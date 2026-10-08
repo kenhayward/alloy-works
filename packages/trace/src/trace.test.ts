@@ -242,7 +242,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(659); // 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(660); // 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -831,8 +831,13 @@ describe('the citations in the committed model', () => {
   // domain, IAM-013 in the service.
   // 826 (2026-10-08): AU1.2 - ADM-002, IAM-013, IAM-037, IAM-060, LIF-027 and LIF-029 in the db,
   // ADM-002, IAM-013 and IAM-037 in the service, IAM-013 in the worker.
+  // 834 (2026-10-08): AU1.3 - DAT-007, LIF-026 and LIF-063 in the db, DAT-007 and LIF-026 in the
+  // service's audit-data and LIF-026 in its dataset-images, LIF-026 in the worker's ingest and publish.
+  // 832 (2026-10-08): the AU1 review - LIF-026 cited nowhere, LIF-063 moved to the service's census
+  // and LIF-027 to the db's audit-content, AST-037 in the service and the worker, IAM-013 in the
+  // service's dataset-images.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(826);
+    expect(model.citations).toHaveLength(832);
   });
 
   it('cites no identifier the corpus does not hold', () => {

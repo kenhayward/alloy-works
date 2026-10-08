@@ -10,6 +10,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { labelled, labels, recordEvent } from './audit.js';
 import {
   checkedLimit,
   countOf,
@@ -138,7 +139,75 @@ export async function createConnection(
     author: input.author,
     substance: { kind: 'connection', content: parsed.settings },
   });
-  return { answer: 'created', connection: await storedConnection(trx, version) };
+  const connection = await storedConnection(trx, version);
+  await recordConnectionEvent(trx, 'connection.made', connection);
+  return { answer: 'created', connection };
+}
+
+type ConnectionEvent =
+  | 'connection.made'
+  | 'connection.changed'
+  | 'connection.credential_set'
+  | 'connection.tested'
+  | 'connection.retired';
+
+/**
+ * A connection's act on the log (DAT-007; the AU1 plan, AU1-K), against the version it was done to,
+ * by its name then and its space's. Never a value: settings by name, a test by its outcome's code.
+ */
+async function recordConnectionEvent(
+  trx: TenantTransaction,
+  kind: ConnectionEvent,
+  connection: Pick<StoredConnection, 'id' | 'space' | 'settings'> & {
+    readonly version: Pick<StoredVersion, 'id'>;
+  },
+  detail: Readonly<Record<string, unknown>> = {},
+): Promise<void> {
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'connection', id: connection.id, version: connection.version.id },
+      space: connection.space.id,
+      detail,
+    },
+    labels(
+      labelled('subject', connection.settings.name, connection.id),
+      labelled('space', connection.space.name, connection.space.id),
+    ),
+  );
+}
+
+/** Every setting, by its dotted name, whose value differs between two versions; never the values. */
+export function changedSettings(before: unknown, after: unknown, path = ''): string[] {
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+  if (isRecord(before) && isRecord(after)) {
+    const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+    return keys
+      .flatMap((key) => changedSettings(before[key], after[key], path ? `${path}.${key}` : key))
+      .sort();
+  }
+  return JSON.stringify(before) === JSON.stringify(after) ? [] : [path];
+}
+
+/**
+ * A version recorded: retiring it is `connection.retired`, and any other setting it changes is
+ * `connection.changed`, naming exactly those (DAT-007).
+ */
+async function recordConnectionChange(
+  trx: TenantTransaction,
+  before: ConnectionSettings,
+  after: StoredConnection,
+): Promise<void> {
+  const retiring = after.settings.retired && !before.retired;
+  const changed = changedSettings(before, after.settings).filter(
+    (name) => !(retiring && name === 'retired'),
+  );
+  if (changed.length > 0) {
+    await recordConnectionEvent(trx, 'connection.changed', after, { settings: changed });
+  }
+  if (retiring) await recordConnectionEvent(trx, 'connection.retired', after);
 }
 
 /**
@@ -178,8 +247,11 @@ export async function recordConnectionVersion(
     };
   }
   switch (answer.answer) {
-    case 'recorded':
-      return { answer: 'recorded', connection: await storedConnection(trx, answer.version) };
+    case 'recorded': {
+      const connection = await storedConnection(trx, answer.version);
+      await recordConnectionChange(trx, current.settings, connection);
+      return { answer: 'recorded', connection };
+    }
     case 'version.unchanged':
       return {
         answer: 'version.unchanged',
@@ -262,6 +334,8 @@ export async function setConnectionCredential(
     .executeTakeFirstOrThrow();
   const credential = await credentialOf(trx, input.id);
   if (!credential.set) throw new Error(`The credential of ${input.id} was set and cannot be read`);
+  // That it was set, against the version it was set for; never its value, sealed or not (DAT-007).
+  await recordConnectionEvent(trx, 'connection.credential_set', current);
   return { answer: 'set', credential, credentialId: String(row.id) };
 }
 
@@ -368,6 +442,29 @@ export async function recordConnectionTest(
     })
     .returning('tested_at')
     .executeTakeFirstOrThrow();
+  // Against the version it tested, by that version's name: a newer one may have been cut meanwhile.
+  const tested = await trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+    .innerJoin('space as s', 's.id', 'a.space_id')
+    .select(['v.content', 's.id as space_id', 's.name as space_name'])
+    .where('v.id', '=', input.versionId)
+    .executeTakeFirstOrThrow();
+  await recordConnectionEvent(
+    trx,
+    'connection.tested',
+    {
+      id: input.connectionId,
+      version: { id: input.versionId },
+      space: { id: tested.space_id, name: tested.space_name },
+      settings: parseConnection(tested.content),
+    },
+    {
+      outcome: input.outcome,
+      findings: [...input.findings],
+      ...(input.failure === null ? {} : { failure: input.failure }),
+    },
+  );
   return row.tested_at;
 }
 

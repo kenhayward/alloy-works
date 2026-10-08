@@ -12,7 +12,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import { everyKind } from './testing/every-kind.js';
 
@@ -119,7 +119,7 @@ describe('migration 0047, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
     // One of every kind there was before 0047, so each rewritten constraint is checked against them.
     await service.withTenant(upgraded, async (trx) => {
       const author = (
@@ -174,6 +174,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0058_query_roles',
       '0059_space_archive',
       '0060_audit',
+      '0061_audit_hardening',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

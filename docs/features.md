@@ -129,8 +129,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   one makes an image in the space, because adding an image is part of editing. The last space not archived cannot be archived. An archived space is marked in the list of
   spaces and offered nowhere as a place to make something.
 
-  **This is not yet audited.** Who archived a space is kept until it is restored; nothing records a
-  rename, and moving content between spaces is T7.
+  Each act is on the environment's audit log (below). Moving content between spaces is T7.
+
+- **An audit log, written.** Every act the product performs is recorded in the environment's own
+  audit log, in the same transaction as the act, naming who did it - a person, by their session or a
+  token, the system for a job, or the vendor - what, when, and the version acted on: sign-ins, failed
+  sign-ins and sign-outs, every refused authorisation of somebody signed in, grants, groups,
+  invitations, tokens, spaces, settings, every version of everything, connections (which settings
+  changed, never a credential), bindings, datasets, images and publications. Each event keeps the
+  names it is read by, so it reads after what it describes is renamed or gone. Nothing in the product
+  changes or deletes an event. Nobody can read it yet: reading and exporting it are next (AU2).
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
@@ -1332,6 +1340,8 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
+- No page or route reads the audit log, and nothing exports it: it is written, and read only from the
+  database.
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.

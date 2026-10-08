@@ -26,6 +26,8 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  auditEvents,
+  beforeTheLogDatabase,
   freshDatabase,
   queryAs,
   type TestDatabase,
@@ -668,6 +670,47 @@ describe('publishing a document, from the request to the stored PDF', () => {
       [tenant.id],
     );
     expect(await work()).toBe('failed');
+  });
+
+  it('records a publication produced and a request failed as the system, for the person who asked', async () => {
+    const events = async (request: string) =>
+      (await service.withTenant(tenant, (trx) => auditEvents(trx))).filter(
+        (event) => event.detail.request === request,
+      );
+    const made = await requested(async (trx) => [
+      reference(await component(trx, general, 'Produced', ['Set the tray.'])),
+    ]);
+    expect(await work()).toBe('done');
+    const row = await requestRow(made);
+    const publication = await publicationOf(made);
+    const produced = await events(made);
+    expect(produced.map((event) => event.kind)).toEqual([
+      'publication.requested',
+      'publication.produced',
+    ]);
+    expect(produced[1]).toMatchObject({
+      actorKind: 'system',
+      actor: null,
+      subjectKind: 'document',
+      subject: row.document_id,
+      subjectVersion: row.document_version_id,
+      space: general,
+      detail: { request: made, publication: publication!.publication_id, requestedBy: ada },
+    });
+
+    const failed = await requested(async (trx) => [
+      reference(await component(trx, general, 'Unset', ['Arabic \u{627} here'])),
+    ]);
+    expect(await work()).toBe('failed');
+    const failing = await events(failed);
+    expect(failing.map((event) => event.kind)).toEqual([
+      'publication.requested',
+      'publication.failed',
+    ]);
+    expect(failing[1]).toMatchObject({
+      actorKind: 'system',
+      detail: { request: failed, codes: ['glyph_missing'], requestedBy: ada },
+    });
   });
 
   it('fails a document with a character no face can set once, with every failure, and logs none of it', async () => {
@@ -1627,8 +1670,8 @@ describe('publishing a request made before layouts', () => {
       hostnames: ['before.acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir });
-    const service = testTenantDatabase(db.serviceUrl);
-    const worker = testTenantDatabase(db.workerUrl);
+    const service = beforeTheLogDatabase(db.serviceUrl);
+    const worker = beforeTheLogDatabase(db.workerUrl);
     const queue = createJobQueue(db.workerUrl);
     try {
       // A document of two sections, and a request for it as 0017 took one: no layout, for there was none.

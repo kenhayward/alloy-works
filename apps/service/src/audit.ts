@@ -3,6 +3,7 @@ import {
   principalLabel,
   recordEvent,
   setAuditContext,
+  tallySignInFailure,
   type AuditLabel,
   type SignInRoute,
   type Tenant,
@@ -166,6 +167,10 @@ export async function recordSignInFailure(
       tenant,
       async (trx) => {
         if (principalId !== undefined) await actAs(trx, principalId, request.id);
+        // Naming nobody, at most once a minute per route and kind, counting the rest (H1).
+        const count =
+          principalId === undefined ? await tallySignInFailure(trx, route, failure) : undefined;
+        if (principalId === undefined && count === undefined) return;
         await recordEvent(
           trx,
           {
@@ -174,7 +179,7 @@ export async function recordSignInFailure(
             ...(principalId === undefined
               ? {}
               : { subject: { kind: 'principal', id: principalId } }),
-            detail: { route, failure },
+            detail: { route, failure, ...(count === undefined ? {} : { count }) },
           },
           principalId === undefined
             ? []

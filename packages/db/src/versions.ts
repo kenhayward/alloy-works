@@ -26,10 +26,20 @@ import {
   type NotCarried,
   type ThemeSubstance,
   type VersionSubstance,
+  isLabelledKind,
+  labelFor,
   nameKey,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import {
+  AUDIT_LOG_KEPT,
+  AUDIT_SETTING,
+  labelled,
+  labels,
+  principalLabel,
+  recordEvent,
+} from './audit.js';
 import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedConnection, checkNotInUse } from './definition-references.js';
 import { checkedLimit } from './listing.js';
@@ -239,6 +249,7 @@ async function insertVersion(
   numbering: { readonly revision: number; readonly version: number },
   authorship: Authorship,
   substance: VersionSubstance,
+  parent: string | null,
   digests = versionDigests(substance),
 ): Promise<StoredVersion> {
   const component = substance.kind === 'component' ? substance : undefined;
@@ -286,7 +297,60 @@ async function insertVersion(
   if (!stored) throw new Error(`Version ${row.id} was written and cannot be read back`);
   // Found by its words from the moment it exists, in its own transaction (search.md; SCH-066).
   await indexVersion(trx, stored);
+  await recordVersionCut(trx, stored, parent);
   return stored;
+}
+
+/**
+ * `content.version_cut` (LIF-026; the AU1 plan, AU1-J), for every version of every kind, in the
+ * transaction that cuts it: by whoever the transaction acts for, naming the author where that is
+ * somebody else - the uploader of an image the worker ingests, the requester of a pending result -
+ * and keeping the title or name it had and its space's name. A migration's versions are inserted in
+ * SQL, never here, so they record nothing; nor does an iteration, which is no version (VER-005).
+ */
+async function recordVersionCut(
+  trx: TenantTransaction,
+  version: StoredVersion,
+  parent: string | null,
+): Promise<void> {
+  const { rows } = await sql<{
+    space_id: string | null;
+    space_name: string | null;
+    actor: string | null;
+    logged: boolean;
+  }>`
+    select a.space_id, s.name as space_name,
+      nullif(current_setting(${AUDIT_SETTING}, true), '')::jsonb ->> 'actor' as actor,
+      ${AUDIT_LOG_KEPT} as logged
+    from artifact a left join space s on s.id = a.space_id
+    where a.id = ${version.artifactId}
+  `.execute(trx);
+  const place = rows[0];
+  // A schema before the log (0060) has nowhere to write it: only a migration's own test stands one.
+  if (place?.logged === false) return;
+  const title = isLabelledKind(version.kind)
+    ? labelFor(version.kind, version.content as Record<string, unknown>)
+    : undefined;
+  // The author, where it is not who acts, named by a label erasure reaches (the AU1 review, L9).
+  const authored = version.author !== null && version.author !== place?.actor;
+  await recordEvent(
+    trx,
+    {
+      kind: 'content.version_cut',
+      subject: { kind: version.kind, id: version.artifactId, version: version.id },
+      space: place?.space_id ?? null,
+      detail: {
+        kind: version.kind,
+        parent,
+        ...(authored ? { author: version.author } : {}),
+      },
+    },
+    labels(
+      labelled('subject', title, version.artifactId),
+      labelled('space', place?.space_name, place?.space_id ?? null),
+      authored ? await principalLabel(trx, 'author', version.author!) : undefined,
+    ),
+  );
 }
 
 /**
@@ -357,6 +421,7 @@ export async function createArtifact(
     { revision: 0, version: 1 },
     input,
     substance,
+    null,
   );
   // A definition's name is held from its first version, whatever made it (definitions.md, MET-031):
   // the seed's as well as the routes', so no path onto the chain leaves a name unheld.
@@ -714,6 +779,7 @@ async function record(
     { revision: current.revision, version: current.version + 1 },
     input,
     substance,
+    current.id,
     digests,
   );
   // And a definition renamed holds its new name, the old one freed.

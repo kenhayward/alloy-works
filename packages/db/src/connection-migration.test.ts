@@ -15,7 +15,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 
 /** The constraints 0044 rewrites. */
@@ -98,7 +98,7 @@ describe('migration 0044, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
     // A role, a scoped token and one artifact of every kind search finds, made before 0044.
     await service.withTenant(upgraded, async (trx) => {
       const ada = (
@@ -163,6 +163,7 @@ describe('migration 0044, over an environment made before it', () => {
       '0058_query_roles',
       '0059_space_archive',
       '0060_audit',
+      '0061_audit_hardening',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

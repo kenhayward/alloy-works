@@ -1,5 +1,5 @@
-import { queryAs } from '@alloy-works/db/testing';
-import { removeGrant } from '@alloy-works/db';
+import { holdingTransaction, queryAs } from '@alloy-works/db/testing';
+import { createSpace, removeGrant } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { binding, HOST, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
 
@@ -9,10 +9,15 @@ type Json = Record<string, unknown>;
 describe('refusals in the audit log', () => {
   let h: Harness;
   let connection: { id: string; version: string };
+  let restricted: string;
 
   beforeAll(async () => {
     h = await startHarness();
     connection = await h.connection('Readings');
+    // A space Ada authors in and Grace reads nothing of.
+    restricted = (await h.tenantDb.withTenant(h.tenant, (trx) => createSpace(trx, 'Restricted')))
+      .id;
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: restricted });
   });
 
   afterAll(async () => {
@@ -27,8 +32,22 @@ describe('refusals in the audit log', () => {
       )
     ).rows[0]!.newest as string;
 
-  /** Every event since `after`, each with its labels by role. */
+  /**
+   * Every event since `after`, once the log is quiet: a refusal is written after its reply has gone
+   * (M5), so this reads until two reads a tenth of a second apart agree.
+   */
   const eventsAfter = async (after: string) => {
+    let last = JSON.stringify(await readAfter(after));
+    for (;;) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const now = await readAfter(after);
+      if (JSON.stringify(now) === last) return now;
+      last = JSON.stringify(now);
+    }
+  };
+
+  /** Every event since `after`, each with its labels by role. */
+  const readAfter = async (after: string) => {
     const { rows } = await queryAs(
       h.db.adminUrl,
       `select e.*, coalesce((select jsonb_object_agg(l.role, l.text) from ${h.tenant.schema}.audit_label l
@@ -104,6 +123,37 @@ describe('refusals in the audit log', () => {
       },
       labels: { subject: 'Quality plan' },
     });
+  });
+
+  it('answers a hidden 404 before its refusal is written, which follows the reply', async () => {
+    const secret = await h.component(h.quality, 'Answered first');
+    const mark = await newest();
+    // Nothing can be written to the log until this is let go.
+    const release = await holdingTransaction(
+      h.db.adminUrl,
+      `lock table ${h.tenant.schema}.audit_event in exclusive mode`,
+    );
+    let released = false;
+    try {
+      const answered = await Promise.race([
+        h.call(ALICE, 'GET', `/v1/components/${secret.id}`),
+        new Promise<'waited'>((resolve) => setTimeout(() => resolve('waited'), 3_000)),
+      ]);
+      expect(answered === 'waited' ? answered : answered.statusCode).toBe(404);
+      await release();
+      released = true;
+      const deadline = Date.now() + 5_000;
+      let events = await eventsAfter(mark);
+      while (events.length === 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        events = await eventsAfter(mark);
+      }
+      expect(events).toEqual([
+        expect.objectContaining({ kind: 'access.refused', subject: secret.id }),
+      ]);
+    } finally {
+      if (!released) await release();
+    }
   });
 
   it('IAM-013 records a grant answered as absent as a hidden refusal of the grant', async () => {
@@ -238,5 +288,103 @@ describe('refusals in the audit log', () => {
         labels: expect.objectContaining({ subject: 'Readings' }),
       }),
     ]);
+  });
+
+  /** A document in General placing one binding of a definition Grace may not read. */
+  const unreadable = async (take = 'name') => {
+    const definition = await h.definition(connection.id, {}, restricted);
+    const component = await h.component(h.general, 'Readings elsewhere');
+    const place = (column: string) =>
+      h.place(
+        component,
+        binding('b1', definition.id, {
+          parameters: { site: { literal: '8' } },
+          take: { column },
+        }),
+      );
+    await place(take);
+    const document = await h.documentReferencing([component.id]);
+    return { definition, component, document, node: document.nodes[0]!, place };
+  };
+  const resolveAs = (as: string, document: string, node: string) =>
+    h.call(as, 'POST', `/v1/documents/${document}/bindings/resolve`, {
+      bindings: [{ node, binding: 'b1' }],
+    });
+  /** The hidden refusal of `definition` to Grace, answered as a binding naming nothing. */
+  const hiddenDefinition = (definition: string) =>
+    expect.objectContaining({
+      kind: 'access.refused',
+      actor: h.ids.grace,
+      subject_kind: 'artifact',
+      subject: definition,
+      detail: expect.objectContaining({
+        permission: 'read',
+        target: `artifact:${definition}`,
+        hidden: true,
+        code: 'binding_missing',
+      }),
+    });
+
+  it('IAM-013 records a resolve and a check naming a definition the caller may not read as hidden refusals', async () => {
+    const { definition, document, node } = await unreadable();
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['8', 'Harbour']]);
+    let mark = await newest();
+    const resolving = await resolveAs('grace', document.id, node);
+    expect(resolving.statusCode, resolving.body).toBe(400);
+    expect(await eventsAfter(mark)).toEqual([hiddenDefinition(definition.id)]);
+    // Swallowed into a check's answer: recorded in the check's own transaction.
+    expect((await resolveAs('ada', document.id, node)).statusCode).toBe(200);
+    mark = await newest();
+    const checked = await h.call(
+      'grace',
+      'POST',
+      `/v1/documents/${document.id}/bindings/check`,
+      {},
+    );
+    expect(checked.statusCode, checked.body).toBe(200);
+    expect(await eventsAfter(mark)).toEqual([hiddenDefinition(definition.id)]);
+  });
+
+  it('IAM-013 records an acceptance of a result whose definition the caller may not read as a hidden refusal', async () => {
+    const { definition, document, node } = await unreadable();
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['8', 'Harbour']]);
+    expect((await resolveAs('ada', document.id, node)).statusCode).toBe(200);
+    h.connector.run = ranOk([['8', 'Harbour Quay']]);
+    expect(
+      (await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/check`, {})).statusCode,
+    ).toBe(200);
+    const state = (await h.call('ada', 'GET', `/v1/documents/${document.id}/bindings`)).json<{
+      bindings: { held: { version: string }; waiting: { version: string } }[];
+    }>().bindings[0]!;
+    const mark = await newest();
+    const accepted = await h.call('grace', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'b1',
+      version: state.waiting.version,
+      replaces: state.held.version,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(400);
+    expect(await eventsAfter(mark)).toEqual([hiddenDefinition(definition.id)]);
+  });
+
+  it('IAM-013 records keeping a value whose definition the caller may not read as a hidden refusal', async () => {
+    const { definition, document, node, place } = await unreadable();
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['8', 'Harbour']]);
+    expect((await resolveAs('ada', document.id, node)).statusCode).toBe(200);
+    const held = (await h.call('ada', 'GET', `/v1/documents/${document.id}/bindings`)).json<{
+      bindings: { held: { version: string } }[];
+    }>().bindings[0]!.held;
+    await place('id');
+    const mark = await newest();
+    const kept = await h.call('grace', 'POST', `/v1/documents/${document.id}/bindings/confirm`, {
+      node,
+      binding: 'b1',
+      replaces: held.version,
+    });
+    expect(kept.statusCode, kept.body).toBe(400);
+    expect(await eventsAfter(mark)).toEqual([hiddenDefinition(definition.id)]);
   });
 });

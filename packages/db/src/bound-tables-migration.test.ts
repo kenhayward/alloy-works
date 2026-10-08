@@ -29,7 +29,7 @@ import {
   freshDatabase,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import {
   addCatalogueVersion,
@@ -72,7 +72,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
         return numbered === null || Number(numbered[1]) <= 55;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

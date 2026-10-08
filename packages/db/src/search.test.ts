@@ -32,6 +32,7 @@ import {
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
@@ -504,7 +505,7 @@ describe('migration 0031, which makes search a projection of the chain', () => {
       hostnames: [`${id}.alloy.test`],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    const service = testTenantDatabase(db.serviceUrl);
+    const service = beforeTheLogDatabase(db.serviceUrl);
     try {
       const component = await service.withTenant(tenant, async (trx) => {
         const ada = await trx

@@ -386,6 +386,12 @@ describe("the service's handling of a credential", () => {
       );
       rows.push(...(dumped.rows as { row: string }[]).map((each) => `${table} ${each.row}`));
     }
+    // The audit log among them, holding the credential's setting and never its value (DAT-007).
+    expect(
+      rows.some(
+        (row) => row.startsWith('audit_event ') && row.includes('connection.credential_set'),
+      ),
+    ).toBe(true);
     const records = await queryAs(
       db.adminUrl,
       `select operation from ${tenant.schema}.idempotency_record`,

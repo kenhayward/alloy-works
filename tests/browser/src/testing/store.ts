@@ -94,7 +94,11 @@ export async function writeTheme(
   artifacts: ThemeArtifacts,
   written: ThemeToWrite,
 ): Promise<string> {
-  const database = createTenantDatabase(DATABASE, { max: 1 });
+  // Written straight to the database, as the suite's own setup: on the audit log as the system.
+  const database = createTenantDatabase(DATABASE, {
+    max: 1,
+    auditContext: { actorKind: 'system', traceId: 'browser-suite' },
+  });
   try {
     const tenant = await database.resolveHostname(new URL(API).hostname);
     if (!tenant) throw new Error(`No environment answers to ${new URL(API).hostname}`);

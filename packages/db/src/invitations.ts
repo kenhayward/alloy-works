@@ -372,6 +372,7 @@ export async function claimInvitation(
       },
       labels(
         labelled('invitee', open.email, open.principal_id),
+        // The vendor's words for its authority, naming no principal: no erasure of a person reaches it.
         labelled('named_by', open.named_by),
       ),
     );

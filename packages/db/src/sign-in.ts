@@ -3,7 +3,7 @@ import { asAdministrator } from './admin.js';
 import { labelled, labels, recordEventSql } from './audit.js';
 import { invitedAddress } from './invitations.js';
 import type { Tenant } from './provision.js';
-import { sealSecret } from '@alloy-works/sealing';
+import { openSecret, sealSecret } from '@alloy-works/sealing';
 
 export type SignInRoute = 'organisation' | 'google';
 
@@ -40,6 +40,31 @@ export async function configureOrganisationSignIn(
   if (provider.clientSecret.length === 0) throw new Error('A client secret is required');
   const sealed = sealSecret(key, 'sign-in', tenant.id, provider.clientSecret);
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
+    // What was configured before, to record a change only where there is one (the AU1 review, L10).
+    const held = await client.query<{
+      issuer: string;
+      client_id: string;
+      sealed_secret: string | null;
+      groups_claim: string;
+    }>(
+      `select issuer, client_id, sealed_secret, groups_claim from ${schema}.identity_provider
+       for update`,
+    );
+    const previous = held.rows[0];
+    const sameSecret = (sealedBefore: string | null) => {
+      if (sealedBefore === null) return false;
+      try {
+        return openSecret(key, 'sign-in', tenant.id, sealedBefore) === provider.clientSecret;
+      } catch {
+        return false;
+      }
+    };
+    const unchanged =
+      previous !== undefined &&
+      previous.issuer === provider.issuer &&
+      previous.client_id === provider.clientId &&
+      (provider.groupsClaim === undefined || previous.groups_claim === provider.groupsClaim) &&
+      sameSecret(previous.sealed_secret);
     await client.query(
       `insert into ${schema}.identity_provider (issuer, client_id, sealed_secret, groups_claim)
        values ($1, $2, $3, coalesce($4, 'groups'))
@@ -49,10 +74,12 @@ export async function configureOrganisationSignIn(
            groups_claim = coalesce($4, ${schema}.identity_provider.groups_claim)`,
       [provider.issuer, provider.clientId, sealed, provider.groupsClaim ?? null],
     );
-    await client.query(
+    const opened = await client.query(
       `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,
     );
-    await routeEvent(client, 'sign_in_route.configured', 'organisation');
+    if (!unchanged || opened.rowCount) {
+      await routeEvent(client, 'sign_in_route.configured', 'organisation');
+    }
   });
 }
 
@@ -75,16 +102,19 @@ export async function permitGoogleSignIn(
   options: { readonly domains?: readonly string[] } = {},
 ): Promise<void> {
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
-    await client.query(
+    const opened = await client.query(
       `insert into ${schema}.sign_in_route (route) values ('google') on conflict do nothing`,
     );
+    let changed = (opened.rowCount ?? 0) > 0;
     for (const domain of options.domains ?? []) {
-      await client.query(
+      const added = await client.query(
         `insert into ${schema}.google_domain (domain) values ($1) on conflict do nothing`,
         [domain.toLowerCase()],
       );
+      changed ||= (added.rowCount ?? 0) > 0;
     }
-    await routeEvent(client, 'sign_in_route.configured', 'google');
+    // Only where something changed (the AU1 review, L10).
+    if (changed) await routeEvent(client, 'sign_in_route.configured', 'google');
   });
 }
 
@@ -138,7 +168,9 @@ export async function closeSignInRoute(
   route: SignInRoute,
 ): Promise<void> {
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
-    await client.query(`delete from ${schema}.sign_in_route where route = $1`, [route]);
+    const closing = await client.query(`delete from ${schema}.sign_in_route where route = $1`, [
+      route,
+    ]);
     // Every session it issued ends, each an event, written before its row goes (the AU1 plan, AU1-F).
     const ending = await client.query<{ id: string; principal_id: string; name: string | null }>(
       `select s.id, s.principal_id, coalesce(p.display_name, p.email) as name
@@ -160,6 +192,7 @@ export async function closeSignInRoute(
     await client.query(`delete from ${schema}.session where route = $1`, [route]);
     await client.query(`delete from ${schema}.sign_in_attempt where route = $1`, [route]);
     if (route === 'google') await client.query(`delete from ${schema}.sign_in_handoff`);
-    await routeEvent(client, 'sign_in_route.closed', route);
+    // A route already closed is closed again silently (the AU1 review, L10).
+    if (closing.rowCount) await routeEvent(client, 'sign_in_route.closed', route);
   });
 }

@@ -21,6 +21,7 @@ import type {
 } from '@alloy-works/api-contract';
 import { SESSION_COOKIE, type ProvenanceView } from '@alloy-works/api-contract';
 import {
+  artifactPlace,
   assetHolding,
   bindingQuestion,
   componentsBinding,
@@ -42,6 +43,7 @@ import {
   readQueryDefinition,
   readVersion,
   recordDatasetVersion,
+  recordEvent,
   recordResolution,
   recordTake,
   refusePending,
@@ -114,7 +116,7 @@ import {
   type Authorised,
   type Caller,
 } from '../access.js';
-import { isRefusal, recordRefusalIn } from '../audit.js';
+import { contextOf, isRefusal, recordRefusalIn } from '../audit.js';
 import { Accepted, AfterCommit, Revalidated } from '../after-commit.js';
 import { AppError, storageUnavailable } from '../errors.js';
 import { hashToken } from '../sessions.js';
@@ -510,8 +512,19 @@ async function prepare(
     const facts = stored && (await connectionFacts(trx, caller, stored.id));
     // A definition the caller may not read is answered as one that is not there, so a binding's
     // refusal never tells them whether it exists.
-    if (!stored || !facts || !decide('read', facts).allowed) {
+    if (!stored || !facts) {
       throw bindingMissing(naming, `The binding ${binding.id} names no query definition here.`);
+    }
+    // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+    const reading = decide('read', facts);
+    if (!reading.allowed) {
+      throw refusedBy(
+        bindingMissing(naming, `The binding ${binding.id} names no query definition here.`),
+        reading,
+        facts,
+        { kind: 'artifact', id: stored.id },
+        true,
+      );
     }
     if (stored.definition.retired) {
       throw refused(
@@ -1064,8 +1077,19 @@ async function mayTakeResult(
   naming: Required<Naming>,
 ): Promise<void> {
   const definition = await connectionFacts(trx, caller, provenance.queryDefinition.artifact);
-  if (!definition || !decide('read', definition).allowed) {
-    throw bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
+  const missing = () =>
+    bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
+  if (!definition) throw missing();
+  // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+  const reading = decide('read', definition);
+  if (!reading.allowed) {
+    throw refusedBy(
+      missing(),
+      reading,
+      definition,
+      { kind: 'artifact', id: provenance.queryDefinition.artifact },
+      true,
+    );
   }
   const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
   const using = connection && decide('use_connection', connection);
@@ -1571,6 +1595,60 @@ async function heldBy(
   );
 }
 
+type BindingEvent =
+  'binding.resolved' | 'binding.checked' | 'binding.accepted' | 'binding.confirmed';
+
+/**
+ * A binding's act on the log (LIF-026; the AU1 plan, AU1-L), in the transaction that records it, not
+ * the one that decided it: about the document, at its latest version, naming the node, the binding
+ * and the dataset version it holds or found.
+ */
+async function recordBindingEvent(
+  trx: TenantTransaction,
+  kind: BindingEvent,
+  at: {
+    readonly document: string;
+    readonly node: string;
+    readonly binding: string;
+    readonly dataset: string;
+    readonly version: string;
+    readonly outcome?: 'unchanged' | 'revision';
+  },
+): Promise<void> {
+  const place = await artifactPlace(trx, at.document);
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'document', id: at.document, version: place.version },
+      space: place.space,
+      detail: { ...at },
+    },
+    place.labels,
+  );
+}
+
+const BY_ACT = {
+  resolve: 'binding.resolved',
+  accept: 'binding.accepted',
+  confirm: 'binding.confirmed',
+} as const satisfies Record<string, BindingEvent>;
+
+/** A resolution row, and its event beside it: every one this service writes is on the log. */
+async function recordLoggedResolution(
+  trx: TenantTransaction,
+  input: Parameters<typeof recordResolution>[1],
+): Promise<void> {
+  const row = await recordResolution(trx, input);
+  await recordBindingEvent(trx, BY_ACT[row.act], {
+    document: row.document,
+    node: row.node,
+    binding: row.binding,
+    dataset: row.dataset,
+    version: row.version,
+  });
+}
+
 type ResolveResult = ResolveBindingsView['results'][number];
 type CheckResult = CheckBindingsView['results'][number];
 
@@ -1640,107 +1718,115 @@ export async function resolveAct(
       );
       questions.forEach((each, at) => ran.set(each.question, outcomes[at]!));
       if (signal.aborted) throw signal.reason;
-      return db.withTenant(tenant, async (record) => {
-        const succeeded = prepared.filter((each) => ran.get(each.question)!.ok);
-        // Before what each holds is read: an accept or another resolve of one of them waits its turn.
-        await lockBindings(
-          record,
-          id,
-          succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
-        );
-        await decideAgain(record, request, { id, permission: 'edit' }, succeeded);
-        await unchangedSince(
-          record,
-          id,
-          principalId,
-          succeeded.map((each) => each.placed),
-          source,
-        );
-        const seesSource = await seeingSourceNow(record, caller, prepared);
-        const held = await heldBy(record, id, placed);
-        // Every question this records, in turn, before the first: after the bindings' locks, as every
-        // act takes them, so two acts recording the same questions never wait on each other.
-        await lockDatasetQuestions(record, recordable(succeeded, ran));
-        const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
-        const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
-        const results: ResolveResult[] = [];
-        for (const each of prepared) {
-          const outcome = ran.get(each.question)!;
-          const { node, binding } = each.placed;
-          const failed = (failure: FailureIn) =>
-            results.push({
-              node,
-              binding: binding.id,
-              failure: bindingFailure(
-                failure,
-                { definition: each.definition.id, binding: binding.id, node, document: id },
-                seesSource(each),
-                each.draft.fetch.kind === 'builder',
-              ),
-            });
-          if (!outcome.ok) {
-            failed(outcome.failure);
-            continue;
-          }
-          const admission = admitted.get(each.question)!;
-          if ('failure' in admission) {
-            failed(admission.failure);
-            continue;
-          }
-          if (!admission.held) {
-            // Its images are being admitted: recorded once every one is, when it is asked for (D8-E).
-            const act: PendingAct = sessionNodes.has(key(node, binding.id)) ? 'session' : 'resolve';
-            const waiting = await pendingResult(record, {
-              act,
+      return db.withTenant(
+        tenant,
+        async (record) => {
+          const succeeded = prepared.filter((each) => ran.get(each.question)!.ok);
+          // Before what each holds is read: an accept or another resolve of one of them waits its turn.
+          await lockBindings(
+            record,
+            id,
+            succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
+          );
+          await decideAgain(record, request, { id, permission: 'edit' }, succeeded);
+          await unchangedSince(
+            record,
+            id,
+            principalId,
+            succeeded.map((each) => each.placed),
+            source,
+          );
+          const seesSource = await seeingSourceNow(record, caller, prepared);
+          const held = await heldBy(record, id, placed);
+          // Every question this records, in turn, before the first: after the bindings' locks, as every
+          // act takes them, so two acts recording the same questions never wait on each other.
+          await lockDatasetQuestions(record, recordable(succeeded, ran));
+          const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+          const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
+          const results: ResolveResult[] = [];
+          for (const each of prepared) {
+            const outcome = ran.get(each.question)!;
+            const { node, binding } = each.placed;
+            const failed = (failure: FailureIn) =>
+              results.push({
+                node,
+                binding: binding.id,
+                failure: bindingFailure(
+                  failure,
+                  { definition: each.definition.id, binding: binding.id, node, document: id },
+                  seesSource(each),
+                  each.draft.fetch.kind === 'builder',
+                ),
+              });
+            if (!outcome.ok) {
+              failed(outcome.failure);
+              continue;
+            }
+            const admission = admitted.get(each.question)!;
+            if ('failure' in admission) {
+              failed(admission.failure);
+              continue;
+            }
+            if (!admission.held) {
+              // Its images are being admitted: recorded once every one is, when it is asked for (D8-E).
+              const act: PendingAct = sessionNodes.has(key(node, binding.id))
+                ? 'session'
+                : 'resolve';
+              const waiting = await pendingResult(record, {
+                act,
+                document: id,
+                node,
+                binding: binding.id,
+                digest: each.placed.digest,
+                holding: held.get(key(node, binding.id))?.id ?? null,
+                session: act === 'session' ? body.session! : null,
+                provenance: admission.provenance,
+                uploads: admission.uploads,
+                by: principalId,
+              });
+              results.push({ node, binding: binding.id, pending: waiting.id });
+              continue;
+            }
+            let recorded = versions.get(each.question);
+            if (!recorded) {
+              recorded = await recordDatasetVersion(record, {
+                provenance: admission.provenance,
+                author: principalId,
+                images: admission.hashes,
+              });
+              versions.set(each.question, recorded);
+            }
+            await recordTaken(record, recorded.version.id, each, outcome);
+            const before = held.get(key(node, binding.id));
+            await recordLoggedResolution(record, {
               document: id,
               node,
               binding: binding.id,
               digest: each.placed.digest,
-              holding: held.get(key(node, binding.id))?.id ?? null,
-              session: act === 'session' ? body.session! : null,
-              provenance: admission.provenance,
-              uploads: admission.uploads,
+              version: recorded.version.id,
+              // What it held, where that is a version of the same dataset: a binding whose question
+              // changed held another dataset, which this does not replace.
+              replaces:
+                before && before.held.dataset === recorded.dataset.id ? before.held.version : null,
+              act: 'resolve',
               by: principalId,
             });
-            results.push({ node, binding: binding.id, pending: waiting.id });
-            continue;
-          }
-          let recorded = versions.get(each.question);
-          if (!recorded) {
-            recorded = await recordDatasetVersion(record, {
-              provenance: admission.provenance,
-              author: principalId,
-              images: admission.hashes,
+            results.push({
+              node,
+              binding: binding.id,
+              held: {
+                dataset: recorded.dataset.id,
+                version: recorded.version.id,
+                reused: recorded.reused,
+              },
             });
-            versions.set(each.question, recorded);
           }
-          await recordTaken(record, recorded.version.id, each, outcome);
-          const before = held.get(key(node, binding.id));
-          await recordResolution(record, {
-            document: id,
-            node,
-            binding: binding.id,
-            digest: each.placed.digest,
-            version: recorded.version.id,
-            // What it held, where that is a version of the same dataset: a binding whose question
-            // changed held another dataset, which this does not replace.
-            replaces:
-              before && before.held.dataset === recorded.dataset.id ? before.held.version : null,
-            act: 'resolve',
-            by: principalId,
-          });
-          results.push({
-            node,
-            binding: binding.id,
-            held: {
-              dataset: recorded.dataset.id,
-              version: recorded.version.id,
-              reused: recorded.reused,
-            },
-          });
-        }
-        return results.some((each) => 'pending' in each) ? new Accepted({ results }) : { results };
-      });
+          return results.some((each) => 'pending' in each)
+            ? new Accepted({ results })
+            : { results };
+        },
+        contextOf(request),
+      );
     }),
   );
 }
@@ -1854,115 +1940,129 @@ export async function checkAct(
       );
       const ran = new Map(asking.map((each, at) => [each.question, outcomes[at]!]));
       if (signal.aborted) throw signal.reason;
-      return db.withTenant(tenant, async (record) => {
-        const succeeded = toRun.filter((each) => ran.get(each.question)?.ok === true);
-        await lockBindings(
-          record,
-          id,
-          succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
-        );
-        await decideAgain(record, request, { id, permission: 'read' }, succeeded);
-        await unchangedSince(
-          record,
-          id,
-          principalId,
-          succeeded.map((each) => each.placed),
-        );
-        // What each holds now, under the lock: an accept while the source answered moves what the
-        // result is compared with, so what was read before the run is not the comparison.
-        const holdingNow = await heldBy(record, id, placed);
-        const seesSource = await seeingSourceNow(record, caller, toRun);
-        await lockDatasetQuestions(record, recordable(succeeded, ran));
-        const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
-        const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
-        let waits = false;
-        for (const each of toRun) {
-          const outcome = ran.get(each.question);
-          if (!outcome) continue;
-          const { node, binding } = each.placed;
-          const naming = {
-            definition: each.definition.id,
-            binding: binding.id,
-            node,
-            document: id,
-          };
-          const failed = (failure: FailureIn) =>
-            results.set(key(node, binding.id), {
-              node,
+      return db.withTenant(
+        tenant,
+        async (record) => {
+          const succeeded = toRun.filter((each) => ran.get(each.question)?.ok === true);
+          await lockBindings(
+            record,
+            id,
+            succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
+          );
+          await decideAgain(record, request, { id, permission: 'read' }, succeeded);
+          await unchangedSince(
+            record,
+            id,
+            principalId,
+            succeeded.map((each) => each.placed),
+          );
+          // What each holds now, under the lock: an accept while the source answered moves what the
+          // result is compared with, so what was read before the run is not the comparison.
+          const holdingNow = await heldBy(record, id, placed);
+          const seesSource = await seeingSourceNow(record, caller, toRun);
+          await lockDatasetQuestions(record, recordable(succeeded, ran));
+          const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+          const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
+          let waits = false;
+          for (const each of toRun) {
+            const outcome = ran.get(each.question);
+            if (!outcome) continue;
+            const { node, binding } = each.placed;
+            const naming = {
+              definition: each.definition.id,
               binding: binding.id,
-              outcome: 'failed',
-              failure: bindingFailure(
-                failure,
-                naming,
-                seesSource(each),
-                each.draft.fetch.kind === 'builder',
-              ),
-            });
-          if (!outcome.ok) {
-            failed(outcome.failure);
-            continue;
-          }
-          const admission = admitted.get(each.question)!;
-          if ('failure' in admission) {
-            failed(admission.failure);
-            continue;
-          }
-          if (!admission.held) {
-            // A result whose images are being admitted: recorded, as a check records one, once every
-            // one is, when it is asked for (D8-E).
-            const waiting = await pendingResult(record, {
-              act: 'check',
+              node,
+              document: id,
+            };
+            const failed = (failure: FailureIn) =>
+              results.set(key(node, binding.id), {
+                node,
+                binding: binding.id,
+                outcome: 'failed',
+                failure: bindingFailure(
+                  failure,
+                  naming,
+                  seesSource(each),
+                  each.draft.fetch.kind === 'builder',
+                ),
+              });
+            if (!outcome.ok) {
+              failed(outcome.failure);
+              continue;
+            }
+            const admission = admitted.get(each.question)!;
+            if ('failure' in admission) {
+              failed(admission.failure);
+              continue;
+            }
+            if (!admission.held) {
+              // A result whose images are being admitted: recorded, as a check records one, once every
+              // one is, when it is asked for (D8-E).
+              const waiting = await pendingResult(record, {
+                act: 'check',
+                document: id,
+                node,
+                binding: binding.id,
+                digest: each.placed.digest,
+                holding: holdingNow.get(key(node, binding.id))?.id ?? null,
+                session: null,
+                provenance: admission.provenance,
+                uploads: admission.uploads,
+                by: principalId,
+              });
+              results.set(key(node, binding.id), {
+                node,
+                binding: binding.id,
+                outcome: 'pending',
+                pending: waiting.id,
+              });
+              waits = true;
+              continue;
+            }
+            let recorded = versions.get(each.question);
+            if (!recorded) {
+              recorded = await recordDatasetVersion(record, {
+                provenance: admission.provenance,
+                author: principalId,
+                images: admission.hashes,
+              });
+              versions.set(each.question, recorded);
+            }
+            await recordTaken(record, recorded.version.id, each, outcome);
+            const holding = holdingNow.get(key(node, binding.id));
+            if (!holding || holding.digest !== each.placed.digest) {
+              results.set(key(node, binding.id), {
+                node,
+                binding: binding.id,
+                outcome: 'unchecked',
+                reason: 'unresolved',
+              });
+              continue;
+            }
+            // A revision where the rows differ, or a floating binding's definition has moved on (B4-A).
+            const unchanged =
+              outcome.provenance.checksum === holding.held.provenance.checksum &&
+              outcome.provenance.queryDefinition.version ===
+                holding.held.provenance.queryDefinition.version;
+            results.set(
+              key(node, binding.id),
+              unchanged
+                ? { node, binding: binding.id, outcome: 'unchanged' }
+                : { node, binding: binding.id, outcome: 'revision', version: recorded.version.id },
+            );
+            await recordBindingEvent(record, 'binding.checked', {
               document: id,
               node,
               binding: binding.id,
-              digest: each.placed.digest,
-              holding: holdingNow.get(key(node, binding.id))?.id ?? null,
-              session: null,
-              provenance: admission.provenance,
-              uploads: admission.uploads,
-              by: principalId,
+              dataset: recorded.dataset.id,
+              version: recorded.version.id,
+              outcome: unchanged ? 'unchanged' : 'revision',
             });
-            results.set(key(node, binding.id), {
-              node,
-              binding: binding.id,
-              outcome: 'pending',
-              pending: waiting.id,
-            });
-            waits = true;
-            continue;
           }
-          let recorded = versions.get(each.question);
-          if (!recorded) {
-            recorded = await recordDatasetVersion(record, {
-              provenance: admission.provenance,
-              author: principalId,
-              images: admission.hashes,
-            });
-            versions.set(each.question, recorded);
-          }
-          await recordTaken(record, recorded.version.id, each, outcome);
-          const holding = holdingNow.get(key(node, binding.id));
-          if (!holding || holding.digest !== each.placed.digest) {
-            results.set(key(node, binding.id), {
-              node,
-              binding: binding.id,
-              outcome: 'unchecked',
-              reason: 'unresolved',
-            });
-            continue;
-          }
-          // A revision where the rows differ, or a floating binding's definition has moved on (B4-A).
-          results.set(
-            key(node, binding.id),
-            outcome.provenance.checksum === holding.held.provenance.checksum &&
-              outcome.provenance.queryDefinition.version ===
-                holding.held.provenance.queryDefinition.version
-              ? { node, binding: binding.id, outcome: 'unchanged' }
-              : { node, binding: binding.id, outcome: 'revision', version: recorded.version.id },
-          );
-        }
-        return waits ? new Accepted({ results: ordered() }) : { results: ordered() };
-      });
+          return waits ? new Accepted({ results: ordered() }) : { results: ordered() };
+        },
+        contextOf(request),
+      );
     }),
   );
 }
@@ -2041,7 +2141,7 @@ export function bindingHandlers(
         throw acknowledgementRequired(naming);
       }
       await mayTakeResult(trx, callerOf(request), held.waiting.provenance, naming);
-      await recordResolution(trx, {
+      await recordLoggedResolution(trx, {
         document: id,
         node: found.node,
         binding: found.binding.id,
@@ -2090,10 +2190,21 @@ export function bindingHandlers(
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const caller = callerOf(request);
       const facts = await connectionFacts(trx, caller, found.binding.query);
-      if (!facts || !decide('read', facts).allowed) {
-        throw bindingMissing(
+      const missing = () =>
+        bindingMissing(
           { ...naming, definition: found.binding.query },
           `The binding ${found.binding.id} names no query definition here.`,
+        );
+      if (!facts) throw missing();
+      // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+      const reading = decide('read', facts);
+      if (!reading.allowed) {
+        throw refusedBy(
+          missing(),
+          reading,
+          facts,
+          { kind: 'artifact', id: found.binding.query },
+          true,
         );
       }
       const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
@@ -2132,7 +2243,7 @@ export function bindingHandlers(
         const take = checkTake(found.binding.take, parseQueryDefinition(ran!.content));
         if (take !== null) throw named(refused(400, 'take.invalid', `${take}.`), naming);
       }
-      await recordResolution(trx, {
+      await recordLoggedResolution(trx, {
         document: id,
         node: found.node,
         binding: found.binding.id,
@@ -2547,111 +2658,127 @@ export function pendingHandlers(
       const { id } = request.params as PendingResultParams;
       const tenant = tenantOf(request);
       const caller = callerOf(request);
-      return db.withTenant(tenant, async (trx) => {
-        // Whose it is, before its row is taken: nobody else's request ever waits on it.
-        const seen = await readPendingResult(trx, id);
-        if (!seen || seen.requestedBy !== caller.principalId) throw notFound();
-        const pending = await readPendingResult(trx, id, true);
-        if (!pending) throw notFound();
-        const { node, binding, document } = pending;
-        const view = (result: PendingResultView['result']): PendingResultView => ({
-          id,
-          act: pending.act,
-          document,
-          node,
-          binding,
-          state: result === null ? 'pending' : 'done',
-          result,
-        });
-        type Failure = ReturnType<typeof bindingFailure>;
-        const failed = (failure: Failure): PendingResultView['result'] =>
-          pending.act === 'check'
-            ? { node, binding, outcome: 'failed', failure }
-            : { node, binding, failure };
-        const refuse = async (failure: Failure) => {
-          await refusePending(trx, id, failure);
-          return view(failed(failure));
-        };
-        const naming = {
-          definition: pending.provenance.queryDefinition.artifact,
-          binding,
-          node,
-          document,
-        };
-        const resultKey = `${tenantPrefix(tenant)}sha256/${pending.provenance.checksum}`;
-        if (pending.state === 'refused') {
-          try {
-            await mayStillAct(trx, caller, pending);
-          } catch (error) {
-            if (!(error instanceof AppError)) throw error;
-            return view(failed(bindingFailure(error, naming)));
+      return db.withTenant(
+        tenant,
+        async (trx) => {
+          // Whose it is, before its row is taken: nobody else's request ever waits on it.
+          const seen = await readPendingResult(trx, id);
+          if (!seen || seen.requestedBy !== caller.principalId) throw notFound();
+          const pending = await readPendingResult(trx, id, true);
+          if (!pending) throw notFound();
+          const { node, binding, document } = pending;
+          const view = (result: PendingResultView['result']): PendingResultView => ({
+            id,
+            act: pending.act,
+            document,
+            node,
+            binding,
+            state: result === null ? 'pending' : 'done',
+            result,
+          });
+          type Failure = ReturnType<typeof bindingFailure>;
+          const failed = (failure: Failure): PendingResultView['result'] =>
+            pending.act === 'check'
+              ? { node, binding, outcome: 'failed', failure }
+              : { node, binding, failure };
+          const refuse = async (failure: Failure) => {
+            await refusePending(trx, id, failure);
+            return view(failed(failure));
+          };
+          const naming = {
+            definition: pending.provenance.queryDefinition.artifact,
+            binding,
+            node,
+            document,
+          };
+          const resultKey = `${tenantPrefix(tenant)}sha256/${pending.provenance.checksum}`;
+          if (pending.state === 'refused') {
+            try {
+              await mayStillAct(trx, caller, pending);
+            } catch (error) {
+              if (!(error instanceof AppError)) throw error;
+              return view(failed(bindingFailure(error, naming)));
+            }
+            return view(failed(pending.failure as Failure));
           }
-          return view(failed(pending.failure as Failure));
-        }
-        const images = await pendingImages(trx, pending);
-        if (images.state === 'waiting') return view(null);
-        if (!objects) throw storageUnavailable();
-        const store = await objects.forTenant(trx, tenant);
-        await lockBindings(trx, document, [{ node, binding }]);
-        if (images.state === 'refused') {
+          const images = await pendingImages(trx, pending);
+          if (images.state === 'waiting') return view(null);
+          if (!objects) throw storageUnavailable();
+          const store = await objects.forTenant(trx, tenant);
+          await lockBindings(trx, document, [{ node, binding }]);
+          if (images.state === 'refused') {
+            try {
+              await mayStillAct(trx, caller, pending);
+            } catch (error) {
+              if (!(error instanceof AppError)) throw error;
+              return refuse(bindingFailure(error, naming));
+            }
+            const at = await whereImage(store, resultKey, images.hash);
+            return refuse(bindingFailure({ code: 'image_refused', ...at }, naming));
+          }
+          let holding: HeldResolution | undefined;
           try {
-            await mayStillAct(trx, caller, pending);
+            holding = await mayFinish(trx, caller, pending);
           } catch (error) {
             if (!(error instanceof AppError)) throw error;
             return refuse(bindingFailure(error, naming));
           }
-          const at = await whereImage(store, resultKey, images.hash);
-          return refuse(bindingFailure({ code: 'image_refused', ...at }, naming));
-        }
-        let holding: HeldResolution | undefined;
-        try {
-          holding = await mayFinish(trx, caller, pending);
-        } catch (error) {
-          if (!(error instanceof AppError)) throw error;
-          return refuse(bindingFailure(error, naming));
-        }
-        const provenance = { ...pending.provenance, images: images.images };
-        await lockDatasetQuestions(trx, [provenance]);
-        const recorded = await recordDatasetVersion(trx, {
-          provenance,
-          author: pending.requestedBy,
-          images: await resultImages(store, resultKey, pending.provenance.checksum),
-        });
-        // Held since it was read, so nothing else has finished it.
-        if (!(await finishPending(trx, id)))
-          throw new Error(`Pending result ${id} was finished twice`);
-        if (pending.act === 'check') {
-          if (!holding || holding.digest !== pending.digest) {
-            return view({ node, binding, outcome: 'unchecked', reason: 'unresolved' });
+          const provenance = { ...pending.provenance, images: images.images };
+          await lockDatasetQuestions(trx, [provenance]);
+          const recorded = await recordDatasetVersion(trx, {
+            provenance,
+            author: pending.requestedBy,
+            images: await resultImages(store, resultKey, pending.provenance.checksum),
+          });
+          // Held since it was read, so nothing else has finished it.
+          if (!(await finishPending(trx, id)))
+            throw new Error(`Pending result ${id} was finished twice`);
+          if (pending.act === 'check') {
+            if (!holding || holding.digest !== pending.digest) {
+              return view({ node, binding, outcome: 'unchecked', reason: 'unresolved' });
+            }
+            const unchanged =
+              provenance.checksum === holding.held.provenance.checksum &&
+              provenance.queryDefinition.version ===
+                holding.held.provenance.queryDefinition.version;
+            await recordBindingEvent(trx, 'binding.checked', {
+              document,
+              node,
+              binding,
+              dataset: recorded.dataset.id,
+              version: recorded.version.id,
+              outcome: unchanged ? 'unchanged' : 'revision',
+            });
+            return view(
+              unchanged
+                ? { node, binding, outcome: 'unchanged' }
+                : { node, binding, outcome: 'revision', version: recorded.version.id },
+            );
           }
-          return view(
-            provenance.checksum === holding.held.provenance.checksum &&
-              provenance.queryDefinition.version === holding.held.provenance.queryDefinition.version
-              ? { node, binding, outcome: 'unchanged' }
-              : { node, binding, outcome: 'revision', version: recorded.version.id },
-          );
-        }
-        await recordResolution(trx, {
-          document,
-          node,
-          binding,
-          digest: pending.digest,
-          version: recorded.version.id,
-          replaces:
-            holding && holding.held.dataset === recorded.dataset.id ? holding.held.version : null,
-          act: 'resolve',
-          by: caller.principalId,
-        });
-        return view({
-          node,
-          binding,
-          held: {
-            dataset: recorded.dataset.id,
+          await recordLoggedResolution(trx, {
+            document,
+            node,
+            binding,
+            digest: pending.digest,
             version: recorded.version.id,
-            reused: recorded.reused,
-          },
-        });
-      });
+            replaces:
+              holding && holding.held.dataset === recorded.dataset.id ? holding.held.version : null,
+            act: 'resolve',
+            by: caller.principalId,
+          });
+          return view({
+            node,
+            binding,
+            held: {
+              dataset: recorded.dataset.id,
+              version: recorded.version.id,
+              reused: recorded.reused,
+            },
+          });
+          // As the person whose act it finishes, who alone may ask for it (the AU1 plan, AU1-L).
+        },
+        contextOf(request),
+      );
     },
   };
 }

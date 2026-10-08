@@ -6,6 +6,7 @@ import { datasetQuestionKey, type DatasetIdentity } from '../datasets.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
 import type { AuditContext } from '@alloy-works/domain';
+import { setAuditContext } from '../audit.js';
 import {
   createTenantDatabase,
   type TenantDatabase,
@@ -25,6 +26,32 @@ export function testTenantDatabase(
   options: TenantDatabaseOptions = {},
 ): TenantDatabase {
   return createTenantDatabase(url, { auditContext: TEST_AUDIT_CONTEXT, ...options });
+}
+
+/**
+ * For a migration's own test, which writes with today's code both to environments it stood as they
+ * were before the log (0060) and to environments migrated since: a transaction names the system, as
+ * `testTenantDatabase`'s do, where the schema keeps a log, and nobody where it does not, so a write
+ * there records nothing rather than failing on a log that is not there yet (`AUDIT_LOG_KEPT`).
+ */
+export function beforeTheLogDatabase(
+  url: string,
+  options: TenantDatabaseOptions = {},
+): TenantDatabase {
+  const database = createTenantDatabase(url, options);
+  return {
+    ...database,
+    withTenant(tenant, work, context) {
+      if (context !== undefined) return database.withTenant(tenant, work, context);
+      return database.withTenant(tenant, async (trx) => {
+        const { rows } = await sql<{
+          logged: boolean;
+        }>`select to_regclass('audit_event') is not null as logged`.execute(trx);
+        if (rows[0]!.logged) await setAuditContext(trx, TEST_AUDIT_CONTEXT);
+        return work(trx);
+      });
+    },
+  };
 }
 
 /**

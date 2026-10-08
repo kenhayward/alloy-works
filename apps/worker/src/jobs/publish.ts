@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import {
   failPublicationRequest,
+  recordPublicationEvent,
+  setAuditContext,
   publicationInputs,
   recordPreview,
   recordPublication,
@@ -478,18 +480,31 @@ export function publishJob(deps: {
       // Every output was made, so a record the database refuses is the store stage's, like a refused
       // put: the objects stay behind, keyed by their hashes, and nothing refers to them. So does an
       // output kept before another could not be, or be made.
+      // As the system, for the requester, with its event in the same transaction (the AU1 plan, AU1-L).
       await deps.db
-        .withTenant(tenant, (trx) =>
-          recordPublication(trx, {
-            requestId: request.id,
-            pipelineVersion: PIPELINE_VERSION[schema],
-            // `compile` and `pinnedFacesByHash` re-hashed the faces against these very pins.
-            fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
-            dataSha256: createHash('sha256').update(data).digest('hex'),
-            numbering: assembled.numbering,
-            // One per format the request names, the PDF first, or none: the record is whole or absent.
-            outputs,
-          }),
+        .withTenant(
+          tenant,
+          async (trx) => {
+            const publication = await recordPublication(trx, {
+              requestId: request.id,
+              pipelineVersion: PIPELINE_VERSION[schema],
+              // `compile` and `pinnedFacesByHash` re-hashed the faces against these very pins.
+              fonts: PINNED_FONT_FILES.map(({ file, sha256 }) => ({ file, sha256 })),
+              dataSha256: createHash('sha256').update(data).digest('hex'),
+              numbering: assembled.numbering,
+              // One per format the request names, the PDF first, or none: whole or absent.
+              outputs,
+            });
+            if (publication !== undefined) {
+              await recordPublicationEvent(
+                trx,
+                'publication.produced',
+                { document: request.documentId, version: request.documentVersionId },
+                { request: request.id, publication },
+              );
+            }
+          },
+          { actorKind: 'system', requestedBy: request.requestedBy },
         )
         .catch((error: unknown) => {
           throw new StoreFailed('The publication could not be recorded.', { cause: error });
@@ -506,8 +521,24 @@ export function publishJob(deps: {
         cause instanceof PublishRefused
           ? cause.failures
           : [platformFailure(cause instanceof StoreFailed ? 'store' : 'engine')];
-      await deps.db.withTenant(tenant, (trx) =>
-        failPublicationRequest(trx, job.subjectId!, failures),
+      await deps.db.withTenant(
+        tenant,
+        async (trx) => {
+          const failed = await failPublicationRequest(trx, job.subjectId!, failures);
+          // A publish's failure is on the log, as the system for whoever asked; a preview's is not.
+          if (failed?.kind !== 'publish') return;
+          await setAuditContext(trx, { actorKind: 'system', requestedBy: failed.requestedBy });
+          await recordPublicationEvent(
+            trx,
+            'publication.failed',
+            { document: failed.documentId, version: failed.documentVersionId },
+            {
+              request: job.subjectId!,
+              codes: [...new Set(failures.map((failure) => failure.code))],
+            },
+          );
+        },
+        { actorKind: 'system' },
       );
     },
   };
