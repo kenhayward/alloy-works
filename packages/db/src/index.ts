@@ -40,6 +40,7 @@ export {
 } from './themes.js';
 export {
   failPublicationRequest,
+  recordPublicationEvent,
   listPublications,
   listReadablePublications,
   MAX_FAILED_RULES,
@@ -166,6 +167,7 @@ export {
   type TenantDatabaseOptions,
 } from './tenant-database.js';
 export {
+  artifactPlace,
   AuditContextMissing,
   eraseLabels,
   labelled,
@@ -176,6 +178,7 @@ export {
   setAuditContext,
   type AuditEvent,
   type AuditLabel,
+  type ArtifactPlace,
   type AuditSubject,
 } from './audit.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';

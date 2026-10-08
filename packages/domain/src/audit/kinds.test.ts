@@ -132,7 +132,18 @@ describe('the audit kinds', () => {
       'connection.changed': { settings: ['host', 'database'] },
       'connection.tested': { outcome: 'ok', findings: ['account_not_read_only'] },
       'binding.resolved': { document: ID, node: 'n-1', binding: 'b_2', dataset: OTHER },
-      'publication.requested': { document: ID, format: 'pdf' },
+      'binding.checked': {
+        document: ID,
+        node: 'n-1',
+        binding: 'b_2',
+        dataset: OTHER,
+        version: ID,
+        outcome: 'revision',
+      },
+      'asset.refused': { reason: 'too_many_pixels' },
+      'publication.requested': { request: ID, formats: ['pdf', 'docx'] },
+      'publication.produced': { request: ID, publication: OTHER },
+      'publication.failed': { request: ID, codes: ['occurrence_unreadable', 'engine'] },
       'audit.label_erased': { labels: 3 },
     };
     for (const [kind, detail] of Object.entries(examples)) {
@@ -158,6 +169,21 @@ describe('the audit kinds', () => {
         /connection\.changed/,
       );
     }
+    // A test that failed names its failure by code.
+    expect(
+      parseAuditDetail('connection.tested', {
+        outcome: 'failed',
+        findings: [],
+        failure: 'connection_failed',
+      }),
+    ).toEqual({ outcome: 'failed', findings: [], failure: 'connection_failed' });
+    expect(() =>
+      parseAuditDetail('connection.tested', {
+        outcome: 'failed',
+        findings: [],
+        failure: 'could not connect to db.example.com',
+      }),
+    ).toThrow();
     // Nor beside the names, under a member of its own.
     expect(() =>
       parseAuditDetail('connection.credential_set', { password: 'swordfish' }),

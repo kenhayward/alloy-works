@@ -1,5 +1,7 @@
 import {
   AuditContext,
+  isLabelledKind,
+  labelFor,
   parseAuditDetail,
   type AuditKind,
   type AuditContext as Context,
@@ -16,6 +18,13 @@ import type { TenantTransaction } from './tables.js';
 
 /** The setting that carries a transaction's audit context, local to the transaction. */
 export const AUDIT_SETTING = 'alloy.audit';
+
+/**
+ * Whether the schema keeps an audit log: every tenant's does from 0060 on. Read by an emitter that runs
+ * a lookup anyway, so a migration's own test, standing an environment before 0060 and writing to it
+ * with today's code, records nothing rather than failing on a table that is not there yet.
+ */
+export const AUDIT_LOG_KEPT = sql<boolean>`to_regclass('audit_event') is not null`;
 
 /** What an event is about: a kind of thing, its id where it has one, and the version acted on. */
 export interface AuditSubject {
@@ -205,3 +214,45 @@ export function labelled(
 /** The labels that have text. */
 export const labels = (...each: (AuditLabel | undefined)[]): AuditLabel[] =>
   each.filter((label): label is AuditLabel => label !== undefined);
+
+/** An artifact as an event about it names it: its space, the version, and their labels. */
+export interface ArtifactPlace {
+  readonly space: string | null;
+  readonly version: string | null;
+  readonly labels: AuditLabel[];
+}
+
+/**
+ * Where an artifact is and what it is called at a version - `version`, or its latest - for an event
+ * about it: its space, the version's id, and the version's title or name and the space's name as
+ * labels (audit.md, "Labels").
+ */
+export async function artifactPlace(
+  trx: TenantTransaction,
+  artifactId: string,
+  version?: string,
+): Promise<ArtifactPlace> {
+  let query = trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+    .leftJoin('space as s', 's.id', 'a.space_id')
+    .select(['v.id', 'v.kind', 'v.content', 'a.space_id', 's.name as space_name'])
+    .where('v.artifact_id', '=', artifactId);
+  query =
+    version === undefined
+      ? query.orderBy('v.revision_no', 'desc').orderBy('v.version_no', 'desc').limit(1)
+      : query.where('v.id', '=', version);
+  const row = await query.executeTakeFirst();
+  if (!row) return { space: null, version: version ?? null, labels: [] };
+  const title = isLabelledKind(row.kind)
+    ? labelFor(row.kind, row.content as Record<string, unknown>)
+    : undefined;
+  return {
+    space: row.space_id,
+    version: row.id,
+    labels: labels(
+      labelled('subject', title, artifactId),
+      labelled('space', row.space_name, row.space_id),
+    ),
+  };
+}

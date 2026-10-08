@@ -8,6 +8,7 @@ import {
   type ImageHeader,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { labelled, labels, recordEvent, type AuditEvent } from './audit.js';
 import { enqueueJob } from './queue.js';
 import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -253,7 +254,29 @@ export async function recordAsset(
     .execute();
   // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
   if (upload.origin === 'dataset') await indexVersion(trx, version);
+  await recordAssetEvent(trx, upload.spaceId, {
+    kind: 'asset.ingested',
+    subject: { kind: 'asset', id: version.artifactId, version: version.id },
+  });
   return version;
+}
+
+/** An upload's end on the log (LIF-064; the AU1 plan, AU1-L), in the space it was made in. */
+async function recordAssetEvent(
+  trx: TenantTransaction,
+  spaceId: string,
+  event: Omit<AuditEvent, 'space'>,
+): Promise<void> {
+  const space = await trx
+    .selectFrom('space')
+    .select('name')
+    .where('id', '=', spaceId)
+    .executeTakeFirst();
+  await recordEvent(
+    trx,
+    { ...event, space: spaceId },
+    labels(labelled('space', space?.name, spaceId)),
+  );
 }
 
 /**
@@ -274,7 +297,15 @@ export async function refuseAssetUpload(
     .where('state', '=', from)
     .returningAll()
     .executeTakeFirst();
-  return row && uploadOf(row);
+  if (!row) return undefined;
+  // Recorded, its reason by code; its bytes are the caller's to remove (AST-037).
+  await recordAssetEvent(trx, row.space_id, {
+    kind: 'asset.refused',
+    outcome: 'refused',
+    subject: { kind: 'asset_upload', id: row.id },
+    detail: { reason },
+  });
+  return uploadOf(row);
 }
 
 /**

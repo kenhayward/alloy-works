@@ -6,6 +6,7 @@ import {
   parseAssetVersion,
   parseOutputReport,
   PUBLISHING_FORMATS,
+  labelFor,
   readContent,
   readLayout,
   readOutline,
@@ -36,6 +37,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
@@ -720,7 +722,55 @@ export async function requestPublication(
   }
   // A job kind of its own, on the one queue, so a deployment can give previews workers of their own.
   await enqueueJob(trx, kind, request.id);
+  // A publish is on the log; a preview, kept for an hour and published nowhere, is not.
+  if (kind === 'publish') {
+    await recordPublicationEvent(
+      trx,
+      'publication.requested',
+      { document: input.documentId, version: latest.id },
+      { request: request.id, formats: PUBLISHING_FORMATS.filter((f) => input.formats.includes(f)) },
+    );
+  }
   return { answer: 'requested', request: { id: request.id, state: 'queued' } };
+}
+
+/**
+ * A publication's event (LIF-026; the AU1 plan, AU1-L): about the document version it publishes, by
+ * that version's title and its space's name. Requested in the request's transaction; produced and
+ * failed in the worker's.
+ */
+export async function recordPublicationEvent(
+  trx: TenantTransaction,
+  kind: 'publication.requested' | 'publication.produced' | 'publication.failed',
+  of: { readonly document: string; readonly version: string },
+  detail: Readonly<Record<string, unknown>>,
+): Promise<void> {
+  const placed = await trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+    .leftJoin('space as s', 's.id', 'a.space_id')
+    .select(['v.content', 'a.space_id', 's.name as space_name', AUDIT_LOG_KEPT.as('logged')])
+    .where('v.id', '=', of.version)
+    .executeTakeFirst();
+  // A schema before the log (0060), which only a migration's own test stands, records nothing.
+  if (placed?.logged === false) return;
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'document', id: of.document, version: of.version },
+      space: placed?.space_id ?? null,
+      detail,
+    },
+    labels(
+      labelled(
+        'subject',
+        placed && labelFor('document', placed.content as Record<string, unknown>),
+        of.document,
+      ),
+      labelled('space', placed?.space_name, placed?.space_id ?? null),
+    ),
+  );
 }
 
 /** What the worker assembles from: everything recorded at the request, read as the tenant. */
@@ -1067,18 +1117,39 @@ export async function publicationInputs(
   };
 }
 
-/** A request that ended without a publication: its failures, all at once, and nothing else. */
+/**
+ * A request that ended without a publication: its failures, all at once, and nothing else. Answers
+ * what failed - its kind, the document version and who asked - or undefined where it was no longer
+ * queued, for the worker's event.
+ */
 export async function failPublicationRequest(
   trx: TenantTransaction,
   requestId: string,
   failures: readonly PublishFailure[],
-): Promise<void> {
-  await trx
+): Promise<
+  | {
+      readonly kind: 'publish' | 'preview';
+      readonly documentId: string;
+      readonly documentVersionId: string;
+      readonly requestedBy: string;
+    }
+  | undefined
+> {
+  const row = await trx
     .updateTable('publication_request')
     .set({ state: 'failed', failures: JSON.stringify(failures), finished_at: sql<Date>`now()` })
     .where('id', '=', requestId)
     .where('state', '=', 'queued')
-    .execute();
+    .returning(['kind', 'document_id', 'document_version_id', 'requested_by'])
+    .executeTakeFirst();
+  return (
+    row && {
+      kind: row.kind,
+      documentId: row.document_id,
+      documentVersionId: row.document_version_id,
+      requestedBy: row.requested_by,
+    }
+  );
 }
 
 /** One output of a publication, in the tenant's store by its hash, with what made it. */

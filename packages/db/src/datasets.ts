@@ -11,6 +11,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { labelled, labels, recordEvent } from './audit.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import { isPlainName } from './plain-name.js';
 import type { TenantTransaction } from './tables.js';
@@ -490,6 +491,26 @@ export async function nameDataset(
     .values({ dataset_id: input.dataset, name: input.name, named_by: input.by })
     .returning(['name', 'named_by', 'named_at'])
     .executeTakeFirstOrThrow();
+  // On the log by the name it was given, at the version it holds now (LIF-026; the AU1 plan, AU1-L).
+  const latest = await latestVersion(trx, input.dataset);
+  const space = await trx
+    .selectFrom('artifact as a')
+    .innerJoin('space as s', 's.id', 'a.space_id')
+    .select(['s.id', 's.name'])
+    .where('a.id', '=', input.dataset)
+    .executeTakeFirst();
+  await recordEvent(
+    trx,
+    {
+      kind: 'dataset.named',
+      subject: { kind: 'dataset', id: input.dataset, version: latest?.id ?? null },
+      space: space?.id ?? null,
+    },
+    labels(
+      labelled('subject', row.name, input.dataset),
+      labelled('space', space?.name, space?.id ?? null),
+    ),
+  );
   return { answer: 'named', name: row.name, namedBy: row.named_by, namedAt: row.named_at };
 }
 

@@ -6,10 +6,16 @@ import {
   recordAsset,
   refuseAssetUpload,
   type AssetUploadReason,
+  type StoredAssetUpload,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { ASSET_MAX_PIXELS, readImageHeader, type ImageHeader } from '@alloy-works/domain';
+import {
+  ASSET_MAX_PIXELS,
+  readImageHeader,
+  type AuditContext,
+  type ImageHeader,
+} from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import sharp from 'sharp';
 import { JobRefused } from '../refusal.js';
@@ -62,6 +68,12 @@ function theFilesFault(error: unknown): boolean {
   );
 }
 
+/** The job acts as the system, for whoever uploaded the image (the AU1 plan, AU1-D). */
+const forUploader = (upload: StoredAssetUpload): AuditContext => ({
+  actorKind: 'system',
+  requestedBy: upload.uploader,
+});
+
 /** The decoder's dimensions, turned as the walk turns them, must be the walk's (assets.md). */
 const agrees = (
   header: ImageHeader,
@@ -107,15 +119,19 @@ export function ingestJob(deps: {
   const refuse = async (
     tenant: Tenant,
     store: TenantStore,
-    id: string,
-    key: string | null,
+    upload: StoredAssetUpload,
     reason: AssetUploadReason,
   ) => {
-    await deps.db.withTenant(tenant, async (trx) => {
-      if (key !== null) await holdObject(trx, key.slice(key.lastIndexOf('/') + 1));
-      if (!(await refuseAssetUpload(trx, id, reason, 'checking'))) return;
-      if (key !== null && !(await objectInUse(trx, key, id))) await store.remove(key);
-    });
+    const { id, objectKey: key } = upload;
+    await deps.db.withTenant(
+      tenant,
+      async (trx) => {
+        if (key !== null) await holdObject(trx, key.slice(key.lastIndexOf('/') + 1));
+        if (!(await refuseAssetUpload(trx, id, reason, 'checking'))) return;
+        if (key !== null && !(await objectInUse(trx, key, id))) await store.remove(key);
+      },
+      forUploader(upload),
+    );
   };
 
   return {
@@ -142,11 +158,15 @@ export function ingestJob(deps: {
         read.ok && read.header.end !== bytes.length ? { ok: false, refusal: 'malformed' } : read;
       const refusal = walked.ok ? await refusalOfDecode(walked.header, bytes) : walked.refusal;
       if (refusal !== undefined || !walked.ok) {
-        await refuse(tenant, store, upload.id, upload.objectKey, refusal ?? 'malformed');
+        await refuse(tenant, store, upload, refusal ?? 'malformed');
         // Refused on its merits: the same bytes fail the same way every time (issue #146).
         throw new JobRefused('asset_refused', 'The upload is not an image the product admits');
       }
-      await deps.db.withTenant(tenant, (trx) => recordAsset(trx, upload.id, walked.header));
+      await deps.db.withTenant(
+        tenant,
+        (trx) => recordAsset(trx, upload.id, walked.header),
+        forUploader(upload),
+      );
     },
 
     /** The last attempt failed for the store's or the database's reasons: never left checking. */
@@ -157,7 +177,7 @@ export function ingestJob(deps: {
         store: await deps.stores.forTenant(trx, tenant),
       }));
       if (found.upload?.state !== 'checking') return;
-      await refuse(tenant, found.store, found.upload.id, found.upload.objectKey, 'unchecked');
+      await refuse(tenant, found.store, found.upload, 'unchecked');
     },
   };
 }

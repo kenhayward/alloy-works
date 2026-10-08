@@ -8,7 +8,13 @@ import {
   removeGrant,
   uploadForDatasetImage,
 } from '@alloy-works/db';
-import { holdingAdvisoryLock, queryAs, untilWaitingOnLocks } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  holdingAdvisoryLock,
+  newestEvent,
+  queryAs,
+  untilWaitingOnLocks,
+} from '@alloy-works/db/testing';
 import {
   canonicalResultBytes,
   readImageHeader,
@@ -228,6 +234,32 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
     expect(held.provenance.images).toEqual({ [hashOf(image)]: asset.id });
     // Done and recorded: the pending result is gone.
     expect((await follow(id)).statusCode).toBe(404);
+  });
+
+  it("LIF-026 records a pending result's dataset version and binding when it is finished, as the person whose act it was", async () => {
+    const image = png(4);
+    const { document, node } = await placed();
+    h.connector.run = ranWithImages([[String(site), 'North', image]]);
+    const id = pendingOf(await resolve(document.id, node));
+    await admit((await uploadsOf(image))[0]!.id, image);
+    const before = await h.tenantDb.withTenant(h.tenant, newestEvent);
+    const done = await followed(id);
+    expect(done.state).toBe('done');
+    const events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+    expect(events.map((event) => event.kind)).toEqual(['content.version_cut', 'binding.resolved']);
+    for (const event of events) {
+      expect(event, event.kind).toMatchObject({ actorKind: 'person', actor: h.ids.ada });
+    }
+    expect(events[0]).toMatchObject({
+      subjectKind: 'dataset',
+      subjectVersion: done.result!.held!.version,
+    });
+    expect(events[1]!.detail).toMatchObject({
+      document: document.id,
+      node,
+      binding: 'b1',
+      version: done.result!.held!.version,
+    });
   });
 
   it('DAT-096 refuses a result whose image is refused, naming its row and column, and records nothing', async () => {

@@ -6,11 +6,11 @@ import { defaultLimits, type ConnectionSettings, type Provenance } from '@alloy-
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createConnection } from './connections.js';
 import { recordDatasetVersion } from './datasets.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createQueryDefinition } from './queryDefinitions.js';
+import { createArtifact } from './versions.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
@@ -94,8 +94,13 @@ describe('migration 0052, which widens dataset_take to an image', () => {
           .where('name', '=', 'General')
           .executeTakeFirstOrThrow()
       ).id;
-      const connection = await createConnection(trx, { author: ada, spaceId: general, settings });
-      if (connection.answer !== 'created') throw new Error(connection.answer);
+      // Its version alone: the connection's own event needs the log, which 0060 brings.
+      const made = await createArtifact(trx, {
+        author: ada,
+        spaceId: general,
+        substance: { kind: 'connection', content: settings },
+      });
+      const connection = { connection: { id: made.artifactId, version: made } };
       const columns = [{ name: 'site', from: { column: 'site' }, type: { base: 'text' } }] as const;
       const query = await createQueryDefinition(trx, {
         author: ada,

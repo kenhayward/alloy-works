@@ -24,6 +24,7 @@ import { ADMITTED_FORMATS, ASSET_MAX_BYTES, decide, readImageHeader } from '@all
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from './access.js';
+import { contextOf } from './audit.js';
 import { connectionFacts } from './data/sql-access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -144,57 +145,63 @@ export function assetHandlers(
       }
       const filled = () =>
         new AppError(409, 'asset_upload_filled', 'This upload already has its image.');
-      const outcome = await db.withTenant(tenant, async (trx) => {
-        const upload = await theirs(request, trx);
-        // `create` in the space, decided again now that something will be made in it: a grant
-        // removed since the upload was made stops it here (final review, finding 6).
-        await authoriseAt(trx, callerOf(request), 'create', {
-          kind: 'space',
-          id: upload.spaceId,
-        });
-        if (bytes === undefined) {
-          throw new AppError(
-            415,
-            'asset_bytes_expected',
-            "Send the image's bytes as application/octet-stream.",
-          );
-        }
-        if (upload.state !== 'awaiting') {
-          // The same image again - a retry after a lost answer - is answered with the upload as it
-          // stands (service-foundations.md, "Idempotency"; ID-D): its object is named by the image's
-          // own hash. Any other bytes for an upload already filled are refused.
-          const again = readImageHeader(bytes);
-          const hash = again.ok
-            ? createHash('sha256').update(bytes.subarray(0, again.header.end)).digest('hex')
-            : undefined;
-          if (hash !== undefined && upload.objectKey?.endsWith(`/sha256/${hash}`)) {
-            return { upload } as const;
+      const outcome = await db.withTenant(
+        tenant,
+        async (trx) => {
+          const upload = await theirs(request, trx);
+          // `create` in the space, decided again now that something will be made in it: a grant
+          // removed since the upload was made stops it here (final review, finding 6).
+          await authoriseAt(trx, callerOf(request), 'create', {
+            kind: 'space',
+            id: upload.spaceId,
+          });
+          if (bytes === undefined) {
+            throw new AppError(
+              415,
+              'asset_bytes_expected',
+              "Send the image's bytes as application/octet-stream.",
+            );
           }
-          throw filled();
-        }
-        const read = readImageHeader(bytes);
-        if (!read.ok) {
-          if (!(await refuseAssetUpload(trx, upload.id, read.refusal, 'awaiting'))) throw filled();
-          return { refused: REFUSED_AT_THE_DOOR[read.refusal] } as const;
-        }
-        if (!objects) throw storageUnavailable();
-        // The image alone: whatever follows its end - a phone's second picture or motion clip, or a
-        // file hidden in a polyglot - is left behind here and never stored (final review, findings 1
-        // and 2). Held by its hash while it is stored, so no refusal of another upload of the same
-        // image can remove it in between.
-        const image = bytes.subarray(0, read.header.end);
-        await holdObject(trx, createHash('sha256').update(image).digest('hex'));
-        const store = await objects.forTenant(trx, tenant);
-        const format = read.header.format;
-        const stored = await store.put(image, ADMITTED_FORMATS[format].contentType);
-        const received = await receiveAssetBytes(trx, upload.id, {
-          key: stored.key,
-          format,
-          bytes: stored.size,
-        });
-        if (!received) throw filled();
-        return { upload: received } as const;
-      });
+          if (upload.state !== 'awaiting') {
+            // The same image again - a retry after a lost answer - is answered with the upload as it
+            // stands (service-foundations.md, "Idempotency"; ID-D): its object is named by the image's
+            // own hash. Any other bytes for an upload already filled are refused.
+            const again = readImageHeader(bytes);
+            const hash = again.ok
+              ? createHash('sha256').update(bytes.subarray(0, again.header.end)).digest('hex')
+              : undefined;
+            if (hash !== undefined && upload.objectKey?.endsWith(`/sha256/${hash}`)) {
+              return { upload } as const;
+            }
+            throw filled();
+          }
+          const read = readImageHeader(bytes);
+          if (!read.ok) {
+            if (!(await refuseAssetUpload(trx, upload.id, read.refusal, 'awaiting')))
+              throw filled();
+            return { refused: REFUSED_AT_THE_DOOR[read.refusal] } as const;
+          }
+          if (!objects) throw storageUnavailable();
+          // The image alone: whatever follows its end - a phone's second picture or motion clip, or a
+          // file hidden in a polyglot - is left behind here and never stored (final review, findings 1
+          // and 2). Held by its hash while it is stored, so no refusal of another upload of the same
+          // image can remove it in between.
+          const image = bytes.subarray(0, read.header.end);
+          await holdObject(trx, createHash('sha256').update(image).digest('hex'));
+          const store = await objects.forTenant(trx, tenant);
+          const format = read.header.format;
+          const stored = await store.put(image, ADMITTED_FORMATS[format].contentType);
+          const received = await receiveAssetBytes(trx, upload.id, {
+            key: stored.key,
+            format,
+            bytes: stored.size,
+          });
+          if (!received) throw filled();
+          return { upload: received } as const;
+          // As the uploader: a refusal at the door is theirs on the log (the AU1 plan, AU1-L).
+        },
+        contextOf(request),
+      );
       if ('refused' in outcome) {
         const { status, code, message, rule } = outcome.refused;
         throw new AppError(status, code, message, rule);

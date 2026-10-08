@@ -13,7 +13,13 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import sharp from 'sharp';
@@ -193,7 +199,37 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     expect(version?.spaceId).toBe(general);
   });
 
-  // Not cited as AST-037, whose refusal must be audited: nothing audits one until LIF's log exists.
+  it('LIF-026 records an asset ingested and an upload refused as the system, for its uploader, keeping no refused bytes', async () => {
+    const image = await sharp({
+      create: { width: 5, height: 3, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    })
+      .png()
+      .toBuffer();
+    const before = await service.withTenant(tenant, newestEvent);
+    const kept = await uploaded(image);
+    expect(await work()).toBe('done');
+    const refused = await uploaded(pngHolding(9, 9, deflateSync(Buffer.alloc(3))));
+    expect(await work()).toBe('failed');
+    const events = (await service.withTenant(tenant, (trx) => auditEvents(trx, before))).filter(
+      (event) => event.actorKind === 'system',
+    );
+    const asset = (await uploadOf(kept.id))!;
+    expect(events.map((event) => [event.kind, event.subject])).toEqual([
+      ['content.version_cut', asset.assetId],
+      ['asset.ingested', asset.assetId],
+      ['asset.refused', refused.id],
+    ]);
+    for (const event of events) {
+      expect(event, event.kind).toMatchObject({ actor: null, space: general });
+      expect(event.detail.requestedBy, event.kind).toBe(ada);
+    }
+    expect(events[1]!.subjectVersion).toBe(asset.assetVersionId);
+    expect(events[2]).toMatchObject({ outcome: 'refused', detail: { reason: 'undecodable' } });
+    // Audited, and the file kept nowhere (AST-037).
+    expect(await gone(refused.key)).toBe(true);
+  });
+
+  // Not cited as AST-037: no design claims it yet, though its refusal is audited (above).
   it('AST-006 AST-051 refuses a file whose structure is sound but whose pixels do not decode, and keeps no bytes', async () => {
     const broken = pngHolding(8, 8, deflateSync(Buffer.alloc(3)));
     const { id, key } = await uploaded(broken);
