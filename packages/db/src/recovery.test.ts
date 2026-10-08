@@ -13,8 +13,14 @@ import { migrate } from './migrate.js';
 import { cutVersion } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
 import { listIterations, newestUncutIteration, readIteration } from './recovery.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact } from './versions.js';
 
 const content = (text: string): ContentDocument => ({
@@ -48,7 +54,7 @@ describe('reading iterations back for Recovery', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(tenant, async (trx) => {
       for (const who of ['ada', 'grace'] as const) {
         people[who] = (

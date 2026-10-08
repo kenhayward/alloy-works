@@ -6,7 +6,6 @@ import {
   createGroup,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -20,6 +19,7 @@ import {
   untilWaitingOnLocks,
   whileAccessIsDecided,
   type TestDatabase,
+  testTenantDatabase,
 } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance, FastifyRequest, LightMyRequestResponse } from 'fastify';
@@ -84,7 +84,7 @@ function freshEnvironment(): Environment {
       issuer: env.idp.issuer,
       clientId: 'alloy',
     });
-    env.tenantDb = createTenantDatabase(env.db.serviceUrl);
+    env.tenantDb = testTenantDatabase(env.db.serviceUrl);
     env.app = buildApp({
       db: env.tenantDb,
       logLevel: 'silent',

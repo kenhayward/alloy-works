@@ -24,12 +24,13 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
   untilBlockedBy,
   type TestDatabase,
+  testTenantDatabase,
 } from './testing/database.js';
 import { versionDigests } from './version-digest.js';
 import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
@@ -105,7 +106,7 @@ describe('a document in the version chain, and its outline edited a version at a
       hostnames: ['dev.acme.alloy.test'],
     });
     // More than one connection, so two structural acts can be in flight at once.
-    service = createTenantDatabase(db.serviceUrl, { max: 4 });
+    service = testTenantDatabase(db.serviceUrl, { max: 4 });
 
     await service.withTenant(production, async (trx) => {
       ada = await person(trx, 'ada', 'Ada');

@@ -139,7 +139,8 @@ describe('refusals in the audit log', () => {
     expect(masked.statusCode, masked.body).toBe(403);
     const sessionOnly = await h.bearer(secret, 'GET', '/v1/tokens');
     expect(sessionOnly.statusCode, sessionOnly.body).toBe(403);
-    const events = await eventsAfter(mark);
+    // The token's first use is on the log too (IAM-037), beside its refusals.
+    const events = (await eventsAfter(mark)).filter((event) => event.kind !== 'token.used');
     expect(events).toEqual([
       expect.objectContaining({
         kind: 'access.refused',

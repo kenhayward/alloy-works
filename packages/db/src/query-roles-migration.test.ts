@@ -4,12 +4,16 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { seedDevelopmentConnectionUse } from './dev-content.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createRole } from './roles.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
 
@@ -34,7 +38,7 @@ describe('migration 0058, which starts every environment with Query builder and 
         return numbered === null || Number(numbered[1]) < 58;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -82,11 +86,35 @@ describe('migration 0058, which starts every environment with Query builder and 
   });
 
   it("keeps the one row development's seed made, and a tenant's own role of either name as it is", async () => {
-    // Development's seed made Query builder, and granted it to Grace, before 0058.
+    // Development's seed made Query builder, and granted it to Grace, before 0058. Written as the
+    // rows it made: today's seed records its grants on the audit log, which comes with 0060.
     const development = await beforeRoles('Development');
-    await service.withTenant(development, (trx) =>
-      seedDevelopmentConnectionUse(trx, { issuer: ISSUER }),
-    );
+    await service.withTenant(development, async (trx) => {
+      const made = await createRole(trx, 'Query builder', ['read', 'use_connection']);
+      if (!('role' in made)) throw new Error(`Query builder was refused: ${made.refused}`);
+      const grace = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'grace', display_name: 'Grace' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .orderBy('created_at')
+        .limit(1)
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto('access_grant')
+        .values({
+          role_id: made.role.id,
+          principal_id: grace.id,
+          level: 'space',
+          space_id: general.id,
+          effect: 'allow',
+          granted_by: grace.id,
+        })
+        .execute();
+    });
     const seeded = await queryRoles(development);
     expect(seeded.map((role) => role.name)).toEqual(['Query builder']);
 

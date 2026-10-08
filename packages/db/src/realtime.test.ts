@@ -10,8 +10,14 @@ import {
   type TenantEvent,
   type TenantListener,
 } from './realtime.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { holdQueries, type QueryHold } from './testing/query-hold.js';
 
 /**
@@ -70,7 +76,7 @@ describe('what an environment says has happened', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     listener = listenToTenants(db.serviceUrl);
     hold = await holdQueries(db.serviceUrl);
   });

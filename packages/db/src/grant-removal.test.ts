@@ -9,12 +9,13 @@ import { createTenant, type Tenant } from './provision.js';
 import { createRole, findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
   untilWaitingOnLocks,
   type TestDatabase,
+  testTenantDatabase,
 } from './testing/database.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -84,7 +85,7 @@ describe('removing a grant, and the lock-out guard', () => {
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
     organisation = { id: 'acme', name: 'Acme' };
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

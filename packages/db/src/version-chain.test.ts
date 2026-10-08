@@ -6,8 +6,13 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const DIGEST = 'a'.repeat(64);
 const content = (schemaVersion: unknown = 1) => ({ schemaVersion, title: 'Dosing' });
@@ -35,7 +40,7 @@ describe('the version chain as stored', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     ({ author, spaceId } = await service.withTenant(production, async (trx) => {
       const principal = await trx
         .insertInto('principal')

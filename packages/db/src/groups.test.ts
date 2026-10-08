@@ -18,8 +18,13 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 /** Thrown to roll a transaction back once what it held has been looked at. */
 class RolledBack extends Error {}
@@ -125,7 +130,7 @@ describe('groups: made, filled, deleted, and followed from the provider (access.
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await within(async (trx) => {
       ada = await principal(trx, 'ada', 'Ada');
       grace = await principal(trx, 'grace', 'Grace');

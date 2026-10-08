@@ -7,8 +7,13 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 /** Thrown to roll a transaction back once what it held has been looked at. */
 class RolledBack extends Error {}
@@ -61,7 +66,7 @@ describe('the access epoch', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     ({ ada, author, spaceId, artifactId, groupId } = await service.withTenant(
       production,
       async (trx) => {

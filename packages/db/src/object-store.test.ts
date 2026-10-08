@@ -3,8 +3,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { recordStoreCredential } from './object-store.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 describe("a tenant's object store credential", () => {
   let db: TestDatabase;
@@ -20,7 +25,7 @@ describe("a tenant's object store credential", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

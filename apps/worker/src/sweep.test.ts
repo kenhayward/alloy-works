@@ -6,7 +6,13 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sweepExpiredSignIns } from './sweep.js';
 
@@ -24,7 +30,7 @@ describe('sweeping what sign-ins leave behind', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    worker = createTenantDatabase(db.workerUrl);
+    worker = testTenantDatabase(db.workerUrl);
   });
 
   afterAll(async () => {
@@ -90,5 +96,52 @@ describe('sweeping what sign-ins leave behind', () => {
       sessions: [{ token_hash: 'session-kept' }],
     });
     expect(await sweepExpiredSignIns(worker)).toBe(0);
+  });
+
+  it('IAM-013 records each session it ends as the system ending it, with when it expired', async () => {
+    // As the worker runs: no context of its own but the one the sweep names.
+    const bare = createTenantDatabase(db.workerUrl);
+    try {
+      const now = new Date();
+      const idle = new Date(now.getTime() - 5 * 60_000);
+      const later = new Date(now.getTime() + 60 * 60_000);
+      const { principal, session, before } = await worker.withTenant(tenant, async (trx) => {
+        const grace = await trx
+          .insertInto('principal')
+          .values({ issuer: 'https://idp.example', subject: 'grace', display_name: 'Grace' })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const made = await trx
+          .insertInto('session')
+          .values({
+            token_hash: 'session-idle',
+            principal_id: grace.id,
+            route: 'google',
+            idle_expires_at: idle,
+            expires_at: later,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        return { principal: grace.id, session: made.id, before: await newestEvent(trx) };
+      });
+      expect(await sweepExpiredSignIns(bare, now)).toBe(1);
+      const events = await worker.withTenant(tenant, (trx) => auditEvents(trx, before));
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({
+        kind: 'authentication.signed_out',
+        actorKind: 'system',
+        actor: null,
+        subjectKind: 'principal',
+        subject: principal,
+        detail: { ended: 'expired', session, expiredAt: idle.toISOString() },
+      });
+      expect(events[0]!.labels['subject']).toEqual({
+        text: 'Grace',
+        refersTo: principal,
+        erased: false,
+      });
+    } finally {
+      await bare.close();
+    }
   });
 });

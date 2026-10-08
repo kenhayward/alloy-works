@@ -1,4 +1,6 @@
+import type pg from 'pg';
 import { asAdministrator } from './admin.js';
+import { labelled, labels, recordEventSql } from './audit.js';
 import { invitedAddress } from './invitations.js';
 import type { Tenant } from './provision.js';
 import { sealSecret } from '@alloy-works/sealing';
@@ -50,7 +52,17 @@ export async function configureOrganisationSignIn(
     await client.query(
       `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,
     );
+    await routeEvent(client, 'sign_in_route.configured', 'organisation');
   });
+}
+
+/** Records the vendor's act on a route (IAM-043), in the tenant's own log. */
+async function routeEvent(
+  client: pg.ClientBase,
+  kind: 'sign_in_route.configured' | 'sign_in_route.closed',
+  route: SignInRoute,
+): Promise<void> {
+  await recordEventSql(client, { kind, subject: { kind: 'sign_in_route' }, detail: { route } });
 }
 
 /**
@@ -72,6 +84,7 @@ export async function permitGoogleSignIn(
         [domain.toLowerCase()],
       );
     }
+    await routeEvent(client, 'sign_in_route.configured', 'google');
   });
 }
 
@@ -102,10 +115,16 @@ export async function inviteToTenant(
       `insert into ${schema}.principal (email) values ($1) returning id`,
       [address],
     );
+    const principal = made.rows[0]!.id;
     await client.query(`insert into ${schema}.invitation (email, principal_id) values ($1, $2)`, [
       address,
-      made.rows[0]!.id,
+      principal,
     ]);
+    await recordEventSql(
+      client,
+      { kind: 'tenant.invited', subject: { kind: 'principal', id: principal } },
+      labels(labelled('invitee', address, principal)),
+    );
   });
 }
 
@@ -120,8 +139,27 @@ export async function closeSignInRoute(
 ): Promise<void> {
   await asAdministrator(adminUrl, tenant, async (client, schema) => {
     await client.query(`delete from ${schema}.sign_in_route where route = $1`, [route]);
+    // Every session it issued ends, each an event, written before its row goes (the AU1 plan, AU1-F).
+    const ending = await client.query<{ id: string; principal_id: string; name: string | null }>(
+      `select s.id, s.principal_id, coalesce(p.display_name, p.email) as name
+       from ${schema}.session s join ${schema}.principal p on p.id = s.principal_id
+       where s.route = $1 order by s.id for update of s`,
+      [route],
+    );
+    for (const session of ending.rows) {
+      await recordEventSql(
+        client,
+        {
+          kind: 'authentication.signed_out',
+          subject: { kind: 'principal', id: session.principal_id },
+          detail: { ended: 'route_closed', session: session.id },
+        },
+        labels(labelled('subject', session.name, session.principal_id)),
+      );
+    }
     await client.query(`delete from ${schema}.session where route = $1`, [route]);
     await client.query(`delete from ${schema}.sign_in_attempt where route = $1`, [route]);
     if (route === 'google') await client.query(`delete from ${schema}.sign_in_handoff`);
+    await routeEvent(client, 'sign_in_route.closed', route);
   });
 }

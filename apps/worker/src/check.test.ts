@@ -9,7 +9,6 @@ import {
   createDocument,
   createJobQueue,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -24,7 +23,12 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   blockIdentifierFrom,
   defaultNumberingScheme,
@@ -256,8 +260,8 @@ describe("checking a publication's PDF with veraPDF, after it is recorded", () =
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     publish = publishJob({ db: worker, stores, typst, fonts });

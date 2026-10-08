@@ -1,6 +1,12 @@
 import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
-import { accessPolicy, externalRefusal, type ExternalRefusal } from './grants.js';
+import { labelled, labels, principalLabel, recordEvent } from './audit.js';
+import {
+  accessPolicy,
+  externalRefusal,
+  recordGrantsRevoked,
+  type ExternalRefusal,
+} from './grants.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -49,7 +55,12 @@ export async function createGroup(
     .onConflict((conflict) => conflict.doNothing())
     .returning(['id', 'name', 'source', 'provider_value'])
     .executeTakeFirst();
-  if (row) return { group: groupOf(row) };
+  if (row) {
+    await recordEvent(trx, { kind: 'group.made', subject: { kind: 'group', id: row.id } }, [
+      { role: 'subject', text: row.name, refersTo: row.id },
+    ]);
+    return { group: groupOf(row) };
+  }
   const named = await trx
     .selectFrom('access_group')
     .select('id')
@@ -181,6 +192,61 @@ async function externalJoinRefusal(
   return undefined;
 }
 
+/**
+ * Records a membership added or removed (ADM-002), with the group's and the member's names: before a
+ * removal deletes the row. `through` is who decides it: an administrator, or the provider's claim.
+ */
+export async function recordMembershipEvent(
+  trx: TenantTransaction,
+  kind: 'group.member_added' | 'group.member_removed',
+  membership: { readonly group: string; readonly principal: string },
+  through: 'manual' | 'provider',
+): Promise<void> {
+  const group = await trx
+    .selectFrom('access_group')
+    .select('name')
+    .where('id', '=', membership.group)
+    .executeTakeFirst();
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'group', id: membership.group },
+      detail: { group: membership.group, principal: membership.principal, through },
+    },
+    labels(
+      labelled('subject', group?.name, membership.group),
+      await principalLabel(trx, 'member', membership.principal),
+    ),
+  );
+}
+
+/** Records the removal of every membership of a principal or of a group, before a cascade's delete. */
+export async function recordMembershipsRemoved(
+  trx: TenantTransaction,
+  of: { readonly principal: string } | { readonly group: string },
+): Promise<void> {
+  const rows = await trx
+    .selectFrom('group_member as m')
+    .innerJoin('access_group as g', 'g.id', 'm.group_id')
+    .select(['m.group_id', 'm.principal_id', 'g.source'])
+    .$if('principal' in of, (query) =>
+      query.where('m.principal_id', '=', (of as { principal: string }).principal),
+    )
+    .$if('group' in of, (query) => query.where('m.group_id', '=', (of as { group: string }).group))
+    .orderBy('m.group_id')
+    .orderBy('m.principal_id')
+    .execute();
+  for (const row of rows) {
+    await recordMembershipEvent(
+      trx,
+      'group.member_removed',
+      { group: row.group_id, principal: row.principal_id },
+      row.source === 'provider' ? 'provider' : 'manual',
+    );
+  }
+}
+
 export type MembershipAnswer =
   { readonly added: true } | { readonly refused: ExternalRefusal | 'group.from_provider' };
 
@@ -224,11 +290,20 @@ export async function addToGroup(
     if (refusal) return { refused: refusal };
   }
 
-  await trx
+  const added = await trx
     .insertInto('group_member')
     .values({ group_id: groupId, principal_id: principalId, asserted_at: null })
     .onConflict((conflict) => conflict.columns(['group_id', 'principal_id']).doNothing())
-    .execute();
+    .returning('principal_id')
+    .executeTakeFirst();
+  if (added) {
+    await recordMembershipEvent(
+      trx,
+      'group.member_added',
+      { group: groupId, principal: principalId },
+      'manual',
+    );
+  }
   return { added: true };
 }
 
@@ -292,6 +367,14 @@ export async function setGroupMembers(
     if (refusal) return { refused: refusal };
   }
 
+  for (const principal of leaving) {
+    await recordMembershipEvent(
+      trx,
+      'group.member_removed',
+      { group: groupId, principal },
+      'manual',
+    );
+  }
   if (leaving.length > 0) {
     await trx
       .deleteFrom('group_member')
@@ -311,6 +394,14 @@ export async function setGroupMembers(
       )
       .execute();
   }
+  for (const person of joining) {
+    await recordMembershipEvent(
+      trx,
+      'group.member_added',
+      { group: groupId, principal: person.id },
+      'manual',
+    );
+  }
   return { set: true };
 }
 
@@ -326,12 +417,22 @@ export async function deleteGroup(
   groupId: string,
 ): Promise<DeletionAnswer> {
   await lockAccessForChange(trx);
-  const row = await trx
-    .deleteFrom('access_group')
+  const group = await trx
+    .selectFrom('access_group')
+    .select(['id', 'name'])
     .where('id', '=', groupId)
-    .returning('id')
+    .forUpdate()
     .executeTakeFirst();
-  return row ? { deleted: row.id } : { refused: 'group.missing' };
+  if (!group) return { refused: 'group.missing' };
+  // One event for each row the cascade removes, then the group's own, all before the delete
+  // (the AU1 plan, AU1-H).
+  await recordGrantsRevoked(trx, { group: groupId });
+  await recordMembershipsRemoved(trx, { group: groupId });
+  await recordEvent(trx, { kind: 'group.deleted', subject: { kind: 'group', id: group.id } }, [
+    { role: 'subject', text: group.name, refersTo: group.id },
+  ]);
+  await trx.deleteFrom('access_group').where('id', '=', groupId).execute();
+  return { deleted: group.id };
 }
 
 /**
@@ -385,6 +486,14 @@ export async function syncProviderGroups(
   if (found.joining.length > 0 || found.leaving.length > 0) {
     await lockAccessForChange(trx);
     found = await differences();
+    for (const group of found.leaving) {
+      await recordMembershipEvent(
+        trx,
+        'group.member_removed',
+        { group, principal: principalId },
+        'provider',
+      );
+    }
     if (found.leaving.length > 0) {
       await trx
         .deleteFrom('group_member')
@@ -393,7 +502,7 @@ export async function syncProviderGroups(
         .execute();
     }
     if (found.joining.length > 0) {
-      await trx
+      const joined = await trx
         .insertInto('group_member')
         .values(
           found.joining.map((groupId) => ({
@@ -403,7 +512,16 @@ export async function syncProviderGroups(
           })),
         )
         .onConflict((conflict) => conflict.columns(['group_id', 'principal_id']).doNothing())
+        .returning('group_id')
         .execute();
+      for (const { group_id: group } of joined) {
+        await recordMembershipEvent(
+          trx,
+          'group.member_added',
+          { group, principal: principalId },
+          'provider',
+        );
+      }
     }
   }
   if (found.wanted.size > 0) {

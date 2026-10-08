@@ -9,8 +9,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 /** The constraints 0046 rewrites. */
 const REWRITTEN = [
@@ -93,7 +99,7 @@ describe('migration 0046, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     // A role holding use_connection and a token scoped to it, made before 0046.
     await service.withTenant(upgraded, async (trx) => {
       const ada = (

@@ -23,6 +23,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { afterCursor, cursorAfter, pageLimit } from './components.js';
+import { contextOf } from './audit.js';
 import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { hashToken } from './sessions.js';
@@ -117,28 +118,33 @@ export function tokenHandlers(
       const body = request.body as CreateTokenBody;
       const expiresAt = new Date(body.expiresAt);
       const secret = newTokenSecret();
-      const issued = await db.withTenant(tenantOf(request), async (trx) => {
-        // By the transaction's clock, which is the one the table bounds the expiry by.
-        const { now } = await trx
-          .selectNoFrom((eb) => eb.fn<Date>('now').as('now'))
-          .executeTakeFirstOrThrow();
-        const latest = now.getTime() + TOKEN_MAX_DAYS * DAY_MS;
-        if (expiresAt.getTime() <= now.getTime() || expiresAt.getTime() > latest) {
-          throw new AppError(
-            400,
-            'token_expiry_invalid',
-            'A token needs an expiry in the future, and no more than 365 days away.',
-            'IAM-034',
-          );
-        }
-        return issueApiToken(trx, {
-          principalId: principalOf(request).principalId,
-          name: body.name,
-          tokenHash: hashToken(secret),
-          scopes: body.scopes,
-          expiresAt,
-        });
-      });
+      // The issue is recorded as the person's own act (IAM-037; the AU1 plan, AU1-G).
+      const issued = await db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          // By the transaction's clock, which is the one the table bounds the expiry by.
+          const { now } = await trx
+            .selectNoFrom((eb) => eb.fn<Date>('now').as('now'))
+            .executeTakeFirstOrThrow();
+          const latest = now.getTime() + TOKEN_MAX_DAYS * DAY_MS;
+          if (expiresAt.getTime() <= now.getTime() || expiresAt.getTime() > latest) {
+            throw new AppError(
+              400,
+              'token_expiry_invalid',
+              'A token needs an expiry in the future, and no more than 365 days away.',
+              'IAM-034',
+            );
+          }
+          return issueApiToken(trx, {
+            principalId: principalOf(request).principalId,
+            name: body.name,
+            tokenHash: hashToken(secret),
+            scopes: body.scopes,
+            expiresAt,
+          });
+        },
+        contextOf(request),
+      );
       // The secret, once: never kept by a cache between the service and the caller (final review).
       void reply.header('Cache-Control', 'no-store');
       return { ...tokenView(issued), secret };
@@ -146,12 +152,16 @@ export function tokenHandlers(
 
     revokeToken: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
       const { id } = request.params as TokenParams;
-      const revoked = await db.withTenant(tenantOf(request), async (trx) => {
-        const removed = await revokeApiToken(trx, principalOf(request).principalId, id);
-        // Every replica stops what the token was doing within two seconds (IAM-082, D7-I).
-        if (removed) await notifyTenant(trx, { kind: 'credential_ended', token: id });
-        return removed;
-      });
+      const revoked = await db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const removed = await revokeApiToken(trx, principalOf(request).principalId, id);
+          // Every replica stops what the token was doing within two seconds (IAM-082, D7-I).
+          if (removed) await notifyTenant(trx, { kind: 'credential_ended', token: id });
+          return removed;
+        },
+        contextOf(request),
+      );
       if (!revoked) throw notFound();
       return reply.status(204).send();
     },

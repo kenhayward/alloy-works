@@ -26,8 +26,13 @@ import { createQueryDefinition } from './queryDefinitions.js';
 import { findRole } from './roles.js';
 import { reindexSearch } from './search.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
@@ -103,7 +108,7 @@ describe("search's projection, written with every version", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = (
         await trx
@@ -499,7 +504,7 @@ describe('migration 0031, which makes search a projection of the chain', () => {
       hostnames: [`${id}.alloy.test`],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    const service = createTenantDatabase(db.serviceUrl);
+    const service = testTenantDatabase(db.serviceUrl);
     try {
       const component = await service.withTenant(tenant, async (trx) => {
         const ada = await trx

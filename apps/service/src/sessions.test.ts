@@ -1,12 +1,17 @@
 import {
   bootstrapCluster,
   createTenant,
-  createTenantDatabase,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createSession, endSession, findSession, hashToken, SESSION_POLICY } from './sessions.js';
 
@@ -25,7 +30,7 @@ describe('sessions', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     ada = await service.withTenant(tenant, async (trx) => {
       const row = await trx
         .insertInto('principal')

@@ -1,5 +1,8 @@
 import { CompiledQuery, sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
+import { labelled, labels, recordEvent, setAuditContext } from './audit.js';
+import { recordGrantsRevoked } from './grants.js';
+import { recordMembershipsRemoved } from './groups.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { SignInRoute } from './sign-in.js';
 import type { TenantTransaction } from './tables.js';
@@ -183,7 +186,9 @@ export async function invite(
       })
       .where('id', '=', waiting.id)
       .execute();
-    return { invited: (await readInvitation(trx, waiting.id))!, renewed: true };
+    const renewed = (await readInvitation(trx, waiting.id))!;
+    await recordInvitationEvent(trx, 'invitation.sent', renewed);
+    return { invited: renewed, renewed: true };
   }
 
   // A claim never takes the epoch, so it can commit between the check above and here - turning
@@ -208,7 +213,29 @@ export async function invite(
     })
     .returning('id')
     .executeTakeFirstOrThrow();
-  return { invited: (await readInvitation(trx, made.id))!, renewed: false };
+  const invited = (await readInvitation(trx, made.id))!;
+  await recordInvitationEvent(trx, 'invitation.sent', invited);
+  return { invited, renewed: false };
+}
+
+/**
+ * Records an invitation's act (ADM-002): the invitation, its principal, and the address it was sent to
+ * as the invitee's label, which refers to the principal so erasure reaches it.
+ */
+async function recordInvitationEvent(
+  trx: TenantTransaction,
+  kind: 'invitation.sent' | 'invitation.accepted' | 'invitation.withdrawn',
+  invitation: { readonly id: string; readonly email: string; readonly principalId: string },
+): Promise<void> {
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'invitation', id: invitation.id },
+      detail: { principal: invitation.principalId },
+    },
+    labels(labelled('invitee', invitation.email, invitation.principalId)),
+  );
 }
 
 /**
@@ -241,12 +268,21 @@ export async function withdrawInvitation(
   await lockAccessForChange(trx);
   const row = await trx
     .selectFrom('invitation')
-    .select(['id', 'principal_id', 'accepted_at'])
+    .select(['id', 'email', 'principal_id', 'accepted_at'])
     .where('id', '=', id)
     .forUpdate()
     .executeTakeFirst();
   if (!row) return { refused: 'invitation.missing' };
   if (row.accepted_at !== null) return { refused: 'invitation.accepted' };
+  // One event for each grant and membership the withdrawal removes, then its own, before any delete
+  // (the AU1 plan, AU1-H).
+  await recordGrantsRevoked(trx, { principal: row.principal_id });
+  await recordMembershipsRemoved(trx, { principal: row.principal_id });
+  await recordInvitationEvent(trx, 'invitation.withdrawn', {
+    id: row.id,
+    email: row.email,
+    principalId: row.principal_id,
+  });
   for (const table of INVITED_PRINCIPAL_CLEANUP_TABLES) {
     await trx.deleteFrom(table).where('principal_id', '=', row.principal_id).execute();
   }
@@ -274,6 +310,8 @@ export async function claimInvitation(
   trx: TenantTransaction,
   identity: ClaimingIdentity,
   route: SignInRoute,
+  /** The sign-in request's trace id, for the events the claim records. */
+  traceId?: string,
 ): Promise<string | undefined> {
   if (!identity.emailVerified || !identity.email) return undefined;
   const address = invitedAddress(identity.email);
@@ -283,7 +321,7 @@ export async function claimInvitation(
   await lockInvitedAddress(trx, address);
   const open = await trx
     .selectFrom('invitation')
-    .select(['id', 'principal_id'])
+    .select(['id', 'email', 'principal_id', 'named_by'])
     .where('email', '=', address)
     .where('accepted_at', 'is', null)
     .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql<Date>`now()`)]))
@@ -312,5 +350,31 @@ export async function claimInvitation(
     .set({ accepted_at: sql<Date>`now()`, accepted_through: route })
     .where('id', '=', open.id)
     .execute();
+  // The claimer acts from here on in this transaction: whoever made it, the invitation's principal
+  // has just become somebody signed in (the AU1 plan, AU1-H).
+  const actorLabel = identity.name?.trim().slice(0, 400);
+  await setAuditContext(trx, {
+    actorKind: 'person',
+    actor: open.principal_id,
+    ...(actorLabel ? { actorLabel } : {}),
+    ...(traceId === undefined ? {} : { traceId }),
+  });
+  const accepted = { id: open.id, email: open.email, principalId: open.principal_id };
+  await recordInvitationEvent(trx, 'invitation.accepted', accepted);
+  // The vendor's naming of the first administrator, claimed (IAM-060).
+  if (open.named_by !== null) {
+    await recordEvent(
+      trx,
+      {
+        kind: 'tenant.administrator_claimed',
+        subject: { kind: 'principal', id: open.principal_id },
+        detail: { principal: open.principal_id },
+      },
+      labels(
+        labelled('invitee', open.email, open.principal_id),
+        labelled('named_by', open.named_by),
+      ),
+    );
+  }
   return open.principal_id;
 }

@@ -2,7 +2,6 @@ import {
   prepareDatabase,
   createJobQueue,
   createTenant,
-  createTenantDatabase,
   enqueueJob,
   listenToTenants,
   migrate,
@@ -11,7 +10,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import pino from 'pino';
@@ -50,8 +54,8 @@ describe('the sample job, from the queue to the store', () => {
       hostnames: ['dev.acme.alloy.test'],
     });
     await store.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(store.settings, store.sealingKey);
     handlers = { sample_pdf: sampleJob({ db: worker, stores, typst }) };

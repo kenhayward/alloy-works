@@ -11,8 +11,13 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact, latestVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
@@ -45,7 +50,7 @@ describe('listing the components a principal may read', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(development, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
     await service.withTenant(production, async (trx) => {
       seeded = (await seedDevelopmentContent(trx, { issuer: ISSUER })).componentId;

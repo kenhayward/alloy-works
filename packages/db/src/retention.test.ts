@@ -19,8 +19,14 @@ import {
   setEditingPolicy,
   sweepIterations,
 } from './retention.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact } from './versions.js';
 
 const content = (text: string): ContentDocument => ({
@@ -63,7 +69,7 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     for (const tenant of [production, development]) {
       await service.withTenant(tenant, async (trx) => {
         principals.set(

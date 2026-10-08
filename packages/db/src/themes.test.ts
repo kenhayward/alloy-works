@@ -13,8 +13,13 @@ import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import {
   addCatalogueVersion,
   addThemeVersion,
@@ -57,7 +62,7 @@ describe("the theme's store", () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

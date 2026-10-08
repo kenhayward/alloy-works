@@ -18,8 +18,14 @@ import { createTenant, type Tenant } from './provision.js';
 import { createQueryDefinition, type StoredQueryDefinition } from './queryDefinitions.js';
 import type { TenantTransaction } from './tables.js';
 import { recordTake, takeDigest, takesOf } from './takes.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 /**
  * A take's outcome as derived data (the B1 plan, B1-H; stored-shape rows 5 to 7): written by
@@ -118,7 +124,7 @@ describe('dataset_take', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await tenant(async (trx) => {
       ada = (
         await trx

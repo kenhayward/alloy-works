@@ -47,7 +47,7 @@ import {
   type Authorised,
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
-import { contextOf, recordRefusal } from './audit.js';
+import { actAs, contextOf, recordRefusal, recordSignInFailure } from './audit.js';
 import { componentHandlers } from './components.js';
 import { bindingHandlers, pendingHandlers } from './data/bindings.js';
 import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
@@ -375,9 +375,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return attempt && attempt.expires_at > new Date() ? attempt : undefined;
   }
 
-  /** The exchange at the provider. A refusal becomes sign_in_failed, logged by its kind alone. */
+  /**
+   * The exchange at the provider. A refusal becomes sign_in_failed, logged by its kind alone, and
+   * recorded as a failed sign-in naming nobody (IAM-013).
+   */
   async function finishAt(
     request: FastifyRequest,
+    tenant: Tenant,
+    route: SignInRoute,
     provider: ProviderSettings,
     expected: { readonly state: string; readonly nonce: string; readonly codeVerifier: string },
   ): Promise<Identity> {
@@ -396,6 +401,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           { reason: String(cause?.code ?? cause?.name ?? 'refused') },
           'sign-in refused',
         );
+        await recordSignInFailure(db, request, tenant, route, 'provider_refused');
         throw signInFailed();
       }
       throw error;
@@ -413,6 +419,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
    * so the two in one transaction could wait on each other in a cycle. Here the epoch is the first lock.
    */
   async function signInAs(
+    request: FastifyRequest,
     reply: FastifyReply,
     tenant: Tenant,
     principalId: string,
@@ -420,6 +427,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
     groups?: readonly string[],
   ): Promise<FastifyReply> {
     const token = await db.withTenant(tenant, async (trx) => {
+      // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
+      await actAs(trx, principalId, request.id);
       if (groups !== undefined) await syncProviderGroups(trx, principalId, groups);
       return createSession(trx, principalId, route);
     });
@@ -486,14 +495,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const query = request.query as SignInCallback;
       const bound = request.cookies[SIGN_IN_COOKIE];
       reply.clearCookie(SIGN_IN_COOKIE, COOKIE);
-      if (query.error || !query.code || !query.state || !bound || !sameValue(bound, query.state)) {
+      if (!query.state || !bound || !sameValue(bound, query.state)) throw signInFailed();
+      const state = query.state;
+      if (query.error || !query.code) {
+        // The provider's answer to an attempt this browser made: recorded by its kind, never its
+        // words, and only where the attempt was there to take (IAM-013).
+        if (await takeAttempt(tenant, 'organisation', hashToken(state))) {
+          await recordSignInFailure(db, request, tenant, 'organisation', 'provider_error');
+        }
         throw signInFailed();
       }
-      const state = query.state;
       const attempt = await takeAttempt(tenant, 'organisation', hashToken(state));
       const provider = await organisationProvider(request, tenant);
       if (!attempt || !provider) throw signInFailed();
-      const identity = await finishAt(request, provider, {
+      const identity = await finishAt(request, tenant, 'organisation', provider, {
         state,
         nonce: attempt.nonce,
         codeVerifier: attempt.code_verifier,
@@ -515,7 +530,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .returning('id')
           .executeTakeFirst();
         if (known) return known;
-        const invited = await claimInvitation(trx, identity, 'organisation');
+        const invited = await claimInvitation(trx, identity, 'organisation', request.id);
         if (invited) return { id: invited };
         // An upsert still: the same identity's first sign-in in another window may land between the
         // lookup above and this insert.
@@ -538,7 +553,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .returning('id')
           .executeTakeFirstOrThrow();
       });
-      return signInAs(reply, tenant, principal.id, 'organisation', identity.groups);
+      return signInAs(request, reply, tenant, principal.id, 'organisation', identity.groups);
     },
 
     startGoogleSignIn: async (request, reply) => {
@@ -570,7 +585,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       if (!google || request.host.toLowerCase() !== google.signInHost) throw notFound();
       const query = request.query as SignInCallback;
       const claimed = query.state ? verifyState(secret('sign_in_state'), query.state) : undefined;
-      if (query.error || !query.code || !query.state || !claimed) throw signInFailed();
+      if (!query.state || !claimed) throw signInFailed();
       const state = query.state;
       // Signed or not, the state's address must belong to the state's environment: that is what
       // keeps the sign-in address from sending anyone anywhere else.
@@ -579,15 +594,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
       request.log = request.log.child({ tenant: tenant.id });
       reply.log = request.log;
       const attempt = await takeAttempt(tenant, 'google', hashToken(claimed.attempt));
+      if (attempt && (query.error || !query.code)) {
+        // Google's answer to an attempt the state signed: recorded by its kind alone (IAM-013).
+        await recordSignInFailure(db, request, tenant, 'google', 'provider_error');
+      }
+      if (query.error || !query.code) throw signInFailed();
       if (!attempt || !(await permits(tenant, 'google'))) throw signInFailed();
-      const identity = await finishAt(request, googleProvider(google), {
+      const identity = await finishAt(request, tenant, 'google', googleProvider(google), {
         state,
         nonce: attempt.nonce,
         codeVerifier: attempt.code_verifier,
       });
       const code = randomBytes(32).toString('base64url');
       const admitted = await db.withTenant(tenant, async (trx) => {
-        const principalId = await admitGoogleAccount(trx, identity);
+        const principalId = await admitGoogleAccount(trx, identity, request.id);
         if (principalId === undefined) return false;
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
@@ -603,6 +623,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         return true;
       });
       if (!admitted) {
+        // An account nobody invited names nobody here, and is recorded as such (IAM-013).
+        await recordSignInFailure(db, request, tenant, 'google', 'not_invited');
         throw new AppError(
           403,
           'not_invited',
@@ -629,16 +651,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .returningAll()
           .executeTakeFirst(),
       );
-      // Only in the browser that started: its cookie is the attempt the hand-off was written for.
-      if (
-        !handoff ||
-        handoff.expires_at <= new Date() ||
-        !bound ||
-        !sameValue(hashToken(bound), handoff.attempt_hash)
-      ) {
+      if (!handoff) throw signInFailed();
+      // Only in the browser that started: its cookie is the attempt the hand-off was written for. A
+      // hand-off redeemed late or elsewhere names the principal it was for (IAM-013).
+      const failure =
+        handoff.expires_at <= new Date()
+          ? 'handoff_expired'
+          : !bound || !sameValue(hashToken(bound), handoff.attempt_hash)
+            ? 'handoff_other_browser'
+            : undefined;
+      if (failure !== undefined) {
+        await recordSignInFailure(db, request, tenant, 'google', failure, handoff.principal_id);
         throw signInFailed();
       }
-      return signInAs(reply, tenant, handoff.principal_id, 'google');
+      return signInAs(request, reply, tenant, handoff.principal_id, 'google');
     },
 
     signOut: async (request, reply) => {
@@ -646,10 +672,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // Said in the transaction that ends it: every replica hears the session's row, and stops what
       // it was doing at the source within two seconds (IAM-082, the D7 plan's D7-I).
       if (token) {
-        await db.withTenant(tenantOf(request), async (trx) => {
-          const ended = await endSession(trx, token);
-          if (ended) await notifyTenant(trx, { kind: 'credential_ended', session: ended });
-        });
+        await db.withTenant(
+          tenantOf(request),
+          async (trx) => {
+            const ended = await endSession(trx, token);
+            if (ended) await notifyTenant(trx, { kind: 'credential_ended', session: ended });
+          },
+          contextOf(request),
+        );
       }
       reply.clearCookie(SESSION_COOKIE, COOKIE);
       return reply.status(204).send();
@@ -901,7 +931,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
             secret === undefined
               ? undefined
               : await db.withTenant(tenantOf(request), (trx) =>
-                  findApiToken(trx, hashToken(secret)),
+                  findApiToken(trx, hashToken(secret), new Date(), request.id),
                 );
           if (!holder) throw unauthenticated();
           request.principal = {

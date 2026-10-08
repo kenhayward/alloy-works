@@ -5,7 +5,6 @@ import {
   createArtifact,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   latestVersion,
@@ -19,6 +18,7 @@ import {
   TEST_PASSWORDS,
   whileAccessIsDecided,
   type TestDatabase,
+  testTenantDatabase,
 } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -115,7 +115,7 @@ describe('writing in an editing session through the service', () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     // Ada and Grace author General, as the development environment has them.
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
     app = buildApp({

@@ -2,8 +2,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant } from './provision.js';
-import { createTenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {} from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 describe('a tenant profile', () => {
   let db: TestDatabase;
@@ -22,7 +27,7 @@ describe('a tenant profile', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    const service = createTenantDatabase(db.serviceUrl);
+    const service = testTenantDatabase(db.serviceUrl);
     try {
       const profile = await service.withTenant(tenant, (trx) =>
         trx.selectFrom('profile').select('display_name').executeTakeFirstOrThrow(),

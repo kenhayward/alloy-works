@@ -10,6 +10,8 @@ import type { Identity } from './oidc.js';
 export async function admitGoogleAccount(
   trx: TenantTransaction,
   identity: Identity,
+  /** The sign-in request's trace id, for the events a claim records. */
+  traceId?: string,
 ): Promise<string | undefined> {
   // Admitted before: found by issuer and subject alone, whatever its address says now.
   const known = await trx
@@ -27,7 +29,7 @@ export async function admitGoogleAccount(
 
   // Invited: bound once, to this account, only for an address Google verifies. From now on the
   // address is only a label on the principal, and somebody else acquiring it later gains nothing.
-  const invited = await claimInvitation(trx, identity, 'google');
+  const invited = await claimInvitation(trx, identity, 'google', traceId);
   if (invited) return invited;
 
   // Google sets hd only for an account the domain manages. A personal account has none, whatever

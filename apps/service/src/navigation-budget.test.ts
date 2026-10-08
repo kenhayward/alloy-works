@@ -5,7 +5,6 @@ import {
   createComponent,
   createDocument,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -15,7 +14,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   blockIdentifierFrom,
   OUTLINE_SCHEMA_VERSION,
@@ -185,7 +189,7 @@ describe('STR-063 opens, numbers and restructures a document of five hundred nod
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
     app = buildApp({
       db: tenantDb,

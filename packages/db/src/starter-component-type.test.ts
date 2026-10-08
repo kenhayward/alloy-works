@@ -10,8 +10,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { defaultComponentType, listComponentTypes, STARTER_COMPONENT_TYPE_ID } from './creation.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { versionDigests } from './version-digest.js';
 
 /** What 0015 writes, and what the digests in it are over. */
@@ -43,7 +48,7 @@ describe('the component type every environment starts with', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

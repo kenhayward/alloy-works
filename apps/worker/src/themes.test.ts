@@ -8,7 +8,6 @@ import {
   createDocument,
   createJobQueue,
   createTenant,
-  createTenantDatabase,
   DEFAULT_THEME_ID,
   defaultTheme as declaredTheme,
   findRole,
@@ -22,7 +21,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import {
   assemble,
   blockIdentifierFrom,
@@ -1311,8 +1310,8 @@ describe('publishing under a theme it must refuse, from the request to the recor
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     handlers = { publish: publishJob({ db: worker, stores, typst: engine, fonts: pinnedFonts }) };

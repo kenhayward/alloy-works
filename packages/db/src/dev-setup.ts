@@ -105,6 +105,8 @@ for (const environment of environments) {
   const seeded = await serviceDb.withTenant(
     { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
     (trx) => seedDevelopmentContent(trx, { issuer: standInIssuer }),
+    // Development's own setup, recorded as the vendor's (the AU1 plan, AU1-D).
+    { actorKind: 'vendor' },
   );
   if (seeded.created) {
     console.log(`Made "Install the printer" at ${environment.hostnames[0]}, for Ada and Grace`);
@@ -113,6 +115,7 @@ for (const environment of environments) {
   await serviceDb.withTenant(
     { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
     (trx) => seedDevelopmentConnectionUse(trx, { issuer: standInIssuer }),
+    { actorKind: 'vendor' },
   );
 }
 await serviceDb.close();

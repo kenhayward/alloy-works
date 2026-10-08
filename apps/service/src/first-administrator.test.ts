@@ -2,13 +2,18 @@ import {
   bootstrapCluster,
   closeSignInRoute,
   createTenant,
-  createTenantDatabase,
   inviteFirstAdministrator,
   migrate,
   permitGoogleSignIn,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   STAND_IN_USERS,
   startStandInProvider,
@@ -98,7 +103,7 @@ describe('the first administrator, arriving by invitation', () => {
         { id: 'ada-unverified', name: 'Ada', email: 'ada@example.com', emailVerified: false },
       ],
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',

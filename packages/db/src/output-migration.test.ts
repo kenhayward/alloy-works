@@ -11,8 +11,14 @@ import { migrate } from './migrate.js';
 import { provisionTenant, type Tenant } from './provision.js';
 import { readPublication, recordPublication } from './publishing.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { requestBefore0029 } from './testing/request-before-0029.js';
 
 const ISSUER = 'https://idp.example';
@@ -35,7 +41,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
         return numbered === null || Number(numbered[1]) < 27;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
