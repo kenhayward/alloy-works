@@ -241,7 +241,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(638); // 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(659); // 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });

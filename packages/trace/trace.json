@@ -15720,6 +15720,95 @@
       ]
     },
     {
+      "document": "audit.md",
+      "owns": [
+        {
+          "id": "LIF-026",
+          "howItIsMet": "The closed list of [event types](#event-types) holds every kind LIF-026 names; each act's design emits its own"
+        },
+        {
+          "id": "LIF-027",
+          "howItIsMet": "Every event has its actor, kind, instant, subject and the subject's version where it has one"
+        },
+        {
+          "id": "LIF-028",
+          "howItIsMet": "`GET /v1/audit` queries it; an export is complete as of a sequence, written by a job"
+        },
+        {
+          "id": "LIF-032",
+          "howItIsMet": "`sequence` is a per-tenant identity, monotonic in commit order of its assignment; order is read by sequence, never by time ([Order](#order))"
+        },
+        {
+          "id": "LIF-056",
+          "howItIsMet": "The log is under no retention policy in T3: kept for ever, never shorter than anything it describes ([Retention](#retention))"
+        },
+        {
+          "id": "LIF-057",
+          "howItIsMet": "Hold applied and removed, archival, deletion and gate rejection are kinds of their own"
+        },
+        {
+          "id": "LIF-064",
+          "howItIsMet": "API and tool use on a governed artifact, generation, a bound value revised, relationships, assets, shared-publication access, support access and channels are kinds of their own"
+        },
+        {
+          "id": "LIF-025",
+          "howItIsMet": "Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))"
+        },
+        {
+          "id": "LIF-029",
+          "howItIsMet": "An event and its labels read without the content they describe, which may be gone"
+        },
+        {
+          "id": "LIF-030",
+          "howItIsMet": "Detail holds identifiers, field names, codes and rules; never a secret, a credential, a bound value or content"
+        },
+        {
+          "id": "LIF-031",
+          "howItIsMet": "One table in each tenant's schema; no event of one tenant is readable from another"
+        },
+        {
+          "id": "LIF-062",
+          "howItIsMet": "`at` is `timestamptz`, UTC; `detail.offset` keeps a local offset where local time is part of the act"
+        },
+        {
+          "id": "LIF-063",
+          "howItIsMet": "Every kind names the requirement it answers, and each emitter's test asserts the event lands with actor, kind, instant and version ([Verification](#verification))"
+        },
+        {
+          "id": "IAM-013",
+          "howItIsMet": "Every sign-in, failed sign-in and sign-out, and every refused authorisation of someone signed in, is an event"
+        },
+        {
+          "id": "IAM-037",
+          "howItIsMet": "A token's issue and revocation are events, and its use is, once a minute per token"
+        },
+        {
+          "id": "IAM-060",
+          "howItIsMet": "Provisioning writes the vendor's naming of the first administrator into the tenant's own log, and the claim of it"
+        },
+        {
+          "id": "IAM-077",
+          "howItIsMet": "The log is the tenant's, read only through its own schema"
+        },
+        {
+          "id": "ADM-002",
+          "howItIsMet": "Every administrative act - spaces, grants, roles, groups, invitations, connections - is an event"
+        },
+        {
+          "id": "ADM-038",
+          "howItIsMet": "Administration's **Audit log** reads and searches it by actor, kind, date and subject"
+        },
+        {
+          "id": "ADM-039",
+          "howItIsMet": "An administrator exports it, complete and scoped to the tenant"
+        },
+        {
+          "id": "DAT-007",
+          "howItIsMet": "A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is"
+        }
+      ]
+    },
+    {
       "document": "bindings.md",
       "owns": [
         {
