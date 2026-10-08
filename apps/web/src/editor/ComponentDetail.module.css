@@ -1,0 +1,137 @@
+/* The chosen component beside the list (docs/interface/handoffs/ledger/components-*). */
+.panel {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-16));
+  display: grid;
+  gap: var(--space-16);
+  max-height: calc(100vh - var(--header-height) - var(--status-height, 0px) - var(--space-32));
+  padding: var(--space-16);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+}
+
+/* Below 1366px the panel stands over the list rather than narrowing it (the LG plan, LG-J). */
+@media (max-width: 1365px) {
+  .panel {
+    position: fixed;
+    top: calc(var(--header-height) + var(--space-8));
+    right: var(--space-8);
+    z-index: var(--z-popover);
+    width: min(var(--dock-panel), calc(100vw - var(--space-16)));
+    box-shadow: var(--shadow-raised);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--size-16);
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.acts {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.open,
+.access {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.open {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.access {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.open:hover,
+.access:hover {
+  text-decoration: none;
+  filter: brightness(0.95);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-8);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--border);
+}
+
+.label {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.text {
+  margin: 0;
+  font-size: var(--size-14);
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.versions {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.number {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.who {
+  display: grid;
+}
+
+.note {
+  color: var(--muted);
+  font-size: var(--size-12);
+}

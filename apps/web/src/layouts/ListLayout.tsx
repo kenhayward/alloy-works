@@ -22,14 +22,18 @@ function remember(collapsed: boolean): void {
 }
 
 /**
- * Layout A: a filter pane that collapses to a rail, then the list at nearly full width. Components,
- * Documents, Publications and search results are all this shape (docs/interface/README.md).
+ * Layout A: a filter pane that collapses to a rail, then the list, and the chosen row in a panel
+ * beside it where there is one (the Ledger, ADR-0046): a column of its own from 1366px, over the list
+ * below that (the LG plan, LG-J). Components, Documents, Publications and search results are all this.
  */
 export function ListLayout({
   filter,
+  detail = null,
   children,
 }: {
   filter: React.ReactNode;
+  /** The chosen row's panel, or null where none is chosen. */
+  detail?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(remembered);
@@ -38,7 +42,7 @@ export function ListLayout({
     remember(next);
   };
   return (
-    <div className={styles['layout']} data-collapsed={collapsed}>
+    <div className={styles['layout']} data-collapsed={collapsed} data-detail={detail !== null}>
       {collapsed ? (
         <div className={styles['rail']}>
           <button
@@ -69,6 +73,7 @@ export function ListLayout({
         </aside>
       )}
       <div className={styles['list']}>{children}</div>
+      {detail}
     </div>
   );
 }
