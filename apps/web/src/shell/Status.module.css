@@ -8,11 +8,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4) var(--space-16);
-  padding: var(--space-6) var(--space-16);
+  padding: var(--space-8) var(--space-16);
   border-top: 1px solid var(--border);
-  background: var(--surface-2);
+  background: var(--sunken);
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
   font-variant-numeric: tabular-nums;
 }
 
@@ -20,7 +20,7 @@
 .context {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-height: 1.5em;
   margin: 0;
 }

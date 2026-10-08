@@ -102,7 +102,7 @@
 
 .hint {
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .tables {

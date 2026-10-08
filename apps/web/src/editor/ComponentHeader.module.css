@@ -14,12 +14,12 @@
   min-width: 8ch;
   max-width: 100%;
   field-sizing: content;
-  padding: var(--space-2) var(--space-6);
+  padding: var(--space-4) var(--space-8);
   border: 1px solid transparent;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   background: transparent;
   color: var(--text);
-  font-size: var(--size-brand);
+  font-size: var(--size-16);
   font-weight: 650;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -27,7 +27,7 @@
 }
 
 .title.title:hover:not(:disabled) {
-  border-color: var(--input-border);
+  border-color: var(--strong-border);
   background: var(--surface);
 }
 
@@ -51,24 +51,24 @@
   padding: 1px var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: var(--chip-bg);
+  background: var(--sunken);
   color: var(--text);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .chip:hover {
-  border-color: var(--input-border);
+  border-color: var(--strong-border);
   background: var(--accent-weak);
 }
 
 .popover {
   position: absolute;
-  top: calc(100% + var(--space-6));
+  top: calc(100% + var(--space-8));
   left: 0;
   z-index: var(--z-dropdown);
-  padding: var(--space-10);
+  padding: var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
@@ -81,5 +81,5 @@
   align-items: center;
   gap: var(--space-8);
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }

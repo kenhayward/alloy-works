@@ -11,12 +11,12 @@
   width: 28px;
   margin: 3px 0 3px var(--space-4);
   border: 1px solid transparent;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   color: var(--text);
 }
 
 .back:hover {
-  border-color: var(--input-border);
+  border-color: var(--strong-border);
   background: var(--accent-weak);
   text-decoration: none;
 }
@@ -28,7 +28,7 @@
 .tab.tab {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-height: 32px;
   padding: 0 var(--space-12);
   border: 0;
@@ -36,7 +36,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
   font-weight: 600;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .strip > :last-child:hover {
-  border-color: var(--input-border);
+  border-color: var(--strong-border);
   background: var(--accent-weak);
 }
 
@@ -73,16 +73,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-10);
-  padding: var(--space-6) 0 var(--space-10);
+  gap: var(--space-12);
+  padding: var(--space-8) 0 var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
-  background: var(--surface-2);
+  background: var(--sunken);
 }
 
 .railLabel {
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;

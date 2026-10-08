@@ -4,22 +4,22 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  padding: var(--space-10) var(--space-12);
+  padding: var(--space-12) var(--space-12);
   border: 1px solid var(--border);
   border-inline-start: 3px solid var(--warn);
-  border-radius: var(--radius-6);
-  background: var(--surface-2);
-  font-size: var(--size-body-small);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  font-size: var(--size-13);
 }
 
 .panel:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .heading {
   margin: 0;
-  font-size: var(--size-label);
+  font-size: var(--size-12);
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;

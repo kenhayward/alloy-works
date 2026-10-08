@@ -6,7 +6,7 @@
  * and a ligature the surface does not draw would join letters in the read text alone.
  */
 .aw-text {
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   line-height: 1.6;
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -16,7 +16,7 @@
 }
 
 .aw-text p {
-  margin: 0 0 var(--space-10);
+  margin: 0 0 var(--space-12);
 }
 
 /*
@@ -226,8 +226,8 @@
   overflow-x: auto;
   margin-block: 0.5em;
   padding: 0.5em;
-  border: 1px solid var(--input-border);
-  background: var(--chip-bg);
+  border: 1px solid var(--strong-border);
+  background: var(--sunken);
 }
 
 /* The label is shown above the text it names, read from the attribute the node renders. */
@@ -242,7 +242,7 @@
   margin-block: 0.5em;
   margin-inline: 0;
   padding-inline-start: 1em;
-  border-inline-start: 3px solid var(--input-border);
+  border-inline-start: 3px solid var(--strong-border);
 }
 
 /* The attribution closes its quotation, aligned to the end as the PDF sets it, and carries no
@@ -285,7 +285,7 @@
 
 .aw-text td,
 .aw-text th {
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--strong-border);
   padding: 0.25em 0.5em;
   vertical-align: top;
 }
@@ -293,7 +293,7 @@
 .aw-text th {
   font-weight: 600;
   text-align: start;
-  background: var(--chip-bg);
+  background: var(--sunken);
 }
 
 .aw-text td p,
@@ -380,7 +380,7 @@
 
 /* The cells a cell selection holds, which `prosemirror-tables` marks with this class. */
 .ProseMirror .selectedCell {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -466,7 +466,7 @@
   z-index: 1;
   margin-top: 0.25em;
   padding: 0.25em 0.75em;
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--strong-border);
   border-radius: 4px;
   background: var(--bg);
   font-size: 0.9em;
@@ -536,7 +536,7 @@
 .aw-reference {
   padding: 0 0.15em;
   border-radius: 3px;
-  background: var(--chip-bg);
+  background: var(--sunken);
   text-decoration: underline dotted;
   text-underline-offset: 0.2em;
 }
@@ -598,7 +598,7 @@ button.aw-binding:focus-visible {
 .aw-binding.aw-binding-alone {
   padding: 0 0.3em;
   border-radius: 3px;
-  background: var(--chip-bg);
+  background: var(--sunken);
   font-style: italic;
 }
 

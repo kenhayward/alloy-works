@@ -15,7 +15,7 @@
 }
 
 .label {
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 /* Wide enough for a long equation to scroll within rather than widen the dialog past the page. */
@@ -26,8 +26,8 @@
   min-height: 3.5rem;
   padding: var(--space-8) var(--space-12);
   overflow-x: auto;
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
 }
 
 .drawn:empty {
@@ -59,14 +59,14 @@
 .choice {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   margin: 0;
 }
 
 .again {
   display: flex;
   align-items: center;
-  gap: var(--space-10);
+  gap: var(--space-12);
 }
 
 .again button {

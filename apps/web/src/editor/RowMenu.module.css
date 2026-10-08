@@ -7,7 +7,7 @@
 
 .kebab {
   min-height: 24px;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-8);
   border-color: transparent;
   background: transparent;
   color: var(--muted);
@@ -17,7 +17,7 @@
 
 .kebab:hover:not(:disabled),
 .kebab[aria-expanded='true'] {
-  border-color: var(--input-border);
+  border-color: var(--strong-border);
 }
 
 .menu {
@@ -27,7 +27,7 @@
   z-index: var(--z-dropdown);
   min-width: 190px;
   margin: 0;
-  padding: var(--space-6);
+  padding: var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
@@ -39,12 +39,12 @@
   display: block;
   width: 100%;
   min-height: 0;
-  padding: var(--space-8) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   border: 0;
   border-radius: var(--radius-4);
   background: transparent;
   color: var(--text);
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   text-align: start;
   text-decoration: none;
 }

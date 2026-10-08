@@ -14,7 +14,7 @@
 .dialog {
   position: relative;
   width: min(600px, 100%);
-  border-radius: var(--radius-10);
+  border-radius: var(--radius-12);
   background: var(--surface);
   box-shadow: var(--shadow-modal);
 }
@@ -24,7 +24,7 @@
 }
 
 .body {
-  padding: var(--space-18) var(--space-20) var(--space-20);
+  padding: var(--space-16) var(--space-24) var(--space-24);
 }
 
 /* A form inside takes the drawn grid - two columns, each field's label above it - without the form
@@ -40,7 +40,7 @@
   grid-column: 1 / -1;
   margin: 0 0 var(--space-4);
   padding-inline-end: var(--space-40);
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
 }
 
 .body > section > label {
@@ -71,8 +71,8 @@
 
 .close {
   position: absolute;
-  top: var(--space-14);
-  right: var(--space-14);
+  top: var(--space-16);
+  right: var(--space-16);
   display: inline-grid;
   place-items: center;
   width: 26px;

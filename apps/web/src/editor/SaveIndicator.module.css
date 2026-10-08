@@ -2,29 +2,29 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-height: 22px;
   padding: 1px var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .chip[data-dot-state='notSaved'] {
-  background: var(--diff-del-bg);
-  color: var(--diff-del-fg);
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .chip[data-dot-state='saving'] {
-  background: var(--chip-bg);
+  background: var(--sunken);
   color: var(--muted);
 }
 
 .chip[data-dot-state='saved'] {
-  background: var(--state-published-bg);
-  color: var(--state-published-fg);
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .dot {
