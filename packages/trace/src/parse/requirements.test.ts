@@ -192,7 +192,8 @@ describe('the real corpus', () => {
     // 1543 (2026-10-08): the T2 audit's five - STY-083, TAB-052, TAB-053, DAT-117 and DAT-118.
     // 1546 (2026-10-08): ADR-0045's three - COL-063, COL-064 and ADM-049.
     // 1549 (2026-10-08): the Ledger's three - SCH-068, SCH-069 and CNT-181.
-    expect(total((document) => document.requirements)).toBe(1549);
+    // 1550 (2026-10-08): ADM-050, a tenant administrator refusing plain http (ADR-0048).
+    expect(total((document) => document.requirements)).toBe(1550);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

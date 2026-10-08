@@ -105,6 +105,7 @@ than as a support request during a notice period, is the difference.
 | **ADM-009** | Access to a secret must be audited by the fact of access, never by its value                                                                                                                                                                                                                                                                                                         | Constraint | Specified             |
 | **ADM-032** | An administrator must be able to see what consumes a secret - which connections, model endpoints and scheduled work - before rotating it                                                                                                                                                                                                                                             | T7         | Superseded by ADM-047 |
 | **ADM-047** | Before rotating any tenant secret, an administrator must be able to see everything that consumes it: connections, model endpoints, external reference sources, translation services, scanning services, notification channels, webhook signing keys and scheduled work. A rotation that breaks something must be reported once against the secret, naming every dependent capability | T7         | Specified             |
+| **ADM-050** | A tenant administrator must be able to refuse connections whose source is reached over plain `http`, for the whole tenant; an existing such connection must then fail to run, named as refused by that setting rather than as unreachable (ADR-0048)                                                                                                                                 | T7         | Specified             |
 
 **ADM-032 closes the other half of rotation.** ADM-007 makes a secret replaceable without a gap
 where neither value works; ADM-032 makes it possible to know what to smoke-test afterwards. An
@@ -312,3 +313,18 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 48, of which 4 superseded | 49, of which 4 superseded |
+
+### Plain http allowed until a tenant can refuse it (ADR-0048), 2026-10-08
+
+Not a review. Ken allowed plain `http` for an HTTP API's base URL and an S3 endpoint everywhere,
+for sources on a laptop or a LAN, and asked that a tenant administrator be able to switch it off in a
+later tranche ([ADR-0048](../../decisions/0048-plain-http-sources-until-t7.md), issue
+[#487](https://github.com/kenhayward/alloy-works/issues/487)).
+
+| What was found                                                                                         | Change                                                                    |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| A tenant handling regulated content needs to forbid credentials and data crossing the network in clear | **ADM-050**, a tenant administrator refusing plain `http` connections, T7 |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 49, of which 4 superseded | 50, of which 4 superseded |

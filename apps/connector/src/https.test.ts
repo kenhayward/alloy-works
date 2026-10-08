@@ -185,9 +185,9 @@ describe('the guarded HTTPS client', () => {
       expect(code(await exchange(asked('/v1/readings', { port }), policy()))).toBe(
         'connection_failed',
       );
-      expect(
-        code(await exchange(asked('/v1/readings', { secure: false }), policy())),
-      ).not.toBe('ok');
+      expect(code(await exchange(asked('/v1/readings', { secure: false }), policy()))).not.toBe(
+        'ok',
+      );
       // Loopback denied, as in production: refused before anything is dialled.
       expect(
         code(

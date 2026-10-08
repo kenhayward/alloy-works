@@ -211,29 +211,29 @@ export async function startFakeStore(
   const seen: FakeStore['seen'] = [];
   const sockets = new Set<{ destroy(): void }>();
   const handle = (request: IncomingMessage, response: ServerResponse) => {
-      seen.push({
-        method: request.method ?? '',
-        rawPath: request.url ?? '',
-        headers: { ...request.headers },
-      });
-      request.resume();
-      const answered = answer(request);
-      if (answered === 'abandon') return;
-      if (answered === 'short') {
-        response.writeHead(200, { 'content-length': '1000' });
-        response.write('id,site\n');
-        setTimeout(() => response.socket?.destroy(), 50);
-        return;
-      }
-      const body =
-        typeof answered.body === 'string'
-          ? Buffer.from(answered.body)
-          : (answered.body ?? Buffer.alloc(0));
-      response.writeHead(answered.status ?? 200, {
-        'content-length': String(body.length),
-        ...answered.headers,
-      });
-      response.end(request.method === 'HEAD' ? undefined : body);
+    seen.push({
+      method: request.method ?? '',
+      rawPath: request.url ?? '',
+      headers: { ...request.headers },
+    });
+    request.resume();
+    const answered = answer(request);
+    if (answered === 'abandon') return;
+    if (answered === 'short') {
+      response.writeHead(200, { 'content-length': '1000' });
+      response.write('id,site\n');
+      setTimeout(() => response.socket?.destroy(), 50);
+      return;
+    }
+    const body =
+      typeof answered.body === 'string'
+        ? Buffer.from(answered.body)
+        : (answered.body ?? Buffer.alloc(0));
+    response.writeHead(answered.status ?? 200, {
+      'content-length': String(body.length),
+      ...answered.headers,
+    });
+    response.end(request.method === 'HEAD' ? undefined : body);
   };
   const server = (
     plain

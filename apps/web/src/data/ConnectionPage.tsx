@@ -570,7 +570,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         </nav>
         <h1>{view.settings.name}</h1>
         <p className={styles['meta']}>
-          <Chip>{`${http ? 'HTTPS API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
+          <Chip>{`${http ? 'HTTP API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
           <Chip className={styles['mono']}>{`Version ${view.version.number}`}</Chip>
           {retired && <Chip tone="warn">Retired</Chip>}
           <ManageAccessLink
