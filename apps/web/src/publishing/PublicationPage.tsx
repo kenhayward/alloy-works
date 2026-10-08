@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 import { Notice } from '../states/Notice.js';
+import { Chip } from '../parts/Chip.js';
 import { reportIn, reportLines, type ReportEntry } from './formats.js';
 import styles from './PublicationPage.module.css';
 import { Waiting } from '../states/Waiting.js';
@@ -209,8 +210,47 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
   const pdf = shown.outputs.find((each) => each.format === 'pdf');
   const word = shown.outputs.find((each) => each.format === 'docx');
   const provenance = shown.outputs.find((each) => each.format === 'provenance');
+  const formats = pdf !== undefined && word !== undefined ? 'PDF and Word' : pdf ? 'PDF' : 'Word';
   return (
     <article aria-labelledby="publication-title" className={styles['page']}>
+      {/* Layout D's head (the Ledger, ADR-0046): where it is, what it is, what can be taken away. */}
+      <header className={styles['head']}>
+        <nav aria-label="Breadcrumb" className={styles['trail']}>
+          <a href="#/publications">Publications</a>
+        </nav>
+        <div className={styles['titleRow']}>
+          <h1 id="publication-title" className={styles['title']}>
+            {shown.title}
+          </h1>
+          <div className={styles['actions']}>
+            <a className={styles['button']} href={`#/documents/${shown.document}`}>
+              Open the document
+            </a>
+            {word !== undefined && (
+              <a className={styles['button']} href={word.download}>
+                Download the Word document
+              </a>
+            )}
+            {pdf !== undefined && (
+              <a className={`${styles['button']} ${styles['primary']}`} href={pdf.download}>
+                Download the PDF
+              </a>
+            )}
+          </div>
+        </div>
+        <div className={styles['facts']}>
+          <Chip className={styles['mono']}>{`from ${shown.version}`}</Chip>
+          <Chip>{formats}</Chip>
+          <Chip tone="warn">Not approved</Chip>
+          <span className={styles['published']}>
+            Published by {shown.publisher ?? 'somebody'} on{' '}
+            {new Date(shown.publishedAt).toLocaleString(undefined, {
+              dateStyle: 'long',
+              timeStyle: 'short',
+            })}
+          </span>
+        </div>
+      </header>
       {/* Layout D: the publication itself, on the desk its pages sit on, shown by the browser's own
           PDF viewer - whose bookmarks, from the tagged PDF, are its contents. Nothing is editable.
           A publication in Word alone has nothing a browser can show. */}
@@ -224,8 +264,10 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           </p>
         )}
       </div>
-      <aside className={styles['record']} aria-label="What it was made from">
-        <h2 id="publication-title">{shown.title}</h2>
+      <aside className={styles['record']} aria-labelledby="publication-record">
+        <h2 id="publication-record" className={styles['recordTitle']}>
+          What it was made from
+        </h2>
         <p className={styles['notApproved']}>{DRAFT_NOTICE.text}</p>
         <p>
           Version {shown.version}, published by {shown.publisher ?? 'somebody'} on{' '}
@@ -240,33 +282,6 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             Made with Typst {shown.engine} and publication template {shown.template}.
           </p>
         )}
-        {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so, and
-            where its checks all gave up, that it could not be checked. */}
-        {pdf !== undefined && (
-          <p>
-            {pdf.check !== null
-              ? checkWords(pdf.check)
-              : pdf.checkGaveUp
-                ? 'Could not be checked for accessibility.'
-                : 'Not yet checked for accessibility.'}
-          </p>
-        )}
-        {pdf?.check != null && pdf.check.failedRules.length > 0 && (
-          <ul aria-label="Rules the PDF failed">
-            {pdf.check.failedRules.map((rule) => (
-              <li key={`${rule.clause}-${rule.test}`}>
-                Clause {rule.clause}, test {rule.test}
-                {rule.description !== null && `: ${rule.description}`}
-              </li>
-            ))}
-          </ul>
-        )}
-        {pdf?.check?.report != null && (
-          <p>
-            <a href={pdf.check.report.download}>Download the full report</a>
-            {size(pdf.check.report.bytes)}
-          </p>
-        )}
         {/* The writer's version as the template's is named, a number: the store's `word/1` names the
             producer too, which the sentence already does (the final review of Word 1, M7). */}
         {word?.producerVersion != null && (
@@ -275,34 +290,62 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             {word.producerVersion.replace(/^word\//, '')}.
           </p>
         )}
-        {pdf !== undefined && (
-          <p>
-            <a href={pdf.download}>Download the PDF</a>
-            {size(pdf.bytes)}
-          </p>
+        {(pdf !== undefined || (word !== undefined && word.report.length > 0)) && (
+          <section className={styles['section']} aria-labelledby="publication-checks">
+            <h3 id="publication-checks" className={styles['label']}>
+              Checks
+            </h3>
+            {/* Checked by veraPDF after it was recorded (W14.1, ADR-0030): until then, it says so, and
+                where its checks all gave up, that it could not be checked. */}
+            {pdf !== undefined && (
+              <p>
+                {pdf.check !== null
+                  ? checkWords(pdf.check)
+                  : pdf.checkGaveUp
+                    ? 'Could not be checked for accessibility.'
+                    : 'Not yet checked for accessibility.'}
+              </p>
+            )}
+            {pdf?.check != null && pdf.check.failedRules.length > 0 && (
+              <ul aria-label="Rules the PDF failed">
+                {pdf.check.failedRules.map((rule) => (
+                  <li key={`${rule.clause}-${rule.test}`}>
+                    Clause {rule.clause}, test {rule.test}
+                    {rule.description !== null && `: ${rule.description}`}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {pdf?.check?.report != null && (
+              <p>
+                <a href={pdf.check.report.download}>Download the full report</a>
+                {size(pdf.check.report.bytes)}
+              </p>
+            )}
+            {word !== undefined && word.report.length > 0 && (
+              <ul aria-label="About the Word document">
+                {reportLines(word.report).map((line) => (
+                  <li key={line.key}>{line.words}</li>
+                ))}
+              </ul>
+            )}
+          </section>
         )}
-        {word !== undefined && (
-          <p>
-            <a href={word.download}>Download the Word document</a>
-            {size(word.bytes)}
-          </p>
+        {(pdf !== undefined || word !== undefined || provenance !== undefined) && (
+          <section className={styles['section']} aria-labelledby="publication-files">
+            <h3 id="publication-files" className={styles['label']}>
+              Files
+            </h3>
+            {pdf !== undefined && <p>PDF{size(pdf.bytes)}</p>}
+            {word !== undefined && <p>Word document{size(word.bytes)}</p>}
+            {provenance !== undefined && (
+              <p>
+                <a href={provenance.download}>Download where its values came from</a>
+                {size(provenance.bytes)}, provenance.json
+              </p>
+            )}
+          </section>
         )}
-        {provenance !== undefined && (
-          <p>
-            <a href={provenance.download}>Download where its values came from</a>
-            {size(provenance.bytes)}, provenance.json
-          </p>
-        )}
-        {word !== undefined && word.report.length > 0 && (
-          <ul aria-label="About the Word document">
-            {reportLines(word.report).map((line) => (
-              <li key={line.key}>{line.words}</li>
-            ))}
-          </ul>
-        )}
-        <p>
-          <a href={`#/documents/${shown.document}`}>Open the document</a>
-        </p>
       </aside>
     </article>
   );
