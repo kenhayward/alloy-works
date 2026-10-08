@@ -32,7 +32,14 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
-import { AUDIT_LOG_KEPT, AUDIT_SETTING, labelled, labels, recordEvent } from './audit.js';
+import {
+  AUDIT_LOG_KEPT,
+  AUDIT_SETTING,
+  labelled,
+  labels,
+  principalLabel,
+  recordEvent,
+} from './audit.js';
 import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedConnection, checkNotInUse } from './definition-references.js';
 import { checkedLimit } from './listing.js';
@@ -324,6 +331,8 @@ async function recordVersionCut(
   const title = isLabelledKind(version.kind)
     ? labelFor(version.kind, version.content as Record<string, unknown>)
     : undefined;
+  // The author, where it is not who acts, named by a label erasure reaches (the AU1 review, L9).
+  const authored = version.author !== null && version.author !== place?.actor;
   await recordEvent(
     trx,
     {
@@ -333,14 +342,13 @@ async function recordVersionCut(
       detail: {
         kind: version.kind,
         parent,
-        ...(version.author !== null && version.author !== place?.actor
-          ? { author: version.author }
-          : {}),
+        ...(authored ? { author: version.author } : {}),
       },
     },
     labels(
       labelled('subject', title, version.artifactId),
       labelled('space', place?.space_name, place?.space_id ?? null),
+      authored ? await principalLabel(trx, 'author', version.author!) : undefined,
     ),
   );
 }

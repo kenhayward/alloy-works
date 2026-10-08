@@ -370,6 +370,35 @@ describe('identity, access and administration on the audit log', () => {
     expect(events[0]!.labels['actor']!.text).toBe('Joan');
   });
 
+  it("erases a token's name with its holder's labels", async () => {
+    const hedy = await person('hedy', 'Hedy');
+    const { events } = await recorded(() =>
+      service.withTenant(
+        tenant,
+        (trx) =>
+          issueApiToken(trx, {
+            principalId: hedy,
+            name: 'Hedy export',
+            tokenHash: 'e'.repeat(64),
+            scopes: [],
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          }),
+        { actorKind: 'person', actor: hedy, actorLabel: 'Hedy' },
+      ),
+    );
+    expect(events[0]!.labels['subject']).toMatchObject({ text: 'Hedy export', refersTo: hedy });
+    await service.withTenant(tenant, (trx) => eraseLabels(trx, hedy), acting);
+    const after = await service.withTenant(
+      tenant,
+      async (trx) =>
+        (await auditEvents(trx, String(Number(events[0]!.sequence) - 1))).find(
+          (event) => event.sequence === events[0]!.sequence,
+        )!,
+      { actorKind: 'system' },
+    );
+    expect(after.labels['subject']).toMatchObject({ text: 'erased', erased: true });
+  });
+
   it('IAM-037 records a token issued, one use a minute under concurrent requests, and its revocation', async () => {
     const now = new Date();
     const { answer: token, events: issued } = await asAda((trx) =>

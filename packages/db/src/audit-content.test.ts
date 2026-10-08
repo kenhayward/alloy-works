@@ -3,6 +3,7 @@ import type { AuditContext, ImageHeader, PostgresSettings } from '@alloy-works/d
 import { sealSecret } from '@alloy-works/sealing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAssetUpload, receiveAssetBytes, recordAsset, refuseAssetUpload } from './assets.js';
+import { eraseLabels } from './audit.js';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   createConnection,
@@ -216,6 +217,37 @@ describe('content and data on the audit log', () => {
     const [cut] = ofKind(events, 'content.version_cut');
     expect(cut).toMatchObject({ actor: ada, detail: { kind: 'component', parent: null } });
     expect(cut!.detail.author).toBe(grace);
+    // Named by a label too, which erasing the author reaches.
+    expect(cut!.labels.author).toEqual({ text: 'Grace', refersTo: grace, erased: false });
+    const lin = await service.withTenant(
+      tenant,
+      async (trx) =>
+        (
+          await trx
+            .insertInto('principal')
+            .values({ issuer: ISSUER, subject: 'lin', email: null, display_name: 'Lin' })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id,
+      { actorKind: 'system' },
+    );
+    const { events: written } = await recorded(async (trx) => {
+      const made = await createComponent(trx, {
+        spaceId: general,
+        title: 'Lin wrote this',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: lin,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+    });
+    await service.withTenant(tenant, (trx) => eraseLabels(trx, lin), acting);
+    const erased = await service.withTenant(
+      tenant,
+      async (trx) => (await auditEvents(trx, String(Number(written[0]!.sequence) - 1)))[0]!,
+      { actorKind: 'system' },
+    );
+    expect(erased.labels.author).toMatchObject({ text: 'erased', refersTo: lin, erased: true });
   });
 
   it('skips a version cut only on a schema with no log in a transaction naming nobody, and fails one naming somebody', async () => {

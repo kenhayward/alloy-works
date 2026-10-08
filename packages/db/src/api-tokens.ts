@@ -96,7 +96,8 @@ async function recordTokenEvent(
   await recordEvent(
     trx,
     { kind, subject: { kind: 'token', id: token.id }, detail },
-    labels(labelled('subject', token.name, token.id), await principalLabel(trx, 'holder', holder)),
+    // A token's name is its holder's to erase, as their own is (the AU1 review, L9).
+    labels(labelled('subject', token.name, holder), await principalLabel(trx, 'holder', holder)),
   );
 }
 
