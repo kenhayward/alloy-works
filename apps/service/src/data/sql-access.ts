@@ -6,7 +6,7 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import { decide, type AccessFacts, type QueryDefinition } from '@alloy-works/domain';
-import type { Caller } from '../access.js';
+import { refusedBy, type Caller } from '../access.js';
 import { AppError } from '../errors.js';
 import { refused, wireCode } from '../wire-codes.js';
 
@@ -52,6 +52,21 @@ export const sqlForbidden = () =>
   );
 
 /**
+ * The refusal of a fetch at a connection whose facts do not allow it, recorded with the decision that
+ * refused (the AU1 plan, AU1-E): `use_connection`, or else `write_sql`.
+ */
+export function fetchRefused(facts: AccessFacts, fetch: FetchOf, connectionId: string): AppError {
+  const using = decide('use_connection', facts);
+  return refusedBy(
+    fetchForbidden(fetch),
+    using.allowed ? decide('write_sql', facts) : using,
+    facts,
+    { kind: 'artifact', id: connectionId },
+    false,
+  );
+}
+
+/**
  * Decides, in the caller's transaction, that they hold what a fetch needs on a connection a definition
  * names (DAT-101, D4-J): `use_connection`, and `write_sql` for SQL. A connection they may not read is
  * named as a problem of the definition's, since the address they called is the definition's or its
@@ -65,8 +80,8 @@ export async function decideFetchAt(
 ): Promise<AccessFacts> {
   await decideOnly(trx);
   const facts = await connectionFacts(trx, caller, connectionId);
-  if (!facts || !decide('read', facts).allowed) {
-    throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
+  const invalid = () =>
+    refused(400, 'definition.invalid', 'The query definition is not valid.', {
       problems: [
         {
           rule: 'definition_invalid',
@@ -75,8 +90,13 @@ export async function decideFetchAt(
         },
       ],
     });
+  if (!facts) throw invalid();
+  // A connection that exists and that the caller may not read: a refusal, hidden (AU1-E).
+  const reading = decide('read', facts);
+  if (!reading.allowed) {
+    throw refusedBy(invalid(), reading, facts, { kind: 'artifact', id: connectionId }, true);
   }
-  if (!mayRunFetch(facts, fetch)) throw fetchForbidden(fetch);
+  if (!mayRunFetch(facts, fetch)) throw fetchRefused(facts, fetch, connectionId);
   return facts;
 }
 

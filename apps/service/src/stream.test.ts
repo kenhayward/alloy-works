@@ -165,7 +165,7 @@ describe('what an environment is doing, as it happens', () => {
     // snapshot is being read.
     const held: TenantDatabase = {
       ...tenantDb,
-      async withTenant(tenant, work) {
+      async withTenant(tenant, work, context) {
         if (holding) {
           if (letThrough > 0) letThrough -= 1;
           else {
@@ -174,7 +174,7 @@ describe('what an environment is doing, as it happens', () => {
             await holding;
           }
         }
-        return tenantDb.withTenant(tenant, work);
+        return tenantDb.withTenant(tenant, work, context);
       },
     };
     slow = buildApp({
@@ -365,8 +365,8 @@ describe('what an environment is doing, as it happens', () => {
     });
     const reading: TenantDatabase = {
       ...tenantDb,
-      async withTenant(tenant, work) {
-        const result = await tenantDb.withTenant(tenant, work);
+      async withTenant(tenant, work, context) {
+        const result = await tenantDb.withTenant(tenant, work, context);
         // The session, then the snapshot.
         if ((reads += 1) === 2) {
           snapshotTaken();
@@ -496,9 +496,9 @@ describe('what an environment is doing, as it happens', () => {
     let readsAfterLeaving = 0;
     const counting: TenantDatabase = {
       ...tenantDb,
-      withTenant(tenant, work) {
+      withTenant(tenant, work, context) {
         if (gone) readsAfterLeaving += 1;
-        return tenantDb.withTenant(tenant, work);
+        return tenantDb.withTenant(tenant, work, context);
       },
     };
     const gatedApp = buildApp({

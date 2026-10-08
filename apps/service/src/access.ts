@@ -16,7 +16,7 @@ import {
   type Permission,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { AppError } from './errors.js';
+import { AppError, type RefusedTarget } from './errors.js';
 
 /** What a permission-checked handler is given: the transaction it was decided in, and the answer. */
 export interface Authorised {
@@ -58,6 +58,32 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const forbidden = (permission: string) =>
   new AppError(403, 'forbidden', `This needs the ${permission} permission.`);
+
+/**
+ * `error`, as the refusal `decision` made of `target` (the AU1 plan, AU1-E): `hidden` where the answer
+ * hides a target that exists. The space is the decision chain's, where it names one.
+ */
+export function refusedBy(
+  error: AppError,
+  decision: Decision,
+  facts: AccessFacts,
+  target: RefusedTarget,
+  hidden: boolean,
+): AppError {
+  if (decision.allowed) throw new Error('An allowed decision refuses nothing');
+  return error.refusing({
+    permission: decision.permission,
+    target,
+    reason: decision.reason as Exclude<Decision['reason'], 'allowed'>,
+    level: decision.level,
+    hidden,
+    space: facts.chain.find((level) => level.kind === 'space')?.id,
+  });
+}
+
+/** Not found, for a target that exists and that the caller may not read: the read refused it. */
+const hiddenBy = (facts: AccessFacts, target: RefusedTarget) =>
+  refusedBy(notFound(), decide('read', facts), facts, target, true);
 
 /**
  * The level a route's declaration names, from the request's validated parameters, query or body, or -
@@ -104,6 +130,13 @@ async function targetOf(
   return typeof id === 'string' ? parseLevel(`${kind}:${id}`) : undefined;
 }
 
+/** The grant a route's path names, where its target is one; it exists, or no level was found. */
+function grantOf(declared: RouteTarget, request: FastifyRequest): string | undefined {
+  if (!('grant' in declared)) return undefined;
+  const id = (request.params as Record<string, unknown>)[declared.grant];
+  return typeof id === 'string' ? id : undefined;
+}
+
 /**
  * What a permission-checked route's transaction takes before `authorise` decides anything. A route that
  * changes access takes the epoch FOR UPDATE first, so the shared lock its decision then takes is one it
@@ -148,9 +181,10 @@ export async function authoriseAt(
   await decideOnly(trx);
   const loaded = await loadFacts(trx, caller.principalId, target);
   const facts = loaded && { ...loaded, scopes: caller.scopes };
-  if (!facts || (target.kind !== 'tenant' && !decide('read', facts).allowed)) throw notFound();
+  if (!facts) throw notFound();
+  if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw hiddenBy(facts, target);
   const decision = decide(permission, facts);
-  if (!decision.allowed) throw forbidden(permission);
+  if (!decision.allowed) throw refusedBy(forbidden(permission), decision, facts, target, false);
   return decision;
 }
 
@@ -185,15 +219,23 @@ export async function authorise(
   const facts: AccessFacts = { ...loaded, scopes: scopesOf(request) };
   // A grant is an administrator's to see (access.md, "Refusing"): one the caller may not manage is
   // answered as absent, even where they may read the level it was made at, so an id cannot be probed.
-  const refused = (unreadable: boolean) =>
-    'grant' in check.target || unreadable ? notFound() : forbidden(check.permission);
+  // Recorded as the refusal it is, of the grant where one is hidden (the AU1 plan, AU1-E).
+  const grant = grantOf(check.target, request);
+  const refused = (decision: Decision, unreadable: boolean) =>
+    grant !== undefined
+      ? refusedBy(notFound(), decision, facts, { kind: 'grant', id: grant }, true)
+      : unreadable
+        ? hiddenBy(facts, target)
+        : refusedBy(forbidden(check.permission), decision, facts, target, false);
   if (check.permission === 'administer') {
     const decision = administerOrAbove(facts);
     if (decision.allowed) return { trx, principalId, target, facts, decision };
-    throw refused(target.kind !== 'tenant' && !decide('read', facts).allowed);
+    throw refused(decision, target.kind !== 'tenant' && !decide('read', facts).allowed);
   }
-  if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw notFound();
+  if (target.kind !== 'tenant' && !decide('read', facts).allowed) {
+    throw refused(decide('read', facts), true);
+  }
   const decision = decide(check.permission, facts);
-  if (!decision.allowed) throw refused(false);
+  if (!decision.allowed) throw refused(decision, false);
   return { trx, principalId, target, facts, decision };
 }

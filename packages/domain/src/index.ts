@@ -32,6 +32,9 @@ export * from './assets/index.js';
 // Access: who may do what to which artifact, and why (docs/design/access.md). The caller loads facts.
 export * from './access/index.js';
 
+// The audit log: its closed list of kinds, their details, its context and labels (docs/design/audit.md).
+export * from './audit/index.js';
+
 // The document's outline: the tree, its parse, and the five operations over it.
 export * from './structure/index.js';
 export * from './template/index.js';

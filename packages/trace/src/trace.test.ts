@@ -826,8 +826,10 @@ describe('the citations in the committed model', () => {
   // the domain, TAB-052 in the worker, DAT-045 in the connector and TPL-016 in the db.
   // 809 (2026-10-08): SP1 - ADM-049 in the service, Administration's Spaces, over HTTP and in the
   // browser.
+  // 815 (2026-10-08): AU1.1 - LIF-025, LIF-030, LIF-031 and LIF-032 in the db and LIF-030 in the
+  // domain, IAM-013 in the service.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(809);
+    expect(model.citations).toHaveLength(815);
   });
 
   it('cites no identifier the corpus does not hold', () => {

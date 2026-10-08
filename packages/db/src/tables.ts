@@ -526,7 +526,39 @@ export interface DatasetPendingTable {
   created_at: ColumnType<Date, never, never>;
 }
 
+/**
+ * An audit event (0060; audit.md): written by `recordEvent` alone, never updated or deleted. The
+ * sequence is a bigint, which pg reads as a string.
+ */
+export interface AuditEventTable {
+  sequence: ColumnType<string, never, never>;
+  at: ColumnType<Date, never, never>;
+  xact: ColumnType<string, never, never>;
+  kind: ColumnType<string, string, never>;
+  actor_kind: ColumnType<string, string, never>;
+  actor: ColumnType<string | null, string | null | undefined, never>;
+  token: ColumnType<string | null, string | null | undefined, never>;
+  subject_kind: ColumnType<string | null, string | null | undefined, never>;
+  subject: ColumnType<string | null, string | null | undefined, never>;
+  subject_version: ColumnType<string | null, string | null | undefined, never>;
+  space: ColumnType<string | null, string | null | undefined, never>;
+  outcome: ColumnType<'done' | 'refused', 'done' | 'refused', never>;
+  detail: ColumnType<Record<string, unknown>, string, never>;
+  trace_id: ColumnType<string | null, string | null | undefined, never>;
+}
+
+/** A label an event keeps (0060): changed only by `erase_labels`. */
+export interface AuditLabelTable {
+  sequence: ColumnType<string, string, never>;
+  role: ColumnType<string, string, never>;
+  text: ColumnType<string, string, never>;
+  refers_to: ColumnType<string | null, string | null | undefined, never>;
+  erased_at: ColumnType<Date | null, never, never>;
+}
+
 export interface TenantTables {
+  audit_event: AuditEventTable;
+  audit_label: AuditLabelTable;
   component_lock: ComponentLockTable;
   iteration: IterationTable;
   principal: PrincipalTable;
