@@ -171,6 +171,11 @@ export interface OutlinePanelProps {
   readonly tab?: { readonly tab: string; readonly panel: string };
   /** Another tab's content, shown in the panel in place of the outline (the Data tab, BI-H). */
   readonly instead?: ReactNode;
+  /**
+   * The chosen part's settings as the Part panel beside the text (the LG plan, LG6c): its id, the tab
+   * that names it, and whether another panel is shown in its place.
+   */
+  readonly details?: { readonly id: string; readonly labelledBy: string; readonly hidden: boolean };
   /** The tree's root row, above the tree: the document itself. */
   readonly root?: ReactNode;
   /**
@@ -334,6 +339,7 @@ export function OutlinePanel({
   head = null,
   tab,
   instead,
+  details,
   root = null,
   scheme,
   editable,
@@ -1048,7 +1054,17 @@ export function OutlinePanel({
             )}
           </div>
         </div>
-        <div data-part="details">
+        <div
+          data-part="details"
+          {...(details === undefined
+            ? {}
+            : {
+                id: details.id,
+                role: 'tabpanel',
+                'aria-labelledby': details.labelledBy,
+                hidden: details.hidden,
+              })}
+        >
           {editable && selected && confirming === null && (
             <NodeDetails
               key={selected.id}

@@ -655,6 +655,17 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.getByRole('button', { name: 'Close the preview' }).click();
       await leave(preview);
 
+      // The panels beside the text, named in words (LG6c): the lists, then publishing.
+      const documentPanels = page.getByRole('tablist', { name: 'Document panels' });
+      await documentPanels.getByRole('tab', { name: 'Lists' }).click();
+      await check('the Lists panel', {
+        shows: page.getByRole('tabpanel', { name: 'Lists' }),
+      });
+      await documentPanels.getByRole('tab', { name: 'Publishing' }).click();
+      await check('the Publishing panel', {
+        shows: page.getByRole('button', { name: /^Publish as/ }).first(),
+      });
+
       // Published, and the publication's own page.
       await page
         .getByRole('button', { name: /^Publish as/ })

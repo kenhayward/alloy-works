@@ -130,7 +130,10 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
     await withPage(async (page) => {
       await page.goto(`${SERVICE}/#/documents/${placed.document}`);
       await page.getByRole('radio', { name: 'Authoring' }).check();
-      // The Parameters panel has read the template's declarations before the dialog is opened.
+      // The Parameters panel, in the Document panel beside the text (LG6c), has read the template's
+      // declarations before the dialog is opened.
+      const panels = page.getByRole('tablist', { name: 'Document panels' });
+      await panels.getByRole('tab', { name: 'Document' }).click();
       const parameters = page.getByRole('region', { name: 'Parameters' });
       await parameters.getByLabel('period', { exact: true }).waitFor();
       const text = page.getByRole('region', { name: "The document's text" });
@@ -220,7 +223,9 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
       expect(await row.textContent()).toContain('South bank');
       expect(await row.getByText("The document's period changed").count()).toBe(0);
 
-      // Published.
+      // Published, from the Publishing panel: Tab to the panels' one stop, End to choose the last.
+      await tabTo(page, panels.getByRole('tab', { selected: true }), 120);
+      await page.keyboard.press('End');
       const publish = page.getByRole('button', { name: /^Publish as/ }).first();
       await tabTo(page, publish, 120);
       await page.keyboard.press('Enter');

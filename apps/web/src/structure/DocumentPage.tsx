@@ -21,10 +21,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
-import { PreviewPane, usePreview } from '../publishing/Preview.js';
+import { PanelTabs } from '../parts/PanelTabs.js';
+import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
-import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
+import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
@@ -443,6 +444,24 @@ const BOUNDARIES_KEY = 'alloy-works.boundaries';
 
 /** The document view's two modes (document-view.md, "Modes"); review is T3's. */
 type Mode = 'reading' | 'authoring';
+
+/** The panels beside the text, named in words (ADR-0046, decision 6; the LG plan, LG6c). */
+const DOCK_PANELS = [
+  { key: 'part', label: 'Part' },
+  { key: 'document', label: 'Document' },
+  { key: 'lists', label: 'Lists' },
+  { key: 'publishing', label: 'Publishing' },
+] as const;
+
+type DockPanel = (typeof DOCK_PANELS)[number]['key'];
+
+const dockIds = (key: string) => ({ tab: `document-tab-${key}`, panel: `document-panel-${key}` });
+
+/** The panel chosen last, remembered by this browser as the panes' widths are. */
+export const DOCK_KEY = 'aw.document.dock';
+
+const keptDock = (): DockPanel =>
+  DOCK_PANELS.find((each) => each.key === kept(DOCK_KEY))?.key ?? 'part';
 
 const MODES: readonly { readonly mode: Mode; readonly name: string }[] = [
   { mode: 'reading', name: 'Reading' },
@@ -1161,6 +1180,11 @@ export function DocumentPage({
   // Every component's edges and label, rather than on hover and focus (document-view.md, "Boundaries";
   // CNT-073): this reader's choice, kept in the browser as a convenience.
   const [boundaries, setBoundaries] = useState(keptBoundaries);
+  const [dock, setDockState] = useState<DockPanel>(keptDock);
+  const setDock = (next: DockPanel) => {
+    setDockState(next);
+    keep(DOCK_KEY, next);
+  };
   // Reading or Authoring (document-view.md, "Modes"; CNT-154): the reader's choice, kept in the browser,
   // Authoring the first time; which of them is on offer is decided below, from what they may do.
   const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
@@ -1325,6 +1349,12 @@ export function DocumentPage({
     holdsValues,
   });
   const ids = tabIds(shown);
+  // The panels beside the text, named in words (the LG plan, LG6c): the document's own only where it
+  // holds fields or parameters.
+  const holdsOwn = document.fields.document.length > 0 || document.templated || holdsValues;
+  const dockTabs = DOCK_PANELS.filter((each) => each.key !== 'document' || holdsOwn);
+  // A remembered Document panel on a document that has none shows the part instead.
+  const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
     // (themes.md, "The theme in the editor", ET-A).
@@ -1336,39 +1366,50 @@ export function DocumentPage({
           {authoring ? 'in Authoring' : 'in Reading'}
         </span>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
-        {/* The mode the page is in, and the switch between the two where Authoring is offered. */}
-        {mayAuthor ? (
-          <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
-            {MODES.map(({ mode, name }) => (
-              <label key={mode}>
-                <input
-                  type="radio"
-                  name={`mode-${document.id}`}
-                  checked={(authoring ? 'authoring' : 'reading') === mode}
-                  onChange={() => chooseMode(mode)}
-                />{' '}
-                {name}
-              </label>
-            ))}
+        {/* The page's head (the Ledger, ADR-0046): where it is, then the mode and Preview beside it
+            (the LG plan, LG6c), the zoom, the boundaries and access. */}
+        <div className={styles['head']}>
+          <nav aria-label="Breadcrumb" className={styles['trail']}>
+            <a href="#/documents">Documents</a>
+            <span>{` / ${document.space.name}`}</span>
+          </nav>
+          <div className={styles['controls']}>
+            {mayAuthor ? (
+              <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
+                {MODES.map(({ mode, name }) => (
+                  <label key={mode}>
+                    <input
+                      type="radio"
+                      name={`mode-${document.id}`}
+                      checked={(authoring ? 'authoring' : 'reading') === mode}
+                      onChange={() => chooseMode(mode)}
+                    />{' '}
+                    {name}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className={styles['mode']}>Reading</p>
+            )}
+            <PreviewButton preview={preview} />
+            <ZoomControl />
+            <label>
+              <input
+                type="checkbox"
+                checked={boundaries}
+                onChange={(event) => showBoundaries(event.target.checked)}
+              />{' '}
+              Show boundaries
+            </label>
+            {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+            <ManageAccessLink
+              client={client}
+              target={`artifact:${document.id}`}
+              href={documentAccessLink(document.id)}
+            />
           </div>
-        ) : (
-          <p className={styles['mode']}>Reading</p>
-        )}
-        {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
-        <ManageAccessLink
-          client={client}
-          target={`artifact:${document.id}`}
-          href={documentAccessLink(document.id)}
-        />
-        <ZoomControl />
-        <label>
-          <input
-            type="checkbox"
-            checked={boundaries}
-            onChange={(event) => showBoundaries(event.target.checked)}
-          />{' '}
-          Show boundaries
-        </label>
+          <PreviewSaid preview={preview} />
+        </div>
         <UnheldFaces />
         {document.scheme === null && <p>This document's numbering could not be read.</p>}
         <div
@@ -1388,6 +1429,11 @@ export function DocumentPage({
               )
             }
             tab={ids}
+            details={{
+              id: dockIds('part').panel,
+              labelledBy: dockIds('part').tab,
+              hidden: shownDock !== 'part',
+            }}
             {...(shown === 'data'
               ? {
                   instead: (
@@ -1540,7 +1586,8 @@ export function DocumentPage({
             className={styles['preview']}
             placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
           />
-          <div className={styles['side']}>
+          {/* A value's provenance stands above the panels, whichever is shown (the B1 plan, B1-M). */}
+          <div className={styles['provenance']}>
             {/* A value's provenance, beside the text it stands in (the B1 plan, B1-M; DAT-041). */}
             {provenanceState?.held && (
               <ProvenancePanel
@@ -1551,52 +1598,83 @@ export function DocumentPage({
                 onClose={closeProvenance}
               />
             )}
-            {/* What the document's template asks of the document itself, filled in and checked as it
-              is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
-            {document.fields.document.length > 0 && (
-              <HeldFields
-                label="Fields of this document"
-                fields={document.fields.document}
-                schemas={document.schemas}
-                people={people}
-                stored={document.values}
-                readOnly={!document.mayEdit || !authoring}
-                onSave={saveValues}
+          </div>
+          <div className={styles['dockTabs']}>
+            <PanelTabs
+              label="Document panels"
+              tabs={dockTabs}
+              chosen={shownDock}
+              onChoose={(key) => setDock(key as DockPanel)}
+              ids={dockIds}
+            />
+          </div>
+          <div className={styles['side']}>
+            <div
+              id={dockIds('document').panel}
+              role="tabpanel"
+              aria-labelledby={dockIds('document').tab}
+              hidden={shownDock !== 'document'}
+            >
+              {/* What the document's template asks of the document itself, filled in and checked as it
+                is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
+              {document.fields.document.length > 0 && (
+                <HeldFields
+                  label="Fields of this document"
+                  fields={document.fields.document}
+                  schemas={document.schemas}
+                  people={people}
+                  stored={document.values}
+                  readOnly={!document.mayEdit || !authoring}
+                  onSave={saveValues}
+                />
+              )}
+              {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
+              {(document.templated || holdsValues) && (
+                <ParametersPanel
+                  client={client}
+                  document={document.id}
+                  version={document.version.id}
+                  values={document.parameters}
+                  readOnly={!document.mayEdit || !authoring}
+                  onSave={saveParameters}
+                  onDeclarations={(read) =>
+                    setDeclared({ document: document.id, declarations: read })
+                  }
+                />
+              )}
+            </div>
+            <div
+              id={dockIds('lists').panel}
+              role="tabpanel"
+              aria-labelledby={dockIds('lists').tab}
+              hidden={shownDock !== 'lists'}
+            >
+              <GeneratedLists
+                document={document.id}
+                outline={document.outline}
+                scheme={document.scheme}
+                known={known}
+                names={names}
+                onRetry={() => setKnownAttempt((count) => count + 1)}
+                onArriveAgain={onArriveAgain}
               />
-            )}
-            {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-            {(document.templated || holdsValues) && (
-              <ParametersPanel
+            </div>
+            <div
+              id={dockIds('publishing').panel}
+              role="tabpanel"
+              aria-labelledby={dockIds('publishing').tab}
+              hidden={shownDock !== 'publishing'}
+            >
+              <Publishing
                 client={client}
                 document={document.id}
                 version={document.version.id}
-                values={document.parameters}
-                readOnly={!document.mayEdit || !authoring}
-                onSave={saveParameters}
-                onDeclarations={(read) =>
-                  setDeclared({ document: document.id, declarations: read })
-                }
+                mayPublish={document.mayPublish}
+                placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
+                followMs={followMs}
+                formats={document.formats}
               />
-            )}
-            <GeneratedLists
-              document={document.id}
-              outline={document.outline}
-              scheme={document.scheme}
-              known={known}
-              names={names}
-              onRetry={() => setKnownAttempt((count) => count + 1)}
-              onArriveAgain={onArriveAgain}
-            />
-            <Publishing
-              client={client}
-              document={document.id}
-              version={document.version.id}
-              mayPublish={document.mayPublish}
-              placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
-              followMs={followMs}
-              formats={document.formats}
-              preview={preview}
-            />
+            </div>
           </div>
         </div>
         {ownViewPrompt}
