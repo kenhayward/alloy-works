@@ -126,7 +126,8 @@ connection in General to host `source-postgres`, port `5432`, database `readings
 TLS `require`; setting its password tests it. `pnpm dev:setup` gives Ada a development role,
 **Connection user**, holding `use_connection` and `write_sql` on General, since no starting role holds
 either, and gives Grace **Query builder**, holding `use_connection` alone there, so she builds queries
-without writing SQL.
+without writing SQL. It also gives Ada **Full access (development)**, every permission across the
+whole environment, so every part of the product can be tried as her.
 
 Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers

@@ -2,6 +2,7 @@ import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
+  permissions,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
@@ -537,5 +538,31 @@ export async function seedDevelopmentConnectionUse(
   });
   if ('refused' in builds && builds.refused !== 'grant.duplicate') {
     throw new Error(`Query builder on General was refused: ${builds.refused}`);
+  }
+
+  // And Ada may do anything anywhere in a development environment: every permission in the closed set,
+  // across the environment, so no space, connection or act is closed to the person trying the product.
+  // A role seeded before a permission joined the set gains it here.
+  let full = await findRole(trx, 'Full access (development)');
+  if (!full) {
+    const made = await createRole(trx, 'Full access (development)', permissions);
+    if (!('role' in made)) throw new Error(`Full access was refused: ${made.refused}`);
+    full = made.role;
+  } else if (full.permissions.length !== permissions.length) {
+    await trx
+      .updateTable('role')
+      .set({ permissions: [...permissions] })
+      .where('id', '=', full.id)
+      .execute();
+  }
+  const everywhere = await grant(trx, {
+    roleId: full.id,
+    subject: { principal: ada },
+    level: { kind: 'tenant' },
+    effect: 'allow',
+    grantedBy: ada,
+  });
+  if ('refused' in everywhere && everywhere.refused !== 'grant.duplicate') {
+    throw new Error(`Full access across the environment was refused: ${everywhere.refused}`);
   }
 }
