@@ -22,6 +22,8 @@ topmost version matches `version.json`. Up to 0.132.3, every pull request had it
 
 - In development, Ada may do everything across the environment, so every part of the product can be
   tried.
+- **A redesign to build towards.** Drawings of the Ledger interface, every main screen in light and
+  dark, with its tokens and the order of work, are in `docs/interface/handoffs/ledger`.
 
 ## 0.144.1 - 2026-10-08 (PR #454)
 
