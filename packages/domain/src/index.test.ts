@@ -111,6 +111,19 @@ describe('the domain package', () => {
         'starterRoles',
         // W12.1: what a personal token may be scoped to, every permission but read (TK-B).
         'tokenScopes',
+        // The audit log (AU1-A): its kinds and their details, its context, and labels.
+        'AccessRefusedDetail',
+        'AuditContext',
+        'AuditName',
+        'AuditTarget',
+        'auditActorKinds',
+        'auditKindSpecs',
+        'auditKinds',
+        'isAuditKind',
+        'isLabelledKind',
+        'labelFor',
+        'parseAuditDetail',
+        'refusalReasons',
         // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',
         'componentTypes',

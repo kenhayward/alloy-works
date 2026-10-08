@@ -23,6 +23,9 @@ export interface HttpOptions {
   readonly onRoute?: (route: { readonly method: string; readonly url: string }) => void;
 }
 
+/** What a route's failure is told to before it is answered (`createHttp`). */
+export type FailureHook = (request: FastifyRequest, error: unknown) => Promise<void>;
+
 /** The header a request identifier travels in, both ways (API-047). */
 export const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -69,6 +72,11 @@ export function createHttp(
   options: HttpOptions,
   /** Answers an address no route claims; the API's own refusal unless the renderer is served too. */
   notFound: (request: FastifyRequest, reply: FastifyReply) => unknown = apiNotFound,
+  /**
+   * Told of every failure before it is answered: how a refused authorisation reaches the audit log
+   * (the AU1 plan, AU1-E). It must not throw; the answer is the same whatever it does.
+   */
+  failed: FailureHook = async () => {},
 ): FastifyInstance {
   const app = Fastify({
     logger: {
@@ -130,7 +138,8 @@ export function createHttp(
     }
   });
 
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
+    await failed(request, error);
     // A creation in an archived space is refused wherever it was tried (the SP1 plan, SP-C).
     const { status, body } = toErrorBody(spaceRefusal(error) ?? error, request.id);
     logFailure(request, error, status);

@@ -18694,6 +18694,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-013",
+      "file": "apps/service/src/audit-refusals.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
       "id": "DAT-015",
       "file": "apps/service/src/bindings-routes.test.ts",
       "line": 199,
@@ -19122,13 +19128,13 @@
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 658,
+      "line": 662,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 600,
+      "line": 604,
       "kind": "title"
     },
     {
@@ -20632,6 +20638,30 @@
       "kind": "title"
     },
     {
+      "id": "LIF-025",
+      "file": "packages/db/src/audit.test.ts",
+      "line": 208,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-030",
+      "file": "packages/db/src/audit.test.ts",
+      "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-031",
+      "file": "packages/db/src/audit.test.ts",
+      "line": 381,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-032",
+      "file": "packages/db/src/audit.test.ts",
+      "line": 312,
+      "kind": "title"
+    },
+    {
       "id": "MET-023",
       "file": "packages/db/src/component-values.test.ts",
       "line": 278,
@@ -21205,6 +21235,12 @@
       "id": "STY-078",
       "file": "packages/domain/src/assets/version.test.ts",
       "line": 38,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-030",
+      "file": "packages/domain/src/audit/kinds.test.ts",
+      "line": 145,
       "kind": "title"
     },
     {
@@ -21834,7 +21870,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 602,
+      "line": 615,
       "kind": "title"
     },
     {

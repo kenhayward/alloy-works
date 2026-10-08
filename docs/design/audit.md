@@ -66,6 +66,7 @@ emission is their own designs'.
 audit_event (
   sequence        bigint generated always as identity primary key,
   at              timestamptz not null default now(),
+  xact            xid8 not null default pg_current_xact_id(),  -- bounds a read by xmin (Order)
   kind            text not null,            -- the closed list, checked
   actor_kind      text not null,            -- person | token | system | vendor
   actor           uuid,                     -- the principal, for person and token
@@ -150,7 +151,13 @@ cites it in its tests.
 `sequence` is a tenant-wide identity: monotonic, so two events read in sequence order are in the order
 their sequences were taken; a rolled-back act leaves a gap, which LIF-032 permits - it asks for order,
 not density. `at` is for people; order is the sequence's. A gapless counter would serialise every
-writing act in the tenant on one row, and is ruled out. LIF-055's hash chain (T7) runs over sequence
+writing act in the tenant on one row, and is ruled out.
+
+A sequence is taken when the event is inserted and seen when its transaction commits, so a later
+sequence can be readable before an earlier one (the AU1 plan, AU1-B). Each event keeps the
+transaction that wrote it, `xact xid8` (`pg_current_xact_id()`), and a read or an export pages only
+over events whose `xact` is below its snapshot's `xmin`: everything below has committed or never will,
+so a cursor never passes a sequence that commits late. LIF-055's hash chain (T7) runs over sequence
 order and is computed at export, so it needs nothing stored now.
 
 ## Kept as written

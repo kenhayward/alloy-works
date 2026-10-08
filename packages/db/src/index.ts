@@ -160,7 +160,21 @@ export {
   type TenantEvent,
   type TenantListener,
 } from './realtime.js';
-export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+export {
+  createTenantDatabase,
+  type TenantDatabase,
+  type TenantDatabaseOptions,
+} from './tenant-database.js';
+export {
+  AuditContextMissing,
+  eraseLabels,
+  recordEvent,
+  recordEventSql,
+  setAuditContext,
+  type AuditEvent,
+  type AuditLabel,
+  type AuditSubject,
+} from './audit.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

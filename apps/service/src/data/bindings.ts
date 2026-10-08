@@ -106,7 +106,15 @@ import {
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
-import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from '../access.js';
+import {
+  authoriseAt,
+  callerOf,
+  notFound,
+  refusedBy,
+  type Authorised,
+  type Caller,
+} from '../access.js';
+import { isRefusal, recordRefusalIn } from '../audit.js';
 import { Accepted, AfterCommit, Revalidated } from '../after-commit.js';
 import { AppError, storageUnavailable } from '../errors.js';
 import { hashToken } from '../sessions.js';
@@ -370,10 +378,12 @@ type Naming = {
 /** A refusal made again with the binding it is about named beside it. */
 function named(error: unknown, naming: Naming): unknown {
   if (!(error instanceof AppError)) return error;
-  return new AppError(error.status, error.code, error.message, error.rule, {
+  const renamed = new AppError(error.status, error.code, error.message, error.rule, {
     ...error.members,
     ...naming,
   });
+  // A refusal stays one, for the audit log (AU1-E).
+  return error.refusal === undefined ? renamed : renamed.refusing(error.refusal);
 }
 
 const bindingMissing = (naming: Naming, why: string) =>
@@ -561,12 +571,16 @@ async function prepare(
     }
     const connection = await through.runnable(trx, definition.connection);
     const atConnection = await connectionFacts(trx, caller, connection.id);
-    if (!atConnection || !decide('use_connection', atConnection).allowed) {
-      throw new AppError(
+    const using = atConnection && decide('use_connection', atConnection);
+    if (!using?.allowed) {
+      const error = new AppError(
         403,
         'forbidden',
         `This needs the use connection permission on the connection the binding ${binding.id} runs on.`,
       );
+      throw atConnection && using
+        ? refusedBy(error, using, atConnection, { kind: 'artifact', id: connection.id }, false)
+        : error;
     }
     await requireSqlPermitted(trx, connection, definition.fetch);
     const { sealed } = await through.usableSealed(trx, connection.id);
@@ -1054,12 +1068,22 @@ async function mayTakeResult(
     throw bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
   }
   const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
-  if (!connection || !decide('use_connection', connection).allowed) {
-    throw new AppError(
+  const using = connection && decide('use_connection', connection);
+  if (!using?.allowed) {
+    const error = new AppError(
       403,
       'forbidden',
       `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
     );
+    throw connection && using
+      ? refusedBy(
+          error,
+          using,
+          connection,
+          { kind: 'artifact', id: provenance.connection.artifact },
+          false,
+        )
+      : error;
   }
 }
 
@@ -1781,6 +1805,9 @@ export async function checkAct(
       results.set(key(node, binding.id), { node, binding: binding.id, outcome: 'unchanged' });
     } catch (error) {
       if (!(error instanceof AppError)) throw error;
+      // Swallowed into the answer, so recorded in the check's own transaction, which commits
+      // (the AU1 plan, AU1-E).
+      if (isRefusal(error)) await recordRefusalIn(trx, error);
       results.set(
         key(node, binding.id),
         error.status === 403
