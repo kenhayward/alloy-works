@@ -85,9 +85,9 @@ that were never exposed.
 | ID          | Requirement                                                                                                                                                        | Tranche    | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
 | **API-010** | The API must be versioned, and a breaking change must require a new version rather than a note in a changelog                                                      | Constraint | Specified |
-| **API-011** | A deprecated version must be announced with a removal date, and must keep working until that date                                                                  | T3         | Specified |
+| **API-011** | A deprecated version must be announced with a removal date, and must keep working until that date                                                                  | T7         | Specified |
 | **API-012** | Adding a field must never break a caller, and callers must be told to ignore fields they do not know                                                               | T1         | Specified |
-| **API-013** | Deprecation must be visible in the response, not only in documentation                                                                                             | T3         | Specified |
+| **API-013** | Deprecation must be visible in the response, not only in documentation                                                                                             | T7         | Specified |
 | **API-052** | A new major API version must state what happens to the MCP surface: which tools move with it, which stay pinned to the older version, and when the older ones stop | T5         | Specified |
 
 **API-011 was truncated** - it ended "must keep working until it" - and now names the removal date it
@@ -342,3 +342,19 @@ drift.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 61, of which 3 superseded | 62, of which 3 superseded |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                     | Change                              |
+| ---------------------------------------------------------------------------------- | ----------------------------------- |
+| Deprecating a version of the API needs a second version; the first release has one | **API-011 and API-013 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 62, of which 3 superseded | 62, of which 3 superseded |

@@ -484,7 +484,7 @@ where the platform lets it, and on macOS says that the system chooses.
 | **CNT-096** | Preview must be fast enough to use while writing rather than as a separate step, against the budget in CNT-151, tested                                                                                                                                                                                                                                                                                                                                                                               | T1      | Withdrawn             |
 | **CNT-114** | Preview must reflect an edit within one second, and never more than two, in a 300-page document - a provisional budget, to be confirmed against real content                                                                                                                                                                                                                                                                                                                                         | T1      | Superseded by CNT-136 |
 | **CNT-136** | Preview must reflect an edit within one second, and never more than two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                                                             | T1      | Superseded by CNT-151 |
-| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                   | T3      | Specified             |
+| **CNT-151** | Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)                                                                                                                                                                                                   | T4      | Specified             |
 
 **CNT-096 is withdrawn: a preview fast enough to use while writing is what CNT-151's budget measures.**
 Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-151 to T3.
@@ -962,3 +962,19 @@ sufficient here too, held over ten samples.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 179, of which 33 superseded and 1 withdrawn | 180, of which 34 superseded and 1 withdrawn |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                                                 | Change                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| CNT-151, the warm range preview's budget, is performance, not collaboration. No tranche is named for performance; T4 is where documents next grow long, by transclusion and bulk generation, and where the editor next changes | **CNT-151 moved to T4**, with PUB-076 and PUB-080, and CNT-Q13 with it |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 180, of which 34 superseded and 1 withdrawn | 180, of which 34 superseded and 1 withdrawn |

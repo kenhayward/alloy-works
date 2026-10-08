@@ -92,7 +92,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   among them Publisher, the only one that may publish, and Query builder and Query writer, the only
   ones that may use a connection - and a space called General. An environment's first administrator is invited, by address, by whoever sets
   it up, and is Administrator from the first sign-in that proves that address; in development, Ada
-  administers both environments from hers. **Access is everywhere**: on any component, document or
+  administers both environments from hers and holds every permission across each, so every part of
+  the product can be tried. **Access is everywhere**: on any component, document or
   template they may administer, **Manage access** - on the component's and the document's page, and on
   each template's row in Templates - lists what is granted on it, on its space and across the whole
   environment; and Administration opens the same Access at each space they administer, from Spaces,

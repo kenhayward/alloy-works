@@ -40,7 +40,7 @@ string in a paragraph.**
 | **LIB-001** | Every library record must belong to a space and be permissioned by it (**IAM**)                                                                                                                                                                    | T7         | Specified |
 | **LIB-002** | Every record must carry a stable identifier, allocated once and never reused                                                                                                                                                                       | Constraint | Specified |
 | **LIB-003** | Content must reference a record by identity, never repeat its contents                                                                                                                                                                             | Constraint | Specified |
-| **LIB-004** | Records must be versioned (**VER-056**), and a baseline must pin the versions it used                                                                                                                                                              | T3         | Specified |
+| **LIB-004** | Records must be versioned (**VER-056**), and a baseline must pin the versions it used                                                                                                                                                              | T7         | Specified |
 | **LIB-005** | Where a record is used must be listable (**REU-006**)                                                                                                                                                                                              | T7         | Specified |
 | **LIB-006** | A record must not be deletable while anything references it                                                                                                                                                                                        | Constraint | Specified |
 | **LIB-007** | A reference to a record that cannot be resolved must fail the publish, naming the record and where it was used                                                                                                                                     | Constraint | Specified |
@@ -48,7 +48,7 @@ string in a paragraph.**
 | **LIB-042** | A shared library must be one record seen from several spaces, never a copy per space: an edit in one is the edit everywhere, and who may see it is each space's (LIB-001)                                                                          | Constraint | Specified |
 | **LIB-043** | Two records may carry the same label in different spaces, because a label is not an identity (LIB-002). Where a shared record and a private one collide by label, both must be offered with the space each came from named, and the author chooses | T7         | Specified |
 | **LIB-047** | A change to a record must reach an unpinned reference at the next publish, and must never reach a baseline that pinned an earlier version (LIB-004, **VER**)                                                                                       | Constraint | Specified |
-| **LIB-048** | Records that have changed since a document last published must be listable for that document, so that a change reaching a reference is visible before the publish rather than after it (LIB-005)                                                   | T3         | Specified |
+| **LIB-048** | Records that have changed since a document last published must be listable for that document, so that a change reaching a reference is visible before the publish rather than after it (LIB-005)                                                   | T7         | Specified |
 | **LIB-056** | Creating, changing, deprecating and retiring a library record must be audited with who, when and what changed (**LIF-026**, **LIF-027**)                                                                                                           | Constraint | Specified |
 | **LIB-057** | Inserting a reference to a deprecated term, or to a deprecated or retired vocabulary value, must be flagged at the moment of insertion as well as where it is already used (LIB-018, LIB-023, LIB-055)                                             | T6         | Specified |
 
@@ -345,6 +345,22 @@ identifier, and only its tranche changes.
 | What was found                                                                                                                                                                                              | Change                                                         |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Records and vocabularies (LIB-001, LIB-005, LIB-020, LIB-030, LIB-043, LIB-053, LIB-054, LIB-055) are the library, not the data: a query's declared variations (DAT-019) are its own list, not a vocabulary | **All eight moved to T7**, with LIB-021, superseded by MET-003 |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 58, of which 1 superseded | 58, of which 1 superseded |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                  | Change                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| A record versioned and pinned, and the records changed since a document last published, need records, which arrive in T7; LIB-048 already rested on LIB-005, T7 | **LIB-004 and LIB-048 moved to T7** |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |

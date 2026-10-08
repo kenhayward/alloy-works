@@ -1,5 +1,5 @@
 // packages/db/src/dev-content.test.ts
-import { decide, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
+import { decide, permissions, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
@@ -452,6 +452,43 @@ describe('the development content', () => {
         const facts = await loadFacts(trx, principal.id, { kind: 'space', id: general.id });
         expect(decide('use_connection', facts!).allowed, subject).toBe(uses);
         expect(decide('write_sql', facts!).allowed, subject).toBe(writes);
+      }
+    });
+  });
+
+  it('gives Ada every permission across the whole environment, through a development role of its own, and nobody else, however often it runs', async () => {
+    await service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    // A role made before a permission joined the closed set gains it when seeded again.
+    await service.withTenant(tenant, (trx) =>
+      createRole(trx, 'Full access (development)', ['read', 'administer']),
+    );
+    for (let run = 0; run < 2; run += 1) {
+      await service.withTenant(tenant, (trx) =>
+        seedDevelopmentConnectionUse(trx, { issuer: ISSUER }),
+      );
+    }
+    await service.withTenant(tenant, async (trx) => {
+      const role = await findRole(trx, 'Full access (development)');
+      expect(role?.permissions).toEqual([...permissions]);
+      const grants = await trx
+        .selectFrom('access_grant')
+        .select(['principal_id', 'level', 'effect'])
+        .where('role_id', '=', role!.id)
+        .execute();
+      const ada = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'ada')
+        .executeTakeFirstOrThrow();
+      expect(grants).toEqual([{ principal_id: ada.id, level: 'tenant', effect: 'allow' }]);
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const facts = await loadFacts(trx, ada.id, { kind: 'space', id: general.id });
+      for (const permission of permissions) {
+        expect(decide(permission, facts!).allowed, permission).toBe(true);
       }
     });
   });
