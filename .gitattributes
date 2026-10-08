@@ -34,3 +34,6 @@
 *.gif binary
 
 pnpm-lock.yaml -diff linguist-generated
+
+# Windows batch files run only with CRLF line endings: cmd.exe misreads labels and blocks in LF files.
+*.cmd text eol=crlf
