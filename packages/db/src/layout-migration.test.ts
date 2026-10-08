@@ -38,7 +38,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import { requestBefore0029 } from './testing/request-before-0029.js';
 import { versionDigests } from './version-digest.js';
@@ -71,7 +71,7 @@ describe('migration 0018, which gives every environment its default layout', () 
         return numbered === null || Number(numbered[1]) < 18;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -697,7 +697,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
         return numbered === null || Number(numbered[1]) < 21;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -820,7 +820,7 @@ describe('migration 0023, which gives the default layout words for a relative re
         return numbered === null || Number(numbered[1]) < 23;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1023,7 +1023,7 @@ describe("migration 0025, which gives the default layout the words a continued t
         return numbered === null || Number(numbered[1]) < 25;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1206,7 +1206,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
         return numbered === null || Number(numbered[1]) < 27;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1414,7 +1414,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
         return numbered === null || Number(numbered[1]) < 35;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

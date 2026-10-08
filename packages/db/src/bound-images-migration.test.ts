@@ -17,7 +17,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 
 const settings: ConnectionSettings = {
@@ -73,7 +73,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
     version = await service.withTenant(upgraded, async (trx) => {
       const ada = (
         await trx

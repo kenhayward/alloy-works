@@ -20,11 +20,13 @@ import type { TenantTransaction } from './tables.js';
 export const AUDIT_SETTING = 'alloy.audit';
 
 /**
- * Whether the schema keeps an audit log: every tenant's does from 0060 on. Read by an emitter that runs
- * a lookup anyway, so a migration's own test, standing an environment before 0060 and writing to it
- * with today's code, records nothing rather than failing on a table that is not there yet.
+ * Whether an emitter that runs a lookup anyway records its event: where the schema keeps an audit log,
+ * as every tenant's does from 0060 on, or where the transaction names who acts, which then fails
+ * loudly on a log that is not there. Only a transaction naming nobody, on a schema before 0060 - a
+ * migration's own test writing to an environment it stood as it was - records nothing.
  */
-export const AUDIT_LOG_KEPT = sql<boolean>`to_regclass('audit_event') is not null`;
+export const AUDIT_LOG_KEPT = sql<boolean>`(to_regclass('audit_event') is not null
+  or nullif(current_setting(${AUDIT_SETTING}, true), '') is not null)`;
 
 /** What an event is about: a kind of thing, its id where it has one, and the version acted on. */
 export interface AuditSubject {

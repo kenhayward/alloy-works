@@ -17,7 +17,7 @@ import {
   freshDatabase,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import { recordVersion } from './versions.js';
 
@@ -42,7 +42,7 @@ describe("migration 0056, which gives the default layout the word a table's note
         return numbered === null || Number(numbered[1]) < 56;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

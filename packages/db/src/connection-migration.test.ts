@@ -15,7 +15,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 
 /** The constraints 0044 rewrites. */
@@ -98,7 +98,7 @@ describe('migration 0044, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
     // A role, a scoped token and one artifact of every kind search finds, made before 0044.
     await service.withTenant(upgraded, async (trx) => {
       const ada = (

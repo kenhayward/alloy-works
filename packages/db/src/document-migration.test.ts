@@ -13,7 +13,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 
 describe('migration 0016, which makes a document an artifact', () => {
@@ -53,7 +53,7 @@ describe('migration 0016, which makes a document an artifact', () => {
 
     // An environment already carrying a component, authored as every component is: the widened author
     // check is validated against it when 0016 adds it back.
-    const service = testTenantDatabase(db.serviceUrl);
+    const service = beforeTheLogDatabase(db.serviceUrl);
     const component = await service
       .withTenant(tenant, async (trx) => {
         const ada = await trx

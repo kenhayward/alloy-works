@@ -17,7 +17,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
-  testTenantDatabase,
+  beforeTheLogDatabase,
 } from './testing/database.js';
 import { requestBefore0029 } from './testing/request-before-0029.js';
 
@@ -41,7 +41,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
         return numbered === null || Number(numbered[1]) < 27;
       },
     });
-    service = testTenantDatabase(db.serviceUrl);
+    service = beforeTheLogDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

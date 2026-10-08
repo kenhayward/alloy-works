@@ -22,6 +22,7 @@ import {
   auditEvents,
   freshDatabase,
   newestEvent,
+  queryAs,
   TEST_PASSWORDS,
   type ReadEvent,
   type TestDatabase,
@@ -215,6 +216,45 @@ describe('content and data on the audit log', () => {
     const [cut] = ofKind(events, 'content.version_cut');
     expect(cut).toMatchObject({ actor: ada, detail: { kind: 'component', parent: null } });
     expect(cut!.detail.author).toBe(grace);
+  });
+
+  it('skips a version cut only on a schema with no log in a transaction naming nobody, and fails one naming somebody', async () => {
+    // An environment as a migration's own test stands one before 0060: no log.
+    const id = db.newTenantId();
+    const before = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Before the log' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await queryAs(
+      db.adminUrl,
+      `drop table ${before.schema}.audit_label, ${before.schema}.audit_event cascade`,
+    );
+    const make = (trx: TenantTransaction) =>
+      trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow()
+        .then(async (space) => {
+          const author = await trx
+            .insertInto('principal')
+            .values({ issuer: ISSUER, subject: randomUUID(), email: null, display_name: 'Ada' })
+            .returning('id')
+            .executeTakeFirstOrThrow();
+          const made = await createComponent(trx, {
+            spaceId: space.id,
+            title: 'Before',
+            language: 'en-GB',
+            direction: 'ltr',
+            author: author.id,
+          });
+          if (made.answer !== 'created') throw new Error(made.answer);
+        });
+    await expect(service.withTenant(before, make)).resolves.toBeUndefined();
+    await expect(service.withTenant(before, make, { actorKind: 'system' })).rejects.toThrow(
+      /audit_event/,
+    );
   });
 
   it('records nothing for an iteration', async () => {
