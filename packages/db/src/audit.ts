@@ -256,3 +256,27 @@ export async function artifactPlace(
     ),
   };
 }
+
+/**
+ * Counts a sign-in failure naming nobody (the AU1 review, H1): at most one event a minute per route and
+ * failure, so an unauthenticated caller cannot write events without limit. Answers how many failures
+ * the event to record now stands for, the held-back ones with this one, or undefined within the minute.
+ */
+export async function tallySignInFailure(
+  trx: TenantTransaction,
+  route: string,
+  failure: string,
+): Promise<number | undefined> {
+  const { rows } = await sql<{ pending: number; due: boolean }>`
+    insert into sign_in_failure_tally as t (route, failure, pending) values (${route}, ${failure}, 1)
+    on conflict (route, failure) do update set pending = t.pending + 1
+    returning t.pending, (t.recorded_at is null or t.recorded_at <= now() - interval '1 minute') as due
+  `.execute(trx);
+  const counted = rows[0]!;
+  if (!counted.due) return undefined;
+  await sql`
+    update sign_in_failure_tally set pending = 0, recorded_at = now()
+    where route = ${route} and failure = ${failure}
+  `.execute(trx);
+  return counted.pending;
+}

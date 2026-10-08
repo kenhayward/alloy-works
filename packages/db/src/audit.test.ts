@@ -183,6 +183,16 @@ describe('the audit log as stored', () => {
     expect(listed.sort()).toEqual([...auditKinds].sort());
   });
 
+  it("pins erasure's search path to the tenant's schema, pg_temp last", async () => {
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where p.proname = 'erase_labels' and n.nspname = $1`,
+      [production.schema],
+    );
+    expect(rows[0]!.proconfig).toEqual([`search_path=${production.schema}, pg_temp`]);
+  });
+
   it('LIF-030 refuses a detail holding a value where a name belongs', async () => {
     const before = await newest();
     await expect(

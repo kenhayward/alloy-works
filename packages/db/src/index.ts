@@ -176,6 +176,7 @@ export {
   recordEvent,
   recordEventSql,
   setAuditContext,
+  tallySignInFailure,
   type AuditEvent,
   type AuditLabel,
   type ArtifactPlace,

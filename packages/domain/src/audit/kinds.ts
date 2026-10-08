@@ -127,7 +127,12 @@ export const auditKindSpecs = {
   ),
   'authentication.sign_in_failed': kind(
     ['IAM-013'],
-    z.strictObject({ route: SignInRoute, failure: z.enum(signInFailures) }),
+    z.strictObject({
+      route: SignInRoute,
+      failure: z.enum(signInFailures),
+      /** For a failure naming nobody: how many since the route's last, at most one a minute. */
+      count: z.int().positive().optional(),
+    }),
     'apps/service/src/audit.ts',
   ),
   'authentication.signed_out': kind(

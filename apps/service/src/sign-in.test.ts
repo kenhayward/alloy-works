@@ -275,7 +275,15 @@ describe('signing in with the organisation provider', () => {
     return tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
   }
 
+  /** Forgets the failures naming nobody that earlier tests counted, so the next is recorded. */
+  async function freshTally(host: string) {
+    const tenant = (await tenantDb.resolveHostname(host))!;
+    await queryAs(db.adminUrl, `delete from ${tenant.schema}.sign_in_failure_tally`);
+  }
+
   it('IAM-013 records a sign-in and its sign-out as the person, and a failed sign-in naming nobody', async () => {
+    await freshTally('acme.alloy.test');
+    await freshTally('other.acme.alloy.test');
     let cookie = '';
     const signedIn = await recorded('acme.alloy.test', async () => {
       const finished = await signInAt('acme.alloy.test');
@@ -319,7 +327,7 @@ describe('signing in with the organisation provider', () => {
     ]);
     expect(errored[0]).toMatchObject({
       outcome: 'refused',
-      detail: { route: 'organisation', failure: 'provider_error' },
+      detail: { route: 'organisation', failure: 'provider_error', count: 1 },
     });
     expect(JSON.stringify(errored)).not.toContain('access_denied');
 
@@ -331,10 +339,40 @@ describe('signing in with the organisation provider', () => {
       [
         'authentication.sign_in_failed',
         'anonymous',
-        { route: 'organisation', failure: 'provider_refused' },
+        { route: 'organisation', failure: 'provider_refused', count: 1 },
       ],
     ]);
     expect(JSON.stringify(refused)).not.toContain(OTHER_SECRET);
+  });
+
+  it('IAM-013 records a failure naming nobody at most once a minute per route and kind, counting the rest', async () => {
+    const tenant = (await tenantDb.resolveHostname('acme.alloy.test'))!;
+    const tally = `${tenant.schema}.sign_in_failure_tally`;
+    await freshTally('acme.alloy.test');
+    const fail = async () => {
+      const started = await start();
+      const signIn = started.cookies.find((candidate) => candidate.name === '__Host-aw_signin')!;
+      await app.inject({
+        url: `/v1/sign-in/organisation/callback?error=x&state=${signIn.value}`,
+        headers: { host: 'acme.alloy.test', cookie: `${signIn.name}=${signIn.value}` },
+      });
+    };
+    // A loop of failures within the minute writes one event.
+    const looped = await recorded('acme.alloy.test', async () => {
+      for (let each = 0; each < 5; each += 1) await fail();
+    });
+    expect(looped.map((event) => [event.kind, event.detail])).toEqual([
+      [
+        'authentication.sign_in_failed',
+        { route: 'organisation', failure: 'provider_error', count: 1 },
+      ],
+    ]);
+    // A minute on, the next is recorded with the four it held back.
+    await queryAs(db.adminUrl, `update ${tally} set recorded_at = now() - interval '2 minutes'`);
+    const later = await recorded('acme.alloy.test', fail);
+    expect(later.map((event) => event.detail)).toEqual([
+      { route: 'organisation', failure: 'provider_error', count: 5 },
+    ]);
   });
 
   it('never writes a client secret to its log or to a refusal', async () => {
