@@ -911,6 +911,7 @@ describe('scanning the repository for test files', () => {
     // 44, from 43 (2026-10-07): structure/DocumentPage.bound-tables.test.tsx, which cites nothing.
     // 45, from 44 (2026-10-07): editor/ComponentEditor.bound-tables.test.tsx, which cites six TAB.
     // 47, from 45 (2026-10-07): structure/NewDocument.parameters.test.tsx and ParametersPanel.test.tsx.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(47);
+    // 49, from 47 (2026-10-08): shell/Rail.test.tsx and shell/CommandPalette.test.tsx, citing nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(49);
   });
 });
