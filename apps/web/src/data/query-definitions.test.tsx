@@ -863,6 +863,24 @@ describe('the query definition page', () => {
     ).toEqual(['id', 'name']);
   });
 
+  it('heads a definition with a trail back to the definitions and its facts as chips, and sets what uses it beside its steps', async () => {
+    const { client } = service({
+      uses: {
+        components: { readable: [{ id: COMPONENT, title: 'Harbour readings' }], others: 0 },
+        documents: { readable: [], others: 0 },
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(trail).getByRole('link', { name: 'Query definitions' })).toHaveAttribute(
+      'href',
+      '#/query-definitions',
+    );
+    const beside = screen.getByRole('complementary', { name: 'Beside the definition' });
+    expect(await within(beside).findByRole('region', { name: 'Used by' })).toBeInTheDocument();
+    expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
+  });
+
   it('DAT-016 shows where a definition is used before a version is saved', async () => {
     const { client } = service({
       uses: {

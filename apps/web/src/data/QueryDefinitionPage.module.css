@@ -1,22 +1,80 @@
+/* A query definition (docs/interface/handoffs/ledger/query-definition-*): the head, its steps as
+ * cards, and what uses it beside them. */
 .page {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: var(--space-16);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dock-panel);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.head {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-8);
+}
+
+.head h1 {
+  margin: 0;
+}
+
+.trail {
+  color: var(--muted);
+  font-size: var(--size-13);
 }
 
 .meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-16);
-  color: var(--muted);
+  gap: var(--space-8);
+  margin: 0;
 }
 
-.retired {
-  font-weight: 600;
+.mono {
+  font-family: var(--mono);
+}
+
+.main {
+  display: grid;
+  grid-row: 2;
+  grid-column: 1;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+.side {
+  grid-row: 2;
+  grid-column: 2;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-16));
+  min-width: 0;
 }
 
 .step {
-  margin-block: var(--space-24);
+  padding: var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+}
+
+.step > h2 {
+  margin: 0 0 var(--space-12);
+  font-size: var(--size-16);
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .main,
+  .side {
+    grid-row: auto;
+    grid-column: 1;
+  }
+
+  .side {
+    position: static;
+  }
 }
 
 .form {
