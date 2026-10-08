@@ -138,7 +138,7 @@ describe('content and data on the audit log', () => {
     expect(ofKind(events, 'content.version_cut')).toEqual([]);
   });
 
-  it('LIF-026 records a version cut with its kind, version, parent and the title it had', async () => {
+  it('LIF-026 LIF-063 records a version cut with who, what, when, its version and parent, and the title it had', async () => {
     const { answer, events } = await recorded(async (trx) => {
       const made = await createComponent(trx, {
         spaceId: general,

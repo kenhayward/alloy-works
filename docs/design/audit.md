@@ -13,7 +13,11 @@ schema ([service-foundations.md](service-foundations.md), ADR-0008), the version
 bindings.md, assets.md, component-editor.md, metadata.md, themes.md, relationships.md and
 document-view.md - each emit the event types named [below](#event-types) as their acts are built.
 
-> **Not built.** Built in two slices, [below](#build-order).
+> **AU1 is built** (0.145.0): every act that exists writes its event, refusals and failed sign-ins
+> in their own transactions; [the AU1 plan](../plans/2026-10-08-au1-the-log-written.md) has what
+> changed while building. **Reading and export (AU2) are not**: nothing reads the log but the
+> database. `apps/service/src/audit-census.test.ts` lists every route, GETs included, and every
+> writer that is not a route, with the kinds each writes or why it writes none.
 
 ## The shape in one paragraph
 
@@ -68,7 +72,7 @@ audit_event (
   at              timestamptz not null default now(),
   xact            xid8 not null default pg_current_xact_id(),  -- bounds a read by xmin (Order)
   kind            text not null,            -- the closed list, checked
-  actor_kind      text not null,            -- person | token | system | vendor
+  actor_kind      text not null,            -- person | token | system | vendor | anonymous
   actor           uuid,                     -- the principal, for person and token
   token           uuid,                     -- the token, for token
   subject_kind    text,                     -- an artifact kind, or space, grant, role, group, token, session, ...
@@ -83,6 +87,7 @@ audit_label (
   sequence        bigint references audit_event,
   role            text,                     -- actor | subject | space | target ...
   text            text not null,            -- a name or title as it was
+  refers_to       uuid,                     -- whom or what it names, indexed, so erasure finds them
   erased_at       timestamptz,              -- set by an erasure act, text then a fixed word
   primary key (sequence, role)
 )
@@ -113,10 +118,13 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `tenant.administrator_named`, `.administrator_claimed`                  | provisioning, the first sign-in                                    | IAM-060          |
 | `token.issued`, `.used`, `.revoked`                                     | API tokens; `used` at most once a minute per token                 | IAM-037          |
 | `space.made`, `.renamed`, `.archived`, `.restored`                      | SP1's acts                                                         | ADM-002, ADM-049 |
+| `group.made`, `.deleted`; `settings.changed`                            | groups; the editing and data settings                              | ADM-002          |
+| `tenant.invited`, `sign_in_route.configured`, `.closed`                 | the vendor's acts on an environment                                | IAM-060, IAM-043 |
 | `content.version_cut`                                                   | every version of every artifact kind; never an iteration (VER-005) | LIF-026          |
 | `connection.made`, `.changed`, `.credential_set`, `.tested`, `.retired` | connections                                                        | DAT-007          |
 | `binding.resolved`, `.checked`, `.accepted`, `.confirmed`               | bindings                                                           | LIF-026          |
 | `dataset.named`                                                         | a dataset's name                                                   | LIF-026          |
+| `asset.ingested`, `.refused`                                            | an image admitted by the worker; an upload refused, its file gone  | LIF-064, AST-037 |
 | `publication.requested`, `.produced`, `.failed`                         | publishing                                                         | LIF-026          |
 | `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                       | LIF-026          |
 | `audit.label_erased`                                                    | erasure of a person's labels                                       | VER-038          |
@@ -126,7 +134,7 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 `hold.applied`, `hold.removed`, `artifact.archived`, `artifact.deleted`, `revision.designated`,
 `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`
-(TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.*`, `generation.*`,
+(TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`,
 `publication.shared_accessed`, `support.*`, `channel.changed`, `tool.used`. A design emitting one
 cites it in its tests.
 
@@ -144,6 +152,11 @@ cites it in its tests.
   logs where an investigation needs them.
 - **Acts that delete their own history** write their event first: revoking a grant or a token, signing
   out, restoring a space (which clears `archived_by`), and a sweep ending sessions (`system` actor).
+- **Who acts** is the transaction's audit context, written once per transaction (the AU1 plan,
+  AU1-D): the request's person or token, a job's `system` naming who asked (`requestedBy`), the
+  vendor's functions. An event in a transaction with none is refused.
+- **Every version of every kind** is `content.version_cut`, written where a version is inserted, naming
+  its author where that is not who acts; a migration's seeded versions and an iteration write none.
 - **No NOTIFY per event**: the log is not on the realtime stream in T3.
 
 ## Order
