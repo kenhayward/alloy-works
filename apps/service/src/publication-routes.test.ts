@@ -580,12 +580,16 @@ describe('publishing a document through the service', () => {
     const seen: { holdsAccessEpoch: boolean; requestsWritten: number }[] = [];
     const watched: TenantDatabase = {
       ...tenantDb,
-      withTenant: (owner, work) =>
-        tenantDb.withTenant(owner, async (trx) => {
-          const result = await work(trx);
-          seen.push(await insideTransaction(trx));
-          return result;
-        }),
+      withTenant: (owner, work, context) =>
+        tenantDb.withTenant(
+          owner,
+          async (trx) => {
+            const result = await work(trx);
+            seen.push(await insideTransaction(trx));
+            return result;
+          },
+          context,
+        ),
     };
     const counted = appOver(watched);
     try {

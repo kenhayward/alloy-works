@@ -71,7 +71,13 @@ export const tokenNotAllowed = () =>
     403,
     'token_not_allowed',
     'This takes a signed-in session: an API token cannot do it.',
-  );
+  ).refusing({
+    permission: null,
+    target: null,
+    reason: 'token_not_allowed',
+    level: null,
+    hidden: false,
+  });
 
 function tokenView(stored: StoredApiToken): TokenView {
   return {

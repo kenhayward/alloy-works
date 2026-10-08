@@ -79,13 +79,7 @@ import { actingOn, runIdentity } from './acting.js';
 import { checkAct, documentsOnConnection, resolveAct, type RunsThrough } from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
-import {
-  fetchForbidden,
-  mayRunFetch,
-  maySqlWith,
-  requireSqlPermitted,
-  sqlForbidden,
-} from './sql-access.js';
+import { fetchRefused, mayRunFetch, maySqlWith, requireSqlPermitted } from './sql-access.js';
 
 /** Where the connector answers, the key the service presents, and, in a test, a fetch of its own. */
 export interface ConnectorOptions {
@@ -725,7 +719,7 @@ export function connectionHandlers(
       // A statement is SQL against the connection: write_sql there as well as use_connection (D2-G).
       // A built query, an HTTP request and a file need use_connection alone, the route's own (D4-J,
       // D6-A).
-      if (sql !== undefined && !maySqlWith(facts)) throw sqlForbidden();
+      if (sql !== undefined && !maySqlWith(facts)) throw fetchRefused(facts, { kind: 'sql' }, id);
       const connection = await runnable(trx, id);
       // What is described suits the connection's type; neither HTTP nor S3 lists tables (D6-A).
       const asked =
@@ -863,7 +857,7 @@ export function connectionHandlers(
       // connection (DAT-101); a built query needs no more (D4-J). The contract has held the draft's
       // fetch to its shape, so its kind is known before the draft is checked whole.
       const asFetched = (body.definition as DraftDefinition).fetch;
-      if (!mayRunFetch(facts, asFetched)) throw fetchForbidden(asFetched);
+      if (!mayRunFetch(facts, asFetched)) throw fetchRefused(facts, asFetched, id);
       const seesSource = decide('write_sql', facts).allowed;
       const connection = await runnable(trx, id);
       let draft: DraftDefinition;

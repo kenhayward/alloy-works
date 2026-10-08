@@ -47,6 +47,7 @@ import {
   type Authorised,
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
+import { contextOf, recordRefusal } from './audit.js';
 import { componentHandlers } from './components.js';
 import { bindingHandlers, pendingHandlers } from './data/bindings.js';
 import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
@@ -254,7 +255,9 @@ const routeClosed = () =>
  */
 export function buildApp(options: AppOptions): FastifyInstance {
   const { db, oidc, secrets } = options;
-  const app = createHttp(options, options.rendererRoot ? rendererFallback : undefined);
+  // Both error handlers - the app's and the raw-body routes' - record a refused authorisation first.
+  const failed = (request: FastifyRequest, error: unknown) => recordRefusal(db, request, error);
+  const app = createHttp(options, options.rendererRoot ? rendererFallback : undefined, failed);
   void app.register(cookie);
   if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
@@ -801,18 +804,25 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // A mutating request may carry an idempotency key, honoured in the one transaction its
       // decision and its work share (service-foundations.md, "Idempotency"; API-008).
       const keyed = mutating ? keyedRequest(request, operation) : undefined;
-      const { body, replayed } = await db.withTenant(tenantOf(request), async (trx) => {
-        await beforeDeciding(trx, access);
-        const principal = principalOf(request).principalId;
-        const authorised = await authorise(trx, principal, access, request);
-        const done = await once(trx, principal, keyed, () => run(request, authorised));
-        // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
-        // commits would go unrecorded: such a route declares `idempotencyKey: false`.
-        if (done.body instanceof AfterCommit && keyed !== undefined) {
-          throw new Error(`${operation} works after its commit and cannot take an idempotency key`);
-        }
-        return done;
-      });
+      // Every event the act records names who it acts for (the AU1 plan, AU1-D).
+      const { body, replayed } = await db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          await beforeDeciding(trx, access);
+          const principal = principalOf(request).principalId;
+          const authorised = await authorise(trx, principal, access, request);
+          const done = await once(trx, principal, keyed, () => run(request, authorised));
+          // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
+          // commits would go unrecorded: such a route declares `idempotencyKey: false`.
+          if (done.body instanceof AfterCommit && keyed !== undefined) {
+            throw new Error(
+              `${operation} works after its commit and cannot take an idempotency key`,
+            );
+          }
+          return done;
+        },
+        contextOf(request),
+      );
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
       // The deciding transaction has committed, and its lock on access with it: the rest of the work -
       // a connector's, say - holds back no grant or revocation (the D1 fix, C4).
@@ -894,14 +904,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
                   findApiToken(trx, hashToken(secret)),
                 );
           if (!holder) throw unauthenticated();
-          // Found first, so a revoked or foreign token is unauthenticated wherever it is sent.
-          if (sessionAlone) throw tokenNotAllowed();
           request.principal = {
             principalId: holder.principalId,
             email: holder.email,
             displayName: holder.displayName,
           };
           request.credential = { kind: 'token', id: holder.tokenId, scopes: holder.scopes };
+          // Found first, so a revoked or foreign token is unauthenticated wherever it is sent; and
+          // named before it is refused here, so the refusal is recorded as its principal's (AU1-E).
+          if (sessionAlone) throw tokenNotAllowed();
           return;
         }
         const token = request.cookies[SESSION_COOKIE];
@@ -928,7 +939,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ? {
             bodyLimit: route.rawBody.maxBytes,
             // A body over the limit is refused before it is read whole, in the route's own words.
-            errorHandler: (error: unknown, request: FastifyRequest, reply: FastifyReply) => {
+            errorHandler: async (error: unknown, request: FastifyRequest, reply: FastifyReply) => {
+              await failed(request, error);
               const tooLarge = (error as { code?: string }).code === 'FST_ERR_CTP_BODY_TOO_LARGE';
               const { status, body } = toErrorBody(
                 tooLarge
