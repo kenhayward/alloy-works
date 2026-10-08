@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                  | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                            | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
+| [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |
 | [0045](0045-t3-is-the-collaboration.md)                                           | T3 is the collaboration                                                       | Accepted           |
 | [0044](0044-the-delegated-tokens-requirement-moves-past-the-first-release.md)     | The delegated token's requirement moves past the first release                | Accepted           |
 | [0043](0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)           | A template's bindings, query set and variables move to T4                     | Accepted           |
