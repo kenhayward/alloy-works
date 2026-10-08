@@ -283,7 +283,7 @@ export function Connections({ client }: { readonly client: Client }) {
           )}
         </div>
         {creating && administered !== null && (
-          <Modal labelledBy="new-connection-heading" onClose={() => setCreating(false)}>
+          <Modal labelledBy="new-connection-heading" wide onClose={() => setCreating(false)}>
             <NewConnection
               client={client}
               spaces={administered}
