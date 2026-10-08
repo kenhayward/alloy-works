@@ -73,7 +73,7 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **TAB-038** | A unit labels; no format converts a quantity                                                                                                                              |
 | **TAB-045** | Separators and date order come from the value catalogue's formats for the document's language (BI-F)                                                                      |
 | **TAB-046** | A number column aligns on its decimal separator by layout, not by added characters; alignment by type is the table style's                                                |
-| **TAB-052** | A column declares `wrap: false` where it must not wrap: its cells are set on one line in the PDF and carry `w:noWrap` in Word |
+| **TAB-052** | A column declares `wrap: false` where it must not wrap: its cells are set on one line in the PDF and carry `w:noWrap` in Word                                             |
 | **TAB-024** | A note anchors to a cell by the definition's key and a column ([Notes](#notes))                                                                                           |
 | **TAB-025** | A note anchors to a column; the table's `note` is the note on the whole table                                                                                             |
 | **TAB-026** | Notes in any table, bound or authored, are lettered in the table's own sequence and printed beneath it                                                                    |

@@ -83,7 +83,8 @@ describe('the committed trace.json', () => {
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
     // 1538, from 1534 (2026-10-07): ADR-0043 - TPL-066 to TPL-069 supersede TPL-019 and TPL-041, split by tranche.
-    expect(model.requirements).toHaveLength(1538);
+    // 1543, from 1538 (2026-10-08): the T2 audit - STY-083, TAB-052 and TAB-053, DAT-117 and DAT-118 supersede STY-014, TAB-035 and DAT-076.
+    expect(model.requirements).toHaveLength(1543);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -239,7 +240,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(635); // 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(638); // 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -819,8 +820,11 @@ describe('the citations in the committed model', () => {
   // 791 (2026-10-07): TP2.1's document parameters feeding bindings - DAT-030 and TPL-066 through the
   // service.
   // 793 (2026-10-07): TP2.2's page and whole system - DAT-030 in the Value dialog, TPL-066 over HTTP.
+  // 805 (2026-10-08): the T2 audit - DAT-024 in the service, the Data tab and the provenance panel,
+  // DAT-117 in the service and the domain, DAT-025 and DAT-066 in the service, STY-077 and STY-083 in
+  // the domain, TAB-052 in the worker, DAT-045 in the connector and TPL-016 in the db.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(793);
+    expect(model.citations).toHaveLength(805);
   });
 
   it('cites no identifier the corpus does not hold', () => {

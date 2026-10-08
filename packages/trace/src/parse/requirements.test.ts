@@ -182,7 +182,8 @@ describe('the real corpus', () => {
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
     // 1538 (2026-10-07): ADR-0043's four TPL rows.
-    expect(total((document) => document.requirements)).toBe(1538);
+    // 1543 (2026-10-08): the T2 audit's five - STY-083, TAB-052, TAB-053, DAT-117 and DAT-118.
+    expect(total((document) => document.requirements)).toBe(1543);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });
