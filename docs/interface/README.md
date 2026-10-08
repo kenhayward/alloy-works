@@ -13,6 +13,13 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **Being redesigned as Ledger.** [`handoffs/ledger/`](handoffs/ledger/README.md) is the target
+> look for every screen ([ADR-0046](../decisions/0046-the-ledger-interface.md), built by
+> [the LG plan](../plans/2026-10-08-lg-the-ledger-interface.md)): a module rail, a header that
+> follows the theme, Light, Dark and Auto. Where it and `screens/` disagree on the look, Ledger
+> wins; their wording and the accessibility rules below still hold. The shell and layouts below
+> describe what is built until each LG PR changes them.
+
 ## Why this is not in `docs/design/`
 
 Because a design document there **claims requirements**, and this one cannot yet.
@@ -62,21 +69,17 @@ sans-serif that machine's system supplies; where the two differ, the HTML is the
 canvas, which has no variables. Nothing in them should be pasted into the renderer as-is: build
 from `tokens.css` and take the geometry from the drawing.
 
-## Light only, for now
+## Themes
 
-[`apps/web/src/theme/tokens.css`](../../apps/web/src/theme/tokens.css) is the whole palette as custom properties, light theme.
+[`apps/web/src/theme/tokens.css`](../../apps/web/src/theme/tokens.css) is the whole palette as
+custom properties. Light is built; Dark and Auto come in LG2, from the values in
+[the Ledger tokens](handoffs/ledger/README.md#tokens), applied as `data-theme` on `<html>`.
 
-The design system these screens come from carries a dark value for every colour token, and the
-intention is Light, Dark and Auto, chosen by the person and applied as `data-theme` on `<html>`.
-That is a later pass. It costs almost nothing **provided nothing outside `tokens.css` ever writes a
-colour**: the day dark mode is built, that file gains a `[data-theme="dark"]` block and a
-`prefers-color-scheme` mapping, and no component changes. A single hard-coded hex in a component is
-the thing that makes it expensive, so treat one as a bug.
+That costs almost nothing **provided nothing outside `tokens.css` ever writes a colour**: Dark is a
+`[data-theme="dark"]` block and Auto a `prefers-color-scheme` mapping, and no component changes. A
+single hard-coded hex in a component is the thing that makes it expensive, so treat one as a bug.
 
-Two consequences worth stating now, because they look like mistakes later:
-
-- **The header band is dark in both themes.** It is not the dark theme leaking; it is the product's
-  one constant. `--header-bg`, `--header-text`, `--header-btn-border` exist for it alone.
+- **The header follows the theme**, as everything else does (ADR-0046). `--header-*` goes in LG2.
 - **The document palette is separate.** `--doc-*` describes a rendered publication - the page, the
   navy Word headings, the grey desk behind it - and must never be used for interface chrome, nor
   the interface palette for a publication. They are two vocabularies sharing a window.
