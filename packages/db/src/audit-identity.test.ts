@@ -595,6 +595,41 @@ describe('identity, access and administration on the audit log', () => {
       // Nothing of the client secret reaches the log.
       expect(JSON.stringify(all)).not.toContain('an-invented-secret');
     });
+
+    it("records the vendor's act on a route only where it changes something", async () => {
+      const provider = { issuer: ISSUER, clientId: 'alloy', clientSecret: 'an-invented-secret' };
+      await configureOrganisationSignIn(db.adminUrl, fresh, provider, KEY);
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      let before = await newest();
+      // The same again, and closing what is closed, change nothing.
+      await configureOrganisationSignIn(db.adminUrl, fresh, provider, KEY);
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      await closeSignInRoute(db.adminUrl, fresh, 'google');
+      await closeSignInRoute(db.adminUrl, fresh, 'google');
+      expect((await eventsOf(before)).map((event) => event.kind)).toEqual(['sign_in_route.closed']);
+      before = await newest();
+      // Another client, another secret, a domain added: each a change.
+      await configureOrganisationSignIn(
+        db.adminUrl,
+        fresh,
+        { ...provider, clientId: 'other' },
+        KEY,
+      );
+      await configureOrganisationSignIn(
+        db.adminUrl,
+        fresh,
+        { ...provider, clientId: 'other', clientSecret: 'another-invented-one' },
+        KEY,
+      );
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      await permitGoogleSignIn(db.adminUrl, fresh, { domains: ['example.com'] });
+      expect((await eventsOf(before)).map((event) => event.detail['route'])).toEqual([
+        'organisation',
+        'organisation',
+        'google',
+        'google',
+      ]);
+    });
   });
 
   it('gives every identity event who, what, when and the subject acted on, and no version', async () => {

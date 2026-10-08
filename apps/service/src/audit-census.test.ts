@@ -51,13 +51,13 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'group.member_removed',
   ),
   startGoogleSignIn: { none: 'attempt' },
-  finishGoogleSignIn: writes('authentication.sign_in_failed'),
-  completeGoogleSignIn: writes(
-    'authentication.signed_in',
+  // The callback admits the account, claiming its invitation; completing makes the session.
+  finishGoogleSignIn: writes(
     'authentication.sign_in_failed',
     'invitation.accepted',
     'tenant.administrator_claimed',
   ),
+  completeGoogleSignIn: writes('authentication.signed_in', 'authentication.sign_in_failed'),
   openStream: read,
   signOut: writes('authentication.signed_out'),
   getMe: read,
