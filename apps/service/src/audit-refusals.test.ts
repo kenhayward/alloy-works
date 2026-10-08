@@ -1,4 +1,4 @@
-import { queryAs } from '@alloy-works/db/testing';
+import { holdingTransaction, queryAs } from '@alloy-works/db/testing';
 import { createSpace, removeGrant } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { binding, HOST, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
@@ -32,8 +32,22 @@ describe('refusals in the audit log', () => {
       )
     ).rows[0]!.newest as string;
 
-  /** Every event since `after`, each with its labels by role. */
+  /**
+   * Every event since `after`, once the log is quiet: a refusal is written after its reply has gone
+   * (M5), so this reads until two reads a tenth of a second apart agree.
+   */
   const eventsAfter = async (after: string) => {
+    let last = JSON.stringify(await readAfter(after));
+    for (;;) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const now = await readAfter(after);
+      if (JSON.stringify(now) === last) return now;
+      last = JSON.stringify(now);
+    }
+  };
+
+  /** Every event since `after`, each with its labels by role. */
+  const readAfter = async (after: string) => {
     const { rows } = await queryAs(
       h.db.adminUrl,
       `select e.*, coalesce((select jsonb_object_agg(l.role, l.text) from ${h.tenant.schema}.audit_label l
@@ -109,6 +123,37 @@ describe('refusals in the audit log', () => {
       },
       labels: { subject: 'Quality plan' },
     });
+  });
+
+  it('answers a hidden 404 before its refusal is written, which follows the reply', async () => {
+    const secret = await h.component(h.quality, 'Answered first');
+    const mark = await newest();
+    // Nothing can be written to the log until this is let go.
+    const release = await holdingTransaction(
+      h.db.adminUrl,
+      `lock table ${h.tenant.schema}.audit_event in exclusive mode`,
+    );
+    let released = false;
+    try {
+      const answered = await Promise.race([
+        h.call(ALICE, 'GET', `/v1/components/${secret.id}`),
+        new Promise<'waited'>((resolve) => setTimeout(() => resolve('waited'), 3_000)),
+      ]);
+      expect(answered === 'waited' ? answered : answered.statusCode).toBe(404);
+      await release();
+      released = true;
+      const deadline = Date.now() + 5_000;
+      let events = await eventsAfter(mark);
+      while (events.length === 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        events = await eventsAfter(mark);
+      }
+      expect(events).toEqual([
+        expect.objectContaining({ kind: 'access.refused', subject: secret.id }),
+      ]);
+    } finally {
+      if (!released) await release();
+    }
   });
 
   it('IAM-013 records a grant answered as absent as a hidden refusal of the grant', async () => {

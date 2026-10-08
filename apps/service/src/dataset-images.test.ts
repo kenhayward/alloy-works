@@ -620,7 +620,12 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       expect((await followed(id)).state).toBe('done');
       const before = await h.tenantDb.withTenant(h.tenant, newestEvent);
       expect((await h.call('alice', 'GET', `/v1/asset-versions/${asset.id}`)).statusCode).toBe(404);
-      const events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+      // Written once the reply has gone.
+      let events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+      for (let wait = 0; events.length === 0 && wait < 50; wait += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+      }
       expect(events).toHaveLength(1);
       expect(events[0]).toMatchObject({
         kind: 'access.refused',
