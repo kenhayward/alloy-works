@@ -1,0 +1,28 @@
+# Development only, and opt-in: lets the connector reach sources on this machine and your network,
+# such as a SeaweedFS or MinIO on a port of its own, beside the stack's seeded `sources`.
+#
+#   docker compose -f deploy/compose.yaml -f deploy/compose.lan.yaml up -d --build --wait
+#
+# or deploy\BringUpDev.cmd. compose.yaml alone keeps the connector on two internal, isolated networks
+# with no route anywhere (deploy/README.md, "The connector and its two networks"); this file adds a
+# third, ordinary one with a route out. With it, the network no longer holds the connector away from
+# the platform: its address guard does. Its own networks' gateways and addresses are refused at start
+# (apps/connector/src/network.ts), beside loopback and link-local, and CONNECTOR_DENY adds:
+#
+# - 172.16.0.0/12, the ranges Docker gives its bridge networks, so no platform container is dialled
+#   by address; and
+# - 192.168.65.0/24, Docker Desktop's own, where host.docker.internal reaches the host's loopback.
+#
+# The platform's ports are published on 127.0.0.1 alone, so the host's LAN address does not reach them
+# either. A source in 172.16.0.0/12 cannot be reached with this file; set ALLOY_LAN_DENY in deploy/.env
+# to ranges of your own if your network uses those. Never in production, and never under the suites:
+# tests/e2e's connector-isolation.test.ts asserts the isolation this file gives up.
+services:
+  connector:
+    environment:
+      CONNECTOR_DENY: ${ALLOY_LAN_DENY:-172.16.0.0/12,192.168.65.0/24}
+    networks:
+      - connector-lan
+
+networks:
+  connector-lan: {}

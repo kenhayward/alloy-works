@@ -42,6 +42,13 @@ $env:COMPOSE_FILE = 'deploy/compose.yaml'          # PowerShell
 The project is named `alloy-works` in the file itself, so its containers, network and volumes keep
 the same names whatever directory you run it from.
 
+**On Windows, `deployBringUpDev.cmd`** does the whole round from the repo root: it checks Git,
+Docker (Engine 28 or later, running) and curl, that the checkout is on `main` with nothing
+uncommitted, pulls with `--ff-only`, builds, starts the stack with [the LAN override](#reaching-sources-on-your-machine-and-network-composelanyaml)
+and waits for every container and then the service to answer. It stops at the first problem,
+naming it. `COMPOSE_PROJECT_NAME` and the ports in [the table below](#when-a-port-is-already-taken)
+are honoured, so it can bring up a second stack beside yours.
+
 Working on the code needs only two of these containers -
 `docker compose -f deploy/compose.yaml up -d --wait postgres seaweedfs` - with the service and the
 worker run from source. [`docs/development.md`](../docs/development.md) is that path.
@@ -107,6 +114,26 @@ limits at zero none can be made at all, and a child can leave nothing there for 
 the connector uses them. Docker sets these only for a container with an IPC namespace of its own, never
 with `ipc: host`. A deployment must give it the limits: without every one of them at zero it refuses to
 start, naming each that is not, as it does without its capabilities.
+
+### Reaching sources on your machine and network: `compose.lan.yaml`
+
+The two isolated networks mean the connector reaches nothing but the seeded sources: a SeaweedFS or
+MinIO on your own machine or LAN fails its test as unreachable. **`deploy/compose.lan.yaml`**, for
+development only, adds a third, ordinary network with a route out:
+
+```bash
+docker compose -f deploy/compose.yaml -f deploy/compose.lan.yaml up -d --build --wait
+```
+
+With it, the address guard holds the connector away from the platform instead of the network: its own
+networks' gateways and addresses, loopback and link-local, and `CONNECTOR_DENY`'s
+`172.16.0.0/12` (Docker's bridge ranges) and `192.168.65.0/24` (Docker Desktop's, where
+`host.docker.internal` reaches the host's loopback - measured to answer the service's port without
+it). The platform's ports are published on `127.0.0.1` alone, so your LAN address does not reach
+them. A source inside `172.16.0.0/12` needs `ALLOY_LAN_DENY` in `deploy/.env`, with ranges of your
+own. Use `http://<your machine's LAN address>:<port>` for a store on this machine, not `localhost`,
+which the guard always refuses. Never with the suites: `connector-isolation.test.ts` asserts the
+isolation this gives up.
 
 ### A source to connect to: the `sources` profile
 
