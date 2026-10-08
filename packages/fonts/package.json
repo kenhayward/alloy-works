@@ -14,11 +14,13 @@
       "types": "./dist/node.d.ts",
       "default": "./dist/node.js"
     },
-    "./files/*": "./files/*"
+    "./files/*": "./files/*",
+    "./interface/*": "./interface/*"
   },
   "files": [
     "dist",
-    "files"
+    "files",
+    "interface"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

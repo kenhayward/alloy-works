@@ -14,6 +14,9 @@ export { capHeight } from './metrics.js';
  */
 export const FONT_DIRECTORY = fileURLToPath(new URL('../files/', import.meta.url));
 
+/** Where the interface's faces are: `interface/`, apart from the files Typst is handed. */
+export const INTERFACE_FONT_DIRECTORY = fileURLToPath(new URL('../interface/', import.meta.url));
+
 /**
  * What each pinned family covers, read from its files' character maps: a character only where **every**
  * face of the family maps it to a glyph, a heading's bold as well as a paragraph's regular, as the worker's

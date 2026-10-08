@@ -24,9 +24,10 @@
  */
 
 :root {
-  /* Type. No web fonts are loaded yet; the platform's own face is the face until Plex (LG3). */
-  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Type. IBM Plex, bundled and never fetched (theme/interface-faces.ts); the platform's face until
+     it has loaded. The chrome's only: a component's text is set in its theme's faces (CNT-097). */
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --document: Calibri, 'Segoe UI', Arial, sans-serif;
 
   /* Six sizes */
