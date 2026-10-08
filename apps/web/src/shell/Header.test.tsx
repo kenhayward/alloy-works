@@ -44,27 +44,22 @@ afterEach(() => {
 });
 
 describe('the header band', () => {
-  it('shows the product, the module, the environment and who is signed in', async () => {
-    render(<Header module="Documents" fetch={serviceThat(signedIn)} />);
+  it('shows the product, the environment, search and who is signed in', async () => {
+    const searching = vi.fn();
+    render(<Header onSearch={searching} fetch={serviceThat(signedIn)} />);
 
     const band = screen.getByRole('banner');
     expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
-    expect(within(band).getByText('Documents')).toBeInTheDocument();
+    await userEvent.click(
+      within(band).getByRole('button', { name: 'Search components, documents, or run a command' }),
+    );
+    expect(searching).toHaveBeenCalledOnce();
     expect(await within(band).findByText('Development')).toBeInTheDocument();
     expect(await within(band).findByRole('button', { name: /Ada Lovelace/ })).toBeInTheDocument();
   });
 
-  it('names no module on Home', async () => {
-    render(<Header module={null} fetch={serviceThat(signedIn)} />);
-    const band = screen.getByRole('banner');
-    expect(await within(band).findByText('Development')).toBeInTheDocument();
-    for (const name of ['Components', 'Documents', 'Publications']) {
-      expect(within(band).queryByText(name)).not.toBeInTheDocument();
-    }
-  });
-
   it('offers Sign in when nobody is signed in', async () => {
-    render(<Header module="Components" fetch={serviceThat(signedOut)} />);
+    render(<Header fetch={serviceThat(signedOut)} />);
 
     const link = await screen.findByRole('link', { name: 'Sign in' });
     expect(link).toHaveAttribute('href', '/v1/sign-in/organisation');
@@ -74,13 +69,7 @@ describe('the header band', () => {
   it('signs out from the account chip', async () => {
     const posted: string[] = [];
     const signedOutNow = vi.fn();
-    render(
-      <Header
-        module="Components"
-        fetch={serviceThat(signedIn, posted)}
-        onSignedOut={signedOutNow}
-      />,
-    );
+    render(<Header fetch={serviceThat(signedIn, posted)} onSignedOut={signedOutNow} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
@@ -98,7 +87,7 @@ describe('the header band', () => {
     );
     sessionStorage.setItem('alloy-works:pane-width', '320');
     const signedOutNow = vi.fn();
-    render(<Header module="Components" fetch={serviceThat(signedIn)} onSignedOut={signedOutNow} />);
+    render(<Header fetch={serviceThat(signedIn)} onSignedOut={signedOutNow} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
@@ -121,7 +110,7 @@ describe('the header band', () => {
     const signedOutNow = vi.fn(() => {
       expect(sessionStorage.getItem(steps)).toBeNull();
     });
-    render(<Header module="Components" fetch={signingOut} onSignedOut={signedOutNow} />);
+    render(<Header fetch={signingOut} onSignedOut={signedOutNow} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
@@ -140,7 +129,7 @@ describe('the header band', () => {
       return asked(request);
     }) as unknown as typeof fetch;
     const signedOutNow = vi.fn();
-    render(<Header module="Components" fetch={failing} onSignedOut={signedOutNow} />);
+    render(<Header fetch={failing} onSignedOut={signedOutNow} />);
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
     const before = meAsked;
 
@@ -164,7 +153,7 @@ describe('the header band', () => {
       return asked(request);
     }) as unknown as typeof fetch;
     const signedOutNow = vi.fn();
-    render(<Header module="Components" fetch={failing} onSignedOut={signedOutNow} />);
+    render(<Header fetch={failing} onSignedOut={signedOutNow} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
@@ -173,14 +162,14 @@ describe('the header band', () => {
   });
 
   it('returns to Home from the mark, which opens no menu', () => {
-    render(<Header module="Components" fetch={serviceThat(signedIn)} />);
+    render(<Header fetch={serviceThat(signedIn)} />);
 
     expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveAttribute('href', '#/');
     expect(screen.queryByRole('button', { name: /Alloy Works/ })).not.toBeInTheDocument();
   });
 
   it('closes a menu on Escape, returning focus to its button', async () => {
-    render(<Header module="Components" fetch={serviceThat(signedIn)} />);
+    render(<Header fetch={serviceThat(signedIn)} />);
 
     const chip = await screen.findByRole('button', { name: /Ada Lovelace/ });
     await userEvent.click(chip);
@@ -191,26 +180,9 @@ describe('the header band', () => {
     expect(chip).toHaveFocus();
   });
 
-  it('opens Administration from the account chip, and closes it', async () => {
-    render(
-      <Header module="Components" fetch={serviceThat(signedIn)} about={<p>the scaffolding</p>} />,
-    );
-
-    await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Administration' }));
-    expect(screen.getByRole('dialog', { name: 'Administration' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /^About/ }));
-    expect(screen.getByText('the scaffolding')).toBeInTheDocument();
-    await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
   it('opens API tokens from the account chip, and closes it', async () => {
     render(
-      <Header
-        module="Components"
-        fetch={serviceThat({ ...signedIn, '/v1/tokens': { items: [], next: null } })}
-      />,
+      <Header fetch={serviceThat({ ...signedIn, '/v1/tokens': { items: [], next: null } })} />,
     );
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
@@ -222,7 +194,7 @@ describe('the header band', () => {
   });
 
   it('chooses Light, Dark or Auto from the Theme button, shows which is chosen, and remembers it', async () => {
-    render(<Header module="Components" fetch={serviceThat(signedIn)} />);
+    render(<Header fetch={serviceThat(signedIn)} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Theme' }));
     const menu = screen.getByRole('group', { name: 'Theme' });
@@ -242,7 +214,7 @@ describe('the header band', () => {
   });
 
   it('holds no Theme in the account chip, which the header button holds', async () => {
-    render(<Header module="Components" fetch={serviceThat(signedIn)} />);
+    render(<Header fetch={serviceThat(signedIn)} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
 

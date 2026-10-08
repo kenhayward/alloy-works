@@ -4,8 +4,10 @@ import styles from './App.module.css';
 import { Workspace } from './editor/Workspace.js';
 import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
+import { CommandPalette, useCommandKey } from './shell/CommandPalette.js';
 import { Header } from './shell/Header.js';
 import { moduleOf } from './shell/moduleOf.js';
+import { Rail } from './shell/Rail.js';
 import { StatusProvider } from './shell/Status.js';
 
 interface AppProps {
@@ -34,6 +36,7 @@ export function App({
 }: AppProps): React.JSX.Element {
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
   const hash = useHash();
+  const [searching, setSearching] = useCommandKey();
 
   useEffect(() => {
     let current = true;
@@ -49,22 +52,26 @@ export function App({
     // The status bar's owner: one live region for the application, at the foot of every page
     // (interface slice 15). The provider draws the bar after what it holds.
     <StatusProvider>
-      {/* The scaffolding's environment panel and the delivery line live in Administration's About
-          (interface slice 12), off every page. */}
-      <Header
-        module={moduleOf(hash)}
-        about={
-          <div className={styles['scaffolding']}>
-            {environment}
-            <p>
-              {platform === null
-                ? 'Checking which delivery this is...'
-                : `Running as ${platform.delivery} on ${platform.runtime}`}
-            </p>
-          </div>
-        }
-      />
-      <main className={styles['page']}>{workspace}</main>
+      <Header onSearch={() => setSearching(true)} />
+      <div className={styles['frame']}>
+        {/* The scaffolding's environment panel and the delivery line live in Administration's
+            About (interface slice 12), which the rail's foot opens (ADR-0046). */}
+        <Rail
+          module={moduleOf(hash)}
+          about={
+            <div className={styles['scaffolding']}>
+              {environment}
+              <p>
+                {platform === null
+                  ? 'Checking which delivery this is...'
+                  : `Running as ${platform.delivery} on ${platform.runtime}`}
+              </p>
+            </div>
+          }
+        />
+        <main className={styles['page']}>{workspace}</main>
+      </div>
+      {searching && <CommandPalette onClose={() => setSearching(false)} />}
     </StatusProvider>
   );
 }

@@ -1,64 +1,25 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
+import { ModuleIcon } from '../shell/ModuleIcon.js';
+import { MODULE_GROUPS, type Module } from '../shell/modules.js';
 import styles from './Home.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-type Module = 'components' | 'documents' | 'publications';
+/** The modules whose list says how many there are, and how a total is said of each. */
+const COUNTED = {
+  Components: { one: 'component you may read', many: 'components you may read' },
+  Documents: { one: 'document you may read', many: 'documents you may read' },
+  Publications: { one: 'publication you may read', many: 'publications you may read' },
+} as const satisfies Partial<Record<Module['name'], { one: string; many: string }>>;
 
-/**
- * Each module as its Home card says it: what it is for, and what can be done there today - the
- * drawing's words, less those for what is not built yet (interface slice 11), and naming Word beside
- * the PDF since Word 1, which the drawing, made before it, does not.
- */
-const CARDS: readonly {
-  readonly module: Module;
-  readonly name: string;
-  readonly href: string;
-  readonly about: string;
-  readonly can: readonly string[];
-  readonly one: string;
-  readonly many: string;
-}[] = [
-  {
-    module: 'components',
-    name: 'Components',
-    href: '#/components',
-    about: 'Write and version the typed pieces documents are assembled from.',
-    can: ['Edit text, lists and marks', 'Cut a version on a positive act'],
-    one: 'component you may read',
-    many: 'components you may read',
-  },
-  {
-    module: 'documents',
-    name: 'Documents',
-    href: '#/documents',
-    about: 'Build an outline of sections and component references, and publish it.',
-    can: [
-      'Restructure the outline, a version at a time',
-      'Publish as a tagged PDF, a Word document or both',
-    ],
-    one: 'document you may read',
-    many: 'documents you may read',
-  },
-  {
-    module: 'publications',
-    name: 'Publications',
-    href: '#/publications',
-    about: 'Read what has been published. Kept exactly as it was made, never changed.',
-    can: [
-      'Read a publication in the browser',
-      'Download the PDF or the Word document',
-      'See the version it was made from',
-    ],
-    one: 'publication you may read',
-    many: 'publications you may read',
-  },
-];
+type Counted = keyof typeof COUNTED;
+
+const isCounted = (name: Module['name']): name is Counted => name in COUNTED;
 
 /** How many a list answers, or null where it could not be read: a total is left off, not guessed. */
-async function totals(client: Client): Promise<Record<Module, number | null>> {
+async function totals(client: Client): Promise<Record<Counted, number | null>> {
   const read = async (ask: () => Promise<number | null>) => {
     try {
       return await ask();
@@ -80,17 +41,18 @@ async function totals(client: Client): Promise<Record<Module, number | null>> {
       return data ? data.total : null;
     }),
   ]);
-  return { components, documents, publications };
+  return { Components: components, Documents: documents, Publications: publications };
 }
 
 /**
- * Home, `#/`: a greeting, then a card for each module, each a link to its list with how many there
- * are there to read. Where you left off waits for a route that can say it.
+ * Home, `#/`: a greeting, then every module in its group - Author, Publish, Data - each a link with
+ * what it is for and, where its list says, how many there are to read (ADR-0046). Needs your attention
+ * and Where you left off wait for their requirements (SCH-068, SCH-069).
  */
 export function Home({ client }: { client: Client }) {
   const [name, setName] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
-  const [counts, setCounts] = useState<Record<Module, number | null> | null>(null);
+  const [counts, setCounts] = useState<Record<Counted, number | null> | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -115,42 +77,47 @@ export function Home({ client }: { client: Client }) {
   }, [client]);
 
   return (
-    <div className={styles['backdrop']}>
-      <section className={styles['panel']} aria-labelledby="home-heading">
-        <h1 id="home-heading" className={styles['greeting']}>
-          {name === null ? 'Welcome back' : `Welcome back, ${name}`}
-        </h1>
-        {environment !== null && <p className={styles['environment']}>{environment}</p>}
-        <div className={styles['cards']}>
-          {CARDS.map((card) => {
-            const count = counts?.[card.module] ?? null;
-            return (
-              <a
-                key={card.module}
-                className={styles['card']}
-                data-module={card.module}
-                href={card.href}
-              >
-                <span className={styles['name']}>{card.name}</span>
-                <span className={styles['about']}>{card.about}</span>
-                <ul className={styles['can']}>
-                  {card.can.map((each) => (
-                    <li key={each}>{each}</li>
-                  ))}
-                </ul>
-                <span className={styles['total']}>
-                  {count !== null && (
-                    <>
-                      <span className={styles['number']}>{count}</span>{' '}
-                      <span className={styles['unit']}>{count === 1 ? card.one : card.many}</span>
-                    </>
-                  )}
-                </span>
-              </a>
-            );
-          })}
-        </div>
-      </section>
+    <div className={styles['home']}>
+      <h1 id="home-heading" className={styles['greeting']}>
+        {name === null ? 'Welcome back' : `Welcome back, ${name}`}
+      </h1>
+      {environment !== null && <p className={styles['environment']}>{environment}</p>}
+      <div className={styles['groups']}>
+        {MODULE_GROUPS.map(({ group, modules }) => (
+          <section key={group} className={styles['group']} aria-labelledby={`home-${group}`}>
+            <h2 id={`home-${group}`} className={styles['groupName']}>
+              {group}
+            </h2>
+            <ul className={styles['modules']}>
+              {modules.map((each) => {
+                const count = isCounted(each.name) ? (counts?.[each.name] ?? null) : null;
+                const said = isCounted(each.name) ? COUNTED[each.name] : null;
+                return (
+                  <li key={each.name}>
+                    <a className={styles['module']} href={each.href}>
+                      <span className={styles['icon']}>
+                        <ModuleIcon name={each.name} />
+                      </span>
+                      <span className={styles['words']}>
+                        <span className={styles['name']}>{each.name}</span>
+                        <span className={styles['about']}>{each.about}</span>
+                      </span>
+                      {count !== null && said !== null && (
+                        <span className={styles['total']}>
+                          <span className={styles['number']}>{count}</span>{' '}
+                          <span className={styles['unit']}>
+                            {count === 1 ? said.one : said.many}
+                          </span>
+                        </span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

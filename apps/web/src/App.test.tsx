@@ -31,8 +31,8 @@ const signedIn = vi.fn(async (input: string | URL | Request, init?: RequestInit)
 
 /** Opens Administration's About from the account chip, where the scaffolding's panel now sits. */
 async function openAbout() {
-  await userEvent.click(await screen.findByRole('button', { name: /Ada/ }));
-  await userEvent.click(screen.getByRole('button', { name: 'Administration' }));
+  const rail = screen.getByRole('navigation', { name: 'Modules' });
+  await userEvent.click(within(rail).getByRole('button', { name: 'Admin' }));
   await userEvent.click(screen.getByRole('button', { name: /^About/ }));
 }
 
@@ -55,8 +55,9 @@ describe('App', () => {
 
     const band = screen.getByRole('banner');
     expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
-    // Home is no module, so the band names none.
+    // The band names no module: the rail beside the page marks the one it is in.
     expect(within(band).queryByText('Components')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Modules' })).toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(within(main).getByText('the workspace')).toBeInTheDocument();
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
@@ -80,7 +81,11 @@ describe('App', () => {
       window.location.hash = '#/documents';
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
-    expect(within(screen.getByRole('banner')).getByText('Documents')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', {
+        name: 'Documents',
+      }),
+    ).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
 
     await openAbout();

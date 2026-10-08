@@ -2,11 +2,9 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiTokens } from '../account/ApiTokens.js';
-import { Administration } from '../admin/Administration.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
 import styles from './Header.module.css';
-import type { ModuleName } from './moduleOf.js';
 
 /** The mark for each theme's ground, served beside the page from `public/`; CSS shows the one that fits. */
 export const MARKS: Record<ThemeName, string> = {
@@ -31,14 +29,12 @@ export function initialsOf({ displayName, email }: Person): string {
 }
 
 export interface HeaderProps {
-  /** The module the page is in; null on Home, which is none. */
-  readonly module: ModuleName | null;
+  /** Opens search and commands, as Ctrl K does. */
+  readonly onSearch?: () => void;
   /** Given in tests; the browser's own otherwise. */
   readonly fetch?: typeof fetch;
   /** After the session has ended; the page reloads, signed out, unless a test says otherwise. */
   readonly onSignedOut?: () => void;
-  /** What Administration's About holds beside the version. */
-  readonly about?: React.ReactNode;
 }
 
 /**
@@ -138,15 +134,14 @@ function ThemeMenu() {
 }
 
 /**
- * The band across the top of every screen, in the theme's chrome: the mark, which goes Home; the
- * module's name; then the environment, the Theme button and the account chip, which holds API tokens,
- * Administration and Sign out.
+ * The band across the top of every screen, in the theme's chrome (ADR-0046): the mark, which goes
+ * Home, and the environment; search and commands in the middle; then the Theme button and the
+ * account chip, which holds API tokens and Sign out. The module the page is in is the rail's to say.
  */
 export function Header({
-  module,
+  onSearch = () => undefined,
   fetch: given,
   onSignedOut = () => window.location.reload(),
-  about = null,
 }: HeaderProps) {
   const origin = window.location.origin;
   const client = useMemo(
@@ -155,7 +150,6 @@ export function Header({
   );
   const [environment, setEnvironment] = useState<string | undefined>();
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
-  const [administering, setAdministering] = useState(false);
   const [managingTokens, setManagingTokens] = useState(false);
 
   useEffect(() => {
@@ -236,14 +230,31 @@ export function Header({
         />
         Alloy Works
       </a>
-      {module !== null && (
-        <>
-          <span className={styles['hairline']} aria-hidden="true" />
-          <span className={styles['module']}>{module}</span>
-        </>
-      )}
-      <span className={styles['spacer']} />
       {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
+      <span className={styles['spacer']} />
+      <button
+        type="button"
+        className={styles['search']}
+        aria-label="Search components, documents, or run a command"
+        aria-keyshortcuts="Control+K"
+        onClick={onSearch}
+      >
+        <svg
+          className={styles['icon']}
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          aria-hidden="true"
+        >
+          <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M10.4 10.4 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        <span className={styles['searchLabel']}>
+          Search components, documents, or run a command
+        </span>
+        <kbd className={styles['key']}>Ctrl K</kbd>
+      </button>
+      <span className={styles['spacer']} />
       <ThemeMenu />
       {who === 'nobody' && (
         <a className={styles['chip']} href="/v1/sign-in/organisation">
@@ -282,18 +293,6 @@ export function Header({
                   className={styles['item']}
                   onClick={() => {
                     close();
-                    setAdministering(true);
-                  }}
-                >
-                  Administration
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className={styles['item']}
-                  onClick={() => {
-                    close();
                     void signOut();
                   }}
                 >
@@ -305,9 +304,6 @@ export function Header({
         </Menu>
       )}
       {managingTokens && <ApiTokens client={client} onClose={() => setManagingTokens(false)} />}
-      {administering && (
-        <Administration client={client} about={about} onClose={() => setAdministering(false)} />
-      )}
     </header>
   );
 }

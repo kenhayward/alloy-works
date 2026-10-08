@@ -25,47 +25,51 @@ const everything = {
 };
 
 describe('Home', () => {
-  it('greets the reader and offers each module with what can be done there and how many there are', async () => {
+  it('greets the reader and offers every module in its group, with how many there are to read', async () => {
     render(<Home client={service(everything)} />);
 
     expect(await screen.findByRole('heading', { name: 'Welcome back, Ada' })).toBeInTheDocument();
     expect(await screen.findByText('Development')).toBeInTheDocument();
+    const group = (name: string) => screen.getByRole('region', { name });
+    expect(
+      within(group('Author'))
+        .getAllByRole('link')
+        .map((each) => each.getAttribute('href')),
+    ).toEqual(['#/components', '#/documents', '#/templates']);
+    expect(within(group('Publish')).getAllByRole('link')).toHaveLength(1);
+    expect(
+      within(group('Data'))
+        .getAllByRole('link')
+        .map((each) => each.getAttribute('href')),
+    ).toEqual(['#/connections', '#/query-definitions']);
 
     const components = screen.getByRole('link', { name: /^Components/ });
-    expect(components).toHaveAttribute('href', '#/components');
     expect(await within(components).findByText('412')).toBeInTheDocument();
     expect(within(components).getByText('components you may read')).toBeInTheDocument();
-    expect(within(components).getByText('Edit text, lists and marks')).toBeInTheDocument();
-
-    const documents = screen.getByRole('link', { name: /^Documents/ });
-    expect(documents).toHaveAttribute('href', '#/documents');
-    expect(await within(documents).findByText('3')).toBeInTheDocument();
-
+    expect(
+      within(components).getByText(
+        'Write and version the typed pieces documents are assembled from.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await within(screen.getByRole('link', { name: /^Documents/ })).findByText('3'),
+    ).toBeInTheDocument();
     const publications = screen.getByRole('link', { name: /^Publications/ });
-    expect(publications).toHaveAttribute('href', '#/publications');
     expect(await within(publications).findByText('1')).toBeInTheDocument();
     expect(within(publications).getByText('publication you may read')).toBeInTheDocument();
   });
 
-  it('says a document publishes to PDF and Word, and a publication downloads as either', async () => {
+  it('shows no total where the service gives none, rather than a guess', async () => {
     render(<Home client={service(everything)} />);
 
-    const documents = await screen.findByRole('link', { name: /^Documents/ });
+    const templates = await screen.findByRole('link', { name: /^Templates/ });
     expect(
-      within(documents).getByText('Publish as a tagged PDF, a Word document or both'),
+      await within(screen.getByRole('link', { name: /^Components/ })).findByText('412'),
     ).toBeInTheDocument();
-    expect(within(documents).queryByText('Publish as a tagged PDF')).not.toBeInTheDocument();
-
-    const publications = screen.getByRole('link', { name: /^Publications/ });
-    expect(
-      within(publications).getByText('Download the PDF or the Word document'),
-    ).toBeInTheDocument();
-    expect(within(publications).queryByText('Download the PDF')).not.toBeInTheDocument();
-    // The totals arrive after the first render; waiting for one keeps React's update inside the test.
-    expect(await within(publications).findByText('1')).toBeInTheDocument();
+    expect(within(templates).queryByText(/\d/)).not.toBeInTheDocument();
   });
 
-  it('leaves a total off its card when it could not be read', async () => {
+  it('leaves a total off when it could not be read', async () => {
     render(
       <Home
         client={service({

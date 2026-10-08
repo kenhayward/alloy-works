@@ -1,0 +1,65 @@
+/* The module rail: 76px, labelled, on every screen, from under the header to the status bar. */
+.rail {
+  position: sticky;
+  top: var(--header-height);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+  width: 76px;
+  height: calc(100vh - var(--header-height) - var(--status-height, 0px));
+  /* 2px a side: the widest label, Components, is 69px in Plex at 12px, and must not break. */
+  padding: var(--space-12) 2px;
+  overflow: hidden auto;
+  border-right: 1px solid var(--border);
+  background: var(--chrome);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-8) 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-8) 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--size-12);
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled) {
+  background: var(--sunken);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.item[aria-current='page'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.label {
+  overflow-wrap: normal;
+}
+
+.foot {
+  margin-top: auto;
+}

@@ -23197,7 +23197,7 @@
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 244,
+      "line": 250,
       "kind": "title"
     },
     {
@@ -23245,7 +23245,7 @@
     {
       "id": "ADM-049",
       "file": "tests/browser/src/spaces.test.ts",
-      "line": 39,
+      "line": 41,
       "kind": "title"
     },
     {

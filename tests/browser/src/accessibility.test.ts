@@ -151,7 +151,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         ],
       });
 
-      // Each list, by the workspace's own links, as a person moves between them: its heading, and a
+      // Each list, by the module rail's links, as a person moves between them: its heading, and a
       // table of what it lists or its words for none.
       for (const [link, state, none] of [
         ['Components', 'the components list', 'There are no components you may read.'],
@@ -162,7 +162,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         await page.goto(`${SERVICE}/#/components`);
         await arrive({ shows: heading('Components') });
         await page
-          .getByRole('navigation', { name: 'Workspace' })
+          .getByRole('navigation', { name: 'Modules' })
           .getByRole('link', { name: link })
           .click();
         const list = page.getByRole('region', { name: link, exact: true });
@@ -171,11 +171,15 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         });
       }
 
+      // Search, from search and commands in the header (ADR-0046).
       await page
-        .getByRole('navigation', { name: 'Workspace' })
-        .getByRole('link', { name: 'Search' })
+        .getByRole('button', { name: 'Search components, documents, or run a command' })
         .click();
-      await page.getByRole('searchbox', { name: 'Search' }).fill('printer');
+      const commands = page.getByRole('dialog', { name: 'Search and commands' });
+      await commands.getByRole('combobox', { name: 'Search or go to' }).fill('printer');
+      await check('search and commands', {
+        shows: commands.getByRole('option', { name: 'Search for "printer"' }),
+      });
       await page.keyboard.press('Enter');
       await check('the search page with results', {
         shows: page
@@ -208,8 +212,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('Escape');
       await leave(page.getByRole('dialog'));
 
-      await account.click();
-      await page.getByRole('button', { name: 'Administration' }).click();
+      await page
+        .getByRole('navigation', { name: 'Modules' })
+        .getByRole('button', { name: 'Admin' })
+        .click();
       const administration = page.getByRole('dialog', { name: 'Administration' });
       await check('Administration', {
         shows: [
@@ -659,7 +665,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.goto(`${SERVICE}/#/components`);
       await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
       const toConnections = page
-        .getByRole('navigation', { name: 'Workspace' })
+        .getByRole('navigation', { name: 'Modules' })
         .getByRole('link', { name: 'Connections' });
       await tabTo(toConnections);
       await page.keyboard.press('Enter');
@@ -774,7 +780,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
       await tabTo(
         page
-          .getByRole('navigation', { name: 'Workspace' })
+          .getByRole('navigation', { name: 'Modules' })
           .getByRole('link', { name: 'Query definitions' }),
       );
       await page.keyboard.press('Enter');

@@ -33,10 +33,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and loaded unchanged by the Electron shell in `apps/desktop`. There is no per-delivery fork of the
   UI, and the running app names which delivery and runtime it is on.
 
-- **An interface in Light, Dark or Auto.** Every screen sits under a header band in the theme's colours with:
-  - the mark, which goes to Home, where each module is chosen;
-  - the module's name;
+- **An interface in Light, Dark or Auto.** Every screen sits beside a labelled module rail - Home;
+  Components, Documents and Templates; Publications; Connections and Query definitions; and Admin,
+  which opens Administration - and under a header band in the theme's colours with:
+  - the mark, which goes to Home, where every module is listed in its group with how many there are;
   - the environment's name;
+  - **search and commands**, which Ctrl K opens too, going to a module or searching for what is typed;
   - **Theme**, choosing Light, Dark or Auto, which follows the system; remembered in this browser,
     and Auto until chosen;
   - an account chip that signs out, or offers Sign in to somebody signed out. Signing in always

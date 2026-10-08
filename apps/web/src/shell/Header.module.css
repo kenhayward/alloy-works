@@ -107,18 +107,43 @@ a.chip {
   font-weight: 600;
 }
 
-.hairline {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-}
-
-.module {
-  opacity: var(--opacity-secondary);
-}
-
 .spacer {
   flex: 1;
+}
+
+/* Search and commands, which Ctrl K opens too: a button drawn as the field it opens. */
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: min(540px, 40vw);
+  height: 32px;
+  padding-inline: var(--space-12) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.search:hover:not(:disabled) {
+  border-color: var(--strong-border);
+  background: var(--sunken);
+}
+
+.searchLabel {
+  flex: 1;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+}
+
+.key {
+  padding: 0 var(--space-4);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-4);
+  font-size: var(--size-12);
 }
 
 .environment {
@@ -174,10 +199,11 @@ a.chip {
   background: var(--accent-weak);
 }
 
-/* Narrow windows keep the mark and the account; the module and the environment give way first. */
+/* Narrow windows keep the mark, search and the account; the search's words and the environment give
+   way first. */
 @media (max-width: 640px) {
-  .hairline,
-  .module,
+  .searchLabel,
+  .key,
   .environment {
     display: none;
   }
