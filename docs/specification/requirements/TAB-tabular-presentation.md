@@ -62,13 +62,19 @@ scientific or engineering reader expects.
 | **TAB-006** | A table must preserve the order the query returned, unless it declares its own sort                                                                                                                                    | T2      | Specified |
 | **TAB-007** | A declared sort must be stable, so that two rows that tie do not swap between runs                                                                                                                                     | T2      | Specified |
 | **TAB-008** | Rows must be groupable by a column, with a group heading row                                                                                                                                                           | T3      | Specified |
-| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                         | T3      | Specified |
-| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                          | T3      | Specified |
+| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                         | T3      | Withdrawn |
+| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                          | T3      | Withdrawn |
 | **TAB-011** | A table returning no rows must render a declared empty state rather than a table with a header and nothing under it                                                                                                    | T2      | Specified |
 | **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group       | T3      | Specified |
 | **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T3      | Specified |
-| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T3      | Specified |
-| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T3      | Specified |
+| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T3      | Withdrawn |
+| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T3      | Withdrawn |
+
+**TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn: totals are never computed here** (TAB-Q04,
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)). A total or a subtotal is a row the query
+returns (TAB-020), so no number on the page lacks a query behind it, and there is nothing for TAB-010
+to disclose. TAB-042's subtotal can now only be a row the query returned; how a table knows it is
+one is left to T3's design of grouping.
 
 **TAB-042 is the realistic bad case in a measurement table, and it sat between two documents.**
 TAB-008 requires group headings and TAB-032 defers break behaviour to the table style, and neither
@@ -185,12 +191,12 @@ of [the publishing design](../../design/publishing.md#tables), filed as issue #2
 
 ## 11. Open questions
 
-| ID          | Question                                                                                                                               | What would settle it                                                                      |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **TAB-Q01** | **How narrow can the reshaping set stay (TAB-021)?** Every customer will ask for one more transformation, and each is reasonable alone | The first request that cannot be met in the query. The answer is usually a better query   |
-| **TAB-Q02** | **Does an interactive table belong in an HTML output?** A read-only PDF cannot sort; a web reading view could                          | Whether HTML output (PUB-056) becomes a real reading format or a convenience              |
-| **TAB-Q03** | **What is the strategy for a table too wide to fit (TAB-033)?** Rotation, scaling and splitting all have bad cases                     | Real report shapes; wide tables of measurements are common in this market                 |
-| **TAB-Q04** | **Should totals ever be computed here at all (TAB-009)?** Forbidding it removes the disagreement TAB-010 exists to disclose            | Whether sources can always be asked for a total. Often they can and sometimes they cannot |
+| ID          | Question                                                                                                                               | What would settle it                                                                                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **TAB-Q01** | **How narrow can the reshaping set stay (TAB-021)?** Every customer will ask for one more transformation, and each is reasonable alone | The first request that cannot be met in the query. The answer is usually a better query                                                                                                       |
+| **TAB-Q02** | **Does an interactive table belong in an HTML output?** A read-only PDF cannot sort; a web reading view could                          | Whether HTML output (PUB-056) becomes a real reading format or a convenience                                                                                                                  |
+| **TAB-Q03** | **What is the strategy for a table too wide to fit (TAB-033)?** Rotation, scaling and splitting all have bad cases                     | Real report shapes; wide tables of measurements are common in this market                                                                                                                     |
+| **TAB-Q04** | **Should totals ever be computed here at all (TAB-009)?** Forbidding it removes the disagreement TAB-010 exists to disclose            | **Settled: never**, by Ken on 2026-10-08 ([ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)). A total is the query's (TAB-020); TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn |
 
 ## 12. Traceability
 
@@ -338,3 +344,21 @@ superseded by its T2 half, and the rest becomes a row of its own.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 51, of which 4 superseded | 53, of which 5 superseded |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                         | Change                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| TAB-Q04 answered "never": a total is the query's (TAB-020), as ADR-0042's "What would change the answer" anticipated   | **TAB-009, TAB-010, TAB-044 and TAB-047 withdrawn**, and TAB-Q04 settled |
+| Grouping, transposition and emphasis rules present what the query returned                                             | **TAB-008, TAB-021, TAB-022, TAB-028, TAB-042 and TAB-043 stay in T3**   |
+| TAB-053, column width by the table style, went to T3 beside the table-style work there, which stays (TAB-028, TAB-042) | **TAB-053 stays in T3**                                                  |
+
+| Counts       | Before                    | After                                     |
+| ------------ | ------------------------- | ----------------------------------------- |
+| Requirements | 53, of which 5 superseded | 53, of which 5 superseded and 4 withdrawn |
