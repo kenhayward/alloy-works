@@ -16,10 +16,13 @@ const FIELD = 'input:not([disabled]), select:not([disabled]), textarea:not([disa
  */
 export function Modal({
   labelledBy,
+  wide = false,
   onClose,
   children,
 }: {
   labelledBy: string;
+  /** 760px rather than 600px, for a form whose fields hold long values or choices. */
+  wide?: boolean;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -69,7 +72,7 @@ export function Modal({
     <div className={styles['scrim']}>
       <div
         ref={dialog}
-        className={styles['dialog']}
+        className={wide ? `${styles['dialog']} ${styles['wide']}` : styles['dialog']}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}

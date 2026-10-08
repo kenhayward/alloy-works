@@ -19,6 +19,10 @@
   box-shadow: var(--shadow-modal);
 }
 
+.wide {
+  width: min(760px, 100%);
+}
+
 .dialog:focus {
   outline: none;
 }
@@ -31,7 +35,8 @@
  * itself knowing it is in a modal. */
 .body > section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, ...) so a long choice is cut off inside its field, never pushing past the dialog. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-12) var(--space-16);
   margin: 0;
 }
@@ -48,6 +53,12 @@
   flex-direction: column;
   gap: var(--space-4);
   margin: 0;
+}
+
+.body > section > label > :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .body > section > p,
@@ -82,7 +93,7 @@
 
 @media (max-width: 720px) {
   .body > section {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .body > section > button.primary {

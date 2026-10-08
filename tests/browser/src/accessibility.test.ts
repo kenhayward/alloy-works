@@ -1,5 +1,5 @@
 import type { Locator, Page } from 'playwright-core';
-import { describe, it, vi, type TaskMeta } from 'vitest';
+import { describe, expect, it, vi, type TaskMeta } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
 import { api, edit, makeDocument, nodesOf, type Client } from './testing/api.js';
 import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
@@ -721,6 +721,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('Enter');
       const dialog = page.getByRole('dialog', { name: 'New connection' });
       await check('a new connection', { shows: dialog.getByRole('button', { name: 'Create' }) });
+      // The S3 fields, the longest choice among them, each fit inside the dialog's own edges.
+      await dialog.getByRole('combobox', { name: /^Type/ }).selectOption('s3');
+      const overflowing = await dialog.evaluate((box) => {
+        const edge = box.getBoundingClientRect().right;
+        return [...box.querySelectorAll('input, select, textarea')]
+          .filter((field) => field.getBoundingClientRect().right > edge)
+          .map((field) => field.closest('label')?.textContent ?? field.tagName);
+      });
+      expect(overflowing).toEqual([]);
+      await dialog.getByRole('combobox', { name: /^Type/ }).selectOption('postgres');
       const name = `Readings ${Date.now()}`;
       for (const [label, value] of [
         ['Name', name],

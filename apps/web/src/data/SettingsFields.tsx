@@ -160,7 +160,7 @@ export function draftProblem(draft: Draft): string | null {
   }
   if (draft.type === 's3') {
     if (!/^https:\/\/[^/?#]+$/.test(draft.endpoint.trim())) {
-      return 'An endpoint starts https:// and names its host, and nothing after it.';
+      return 'An endpoint starts https:// and names its host, and its port if it needs one, as https://storage.example.com:9000.';
     }
     if (draft.region.trim() === '') return 'A connection needs the region of its bucket.';
     if (draft.bucket.trim() === '') return 'A connection needs the name of its bucket.';
