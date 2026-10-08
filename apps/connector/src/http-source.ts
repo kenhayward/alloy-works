@@ -68,6 +68,7 @@ async function send(
     {
       host: base.host,
       port: base.port,
+      secure: base.secure,
       path: `${base.path}${bound.path}${bound.query === '' ? '' : `?${bound.query}`}` || '/',
       method: bound.method,
       headers: [
@@ -107,6 +108,7 @@ export async function testHttp(
     {
       host: base.host,
       port: base.port,
+      secure: base.secure,
       path: base.path || '/',
       method: 'GET',
       headers: [[settings.source.secretHeader, secret]],

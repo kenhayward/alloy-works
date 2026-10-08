@@ -252,6 +252,19 @@ describe('an S3 exchange', () => {
   }
   const code = (answer: RunAnswer) => (answer.outcome === 'ok' ? 'ok' : answer.failure.code);
 
+  it('reads an object from a store over plain http, signed for http and its port (ADR-0048)', async () => {
+    const plain = await startFakeStore(() => ({ body: CSV_BODY }), { plain: true });
+    try {
+      const source = s3Settings(plain.port, { endpoint: `http://127.0.0.1:${plain.port}` });
+      expect(code(await answered('run', s3RunRequest(source, draft)))).toBe('ok');
+      const asked = plain.seen.at(-1)!;
+      expect(asked.headers.host).toBe(`127.0.0.1:${plain.port}`);
+      expect(String(asked.headers.authorization)).toMatch(/^AWS4-HMAC-SHA256 /);
+    } finally {
+      await plain.close();
+    }
+  });
+
   it('DAT-108 refuses an object shorter than its Content-Length, or not the checksum its store states, result_incomplete; an ETag is never read', async () => {
     const source = s3Settings(store.port);
     const run = () => answered('run', s3RunRequest(source, draft));

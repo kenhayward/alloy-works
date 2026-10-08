@@ -171,14 +171,15 @@ const URL_PORT = /^[1-9][0-9]{0,4}$/;
 const URL_SEGMENT = /^(?:[A-Za-z0-9._~!$&'()*+,;=:@-]|%[0-9A-F]{2})+$/;
 
 /**
- * Whether a base URL is one the stored shape takes (the D6 plan, D6-D): `https`, a canonical host - a
+ * Whether a base URL is one the stored shape takes (the D6 plan, D6-D): `https` or, since ADR-0048,
+ * plain `http`, a canonical host - a
  * name, a dotted quad or a bracketed IPv6 address, as a database's - an optional port, and path
  * segments, none empty, `.` or `..`; no user, query or fragment, and no trailing slash, so one
  * address has one spelling. Whether the host may be dialled is the guard's, at each request.
  */
 export function isBaseUrl(value: string): boolean {
   if (value.length > 2048) return false;
-  const match = /^https:\/\/([^/?#@]+)((?:\/[^/?#]*)*)$/.exec(value);
+  const match = /^https?:\/\/([^/?#@]+)((?:\/[^/?#]*)*)$/.exec(value);
   if (!match) return false;
   const authority = match[1]!;
   const path = match[2]!;
@@ -231,7 +232,7 @@ export function isFreeHeaderName(value: string): boolean {
 const httpSource = z.strictObject({
   baseUrl: z.string().refine(isBaseUrl, {
     message:
-      'A base URL is https, a lower-case host or a canonical address, an optional port and a path: no user, query, fragment or trailing slash',
+      'A base URL is http or https, a lower-case host or a canonical address, an optional port and a path: no user, query, fragment or trailing slash',
   }),
   secretHeader: z.string().refine(isFreeHeaderName, {
     message:
@@ -255,15 +256,23 @@ function isBucketName(value: string): boolean {
   );
 }
 
-/** An S3 endpoint: a base URL with no path, `https` and a canonical host (the D6 plan, D6-C). */
-const isEndpoint = (value: string) => isBaseUrl(value) && !/^https:\/\/[^/]+\//.test(value);
+/** An S3 endpoint: a base URL with no path, `http` or `https`, and a canonical host (D6-C). */
+const isEndpoint = (value: string) => isBaseUrl(value) && !/^https?:\/\/[^/]+\//.test(value);
 
-/** The host an endpoint names, without brackets, and whether it is a name rather than an address. */
-export function endpointHost(endpoint: string): { readonly host: string; readonly port: number } {
-  const match = /^https:\/\/(\[[^\]]+\]|[^/:]+)(?::([0-9]+))?$/.exec(endpoint);
+/** Where an endpoint is: its host without brackets, its port, and whether it is reached over TLS. */
+export interface EndpointPlace {
+  readonly host: string;
+  readonly port: number;
+  readonly secure: boolean;
+}
+
+/** The place an endpoint names: its port 443, or 80 for plain `http`, unless it names one. */
+export function endpointHost(endpoint: string): EndpointPlace {
+  const match = /^(https?):\/\/(\[[^\]]+\]|[^/:]+)(?::([0-9]+))?$/.exec(endpoint);
   if (!match) throw new Error('Not an endpoint');
-  const host = match[1]!.startsWith('[') ? match[1]!.slice(1, -1) : match[1]!;
-  return { host, port: match[2] === undefined ? 443 : Number(match[2]) };
+  const secure = match[1] === 'https';
+  const host = match[2]!.startsWith('[') ? match[2]!.slice(1, -1) : match[2]!;
+  return { host, port: match[3] === undefined ? (secure ? 443 : 80) : Number(match[3]), secure };
 }
 
 /**
@@ -274,16 +283,16 @@ export function bucketHost(source: {
   readonly endpoint: string;
   readonly bucket: string;
   readonly pathStyle: boolean;
-}): { readonly host: string; readonly port: number } {
-  const { host, port } = endpointHost(source.endpoint);
-  return { host: source.pathStyle ? host : `${source.bucket}.${host}`, port };
+}): EndpointPlace {
+  const { host, port, secure } = endpointHost(source.endpoint);
+  return { host: source.pathStyle ? host : `${source.bucket}.${host}`, port, secure };
 }
 
 const s3Source = z
   .strictObject({
     endpoint: z.string().refine(isEndpoint, {
       message:
-        'An endpoint is https, a lower-case host or a canonical address and an optional port: no path, user, query or fragment',
+        'An endpoint is http or https, a lower-case host or a canonical address and an optional port: no path, user, query or fragment',
     }),
     region: z
       .string()

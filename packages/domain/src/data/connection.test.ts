@@ -340,10 +340,16 @@ describe('an http connection version', () => {
     }
   });
 
-  it('refuses a base URL that is not https, holds a user, a query or a fragment, or is not written one way', () => {
+  it('holds a plain http base URL, its port 80 unless it names one (ADR-0048)', () => {
+    for (const baseUrl of ['http://api.example.test', 'http://192.168.1.129:8080/v1']) {
+      expect(refusal(withSource({ baseUrl })), baseUrl).toEqual([]);
+    }
+  });
+
+  it('refuses a base URL that is neither http nor https, holds a user, a query or a fragment, or is not written one way', () => {
     for (const baseUrl of [
-      'http://api.example.test',
       'ftp://api.example.test',
+      'http//api.example.test',
       'https://reader:pw@api.example.test',
       'https://api.example.test/v1?key=1',
       'https://api.example.test/v1#top',
@@ -480,15 +486,29 @@ describe('an s3 connection version', () => {
       { endpoint: 'https://s3.example.test:8443' },
       { endpoint: 'https://172.31.20.21:8333', pathStyle: true },
       { endpoint: 'https://[2001:db8::1]', pathStyle: true },
+      { endpoint: 'http://192.168.1.129:8333', pathStyle: true },
+      { endpoint: 'http://s3.example.test' },
       { bucket: 'a.b-c' },
       { region: 'us-east-1' },
     ]) {
       expect(refusal(withSource(source)), JSON.stringify(source)).toEqual([]);
     }
-    expect(bucketHost(s3.source)).toEqual({ host: 'alloy-readings.s3.example.test', port: 443 });
+    expect(bucketHost(s3.source)).toEqual({
+      host: 'alloy-readings.s3.example.test',
+      port: 443,
+      secure: true,
+    });
+    expect(
+      bucketHost({ ...s3.source, endpoint: 'http://192.168.1.129:8333', pathStyle: true }),
+    ).toEqual({ host: '192.168.1.129', port: 8333, secure: false });
+    expect(bucketHost({ ...s3.source, endpoint: 'http://s3.example.test' })).toEqual({
+      host: 'alloy-readings.s3.example.test',
+      port: 80,
+      secure: false,
+    });
     expect(
       bucketHost({ ...s3.source, endpoint: 'https://s3.example.test:8443', pathStyle: true }),
-    ).toEqual({ host: 's3.example.test', port: 8443 });
+    ).toEqual({ host: 's3.example.test', port: 8443, secure: true });
   });
 
   it('refuses an endpoint with a path, a bucket S3 would not name, a region that is not one, and an address virtual-hosted', () => {
@@ -498,7 +518,8 @@ describe('an s3 connection version', () => {
         path,
       });
     for (const endpoint of [
-      'http://s3.example.test',
+      'ftp://s3.example.test',
+      'http://s3.example.test/',
       'https://s3.example.test/',
       'https://s3.example.test/bucket',
       'https://key:secret@s3.example.test',
