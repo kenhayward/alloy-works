@@ -790,6 +790,25 @@ describe('a connection on its own page', () => {
     ).toEqual([true, false]);
   });
 
+  it('heads a connection with a trail back to the connections and its facts as chips, and sets what uses it beside its parts', async () => {
+    const { client } = service({
+      uses: () =>
+        json(200, {
+          definitions: { readable: [], others: 0 },
+          documents: { readable: [], others: 0 },
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(trail).getByRole('link', { name: 'Connections' })).toHaveAttribute(
+      'href',
+      '#/connections',
+    );
+    const beside = screen.getByRole('complementary', { name: 'Beside the connection' });
+    expect(await within(beside).findByRole('region', { name: 'Used by' })).toBeInTheDocument();
+    expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
+  });
+
   it('says which query definitions use a connection, and why retiring it was refused', async () => {
     const user = userEvent.setup();
     const naming = {

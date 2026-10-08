@@ -39,6 +39,7 @@ import { HttpFields } from './HttpFields.js';
 import { formatOf, partOf, requestText, templateOf } from './httpDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
 import { useDefinitionPlaces, type Place } from './places.js';
+import { Chip } from '../parts/Chip.js';
 import styles from './QueryDefinitionPage.module.css';
 import { isRecord, isRelations, refusalText, type Described } from './shapes.js';
 import { isUses, UsedList, type Uses } from './uses.js';
@@ -1046,49 +1047,125 @@ export function QueryDefinitionPage({
 
   return (
     <article className={styles['page']}>
-      <p>
-        <a href="#/query-definitions">Back to query definitions</a>
-      </p>
-      <h1>{isNew ? 'New query definition' : shown!.definition.title}</h1>
-      {shown !== null && (
-        <p className={styles['meta']}>
-          <span>In {shown.space.name}</span>
-          <span>Version {shown.version.number}</span>
-          {retired && <span className={styles['retired']}>Retired</span>}
-        </p>
-      )}
-
-      {!editable && shown !== null ? (
-        <>
-          {unshown !== null && (
-            <p>{`This query definition can be read here and not changed: ${unshown}. Change it through the API.`}</p>
-          )}
-          <p>
-            Runs against{' '}
-            {shown.connection === null ? (
-              'a connection that is no longer there'
-            ) : shown.connection.name === null ? (
-              'a connection you may not read'
-            ) : (
-              <a href={connectionLink(shown.connection.id)}>{shown.connection.name}</a>
-            )}
-            .
+      {/* The head (the Ledger, ADR-0046): where it is, what it is, its facts as chips. */}
+      <header className={styles['head']}>
+        <nav aria-label="Breadcrumb" className={styles['trail']}>
+          <a href="#/query-definitions">Query definitions</a>
+          {shown !== null && <span>{` / ${shown.space.name}`}</span>}
+        </nav>
+        <h1>{isNew ? 'New query definition' : shown!.definition.title}</h1>
+        {shown !== null && (
+          <p className={styles['meta']}>
+            <Chip className={styles['mono']}>{`Version ${shown.version.number}`}</Chip>
+            <Chip>{`In ${shown.space.name}`}</Chip>
+            {retired && <Chip tone="warn">Retired</Chip>}
           </p>
-          <ReadOnly definition={shown.definition} />
-        </>
-      ) : (
-        <>
-          <Step title="Connection and title">
-            <div className={styles['form']}>
-              {isNew && (
-                <Choice label="Space">
+        )}
+      </header>
+      {/* What uses it, read before the steps that change it (DAT-016): beside them on the page. */}
+      <aside className={styles['side']} aria-label="Beside the definition">
+        {shown !== null && (
+          <Step title="Used by">
+            {uses === null ? null : uses === 'failed' ? (
+              <p>What uses this query definition could not be read.</p>
+            ) : uses.components.readable.length === 0 &&
+              uses.components.others === 0 &&
+              uses.documents.readable.length === 0 &&
+              uses.documents.others === 0 ? (
+              <p>No component binds this query definition yet.</p>
+            ) : (
+              <>
+                <UsedList
+                  heading="Components"
+                  uses={uses.components}
+                  link={(component) => `#/components/${component}`}
+                  counted={(others) =>
+                    `Bound by ${others} ${others === 1 ? 'component' : 'components'} you may not read.`
+                  }
+                />
+                <UsedList
+                  heading="Documents"
+                  uses={uses.documents}
+                  link={documentLink}
+                  counted={(others) =>
+                    `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+                  }
+                />
+                <p className={styles['hint']}>
+                  A binding that does not pin a version runs the latest one the next time it is
+                  resolved or checked.
+                </p>
+              </>
+            )}
+          </Step>
+        )}
+      </aside>
+      <div className={styles['main']}>
+        {!editable && shown !== null ? (
+          <>
+            {unshown !== null && (
+              <p>{`This query definition can be read here and not changed: ${unshown}. Change it through the API.`}</p>
+            )}
+            <p>
+              Runs against{' '}
+              {shown.connection === null ? (
+                'a connection that is no longer there'
+              ) : shown.connection.name === null ? (
+                'a connection you may not read'
+              ) : (
+                <a href={connectionLink(shown.connection.id)}>{shown.connection.name}</a>
+              )}
+              .
+            </p>
+            <ReadOnly definition={shown.definition} />
+          </>
+        ) : (
+          <>
+            <Step title="Connection and title">
+              <div className={styles['form']}>
+                {isNew && (
+                  <Choice label="Space">
+                    {(id) => (
+                      <select
+                        id={id}
+                        value={space}
+                        onChange={(event) => setSpace(event.target.value)}
+                      >
+                        {(places?.spaces ?? []).map((each) => (
+                          <option key={each.id} value={each.id}>
+                            {each.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </Choice>
+                )}
+                <Choice label="Connection">
                   {(id) => (
                     <select
                       id={id}
-                      value={space}
-                      onChange={(event) => setSpace(event.target.value)}
+                      value={draft.connection}
+                      onChange={(event) => {
+                        setSource(null);
+                        setSourceLines(null);
+                        const chosen = event.target.value;
+                        // An HTTP connection's query is a request template, an S3 connection's a
+                        // file; a database's is built or written (the D6 plan).
+                        changeStatement({
+                          connection: chosen,
+                          mode:
+                            places?.http.has(chosen) === true
+                              ? 'http'
+                              : places?.s3.has(chosen) === true
+                                ? 'file'
+                                : draft.mode === 'http' || draft.mode === 'file'
+                                  ? 'builder'
+                                  : draft.mode,
+                        });
+                      }}
                     >
-                      {(places?.spaces ?? []).map((each) => (
+                      {draft.connection === '' && <option value="">Choose a connection</option>}
+                      {connections.map((each) => (
                         <option key={each.id} value={each.id}>
                           {each.name}
                         </option>
@@ -1096,546 +1173,483 @@ export function QueryDefinitionPage({
                     </select>
                   )}
                 </Choice>
-              )}
-              <Choice label="Connection">
-                {(id) => (
-                  <select
-                    id={id}
-                    value={draft.connection}
-                    onChange={(event) => {
-                      setSource(null);
-                      setSourceLines(null);
-                      const chosen = event.target.value;
-                      // An HTTP connection's query is a request template, an S3 connection's a
-                      // file; a database's is built or written (the D6 plan).
-                      changeStatement({
-                        connection: chosen,
-                        mode:
-                          places?.http.has(chosen) === true
-                            ? 'http'
-                            : places?.s3.has(chosen) === true
-                              ? 'file'
-                              : draft.mode === 'http' || draft.mode === 'file'
-                                ? 'builder'
-                                : draft.mode,
-                      });
-                    }}
-                  >
-                    {draft.connection === '' && <option value="">Choose a connection</option>}
-                    {connections.map((each) => (
-                      <option key={each.id} value={each.id}>
-                        {each.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Choice>
-              <p className={styles['hint']}>
-                Only connections you may use are offered. SQL is offered only on one you may write
-                SQL against, and runs only on one whose latest test found its account read-only.
-              </p>
-              <label>
-                Title
-                <input
-                  value={draft.title}
-                  onChange={(event) => change({ title: event.target.value })}
-                />
-              </label>
-              <Choice label="Description">
-                {(id) => (
-                  <textarea
-                    id={id}
-                    rows={2}
-                    value={draft.description}
-                    onChange={(event) => change({ description: event.target.value })}
-                  />
-                )}
-              </Choice>
-            </div>
-          </Step>
-
-          <Step title="Query">
-            <div className={styles['form']}>
-              {draft.mode === 'http' ? (
-                <HttpFields
-                  http={draft.http}
-                  parameters={draft.parameters}
-                  onChange={(http) => changeStatement({ http })}
-                />
-              ) : draft.mode === 'file' ? (
-                <FileFields
-                  file={draft.file}
-                  parameters={draft.parameters}
-                  columns={draft.columns.map((column) => {
-                    const type = valueTypeOf(column.type);
-                    return { name: column.name, type: typeof type === 'string' ? null : type };
-                  })}
-                  onChange={(file) => changeStatement({ file })}
-                />
-              ) : sqlOffered ? (
-                <fieldset>
-                  <legend>Write the query with</legend>
-                  <label className={styles['check']}>
-                    <input
-                      type="radio"
-                      name="mode"
-                      checked={draft.mode === 'builder'}
-                      onChange={() => changeStatement({ mode: 'builder' })}
-                    />
-                    Builder
-                  </label>
-                  <label className={styles['check']}>
-                    <input
-                      type="radio"
-                      name="mode"
-                      checked={draft.mode === 'sql'}
-                      onChange={() => changeStatement({ mode: 'sql' })}
-                    />
-                    SQL
-                  </label>
-                </fieldset>
-              ) : (
                 <p className={styles['hint']}>
-                  Built from the source&apos;s tables and views. SQL is offered where you may write
-                  SQL on the connection.
+                  Only connections you may use are offered. SQL is offered only on one you may write
+                  SQL against, and runs only on one whose latest test found its account read-only.
                 </p>
-              )}
-              {draft.mode === 'http' || draft.mode === 'file' ? null : draft.mode === 'builder' ? (
-                <BuilderFields
-                  builder={draft.builder}
-                  parameters={draft.parameters}
-                  described={source}
-                  describedLines={sourceLines}
-                  busy={busy !== null}
-                  onDescribe={describeSource}
-                  onChange={(builder) => changeStatement({ builder })}
-                />
-              ) : (
-                <>
-                  <Choice label="SQL text">
-                    {(id) => (
-                      <textarea
-                        id={id}
-                        className={styles['code']}
-                        rows={8}
-                        spellCheck={false}
-                        value={draft.sql}
-                        onChange={(event) => changeStatement({ sql: event.target.value })}
-                      />
-                    )}
-                  </Choice>
-                  <p className={styles['hint']}>
-                    Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
-                    parameter below. A value is always sent apart from the SQL, never placed in it.
-                  </p>
-                </>
-              )}
-              {draft.parameters.map((parameter, at) => (
-                <ParameterFields
-                  key={at}
-                  index={at}
-                  built={draft.mode !== 'sql'}
-                  parameter={parameter}
-                  onChange={(changed) => setParameter(at, changed)}
-                  onRemove={() =>
-                    changeStatement({
-                      parameters: draft.parameters.filter((_, place) => place !== at),
-                    })
-                  }
-                />
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  changeStatement({ parameters: [...draft.parameters, NEW_PARAMETER] })
-                }
-              >
-                Add parameter
-              </button>
-              {draft.mode === 'builder' && <GeneratedSql shown={generatedSql(draft)} />}
-            </div>
-          </Step>
-
-          <Step title="Columns">
-            {mayRun && (
-              <button type="button" disabled={busy !== null} onClick={describe}>
-                {draft.mode === 'http' || draft.mode === 'file' ? 'Sample for columns' : 'Describe'}
-              </button>
-            )}
-            <p className={styles['hint']}>
-              {draft.mode === 'file'
-                ? "Sample for columns reads the file with the sample values below and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-                : draft.mode === 'http'
-                  ? "Sample for columns sends the request with the sample values below and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-                  : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
-            </p>
-            <Status lines={described} />
-            {draft.columns.length > 0 && (
-              <table className={styles['table']}>
-                <caption>Columns</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">At the source</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Confirmed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {draft.columns.map((column, at) => (
-                    <tr key={column.name}>
-                      <td>{column.name}</td>
-                      <td>{column.sourceType ?? 'Not described'}</td>
-                      <td>
-                        <TypeFields
-                          name={column.name}
-                          textColumns={textColumns}
-                          type={column.type}
-                          onChange={(type) => setColumn(at, { ...column, type, confirmed: false })}
-                        />
-                        {column.type.base === '' && (
-                          <p className={styles['hint']}>Declare a type for this column</p>
-                        )}
-                      </td>
-                      <td>
-                        {column.confirmed ? (
-                          'Confirmed'
-                        ) : (
-                          <button
-                            type="button"
-                            aria-label={`Confirm ${column.name}`}
-                            disabled={column.type.base === ''}
-                            onClick={() => setColumn(at, { ...column, confirmed: true })}
-                          >
-                            Confirm
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Step>
-
-          <Step title="Key, order, empty and limits">
-            <div className={styles['form']}>
-              <fieldset>
-                <legend>Key</legend>
-                {columnNames.length === 0 && <p>Describe the statement to choose its key.</p>}
-                {columnNames.map((name) => (
-                  <label key={name} className={styles['check']}>
-                    <input
-                      type="checkbox"
-                      checked={draft.key.includes(name)}
-                      onChange={(event) =>
-                        change({
-                          key: event.target.checked
-                            ? [...draft.key, name]
-                            : draft.key.filter((each) => each !== name),
-                        })
-                      }
-                    />
-                    {name}
-                  </label>
-                ))}
-              </fieldset>
-              <fieldset>
-                <legend>Order</legend>
-                <label className={styles['check']}>
+                <label>
+                  Title
                   <input
-                    type="radio"
-                    name="order"
-                    checked={draft.order === 'multiset'}
-                    onChange={() => change({ order: 'multiset' })}
+                    value={draft.title}
+                    onChange={(event) => change({ title: event.target.value })}
                   />
-                  Check the rows as a set, in any order
                 </label>
-                <label className={styles['check']}>
-                  <input
-                    type="radio"
-                    name="order"
-                    checked={draft.order !== 'multiset'}
-                    onChange={() =>
-                      change({
-                        order: draft.key.map((column) => ({ column, direction: 'ascending' })),
+                <Choice label="Description">
+                  {(id) => (
+                    <textarea
+                      id={id}
+                      rows={2}
+                      value={draft.description}
+                      onChange={(event) => change({ description: event.target.value })}
+                    />
+                  )}
+                </Choice>
+              </div>
+            </Step>
+
+            <Step title="Query">
+              <div className={styles['form']}>
+                {draft.mode === 'http' ? (
+                  <HttpFields
+                    http={draft.http}
+                    parameters={draft.parameters}
+                    onChange={(http) => changeStatement({ http })}
+                  />
+                ) : draft.mode === 'file' ? (
+                  <FileFields
+                    file={draft.file}
+                    parameters={draft.parameters}
+                    columns={draft.columns.map((column) => {
+                      const type = valueTypeOf(column.type);
+                      return { name: column.name, type: typeof type === 'string' ? null : type };
+                    })}
+                    onChange={(file) => changeStatement({ file })}
+                  />
+                ) : sqlOffered ? (
+                  <fieldset>
+                    <legend>Write the query with</legend>
+                    <label className={styles['check']}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        checked={draft.mode === 'builder'}
+                        onChange={() => changeStatement({ mode: 'builder' })}
+                      />
+                      Builder
+                    </label>
+                    <label className={styles['check']}>
+                      <input
+                        type="radio"
+                        name="mode"
+                        checked={draft.mode === 'sql'}
+                        onChange={() => changeStatement({ mode: 'sql' })}
+                      />
+                      SQL
+                    </label>
+                  </fieldset>
+                ) : (
+                  <p className={styles['hint']}>
+                    Built from the source&apos;s tables and views. SQL is offered where you may
+                    write SQL on the connection.
+                  </p>
+                )}
+                {draft.mode === 'http' || draft.mode === 'file' ? null : draft.mode ===
+                  'builder' ? (
+                  <BuilderFields
+                    builder={draft.builder}
+                    parameters={draft.parameters}
+                    described={source}
+                    describedLines={sourceLines}
+                    busy={busy !== null}
+                    onDescribe={describeSource}
+                    onChange={(builder) => changeStatement({ builder })}
+                  />
+                ) : (
+                  <>
+                    <Choice label="SQL text">
+                      {(id) => (
+                        <textarea
+                          id={id}
+                          className={styles['code']}
+                          rows={8}
+                          spellCheck={false}
+                          value={draft.sql}
+                          onChange={(event) => changeStatement({ sql: event.target.value })}
+                        />
+                      )}
+                    </Choice>
+                    <p className={styles['hint']}>
+                      Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
+                      parameter below. A value is always sent apart from the SQL, never placed in
+                      it.
+                    </p>
+                  </>
+                )}
+                {draft.parameters.map((parameter, at) => (
+                  <ParameterFields
+                    key={at}
+                    index={at}
+                    built={draft.mode !== 'sql'}
+                    parameter={parameter}
+                    onChange={(changed) => setParameter(at, changed)}
+                    onRemove={() =>
+                      changeStatement({
+                        parameters: draft.parameters.filter((_, place) => place !== at),
                       })
                     }
                   />
-                  {draft.mode === 'builder' || draft.mode === 'file'
-                    ? 'Return the rows in a declared order'
-                    : 'Check the rows are in the order the SQL sorts them'}
-                </label>
-                {draft.order !== 'multiset' && (
-                  <>
-                    {draft.order.map((each, at) => (
-                      <div key={at} className={styles['fragment']}>
-                        <Choice label={`Order column ${at + 1}`}>
-                          {(id) => (
-                            <select
-                              id={id}
-                              value={each.column}
-                              onChange={(event) =>
-                                change({
-                                  order: (draft.order as (typeof each)[]).map((held, place) =>
-                                    place === at ? { ...held, column: event.target.value } : held,
-                                  ),
-                                })
-                              }
-                            >
-                              {columnNames.map((name) => (
-                                <option key={name} value={name}>
-                                  {name}
-                                </option>
-                              ))}
-                            </select>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    changeStatement({ parameters: [...draft.parameters, NEW_PARAMETER] })
+                  }
+                >
+                  Add parameter
+                </button>
+                {draft.mode === 'builder' && <GeneratedSql shown={generatedSql(draft)} />}
+              </div>
+            </Step>
+
+            <Step title="Columns">
+              {mayRun && (
+                <button type="button" disabled={busy !== null} onClick={describe}>
+                  {draft.mode === 'http' || draft.mode === 'file'
+                    ? 'Sample for columns'
+                    : 'Describe'}
+                </button>
+              )}
+              <p className={styles['hint']}>
+                {draft.mode === 'file'
+                  ? "Sample for columns reads the file with the sample values below and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+                  : draft.mode === 'http'
+                    ? "Sample for columns sends the request with the sample values below and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+                    : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
+              </p>
+              <Status lines={described} />
+              {draft.columns.length > 0 && (
+                <table className={styles['table']}>
+                  <caption>Columns</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">At the source</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Confirmed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draft.columns.map((column, at) => (
+                      <tr key={column.name}>
+                        <td>{column.name}</td>
+                        <td>{column.sourceType ?? 'Not described'}</td>
+                        <td>
+                          <TypeFields
+                            name={column.name}
+                            textColumns={textColumns}
+                            type={column.type}
+                            onChange={(type) =>
+                              setColumn(at, { ...column, type, confirmed: false })
+                            }
+                          />
+                          {column.type.base === '' && (
+                            <p className={styles['hint']}>Declare a type for this column</p>
                           )}
-                        </Choice>
-                        <Choice label={`Direction ${at + 1}`}>
-                          {(id) => (
-                            <select
-                              id={id}
-                              value={each.direction}
-                              onChange={(event) =>
-                                change({
-                                  order: (draft.order as (typeof each)[]).map((held, place) =>
-                                    place === at
-                                      ? {
-                                          ...held,
-                                          direction: event.target.value as typeof each.direction,
-                                        }
-                                      : held,
-                                  ),
-                                })
-                              }
+                        </td>
+                        <td>
+                          {column.confirmed ? (
+                            'Confirmed'
+                          ) : (
+                            <button
+                              type="button"
+                              aria-label={`Confirm ${column.name}`}
+                              disabled={column.type.base === ''}
+                              onClick={() => setColumn(at, { ...column, confirmed: true })}
                             >
-                              <option value="ascending">Ascending</option>
-                              <option value="descending">Descending</option>
-                            </select>
+                              Confirm
+                            </button>
                           )}
-                        </Choice>
-                      </div>
+                        </td>
+                      </tr>
                     ))}
-                    {columnNames.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
+                  </tbody>
+                </table>
+              )}
+            </Step>
+
+            <Step title="Key, order, empty and limits">
+              <div className={styles['form']}>
+                <fieldset>
+                  <legend>Key</legend>
+                  {columnNames.length === 0 && <p>Describe the statement to choose its key.</p>}
+                  {columnNames.map((name) => (
+                    <label key={name} className={styles['check']}>
+                      <input
+                        type="checkbox"
+                        checked={draft.key.includes(name)}
+                        onChange={(event) =>
                           change({
-                            order: [
-                              ...(draft.order as readonly {
-                                column: string;
-                                direction: 'ascending' | 'descending';
-                              }[]),
-                              { column: columnNames[0]!, direction: 'ascending' },
-                            ],
+                            key: event.target.checked
+                              ? [...draft.key, name]
+                              : draft.key.filter((each) => each !== name),
                           })
                         }
-                      >
-                        Add a column to the order
-                      </button>
-                    )}
-                    <p className={styles['hint']}>
-                      {draft.mode === 'builder' || draft.mode === 'file'
-                        ? 'The order covers the whole key. Text is ordered by code point.'
-                        : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
-                    </p>
-                    {draft.mode === 'builder' && (
-                      <label>
-                        Return at most
-                        <input
-                          inputMode="numeric"
-                          value={draft.builder.limit}
-                          onChange={(event) =>
-                            change({ builder: { ...draft.builder, limit: event.target.value } })
+                      />
+                      {name}
+                    </label>
+                  ))}
+                </fieldset>
+                <fieldset>
+                  <legend>Order</legend>
+                  <label className={styles['check']}>
+                    <input
+                      type="radio"
+                      name="order"
+                      checked={draft.order === 'multiset'}
+                      onChange={() => change({ order: 'multiset' })}
+                    />
+                    Check the rows as a set, in any order
+                  </label>
+                  <label className={styles['check']}>
+                    <input
+                      type="radio"
+                      name="order"
+                      checked={draft.order !== 'multiset'}
+                      onChange={() =>
+                        change({
+                          order: draft.key.map((column) => ({ column, direction: 'ascending' })),
+                        })
+                      }
+                    />
+                    {draft.mode === 'builder' || draft.mode === 'file'
+                      ? 'Return the rows in a declared order'
+                      : 'Check the rows are in the order the SQL sorts them'}
+                  </label>
+                  {draft.order !== 'multiset' && (
+                    <>
+                      {draft.order.map((each, at) => (
+                        <div key={at} className={styles['fragment']}>
+                          <Choice label={`Order column ${at + 1}`}>
+                            {(id) => (
+                              <select
+                                id={id}
+                                value={each.column}
+                                onChange={(event) =>
+                                  change({
+                                    order: (draft.order as (typeof each)[]).map((held, place) =>
+                                      place === at ? { ...held, column: event.target.value } : held,
+                                    ),
+                                  })
+                                }
+                              >
+                                {columnNames.map((name) => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </Choice>
+                          <Choice label={`Direction ${at + 1}`}>
+                            {(id) => (
+                              <select
+                                id={id}
+                                value={each.direction}
+                                onChange={(event) =>
+                                  change({
+                                    order: (draft.order as (typeof each)[]).map((held, place) =>
+                                      place === at
+                                        ? {
+                                            ...held,
+                                            direction: event.target.value as typeof each.direction,
+                                          }
+                                        : held,
+                                    ),
+                                  })
+                                }
+                              >
+                                <option value="ascending">Ascending</option>
+                                <option value="descending">Descending</option>
+                              </select>
+                            )}
+                          </Choice>
+                        </div>
+                      ))}
+                      {columnNames.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            change({
+                              order: [
+                                ...(draft.order as readonly {
+                                  column: string;
+                                  direction: 'ascending' | 'descending';
+                                }[]),
+                                { column: columnNames[0]!, direction: 'ascending' },
+                              ],
+                            })
                           }
-                        />
-                      </label>
-                    )}
-                  </>
-                )}
-                {draft.mode === 'builder' && draft.order === 'multiset' && (
-                  <p className={styles['hint']}>
-                    Return at most is offered beside a declared order: over rows in no order it
-                    would choose them arbitrarily.
-                  </p>
-                )}
-              </fieldset>
-              <label className={styles['check']}>
-                <input
-                  type="checkbox"
-                  checked={draft.empty === 'valid'}
-                  onChange={(event) =>
-                    change({ empty: event.target.checked ? 'valid' : 'invalid' })
-                  }
-                />
-                No rows is a valid answer
-              </label>
-              <label>
-                Most rows
-                <input
-                  inputMode="numeric"
-                  value={draft.limits.rows}
-                  onChange={(event) =>
-                    change({ limits: { ...draft.limits, rows: event.target.value } })
-                  }
-                />
-              </label>
-              <label>
-                Most bytes
-                <input
-                  inputMode="numeric"
-                  value={draft.limits.bytes}
-                  onChange={(event) =>
-                    change({ limits: { ...draft.limits, bytes: event.target.value } })
-                  }
-                />
-              </label>
-              <label>
-                Most seconds
-                <input
-                  inputMode="numeric"
-                  value={draft.limits.seconds}
-                  onChange={(event) =>
-                    change({ limits: { ...draft.limits, seconds: event.target.value } })
-                  }
-                />
-              </label>
-              <p className={styles['hint']}>
-                The environment may lower each limit; a run takes the lower of the two.
-              </p>
-            </div>
-          </Step>
-        </>
-      )}
+                        >
+                          Add a column to the order
+                        </button>
+                      )}
+                      <p className={styles['hint']}>
+                        {draft.mode === 'builder' || draft.mode === 'file'
+                          ? 'The order covers the whole key. Text is ordered by code point.'
+                          : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
+                      </p>
+                      {draft.mode === 'builder' && (
+                        <label>
+                          Return at most
+                          <input
+                            inputMode="numeric"
+                            value={draft.builder.limit}
+                            onChange={(event) =>
+                              change({ builder: { ...draft.builder, limit: event.target.value } })
+                            }
+                          />
+                        </label>
+                      )}
+                    </>
+                  )}
+                  {draft.mode === 'builder' && draft.order === 'multiset' && (
+                    <p className={styles['hint']}>
+                      Return at most is offered beside a declared order: over rows in no order it
+                      would choose them arbitrarily.
+                    </p>
+                  )}
+                </fieldset>
+                <label className={styles['check']}>
+                  <input
+                    type="checkbox"
+                    checked={draft.empty === 'valid'}
+                    onChange={(event) =>
+                      change({ empty: event.target.checked ? 'valid' : 'invalid' })
+                    }
+                  />
+                  No rows is a valid answer
+                </label>
+                <label>
+                  Most rows
+                  <input
+                    inputMode="numeric"
+                    value={draft.limits.rows}
+                    onChange={(event) =>
+                      change({ limits: { ...draft.limits, rows: event.target.value } })
+                    }
+                  />
+                </label>
+                <label>
+                  Most bytes
+                  <input
+                    inputMode="numeric"
+                    value={draft.limits.bytes}
+                    onChange={(event) =>
+                      change({ limits: { ...draft.limits, bytes: event.target.value } })
+                    }
+                  />
+                </label>
+                <label>
+                  Most seconds
+                  <input
+                    inputMode="numeric"
+                    value={draft.limits.seconds}
+                    onChange={(event) =>
+                      change({ limits: { ...draft.limits, seconds: event.target.value } })
+                    }
+                  />
+                </label>
+                <p className={styles['hint']}>
+                  The environment may lower each limit; a run takes the lower of the two.
+                </p>
+              </div>
+            </Step>
+          </>
+        )}
 
-      {mayRun && (
-        <Step title="Sample">
-          <div className={styles['form']}>
-            {draft.parameters.map((parameter, at) => (
-              <ValueField
-                key={at}
-                parameter={parameter}
-                value={typed[parameter.name] ?? ''}
-                onChange={(value) => setTyped((held) => ({ ...held, [parameter.name]: value }))}
-              />
-            ))}
-            <button type="button" disabled={busy !== null} onClick={sample}>
-              Run sample
-            </button>
-          </div>
-          <p className={styles['hint']}>
-            A sample runs the definition exactly as a document would, and keeps nothing.
-          </p>
-          {sampled !== null && Array.isArray(sampled) && <Status lines={sampled} />}
-          {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'failed' && (
-            <Status lines={[sampled.failure.message]} />
-          )}
-          {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'ok' && (
-            <div role="status">
-              <p>{`${sampled.rowCount} ${sampled.rowCount === 1 ? 'row' : 'rows'}.`}</p>
-              <p>{`Checksum ${sampled.checksum.slice(0, 12)}.`}</p>
-              <table className={styles['table']}>
-                <caption>The first rows</caption>
-                <thead>
-                  <tr>
-                    {sampled.columns.map(([name]) => (
-                      <th key={name} scope="col">
-                        {name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sampled.rows.map((row, at) => (
-                    <tr key={at}>
-                      {row.map((value, place) => (
-                        <td key={place}>
-                          {cellWords(value, sampled.columns[place]?.[1], sampled.images)}
-                        </td>
+        {mayRun && (
+          <Step title="Sample">
+            <div className={styles['form']}>
+              {draft.parameters.map((parameter, at) => (
+                <ValueField
+                  key={at}
+                  parameter={parameter}
+                  value={typed[parameter.name] ?? ''}
+                  onChange={(value) => setTyped((held) => ({ ...held, [parameter.name]: value }))}
+                />
+              ))}
+              <button type="button" disabled={busy !== null} onClick={sample}>
+                Run sample
+              </button>
+            </div>
+            <p className={styles['hint']}>
+              A sample runs the definition exactly as a document would, and keeps nothing.
+            </p>
+            {sampled !== null && Array.isArray(sampled) && <Status lines={sampled} />}
+            {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'failed' && (
+              <Status lines={[sampled.failure.message]} />
+            )}
+            {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'ok' && (
+              <div role="status">
+                <p>{`${sampled.rowCount} ${sampled.rowCount === 1 ? 'row' : 'rows'}.`}</p>
+                <p>{`Checksum ${sampled.checksum.slice(0, 12)}.`}</p>
+                <table className={styles['table']}>
+                  <caption>The first rows</caption>
+                  <thead>
+                    <tr>
+                      {sampled.columns.map(([name]) => (
+                        <th key={name} scope="col">
+                          {name}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p>
-                {'sql' in sampled.ran
-                  ? 'The SQL that ran'
-                  : 'object' in sampled.ran
-                    ? 'The object that was read'
-                    : 'The request that was sent'}
-              </p>
-              <pre className={styles['sql']}>
-                {'sql' in sampled.ran
-                  ? sampled.ran.sql
-                  : 'object' in sampled.ran
-                    ? `${sampled.ran.object.bucket}/${sampled.ran.object.key}`
-                    : requestText(sampled.ran.request as never)}
-              </pre>
-            </div>
-          )}
-        </Step>
-      )}
+                  </thead>
+                  <tbody>
+                    {sampled.rows.map((row, at) => (
+                      <tr key={at}>
+                        {row.map((value, place) => (
+                          <td key={place}>
+                            {cellWords(value, sampled.columns[place]?.[1], sampled.images)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p>
+                  {'sql' in sampled.ran
+                    ? 'The SQL that ran'
+                    : 'object' in sampled.ran
+                      ? 'The object that was read'
+                      : 'The request that was sent'}
+                </p>
+                <pre className={styles['sql']}>
+                  {'sql' in sampled.ran
+                    ? sampled.ran.sql
+                    : 'object' in sampled.ran
+                      ? `${sampled.ran.object.bucket}/${sampled.ran.object.key}`
+                      : requestText(sampled.ran.request as never)}
+                </pre>
+              </div>
+            )}
+          </Step>
+        )}
 
-      {shown !== null && (
-        <Step title="Used by">
-          {uses === null ? null : uses === 'failed' ? (
-            <p>What uses this query definition could not be read.</p>
-          ) : uses.components.readable.length === 0 &&
-            uses.components.others === 0 &&
-            uses.documents.readable.length === 0 &&
-            uses.documents.others === 0 ? (
-            <p>No component binds this query definition yet.</p>
-          ) : (
-            <>
-              <UsedList
-                heading="Components"
-                uses={uses.components}
-                link={(component) => `#/components/${component}`}
-                counted={(others) =>
-                  `Bound by ${others} ${others === 1 ? 'component' : 'components'} you may not read.`
-                }
-              />
-              <UsedList
-                heading="Documents"
-                uses={uses.documents}
-                link={documentLink}
-                counted={(others) =>
-                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
-                }
-              />
-              <p className={styles['hint']}>
-                A binding that does not pin a version runs the latest one the next time it is
-                resolved or checked.
-              </p>
-            </>
-          )}
-        </Step>
-      )}
-
-      {mayEdit && (
-        <Step title="Save">
-          {unshown !== null ? null : everyColumnConfirmed(draft) ? (
-            <button type="button" className="primary" disabled={busy !== null} onClick={save}>
-              Save version
-            </button>
-          ) : (
-            <p>Confirm every column to save.</p>
-          )}
-          <Status lines={saved} />
-          {shown !== null && (
-            <>
-              <p>
-                {retired
-                  ? 'A retired query definition runs nothing. Reinstating it lets it run again.'
-                  : 'A retired query definition runs nothing, and keeps every version it had.'}
-              </p>
-              <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
-                {retired ? 'Reinstate' : 'Retire'}
+        {mayEdit && (
+          <Step title="Save">
+            {unshown !== null ? null : everyColumnConfirmed(draft) ? (
+              <button type="button" className="primary" disabled={busy !== null} onClick={save}>
+                Save version
               </button>
-            </>
-          )}
-        </Step>
-      )}
+            ) : (
+              <p>Confirm every column to save.</p>
+            )}
+            <Status lines={saved} />
+            {shown !== null && (
+              <>
+                <p>
+                  {retired
+                    ? 'A retired query definition runs nothing. Reinstating it lets it run again.'
+                    : 'A retired query definition runs nothing, and keeps every version it had.'}
+                </p>
+                <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
+                  {retired ? 'Reinstate' : 'Retire'}
+                </button>
+              </>
+            )}
+          </Step>
+        )}
+      </div>
     </article>
   );
 }

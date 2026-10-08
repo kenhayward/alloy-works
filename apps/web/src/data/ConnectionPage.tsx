@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Notice } from '../states/Notice.js';
 import { documentLink } from '../structure/links.js';
+import { Chip } from '../parts/Chip.js';
 import styles from './ConnectionPage.module.css';
 import { connectionAccessLink, queryDefinitionLink } from './links.js';
 import {
@@ -561,192 +562,198 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
 
   return (
     <article className={styles['page']}>
-      <p>
-        <a href="#/connections">Back to connections</a>{' '}
-        <ManageAccessLink
-          client={client}
-          target={`artifact:${view.id}`}
-          href={connectionAccessLink(view.id)}
-        />
-      </p>
-      <h1>{view.settings.name}</h1>
-      <p className={styles['meta']}>
-        <span>
-          {http ? 'HTTPS API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in {view.space.name}
-        </span>
-        <span>Version {view.version.number}</span>
-        {retired && <span className={styles['retired']}>Retired</span>}
-      </p>
+      {/* The head (the Ledger, ADR-0046): where it is, what it is, its facts as chips. */}
+      <header className={styles['head']}>
+        <nav aria-label="Breadcrumb" className={styles['trail']}>
+          <a href="#/connections">Connections</a>
+          <span>{` / ${view.space.name}`}</span>
+        </nav>
+        <h1>{view.settings.name}</h1>
+        <p className={styles['meta']}>
+          <Chip>{`${http ? 'HTTPS API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
+          <Chip className={styles['mono']}>{`Version ${view.version.number}`}</Chip>
+          {retired && <Chip tone="warn">Retired</Chip>}
+          <ManageAccessLink
+            client={client}
+            target={`artifact:${view.id}`}
+            href={connectionAccessLink(view.id)}
+          />
+        </p>
+      </header>
 
-      <Part title="Settings">
-        {view.mayAdminister && draft !== null ? (
-          <div className={styles['form']}>
-            <SettingsFields draft={draft} onChange={setDraft} typeFixed />
-            <button type="button" className="primary" disabled={busy !== null} onClick={save}>
-              Save version
-            </button>
-          </div>
-        ) : (
-          <SettingsList settings={view.settings} />
-        )}
-        <p role="status">{saved}</p>
-      </Part>
-
-      <Part title="Credential">
-        <p>{credentialText(view.credential, type)}</p>
-        {view.mayAdminister && !retired && (
-          <div className={styles['form']}>
-            {s3 && (
-              <>
-                <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
-                <label>
-                  Access key id
-                  <input
-                    autoComplete="off"
-                    spellCheck={false}
-                    value={keyId}
-                    onChange={(event) => setKeyId(event.target.value)}
-                  />
-                </label>
-              </>
-            )}
-            <label>
-              {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={secret}
-                onChange={(event) => setSecret(event.target.value)}
-              />
-            </label>
-            <button type="button" disabled={busy !== null} onClick={setCredential}>
-              {!view.credential.set
-                ? 'Set'
-                : view.credential.targetChanged
-                  ? 'Set again'
-                  : 'Replace'}
-            </button>
-            <p className={styles['hint']}>
-              It is sealed as soon as it is sent and never shown again, here or anywhere. The
-              connection is tested with it straight after.
-            </p>
-          </div>
-        )}
-        <TestAnswer tested={rotation} />
-      </Part>
-
-      {view.mayUse && !retired && (
-        <Part title="Test">
-          <p>{lastTestText(view)}</p>
-          <button type="button" disabled={busy !== null} onClick={test}>
-            Test
-          </button>
-          <TestAnswer tested={tested} />
-        </Part>
-      )}
-
-      {view.mayUse && !retired && type === 'postgres' && (
-        <Part title="Tables">
-          <button type="button" disabled={busy !== null} onClick={describe}>
-            List tables
-          </button>
-          {typeof tables === 'string' && (
-            <div role="status">
-              <Lines text={tables} />
-            </div>
-          )}
-          {tables !== null && typeof tables !== 'string' && (
+      {/* What uses it, read before the parts that change it: beside them on the page. */}
+      <aside className={styles['side']} aria-label="Beside the connection">
+        <Part title="Used by">
+          {uses === null ? null : uses === 'failed' ? (
+            <p>What uses this connection could not be read.</p>
+          ) : uses.definitions.readable.length === 0 &&
+            uses.definitions.others === 0 &&
+            uses.documents.readable.length === 0 &&
+            uses.documents.others === 0 ? (
+            <p>Nothing uses this connection.</p>
+          ) : (
             <>
-              <table className={styles['tables']}>
-                <caption>Tables and views</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Kind</th>
-                    <th scope="col">Columns</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tables.relations.map((relation) => (
-                    <tr key={`${relation.schema}.${relation.name}`}>
-                      <td>{`${relation.schema}.${relation.name}`}</td>
-                      <td>{KINDS[relation.kind] ?? relation.kind}</td>
-                      <td>{relation.columns.map((column) => column.name).join(', ')}</td>
-                    </tr>
+              {(uses.definitions.readable.length > 0 || uses.definitions.others > 0) && (
+                <h3>Query definitions</h3>
+              )}
+              {uses.definitions.readable.length > 0 && (
+                <ul>
+                  {uses.definitions.readable.map((each) => (
+                    <li key={each.id}>
+                      <a href={queryDefinitionLink(each.id)}>{each.title}</a>
+                      {each.retired && ' (retired)'}
+                    </li>
                   ))}
-                </tbody>
-              </table>
-              {tables.truncated && (
+                </ul>
+              )}
+              {uses.definitions.others > 0 && (
                 <p>
-                  The list was cut short: the source has more tables and views than the connector
-                  lists at once.
+                  {uses.definitions.readable.length > 0
+                    ? `And ${uses.definitions.others} more you may not read.`
+                    : `Used by ${unread(uses.definitions.others)}.`}
                 </p>
               )}
-              {leftOutText(tables.leftOut) && <p>{leftOutText(tables.leftOut)}</p>}
+              <UsedList
+                heading="Documents"
+                uses={uses.documents}
+                link={documentLink}
+                counted={(others) =>
+                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+                }
+              />
             </>
           )}
         </Part>
-      )}
-
-      <Part title="Used by">
-        {uses === null ? null : uses === 'failed' ? (
-          <p>What uses this connection could not be read.</p>
-        ) : uses.definitions.readable.length === 0 &&
-          uses.definitions.others === 0 &&
-          uses.documents.readable.length === 0 &&
-          uses.documents.others === 0 ? (
-          <p>Nothing uses this connection.</p>
-        ) : (
-          <>
-            {(uses.definitions.readable.length > 0 || uses.definitions.others > 0) && (
-              <h3>Query definitions</h3>
-            )}
-            {uses.definitions.readable.length > 0 && (
-              <ul>
-                {uses.definitions.readable.map((each) => (
-                  <li key={each.id}>
-                    <a href={queryDefinitionLink(each.id)}>{each.title}</a>
-                    {each.retired && ' (retired)'}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {uses.definitions.others > 0 && (
-              <p>
-                {uses.definitions.readable.length > 0
-                  ? `And ${uses.definitions.others} more you may not read.`
-                  : `Used by ${unread(uses.definitions.others)}.`}
-              </p>
-            )}
-            <UsedList
-              heading="Documents"
-              uses={uses.documents}
-              link={documentLink}
-              counted={(others) =>
-                `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
-              }
-            />
-          </>
-        )}
-      </Part>
-
-      {view.mayAdminister && (
-        <Part title={retired ? 'Reinstating' : 'Retiring'}>
-          <p>
-            {retired
-              ? 'A retired connection runs nothing. Reinstating it lets it be tested and used again.'
-              : 'A retired connection runs nothing. Everything already kept from it stays as it is.'}
-          </p>
-          <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
-            {retired ? 'Reinstate' : 'Retire'}
-          </button>
-          <div role="status">
-            {retiring?.map((line, at) => (
-              <p key={at}>{line}</p>
-            ))}
-          </div>
+      </aside>
+      <div className={styles['main']}>
+        <Part title="Settings">
+          {view.mayAdminister && draft !== null ? (
+            <div className={styles['form']}>
+              <SettingsFields draft={draft} onChange={setDraft} typeFixed />
+              <button type="button" className="primary" disabled={busy !== null} onClick={save}>
+                Save version
+              </button>
+            </div>
+          ) : (
+            <SettingsList settings={view.settings} />
+          )}
+          <p role="status">{saved}</p>
         </Part>
-      )}
+
+        <Part title="Credential">
+          <p>{credentialText(view.credential, type)}</p>
+          {view.mayAdminister && !retired && (
+            <div className={styles['form']}>
+              {s3 && (
+                <>
+                  <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
+                  <label>
+                    Access key id
+                    <input
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={keyId}
+                      onChange={(event) => setKeyId(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              <label>
+                {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={secret}
+                  onChange={(event) => setSecret(event.target.value)}
+                />
+              </label>
+              <button type="button" disabled={busy !== null} onClick={setCredential}>
+                {!view.credential.set
+                  ? 'Set'
+                  : view.credential.targetChanged
+                    ? 'Set again'
+                    : 'Replace'}
+              </button>
+              <p className={styles['hint']}>
+                It is sealed as soon as it is sent and never shown again, here or anywhere. The
+                connection is tested with it straight after.
+              </p>
+            </div>
+          )}
+          <TestAnswer tested={rotation} />
+        </Part>
+
+        {view.mayUse && !retired && (
+          <Part title="Test">
+            <p>{lastTestText(view)}</p>
+            <button type="button" disabled={busy !== null} onClick={test}>
+              Test
+            </button>
+            <TestAnswer tested={tested} />
+          </Part>
+        )}
+
+        {view.mayUse && !retired && type === 'postgres' && (
+          <Part title="Tables">
+            <button type="button" disabled={busy !== null} onClick={describe}>
+              List tables
+            </button>
+            {typeof tables === 'string' && (
+              <div role="status">
+                <Lines text={tables} />
+              </div>
+            )}
+            {tables !== null && typeof tables !== 'string' && (
+              <>
+                <table className={styles['tables']}>
+                  <caption>Tables and views</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Kind</th>
+                      <th scope="col">Columns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tables.relations.map((relation) => (
+                      <tr key={`${relation.schema}.${relation.name}`}>
+                        <td>{`${relation.schema}.${relation.name}`}</td>
+                        <td>{KINDS[relation.kind] ?? relation.kind}</td>
+                        <td>{relation.columns.map((column) => column.name).join(', ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {tables.truncated && (
+                  <p>
+                    The list was cut short: the source has more tables and views than the connector
+                    lists at once.
+                  </p>
+                )}
+                {leftOutText(tables.leftOut) && <p>{leftOutText(tables.leftOut)}</p>}
+              </>
+            )}
+          </Part>
+        )}
+
+        {view.mayAdminister && (
+          <Part title={retired ? 'Reinstating' : 'Retiring'}>
+            <p>
+              {retired
+                ? 'A retired connection runs nothing. Reinstating it lets it be tested and used again.'
+                : 'A retired connection runs nothing. Everything already kept from it stays as it is.'}
+            </p>
+            <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
+              {retired ? 'Reinstate' : 'Retire'}
+            </button>
+            <div role="status">
+              {retiring?.map((line, at) => (
+                <p key={at}>{line}</p>
+              ))}
+            </div>
+          </Part>
+        )}
+      </div>
     </article>
   );
 }
