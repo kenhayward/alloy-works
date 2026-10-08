@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger tokens</title>
+</head>
+<body>
+
+<style>
+body{margin:0}
+a{color:#165a72}a:hover{color:#0f4152}
+.sw{display:flex;align-items:center;gap:10px;height:32px}
+.sw i{width:26px;height:26px;border-radius:6px;flex:none;box-shadow:inset 0 0 0 1px rgba(127,127,127,0.35)}
+.sw b{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:13px;flex:1}
+.sw span{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.cr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.cr span:last-child{font-family:'IBM Plex Mono',monospace}
+</style>
+
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 40px 48px; background: #f4f6f8; color: #15202b; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; align-items: flex-end; gap: 24px">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.015em">Ledger tokens</h1>
+      <p style="margin: 0; font-size: 15px; color: #56606c">A replacement for tokens.css. One block per theme under data-theme on html, Auto maps prefers-color-scheme onto them. The header follows the theme; --doc-* stays as it is, so a page is always paper.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <section aria-label="Light theme" style="background: #ffffff; color: #15202b; border: 1px solid #e1e5ea; border-radius: 12px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Light</h2><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #56606c">[data-theme="light"]</span></div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px">
+        <div class="sw"><i style="background: #f4f6f8"></i><b>--bg</b><span>#f4f6f8</span></div>
+        <div class="sw"><i style="background: #15202b"></i><b>--text</b><span>#15202b</span></div>
+        <div class="sw"><i style="background: #ffffff"></i><b>--chrome</b><span>#ffffff</span></div>
+        <div class="sw"><i style="background: #56606c"></i><b>--muted</b><span>#56606c</span></div>
+        <div class="sw"><i style="background: #ffffff"></i><b>--surface</b><span>#ffffff</span></div>
+        <div class="sw"><i style="background: #e1e5ea"></i><b>--border</b><span>#e1e5ea</span></div>
+        <div class="sw"><i style="background: #eef1f4"></i><b>--sunken</b><span>#eef1f4</span></div>
+        <div class="sw"><i style="background: #c9d0d8"></i><b>--strong-border</b><span>#c9d0d8</span></div>
+        <div class="sw"><i style="background: #1d6a85"></i><b>--accent</b><span>#1d6a85</span></div>
+        <div class="sw"><i style="background: #e4f1f5"></i><b>--accent-weak</b><span>#e4f1f5</span></div>
+        <div class="sw"><i style="background: #ffffff"></i><b>--on-accent</b><span>#ffffff</span></div>
+        <div class="sw"><i style="background: #165a72"></i><b>--accent-text</b><span>#165a72</span></div>
+        <div class="sw"><i style="background: #9a4610"></i><b>--warn</b><span>#9a4610</span></div>
+        <div class="sw"><i style="background: #fdf0e1"></i><b>--warn-bg</b><span>#fdf0e1</span></div>
+        <div class="sw"><i style="background: #1d7148"></i><b>--ok</b><span>#1d7148</span></div>
+        <div class="sw"><i style="background: #e2f3e9"></i><b>--ok-bg</b><span>#e2f3e9</span></div>
+        <div class="sw"><i style="background: #5b3fb8"></i><b>--info</b><span>#5b3fb8</span></div>
+        <div class="sw"><i style="background: #efeafc"></i><b>--info-bg</b><span>#efeafc</span></div>
+        <div class="sw"><i style="background: #b42318"></i><b>--danger</b><span>#b42318</span></div>
+        <div class="sw"><i style="background: #fdecea"></i><b>--danger-bg</b><span>#fdecea</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; padding-top: 8px; border-top: 1px solid #e1e5ea; color: #56606c">
+        <div class="cr"><span>text on bg</span><span>15.2:1</span></div>
+        <div class="cr"><span>on-accent on accent</span><span>6.1:1</span></div>
+        <div class="cr"><span>muted on surface</span><span>6.4:1</span></div>
+        <div class="cr"><span>accent-text on accent-weak</span><span>6.6:1</span></div>
+        <div class="cr"><span>muted on sunken</span><span>5.6:1</span></div>
+        <div class="cr"><span>warn on warn-bg</span><span>5.7:1</span></div>
+      </div>
+    </section>
+
+    <section aria-label="Dark theme" style="background: #141c24; color: #e5eaef; border: 1px solid #232f3a; border-radius: 12px; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Dark</h2><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #9aa6b2">[data-theme="dark"]</span></div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px">
+        <div class="sw"><i style="background: #0d1217"></i><b>--bg</b><span>#0d1217</span></div>
+        <div class="sw"><i style="background: #e5eaef"></i><b>--text</b><span>#e5eaef</span></div>
+        <div class="sw"><i style="background: #11181f"></i><b>--chrome</b><span>#11181f</span></div>
+        <div class="sw"><i style="background: #9aa6b2"></i><b>--muted</b><span>#9aa6b2</span></div>
+        <div class="sw"><i style="background: #141c24"></i><b>--surface</b><span>#141c24</span></div>
+        <div class="sw"><i style="background: #232f3a"></i><b>--border</b><span>#232f3a</span></div>
+        <div class="sw"><i style="background: #0f161d"></i><b>--sunken</b><span>#0f161d</span></div>
+        <div class="sw"><i style="background: #34424f"></i><b>--strong-border</b><span>#34424f</span></div>
+        <div class="sw"><i style="background: #5fb6cc"></i><b>--accent</b><span>#5fb6cc</span></div>
+        <div class="sw"><i style="background: #132f39"></i><b>--accent-weak</b><span>#132f39</span></div>
+        <div class="sw"><i style="background: #04222b"></i><b>--on-accent</b><span>#04222b</span></div>
+        <div class="sw"><i style="background: #8fd0e0"></i><b>--accent-text</b><span>#8fd0e0</span></div>
+        <div class="sw"><i style="background: #f2a764"></i><b>--warn</b><span>#f2a764</span></div>
+        <div class="sw"><i style="background: #3a2513"></i><b>--warn-bg</b><span>#3a2513</span></div>
+        <div class="sw"><i style="background: #5ccf93"></i><b>--ok</b><span>#5ccf93</span></div>
+        <div class="sw"><i style="background: #12301f"></i><b>--ok-bg</b><span>#12301f</span></div>
+        <div class="sw"><i style="background: #c0adff"></i><b>--info</b><span>#c0adff</span></div>
+        <div class="sw"><i style="background: #2a2148"></i><b>--info-bg</b><span>#2a2148</span></div>
+        <div class="sw"><i style="background: #ff8a80"></i><b>--danger</b><span>#ff8a80</span></div>
+        <div class="sw"><i style="background: #3b1715"></i><b>--danger-bg</b><span>#3b1715</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; padding-top: 8px; border-top: 1px solid #232f3a; color: #9aa6b2">
+        <div class="cr"><span>text on bg</span><span>15.5:1</span></div>
+        <div class="cr"><span>on-accent on accent</span><span>7.1:1</span></div>
+        <div class="cr"><span>muted on surface</span><span>6.9:1</span></div>
+        <div class="cr"><span>accent-text on accent-weak</span><span>8.2:1</span></div>
+        <div class="cr"><span>muted on sunken</span><span>7.3:1</span></div>
+        <div class="cr"><span>warn on warn-bg</span><span>7.2:1</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: 1.3fr 1fr 0.8fr 1.3fr; gap: 24px; min-height: 0">
+    <section aria-label="Type" style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #56606c">Type, 6 sizes</h2>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">28</span><span style="font-size: 28px; font-weight: 600; letter-spacing: -0.015em">Greeting</span></div>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">20</span><span style="font-size: 20px; font-weight: 600">Page and section title</span></div>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">16</span><span style="font-size: 16px; font-weight: 600">Panel and card title</span></div>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">14</span><span style="font-size: 14px">Body, controls, rows</span></div>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">13</span><span style="font-size: 13px">Labels, metadata, chips</span></div>
+      <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 30px; color: #56606c">12</span><span style="font-size: 12px">Status bar, rail labels</span></div>
+    </section>
+    <section aria-label="Space" style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px">
+      <h2 style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #56606c">Space, 4px base</h2>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">4</span><span style="width: 4px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">8</span><span style="width: 8px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">12</span><span style="width: 12px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">16</span><span style="width: 16px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">24</span><span style="width: 24px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">32</span><span style="width: 32px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+      <div style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; width: 24px">40</span><span style="width: 40px; height: 14px; background: #1d6a85; border-radius: 2px"></span></div>
+    </section>
+    <section aria-label="Radius" style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #56606c">Radius</h2>
+      <div style="display: flex; align-items: center; gap: 12px"><span style="width: 40px; height: 28px; border: 1.5px solid #1d6a85; border-radius: 4px"></span><span style="font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace; font-weight: 500">4</b> chips, tags</span></div>
+      <div style="display: flex; align-items: center; gap: 12px"><span style="width: 40px; height: 28px; border: 1.5px solid #1d6a85; border-radius: 8px"></span><span style="font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace; font-weight: 500">8</b> controls, rows</span></div>
+      <div style="display: flex; align-items: center; gap: 12px"><span style="width: 40px; height: 28px; border: 1.5px solid #1d6a85; border-radius: 12px"></span><span style="font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace; font-weight: 500">12</b> cards, panels</span></div>
+    </section>
+    <section aria-label="Rules" style="background: #15202b; color: #e5eaef; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px">
+      <h2 style="margin: 0 0 2px; font-size: 14px; font-weight: 600; color: #8fd0e0">Rules</h2>
+      <ul style="margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.45">
+        <li>One accent. Status colours only ever mean status.</li>
+        <li>Warn is not approved, changes not in a version, checks failing. Info is someone else editing, or a newer version.</li>
+        <li>IBM Plex Sans for the interface, Plex Mono for numbers, versions and identifiers.</li>
+        <li>Panels are named in words. No two-letter codes.</li>
+        <li>colours.test.ts keeps both blocks naming the same tokens.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>
