@@ -18576,31 +18576,31 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 500,
+      "line": 504,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 450,
+      "line": 454,
       "kind": "title"
     },
     {
       "id": "API-003",
       "file": "apps/service/src/app.test.ts",
-      "line": 85,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "API-062",
       "file": "apps/service/src/app.test.ts",
-      "line": 103,
+      "line": 107,
       "kind": "title"
     },
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 172,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -18648,49 +18648,49 @@
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 222,
+      "line": 226,
       "kind": "rule"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 216,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "AST-002",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 216,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 309,
+      "line": 313,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 289,
+      "line": 293,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 216,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 272,
+      "line": 276,
       "kind": "rule"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 267,
+      "line": 271,
       "kind": "title"
     },
     {
@@ -18768,49 +18768,49 @@
     {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
-      "line": 222,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "MET-011",
       "file": "apps/service/src/component-creation.test.ts",
-      "line": 176,
+      "line": 180,
       "kind": "title"
     },
     {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 210,
+      "line": 214,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 332,
+      "line": 336,
       "kind": "title"
     },
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 964,
+      "line": 968,
       "kind": "rule"
     },
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 952,
+      "line": 956,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 253,
+      "line": 257,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 840,
+      "line": 844,
       "kind": "rule"
     },
     {
@@ -18822,13 +18822,13 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 857,
+      "line": 861,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/service/src/data-secrets.test.ts",
-      "line": 162,
+      "line": 167,
       "kind": "title"
     },
     {
@@ -18846,25 +18846,25 @@
     {
       "id": "MET-008",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 185,
+      "line": 189,
       "kind": "rule"
     },
     {
       "id": "MET-024",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 121,
+      "line": 125,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 157,
+      "line": 161,
       "kind": "rule"
     },
     {
       "id": "MET-037",
       "file": "apps/service/src/definition-routes.test.ts",
-      "line": 196,
+      "line": 200,
       "kind": "rule"
     },
     {
@@ -18882,31 +18882,31 @@
     {
       "id": "API-037",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 515,
+      "line": 519,
       "kind": "rule"
     },
     {
       "id": "CNT-160",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 384,
+      "line": 388,
       "kind": "title"
     },
     {
       "id": "STR-054",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 241,
+      "line": 245,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 549,
+      "line": 553,
       "kind": "title"
     },
     {
       "id": "STR-061",
       "file": "apps/service/src/document-routes.test.ts",
-      "line": 213,
+      "line": 217,
       "kind": "title"
     },
     {
@@ -18960,55 +18960,61 @@
     {
       "id": "IAM-059",
       "file": "apps/service/src/first-administrator.test.ts",
-      "line": 122,
+      "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-013",
+      "file": "apps/service/src/google-sign-in.test.ts",
+      "line": 283,
       "kind": "title"
     },
     {
       "id": "IAM-041",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 197,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 146,
+      "line": 153,
       "kind": "rule"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 143,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 222,
+      "line": 229,
       "kind": "rule"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google-sign-in.test.ts",
-      "line": 218,
+      "line": 225,
       "kind": "title"
     },
     {
       "id": "IAM-054",
       "file": "apps/service/src/google.test.ts",
-      "line": 27,
+      "line": 31,
       "kind": "title"
     },
     {
       "id": "IAM-071",
       "file": "apps/service/src/grant-routes.test.ts",
-      "line": 293,
+      "line": 297,
       "kind": "rule"
     },
     {
       "id": "IAM-009",
       "file": "apps/service/src/group-routes.test.ts",
-      "line": 150,
+      "line": 154,
       "kind": "title"
     },
     {
@@ -19032,37 +19038,37 @@
     {
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
-      "line": 138,
+      "line": 142,
       "kind": "rule"
     },
     {
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
-      "line": 117,
+      "line": 121,
       "kind": "title"
     },
     {
       "id": "IAM-072",
       "file": "apps/service/src/invitation-routes.test.ts",
-      "line": 147,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 275,
+      "line": 279,
       "kind": "title"
     },
     {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
-      "line": 124,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/service/src/numbering-routes.test.ts",
-      "line": 241,
+      "line": 245,
       "kind": "title"
     },
     {
@@ -19086,7 +19092,7 @@
     {
       "id": "STY-035",
       "file": "apps/service/src/presentation-routes.test.ts",
-      "line": 109,
+      "line": 113,
       "kind": "title"
     },
     {
@@ -19152,43 +19158,43 @@
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 546,
+      "line": 550,
       "kind": "rule"
     },
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 523,
+      "line": 527,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 604,
+      "line": 608,
       "kind": "title"
     },
     {
       "id": "DAT-050",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 559,
+      "line": 563,
       "kind": "title"
     },
     {
       "id": "DAT-101",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 304,
+      "line": 308,
       "kind": "title"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 476,
+      "line": 480,
       "kind": "rule"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 458,
+      "line": 462,
       "kind": "title"
     },
     {
@@ -19200,151 +19206,163 @@
     {
       "id": "SCH-039",
       "file": "apps/service/src/search-routes.test.ts",
-      "line": 99,
+      "line": 103,
       "kind": "title"
     },
     {
       "id": "IAM-039",
       "file": "apps/service/src/session-routes.test.ts",
-      "line": 81,
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-002",
+      "file": "apps/service/src/settings-routes.test.ts",
+      "line": 152,
       "kind": "title"
     },
     {
       "id": "VER-004",
       "file": "apps/service/src/settings-routes.test.ts",
-      "line": 117,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "IAM-007",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 123,
+      "line": 130,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-013",
+      "file": "apps/service/src/sign-in.test.ts",
+      "line": 278,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 184,
+      "line": 191,
       "kind": "rule"
     },
     {
       "id": "IAM-075",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 198,
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "ADM-049",
       "file": "apps/service/src/space-routes.test.ts",
-      "line": 220,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "API-047",
       "file": "apps/service/src/stream.test.ts",
-      "line": 224,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 250,
+      "line": 254,
       "kind": "rule"
     },
     {
       "id": "IAM-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 210,
+      "line": 214,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 238,
+      "line": 242,
       "kind": "rule"
     },
     {
       "id": "TPL-006",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 184,
+      "line": 188,
       "kind": "title"
     },
     {
       "id": "TPL-013",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 471,
+      "line": 475,
       "kind": "rule"
     },
     {
       "id": "TPL-017",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 575,
+      "line": 579,
       "kind": "title"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 734,
+      "line": 738,
       "kind": "rule"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 728,
+      "line": 732,
       "kind": "title"
     },
     {
       "id": "TPL-020",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 890,
+      "line": 894,
       "kind": "title"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 874,
+      "line": 878,
       "kind": "rule"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 865,
+      "line": 869,
       "kind": "title"
     },
     {
       "id": "TPL-026",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 716,
+      "line": 720,
       "kind": "title"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 757,
+      "line": 761,
       "kind": "rule"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 740,
+      "line": 744,
       "kind": "title"
     },
     {
       "id": "TPL-055",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 488,
+      "line": 492,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 593,
+      "line": 597,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 585,
+      "line": 589,
       "kind": "title"
     },
     {
@@ -19356,25 +19374,31 @@
     {
       "id": "IAM-034",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 278,
+      "line": 285,
       "kind": "rule"
     },
     {
       "id": "IAM-034",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 265,
+      "line": 272,
       "kind": "title"
     },
     {
       "id": "IAM-035",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 307,
+      "line": 314,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-037",
+      "file": "apps/service/src/token-routes.test.ts",
+      "line": 499,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "apps/service/src/token-routes.test.ts",
-      "line": 554,
+      "line": 597,
       "kind": "title"
     },
     {
@@ -20040,115 +20064,115 @@
     {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 446,
+      "line": 445,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 431,
+      "line": 430,
       "kind": "title"
     },
     {
       "id": "DAT-088",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 399,
+      "line": 398,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 788,
+      "line": 787,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 788,
+      "line": 787,
       "kind": "title"
     },
     {
       "id": "PUB-049",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 446,
+      "line": 445,
       "kind": "title"
     },
     {
       "id": "STY-082",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 506,
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "DAT-028",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 437,
+      "line": 436,
       "kind": "title"
     },
     {
       "id": "DAT-069",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 519,
+      "line": 518,
       "kind": "title"
     },
     {
       "id": "TAB-004",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 576,
+      "line": 575,
       "kind": "title"
     },
     {
       "id": "TAB-016",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 482,
+      "line": 481,
       "kind": "title"
     },
     {
       "id": "TAB-019",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 538,
+      "line": 537,
       "kind": "title"
     },
     {
       "id": "TAB-024",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 627,
+      "line": 626,
       "kind": "title"
     },
     {
       "id": "TAB-026",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 715,
+      "line": 714,
       "kind": "title"
     },
     {
       "id": "TAB-027",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 506,
+      "line": 505,
       "kind": "title"
     },
     {
       "id": "TAB-046",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 467,
+      "line": 466,
       "kind": "title"
     },
     {
       "id": "TAB-052",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 489,
+      "line": 488,
       "kind": "title"
     },
     {
       "id": "PUB-091",
       "file": "apps/worker/src/check.test.ts",
-      "line": 305,
+      "line": 309,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "apps/worker/src/check.test.ts",
-      "line": 305,
+      "line": 309,
       "kind": "title"
     },
     {
@@ -20214,25 +20238,25 @@
     {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 137,
+      "line": 136,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 198,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 198,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "VER-003",
       "file": "apps/worker/src/iteration-sweep.test.ts",
-      "line": 150,
+      "line": 154,
       "kind": "title"
     },
     {
@@ -20274,79 +20298,79 @@
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 422,
+      "line": 426,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 464,
+      "line": 468,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 357,
+      "line": 361,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 743,
+      "line": 747,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 561,
+      "line": 565,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 577,
+      "line": 581,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 582,
+      "line": 586,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1323,
+      "line": 1327,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1238,
+      "line": 1242,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 761,
+      "line": 765,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 371,
+      "line": 375,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 688,
+      "line": 692,
       "kind": "title"
     },
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 156,
+      "line": 155,
       "kind": "title"
     },
     {
@@ -20395,6 +20419,12 @@
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
       "line": 1296,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-013",
+      "file": "apps/worker/src/sweep.test.ts",
+      "line": 101,
       "kind": "title"
     },
     {
@@ -20472,43 +20502,43 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1360,
+      "line": 1359,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 947,
+      "line": 946,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 491,
+      "line": 490,
       "kind": "title"
     },
     {
       "id": "STY-009",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 681,
+      "line": 680,
       "kind": "title"
     },
     {
       "id": "STY-010",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 774,
+      "line": 773,
       "kind": "title"
     },
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1360,
+      "line": 1359,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1032,
+      "line": 1031,
       "kind": "title"
     },
     {
@@ -20592,49 +20622,85 @@
     {
       "id": "IAM-014",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 220,
+      "line": 225,
       "kind": "title"
     },
     {
       "id": "IAM-024",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 238,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "IAM-027",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 304,
+      "line": 309,
       "kind": "title"
     },
     {
       "id": "IAM-063",
       "file": "packages/db/src/access-facts.test.ts",
-      "line": 325,
+      "line": 330,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
-      "line": 161,
+      "line": 166,
       "kind": "title"
     },
     {
       "id": "IAM-034",
       "file": "packages/db/src/api-token.test.ts",
-      "line": 82,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "AST-005",
       "file": "packages/db/src/assets.test.ts",
-      "line": 90,
+      "line": 96,
       "kind": "title"
     },
     {
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
-      "line": 90,
+      "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-002",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-013",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 530,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-037",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 376,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-060",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 447,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-027",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 606,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-029",
+      "file": "packages/db/src/audit-identity.test.ts",
+      "line": 161,
       "kind": "title"
     },
     {
@@ -20664,217 +20730,217 @@
     {
       "id": "MET-023",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 278,
+      "line": 283,
       "kind": "title"
     },
     {
       "id": "MET-033",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 191,
+      "line": 196,
       "kind": "title"
     },
     {
       "id": "MET-038",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 246,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "DAT-001",
       "file": "packages/db/src/connections.test.ts",
-      "line": 151,
+      "line": 157,
       "kind": "title"
     },
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 382,
+      "line": 388,
       "kind": "title"
     },
     {
       "id": "DAT-065",
       "file": "packages/db/src/connections.test.ts",
-      "line": 792,
+      "line": 798,
       "kind": "title"
     },
     {
       "id": "CNT-124",
       "file": "packages/db/src/creation.test.ts",
-      "line": 81,
+      "line": 86,
       "kind": "title"
     },
     {
       "id": "MET-042",
       "file": "packages/db/src/creation.test.ts",
-      "line": 104,
+      "line": 109,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 732,
+      "line": 733,
       "kind": "title"
     },
     {
       "id": "DAT-085",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 357,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "DAT-092",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 276,
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
-      "line": 111,
+      "line": 116,
       "kind": "title"
     },
     {
       "id": "MET-008",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 190,
+      "line": 195,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 140,
+      "line": 145,
       "kind": "title"
     },
     {
       "id": "MET-037",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 265,
+      "line": 270,
       "kind": "title"
     },
     {
       "id": "MET-040",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 214,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "MET-041",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 117,
+      "line": 122,
       "kind": "title"
     },
     {
       "id": "STY-025",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 353,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 608,
+      "line": 613,
       "kind": "title"
     },
     {
       "id": "TPL-013",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 527,
+      "line": 532,
       "kind": "title"
     },
     {
       "id": "TPL-016",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 241,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "TPL-025",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 169,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "TPL-027",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 241,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "TPL-055",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 567,
+      "line": 572,
       "kind": "title"
     },
     {
       "id": "STR-003",
       "file": "packages/db/src/documents.test.ts",
-      "line": 277,
+      "line": 278,
       "kind": "title"
     },
     {
       "id": "STR-067",
       "file": "packages/db/src/documents.test.ts",
-      "line": 277,
+      "line": 278,
       "kind": "title"
     },
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 327,
+      "line": 333,
       "kind": "title"
     },
     {
       "id": "IAM-022",
       "file": "packages/db/src/grants.test.ts",
-      "line": 110,
+      "line": 115,
       "kind": "title"
     },
     {
       "id": "IAM-049",
       "file": "packages/db/src/grants.test.ts",
-      "line": 185,
+      "line": 190,
       "kind": "title"
     },
     {
       "id": "IAM-071",
       "file": "packages/db/src/grants.test.ts",
-      "line": 218,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "IAM-009",
       "file": "packages/db/src/groups.test.ts",
-      "line": 339,
+      "line": 344,
       "kind": "title"
     },
     {
       "id": "IAM-049",
       "file": "packages/db/src/groups.test.ts",
-      "line": 397,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "IAM-075",
       "file": "packages/db/src/idempotency.test.ts",
-      "line": 88,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
-      "line": 206,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "COL-010",
       "file": "packages/db/src/promotion.test.ts",
-      "line": 312,
+      "line": 317,
       "kind": "title"
     },
     {
       "id": "VER-006",
       "file": "packages/db/src/promotion.test.ts",
-      "line": 158,
+      "line": 163,
       "kind": "title"
     },
     {
@@ -20886,193 +20952,193 @@
     {
       "id": "DAT-042",
       "file": "packages/db/src/publication-bindings.test.ts",
-      "line": 498,
+      "line": 503,
       "kind": "title"
     },
     {
       "id": "DAT-087",
       "file": "packages/db/src/publication-bindings.test.ts",
-      "line": 318,
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2516,
+      "line": 2517,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 333,
+      "line": 334,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 956,
+      "line": 957,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 425,
+      "line": 426,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 816,
+      "line": 817,
       "kind": "title"
     },
     {
       "id": "DAT-009",
       "file": "packages/db/src/query-definitions.test.ts",
-      "line": 182,
+      "line": 188,
       "kind": "title"
     },
     {
       "id": "VER-057",
       "file": "packages/db/src/query-definitions.test.ts",
-      "line": 267,
+      "line": 273,
       "kind": "title"
     },
     {
       "id": "IAM-075",
       "file": "packages/db/src/queue.test.ts",
-      "line": 82,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "VER-008",
       "file": "packages/db/src/record-version.test.ts",
-      "line": 119,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "CNT-090",
       "file": "packages/db/src/recovery.test.ts",
-      "line": 211,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "CNT-174",
       "file": "packages/db/src/recovery.test.ts",
-      "line": 177,
+      "line": 183,
       "kind": "title"
     },
     {
       "id": "VER-003",
       "file": "packages/db/src/retention.test.ts",
-      "line": 198,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "VER-004",
       "file": "packages/db/src/retention.test.ts",
-      "line": 332,
+      "line": 338,
       "kind": "title"
     },
     {
       "id": "IAM-021",
       "file": "packages/db/src/roles.test.ts",
-      "line": 39,
+      "line": 44,
       "kind": "title"
     },
     {
       "id": "SCH-034",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 382,
+      "line": 387,
       "kind": "title"
     },
     {
       "id": "SCH-046",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 306,
+      "line": 311,
       "kind": "title"
     },
     {
       "id": "SCH-059",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 270,
+      "line": 275,
       "kind": "title"
     },
     {
       "id": "SCH-062",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 345,
+      "line": 350,
       "kind": "title"
     },
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-words.test.ts",
-      "line": 249,
+      "line": 254,
       "kind": "title"
     },
     {
       "id": "SCH-011",
       "file": "packages/db/src/search-words.test.ts",
-      "line": 154,
+      "line": 159,
       "kind": "title"
     },
     {
       "id": "SCH-012",
       "file": "packages/db/src/search-words.test.ts",
-      "line": 201,
+      "line": 206,
       "kind": "title"
     },
     {
       "id": "SCH-016",
       "file": "packages/db/src/search-words.test.ts",
-      "line": 208,
+      "line": 213,
       "kind": "title"
     },
     {
       "id": "SCH-017",
       "file": "packages/db/src/search-words.test.ts",
-      "line": 226,
+      "line": 231,
       "kind": "title"
     },
     {
       "id": "SCH-054",
       "file": "packages/db/src/search.test.ts",
-      "line": 160,
+      "line": 165,
       "kind": "title"
     },
     {
       "id": "SCH-055",
       "file": "packages/db/src/search.test.ts",
-      "line": 334,
+      "line": 339,
       "kind": "title"
     },
     {
       "id": "SCH-066",
       "file": "packages/db/src/search.test.ts",
-      "line": 377,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "MET-042",
       "file": "packages/db/src/starter-component-type.test.ts",
-      "line": 54,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "packages/db/src/takes.test.ts",
-      "line": 326,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "TPL-001",
       "file": "packages/db/src/templates.test.ts",
-      "line": 136,
+      "line": 141,
       "kind": "title"
     },
     {
       "id": "VER-056",
       "file": "packages/db/src/templates.test.ts",
-      "line": 157,
+      "line": 162,
       "kind": "title"
     },
     {
@@ -21090,61 +21156,61 @@
     {
       "id": "STY-005",
       "file": "packages/db/src/themes.test.ts",
-      "line": 156,
+      "line": 161,
       "kind": "title"
     },
     {
       "id": "STY-069",
       "file": "packages/db/src/themes.test.ts",
-      "line": 466,
+      "line": 471,
       "kind": "title"
     },
     {
       "id": "CNT-145",
       "file": "packages/db/src/version-chain.test.ts",
-      "line": 347,
+      "line": 352,
       "kind": "title"
     },
     {
       "id": "VER-008",
       "file": "packages/db/src/version-chain.test.ts",
-      "line": 107,
+      "line": 112,
       "kind": "title"
     },
     {
       "id": "VER-010",
       "file": "packages/db/src/version-chain.test.ts",
-      "line": 146,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "CNT-145",
       "file": "packages/db/src/versions.test.ts",
-      "line": 233,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "MET-016",
       "file": "packages/db/src/versions.test.ts",
-      "line": 218,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "VER-007",
       "file": "packages/db/src/versions.test.ts",
-      "line": 183,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "VER-010",
       "file": "packages/db/src/versions.test.ts",
-      "line": 212,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "VER-042",
       "file": "packages/db/src/versions.test.ts",
-      "line": 297,
+      "line": 303,
       "kind": "title"
     },
     {
@@ -21240,7 +21306,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 145,
+      "line": 149,
       "kind": "title"
     },
     {
