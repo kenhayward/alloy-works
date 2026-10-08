@@ -793,6 +793,6 @@ own sketch plan when its turn comes.
 
 [ADR-0045](../decisions/0045-t3-is-the-collaboration.md)'s tranche, slice by slice.
 
-| #   | Plan                                                          | Builds                                                                                                                      | Status  |
-| --- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------- |
-| SP1 | [Spaces made, renamed and archived](2026-10-08-sp1-spaces.md) | An administrator of the environment makes, renames, archives and restores a space; nothing new is made in an archived space | Planned |
+| #   | Plan                                                          | Builds                                                                                                                      | Status          |
+| --- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| SP1 | [Spaces made, renamed and archived](2026-10-08-sp1-spaces.md) | An administrator of the environment makes, renames, archives and restores a space; nothing new is made in an archived space | Built (PR #459) |
