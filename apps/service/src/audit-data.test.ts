@@ -128,7 +128,7 @@ describe('content and data on the audit log, through the service', () => {
     expect(JSON.stringify(all)).not.toContain(SECRET);
   });
 
-  it('LIF-026 records a binding resolved, checked, accepted and kept, each as the person who did it', async () => {
+  it('records a binding resolved, checked, accepted and kept, each as the person who did it', async () => {
     const connection = await h.connection('Bound readings');
     const definition = await h.definition(connection.id);
     const component = await h.component(h.general, 'Sites');
@@ -218,7 +218,7 @@ describe('content and data on the audit log, through the service', () => {
     asAda([...resolving, ...checking, ...accepting, ...keeping]);
   });
 
-  it('LIF-026 records a publication requested as its requester, and a preview not at all', async () => {
+  it('records a publication requested as its requester, and a preview not at all', async () => {
     const publisher = await h.tenantDb.withTenant(h.tenant, (trx) => findRole(trx, 'Publisher'));
     await h.allow(h.ids.ada!, publisher!.id, { kind: 'space', id: h.general });
     const component = await h.component(h.general, 'Published');
@@ -251,7 +251,7 @@ describe('content and data on the audit log, through the service', () => {
     expect(previewing).toEqual([]);
   });
 
-  it('LIF-026 records an upload refused at the door as its uploader, keeping none of its bytes', async () => {
+  it('records an upload refused at the door as its uploader, keeping none of its bytes', async () => {
     const upload = (
       await ok(
         h.call('ada', 'POST', `/v1/spaces/${h.general}/asset-uploads`, { alternative: null }),

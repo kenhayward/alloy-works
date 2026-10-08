@@ -139,7 +139,7 @@ describe('content and data on the audit log', () => {
     expect(ofKind(events, 'content.version_cut')).toEqual([]);
   });
 
-  it('LIF-026 LIF-063 records a version cut with who, what, when, its version and parent, and the title it had', async () => {
+  it('LIF-027 records a version cut with who, what, when, its version and parent, and the title it had', async () => {
     const { answer, events } = await recorded(async (trx) => {
       const made = await createComponent(trx, {
         spaceId: general,
@@ -290,7 +290,7 @@ describe('content and data on the audit log', () => {
     expect(events).toEqual([]);
   });
 
-  it('DAT-007 records a connection made, changed, its credential set, tested and retired, and never the value', async () => {
+  it('DAT-007 LIF-027 records a connection made, changed, its credential set, tested and retired, by whom, when and at which version, and never the value', async () => {
     const SEALED = sealSecret(randomBytes(32), 'source-credential', tenant.id, SECRET);
     const { answer: made, events: making } = await recorded((trx) =>
       createConnection(trx, { author: ada, spaceId: general, settings: settings() }),
@@ -397,19 +397,20 @@ describe('content and data on the audit log', () => {
       detail: {},
     });
 
+    // Each by whom, when, and against the version it was done to (LIF-027).
+    const all = [...making, ...changing, ...setting, ...testing, ...retiring];
+    for (const event of all) {
+      expect(event, event.kind).toMatchObject({ actorKind: 'person', actor: ada });
+      expect(event.at, event.kind).toBeInstanceOf(Date);
+      expect(event.subjectVersion, event.kind).toMatch(/^[0-9a-f-]{36}$/);
+    }
     // No value anywhere in any of it: not the secret, not its sealed form.
-    const everything = JSON.stringify([
-      ...making,
-      ...changing,
-      ...setting,
-      ...testing,
-      ...retiring,
-    ]);
+    const everything = JSON.stringify(all);
     expect(everything).not.toContain(SECRET);
     expect(everything).not.toContain(SEALED);
   });
 
-  it('LIF-026 records an asset ingested and an upload refused, the worker naming who asked', async () => {
+  it('records an asset ingested and an upload refused, the worker naming who asked', async () => {
     const key = (fill: string) => `${tenant.role}/sha256/${fill.repeat(64)}`;
     const { answer: uploads } = await recorded(async (trx) => {
       const kept = await createAssetUpload(trx, {
@@ -467,7 +468,7 @@ describe('content and data on the audit log', () => {
     expect(again).toEqual([]);
   });
 
-  it('LIF-026 records a dataset named, and a publication requested but not a preview', async () => {
+  it('records a dataset named, and a publication requested but not a preview', async () => {
     const { answer: made, events } = await recorded((trx) =>
       everyKind(trx, { author: ada, spaceId: general, word: 'audited', role: tenant.role }),
     );

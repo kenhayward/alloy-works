@@ -88,6 +88,19 @@ describe('the audit kinds', () => {
       'support.granted',
       'support.used',
       'support.revoked',
+      // The AU1 review's (M4): one for each requirement saying its act is audited that none named.
+      'secret.accessed',
+      'tenant.closed',
+      'webhook.changed',
+      'extension.changed',
+      'organisation.changed',
+      'import.restored',
+      'library.changed',
+      'line.merged',
+      'revision.effective',
+      'component.type_changed',
+      'theme.moved',
+      'style.changed',
     ];
     expect([...auditKinds].sort()).toEqual([...listed].sort());
     for (const kind of auditKinds) {

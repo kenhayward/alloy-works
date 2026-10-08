@@ -236,7 +236,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
     expect((await follow(id)).statusCode).toBe(404);
   });
 
-  it("LIF-026 records a pending result's dataset version and binding when it is finished, as the person whose act it was", async () => {
+  it("records a pending result's dataset version and binding when it is finished, as the person whose act it was", async () => {
     const image = png(4);
     const { document, node } = await placed();
     h.connector.run = ranWithImages([[String(site), 'North', image]]);

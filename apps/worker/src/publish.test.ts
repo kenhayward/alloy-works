@@ -671,7 +671,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await work()).toBe('failed');
   });
 
-  it('LIF-026 records a publication produced and a request failed as the system, for the person who asked', async () => {
+  it('records a publication produced and a request failed as the system, for the person who asked', async () => {
     const events = async (request: string) =>
       (await service.withTenant(tenant, (trx) => auditEvents(trx))).filter(
         (event) => event.detail.request === request,

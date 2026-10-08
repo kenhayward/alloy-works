@@ -228,7 +228,34 @@ const everyEntry = [
   ...Object.values(WRITERS).flatMap((group) => Object.values(group)),
 ];
 
+/**
+ * A requirement whose statement says an act of it is audited (LIF-063). Read from the compiled corpus,
+ * `packages/trace/trace.json`, so a requirement added saying so fails here until a kind names it.
+ */
+const SAYS_AUDITED =
+  /\b(be|been|is|are)\s+(\w+\s+)?audited\b|\baudited\s+(act|event)\b|\brecorded in the audit log\b|\baudited into\b|\band audited\b|\baudited with\b|, audited\b/i;
+
+/** Matched by the words, and stating no act the log records. */
+const NOT_AN_ACT: Readonly<Record<string, string>> = {
+  'CNT-177': 'A person audits a release against WCAG; nothing is logged',
+  'ADM-044': 'Schedules re-verifying audit exports, an act on exports and not one of its own',
+  'LIF-063': 'This rule itself',
+};
+
 describe('the census of the audit log', () => {
+  it('LIF-063 names, in some kind, every requirement that says an act of it is audited', () => {
+    const corpus = JSON.parse(source('../../../packages/trace/trace.json')) as {
+      requirements: { id: string; statement: string; status: string }[];
+    };
+    const named = new Set(auditKinds.flatMap((kind) => auditKindSpecs[kind].requirements));
+    const audited = corpus.requirements
+      .filter((requirement) => !requirement.status.startsWith('Superseded'))
+      .filter((requirement) => SAYS_AUDITED.test(requirement.statement))
+      .map((requirement) => requirement.id);
+    expect(audited).toEqual(expect.arrayContaining(['AST-037', 'DAT-007', 'IAM-060']));
+    expect(audited.filter((id) => !named.has(id) && !(id in NOT_AN_ACT))).toEqual([]);
+  });
+
   it('lists every operation the contract declares, GETs included, and nothing else', () => {
     expect(Object.keys(ROUTES).sort()).toEqual(allRoutes.map((route) => route.operationId).sort());
   });
