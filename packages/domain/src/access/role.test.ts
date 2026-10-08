@@ -17,7 +17,7 @@ describe('a role', () => {
     expect(allowable(['read', 'edit'])).toBe(true);
   });
 
-  it('starts a tenant with nine, each of which passes the same check', () => {
+  it('starts a tenant with eleven, each of which passes the same check', () => {
     expect(starterRoles.map((role) => role.name)).toEqual([
       'Reader',
       'Reviewer',
@@ -28,6 +28,8 @@ describe('a role', () => {
       'Administrator',
       'Editing',
       'Publisher',
+      'Query builder',
+      'Query writer',
     ]);
     for (const role of starterRoles) {
       expect(checkRole(role.permissions), role.name).toBeUndefined();
@@ -44,12 +46,16 @@ describe('a role', () => {
     expect(
       starterRoles.filter((role) => role.permissions.includes('publish')).map((role) => role.name),
     ).toEqual(['Publisher']);
+  });
+
+  it('holds every permission in some starter role, so an administrator can grant any of them', () => {
     const held = new Set(starterRoles.flatMap((role) => role.permissions));
-    // Every permission a starting role could hold, but using a connection and writing SQL against
-    // one, which are always granted on purpose (data.md, "Permissions").
-    expect(permissions.filter((permission) => !held.has(permission))).toEqual([
-      'use_connection',
-      'write_sql',
-    ]);
+    expect(permissions.filter((permission) => !held.has(permission))).toEqual([]);
+  });
+
+  it('gives using a connection to the two query roles, and writing SQL to Query writer alone', () => {
+    const byName = new Map(starterRoles.map((role) => [role.name, role.permissions]));
+    expect(byName.get('Query builder')).toEqual(['read', 'use_connection']);
+    expect(byName.get('Query writer')).toEqual(['read', 'use_connection', 'write_sql']);
   });
 });

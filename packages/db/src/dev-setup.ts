@@ -109,7 +109,7 @@ for (const environment of environments) {
   if (seeded.created) {
     console.log(`Made "Install the printer" at ${environment.hostnames[0]}, for Ada and Grace`);
   }
-  // And Ada may use a connection in General: no starting role holds `use_connection`.
+  // And Ada may use a connection in General: no default grant gives `use_connection`.
   await serviceDb.withTenant(
     { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
     (trx) => seedDevelopmentConnectionUse(trx, { issuer: standInIssuer }),

@@ -875,8 +875,11 @@ space or the tenant, walked as every permission is:
 Adding them is the code change and the migration access.md names - `use_connection` in D1, and
 `write_sql` in D2 with the check that reads it (DAT-101), since a permission no check reads is a
 promise with nothing behind it: `permissions` in `packages/domain/src/access/permissions.ts`, and
-the check constraints `role_permissions_closed` and `api_token_scopes_closed`. **No starting role
-gains either**, so using a connection is always granted on purpose; the external cap gains both.
+the check constraints `role_permissions_closed` and `api_token_scopes_closed`. **Two starting roles
+hold them** (migration 0058, approved by Ken 2026-10-08), since a tenant cannot yet make a role (T7):
+Query builder, `read` and `use_connection`, and Query writer, which adds `write_sql`. No default grant
+names either, so using a connection is still granted on purpose, from Manage access; the external cap
+gains both.
 **What a definition needs is decided by its fetch** (the D4 plan, D4-J), each version by its own: a
 built query needs `edit` and `use_connection`, never `write_sql`, and is not refused on a connection
 whose last test found its account able to write, since DAT-101 and DAT-103 are the SQL fallback's and

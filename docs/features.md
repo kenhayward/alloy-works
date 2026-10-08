@@ -88,8 +88,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   them, and publishing takes those and refuses the rest.
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
-  denial, on the whole environment, one space, or one item. Every environment starts with nine roles -
-  among them Publisher, the only one that may publish - and a space called General. An environment's first administrator is invited, by address, by whoever sets
+  denial, on the whole environment, one space, or one item. Every environment starts with eleven roles -
+  among them Publisher, the only one that may publish, and Query builder and Query writer, the only
+  ones that may use a connection - and a space called General. An environment's first administrator is invited, by address, by whoever sets
   it up, and is Administrator from the first sign-in that proves that address; in development, Ada
   administers both environments from hers and holds every permission across each, so every part of
   the product can be tried. **Access is everywhere**: on any component, document or
@@ -630,8 +631,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   name holds a control character such as a tab, and says when the list was cut short, past 2,000
   tables or past what one answer can carry.
   **Retire** stops a connection running anything, and **Reinstate** starts it again, each a version.
-  Testing and listing tables need **use connection**, which no starting role holds, so it is always
-  granted on purpose, from **Manage access** on the connection or its space. The password is sealed
+  Testing and listing tables need **use connection**, which an administrator grants on purpose, from
+  **Manage access** on the connection or its space, by giving the starting role **Query builder**
+  (use connection) or **Query writer** (use connection and write SQL); no default grant gives either. The password is sealed
   by the connector, a separate process on networks of its own with no route to anything else of
   Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
   database only in a way that never sends the password itself. A connection's page lists, under
@@ -685,7 +687,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   parameter is refused by name before anything runs. Text sorts by code point, so a text column the
   rows are ordered by is ordered `COLLATE "C"`, and the page says so when a sample is refused for
   it. SQL runs only on a connection whose latest test found its account read-only, and **write SQL**
-  is held by no starting role, so it is granted on purpose. A source's refusal of a built query - a
+  is held by Query writer alone among the starting roles, so it is granted on purpose. A source's refusal of a built query - a
   table or a column it does not have, two types it cannot compare, a table the account may not read -
   is said in words of the product's own; what the source itself said is shown only to somebody who may
   write SQL on the connection. An administrator of the environment can

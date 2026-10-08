@@ -167,7 +167,12 @@ describe('query definitions through the service', () => {
   const ids: Record<string, string> = {};
   const roles: Record<string, string> = {};
 
-  const call = (as: string, method: 'GET' | 'POST' | 'PUT', url: string, payload?: Json) =>
+  const call = (
+    as: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    url: string,
+    payload?: Json,
+  ) =>
     app.inject({
       method,
       url,
@@ -358,6 +363,96 @@ describe('query definitions through the service', () => {
       (await call('ada', 'GET', `/v1/query-definitions/${body.id}`)).json<DefinitionBody>(),
     ).toMatchObject({ mayEdit: true, mayRun: true });
     expect((await call('alice', 'GET', `/v1/query-definitions/${body.id}`)).statusCode).toBe(404);
+  });
+
+  it('DAT-101 lets an administrator grant Query writer or Query builder on a connection from Manage access, and only Query writer saves or runs SQL against it', async () => {
+    // Every grant this makes, through Manage access's route, and removed at the end so that what Ivy
+    // and Alice may read elsewhere in this file is unchanged.
+    const made: string[] = [];
+    const give = async (who: string, role: string, level: string) => {
+      const granted = await call('ada', 'POST', '/v1/grants', {
+        role,
+        subject: { principal: ids[who] },
+        level,
+        effect: 'allow',
+      });
+      expect(granted.statusCode, granted.body).toBe(200);
+      made.push(granted.json<{ grant: { id: string } }>().grant.id);
+    };
+    // A space of its own, where Ivy and Alice author and use no connection.
+    const roomy = await tenantDb.withTenant(
+      tenant,
+      async (trx) => (await createSpace(trx, 'Starting roles')).id,
+    );
+    await give('ivy', roles.Author!, `space:${roomy}`);
+    await give('alice', roles.Author!, `space:${roomy}`);
+    const source = await connection('Granted on purpose', 'clean', roomy);
+    connector.mode = 'answer';
+    connector.run = ranOk([['1', 'North']]);
+
+    // Before any grant, neither may run anything against it or save a definition for it.
+    for (const who of ['ivy', 'alice']) {
+      expect((await sample(who, source.id, draft(source.id))).statusCode, who).toBe(403);
+      expect(
+        (await sample(who, source.id, draft(source.id, { fetch: builtFetch }))).statusCode,
+        who,
+      ).toBe(403);
+      expect((await create(who, definition(source.id), roomy)).statusCode, who).toBe(403);
+      expect((await create(who, built(source.id), roomy)).statusCode, who).toBe(403);
+    }
+    const before = runsAsked();
+
+    // Both are starting roles, which Manage access lists for the connection.
+    const listed = await call('ada', 'GET', `/v1/roles?level=artifact:${source.id}&limit=100`);
+    expect(listed.statusCode, listed.body).toBe(200);
+    const starting = new Map(
+      listed
+        .json<{ items: { id: string; name: string; permissions: string[] }[] }>()
+        .items.map((role) => [role.name, role]),
+    );
+    expect(starting.get('Query builder')?.permissions).toEqual(['read', 'use_connection']);
+    expect(starting.get('Query writer')?.permissions).toEqual([
+      'read',
+      'use_connection',
+      'write_sql',
+    ]);
+    for (const [who, role] of [
+      ['ivy', 'Query writer'],
+      ['alice', 'Query builder'],
+    ] as const) {
+      await give(who, starting.get(role)!.id, `artifact:${source.id}`);
+    }
+
+    // Ivy, a Query writer, samples and saves SQL, and builds as well.
+    expect((await sample('ivy', source.id, draft(source.id))).json()).toMatchObject({
+      outcome: 'ok',
+    });
+    const written = await create('ivy', definition(source.id), roomy);
+    expect(written.statusCode, written.body).toBe(200);
+    expect(written.json<DefinitionBody>()).toMatchObject({
+      definition: { fetch: { kind: 'sql' } },
+      mayEdit: true,
+      mayRun: true,
+    });
+    expect((await create('ivy', built(source.id), roomy)).statusCode).toBe(200);
+
+    // Alice, a Query builder, samples and saves a built query, and is refused SQL either way.
+    expect(
+      (await sample('alice', source.id, draft(source.id, { fetch: builtFetch }))).json(),
+    ).toMatchObject({ outcome: 'ok' });
+    const builds = await create('alice', built(source.id), roomy);
+    expect(builds.statusCode, builds.body).toBe(200);
+    const runs = runsAsked();
+    expect((await sample('alice', source.id, draft(source.id))).statusCode).toBe(403);
+    const refused = await create('alice', definition(source.id), roomy);
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json<{ message: string }>().message).toContain('write SQL');
+    expect(runsAsked()).toBe(runs);
+    expect(runs).toBeGreaterThan(before);
+
+    for (const id of made) {
+      expect((await call('ada', 'DELETE', `/v1/grants/${id}`)).statusCode).toBe(200);
+    }
   });
 
   it('DAT-103 refuses SQL on a connection whose latest test did not find its account read-only', async () => {

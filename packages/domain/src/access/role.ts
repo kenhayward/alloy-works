@@ -31,11 +31,14 @@ export interface StarterRole {
 
 /**
  * The roles a tenant starts with. They are ordinary rows once written, which the tenant may rename,
- * change or remove; the tenant migrations write the same nine - 0009 the first eight, 0017 Publisher -
- * and a test holds the two together. Editing holds `edit` alone: it cannot be allowed, and denied on
- * one artifact to somebody who authors its space it leaves them reading, commenting and suggesting
- * there. Publisher is the only role holding `publish`, because publishing releases content to whoever
- * may read the publication (the first publishing plan, decision L).
+ * change or remove; the tenant migrations write the same eleven - 0009 the first eight, 0017
+ * Publisher, 0058 the two query roles - and a test holds the two together. Editing holds `edit` alone:
+ * it cannot be allowed, and denied on one artifact to somebody who authors its space it leaves them
+ * reading, commenting and suggesting there. Publisher is the only role holding `publish`, because
+ * publishing releases content to whoever may read the publication (the first publishing plan, decision
+ * L). Query builder and Query writer alone hold `use_connection`, and Query writer alone `write_sql`;
+ * no default grant names them, so using a connection is still granted on purpose (data.md,
+ * "Permissions").
  */
 export const starterRoles: readonly StarterRole[] = [
   { name: 'Reader', permissions: ['read'] },
@@ -47,4 +50,6 @@ export const starterRoles: readonly StarterRole[] = [
   { name: 'Administrator', permissions: ['read', 'administer'] },
   { name: 'Editing', permissions: ['edit'] },
   { name: 'Publisher', permissions: ['read', 'publish'] },
+  { name: 'Query builder', permissions: ['read', 'use_connection'] },
+  { name: 'Query writer', permissions: ['read', 'use_connection', 'write_sql'] },
 ];

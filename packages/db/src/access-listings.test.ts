@@ -219,11 +219,11 @@ describe('listing grants, roles and people, for managing access', () => {
   });
 
   it('lists the roles a grant can name, with what each holds, a page at a time', async () => {
-    const first = await service.withTenant(production, (trx) => listRoles(trx, { limit: 5 }));
+    const first = await service.withTenant(production, (trx) => listRoles(trx, { limit: 6 }));
     const rest = await service.withTenant(production, (trx) =>
-      listRoles(trx, { after: first.after!, limit: 5 }),
+      listRoles(trx, { after: first.after!, limit: 6 }),
     );
-    expect(first.items).toHaveLength(5);
+    expect(first.items).toHaveLength(6);
     expect(rest.after).toBeNull();
     const all = [...first.items, ...rest.items];
     expect(all.map((role) => role.id)).toEqual(all.map((role) => role.id).sort());
@@ -235,6 +235,8 @@ describe('listing grants, roles and people, for managing access', () => {
       'Designer',
       'Editing',
       'Publisher',
+      'Query builder',
+      'Query writer',
       'Reader',
       'Reviewer',
     ]);
