@@ -19,6 +19,7 @@ import {
   spellCheckerChoice,
   spellCheckerLanguages,
   spellingMenu,
+  windowBackground,
 } from './shell.js';
 
 // String.raw so the Windows separators stay literal - the shell must hand Electron the path it was
@@ -437,5 +438,24 @@ describe('keeping the window on the renderer (issue #309)', () => {
         service,
       ),
     ).toEqual({ allow: false });
+  });
+});
+
+describe('windowBackground', () => {
+  // The renderer's own --bg for each theme, read from tokens.css, so the two cannot drift apart.
+  const tokens = readFileSync(
+    join(process.cwd(), '..', 'web', 'src', 'theme', 'tokens.css'),
+    'utf8',
+  ).replace(/\/\*[\s\S]*?\*\//g, '');
+  const bgOf = (theme: string) =>
+    new RegExp(String.raw`\[data-theme='${theme}'\][^{]*\{[^}]*?--bg:\s*(#[0-9a-f]{6})`, 'i').exec(
+      tokens,
+    )?.[1];
+
+  it("paints the window in the theme's ground before the renderer loads, as the system prefers", () => {
+    expect(windowBackground(false)).toBe('#f4f6f8');
+    expect(windowBackground(true)).toBe('#0d1217');
+    expect(windowBackground(false)).toBe(bgOf('light'));
+    expect(windowBackground(true)).toBe(bgOf('dark'));
   });
 });

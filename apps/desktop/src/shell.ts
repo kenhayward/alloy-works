@@ -283,3 +283,12 @@ export function spellingMenu(params: {
     { kind: 'add', label: 'Add to dictionary', word },
   ];
 }
+
+/**
+ * The window's ground before the renderer paints, so a dark system never flashes a light window:
+ * tokens.css's --bg for the theme Auto resolves to (ADR-0046, LG-C). A person who chose a theme
+ * other than the system's sees it from the renderer's first paint; the shell is never told.
+ */
+export function windowBackground(systemPrefersDark: boolean): string {
+  return systemPrefersDark ? '#0d1217' : '#f4f6f8';
+}

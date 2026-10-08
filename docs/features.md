@@ -33,24 +33,26 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and loaded unchanged by the Electron shell in `apps/desktop`. There is no per-delivery fork of the
   UI, and the running app names which delivery and runtime it is on.
 
-- **An interface in one theme.** Every screen sits under a dark header band with:
+- **An interface in Light, Dark or Auto.** Every screen sits under a header band in the theme's colours with:
   - the mark, which goes to Home, where each module is chosen;
   - the module's name;
   - the environment's name;
+  - **Theme**, choosing Light, Dark or Auto, which follows the system; remembered in this browser,
+    and Auto until chosen;
   - an account chip that signs out, or offers Sign in to somebody signed out. Signing in always
     asks the provider which account to use, so signing out and back in can switch person.
 
-  Controls, tables and messages are drawn in the Light theme from the tokens in
-  `apps/web/src/theme/tokens.css`, the only file that writes a colour. A test fails the build if
-  any other file writes one, and another fails it if a second theme misses a token. The components list is a table - title,
+  Controls, tables and messages are drawn in the chosen theme from the Ledger tokens in
+  `apps/web/src/theme/tokens.css`, the only file that writes a colour; a component's text stays on
+  white paper in either. A test fails the build if any other file writes one, another if a theme
+  misses a token, and another if a text colour falls under 4.5:1 on its ground. The components list is a table - title,
   type, space, version, language, when changed and by whom - beside a filter pane of spaces with
   their counts, which hides to a rail, Administration opens from the account chip with the environment, its spaces, its people and invitations, its roles and the version; the application opens on Home, a card for each module with how many there are to read; publications are listed together, across documents, newest first or by title, filtered by document and space, and each opens with its PDF shown in the page beside what it was made from; a document opens as one page - its outline in a tabbed pane that resizes and hides to a rail, holding the way back to the documents, the acts as icons, the document as the root of an indented tree, and a triangle or a page beside each section or component - a section's triangle, or Left and Right on the keyboard, collapses and expands what it holds - its text in reading order as one continuous scroll on the theme's paper - each section's and each component's heading set as the publication sets it, and no box round a component - with a component's edges and a label saying which of its versions the document shows, and whether it is pinned there or follows the latest - chosen from the label in Authoring - and whether you may edit it now and, when not, why - who is editing it and when they are expected back - shown when you point at it or move into it, or for all of them with **Show boundaries**; in **Reading** or **Authoring**, a switch in its header offered to whoever may change the document or a component it places and remembered in this browser - Reading shows the document with nothing that changes it, and in Authoring any component you may edit opens for editing in place when you click its text, the caret where you clicked, and closes again with Done, and the chosen part's settings beside them; the documents list is a table - title, space, version, section and component counts, publishing state and when changed - sorted by title or when changed, filtered by space and by publishing state, a page at a time; its access page sets what is granted and why beside giving and inviting, and an open component sits beside the list of its space, under one strip holding its title (renamed by clicking it), its version and space, its language and direction as chips that open to change them, a save chip saying Saved, Saving or Not saved, and Done and Save version, over a single row of icons for the toolbar, each naming itself and its shortcut on hover; its block and word counts are the tooltip of its section number, or of its version where it has none; with New component in a dialog and a menu on each row to open it, copy its link or manage its access; a status bar along the foot of every page says the latest notice, such as a move or why one was refused, and for a document how many sections and components it holds and which version it is in which space; the components list is sorted by title or when changed and filtered by space and component type, with
   no filter by language or date yet, though Search finds across it; templates have a list of their own,
   **Templates**, beside the others, each with its space, version and when it changed, filtered by space -
   a template is still made and changed through the API. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
-  editing, empty and waiting, and the save state carries a coloured dot. There is one
-  theme, so there is no theme choice, and no screen has the layout the drawings in
-  `docs/interface/` give it yet.
+  editing, empty and waiting, and the save state carries a coloured dot. No screen has
+  the Ledger layout (`docs/interface/handoffs/ledger/`) yet: the module rail and the new shell come next.
 
 - **A platform bridge.** The single seam between the renderer and its host. In a browser it answers
   locally; in the desktop shell it answers over enumerated IPC channels from a sandboxed preload.

@@ -88,6 +88,73 @@ function themeOf(selector: string): string | undefined {
   return /\[data-theme='([\w-]+)'\]/.exec(selector)?.[1];
 }
 
+/** One theme's tokens, with the shared aliases every theme declares, each `var()` followed home. */
+function palette(theme: string): (name: string) => string {
+  const all = blocks();
+  const tokens = new Map([
+    ...all
+      .filter((block) => themeOf(block.selector) === undefined)
+      .flatMap((block) => [...block.tokens]),
+    ...(all.find((block) => themeOf(block.selector) === theme)?.tokens ?? []),
+  ]);
+  return (name) => {
+    let value = tokens.get(name);
+    for (let hop = 0; value?.startsWith('var(') && hop < 5; hop += 1) {
+      value = tokens.get(/var\((--[\w-]+)\)/.exec(value)?.[1] ?? '');
+    }
+    if (value === undefined || !/^#[0-9a-f]{6}$/i.test(value)) {
+      throw new Error(`${name} in ${theme} is not a six-digit colour: ${String(value)}`);
+    }
+    return value;
+  };
+}
+
+/** WCAG's contrast ratio between two six-digit colours. */
+function contrast(one: string, two: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((at) => {
+      const channel = parseInt(hex.slice(at, at + 2), 16) / 255;
+      return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [light, dark] = [luminance(one), luminance(two)].sort((a, b) => b - a) as [number, number];
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/** Every text colour on every ground it is set on, by token. */
+const TEXT_ON: readonly (readonly [string, string])[] = [
+  ['--text', '--bg'],
+  ['--text', '--chrome'],
+  ['--text', '--surface'],
+  ['--text', '--sunken'],
+  ['--text', '--accent-weak'],
+  ['--muted', '--bg'],
+  ['--muted', '--chrome'],
+  ['--muted', '--surface'],
+  ['--muted', '--sunken'],
+  ['--muted', '--accent-weak'],
+  ['--accent-text', '--surface'],
+  ['--accent-text', '--accent-weak'],
+  ['--on-accent', '--accent'],
+  ['--warn', '--surface'],
+  ['--warn', '--warn-bg'],
+  ['--ok', '--surface'],
+  ['--ok', '--ok-bg'],
+  ['--danger', '--surface'],
+  ['--danger', '--danger-bg'],
+  ['--info', '--surface'],
+  ['--info', '--info-bg'],
+  ['--warn-text', '--surface'],
+  ['--concept-text', '--concept-bg'],
+  ['--state-published-fg', '--state-published-bg'],
+  ['--state-behind-fg', '--state-behind-bg'],
+  ['--state-never-fg', '--state-never-bg'],
+  ['--state-private-fg', '--state-private-bg'],
+  ['--diff-add-fg', '--diff-add-bg'],
+  ['--diff-del-fg', '--diff-del-bg'],
+];
+
 describe('colour, which only tokens.css writes', () => {
   it('finds a colour written in CSS or in a string, and ignores one in a comment', () => {
     expect(coloursIn('a.css', '/* #fff */\na { color: #fff; }')).toEqual([2]);
@@ -130,6 +197,30 @@ describe('colour, which only tokens.css writes', () => {
     ];
     expect(light.length).toBeGreaterThan(0);
     for (const theme of themes) expect([...theme.tokens.keys()].sort()).toEqual([...light].sort());
+  });
+
+  it('sets every text colour at 4.5:1 or more on each ground it stands on, in every theme', () => {
+    const short = THEMES.flatMap((theme) => {
+      const colour = palette(theme);
+      return TEXT_ON.map(([text, ground]) => ({
+        pair: `${theme}: ${text} on ${ground}`,
+        ratio: contrast(colour(text), colour(ground)),
+      })).filter(({ ratio }) => ratio < 4.5);
+    });
+    expect(short).toEqual([]);
+  });
+
+  it('draws the focus ring in the accent, 3:1 or more against every ground, in every theme', () => {
+    for (const theme of THEMES) {
+      const colour = palette(theme);
+      expect(colour('--ring')).toBe(colour('--accent'));
+      for (const ground of ['--bg', '--chrome', '--surface', '--sunken']) {
+        expect(
+          contrast(colour('--ring'), colour(ground)),
+          `${theme}: --ring on ${ground}`,
+        ).toBeGreaterThanOrEqual(3);
+      }
+    }
   });
 
   it('applies a theme as data-theme on the root element', () => {

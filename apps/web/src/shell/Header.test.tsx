@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mayKeepEditing } from '../editor/editing-storage.js';
+import { THEME_KEY, THEMES } from '../theme/themes.js';
 import { Header, initialsOf } from './Header.js';
 
 /** The service, as far as the header band is concerned. */
@@ -37,7 +38,10 @@ const signedOut = {
   }),
 };
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  window.localStorage.removeItem(THEME_KEY);
+});
 
 describe('the header band', () => {
   it('shows the product, the module, the environment and who is signed in', async () => {
@@ -217,12 +221,33 @@ describe('the header band', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('offers no Theme while there is one theme', async () => {
+  it('chooses Light, Dark or Auto from the Theme button, shows which is chosen, and remembers it', async () => {
+    render(<Header module="Components" fetch={serviceThat(signedIn)} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Theme' }));
+    const menu = screen.getByRole('group', { name: 'Theme' });
+    expect(within(menu).getByRole('button', { name: 'Auto' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(within(menu).getByRole('button', { name: 'Dark' }));
+
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(window.localStorage.getItem(THEME_KEY)).toBe('dark');
+    expect(screen.queryByRole('group', { name: 'Theme' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Theme' }));
+    expect(screen.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Light' }));
+    expect(document.documentElement.dataset['theme']).toBe('light');
+  });
+
+  it('holds no Theme in the account chip, which the header button holds', async () => {
     render(<Header module="Components" fetch={serviceThat(signedIn)} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
 
-    expect(screen.queryByRole('button', { name: /Theme/ })).not.toBeInTheDocument();
+    const account = screen.getByRole('group', { name: 'Account' });
+    expect(within(account).queryByRole('button', { name: /Theme/ })).not.toBeInTheDocument();
   });
 
   it('takes initials from the name, or the address when there is none', () => {
@@ -235,10 +260,13 @@ describe('the header band', () => {
 });
 
 describe('the mark in the header band', () => {
-  it('is a file that exists, since a missing image fails in silence', async () => {
+  it('is a file for each theme that exists, since a missing image fails in silence', async () => {
     const { existsSync } = await import('node:fs');
     const { join } = await import('node:path');
-    const { MARK } = await import('./Header.js');
-    expect(existsSync(join(process.cwd(), 'public', MARK))).toBe(true);
+    const { MARKS } = await import('./Header.js');
+    expect(Object.keys(MARKS).sort()).toEqual([...THEMES].sort());
+    for (const mark of Object.values(MARKS)) {
+      expect(existsSync(join(process.cwd(), 'public', mark))).toBe(true);
+    }
   });
 });

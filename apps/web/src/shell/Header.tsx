@@ -4,12 +4,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiTokens } from '../account/ApiTokens.js';
 import { Administration } from '../admin/Administration.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
-import { THEMES } from '../theme/themes.js';
+import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
 import styles from './Header.module.css';
 import type { ModuleName } from './moduleOf.js';
 
-/** The mark, drawn for a dark ground; served beside the page from `public/`. */
-export const MARK = 'mark-dark.svg';
+/** The mark for each theme's ground, served beside the page from `public/`; CSS shows the one that fits. */
+export const MARKS: Record<ThemeName, string> = {
+  light: 'mark-light.svg',
+  dark: 'mark-dark.svg',
+};
+
+const CHOICE_NAMES = { light: 'Light', dark: 'Dark', auto: 'Auto' } as const;
 
 interface Person {
   readonly displayName: string | null;
@@ -43,10 +48,13 @@ export interface HeaderProps {
 function Menu({
   label,
   button,
+  named,
   children,
 }: {
   label: string;
   button: React.ReactNode;
+  /** The button's name, where it shows an icon rather than words. */
+  named?: string;
   children: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -69,8 +77,10 @@ function Menu({
       <button
         ref={trigger}
         type="button"
-        className={styles['chip']}
+        className={named === undefined ? styles['chip'] : styles['iconButton']}
         aria-expanded={open}
+        aria-label={named}
+        title={named}
         onClick={() => setOpen((was) => !was)}
       >
         {button}
@@ -84,9 +94,53 @@ function Menu({
   );
 }
 
+/** Light, Dark or Auto (ADR-0046), from the header's own button; the choice is kept on this device. */
+function ThemeMenu() {
+  const [choice, choose] = useThemeChoice();
+  return (
+    <Menu
+      label="Theme"
+      named="Theme"
+      button={
+        <svg
+          className={styles['icon']}
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M8 2a6 6 0 0 1 0 12Z" fill="currentColor" />
+        </svg>
+      }
+    >
+      {(close) => (
+        <ul className={styles['items']}>
+          {THEME_CHOICES.map((each) => (
+            <li key={each}>
+              <button
+                type="button"
+                className={styles['item']}
+                aria-pressed={choice === each}
+                onClick={() => {
+                  choose(each);
+                  close();
+                }}
+              >
+                {CHOICE_NAMES[each]}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Menu>
+  );
+}
+
 /**
- * The band across the top of every screen, dark in every theme: the mark, which goes Home;
- * the module's name; then the environment and the account chip, which holds API tokens, Administration and Sign out.
+ * The band across the top of every screen, in the theme's chrome: the mark, which goes Home; the
+ * module's name; then the environment, the Theme button and the account chip, which holds API tokens,
+ * Administration and Sign out.
  */
 export function Header({
   module,
@@ -166,7 +220,20 @@ export function Header({
   return (
     <header className={styles['band']}>
       <a className={styles['brand']} href="#/">
-        <img className={styles['mark']} src={MARK} alt="" width={18} height={18} />
+        <img
+          className={`${styles['mark']} ${styles['onLight']}`}
+          src={MARKS.light}
+          alt=""
+          width={18}
+          height={18}
+        />
+        <img
+          className={`${styles['mark']} ${styles['onDark']}`}
+          src={MARKS.dark}
+          alt=""
+          width={18}
+          height={18}
+        />
         Alloy Works
       </a>
       {module !== null && (
@@ -177,6 +244,7 @@ export function Header({
       )}
       <span className={styles['spacer']} />
       {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
+      <ThemeMenu />
       {who === 'nobody' && (
         <a className={styles['chip']} href="/v1/sign-in/organisation">
           Sign in
@@ -220,13 +288,6 @@ export function Header({
                   Administration
                 </button>
               </li>
-              {THEMES.length > 1 && (
-                <li>
-                  <button type="button" className={styles['item']} onClick={close}>
-                    Theme
-                  </button>
-                </li>
-              )}
               <li>
                 <button
                   type="button"

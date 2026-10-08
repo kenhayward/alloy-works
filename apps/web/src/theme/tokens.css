@@ -1,69 +1,83 @@
 /*
  * Alloy Works interface tokens: the only file in the codebase that writes a colour.
  *
- * Taken from the Protocol Authoring design system the screens in docs/interface/ are drawn in.
- * Two kinds of block:
+ * The Ledger palette and scales (docs/interface/handoffs/ledger, ADR-0046). Three kinds of block:
  *
  *   :root holds what no theme changes - type, space, shape, stacking, pane geometry, and the
  *   document palette, because a publication is the same page whatever chrome is around it.
  *
- *   :root, [data-theme="<name>"] holds one theme: every interface colour and every shadow. Light
- *   is the only theme today (theme/themes.ts lists them). A second theme is a second block naming
- *   exactly the same tokens - theme/colours.test.ts fails the build when one is missing - and Auto
- *   is a prefers-color-scheme mapping onto it. Nothing else changes, because nothing outside this
- *   file writes a colour.
+ *   [data-theme="<name>"] holds one theme: every interface colour and every shadow, the same tokens
+ *   in each (theme/colours.test.ts). themes.ts sets data-theme on <html>, Auto by the system's
+ *   preference. Light also holds .aw-canvas, the paper a component's text is set on, so the text and
+ *   whatever stands in it keep the publishing theme's colours on paper in either theme (STY-036).
+ *
+ *   The shared block names older tokens for Ledger ones; each theme's value follows it. Screens move
+ *   to the Ledger names in their own PRs, and the last of them deletes these (the LG plan, LG-F).
  *
  * Rules:
  *   - Write var(--token). Never a hex, rgb() or named colour anywhere else.
- *   - The header band is dark in every theme. It is not "the dark theme's surface".
+ *   - One accent. A status colour means only its status: warn is not approved, changes not in a
+ *     version, a check failing; info is somebody else editing or a newer version; ok is saved,
+ *     connected, passed.
  *   - The document palette (--doc-*) is for rendered publications only. Keep it away from the
  *     interface palette; they are two vocabularies that happen to share a page.
  */
 
 :root {
-  /* Type. No web fonts are loaded; the platform's own face is the face. */
+  /* Type. No web fonts are loaded yet; the platform's own face is the face until Plex (LG3). */
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --document: Calibri, 'Segoe UI', Arial, sans-serif;
 
-  --size-greeting: 24px;
-  --size-page-title: 22px;
-  --size-doc-title: 20px;
-  --size-release-title: 17px;
-  --size-modal-title: 16px;
-  --size-card-title: 16px;
-  --size-brand: 15px;
-  --size-body: 14px;
-  --size-body-small: 13px;
-  --size-label: 12px;
-  --size-overline: 11px;
-  --size-micro: 10px;
-  --size-code: 12px;
+  /* Six sizes */
+  --size-12: 12px;
+  --size-13: 13px;
+  --size-14: 14px;
+  --size-16: 16px;
+  --size-20: 20px;
+  --size-28: 28px;
 
-  /* Space. Literal px on a loose 2px rhythm, as the source system has it. */
-  --space-2: 2px;
+  /* Space, on 4px */
   --space-4: 4px;
-  --space-6: 6px;
   --space-8: 8px;
-  --space-10: 10px;
   --space-12: 12px;
-  --space-14: 14px;
   --space-16: 16px;
-  --space-18: 18px;
-  --space-20: 20px;
   --space-24: 24px;
-  --space-28: 28px;
+  --space-32: 32px;
   --space-40: 40px;
 
-  /* Shape */
-  --radius-3: 3px;
+  /* Shape: chips, then controls and rows, then cards and panels */
   --radius-4: 4px;
-  --radius-6: 6px;
-  --radius-7: 7px;
   --radius-8: 8px;
-  --radius-10: 10px;
-  --radius-14: 14px;
+  --radius-12: 12px;
   --radius-pill: 999px;
+
+  /* The older names, snapped to the scales above until each screen moves off them (LG-F). */
+  --size-greeting: var(--size-28);
+  --size-page-title: var(--size-20);
+  --size-doc-title: var(--size-20);
+  --size-release-title: var(--size-16);
+  --size-modal-title: var(--size-16);
+  --size-card-title: var(--size-16);
+  --size-brand: var(--size-16);
+  --size-body: var(--size-14);
+  --size-body-small: var(--size-13);
+  --size-label: var(--size-12);
+  --size-overline: var(--size-12);
+  --size-micro: var(--size-12);
+  --size-code: var(--size-12);
+  --space-2: var(--space-4);
+  --space-6: var(--space-8);
+  --space-10: var(--space-12);
+  --space-14: var(--space-16);
+  --space-18: var(--space-16);
+  --space-20: var(--space-24);
+  --space-28: var(--space-32);
+  --radius-3: var(--radius-4);
+  --radius-6: var(--radius-8);
+  --radius-7: var(--radius-8);
+  --radius-10: var(--radius-12);
+  --radius-14: var(--radius-12);
 
   /* Stacking */
   --z-popover: 30;
@@ -86,8 +100,7 @@
   --dock-panel: 320px;
   --header-height: 44px;
 
-  /* A rendered publication */
-  --doc-canvas: #f3f3f3;
+  /* A rendered publication: paper in every theme. The desk around it is --desk, which a theme sets. */
   --doc-page: #ffffff;
   --doc-ink: #1a1a1a;
   --doc-heading: #1f3864;
@@ -96,74 +109,68 @@
   --doc-caption: #555555;
 }
 
-/* The Light theme. */
+/* The older colour names, for the Ledger ones. Declared wherever a theme is, so each takes its value. */
 :root,
-[data-theme='light'] {
-  /* Ground and text */
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #fbfcfd;
-  --text: #1c2024;
-  /* Darker than the drawings' #6b7280, which passes WCAG's 4.5:1 on white and on --bg but not on the
-     tinted grounds muted text also stands on - 4.44 on --accent-weak, 4.41 on --chip-bg - as axe
-     found in the browser suite (W13.2). This one is 4.9 on both. */
-  --muted: #646b78;
-  --border: #e3e6ea;
-  --input-border: #cbd2d9;
-
-  /* The one action colour */
-  --accent: #2563eb;
-  --accent-weak: #eff6ff;
-  --on-accent: #ffffff;
-  --ring: #93c5fd;
-
-  /* The header band, dark in both themes */
-  --header-bg: #0f172a;
-  --header-text: #ffffff;
-  --header-btn-border: #475569;
-
-  /* State */
-  --danger: #b91c1c;
-  --warn: #d97706;
-  /* Warning words on the page: --warn is 3.2:1 on white, enough for a border but not for text. */
-  --warn-text: #b45309;
-  --ok: #16a34a;
-  --chip-bg: #f1f5f9;
-  --concept-bg: #ecfeff;
-  --concept-text: #0e7490;
-  --overlay: rgba(15, 23, 42, 0.45);
-  --panel-translucent: rgba(255, 255, 255, 0.66);
-
-  /* Modules. Home cards, switcher dots, and inside their own module only. */
-  --module-components: #2563eb;
-  --module-documents: #0e7490;
-  --module-publications: #7c3aed;
+[data-theme],
+.aw-canvas {
+  --surface-2: var(--sunken);
+  --input-border: var(--strong-border);
+  /* The accent: the drawings' pale ring was 1.9:1 on white, under WCAG's 3:1 for a focus indicator. */
+  --ring: var(--accent);
+  --warn-text: var(--warn);
+  --chip-bg: var(--sunken);
+  --concept-bg: var(--accent-weak);
+  --concept-text: var(--accent-text);
 
   /* Publishing state */
-  --state-published-bg: #dcfce7;
-  --state-published-fg: #166534;
-  --state-behind-bg: #ffedd5;
-  --state-behind-fg: #9a3412;
-  --state-never-bg: #e5e7eb;
-  --state-never-fg: #4b5563;
-  --state-private-bg: #f3e8ff;
-  --state-private-fg: #6b21a8;
+  --state-published-bg: var(--ok-bg);
+  --state-published-fg: var(--ok);
+  --state-behind-bg: var(--warn-bg);
+  --state-behind-fg: var(--warn);
+  --state-never-bg: var(--sunken);
+  --state-never-fg: var(--muted);
+  --state-private-bg: var(--info-bg);
+  --state-private-fg: var(--info);
 
   /* Version diffs */
-  --status-added: #16a34a;
-  --status-removed: #dc2626;
-  --status-modified: #d97706;
-  --diff-add-bg: #dcfce7;
-  --diff-add-fg: #14532d;
-  --diff-del-bg: #fee2e2;
-  --diff-del-fg: #7f1d1d;
+  --status-added: var(--ok);
+  --status-removed: var(--danger);
+  --status-modified: var(--warn);
+  --diff-add-bg: var(--ok-bg);
+  --diff-add-fg: var(--ok);
+  --diff-del-bg: var(--danger-bg);
+  --diff-del-fg: var(--danger);
+}
 
-  /* The mark. Brand moments only, never UI state. */
-  --mark-navy: #11325f;
-  --mark-slate: #32647b;
-  --mark-teal: #49888e;
-  --mark-sea: #63aea2;
-  --mark-mint: #f3f9f8;
+/* The Light theme, and the paper a component's text is set on. */
+:root,
+[data-theme='light'],
+.aw-canvas {
+  --bg: #f4f6f8;
+  --chrome: #ffffff;
+  --surface: #ffffff;
+  --sunken: #eef1f4;
+  --text: #15202b;
+  --muted: #56606c;
+  --border: #e1e5ea;
+  --strong-border: #c9d0d8;
+  --accent: #1d6a85;
+  --on-accent: #ffffff;
+  --accent-weak: #e4f1f5;
+  --accent-text: #165a72;
+  --warn: #9a4610;
+  --warn-bg: #fdf0e1;
+  --ok: #1d7148;
+  --ok-bg: #e2f3e9;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+  --info: #5b3fb8;
+  --info-bg: #efeafc;
+  --mark-a: #11325f;
+  --mark-b: #49888e;
+  --desk: #e6e9ed;
+  --overlay: rgba(15, 23, 42, 0.45);
+  --panel-translucent: rgba(255, 255, 255, 0.66);
 
   /* Elevation. Only things that float get one. */
   --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -172,4 +179,41 @@
   --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.08);
   --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.08);
   --shadow-document: 0 1px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* The Dark theme. Only the desk darkens around a page; the page stays paper. */
+[data-theme='dark'] {
+  --bg: #0d1217;
+  --chrome: #11181f;
+  --surface: #141c24;
+  --sunken: #0f161d;
+  --text: #e5eaef;
+  --muted: #9aa6b2;
+  --border: #232f3a;
+  --strong-border: #34424f;
+  --accent: #5fb6cc;
+  --on-accent: #04222b;
+  --accent-weak: #132f39;
+  --accent-text: #8fd0e0;
+  --warn: #f2a764;
+  --warn-bg: #3a2513;
+  --ok: #5ccf93;
+  --ok-bg: #12301f;
+  --danger: #ff8a80;
+  --danger-bg: #3b1715;
+  --info: #c0adff;
+  --info-bg: #2a2148;
+  --mark-a: #8fd0e0;
+  --mark-b: #63aea2;
+  --desk: #070a0d;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --panel-translucent: rgba(20, 28, 36, 0.66);
+
+  /* Elevation, deeper: a pale shadow does not show on a dark ground. */
+  --shadow-rest: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-raised: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.45);
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-document: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
