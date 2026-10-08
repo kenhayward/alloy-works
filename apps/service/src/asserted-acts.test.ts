@@ -111,7 +111,7 @@ describe('acts on a connection that runs as each person', () => {
     resolutions: await count(`select count(*)::int as n from $schema.binding_resolution`),
   });
 
-  it('runs as the caller, by the role their email names, and records whose view it is and as whom the source saw them', async () => {
+  it('DAT-024 DAT-117 runs as the caller, by the role their email names, and records whose view it is and as whom the source saw them', async () => {
     const { document, node } = await placed(binding('b1', built.id));
     answersAs([['1', 'North']]);
     const before = runs().length;
@@ -178,7 +178,7 @@ describe('acts on a connection that runs as each person', () => {
     });
   });
 
-  it('refuses an act whose caller the connection cannot name identity_unavailable, before anything runs', async () => {
+  it('DAT-117 refuses an act whose caller the connection cannot name identity_unavailable, before anything runs', async () => {
     const { document, node } = await placed(binding('b1', built.id));
     answersAs([['1', 'North']]);
     const set = (email: string | null) =>

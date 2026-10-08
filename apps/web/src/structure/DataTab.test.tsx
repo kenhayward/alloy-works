@@ -370,7 +370,7 @@ describe("a person's own view in the Data tab (the D7 plan, D7.3)", () => {
     ]);
   });
 
-  it('DAT-022 says whose own view a binding holds beside its value', () => {
+  it('DAT-022 DAT-024 says whose own view a binding holds beside its value', () => {
     drawn(
       states(
         view(FIRST, 'hers', 'North', {

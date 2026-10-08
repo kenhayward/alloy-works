@@ -486,7 +486,7 @@ describe('publishing a document holding a bound table', () => {
     expect(fill('1.11')).not.toBe('#c00000');
   });
 
-  it("sets a no-wrap column's cells on one line in the PDF, and w:noWrap on them in Word", async () => {
+  it("TAB-052 sets a no-wrap column's cells on one line in the PDF, and w:noWrap on them in Word", async () => {
     const paint = await readGlyphs(published.pdf);
     const words = LONG_SITE.split(' ');
     const lines = new Set(

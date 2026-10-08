@@ -166,7 +166,7 @@ describe('a connection version', () => {
     expect(database).toMatchObject({ message: 'A database is 1 to 63 bytes of UTF-8' });
   });
 
-  it('DAT-078 PostgreSQL declares asserted identity alone: refuses delegated, and a choice of assertion, identity_not_supported', () => {
+  it('DAT-078 DAT-117 PostgreSQL declares asserted identity alone: refuses delegated, and a choice of assertion, identity_not_supported', () => {
     expect(connectorIdentities.postgres).toEqual(['asserted']);
     const asserted = withMember(['identity'], {
       kind: 'endUser',
