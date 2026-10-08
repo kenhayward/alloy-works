@@ -263,7 +263,7 @@ permission that can be granted to somebody who holds neither.
 | **MET-024** | Managing fields, schemas and component types must be a permission of its own, grantable without tenant administration and separate from designing templates (**TPL-006**, **IAM**)                                                                                                                         | T1         | Specified |
 | **MET-025** | A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition) | T7         | Specified |
 | **MET-026** | Deleting a field, a schema or a component type that anything uses must be refused, naming what depends on it. It must never cascade                                                                                                                                                                        | Constraint | Specified |
-| **MET-027** | A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)                                                                                      | T3         | Specified |
+| **MET-027** | A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)                                                                                      | T7         | Specified |
 
 ## 9. Non-requirements
 
@@ -407,6 +407,22 @@ identifier, and only its tranche changes.
 | What was found                                                                                                                                                                                                                          | Change                                                |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | MET-003's vocabulary-backed fields wait on LIB's vocabularies, which move; MET-014's audited change of type, MET-025's where-used and MET-039's departed user, which waits on SCIM (IAM-008), are metadata's management, not the data's | **MET-003, MET-014, MET-025 and MET-039 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 42, of which 4 superseded | 42, of which 4 superseded |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                | Change                  |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Deprecating a field, a schema or a type is the catalogue's administration, the same state as a deprecated value (LIB-055), T7 | **MET-027 moved to T7** |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |

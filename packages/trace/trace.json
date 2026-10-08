@@ -40,7 +40,7 @@
       "id": "ADM-005",
       "area": "ADM",
       "statement": "Configuration must be exportable and importable, so that a tenant can be reproduced (**IMP-018**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 47
@@ -49,10 +49,19 @@
       "id": "ADM-027",
       "area": "ADM",
       "statement": "A configuration export must carry a reference to each secret rather than its value, and an import must bind every reference to a secret in the receiving tenant. An import with an unbound reference must be refused, naming each one (ADM-005, ADM-008, **IMP-018**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 48
+    },
+    {
+      "id": "ADM-049",
+      "area": "ADM",
+      "statement": "An administrator must be able to create a space, rename it and archive it, in the interface and through the API, with who may do each decided by the access model like any other act (**IAM**)",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "ADM-administration-cost-and-observability.md",
+      "line": 49
     },
     {
       "id": "ADM-038",
@@ -61,7 +70,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 63
+      "line": 68
     },
     {
       "id": "ADM-039",
@@ -70,61 +79,61 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 64
+      "line": 69
     },
     {
       "id": "ADM-040",
       "area": "ADM",
       "statement": "Scheduled and system work that affects a tenant - a review date falling due (**LIF-060**), a budget evaluation, an external source re-check (**LIB-035**), a translation job, indexing, a derivative rebuild, a scan timeout, a cohort run - must be visible to that tenant with its state, when it last ran, when it is next due and why it last failed. Work a user submits follows the job contract in **API-040** to **API-043**; this is the rest",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 65
+      "line": 70
     },
     {
       "id": "ADM-041",
       "area": "ADM",
       "statement": "A tenant must be able to see one declaration of everything that can leave its boundary: model endpoints (**GEN-031**), embedding (**GEN-038**), external reference sources (**LIB-037**), translation services (**LOC-026**), malware scanning (**AST-Q03**), data connections, webhooks and notification delivery. For each it must state what may leave, whether it is on by default, who may change it, and any residency constraint (**ADM-Q01**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 66
+      "line": 71
     },
     {
       "id": "ADM-042",
       "area": "ADM",
       "statement": "A tenant administrator must be able to grant, review and revoke support access (ADM-023) as an administrative act: each grant declaring its scope - metadata only, diagnostics, content read - its expiry, its purpose and who it is for, audited into the tenant's own log and shown in ADM-025. Support access must appear in the effective-permission view (**IAM-029**, **IAM-030**) like any other grant",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 67
+      "line": 72
     },
     {
       "id": "ADM-043",
       "area": "ADM",
       "statement": "Backup frequency, recovery point and recovery time must be declared per artifact class and tested: restoring must be exercised on a stated schedule rather than assumed, and a restore that is never rehearsed must not be presented as a capability (ADM-020)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 68
+      "line": 73
     },
     {
       "id": "ADM-044",
       "area": "ADM",
       "statement": "Stored artifacts must have declared integrity re-verification schedules - assets against their hashes (**AST-042**), version digests (**VER-042**), audit exports (**LIF-055**) - and a verification failure must be surfaced in diagnostics and audited rather than logged",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 69
+      "line": 74
     },
     {
       "id": "ADM-046",
       "area": "ADM",
       "statement": "Every performance budget in the specification must be registered with its owner, its reference configuration, whether it is provisional, the tranche by which it is confirmed, and how it is measured in production. ADM-016's reporting must say, budget by budget, whether it is being met",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 70
+      "line": 75
     },
     {
       "id": "ADM-048",
@@ -133,52 +142,52 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 71
+      "line": 76
     },
     {
       "id": "ADM-028",
       "area": "ADM",
       "statement": "A tenant must be suspendable: sign-in and API access stop, content and configuration are retained untouched, the reason is recorded, and the suspension is reversible without loss",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 82
+      "line": 87
     },
     {
       "id": "ADM-029",
       "area": "ADM",
       "statement": "Before a tenant is closed, its administrator must be able to take a complete export of content, configuration and audit (**IMP-018**, ADM-039). Closure must not proceed until that export has been offered, and whether it was taken or declined must be recorded",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 83
+      "line": 88
     },
     {
       "id": "ADM-030",
       "area": "ADM",
       "statement": "Closing a tenant must be a deliberate, audited act with a declared grace period before anything is deleted, reversible throughout that period (**ADM-Q06**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 84
+      "line": 89
     },
     {
       "id": "ADM-031",
       "area": "ADM",
       "statement": "Suspension and closure must each declare in advance which capabilities stop and which continue - in-flight publications, scheduled work, webhook delivery - as ADM-014 does for an exhausted budget",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Superseded by ADM-045",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 85
+      "line": 90
     },
     {
       "id": "ADM-045",
       "area": "ADM",
       "statement": "Suspension and closure must each declare what stops and what continues, naming at least: shared publication links (**PUB-081**), webhook delivery, scheduled and background work (ADM-040), realtime connections, model endpoints, search indexes, notification delivery, and in-flight publications",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 86
+      "line": 91
     },
     {
       "id": "ADM-006",
@@ -187,16 +196,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 97
+      "line": 102
     },
     {
       "id": "ADM-007",
       "area": "ADM",
       "statement": "A secret must be replaceable without being read, and rotation must not require a period where both values are invalid",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 98
+      "line": 103
     },
     {
       "id": "ADM-008",
@@ -205,7 +214,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 99
+      "line": 104
     },
     {
       "id": "ADM-009",
@@ -214,25 +223,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 100
+      "line": 105
     },
     {
       "id": "ADM-032",
       "area": "ADM",
       "statement": "An administrator must be able to see what consumes a secret - which connections, model endpoints and scheduled work - before rotating it",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Superseded by ADM-047",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 101
+      "line": 106
     },
     {
       "id": "ADM-047",
       "area": "ADM",
       "statement": "Before rotating any tenant secret, an administrator must be able to see everything that consumes it: connections, model endpoints, external reference sources, translation services, scanning services, notification channels, webhook signing keys and scheduled work. A rotation that breaks something must be reported once against the secret, naming every dependent capability",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 102
+      "line": 107
     },
     {
       "id": "ADM-010",
@@ -241,16 +250,16 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 113
+      "line": 118
     },
     {
       "id": "ADM-011",
       "area": "ADM",
       "statement": "Query execution, storage, publication volume and asset storage must each be measured and attributable",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 114
+      "line": 119
     },
     {
       "id": "ADM-012",
@@ -259,7 +268,7 @@
       "tranche": "T5",
       "status": "Superseded by ADM-033",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 115
+      "line": 120
     },
     {
       "id": "ADM-013",
@@ -268,7 +277,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 116
+      "line": 121
     },
     {
       "id": "ADM-014",
@@ -277,7 +286,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 117
+      "line": 122
     },
     {
       "id": "ADM-033",
@@ -286,7 +295,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 118
+      "line": 123
     },
     {
       "id": "ADM-034",
@@ -295,43 +304,43 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 119
+      "line": 124
     },
     {
       "id": "ADM-035",
       "area": "ADM",
       "statement": "The precision at which usage is recorded, and how long usage records are kept, must be declared before measurement begins rather than inferred from the data afterwards (**LIF** owns retention policy; **ADM-Q02** can only raise the bar)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 120
+      "line": 125
     },
     {
       "id": "ADM-015",
       "area": "ADM",
       "statement": "Health, latency and error rate must be measured per capability, not only for the service as a whole",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 141
+      "line": 146
     },
     {
       "id": "ADM-016",
       "area": "ADM",
       "statement": "The performance budgets in scope §11 must be measured in production as well as in tests, and the measurements must be reported against those budgets",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 142
+      "line": 147
     },
     {
       "id": "ADM-017",
       "area": "ADM",
       "statement": "A tenant administrator must be able to see diagnostics for their own tenant without raising a support ticket",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 143
+      "line": 148
     },
     {
       "id": "ADM-018",
@@ -340,25 +349,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 144
+      "line": 149
     },
     {
       "id": "ADM-019",
       "area": "ADM",
       "statement": "Failures that a user would experience as \"nothing happened\" - an index not updating, a webhook not delivering, a query timing out - must be surfaced rather than logged",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Superseded by ADM-037",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 145
+      "line": 150
     },
     {
       "id": "ADM-020",
       "area": "ADM",
       "statement": "Availability, recovery point and recovery time objectives must be stated, and actual availability, recovery point and recovery time must be measured against them",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 146
+      "line": 151
     },
     {
       "id": "ADM-021",
@@ -367,25 +376,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 147
+      "line": 152
     },
     {
       "id": "ADM-036",
       "area": "ADM",
       "statement": "The diagnostics a tenant administrator can see (ADM-017) must include at least: health, latency and error rate per capability (ADM-015), the state of the search index, the delivery state of webhooks, the outcome of recent scheduled work, and the tenant's position against its budgets",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 148
+      "line": 153
     },
     {
       "id": "ADM-037",
       "area": "ADM",
       "statement": "Failures a user would experience as \"nothing happened\" - an index not updating, a webhook not delivering, a query timing out - must be surfaced to the tenant administrator in those diagnostics (ADM-036), and to the user waiting on the result where there is one",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 149
+      "line": 154
     },
     {
       "id": "ADM-022",
@@ -394,7 +403,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 178
+      "line": 183
     },
     {
       "id": "ADM-023",
@@ -403,7 +412,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 179
+      "line": 184
     },
     {
       "id": "ADM-024",
@@ -412,25 +421,25 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 180
+      "line": 185
     },
     {
       "id": "ADM-025",
       "area": "ADM",
       "statement": "A tenant must be able to see, at any time, whether support access is currently active and what it covers",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 181
+      "line": 186
     },
     {
       "id": "ADM-026",
       "area": "ADM",
       "statement": "Support tooling must make the difference between metadata and content obvious, so that reading content is a deliberate act",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 182
+      "line": 187
     },
     {
       "id": "API-001",
@@ -661,7 +670,7 @@
       "id": "API-011",
       "area": "API",
       "statement": "A deprecated version must be announced with a removal date, and must keep working until that date",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 88
@@ -679,7 +688,7 @@
       "id": "API-013",
       "area": "API",
       "statement": "Deprecation must be visible in the response, not only in documentation",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 90
@@ -1156,7 +1165,7 @@
       "id": "AST-011",
       "area": "AST",
       "statement": "Format conversion for an output that cannot carry the original must be declared, and must be recorded on the publication",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 98
@@ -1165,7 +1174,7 @@
       "id": "AST-046",
       "area": "AST",
       "statement": "Converting a format for an output that cannot carry the original (AST-011) is a modification for licensing purposes, and must be refused where the licence does not permit modification (AST-022)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 99
@@ -1174,7 +1183,7 @@
       "id": "AST-047",
       "area": "AST",
       "statement": "A conversion that changes the content as well as the container - a wide-gamut image reduced to sRGB, a transparency flattened - must be declared and recorded on the publication in the same way, because the picture a reader sees is not the picture that was ingested",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 100
@@ -1300,7 +1309,7 @@
       "id": "AST-032",
       "area": "AST",
       "statement": "A change to an asset's licence or to what it permits must be surfaced wherever the asset is used, as an expiry is (AST-025), and must never reach a reference floating at latest (AST-017) without being visible",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 146
@@ -1327,7 +1336,7 @@
       "id": "AST-021",
       "area": "AST",
       "statement": "An asset must record its source and the licence it is held under",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 166
@@ -1336,7 +1345,7 @@
       "id": "AST-022",
       "area": "AST",
       "statement": "A licence must be able to declare what it permits: internal use, publication, redistribution, modification",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 167
@@ -1345,7 +1354,7 @@
       "id": "AST-023",
       "area": "AST",
       "statement": "Publishing must be refused where an asset's licence does not permit the use being made of it, and must say which asset and which licence",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 168
@@ -1354,7 +1363,7 @@
       "id": "AST-024",
       "area": "AST",
       "statement": "An asset carrying content credentials must have them preserved or deliberately removed, and which happened must be recorded",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 169
@@ -1363,7 +1372,7 @@
       "id": "AST-025",
       "area": "AST",
       "statement": "An expiry date must be recordable on a licence, and content past it must be surfaced wherever the asset is used",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 170
@@ -1381,7 +1390,7 @@
       "id": "AST-044",
       "area": "AST",
       "statement": "Upload must ask for the source and licence declaration, and where it is not given must record its absence explicitly, so that undeclared assets are listable rather than indistinguishable from declared ones",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 172
@@ -1390,7 +1399,7 @@
       "id": "AST-045",
       "area": "AST",
       "statement": "A licence must be able to declare that it requires attribution, and what that attribution must say. Whether the credit line is rendered, and where, is **PUB**'s (**AST-Q06**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 173
@@ -1426,7 +1435,7 @@
       "id": "AST-029",
       "area": "AST",
       "statement": "A duplicate upload should be detected by content, and the uploader offered the existing asset",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 198
@@ -1444,7 +1453,7 @@
       "id": "AST-050",
       "area": "AST",
       "statement": "Assets that nothing references - no component, no document, no baseline (AST-018) - must be listable, so that a library can be tidied deliberately rather than growing silently",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 200
@@ -2794,7 +2803,7 @@
       "id": "CNT-151",
       "area": "CNT",
       "statement": "Preview must reflect a saved edit within one second of the save being recorded, with no measured sample above two, in a 300-page document, measured on a declared reference configuration recorded alongside the budget - a provisional number, to be confirmed against real content (**CNT-Q13**)",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 487
@@ -3542,9 +3551,27 @@
       "area": "COL",
       "statement": "Notifications must be deliverable in an in-app inbox and by email",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Superseded by COL-063",
       "document": "COL-collaboration-and-review.md",
       "line": 186
+    },
+    {
+      "id": "COL-063",
+      "area": "COL",
+      "statement": "Notifications must be deliverable in an in-app inbox",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "COL-collaboration-and-review.md",
+      "line": 187
+    },
+    {
+      "id": "COL-064",
+      "area": "COL",
+      "statement": "Notifications must be deliverable by email, as well as in the inbox (COL-063)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "COL-collaboration-and-review.md",
+      "line": 188
     },
     {
       "id": "COL-034",
@@ -3553,7 +3580,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 187
+      "line": 189
     },
     {
       "id": "COL-035",
@@ -3562,7 +3589,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 188
+      "line": 190
     },
     {
       "id": "COL-036",
@@ -3571,7 +3598,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 189
+      "line": 191
     },
     {
       "id": "COL-037",
@@ -3580,25 +3607,25 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 190
+      "line": 192
     },
     {
       "id": "COL-060",
       "area": "COL",
       "statement": "Notification channels must be tenant configuration: which channels are enabled, the address or domain email is sent from, and the tenant's own policy. Changing that must be permissioned and audited, and must be carried in the configuration export (**ADM-005**, **ADM-027**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 191
+      "line": 193
     },
     {
       "id": "COL-061",
       "area": "COL",
       "statement": "Notification delivery must state its guarantee: at-least-once with a stable event identifier a recipient can de-duplicate on (**API-045**), a declared retry and backoff, and a failing channel surfaced in tenant diagnostics (**ADM-036**) rather than silently dropped",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 192
+      "line": 194
     },
     {
       "id": "COL-062",
@@ -3607,7 +3634,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 193
+      "line": 195
     },
     {
       "id": "COL-053",
@@ -3616,7 +3643,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 194
+      "line": 196
     },
     {
       "id": "COL-054",
@@ -3625,7 +3652,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 213
+      "line": 220
     },
     {
       "id": "DAT-001",
@@ -5314,7 +5341,7 @@
       "id": "IAM-006",
       "area": "IAM",
       "statement": "Deleting a tenant must render everything it owns unreadable on a stated timetable, and that timetable must be verifiable",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 56
@@ -5341,7 +5368,7 @@
       "id": "IAM-079",
       "area": "IAM",
       "statement": "An organisation must share billing, administration and identity-provider configuration across its tenants (**IAM-068**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 59
@@ -5359,7 +5386,7 @@
       "id": "IAM-058",
       "area": "IAM",
       "statement": "The timetable in IAM-006 must be a stated number of days from the deletion becoming irreversible to everything the tenant owns being unreadable, published to tenants in advance, and proven by a test rather than asserted. It is the same clock as the grace period in **ADM-030** (**IAM-Q08**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 61
@@ -5413,7 +5440,7 @@
       "id": "IAM-012",
       "area": "IAM",
       "statement": "Authentication must be re-assertable within a session, so that a signing act can require it (**LIF** owns when)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 96
@@ -5530,7 +5557,7 @@
       "id": "IAM-068",
       "area": "IAM",
       "statement": "An organisation (IAM-078) must have administrators of its own, and organisation-level acts - creating a tenant, suspending one, changing the identity-provider configuration the organisation shares - must be permissioned through roles and audited into both the organisation's record and the affected tenant's own log",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 109
@@ -6448,7 +6475,7 @@
       "id": "LIB-004",
       "area": "LIB",
       "statement": "Records must be versioned (**VER-056**), and a baseline must pin the versions it used",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 43
@@ -6520,7 +6547,7 @@
       "id": "LIB-048",
       "area": "LIB",
       "statement": "Records that have changed since a document last published must be listable for that document, so that a change reaching a reference is visible before the publish rather than after it (LIB-005)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 51
@@ -7087,7 +7114,7 @@
       "id": "LIF-011",
       "area": "LIF",
       "statement": "A signing act must be able to require re-authentication (**IAM-012**) and an attributed statement of intent",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 77
@@ -7096,7 +7123,7 @@
       "id": "LIF-012",
       "area": "LIF",
       "statement": "The statement of intent must be recorded verbatim alongside the signature, because what somebody attested to is the point of attesting",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 78
@@ -7438,7 +7465,7 @@
       "id": "LIF-055",
       "area": "LIF",
       "statement": "An export of the log must be verifiable by whoever receives it: it must carry a hash chain or a signature over its entries, so that completeness and integrity can be checked without trusting the exporter (LIF-028, LIF-034)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 202
@@ -7519,7 +7546,7 @@
       "id": "LIF-034",
       "area": "LIF",
       "statement": "Evidence an auditor asks for - who approved what, when, against which version, and can it be reproduced - must be producible without engineering help",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 240
@@ -7528,7 +7555,7 @@
       "id": "LIF-035",
       "area": "LIF",
       "statement": "Where a capability is built for a named regime, the requirement it satisfies must be recorded, so that a claim can be traced rather than asserted",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 241
@@ -8293,7 +8320,7 @@
       "id": "MET-027",
       "area": "MET",
       "statement": "A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 266
@@ -8617,7 +8644,7 @@
       "id": "PUB-020",
       "area": "PUB",
       "statement": "PDF/A must be producible where a layout declares it, for archival and submission",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 96
@@ -8887,7 +8914,7 @@
       "id": "PUB-101",
       "area": "PUB",
       "statement": "Every Word publication must be checked automatically for accessibility, as PUB-091 checks the PDF, and the result retained with the publication",
-      "tranche": "T3",
+      "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 172
@@ -8914,7 +8941,7 @@
       "id": "PUB-080",
       "area": "PUB",
       "statement": "Where a preview is untagged by design (PUB-061), the reading context must say so to assistive technology as well as on screen, and must name the tagged output as the accessible path. A preview that is hostile on purpose must not be silently hostile",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 175
@@ -9067,7 +9094,7 @@
       "id": "PUB-076",
       "area": "PUB",
       "statement": "An incremental compilation and a clean compilation of the same input must produce byte-identical output, so that reusing layout between compiles cannot introduce a difference nobody would look for (**PUB-Q05**)",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 225
@@ -10534,7 +10561,7 @@
       "id": "SCH-040",
       "area": "SCH",
       "statement": "Search must offer completion as a query is typed, over what the requesting user may see (SCH-032), and must offer a correction where a query matches nothing and a near one would",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 103
@@ -10543,7 +10570,7 @@
       "id": "SCH-041",
       "area": "SCH",
       "statement": "Matching must tolerate a stated edit distance on a term, and a result matched approximately must say so rather than appearing as an exact match",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 104
@@ -10588,7 +10615,7 @@
       "id": "SCH-047",
       "area": "SCH",
       "statement": "Text analysis - tokenisation and stemming - must follow the language of the content (**CNT-140**). Cross-language matching must never be inferred: a query in one language must match another only through a term's labels (SCH-015)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 109
@@ -10687,7 +10714,7 @@
       "id": "SCH-020",
       "area": "SCH",
       "statement": "A search or a listing must be saveable, nameable and shareable, subject to the recipient's own permissions",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 139
@@ -10696,7 +10723,7 @@
       "id": "SCH-021",
       "area": "SCH",
       "statement": "A saved search must be re-evaluated when opened, never showing the results it had when it was saved",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 140
@@ -10723,7 +10750,7 @@
       "id": "SCH-044",
       "area": "SCH",
       "statement": "A saved search must record what it referenced - term identities, metadata values, facet dimensions - and where one has been renamed, deprecated or removed, re-evaluation must surface that rather than silently resolving to whatever is current (**LIB-037**, **LIB-055**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 143
@@ -12398,7 +12425,7 @@
       "area": "TAB",
       "statement": "Totals and subtotals must be declarable per column, with the aggregation named",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
       "line": 65
     },
@@ -12407,7 +12434,7 @@
       "area": "TAB",
       "statement": "An aggregation must state whether it was computed here or returned by the query, because the two can disagree",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
       "line": 66
     },
@@ -12443,7 +12470,7 @@
       "area": "TAB",
       "statement": "The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
       "line": 70
     },
@@ -12452,7 +12479,7 @@
       "area": "TAB",
       "statement": "A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
       "line": 71
     },
@@ -12463,7 +12490,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 92
+      "line": 98
     },
     {
       "id": "TAB-013",
@@ -12472,7 +12499,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 93
+      "line": 99
     },
     {
       "id": "TAB-014",
@@ -12481,7 +12508,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 94
+      "line": 100
     },
     {
       "id": "TAB-015",
@@ -12490,7 +12517,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 95
+      "line": 101
     },
     {
       "id": "TAB-016",
@@ -12499,7 +12526,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 96
+      "line": 102
     },
     {
       "id": "TAB-017",
@@ -12508,7 +12535,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 97
+      "line": 103
     },
     {
       "id": "TAB-018",
@@ -12517,7 +12544,7 @@
       "tranche": "T2",
       "status": "Superseded by TAB-045",
       "document": "TAB-tabular-presentation.md",
-      "line": 98
+      "line": 104
     },
     {
       "id": "TAB-019",
@@ -12526,7 +12553,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 99
+      "line": 105
     },
     {
       "id": "TAB-037",
@@ -12535,7 +12562,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 100
+      "line": 106
     },
     {
       "id": "TAB-038",
@@ -12544,7 +12571,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 101
+      "line": 107
     },
     {
       "id": "TAB-045",
@@ -12553,7 +12580,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 102
+      "line": 108
     },
     {
       "id": "TAB-046",
@@ -12562,7 +12589,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 103
+      "line": 109
     },
     {
       "id": "TAB-020",
@@ -12571,7 +12598,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 127
+      "line": 133
     },
     {
       "id": "TAB-021",
@@ -12580,7 +12607,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 128
+      "line": 134
     },
     {
       "id": "TAB-022",
@@ -12589,7 +12616,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 129
+      "line": 135
     },
     {
       "id": "TAB-023",
@@ -12598,7 +12625,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 130
+      "line": 136
     },
     {
       "id": "TAB-024",
@@ -12607,7 +12634,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 136
+      "line": 142
     },
     {
       "id": "TAB-025",
@@ -12616,7 +12643,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 137
+      "line": 143
     },
     {
       "id": "TAB-026",
@@ -12625,7 +12652,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 138
+      "line": 144
     },
     {
       "id": "TAB-027",
@@ -12634,7 +12661,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 139
+      "line": 145
     },
     {
       "id": "TAB-028",
@@ -12643,7 +12670,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 145
+      "line": 151
     },
     {
       "id": "TAB-029",
@@ -12652,7 +12679,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 146
+      "line": 152
     },
     {
       "id": "TAB-030",
@@ -12661,7 +12688,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 147
+      "line": 153
     },
     {
       "id": "TAB-031",
@@ -12670,7 +12697,7 @@
       "tranche": "T1",
       "status": "Superseded by TAB-049",
       "document": "TAB-tabular-presentation.md",
-      "line": 153
+      "line": 159
     },
     {
       "id": "TAB-032",
@@ -12679,7 +12706,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 154
+      "line": 160
     },
     {
       "id": "TAB-033",
@@ -12688,7 +12715,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 155
+      "line": 161
     },
     {
       "id": "TAB-034",
@@ -12697,7 +12724,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 156
+      "line": 162
     },
     {
       "id": "TAB-039",
@@ -12706,7 +12733,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 157
+      "line": 163
     },
     {
       "id": "TAB-040",
@@ -12715,7 +12742,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 158
+      "line": 164
     },
     {
       "id": "TAB-041",
@@ -12724,7 +12751,7 @@
       "tranche": "T1",
       "status": "Superseded by TAB-050",
       "document": "TAB-tabular-presentation.md",
-      "line": 159
+      "line": 165
     },
     {
       "id": "TAB-050",
@@ -12733,7 +12760,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 160
+      "line": 166
     },
     {
       "id": "TAB-051",
@@ -12742,7 +12769,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 161
+      "line": 167
     },
     {
       "id": "TAB-049",
@@ -12751,7 +12778,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 162
+      "line": 168
     },
     {
       "id": "TPL-001",
@@ -13893,31 +13920,31 @@
       "id": "ADM-N01",
       "statement": "**No standing support access to tenant content** (ADM-023)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 194
+      "line": 199
     },
     {
       "id": "ADM-N02",
       "statement": "**No cross-tenant reporting** of content, or of product analytics identifying individuals or unrelated tenants, other than aggregates that identify nobody. Administrative and cost reporting across the tenants of one customer organisation is permitted to that organisation's own administrators (**IAM-068**, **IAM-069**), because they are one customer looking at themselves",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 195
+      "line": 200
     },
     {
       "id": "ADM-N03",
       "statement": "**Not a billing system.** Usage is measured and reported here; invoicing is somewhere else",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 196
+      "line": 201
     },
     {
       "id": "ADM-N04",
       "statement": "**No configuration only reachable by the vendor.** Anything a tenant is entitled to change, a tenant administrator can change",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 197
+      "line": 202
     },
     {
       "id": "ADM-N05",
       "statement": "**Not a notification system.** This area decides what is worth alerting on and who should receive it; the inbox, the email and the delivery are **COL**'s (COL-033 to COL-036)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 198
+      "line": 203
     },
     {
       "id": "API-N01",
@@ -14037,43 +14064,43 @@
       "id": "COL-N01",
       "statement": "**No real-time character-level co-editing.** Scope §9 decision 4; the parallelism authors want is across components (**COL-011**)",
       "document": "COL-collaboration-and-review.md",
-      "line": 219
+      "line": 226
     },
     {
       "id": "COL-N02",
       "statement": "**No document-level locking.** It defeats the point of components",
       "document": "COL-collaboration-and-review.md",
-      "line": 220
+      "line": 227
     },
     {
       "id": "COL-N03",
       "statement": "**No comments in published output** (COL-019)",
       "document": "COL-collaboration-and-review.md",
-      "line": 221
+      "line": 228
     },
     {
       "id": "COL-N04",
       "statement": "**No anonymous review.** Every comment, suggestion and acceptance is attributable, because an audited document cannot contain unattributed changes",
       "document": "COL-collaboration-and-review.md",
-      "line": 222
+      "line": 229
     },
     {
       "id": "COL-N05",
       "statement": "**No live cursors.** Presence says which component each person is in and their mode (COL-001, COL-002), not where their cursor is; cursor-level presence belongs to the co-editing COL-N01 rules out",
       "document": "COL-collaboration-and-review.md",
-      "line": 223
+      "line": 230
     },
     {
       "id": "COL-N06",
       "statement": "**No deleting review history.** Not by its author, not by an author of the component, not by a tenant administrator (COL-049, COL-050). Resolution is how a thread stops mattering",
       "document": "COL-collaboration-and-review.md",
-      "line": 224
+      "line": 231
     },
     {
       "id": "COL-N07",
       "statement": "**No queued or automatic application of a suggestion** (COL-043). A change to a document is made by a person, at a moment they chose, against the content in front of them",
       "document": "COL-collaboration-and-review.md",
-      "line": 225
+      "line": 232
     },
     {
       "id": "DAT-N01",
@@ -14529,25 +14556,25 @@
       "id": "TAB-N01",
       "statement": "**No pivot engine.** Pivoting belongs to the query (TAB-020)",
       "document": "TAB-tabular-presentation.md",
-      "line": 181
+      "line": 187
     },
     {
       "id": "TAB-N02",
       "statement": "**No cell formulas.** Computation belongs in the query layer; this is not a spreadsheet",
       "document": "TAB-tabular-presentation.md",
-      "line": 182
+      "line": 188
     },
     {
       "id": "TAB-N03",
       "statement": "**No per-document conditional formatting.** Emphasis rules live in a style (TAB-029)",
       "document": "TAB-tabular-presentation.md",
-      "line": 183
+      "line": 189
     },
     {
       "id": "TAB-N04",
       "statement": "**No interactive tables in published output.** Sorting and filtering a PDF is not a thing; a report is read, not queried",
       "document": "TAB-tabular-presentation.md",
-      "line": 184
+      "line": 190
     },
     {
       "id": "TPL-N01",
@@ -14604,49 +14631,49 @@
       "question": "**What data residency commitments are made?** It interacts with tenant isolation, model endpoints, malware scanning and translation vendors",
       "settledBy": "The first customer who asks, which in this market is early",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 204
+      "line": 209
     },
     {
       "id": "ADM-Q02",
       "question": "**Is usage metered for pricing, or only for visibility?** Metering for pricing makes every measurement a billing dispute waiting to happen",
       "settledBy": "The commercial model. Settling it feeds straight back into ADM-010, ADM-011 and ADM-035: metering for pricing raises the precision each measurement needs and the time each record must survive, neither of which can be applied retrospectively",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 205
+      "line": 210
     },
     {
       "id": "ADM-Q03",
       "question": "**How much can support diagnose from metadata alone (ADM-022)?** The aspiration is most things; the practice will find the exceptions",
       "settledBy": "Experience. It should be revisited after the first hundred support cases",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 206
+      "line": 211
     },
     {
       "id": "ADM-Q04",
       "question": "**Who administers a tenant before it has an administrator?** Bootstrapping needs vendor action, which ADM-N04 is uncomfortable with",
       "settledBy": "A decision on onboarding, taken deliberately rather than by whoever builds signup",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 207
+      "line": 212
     },
     {
       "id": "ADM-Q05",
       "question": "**Who may close a tenant (ADM-030)?** ADM-N04 says nothing is vendor-only, but ending a contract is a commercial act and a customer cannot be the sole author of an irreversible deletion",
       "settledBy": "The commercial model, taken with ADM-Q04 - the two are the same decision at opposite ends of a tenant's life",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 208
+      "line": 213
     },
     {
       "id": "ADM-Q06",
       "question": "**How long is the grace period in ADM-030, and what survives it?** A legal hold (**LIF-021**) prevents deletion regardless of retention policy, which a closing tenant has to reckon with",
       "settledBy": "Legal input, taken with **LIF**. The hold question is the one that decides whether closure can ever be final",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 209
+      "line": 214
     },
     {
       "id": "ADM-Q07",
       "question": "**Should notifications, background work, and security and data protection become areas of their own?** Each is now specified as cross-cutting requirements with named owners - COL-060 to COL-062 and API-055 for notification and webhook mechanics, ADM-040 for scheduled work, ADM-041 to ADM-044 and IAM-066 for boundaries, backup and derived copies - which is the smaller move. Each could instead be an area",
       "settledBy": "Whether the cross-cutting requirements hold together as the tranches are planned. An area earns its own document when its requirements stop fitting in somebody else's, and these are close to that line rather than over it",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 210
+      "line": 215
     },
     {
       "id": "API-Q01",
@@ -14849,42 +14876,42 @@
       "question": "**May a reviewer who also holds authoring rights edit directly instead of suggesting?** Carried from CNT-Q10",
       "settledBy": "Whether review in this market is a separate pass or a mode anybody drops into",
       "document": "COL-collaboration-and-review.md",
-      "line": 231
+      "line": 238
     },
     {
       "id": "COL-Q02",
       "question": "**What is the default lock timeout (COL-008)?** Too short interrupts thinking; too long blocks a colleague",
       "settledBy": "Observed behaviour. Fifteen minutes is a guess, not a finding",
       "document": "COL-collaboration-and-review.md",
-      "line": 232
+      "line": 239
     },
     {
       "id": "COL-Q03",
       "question": "**Can a thread be private to some reviewers?**",
       "settledBy": "**Settled.** Internal threads are required, not optional, because external reviewers exist (COL-038 to COL-040). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "COL-collaboration-and-review.md",
-      "line": 233
+      "line": 240
     },
     {
       "id": "COL-Q04",
       "question": "**Does the soft-lock bet survive contact with users?** Scope §13 names it as a risk, and it is the one thing here that a demo will be judged on",
       "settledBy": "Early evaluations. The content model stays CRDT-compatible either way",
       "document": "COL-collaboration-and-review.md",
-      "line": 234
+      "line": 241
     },
     {
       "id": "COL-Q05",
       "question": "**What are the two idle periods in COL-046 - the one after which a lock may be taken, and the one after which it releases?** COL-Q02 asks half of this question; COL-046 is why it is two",
       "settledBy": "Observed behaviour, as with COL-Q02. The ordering is fixed by COL-046; the numbers are not",
       "document": "COL-collaboration-and-review.md",
-      "line": 235
+      "line": 242
     },
     {
       "id": "COL-Q06",
       "question": "**May a principal who can accept suggestions but cannot author hold a lock in order to accept one?** COL-041 makes accepting an edit, which ties it to the lock and so to authoring rights",
       "settledBy": "A decision in **IAM**. If such a principal exists, either the lock admits a narrower claim or the right implies the other",
       "document": "COL-collaboration-and-review.md",
-      "line": 236
+      "line": 243
     },
     {
       "id": "DAT-Q01",
@@ -15458,28 +15485,28 @@
       "question": "**How narrow can the reshaping set stay (TAB-021)?** Every customer will ask for one more transformation, and each is reasonable alone",
       "settledBy": "The first request that cannot be met in the query. The answer is usually a better query",
       "document": "TAB-tabular-presentation.md",
-      "line": 190
+      "line": 196
     },
     {
       "id": "TAB-Q02",
       "question": "**Does an interactive table belong in an HTML output?** A read-only PDF cannot sort; a web reading view could",
       "settledBy": "Whether HTML output (PUB-056) becomes a real reading format or a convenience",
       "document": "TAB-tabular-presentation.md",
-      "line": 191
+      "line": 197
     },
     {
       "id": "TAB-Q03",
       "question": "**What is the strategy for a table too wide to fit (TAB-033)?** Rotation, scaling and splitting all have bad cases",
       "settledBy": "Real report shapes; wide tables of measurements are common in this market",
       "document": "TAB-tabular-presentation.md",
-      "line": 192
+      "line": 198
     },
     {
       "id": "TAB-Q04",
       "question": "**Should totals ever be computed here at all (TAB-009)?** Forbidding it removes the disagreement TAB-010 exists to disclose",
-      "settledBy": "Whether sources can always be asked for a total. Often they can and sometimes they cannot",
+      "settledBy": "**Settled: never**, by Ken on 2026-10-08 ([ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)). A total is the query's (TAB-020); TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn",
       "document": "TAB-tabular-presentation.md",
-      "line": 193
+      "line": 199
     },
     {
       "id": "TPL-Q01",
@@ -16287,10 +16314,6 @@
           "howItIsMet": "`test` answers `ok`, or `connection_failed` alike for a refused or filtered port, an unknown host, a guarded address and a wrong credential, naming no address and echoing no credential; checks of the authenticated account are reported after it by name ([The connection test](#the-connection-test))"
         },
         {
-          "id": "DAT-007",
-          "howItIsMet": "Every change to a connection's settings is a version, so what changed is a comparison of two versions; every credential set or replaced is a row naming who and when and never the value; a connection is never deleted, and retiring it is a version"
-        },
-        {
           "id": "DAT-117",
           "howItIsMet": "`identity` is `service`, or `endUser` by `asserted` where the connector declares it (DAT-078); an asserted act runs as the caller, by the sign-in attribute the connection names, and one whose caller it cannot name is refused, `identity_unavailable`, before anything runs (D7)"
         },
@@ -16708,7 +16731,7 @@
         },
         {
           "id": "PUB-080",
-          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it. T3's since ADR-0027"
+          "howItIsMet": "A range preview's pages are images whose alternative text says each is an untagged preview page and names the tagged PDF; the panel says the same on screen and offers the tagged PDF beside it. T4's since ADR-0045"
         },
         {
           "id": "PUB-007",

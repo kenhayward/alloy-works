@@ -47,7 +47,7 @@ document setting an equation (`maths_coverage_unchecked`, W14.6), but which is s
 any character. **PUB-035 was not claimed either**, for the structures it asked Word to carry on the
 PDF's terms that Word does not; argued in full in Word 4's part of [What was built](#what-was-built).
 **Since 2026-09-28 PUB-035 is superseded** by PUB-100, the structure Word carries wherever it can
-hold it and a report of what it cannot, and PUB-101, an automatic accessibility check of Word, in T3
+hold it and a report of what it cannot, and PUB-101, an automatic accessibility check of Word, in T8 since ADR-0045
 (the T1 audit's last rewordings). **PUB-100 is claimed since W14.6**, read against its every clause
 in [Accessibility](#accessibility-pub-100): each structure it names is carried, and each Word has no
 place for is named in the report, by its place where it has one. PUB-101 is not claimed: nothing checks a Word

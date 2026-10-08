@@ -181,17 +181,19 @@ repeated.
 
 ## 8. Notifications
 
-| ID          | Requirement                                                                                                                                                                                                                                                                       | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **COL-033** | Notifications must be deliverable in an in-app inbox and by email                                                                                                                                                                                                                 | T3         | Specified |
-| **COL-034** | A user must be able to choose what they are notified about and how often                                                                                                                                                                                                          | T3         | Specified |
-| **COL-035** | Notifications must be digestible into a single message rather than one per event                                                                                                                                                                                                  | T3         | Specified |
-| **COL-036** | A notification must not disclose content the recipient may not read - it must say that something happened, not what                                                                                                                                                               | Constraint | Specified |
-| **COL-037** | Notification events must also be available as webhooks (**API**)                                                                                                                                                                                                                  | T5         | Specified |
-| **COL-060** | Notification channels must be tenant configuration: which channels are enabled, the address or domain email is sent from, and the tenant's own policy. Changing that must be permissioned and audited, and must be carried in the configuration export (**ADM-005**, **ADM-027**) | T3         | Specified |
-| **COL-061** | Notification delivery must state its guarantee: at-least-once with a stable event identifier a recipient can de-duplicate on (**API-045**), a declared retry and backoff, and a failing channel surfaced in tenant diagnostics (**ADM-036**) rather than silently dropped         | T3         | Specified |
-| **COL-062** | The inbox must have a stated lifecycle: how long a notification is retained, who may delete one, what happens to a deprovisioned user's inbox, and that its contents are a second copy of tenant content and tenant-scoped as such (**IAM-066**)                                  | T3         | Specified |
-| **COL-053** | The rule in COL-036 must hold wherever review material leaves the document: a report of unresolved suggestions (COL-027), an export, a digest and a webhook payload (COL-037) must each carry no content the recipient may not read                                               | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                       | Tranche    | Status                |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **COL-033** | Notifications must be deliverable in an in-app inbox and by email                                                                                                                                                                                                                 | T3         | Superseded by COL-063 |
+| **COL-063** | Notifications must be deliverable in an in-app inbox                                                                                                                                                                                                                              | T3         | Specified             |
+| **COL-064** | Notifications must be deliverable by email, as well as in the inbox (COL-063)                                                                                                                                                                                                     | T7         | Specified             |
+| **COL-034** | A user must be able to choose what they are notified about and how often                                                                                                                                                                                                          | T3         | Specified             |
+| **COL-035** | Notifications must be digestible into a single message rather than one per event                                                                                                                                                                                                  | T3         | Specified             |
+| **COL-036** | A notification must not disclose content the recipient may not read - it must say that something happened, not what                                                                                                                                                               | Constraint | Specified             |
+| **COL-037** | Notification events must also be available as webhooks (**API**)                                                                                                                                                                                                                  | T5         | Specified             |
+| **COL-060** | Notification channels must be tenant configuration: which channels are enabled, the address or domain email is sent from, and the tenant's own policy. Changing that must be permissioned and audited, and must be carried in the configuration export (**ADM-005**, **ADM-027**) | T7         | Specified             |
+| **COL-061** | Notification delivery must state its guarantee: at-least-once with a stable event identifier a recipient can de-duplicate on (**API-045**), a declared retry and backoff, and a failing channel surfaced in tenant diagnostics (**ADM-036**) rather than silently dropped         | T7         | Specified             |
+| **COL-062** | The inbox must have a stated lifecycle: how long a notification is retained, who may delete one, what happens to a deprovisioned user's inbox, and that its contents are a second copy of tenant content and tenant-scoped as such (**IAM-066**)                                  | T3         | Specified             |
+| **COL-053** | The rule in COL-036 must hold wherever review material leaves the document: a report of unresolved suggestions (COL-027), an export, a digest and a webhook payload (COL-037) must each carry no content the recipient may not read                                               | Constraint | Specified             |
 
 **COL-036 is a leak that arrives by email.** A notification quoting the sentence somebody commented
 on sends that sentence to whoever is on the thread, past whatever permissions the document had.
@@ -200,6 +202,11 @@ on sends that sentence to whoever is on the thread, past whatever permissions th
 written down once and scoped to notifications. A report of unresolved suggestions, an export of a
 review round and a webhook payload all carry review text out of the document, and each reaches
 somebody whose permissions were checked somewhere other than where the text was assembled.
+
+**The inbox is T3's and email T7's** ([ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)).
+COL-033 asked for both, so COL-063 is its inbox half and COL-064 its email half; the channels' tenant
+configuration (COL-060) and delivery guarantee (COL-061) go with email, since the inbox has no outbound
+channel to configure or to fail.
 
 ## 9. Time, and what a date means
 
@@ -316,3 +323,20 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Requirements     | 62     | 62    |
 | Non-requirements | 7      | 7     |
 | Open questions   | 6      | 6     |
+
+### Ken's re-tranching of T3 (ADR-0045), 2026-10-08
+
+Not a review. Ken narrowed T3 to the collaboration - presence, locks, threads, suggestions, review
+rounds, an in-app inbox, baselines, comparison, workflow, approvals and the audit log - and moved
+what T3 held besides to the tranche it fits, recorded by
+[ADR-0045](../../decisions/0045-t3-is-the-collaboration.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                | Change                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| COL-033 asks for an in-app inbox and email together; the inbox is collaboration, and email a channel to configure and operate | **COL-033 superseded by COL-063** (T3, the inbox) **and COL-064** (T7, email) |
+| A channel's tenant configuration and its delivery guarantee are email's, not the inbox's                                      | **COL-060 and COL-061 moved to T7**                                           |
+
+| Counts       | Before | After                     |
+| ------------ | ------ | ------------------------- |
+| Requirements | 62     | 64, of which 1 superseded |
