@@ -16,8 +16,13 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate } from './templates.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, readVersion, recordVersion } from './versions.js';
 
@@ -71,7 +76,7 @@ describe('definitions through the service', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = (
         await trx

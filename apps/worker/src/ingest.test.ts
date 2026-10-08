@@ -4,7 +4,6 @@ import {
   createAssetUpload,
   createJobQueue,
   createTenant,
-  createTenantDatabase,
   migrate,
   readAssetUpload,
   readAssetVersion,
@@ -14,7 +13,7 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import sharp from 'sharp';
@@ -97,8 +96,8 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     handlers = { ingest: ingestJob({ db: worker, stores }) };

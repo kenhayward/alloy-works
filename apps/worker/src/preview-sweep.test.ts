@@ -1,7 +1,6 @@
 import {
   createDocument,
   createTenant,
-  createTenantDatabase,
   migrate,
   prepareDatabase,
   recordPreview,
@@ -9,7 +8,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -42,8 +46,8 @@ describe('sweeping previews an hour after they finished (PV-F)', () => {
       await objects.setUp(db.adminUrl, tenant);
       tenants.push(tenant);
     }
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
   });
 

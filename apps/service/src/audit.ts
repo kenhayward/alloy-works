@@ -1,6 +1,11 @@
 import {
+  labels,
+  principalLabel,
   recordEvent,
+  setAuditContext,
   type AuditLabel,
+  type SignInRoute,
+  type Tenant,
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
@@ -114,5 +119,71 @@ export async function recordRefusal(
     await db.withTenant(request.tenant, (trx) => recordRefusalIn(trx, error), context);
   } catch (failure) {
     request.log.error({ err: failure }, 'the refusal could not be recorded');
+  }
+}
+
+/**
+ * Names `principalId` as who the rest of this transaction acts for, by their name as it is now: a
+ * sign-in's own transaction, which names nobody until it knows who signed in (the AU1 plan, AU1-F).
+ */
+export async function actAs(
+  trx: TenantTransaction,
+  principalId: string,
+  traceId: string,
+): Promise<void> {
+  const label = await principalLabel(trx, 'actor', principalId);
+  await setAuditContext(trx, {
+    actorKind: 'person',
+    actor: principalId,
+    traceId,
+    ...(label === undefined ? {} : { actorLabel: label.text }),
+  });
+}
+
+/** Why a sign-in failed, by kind alone: never the provider's words (IAM-013). */
+export type SignInFailure =
+  | 'provider_error'
+  | 'provider_refused'
+  | 'not_invited'
+  | 'handoff_expired'
+  | 'handoff_other_browser';
+
+/**
+ * Records a failed sign-in (IAM-013) in a short transaction of its own, since the sign-in commits
+ * nothing: as the principal it was for where one is known, and as nobody otherwise. A failure to write
+ * is logged at error and never changes the answer, which is a failure either way.
+ */
+export async function recordSignInFailure(
+  db: TenantDatabase,
+  request: FastifyRequest,
+  tenant: Tenant,
+  route: SignInRoute,
+  failure: SignInFailure,
+  principalId?: string,
+): Promise<void> {
+  try {
+    await db.withTenant(
+      tenant,
+      async (trx) => {
+        if (principalId !== undefined) await actAs(trx, principalId, request.id);
+        await recordEvent(
+          trx,
+          {
+            kind: 'authentication.sign_in_failed',
+            outcome: 'refused',
+            ...(principalId === undefined
+              ? {}
+              : { subject: { kind: 'principal', id: principalId } }),
+            detail: { route, failure },
+          },
+          principalId === undefined
+            ? []
+            : labels(await principalLabel(trx, 'subject', principalId)),
+        );
+      },
+      { actorKind: 'anonymous', traceId: request.id },
+    );
+  } catch (error) {
+    request.log.error({ err: error }, 'the failed sign-in could not be recorded');
   }
 }

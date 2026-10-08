@@ -1,7 +1,9 @@
 import {
   CHECK_GIVE_UPS,
   enqueueJob,
+  labelled,
   publicationsToCheckAgain,
+  recordEvent,
   recordCheckGivenUp,
   sweepIterations,
   sweepPreviews,
@@ -13,7 +15,9 @@ import type { WorkerLog } from './worker.js';
 
 /**
  * What sign-ins leave behind: attempts and hand-offs nobody came back for, and sessions past their
- * last hour. All are refused once expired; this is what stops the rows accumulating for ever.
+ * last hour. All are refused once expired; this is what stops the rows accumulating for ever. Each
+ * session ended is a sign-out by the system (IAM-013; the AU1 plan, AU1-F), recorded in the
+ * transaction that removes it, with when it expired.
  */
 export async function sweepExpiredSignIns(
   db: TenantDatabase,
@@ -21,21 +25,51 @@ export async function sweepExpiredSignIns(
 ): Promise<number> {
   let removed = 0;
   for (const tenant of await db.tenants()) {
-    removed += await db.withTenant(tenant, async (trx) => {
-      const attempts = await trx
-        .deleteFrom('sign_in_attempt')
-        .where('expires_at', '<=', now)
-        .executeTakeFirst();
-      const handoffs = await trx
-        .deleteFrom('sign_in_handoff')
-        .where('expires_at', '<=', now)
-        .executeTakeFirst();
-      const sessions = await trx
-        .deleteFrom('session')
-        .where((eb) => eb.or([eb('expires_at', '<=', now), eb('idle_expires_at', '<=', now)]))
-        .executeTakeFirst();
-      return Number(attempts.numDeletedRows + handoffs.numDeletedRows + sessions.numDeletedRows);
-    });
+    removed += await db.withTenant(
+      tenant,
+      async (trx) => {
+        const attempts = await trx
+          .deleteFrom('sign_in_attempt')
+          .where('expires_at', '<=', now)
+          .executeTakeFirst();
+        const handoffs = await trx
+          .deleteFrom('sign_in_handoff')
+          .where('expires_at', '<=', now)
+          .executeTakeFirst();
+        const sessions = await trx
+          .deleteFrom('session')
+          .where((eb) => eb.or([eb('expires_at', '<=', now), eb('idle_expires_at', '<=', now)]))
+          .returning(['id', 'principal_id', 'expires_at', 'idle_expires_at'])
+          .execute();
+        for (const session of sessions) {
+          const holder = await trx
+            .selectFrom('principal')
+            .select(['display_name', 'email'])
+            .where('id', '=', session.principal_id)
+            .executeTakeFirst();
+          const label = labelled(
+            'subject',
+            holder && (holder.display_name ?? holder.email),
+            session.principal_id,
+          );
+          const expiredAt =
+            session.idle_expires_at < session.expires_at
+              ? session.idle_expires_at
+              : session.expires_at;
+          await recordEvent(
+            trx,
+            {
+              kind: 'authentication.signed_out',
+              subject: { kind: 'principal', id: session.principal_id },
+              detail: { ended: 'expired', session: session.id, expiredAt: expiredAt.toISOString() },
+            },
+            label === undefined ? [] : [label],
+          );
+        }
+        return Number(attempts.numDeletedRows + handoffs.numDeletedRows) + sessions.length;
+      },
+      { actorKind: 'system' },
+    );
   }
   return removed;
 }

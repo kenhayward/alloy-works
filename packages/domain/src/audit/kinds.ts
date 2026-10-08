@@ -37,6 +37,19 @@ export const AuditTarget = z
   );
 
 const SignInRoute = z.enum(['organisation', 'google']);
+
+/**
+ * Why a sign-in failed, by kind alone (IAM-013): never the provider's message. A provider's error or
+ * refusal and an uninvited account name nobody; a Google hand-off that expired or was redeemed in
+ * another browser names the principal it was for.
+ */
+export const signInFailures = [
+  'provider_error',
+  'provider_refused',
+  'not_invited',
+  'handoff_expired',
+  'handoff_other_browser',
+] as const;
 const Permission = z.enum(permissions);
 const empty = z.strictObject({});
 
@@ -99,23 +112,30 @@ const kind = (
   emittedBy: string | null,
 ): KindSpec => ({ requirements, detail, emittedBy });
 
-const APP = 'apps/service/src/app.ts';
+const SESSIONS = 'apps/service/src/sessions.ts';
 const LATER = null;
 
 export const auditKindSpecs = {
-  'authentication.signed_in': kind(['IAM-013'], z.strictObject({ route: SignInRoute }), APP),
+  // The subject is the principal; the session is named in detail. A session also ends by the expiry
+  // sweep (apps/worker/src/sweep.ts) and by a route closed (packages/db/src/sign-in.ts).
+  'authentication.signed_in': kind(
+    ['IAM-013'],
+    z.strictObject({ route: SignInRoute, session: Id }),
+    SESSIONS,
+  ),
   'authentication.sign_in_failed': kind(
     ['IAM-013'],
-    z.strictObject({ route: SignInRoute, failure: AuditName }),
-    APP,
+    z.strictObject({ route: SignInRoute, failure: z.enum(signInFailures) }),
+    'apps/service/src/audit.ts',
   ),
   'authentication.signed_out': kind(
     ['IAM-013'],
     z.strictObject({
       ended: z.enum(['signed_out', 'expired', 'route_closed']),
+      session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),
     }),
-    APP,
+    SESSIONS,
   ),
   'access.refused': kind(['IAM-013', 'LIF-026'], AccessRefusedDetail, 'apps/service/src/audit.ts'),
   'access.granted': kind(['ADM-002', 'LIF-026'], Grant, 'packages/db/src/grants.ts'),
@@ -163,10 +183,10 @@ export const auditKindSpecs = {
   'token.issued': kind(
     ['IAM-037'],
     z.strictObject({ scopes: z.array(Permission) }),
-    'apps/service/src/tokens.ts',
+    'packages/db/src/api-tokens.ts',
   ),
   'token.used': kind(['IAM-037'], empty, 'packages/db/src/api-tokens.ts'),
-  'token.revoked': kind(['IAM-037'], empty, 'apps/service/src/tokens.ts'),
+  'token.revoked': kind(['IAM-037'], empty, 'packages/db/src/api-tokens.ts'),
   'space.made': kind(['ADM-002', 'ADM-049'], empty, 'packages/db/src/spaces.ts'),
   'space.renamed': kind(['ADM-002', 'ADM-049'], empty, 'packages/db/src/spaces.ts'),
   'space.archived': kind(['ADM-002', 'ADM-049'], empty, 'packages/db/src/spaces.ts'),

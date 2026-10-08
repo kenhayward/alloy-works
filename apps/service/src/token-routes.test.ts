@@ -6,14 +6,21 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
@@ -135,7 +142,7 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       // Every line a request writes, so the last test can say none of them carries a secret.
@@ -487,6 +494,42 @@ describe('personal tokens (service-foundations.md, "Personal tokens, as W12 buil
       const listed = await call('GET', '/v1/tokens', as('grace'));
       const shown = listed.json<{ items: Issued[] }>().items.find((item) => item.id === issued.id);
       expect(shown?.lastUsedAt).not.toBeNull();
+    });
+
+    it('IAM-037 records an issue and a revocation as the person, an administrator revoking, and a use as the token', async () => {
+      const before = await tenantDb.withTenant(tenant, newestEvent);
+      const mine = await issue('grace', ['edit'], 'Audited');
+      expect((await call('GET', '/v1/me', bearer(mine.secret))).statusCode).toBe(200);
+      expect((await call('GET', '/v1/me', bearer(mine.secret))).statusCode).toBe(200);
+      expect((await call('DELETE', `/v1/tokens/${mine.id}`, as('grace'))).statusCode).toBe(204);
+      const theirs = await issue('grace', [], 'Taken back');
+      const revoked = await call(
+        'DELETE',
+        `/v1/principals/${ids.grace!}/tokens/${theirs.id}`,
+        as('ada'),
+      );
+      expect(revoked.statusCode, revoked.body).toBe(200);
+      const events = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+      expect(
+        events.map((event) => [
+          event.kind,
+          event.actorKind,
+          event.actor,
+          event.token,
+          event.subject,
+        ]),
+      ).toEqual([
+        ['token.issued', 'person', ids.grace, null, mine.id],
+        ['token.used', 'token', ids.grace, mine.id, mine.id],
+        ['token.revoked', 'person', ids.grace, null, mine.id],
+        ['token.issued', 'person', ids.grace, null, theirs.id],
+        ['token.revoked', 'person', ids.ada, null, theirs.id],
+      ]);
+      expect(events[0]!.detail).toEqual({ scopes: ['edit'] });
+      expect(events[4]!.labels['holder']).toMatchObject({ refersTo: ids.grace });
+      const text = JSON.stringify(events);
+      expect(text).not.toContain(mine.secret);
+      expect(text).not.toContain('awt_');
     });
 
     it('takes a session alone for managing tokens, signing out and the event stream (TK-D)', async () => {

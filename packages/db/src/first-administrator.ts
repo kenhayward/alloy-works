@@ -1,4 +1,6 @@
+import type pg from 'pg';
 import { asAdministrator } from './admin.js';
+import { labelled, labels, recordEventSql } from './audit.js';
 import {
   INVITATION_DAYS,
   INVITED_PRINCIPAL_CLEANUP_TABLES,
@@ -140,6 +142,8 @@ export async function inviteFirstAdministrator(
         answer = { refused: 'first_administrator.already_invited' };
         return;
       }
+      // One event for each row the replacement removes, before any delete (the AU1 plan, AU1-H).
+      await recordWithdrawal(client, schema, other);
       for (const table of INVITED_PRINCIPAL_CLEANUP_TABLES) {
         await client.query(`delete from ${schema}.${table} where principal_id = $1`, [
           other.principal_id,
@@ -195,12 +199,130 @@ export async function inviteFirstAdministrator(
     }
     // Granted by the principal it is granted to, as the naming it replaces granted: nobody else has
     // acted inside the tenant yet.
-    await client.query(
+    const granted = await client.query<{ id: string }>(
       `insert into ${schema}.access_grant (role_id, principal_id, level, effect, granted_by)
        values ($1, $2, 'tenant', 'allow', $2)
-       on conflict on constraint access_grant_once do nothing`,
+       on conflict on constraint access_grant_once do nothing
+       returning id`,
       [role.rows[0].id, principalId],
     );
+    // The vendor's naming, in the tenant's own log (IAM-060), by whom it was named as a label.
+    const invitee = labelled('invitee', email, principalId!);
+    await recordEventSql(
+      client,
+      {
+        kind: 'tenant.administrator_named',
+        subject: { kind: 'principal', id: principalId! },
+        detail: { principal: principalId! },
+      },
+      labels(invitee, labelled('named_by', input.namedBy)),
+    );
+    if (granted.rows[0]) {
+      await recordEventSql(
+        client,
+        {
+          kind: 'access.granted',
+          subject: { kind: 'grant', id: granted.rows[0].id },
+          detail: {
+            role: role.rows[0].id,
+            level: 'tenant',
+            effect: 'allow',
+            grantee: principalId!,
+            granteeKind: 'principal',
+          },
+        },
+        labels(
+          labelled('role', 'Administrator', role.rows[0].id),
+          invitee && { ...invitee, role: 'grantee' },
+        ),
+      );
+    }
   });
   return answer;
+}
+
+/**
+ * Records the withdrawal of a lapsed administrator invitation: each grant and membership its principal
+ * holds, then the invitation itself, over the administrator's own connection.
+ */
+async function recordWithdrawal(
+  client: pg.ClientBase,
+  schema: string,
+  invitation: { readonly id: string; readonly email: string; readonly principal_id: string },
+): Promise<void> {
+  const invitee = labelled('invitee', invitation.email, invitation.principal_id);
+  const grants = await client.query<{
+    id: string;
+    role_id: string;
+    role_name: string;
+    level: 'tenant' | 'space' | 'artifact';
+    space_id: string | null;
+    artifact_id: string | null;
+    space_name: string | null;
+    effect: 'allow' | 'deny';
+  }>(
+    `select g.id, g.role_id, r.name as role_name, g.level, g.space_id, g.artifact_id,
+            s.name as space_name, g.effect
+     from ${schema}.access_grant g
+     join ${schema}.role r on r.id = g.role_id
+     left join ${schema}.space s on s.id = g.space_id
+     where g.principal_id = $1 order by g.id`,
+    [invitation.principal_id],
+  );
+  for (const grant of grants.rows) {
+    const at = grant.level === 'space' ? grant.space_id : grant.artifact_id;
+    await recordEventSql(
+      client,
+      {
+        kind: 'access.revoked',
+        subject: { kind: 'grant', id: grant.id },
+        space: grant.space_id,
+        detail: {
+          role: grant.role_id,
+          level: grant.level === 'tenant' ? 'tenant' : `${grant.level}:${at}`,
+          effect: grant.effect,
+          grantee: invitation.principal_id,
+          granteeKind: 'principal',
+        },
+      },
+      labels(
+        labelled('role', grant.role_name, grant.role_id),
+        invitee && { ...invitee, role: 'grantee' },
+        labelled('space', grant.space_name, grant.space_id),
+      ),
+    );
+  }
+  const memberships = await client.query<{ group_id: string; name: string; source: string }>(
+    `select m.group_id, g.name, g.source
+     from ${schema}.group_member m join ${schema}.access_group g on g.id = m.group_id
+     where m.principal_id = $1 order by m.group_id`,
+    [invitation.principal_id],
+  );
+  for (const membership of memberships.rows) {
+    await recordEventSql(
+      client,
+      {
+        kind: 'group.member_removed',
+        subject: { kind: 'group', id: membership.group_id },
+        detail: {
+          group: membership.group_id,
+          principal: invitation.principal_id,
+          through: membership.source === 'provider' ? 'provider' : 'manual',
+        },
+      },
+      labels(
+        labelled('subject', membership.name, membership.group_id),
+        invitee && { ...invitee, role: 'member' },
+      ),
+    );
+  }
+  await recordEventSql(
+    client,
+    {
+      kind: 'invitation.withdrawn',
+      subject: { kind: 'invitation', id: invitation.id },
+      detail: { principal: invitation.principal_id },
+    },
+    labels(invitee),
+  );
 }

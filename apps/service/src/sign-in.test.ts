@@ -2,12 +2,19 @@ import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
   createTenant,
-  createTenantDatabase,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -83,7 +90,7 @@ describe('signing in with the organisation provider', () => {
       hostnames: ['before.acme.alloy.test'],
     });
     await configureStandIn(db.adminUrl, before, { issuer: idp.issuer, clientId: 'alloy' });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'info',
@@ -258,6 +265,76 @@ describe('signing in with the organisation provider', () => {
     ]);
     await configureStandIn(db.adminUrl, before, { issuer: idp.issuer, clientId: 'alloy' });
     expect((await signInAt('before.acme.alloy.test')).statusCode).toBe(302);
+  });
+
+  /** What `act` recorded in the environment at `host`. */
+  async function recorded(host: string, act: () => Promise<unknown>) {
+    const tenant = (await tenantDb.resolveHostname(host))!;
+    const before = await tenantDb.withTenant(tenant, newestEvent);
+    await act();
+    return tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+  }
+
+  it('IAM-013 records a sign-in and its sign-out as the person, and a failed sign-in naming nobody', async () => {
+    let cookie = '';
+    const signedIn = await recorded('acme.alloy.test', async () => {
+      const finished = await signInAt('acme.alloy.test');
+      const session = finished.cookies.find((candidate) => candidate.name === '__Host-aw_session')!;
+      cookie = `${session.name}=${session.value}`;
+    });
+    const ada = signedIn[0]?.actor;
+    expect(signedIn.map((event) => [event.kind, event.actorKind, event.subject])).toEqual([
+      ['authentication.signed_in', 'person', ada],
+    ]);
+    expect(signedIn[0]!.detail).toEqual({ route: 'organisation', session: expect.any(String) });
+    expect(signedIn[0]!.labels['actor']!.text).toBe('Ada');
+    expect(signedIn[0]!.traceId).toEqual(expect.any(String));
+
+    const signedOut = await recorded('acme.alloy.test', () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/sign-out',
+        headers: { host: 'acme.alloy.test', cookie },
+      }),
+    );
+    expect(signedOut.map((event) => [event.kind, event.actorKind, event.actor])).toEqual([
+      ['authentication.signed_out', 'person', ada],
+    ]);
+    expect(signedOut[0]!.detail).toEqual({
+      ended: 'signed_out',
+      session: signedIn[0]!.detail['session'],
+    });
+
+    // The provider's answer, by its kind and never its words, from nobody the environment knows.
+    const errored = await recorded('acme.alloy.test', async () => {
+      const started = await start();
+      const signIn = started.cookies.find((candidate) => candidate.name === '__Host-aw_signin')!;
+      await app.inject({
+        url: `/v1/sign-in/organisation/callback?error=access_denied&state=${signIn.value}`,
+        headers: { host: 'acme.alloy.test', cookie: `${signIn.name}=${signIn.value}` },
+      });
+    });
+    expect(errored.map((event) => [event.kind, event.actorKind, event.actor])).toEqual([
+      ['authentication.sign_in_failed', 'anonymous', null],
+    ]);
+    expect(errored[0]).toMatchObject({
+      outcome: 'refused',
+      detail: { route: 'organisation', failure: 'provider_error' },
+    });
+    expect(JSON.stringify(errored)).not.toContain('access_denied');
+
+    // The provider refusing the exchange: another environment's secret.
+    const refused = await recorded('other.acme.alloy.test', () =>
+      signInAt('other.acme.alloy.test'),
+    );
+    expect(refused.map((event) => [event.kind, event.actorKind, event.detail])).toEqual([
+      [
+        'authentication.sign_in_failed',
+        'anonymous',
+        { route: 'organisation', failure: 'provider_refused' },
+      ],
+    ]);
+    expect(JSON.stringify(refused)).not.toContain(OTHER_SECRET);
   });
 
   it('never writes a client secret to its log or to a refusal', async () => {

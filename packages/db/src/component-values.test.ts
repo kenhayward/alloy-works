@@ -13,8 +13,13 @@ import { requestPublication } from './publishing.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import type { StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
@@ -56,7 +61,7 @@ describe("a component's values, written with its iterations", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await run(async (trx) => {
       ada = (
         await trx

@@ -4,7 +4,6 @@ import {
   createComponent,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -23,6 +22,7 @@ import {
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
+  testTenantDatabase,
 } from '@alloy-works/db/testing';
 import { defaultNumberingScheme, OUTPUT_CONTENT_TYPES } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
@@ -265,7 +265,7 @@ describe('publishing a document through the service', () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
     app = appOver(tenantDb);
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {

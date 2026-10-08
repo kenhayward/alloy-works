@@ -2,7 +2,6 @@ import {
   bootstrapCluster,
   createRole,
   createTenant,
-  createTenantDatabase,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
   findRole,
@@ -11,7 +10,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { permissions, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -161,7 +165,7 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
       hostnames: [HOST],
     });
     await configureStandIn(db.adminUrl, production, { issuer: idp.issuer, clientId: 'alloy' });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',

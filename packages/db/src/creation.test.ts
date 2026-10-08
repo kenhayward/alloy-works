@@ -5,8 +5,13 @@ import { createComponent, currentDefinitionsFor, STARTER_COMPONENT_TYPE_ID } fro
 import { createSpace } from './spaces.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact, latestVersion } from './versions.js';
 
 const ELSEWHERE = '11111111-1111-4111-8111-111111111111';
@@ -49,7 +54,7 @@ describe('creating a component', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     grace = await person(acme, 'grace');
     general = await service.withTenant(acme, async (trx) => {
       const space = await trx

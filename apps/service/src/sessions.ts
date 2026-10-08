@@ -1,5 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { SignInRoute, TenantTransaction } from '@alloy-works/db';
+import {
+  labels,
+  principalLabel,
+  recordEvent,
+  type SignInRoute,
+  type TenantTransaction,
+} from '@alloy-works/db';
 
 /** Twelve hours at most, an hour idle; per-tenant settings (IAM-038) are T2. */
 export const SESSION_POLICY = {
@@ -19,7 +25,10 @@ export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-/** Starts a session and returns its token, which is never stored: only its hash is. */
+/**
+ * Starts a session and returns its token, which is never stored: only its hash is. Records the
+ * sign-in (IAM-013) as the transaction's context has it: the principal signing in.
+ */
 export async function createSession(
   trx: TenantTransaction,
   principalId: string,
@@ -27,7 +36,7 @@ export async function createSession(
   now: Date = new Date(),
 ): Promise<string> {
   const token = randomBytes(32).toString('base64url');
-  await trx
+  const session = await trx
     .insertInto('session')
     .values({
       token_hash: hashToken(token),
@@ -37,7 +46,17 @@ export async function createSession(
       idle_expires_at: new Date(now.getTime() + SESSION_POLICY.idleMs),
       expires_at: new Date(now.getTime() + SESSION_POLICY.absoluteMs),
     })
-    .execute();
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await recordEvent(
+    trx,
+    {
+      kind: 'authentication.signed_in',
+      subject: { kind: 'principal', id: principalId },
+      detail: { route, session: session.id },
+    },
+    labels(await principalLabel(trx, 'subject', principalId)),
+  );
   return token;
 }
 
@@ -98,15 +117,30 @@ export async function sessionHeld(
   };
 }
 
-/** Ends the session a token is, answering its row where there was one. */
+/**
+ * Ends the session a token is, answering its row where there was one. The sign-out is recorded
+ * (IAM-013) before the row goes, as the transaction's context has it: the session's own holder.
+ */
 export async function endSession(
   trx: TenantTransaction,
   token: string,
 ): Promise<string | undefined> {
-  const ended = await trx
-    .deleteFrom('session')
+  const held = await trx
+    .selectFrom('session')
+    .select(['id', 'principal_id'])
     .where('token_hash', '=', hashToken(token))
-    .returning('id')
+    .forUpdate()
     .executeTakeFirst();
-  return ended?.id;
+  if (!held) return undefined;
+  await recordEvent(
+    trx,
+    {
+      kind: 'authentication.signed_out',
+      subject: { kind: 'principal', id: held.principal_id },
+      detail: { ended: 'signed_out', session: held.id },
+    },
+    labels(await principalLabel(trx, 'subject', held.principal_id)),
+  );
+  await trx.deleteFrom('session').where('id', '=', held.id).execute();
+  return held.id;
 }

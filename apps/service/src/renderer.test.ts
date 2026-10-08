@@ -1,14 +1,13 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { bootstrapCluster, createTenant, migrate, type TenantDatabase } from '@alloy-works/db';
 import {
-  bootstrapCluster,
-  createTenant,
-  createTenantDatabase,
-  migrate,
-  type TenantDatabase,
-} from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
@@ -37,7 +36,7 @@ describe('the renderer, served by the service', () => {
     await writeFile(join(root, 'index.html'), '<!doctype html><title>Alloy Works</title>');
     await mkdir(join(root, 'assets'));
     await writeFile(join(root, 'assets', 'app.js'), 'export const hello = 1;');
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     const common = {
       db: tenantDb,
       logLevel: 'silent' as const,

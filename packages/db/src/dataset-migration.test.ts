@@ -6,8 +6,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { everyKind } from './testing/every-kind.js';
 
 /** The constraints 0047 rewrites. */
@@ -113,7 +119,7 @@ describe('migration 0047, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     // One of every kind there was before 0047, so each rewritten constraint is checked against them.
     await service.withTenant(upgraded, async (trx) => {
       const author = (

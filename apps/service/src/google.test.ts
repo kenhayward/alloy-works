@@ -1,14 +1,18 @@
 import {
   bootstrapCluster,
   createTenant,
-  createTenantDatabase,
   inviteToTenant,
   migrate,
   permitGoogleSignIn,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admitGoogleAccount } from './google.js';
 import type { Identity } from './oidc.js';
@@ -41,7 +45,7 @@ describe('who a Google account may enter as (IAM-054)', () => {
     await permitGoogleSignIn(db.adminUrl, tenant, { domains: ['example.org'] });
     await inviteToTenant(db.adminUrl, tenant, 'Ada@Example.com');
     await inviteToTenant(db.adminUrl, tenant, 'grace@example.com');
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

@@ -3,14 +3,18 @@ import {
   createDocument,
   createSpace,
   createTenant,
-  createTenantDatabase,
   defaultTheme,
   migrate,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { readTheme } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -66,7 +70,7 @@ describe("the theme and layout the editor sets a component's text in", () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
     app = buildApp({
       db: tenantDb,

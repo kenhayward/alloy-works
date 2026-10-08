@@ -11,7 +11,6 @@ import {
   createJobQueue,
   createSpace,
   createTenant,
-  createTenantDatabase,
   defaultLayout,
   findRole,
   grant,
@@ -26,7 +25,12 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   assemble,
   blockIdentifierFrom,
@@ -313,8 +317,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     // A preview is run by the publish handler, told the kind by its request (publishing.md, "Preview").
@@ -1623,8 +1627,8 @@ describe('publishing a request made before layouts', () => {
       hostnames: ['before.acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir });
-    const service = createTenantDatabase(db.serviceUrl);
-    const worker = createTenantDatabase(db.workerUrl);
+    const service = testTenantDatabase(db.serviceUrl);
+    const worker = testTenantDatabase(db.workerUrl);
     const queue = createJobQueue(db.workerUrl);
     try {
       // A document of two sections, and a request for it as 0017 took one: no layout, for there was none.

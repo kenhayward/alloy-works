@@ -22,8 +22,13 @@ import {
   readTemplate,
   recordTemplateVersion,
 } from './templates.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, latestVersion, recordVersion } from './versions.js';
 
@@ -89,7 +94,7 @@ describe('a document made from a template', () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = await person(trx, 'ada', 'Ada');
       grace = await person(trx, 'grace', 'Grace');

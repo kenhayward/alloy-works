@@ -1,5 +1,6 @@
 // packages/db/src/api-tokens.ts
 import { isPermission, type Permission } from '@alloy-works/domain';
+import { labelled, labels, principalLabel, recordEvent, setAuditContext } from './audit.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -78,7 +79,25 @@ export async function issueApiToken(
     })
     .returning(COLUMNS)
     .executeTakeFirstOrThrow();
+  await recordTokenEvent(trx, 'token.issued', row, input.principalId, {
+    scopes: scopesOf(row.scopes),
+  });
   return stored(row);
+}
+
+/** Records a token's act (IAM-037): its name and its holder's as labels, never its secret or hash. */
+async function recordTokenEvent(
+  trx: TenantTransaction,
+  kind: 'token.issued' | 'token.used' | 'token.revoked',
+  token: { readonly id: string; readonly name: string },
+  holder: string,
+  detail: Readonly<Record<string, unknown>> = {},
+): Promise<void> {
+  await recordEvent(
+    trx,
+    { kind, subject: { kind: 'token', id: token.id }, detail },
+    labels(labelled('subject', token.name, token.id), await principalLabel(trx, 'holder', holder)),
+  );
 }
 
 /**
@@ -91,31 +110,42 @@ export async function findApiToken(
   trx: TenantTransaction,
   tokenHash: string,
   now: Date = new Date(),
+  /** The request's trace id, for the use's event. */
+  traceId?: string,
 ): Promise<ApiTokenHolder | undefined> {
   const row = await trx
     .selectFrom('api_token as t')
     .innerJoin('principal as p', 'p.id', 't.principal_id')
-    .select([
-      't.id',
-      't.scopes',
-      't.last_used_at',
-      'p.id as principal_id',
-      'p.email',
-      'p.display_name',
-    ])
+    .select(['t.id', 't.name', 't.scopes', 'p.id as principal_id', 'p.email', 'p.display_name'])
     .where('t.token_hash', '=', tokenHash)
     .where('t.expires_at', '>', now)
     .executeTakeFirst();
   if (!row) return undefined;
-  if (
-    row.last_used_at === null ||
-    now.getTime() - row.last_used_at.getTime() > TOKEN_TOUCH_AFTER_MS
-  ) {
-    await trx
-      .updateTable('api_token')
-      .set({ last_used_at: now })
-      .where('id', '=', row.id)
-      .execute();
+  // Recorded by the one request whose update lands (the AU1 plan, AU1-G): a concurrent one waits on
+  // the row, then finds it used within the minute and records nothing.
+  const used = await trx
+    .updateTable('api_token')
+    .set({ last_used_at: now })
+    .where('id', '=', row.id)
+    .where((eb) =>
+      eb.or([
+        eb('last_used_at', 'is', null),
+        eb('last_used_at', '<', new Date(now.getTime() - TOKEN_TOUCH_AFTER_MS)),
+      ]),
+    )
+    .returning('id')
+    .executeTakeFirst();
+  if (used) {
+    // The token acts here: nobody else is named in this transaction (the AU1 plan, AU1-D).
+    const actorLabel = row.display_name?.trim().slice(0, 400);
+    await setAuditContext(trx, {
+      actorKind: 'token',
+      actor: row.principal_id,
+      token: row.id,
+      ...(actorLabel ? { actorLabel } : {}),
+      ...(traceId === undefined ? {} : { traceId }),
+    });
+    await recordTokenEvent(trx, 'token.used', row, row.principal_id);
   }
   return {
     tokenId: row.id,
@@ -154,10 +184,16 @@ export async function revokeApiToken(
   principalId: string,
   id: string,
 ): Promise<boolean> {
-  const removed = await trx
-    .deleteFrom('api_token')
+  const held = await trx
+    .selectFrom('api_token')
+    .select(['id', 'name'])
     .where('id', '=', id)
     .where('principal_id', '=', principalId)
+    .forUpdate()
     .executeTakeFirst();
+  if (!held) return false;
+  // Before the row goes (audit.md, "Writing").
+  await recordTokenEvent(trx, 'token.revoked', held, principalId);
+  const removed = await trx.deleteFrom('api_token').where('id', '=', id).executeTakeFirst();
   return removed.numDeletedRows > 0n;
 }

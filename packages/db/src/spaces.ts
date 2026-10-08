@@ -1,6 +1,7 @@
 import { decide, type AccessFacts, type Permission } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
+import { recordEvent, type AuditLabel } from './audit.js';
 import { isPlainName } from './plain-name.js';
 import { inSavepoint } from './savepoint.js';
 import type { TenantTransaction } from './tables.js';
@@ -74,7 +75,21 @@ export async function createSpace(trx: TenantTransaction, name: string): Promise
     .returning(['id', 'name', 'created_at'])
     .executeTakeFirst();
   if (!row) throw new SpaceRefused('space.name_taken');
+  await recordSpaceEvent(trx, 'space.made', row);
   return { id: row.id, name: row.name, createdAt: row.created_at };
+}
+
+/** Records an act on a space (ADM-002, ADM-049), its name as it is now the subject's label. */
+async function recordSpaceEvent(
+  trx: TenantTransaction,
+  kind: 'space.made' | 'space.renamed' | 'space.archived' | 'space.restored',
+  space: { readonly id: string; readonly name: string },
+  more: readonly AuditLabel[] = [],
+): Promise<void> {
+  await recordEvent(trx, { kind, subject: { kind: 'space', id: space.id }, space: space.id }, [
+    { role: 'subject', text: space.name, refersTo: space.id },
+    ...more,
+  ]);
 }
 
 const stateColumns = ['id', 'name', 'created_at', 'archived_at', 'archived_by'] as const;
@@ -118,6 +133,12 @@ export async function renameSpace(
   name: string,
 ): Promise<SpaceState | undefined> {
   const checked = checkedName(name);
+  const before = await trx
+    .selectFrom('space')
+    .select('name')
+    .where('id', '=', id)
+    .forUpdate()
+    .executeTakeFirst();
   try {
     const row = await inSavepoint(trx, () =>
       trx
@@ -127,6 +148,12 @@ export async function renameSpace(
         .returning(stateColumns)
         .executeTakeFirst(),
     );
+    // Its old name and its new (the AU1 plan, AU1-I); naming it what it was already changes nothing.
+    if (row && before && before.name !== row.name) {
+      await recordSpaceEvent(trx, 'space.renamed', row, [
+        { role: 'previous', text: before.name, refersTo: row.id },
+      ]);
+    }
     return row && stateOf(row);
   } catch (error) {
     if (isNameTaken(error)) throw new SpaceRefused('space.name_taken');
@@ -171,6 +198,7 @@ export async function archiveSpace(
     .where('id', '=', id)
     .returning(stateColumns)
     .executeTakeFirstOrThrow();
+  await recordSpaceEvent(trx, 'space.archived', row);
   return stateOf(row);
 }
 
@@ -182,6 +210,14 @@ export async function restoreSpace(
   trx: TenantTransaction,
   id: string,
 ): Promise<SpaceState | undefined> {
+  const held = await trx
+    .selectFrom('space')
+    .select(['id', 'name', 'archived_at'])
+    .where('id', '=', id)
+    .forUpdate()
+    .executeTakeFirst();
+  // Recorded before `archived_by` clears (audit.md, "Writing"), and only for a space that was archived.
+  if (held && held.archived_at !== null) await recordSpaceEvent(trx, 'space.restored', held);
   const row = await trx
     .updateTable('space')
     .set({ archived_at: null, archived_by: null })

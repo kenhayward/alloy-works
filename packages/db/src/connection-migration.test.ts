@@ -8,9 +8,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import { everyKind } from './testing/every-kind.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 /** The constraints 0044 rewrites. */
 const REWRITTEN = [
@@ -92,7 +98,7 @@ describe('migration 0044, over an environment made before it', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     // A role, a scoped token and one artifact of every kind search finds, made before 0044.
     await service.withTenant(upgraded, async (trx) => {
       const ada = (

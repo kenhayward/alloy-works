@@ -16,8 +16,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { versionDigests } from './version-digest.js';
 import { recordVersion } from './versions.js';
 
@@ -42,7 +47,7 @@ describe('the layout every environment starts with', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

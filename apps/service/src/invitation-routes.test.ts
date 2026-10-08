@@ -3,14 +3,18 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   STAND_IN_USERS,
   startStandInProvider,
@@ -89,7 +93,7 @@ describe('inviting people through the service', () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',

@@ -12,8 +12,14 @@ import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { everyKind } from './testing/every-kind.js';
 import { latestVersion } from './versions.js';
 
@@ -110,7 +116,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     // An upload made before 0051, described as a person describes one.
     earlier = await service.withTenant(upgraded, async (trx) => {
       const made = await trx

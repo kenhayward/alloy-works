@@ -2,12 +2,17 @@ import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
   createTenant,
-  createTenantDatabase,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { createObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
@@ -53,7 +58,7 @@ describe('a sample of this environment', () => {
       clientId: 'alloy',
     });
     await store.setUp(db.adminUrl, tenant);
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'info',

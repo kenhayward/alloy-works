@@ -19,8 +19,13 @@ import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { listReadableTemplates } from './templates.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { publish } from './testing/every-kind.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, latestVersion, recordVersion, substanceOf } from './versions.js';
@@ -50,7 +55,7 @@ describe('listings filtered on the service, each facet counted without its own f
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx: TenantTransaction) => {
       ada = (
         await trx

@@ -4,12 +4,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { recallAnswer, rememberAnswer } from './idempotency.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
   untilWaitingOnLocks,
   type TestDatabase,
+  testTenantDatabase,
 } from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
@@ -52,7 +53,7 @@ describe('an answer kept against its idempotency key', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl, { max: 4 });
+    service = testTenantDatabase(db.serviceUrl, { max: 4 });
     ada = await person(production);
     adaThere = await person(development);
   });

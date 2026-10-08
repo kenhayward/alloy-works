@@ -9,8 +9,13 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -65,7 +70,7 @@ describe('making a grant', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = await principal(trx, 'ada', 'user');
       alice = await principal(trx, 'alice', 'external');

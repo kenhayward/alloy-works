@@ -23,8 +23,14 @@ import {
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact } from './versions.js';
 
 /** One paragraph of the content document, which this file builds runs inside. */
@@ -108,7 +114,7 @@ describe('editing a component: its lock and its iterations', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       const person = (subject: string, name: string) =>
         trx

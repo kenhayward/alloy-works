@@ -24,8 +24,13 @@ import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { publicationInputs, requestPublication } from './publishing.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import {
   addCatalogueVersion,
   addThemeVersion,
@@ -67,7 +72,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
         return numbered === null || Number(numbered[1]) <= 55;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

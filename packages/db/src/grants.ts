@@ -1,6 +1,13 @@
-import { allowable, externalCap, type Level, type Permission } from '@alloy-works/domain';
+import {
+  allowable,
+  externalCap,
+  formatLevel,
+  type Level,
+  type Permission,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
+import { labelled, labels, principalLabel, recordEvent } from './audit.js';
 import type { TenantTransaction } from './tables.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -179,19 +186,107 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
     .returning(['id', 'expires_at', 'granted_at'])
     .executeTakeFirst();
   if (!row) return { refused: 'grant.duplicate' };
-  return {
-    granted: {
-      id: row.id,
-      roleId: input.roleId,
-      subject: input.subject,
-      level: input.level,
-      effect: input.effect,
-      expiresAt: row.expires_at,
-      grantedBy: input.grantedBy,
-      grantedAt: row.granted_at,
-    },
+  const granted: StoredGrant = {
+    id: row.id,
+    roleId: input.roleId,
+    subject: input.subject,
+    level: input.level,
+    effect: input.effect,
+    expiresAt: row.expires_at,
+    grantedBy: input.grantedBy,
+    grantedAt: row.granted_at,
   };
+  await recordGrantEvent(trx, 'access.granted', granted);
+  return { granted };
 }
+
+/**
+ * Records a grant made or removed (ADM-002), with its role's, grantee's and space's names as labels,
+ * read before a removal deletes anything: what the event needs to be read once they are gone.
+ */
+export async function recordGrantEvent(
+  trx: TenantTransaction,
+  kind: 'access.granted' | 'access.revoked',
+  stored: Pick<StoredGrant, 'id' | 'roleId' | 'subject' | 'level' | 'effect'>,
+): Promise<void> {
+  const grantee = 'principal' in stored.subject ? stored.subject.principal : stored.subject.group;
+  const role = await trx
+    .selectFrom('role')
+    .select('name')
+    .where('id', '=', stored.roleId)
+    .executeTakeFirst();
+  const group =
+    'group' in stored.subject
+      ? await trx
+          .selectFrom('access_group')
+          .select('name')
+          .where('id', '=', grantee)
+          .executeTakeFirst()
+      : undefined;
+  const space =
+    stored.level.kind === 'space'
+      ? await trx
+          .selectFrom('space')
+          .select('name')
+          .where('id', '=', stored.level.id)
+          .executeTakeFirst()
+      : undefined;
+  await recordEvent(
+    trx,
+    {
+      kind,
+      subject: { kind: 'grant', id: stored.id },
+      space: stored.level.kind === 'space' ? stored.level.id : null,
+      detail: {
+        role: stored.roleId,
+        level: formatLevel(stored.level),
+        effect: stored.effect,
+        grantee,
+        granteeKind: 'principal' in stored.subject ? 'principal' : 'group',
+      },
+    },
+    labels(
+      labelled('role', role?.name, stored.roleId),
+      'principal' in stored.subject
+        ? await principalLabel(trx, 'grantee', grantee)
+        : labelled('grantee', group?.name, grantee),
+      stored.level.kind === 'space' ? labelled('space', space?.name, stored.level.id) : undefined,
+    ),
+  );
+}
+
+/** Records the removal of every grant naming a principal or a group, before a cascade deletes them. */
+export async function recordGrantsRevoked(
+  trx: TenantTransaction,
+  holder: { readonly principal: string } | { readonly group: string },
+): Promise<void> {
+  const rows = await trx
+    .selectFrom('access_grant')
+    .select(GRANT_COLUMNS)
+    .$if('principal' in holder, (query) =>
+      query.where('principal_id', '=', (holder as { principal: string }).principal),
+    )
+    .$if('group' in holder, (query) =>
+      query.where('group_id', '=', (holder as { group: string }).group),
+    )
+    .orderBy('id')
+    .execute();
+  for (const row of rows) await recordGrantEvent(trx, 'access.revoked', storedOf(row));
+}
+
+const GRANT_COLUMNS = [
+  'id',
+  'role_id',
+  'principal_id',
+  'group_id',
+  'level',
+  'space_id',
+  'artifact_id',
+  'effect',
+  'expires_at',
+  'granted_by',
+  'granted_at',
+] as const;
 
 type GrantRow = {
   id: string;
@@ -280,19 +375,7 @@ export async function removeGrant(trx: TenantTransaction, id: string): Promise<R
   await lockAccessForChange(trx);
   const row = await trx
     .selectFrom('access_grant')
-    .select([
-      'id',
-      'role_id',
-      'principal_id',
-      'group_id',
-      'level',
-      'space_id',
-      'artifact_id',
-      'effect',
-      'expires_at',
-      'granted_by',
-      'granted_at',
-    ])
+    .select(GRANT_COLUMNS)
     .where('id', '=', id)
     .executeTakeFirst();
   if (!row) return { refused: 'grant.missing' };
@@ -300,6 +383,9 @@ export async function removeGrant(trx: TenantTransaction, id: string): Promise<R
   if (administering.includes(id) && administering.length === 1) {
     return { refused: 'grant.last_administrator' };
   }
+  const removed = storedOf(row);
+  // Written before the row goes, its labels read while it stands (audit.md, "Writing").
+  await recordGrantEvent(trx, 'access.revoked', removed);
   await trx.deleteFrom('access_grant').where('id', '=', id).execute();
-  return { removed: storedOf(row) };
+  return { removed };
 }

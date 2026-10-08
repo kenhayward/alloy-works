@@ -6,7 +6,6 @@ import {
   createJobQueue,
   createQueryDefinition,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -23,7 +22,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import { readPaint as readGlyphs } from '@alloy-works/conformance';
 import {
   bindingDigestInput,
@@ -316,8 +315,8 @@ describe('publishing a document holding a bound table', () => {
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     await within(async (trx) => {

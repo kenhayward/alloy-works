@@ -6,7 +6,6 @@ import {
   createSpace,
   createTenant,
   createQueryDefinition,
-  createTenantDatabase,
   findRole,
   recordQueryDefinitionVersion,
   grant,
@@ -15,7 +14,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   canonicalResultBytes,
   dataFailureCodes,
@@ -155,7 +159,7 @@ describe('connections through the service', () => {
       hostnames: [HOST],
     });
     await configureStandIn(db.adminUrl, tenant, { issuer: idp.issuer, clientId: 'alloy' });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     const options = {
       db: tenantDb,
       logLevel: 'silent' as const,

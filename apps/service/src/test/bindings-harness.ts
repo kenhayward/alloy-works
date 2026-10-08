@@ -6,7 +6,6 @@ import {
   createRole,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   listenToTenants,
@@ -16,7 +15,12 @@ import {
   type TenantDatabase,
   type TenantListener,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   canonicalResultBytes,
   type CanonicalValue,
@@ -223,7 +227,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
   await configureStandIn(db.adminUrl, tenant, { issuer: idp.issuer, clientId: 'alloy' });
   await store.setUp(db.adminUrl, tenant);
   const stores = createObjectStores(store.settings, store.sealingKey);
-  const tenantDb = createTenantDatabase(db.serviceUrl);
+  const tenantDb = testTenantDatabase(db.serviceUrl);
   const connector = fakeConnector();
   const lines: string[] = [];
   const listeners: TenantListener[] = [];

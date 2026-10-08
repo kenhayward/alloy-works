@@ -17,7 +17,6 @@ import {
   createTenant,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
-  createTenantDatabase,
   findRole,
   grant,
   invite,
@@ -32,7 +31,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
@@ -898,7 +902,7 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
         clientId: 'alloy',
       });
     }
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',

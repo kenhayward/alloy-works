@@ -7,8 +7,14 @@ import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createComponent } from './creation.js';
 import { createTenant, provisionTenant } from './provision.js';
-import { createTenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {} from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 describe('migration 0016, which makes a document an artifact', () => {
   let db: TestDatabase;
@@ -47,7 +53,7 @@ describe('migration 0016, which makes a document an artifact', () => {
 
     // An environment already carrying a component, authored as every component is: the widened author
     // check is validated against it when 0016 adds it back.
-    const service = createTenantDatabase(db.serviceUrl);
+    const service = testTenantDatabase(db.serviceUrl);
     const component = await service
       .withTenant(tenant, async (trx) => {
         const ada = await trx

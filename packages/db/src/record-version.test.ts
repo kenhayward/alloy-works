@@ -9,8 +9,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import {
   createArtifact,
   latestVersion,
@@ -54,7 +59,7 @@ describe('recording the next version', () => {
       hostnames: ['dev.acme.alloy.test'],
     });
     // More than one connection, so two cuts can be in flight at once.
-    service = createTenantDatabase(db.serviceUrl, { max: 4 });
+    service = testTenantDatabase(db.serviceUrl, { max: 4 });
 
     ({ ada, grace, spaceId, definitions } = await service.withTenant(production, async (trx) => {
       const [first, second] = await trx

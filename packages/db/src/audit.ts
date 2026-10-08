@@ -173,3 +173,35 @@ export async function eraseLabels(trx: TenantTransaction, principalId: string): 
   `.execute(trx);
   return rows[0]!.erased;
 }
+
+/**
+ * A principal's label, as `role`: their display name, or the address an invitation holds for somebody
+ * who has not signed in yet. Undefined for a principal the tenant does not hold. Refers to them, so
+ * erasure reaches it.
+ */
+export async function principalLabel(
+  trx: TenantTransaction,
+  role: string,
+  principalId: string,
+): Promise<AuditLabel | undefined> {
+  const row = await trx
+    .selectFrom('principal')
+    .select(['display_name', 'email'])
+    .where('id', '=', principalId)
+    .executeTakeFirst();
+  return labelled(role, row && (row.display_name ?? row.email), principalId);
+}
+
+/** A label, where there is text to keep. */
+export function labelled(
+  role: string,
+  text: string | null | undefined,
+  refersTo: string | null = null,
+): AuditLabel | undefined {
+  const kept = text?.trim().slice(0, 400);
+  return kept ? { role, text: kept, refersTo } : undefined;
+}
+
+/** The labels that have text. */
+export const labels = (...each: (AuditLabel | undefined)[]): AuditLabel[] =>
+  each.filter((label): label is AuditLabel => label !== undefined);

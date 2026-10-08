@@ -12,8 +12,13 @@ import { bootstrapCluster } from './bootstrap.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
 import { migrate } from './migrate.js';
 import { provisionTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { recordVersion } from './versions.js';
 
 /**
@@ -37,7 +42,7 @@ describe("migration 0056, which gives the default layout the word a table's note
         return numbered === null || Number(numbered[1]) < 56;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

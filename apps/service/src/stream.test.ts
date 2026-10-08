@@ -1,7 +1,6 @@
 import {
   bootstrapCluster,
   createTenant,
-  createTenantDatabase,
   listenToTenants,
   notifyTenant,
   migrate,
@@ -9,7 +8,12 @@ import {
   type TenantDatabase,
   type TenantListener,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -148,7 +152,7 @@ describe('what an environment is doing, as it happens', () => {
         clientId: 'alloy',
       });
     }
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     events = listenToTenants(db.serviceUrl);
     app = buildApp({
       db: tenantDb,

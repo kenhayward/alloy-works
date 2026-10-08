@@ -4,7 +4,6 @@ import {
   closeSignInRoute,
   createGroup,
   createTenant,
-  createTenantDatabase,
   inviteToTenant,
   migrate,
   permitGoogleSignIn,
@@ -12,7 +11,15 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   STAND_IN_USERS,
   startStandInProvider,
@@ -100,7 +107,7 @@ describe('signing in with a Google account', () => {
     await inviteToTenant(db.adminUrl, dev, 'Ada@Example.com');
     await inviteToTenant(db.adminUrl, dev, 'eve@example.com');
     await permitGoogleSignIn(db.adminUrl, other, { domains: ['example.org'] });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp(
       options({ google: { issuer: idp.issuer, clientId: 'alloy-google', signInHost: SIGN_IN } }),
     );
@@ -264,6 +271,70 @@ describe('signing in with a Google account', () => {
       [codeHash],
     );
     expect((await complete(next, cookie)).statusCode).toBe(401);
+  });
+
+  /** What `act` recorded in the development environment. */
+  async function recorded(act: () => Promise<unknown>) {
+    const before = await tenantDb.withTenant(dev, newestEvent);
+    await act();
+    return tenantDb.withTenant(dev, (trx) => auditEvents(trx, before));
+  }
+
+  it('IAM-013 records a Google sign-in, an uninvited account, a provider error, and a hand-off redeemed late or elsewhere', async () => {
+    const signedIn = await recorded(() => signInWithGoogle(DEV, 'alice'));
+    const alice = signedIn.find((event) => event.kind === 'authentication.signed_in')!;
+    expect(alice).toMatchObject({
+      actorKind: 'person',
+      subjectKind: 'principal',
+      detail: { route: 'google', session: expect.any(String) },
+    });
+    expect(alice.actor).toBe(alice.subject);
+
+    const uninvited = await recorded(async () => callback((await atGoogle(DEV, 'grace')).back));
+    expect(uninvited.map((event) => [event.kind, event.actorKind, event.detail])).toEqual([
+      ['authentication.sign_in_failed', 'anonymous', { route: 'google', failure: 'not_invited' }],
+    ]);
+
+    // Google's error, for an attempt the state signed: its kind, never its words.
+    const errored = await recorded(async () => {
+      const { back } = await atGoogle(DEV, 'alice');
+      back.searchParams.delete('code');
+      back.searchParams.set('error', 'access_denied');
+      expect((await callback(back)).statusCode).toBe(401);
+    });
+    expect(errored.map((event) => [event.kind, event.actorKind, event.detail])).toEqual([
+      [
+        'authentication.sign_in_failed',
+        'anonymous',
+        { route: 'google', failure: 'provider_error' },
+      ],
+    ]);
+    expect(JSON.stringify(errored)).not.toContain('access_denied');
+
+    // A hand-off names its principal: redeemed in another browser, or after its minute.
+    const elsewhere = await recorded(async () => {
+      const { next } = await untilHandoff(DEV, 'alice');
+      expect((await complete(next)).statusCode).toBe(401);
+    });
+    const failed = elsewhere.filter((event) => event.kind === 'authentication.sign_in_failed');
+    expect(failed.map((event) => [event.actorKind, event.actor, event.detail])).toEqual([
+      ['person', alice.actor, { route: 'google', failure: 'handoff_other_browser' }],
+    ]);
+    const late = await recorded(async () => {
+      const { next, cookie } = await untilHandoff(DEV, 'alice');
+      await queryAs(
+        db.adminUrl,
+        `update ${dev.schema}.sign_in_handoff set expires_at = now() - interval '1 second'
+          where code_hash = $1`,
+        [hashToken(next.searchParams.get('code')!)],
+      );
+      expect((await complete(next, cookie)).statusCode).toBe(401);
+    });
+    expect(
+      late
+        .filter((event) => event.kind === 'authentication.sign_in_failed')
+        .map((event) => [event.actor, event.detail]),
+    ).toEqual([[alice.actor, { route: 'google', failure: 'handoff_expired' }]]);
   });
 
   it('refuses a state that has been tampered with', async () => {

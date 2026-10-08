@@ -3,7 +3,6 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
-  createTenantDatabase,
   editingPolicy,
   findRole,
   grant,
@@ -11,7 +10,14 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  auditEvents,
+  freshDatabase,
+  newestEvent,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -62,7 +68,7 @@ describe("the environment's editing settings through the service", () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
       logLevel: 'silent',
@@ -141,6 +147,33 @@ describe("the environment's editing settings through the service", () => {
     expect(await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx))).toEqual({
       iterationRetentionDays: 90,
     });
+  });
+
+  it('ADM-002 records the settings a change changed, by name and never by value, as who changed them', async () => {
+    const before = await tenantDb.withTenant(tenant, newestEvent);
+    const was = await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx));
+    expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
+    // The same window again changes nothing, and records nothing.
+    expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
+    const data = (payload: object) =>
+      app.inject({
+        method: 'PUT',
+        url: '/v1/settings/data',
+        headers: { host: HOST, cookie: cookies.ada! },
+        payload,
+      });
+    expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
+    expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
+    const events = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+    expect(events.map((event) => [event.kind, event.actorKind, event.actor, event.detail])).toEqual(
+      [
+        ['settings.changed', 'person', ids.ada, { settings: ['editing.iterationRetentionDays'] }],
+        ['settings.changed', 'person', ids.ada, { settings: ['data.rows', 'data.seconds'] }],
+      ],
+    );
+    expect(JSON.stringify(events)).not.toContain('4321');
+    await call('ada', 'PUT', was);
+    await data({});
   });
 
   it('answers a window outside 1 to 365 whole days as a bad request, and changes nothing', async () => {

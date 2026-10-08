@@ -11,8 +11,14 @@ import { recordDatasetVersion } from './datasets.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createQueryDefinition } from './queryDefinitions.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const settings: ConnectionSettings = {
   schemaVersion: 1,
@@ -67,7 +73,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       hostnames: ['acme.alloy.test'],
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     version = await service.withTenant(upgraded, async (trx) => {
       const ada = (
         await trx

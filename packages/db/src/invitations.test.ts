@@ -17,7 +17,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
@@ -25,6 +25,7 @@ import {
   untilWaitingOnLocks,
   whileAccessIsDecided,
   type TestDatabase,
+  testTenantDatabase,
 } from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
@@ -144,7 +145,7 @@ describe('inviting somebody by address, before they sign in', () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

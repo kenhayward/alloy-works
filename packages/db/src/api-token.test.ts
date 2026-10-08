@@ -6,8 +6,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -28,7 +34,7 @@ describe('api_token, where a personal token is kept as its hash (service-foundat
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     ada = await principal('ada', 'Ada');
   });
 

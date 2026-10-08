@@ -32,8 +32,14 @@ import {
   requestPublication,
 } from './publishing.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { requestBefore0029 } from './testing/request-before-0029.js';
 import { versionDigests } from './version-digest.js';
 import { recordVersion, type StoredVersion } from './versions.js';
@@ -65,7 +71,7 @@ describe('migration 0018, which gives every environment its default layout', () 
         return numbered === null || Number(numbered[1]) < 18;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -689,7 +695,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
         return numbered === null || Number(numbered[1]) < 21;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -811,7 +817,7 @@ describe('migration 0023, which gives the default layout words for a relative re
         return numbered === null || Number(numbered[1]) < 23;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1012,7 +1018,7 @@ describe("migration 0025, which gives the default layout the words a continued t
         return numbered === null || Number(numbered[1]) < 25;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1193,7 +1199,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
         return numbered === null || Number(numbered[1]) < 27;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1399,7 +1405,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
         return numbered === null || Number(numbered[1]) < 35;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

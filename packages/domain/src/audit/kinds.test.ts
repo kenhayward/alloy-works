@@ -103,9 +103,13 @@ describe('the audit kinds', () => {
 
   it('takes the detail each kind emitted now describes', () => {
     const examples: Partial<Record<(typeof auditKinds)[number], unknown>> = {
-      'authentication.signed_in': { route: 'organisation' },
+      'authentication.signed_in': { route: 'organisation', session: ID },
       'authentication.sign_in_failed': { route: 'google', failure: 'handoff_expired' },
-      'authentication.signed_out': { ended: 'expired', expiredAt: '2026-10-08T09:00:00.000Z' },
+      'authentication.signed_out': {
+        ended: 'expired',
+        session: ID,
+        expiredAt: '2026-10-08T09:00:00.000Z',
+      },
       'access.refused': {
         permission: 'edit',
         target: `artifact:${ID}`,
@@ -173,6 +177,13 @@ describe('the audit kinds', () => {
     ).toThrow();
     expect(() =>
       parseAuditDetail('access.refused', { ...refusal, target: 'Quarterly report' }),
+    ).toThrow();
+    // A failed sign-in is named by its kind, never by the provider's words.
+    expect(() =>
+      parseAuditDetail('authentication.sign_in_failed', {
+        route: 'organisation',
+        failure: 'invalid_grant',
+      }),
     ).toThrow();
     // And the thrown words name where it failed, never what it held.
     expect(() => parseAuditDetail('settings.changed', { settings: ['secret=swordfish'] })).toThrow(

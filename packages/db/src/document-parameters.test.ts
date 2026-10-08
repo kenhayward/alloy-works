@@ -15,8 +15,14 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate, recordTemplateVersion } from './templates.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import {
   createArtifact,
@@ -89,7 +95,7 @@ describe("a document's parameters", () => {
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: ['acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       ada = await person(trx, 'ada', 'Ada');
       general = (

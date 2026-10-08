@@ -3,7 +3,6 @@ import {
   claimLock,
   createArtifact,
   createTenant,
-  createTenantDatabase,
   cutVersion,
   migrate,
   prepareDatabase,
@@ -11,7 +10,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import {
   DEFINITION_SCHEMA_VERSION,
   definitionsFor,
@@ -61,8 +65,8 @@ describe('sweeping iterations past their window, in every tenant', () => {
         }),
       );
     }
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
   });
 
   afterAll(async () => {

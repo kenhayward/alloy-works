@@ -16,12 +16,13 @@ import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
+import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
   untilBlockedBy,
   type TestDatabase,
+  testTenantDatabase,
 } from './testing/database.js';
 
 const ISSUER = 'https://idp.example';
@@ -107,7 +108,7 @@ describe('the first administrator, invited by address', () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
     await migrate(db.migratorUrl);
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

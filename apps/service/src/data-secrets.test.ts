@@ -4,14 +4,19 @@ import {
   createComponent,
   createRole,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import type { ConnectionSettings } from '@alloy-works/domain';
 import { createObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
@@ -86,7 +91,7 @@ describe("the service's handling of a credential", () => {
     await configureStandIn(db.adminUrl, tenant, { issuer: idp.issuer, clientId: 'alloy' });
     store = await testObjectStore();
     await store.setUp(db.adminUrl, tenant);
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     // Every line the service writes, at its most talkative.
     const logStream = new Writable({
       write(chunk: Buffer, _encoding, done) {

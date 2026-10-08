@@ -16,8 +16,13 @@ import { migrate } from './migrate.js';
 import { cutVersion, releaseLock } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { createArtifact, latestVersion } from './versions.js';
 
 const identity = (id: string, name: string) =>
@@ -101,7 +106,7 @@ describe('cutting a version from an editing session, and releasing its lock', ()
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
     await service.withTenant(production, async (trx) => {
       const person = (subject: string, name: string) =>
         trx

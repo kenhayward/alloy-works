@@ -309,3 +309,75 @@ export async function freshDatabase(): Promise<TestDatabase> {
     },
   };
 }
+
+/** An event as a test reads it back: its row, and its labels by role. */
+export interface ReadEvent {
+  readonly sequence: string;
+  readonly at: Date;
+  readonly kind: string;
+  readonly actorKind: string;
+  readonly actor: string | null;
+  readonly token: string | null;
+  readonly subjectKind: string | null;
+  readonly subject: string | null;
+  readonly subjectVersion: string | null;
+  readonly space: string | null;
+  readonly outcome: string;
+  readonly detail: Record<string, unknown>;
+  readonly traceId: string | null;
+  readonly labels: Readonly<
+    Record<string, { readonly text: string; readonly refersTo: string | null; erased: boolean }>
+  >;
+}
+
+/** The tenant's events after `after`, in sequence order, each with its labels. */
+export async function auditEvents(trx: TenantTransaction, after = '0'): Promise<ReadEvent[]> {
+  const rows = await trx
+    .selectFrom('audit_event')
+    .selectAll()
+    .where('sequence', '>', after)
+    .orderBy('sequence')
+    .execute();
+  if (rows.length === 0) return [];
+  const labels = await trx
+    .selectFrom('audit_label')
+    .selectAll()
+    .where(
+      'sequence',
+      'in',
+      rows.map((row) => row.sequence),
+    )
+    .execute();
+  return rows.map((row) => ({
+    sequence: String(row.sequence),
+    at: row.at,
+    kind: row.kind,
+    actorKind: row.actor_kind,
+    actor: row.actor,
+    token: row.token,
+    subjectKind: row.subject_kind,
+    subject: row.subject,
+    subjectVersion: row.subject_version,
+    space: row.space,
+    outcome: row.outcome,
+    detail: row.detail as Record<string, unknown>,
+    traceId: row.trace_id,
+    labels: Object.fromEntries(
+      labels
+        .filter((label) => String(label.sequence) === String(row.sequence))
+        .map((label) => [
+          label.role,
+          { text: label.text, refersTo: label.refers_to, erased: label.erased_at !== null },
+        ]),
+    ),
+  }));
+}
+
+/** The tenant's newest sequence, '0' where there is none: what `auditEvents` reads after. */
+export async function newestEvent(trx: TenantTransaction): Promise<string> {
+  const row = await trx
+    .selectFrom('audit_event')
+    .select(sql<string>`coalesce(max(sequence), 0)::text`.as('newest'))
+    .executeTakeFirstOrThrow();
+  return row.newest;
+}

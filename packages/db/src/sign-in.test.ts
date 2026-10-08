@@ -10,8 +10,14 @@ import {
   permitGoogleSignIn,
 } from './sign-in.js';
 import { openSecret, SealedSecretRefused } from '@alloy-works/sealing';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 
 const KEY = randomBytes(32);
 const SECRET = 'acme-client-secret';
@@ -36,7 +42,7 @@ describe('sign-in settings', () => {
       tenant: { id: db.newTenantId(), name: 'Development' },
       hostnames: ['dev.acme.alloy.test'],
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {

@@ -6,7 +6,6 @@ import {
   createDocument,
   createJobQueue,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -19,7 +18,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { freshDatabase, type TestDatabase } from '@alloy-works/db/testing';
+import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import {
   blockIdentifierFrom,
   type ContentDocument,
@@ -198,8 +197,8 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
       hostnames: ['dev.acme.alloy.test'],
     });
     await objects.setUp(db.adminUrl, tenant);
-    service = createTenantDatabase(db.serviceUrl);
-    worker = createTenantDatabase(db.workerUrl);
+    service = testTenantDatabase(db.serviceUrl);
+    worker = testTenantDatabase(db.workerUrl);
     queue = createJobQueue(db.workerUrl);
     stores = createObjectStores(objects.settings, objects.sealingKey);
     // The publish job alone: nothing but the publish runs inside the measured span. The conformance

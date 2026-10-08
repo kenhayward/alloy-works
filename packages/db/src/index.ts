@@ -168,6 +168,9 @@ export {
 export {
   AuditContextMissing,
   eraseLabels,
+  labelled,
+  labels,
+  principalLabel,
   recordEvent,
   recordEventSql,
   setAuditContext,

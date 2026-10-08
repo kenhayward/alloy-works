@@ -3,7 +3,6 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
-  createTenantDatabase,
   findRole,
   grant,
   migrate,
@@ -14,7 +13,12 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from '@alloy-works/db/testing';
 import { readImageHeader } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
@@ -134,7 +138,7 @@ describe('uploading an image through the service (figures 1)', () => {
       issuer: idp.issuer,
       clientId: 'alloy',
     });
-    tenantDb = createTenantDatabase(db.serviceUrl);
+    tenantDb = testTenantDatabase(db.serviceUrl);
     await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
     app = buildApp({
       db: tenantDb,

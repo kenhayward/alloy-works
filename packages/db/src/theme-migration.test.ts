@@ -57,8 +57,14 @@ import {
   requestPublication,
 } from './publishing.js';
 import type { TenantTransaction } from './tables.js';
-import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
 import { requestBefore0029 } from './testing/request-before-0029.js';
 import {
   addCatalogueVersion,
@@ -129,7 +135,7 @@ describe('migration 0024, which gives every environment its default theme', () =
         return numbered === null || Number(numbered[1]) < 18;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -614,7 +620,7 @@ describe('migration 0025, which gives the default theme its table and image styl
         return numbered === null || Number(numbered[1]) <= 25;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -872,7 +878,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
     atFirst = await migrationsBelow(25);
     // And every one up to 0026 itself, so what 0026 leaves is read before 0034 gives the theme 0.4.
     through = await migrationsBelow(27);
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1147,7 +1153,7 @@ describe('migration 0034, which gives the default theme styles an author may cho
         return numbered === null || Number(numbered[1]) < 43;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1435,7 +1441,7 @@ describe('migration 0043, which says where the default theme places each caption
         return numbered === null || Number(numbered[1]) < 48;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
@@ -1711,7 +1717,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
         return numbered === null || Number(numbered[1]) < 48;
       },
     });
-    service = createTenantDatabase(db.serviceUrl);
+    service = testTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
