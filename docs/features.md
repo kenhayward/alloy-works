@@ -647,7 +647,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   both are checked at every run, and the connection's page says what the database's administrator
   must change. Holding your own view in a document first warns that everybody who may read the
   document will see it, and that it prints in its publications; a value says whose own view it is,
-  and nobody else may accept or check it. Signing out, or revoking the token a query was asked with,
+  and its provenance how they signed in and the name the source saw them by, and nobody else may accept or check it. Signing out, or revoking the token a query was asked with,
   stops it at the database within two seconds, records nothing and says why, and closes your live
   updates. [The administrator's guide](guides/asserted-identity-on-postgresql.md) says how to set the
   database up, and what it trusts.

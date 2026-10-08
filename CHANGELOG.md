@@ -3,6 +3,13 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.144.1 - 2026-10-08 (PR #454)
+
+### Changed
+
+- **Whose view, in full.** A value's provenance now says how the person whose own view it is signed
+  in, and the name the source saw them by, beside their name.
+
 ## 0.144.0 - 2026-10-07 (PR #451)
 
 ### Added
