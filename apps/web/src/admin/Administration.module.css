@@ -3,7 +3,7 @@
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
-  gap: var(--space-14) var(--space-20);
+  gap: var(--space-16) var(--space-24);
   min-height: 420px;
 }
 
@@ -11,33 +11,33 @@
   grid-column: 1 / -1;
   display: flex;
   align-items: baseline;
-  gap: var(--space-14);
+  gap: var(--space-16);
   padding-inline-end: var(--space-40);
 }
 
 .head h2 {
   margin: 0;
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
 }
 
 .environment {
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
 }
 
 .section {
   justify-content: flex-start;
-  padding: var(--space-8) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   border: 0;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   background: transparent;
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   text-align: start;
 }
 
@@ -48,12 +48,12 @@
 
 .shown {
   min-width: 0;
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .shown h3 {
   margin-top: 0;
-  font-size: var(--size-card-title);
+  font-size: var(--size-16);
 }
 
 /* A heading focus is moved to, as a person's tokens open or close, rather than a stop of its own. */
@@ -65,7 +65,7 @@
 .shown h4 {
   margin: var(--space-16) 0 var(--space-8);
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -95,13 +95,13 @@
 .dialog {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-12);
 }
 
 .dialog h2 {
   margin: 0;
   padding-inline-end: var(--space-40);
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
 }
 
 .dialog > label {
@@ -117,11 +117,11 @@
 .members {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-8);
   margin: 0;
-  padding: var(--space-10) var(--space-12);
+  padding: var(--space-12) var(--space-12);
   border: 1px solid var(--border);
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
 }
 
 .actions {
@@ -143,10 +143,10 @@
 .foot {
   grid-column: 1 / -1;
   margin: 0;
-  padding-top: var(--space-10);
+  padding-top: var(--space-12);
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 @media (max-width: 720px) {

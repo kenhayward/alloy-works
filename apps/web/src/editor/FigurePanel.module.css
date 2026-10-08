@@ -5,20 +5,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--space-6) var(--space-8);
-  font-size: var(--size-body-small);
+  gap: var(--space-8) var(--space-8);
+  font-size: var(--size-13);
 }
 
 .panel fieldset {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-8);
   margin: 0;
   border: 0;
   padding: 0;
 }
 
 .note {
-  margin: 0 0 0 var(--space-20);
+  margin: 0 0 0 var(--space-24);
   color: var(--muted);
 }

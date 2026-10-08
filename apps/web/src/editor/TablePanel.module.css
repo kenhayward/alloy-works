@@ -4,14 +4,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-6) var(--space-8);
-  font-size: var(--size-body-small);
+  gap: var(--space-8) var(--space-8);
+  font-size: var(--size-13);
 }
 
 .count {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
 }
 
 .count input {

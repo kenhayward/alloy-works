@@ -23,7 +23,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   line-height: 1.5;
 }
 
@@ -61,25 +61,25 @@ html {
 
 h1 {
   margin: 0 0 var(--space-16);
-  font-size: var(--size-page-title);
+  font-size: var(--size-20);
   font-weight: 650;
   letter-spacing: -0.01em;
 }
 
 h2 {
   margin: var(--space-24) 0 var(--space-12);
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
   font-weight: 600;
 }
 
 h3 {
   margin: var(--space-16) 0 var(--space-8);
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   font-weight: 600;
 }
 
 p {
-  margin: 0 0 var(--space-10);
+  margin: 0 0 var(--space-12);
 }
 
 /* Underlined, as the Ledger draws them: the accent is 2.7:1 against body text, under the 3:1 a link
@@ -98,7 +98,7 @@ code,
 kbd,
 pre {
   font-family: var(--mono);
-  font-size: var(--size-code);
+  font-size: var(--size-12);
 }
 
 /* Controls */
@@ -161,9 +161,9 @@ input:not([type='checkbox'], [type='radio']),
 select,
 textarea {
   min-height: 32px;
-  padding: var(--space-4) var(--space-10);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  padding: var(--space-4) var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
   background: var(--surface);
 }
 
@@ -173,9 +173,9 @@ input[type='radio'] {
 }
 
 label {
-  margin-inline: var(--space-10) var(--space-4);
+  margin-inline: var(--space-12) var(--space-4);
   color: var(--text);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 label:first-child {
@@ -193,7 +193,7 @@ fieldset {
 legend {
   padding-inline: var(--space-4);
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 form {
@@ -201,7 +201,7 @@ form {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -209,7 +209,7 @@ form {
 
 ul,
 ol {
-  padding-inline-start: var(--space-20);
+  padding-inline-start: var(--space-24);
 }
 
 nav ul,
@@ -222,14 +222,14 @@ table {
   width: 100%;
   border-collapse: collapse;
   background: var(--surface);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 th {
   padding: var(--space-8) var(--space-12);
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: start;
@@ -237,7 +237,7 @@ th {
 }
 
 td {
-  padding: var(--space-10) var(--space-12);
+  padding: var(--space-12) var(--space-12);
   border-bottom: 1px solid var(--border);
 }
 
@@ -253,7 +253,7 @@ time {
 dl {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: var(--space-6) var(--space-16);
+  gap: var(--space-8) var(--space-16);
   margin: 0 0 var(--space-12);
 }
 
@@ -271,14 +271,14 @@ dd {
   padding: var(--space-8) var(--space-12);
   border: 1px solid var(--danger);
   border-inline-start-width: 3px;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   background: var(--surface);
   color: var(--danger);
 }
 
 [role='status'] {
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 section {

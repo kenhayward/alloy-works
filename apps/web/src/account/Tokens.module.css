@@ -2,7 +2,7 @@
 .tokens h2 {
   margin: 0 0 var(--space-8);
   padding-inline-end: var(--space-40);
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
 }
 
 .tokens > p {
@@ -53,35 +53,35 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--space-6) var(--space-12);
+  gap: var(--space-8) var(--space-12);
   margin: 0;
-  padding: var(--space-10) var(--space-12);
+  padding: var(--space-12) var(--space-12);
   border: 1px solid var(--border);
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
 }
 
 .scopes legend {
   padding: 0 var(--space-4);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .scopes p {
   grid-column: 1 / -1;
   margin: 0 0 var(--space-4);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .scope {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
 }
 
 .warning {
   padding: var(--space-8) var(--space-12);
   border: 1px solid var(--warn);
   border-inline-start-width: 3px;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
 }
 
 .secret {

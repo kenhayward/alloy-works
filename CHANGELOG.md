@@ -3,6 +3,49 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.146.0 - 2026-10-08 (PR #483)
+
+### Added
+
+- **Light, Dark and Auto.** Choose the theme from the Theme button in the header. Auto follows your
+  system, and your choice is remembered in this browser. A component's text stays on white paper in
+  either theme.
+- **The module rail.** Every screen has a labelled rail: Home, then Components, Documents and
+  Templates, Publications, Connections and Query definitions, and Admin at its foot, which opens
+  Administration.
+- **Search and commands.** Press Ctrl K, or use the search field in the header, to go to any module
+  or search for what you type. In a component's text, Ctrl K still adds a link.
+- **F6 reaches the header and the rail.** F6 and Shift-F6 move between the header, the module rail
+  and the page, and on through the component editor's own regions.
+- **A component beside the list.** Show here on a row opens the component's facts, Open, Give
+  access, the start of its text and its latest versions beside the components list, or over it in a
+  narrow window.
+- **Panels beside a component.** An open component has Attributes, with the fields of its type,
+  Versions and Access beside it.
+
+### Changed
+
+- **The Ledger redesign.** The interface takes the redesign's colours, sizes, spacing and corners,
+  set in IBM Plex Sans with IBM Plex Mono for numbers and identifiers, bundled so nothing is fetched;
+  the header follows the theme; links are underlined. A component's text keeps its theme's own
+  typefaces.
+- **Home** lists every module in its group, Author, Publish and Data, with how many there are to read
+  where that is known.
+- **The components list** puts each component's space and language under its title, and shows each
+  filter you have chosen as a chip you can remove.
+- **The component editor** shows Components and its space above the title, and its Saved text, Save
+  version and Done are one tab stop, moved along with the arrow keys.
+- **The document page** opens under Documents and its space, with Reading and Authoring beside
+  Preview at its head, and the panels beside the text named in words: Part, Document, Lists and
+  Publishing. The panel you chose is remembered in this browser.
+- **A publication's page** opens under Publications with its title, its version, formats and approval
+  as chips, and Open the document, Download the Word document and Download the PDF at its head;
+  beside it, what it was made from, its checks and its files.
+- **Connections and query definitions** open under their list and space, with their facts as chips,
+  each part or step as a card, and what uses them beside.
+- **Toolbars, tabs, buttons and chips** follow the redesign. Every toolbar is one tab stop, moved
+  along with the arrow keys, and a state shows as a chip in the colour that means it.
+
 ## 0.145.0 - 2026-10-08 (PR #471)
 
 ### Added

@@ -20,9 +20,9 @@
   gap: var(--space-4);
   max-height: 16rem;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-10);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
 }
 
 .forms {
@@ -36,7 +36,7 @@
 .choice {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   min-height: 24px;
   margin: 0;
 }

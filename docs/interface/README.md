@@ -13,12 +13,13 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
-> **Being redesigned as Ledger.** [`handoffs/ledger/`](handoffs/ledger/README.md) is the target
-> look for every screen ([ADR-0046](../decisions/0046-the-ledger-interface.md), built by
-> [the LG plan](../plans/2026-10-08-lg-the-ledger-interface.md)): a module rail, a header that
-> follows the theme, Light, Dark and Auto. Where it and `screens/` disagree on the look, Ledger
-> wins; their wording and the accessibility rules below still hold. The shell and layouts below
-> describe what is built until each LG PR changes them.
+> **Redesigned as Ledger.** [`handoffs/ledger/`](handoffs/ledger/README.md) is the look of every
+> screen ([ADR-0046](../decisions/0046-the-ledger-interface.md)), built by
+> [the LG plan](../plans/2026-10-08-lg-the-ledger-interface.md): a module rail, a header that follows
+> the theme, Light, Dark and Auto, panels named in words. Where it and `screens/` disagree on the
+> look, Ledger wins; their wording and the accessibility rules below still hold. The shell and
+> layouts below were written before it; [`../architecture.md`](../architecture.md#the-interface) is
+> the account as built.
 
 ## Why this is not in `docs/design/`
 

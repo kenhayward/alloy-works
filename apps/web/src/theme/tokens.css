@@ -11,9 +11,6 @@
  *   preference. Light also holds .aw-canvas, the paper a component's text is set on, so the text and
  *   whatever stands in it keep the publishing theme's colours on paper in either theme (STY-036).
  *
- *   The shared block names older tokens for Ledger ones; each theme's value follows it. Screens move
- *   to the Ledger names in their own PRs, and the last of them deletes these (the LG plan, LG-F).
- *
  * Rules:
  *   - Write var(--token). Never a hex, rgb() or named colour anywhere else.
  *   - One accent. A status colour means only its status: warn is not approved, changes not in a
@@ -53,33 +50,6 @@
   --radius-12: 12px;
   --radius-pill: 999px;
 
-  /* The older names, snapped to the scales above until each screen moves off them (LG-F). */
-  --size-greeting: var(--size-28);
-  --size-page-title: var(--size-20);
-  --size-doc-title: var(--size-20);
-  --size-release-title: var(--size-16);
-  --size-modal-title: var(--size-16);
-  --size-card-title: var(--size-16);
-  --size-brand: var(--size-16);
-  --size-body: var(--size-14);
-  --size-body-small: var(--size-13);
-  --size-label: var(--size-12);
-  --size-overline: var(--size-12);
-  --size-micro: var(--size-12);
-  --size-code: var(--size-12);
-  --space-2: var(--space-4);
-  --space-6: var(--space-8);
-  --space-10: var(--space-12);
-  --space-14: var(--space-16);
-  --space-18: var(--space-16);
-  --space-20: var(--space-24);
-  --space-28: var(--space-32);
-  --radius-3: var(--radius-4);
-  --radius-6: var(--radius-8);
-  --radius-7: var(--radius-8);
-  --radius-10: var(--radius-12);
-  --radius-14: var(--radius-12);
-
   /* Stacking */
   --z-popover: 30;
   --z-dropdown: 1000;
@@ -108,39 +78,6 @@
   --doc-rule: #8a8a8a;
   --doc-th-bg: #f2f2f2;
   --doc-caption: #555555;
-}
-
-/* The older colour names, for the Ledger ones. Declared wherever a theme is, so each takes its value. */
-:root,
-[data-theme],
-.aw-canvas {
-  --surface-2: var(--sunken);
-  --input-border: var(--strong-border);
-  /* The accent: the drawings' pale ring was 1.9:1 on white, under WCAG's 3:1 for a focus indicator. */
-  --ring: var(--accent);
-  --warn-text: var(--warn);
-  --chip-bg: var(--sunken);
-  --concept-bg: var(--accent-weak);
-  --concept-text: var(--accent-text);
-
-  /* Publishing state */
-  --state-published-bg: var(--ok-bg);
-  --state-published-fg: var(--ok);
-  --state-behind-bg: var(--warn-bg);
-  --state-behind-fg: var(--warn);
-  --state-never-bg: var(--sunken);
-  --state-never-fg: var(--muted);
-  --state-private-bg: var(--info-bg);
-  --state-private-fg: var(--info);
-
-  /* Version diffs */
-  --status-added: var(--ok);
-  --status-removed: var(--danger);
-  --status-modified: var(--warn);
-  --diff-add-bg: var(--ok-bg);
-  --diff-add-fg: var(--ok);
-  --diff-del-bg: var(--danger-bg);
-  --diff-del-fg: var(--danger);
 }
 
 /* The Light theme, and the paper a component's text is set on. */

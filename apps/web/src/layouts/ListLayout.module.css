@@ -26,8 +26,8 @@
   padding: var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
-  background: var(--surface-2);
-  font-size: var(--size-body-small);
+  background: var(--sunken);
+  font-size: var(--size-13);
 }
 
 .hide {
@@ -35,28 +35,28 @@
   top: var(--space-8);
   right: var(--space-8);
   min-height: 22px;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-8);
 }
 
 .rail {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-10);
+  gap: var(--space-12);
   padding-block: var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
-  background: var(--surface-2);
+  background: var(--sunken);
 }
 
 .railButton {
   min-height: 22px;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-8);
 }
 
 .railLabel {
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;

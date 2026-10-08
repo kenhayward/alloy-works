@@ -3,13 +3,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 var(--space-28) var(--space-10) 0;
+  margin: 0 var(--space-32) var(--space-12) 0;
 }
 
 .overline {
   padding: 0;
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -21,7 +21,7 @@
   border: 0;
   background: transparent;
   color: var(--accent);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .clear:hover:not(:disabled) {
@@ -37,7 +37,7 @@
 }
 
 .facet legend {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-8);
 }
 
 .option {
@@ -45,7 +45,7 @@
   align-items: center;
   gap: var(--space-8);
   margin: 0;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-4);
   cursor: pointer;
 }
@@ -60,7 +60,7 @@
 
 .count {
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
   font-variant-numeric: tabular-nums;
 }
 
@@ -68,9 +68,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-12);
-  margin: var(--space-12) 0 var(--space-10);
+  margin: var(--space-12) 0 var(--space-12);
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .scope {
@@ -100,7 +100,7 @@
 .code {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: var(--size-code);
+  font-size: var(--size-12);
 }
 
 .more {
@@ -142,6 +142,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  margin: 0 0 var(--space-10);
-  font-size: var(--size-label);
+  margin: 0 0 var(--space-12);
+  font-size: var(--size-12);
 }

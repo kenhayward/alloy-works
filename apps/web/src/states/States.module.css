@@ -6,13 +6,13 @@
   align-items: center;
   gap: var(--space-8) var(--space-12);
   margin-block: var(--space-8);
-  padding: var(--space-10) var(--space-14);
+  padding: var(--space-12) var(--space-16);
   border: 1px solid var(--border);
   border-inline-start-width: 3px;
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   background: var(--surface);
   color: var(--text);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .notice > p {
@@ -29,20 +29,20 @@
 }
 
 .notice[data-tone='readOnly'] {
-  border-color: var(--input-border);
-  background: var(--surface-2);
+  border-color: var(--strong-border);
+  background: var(--sunken);
 }
 
 .notice[data-tone='refused'] {
   border-color: var(--warn);
-  background: var(--state-behind-bg);
-  color: var(--state-behind-fg);
+  background: var(--warn-bg);
+  color: var(--warn);
 }
 
 .notice[data-tone='withdrawn'] {
   border-color: var(--danger);
-  background: var(--diff-del-bg);
-  color: var(--diff-del-fg);
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 /* Saved and never made a version: the warning edge the unsaved dot has, on the ordinary surface. */
@@ -51,9 +51,9 @@
 }
 
 .notice[data-tone='editing'] {
-  border-color: var(--state-private-fg);
-  background: var(--state-private-bg);
-  color: var(--state-private-fg);
+  border-color: var(--info);
+  background: var(--info-bg);
+  color: var(--info);
 }
 
 .empty {
@@ -62,11 +62,11 @@
   align-items: flex-start;
   gap: var(--space-8);
   margin-block: var(--space-12);
-  padding: var(--space-14) var(--space-16);
-  border: 1px dashed var(--input-border);
-  border-radius: var(--radius-6);
+  padding: var(--space-16) var(--space-16);
+  border: 1px dashed var(--strong-border);
+  border-radius: var(--radius-8);
   background: var(--surface);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .empty > p {
@@ -79,7 +79,7 @@
   gap: var(--space-8);
   margin-block: var(--space-8);
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .spinner {
@@ -107,10 +107,10 @@
 .save {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-8);
   margin: 0;
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .dot {

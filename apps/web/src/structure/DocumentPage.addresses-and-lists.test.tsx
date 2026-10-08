@@ -1661,7 +1661,7 @@ describe('the address of every node', () => {
       'white-space: break-spaces',
       'font-variant-ligatures: none',
       "font-feature-settings: 'liga' 0",
-      'font-size: var(--size-body)',
+      'font-size: var(--size-14)',
       'line-height: 1.6',
     ]) {
       expect(own, declaration).toContain(declaration);

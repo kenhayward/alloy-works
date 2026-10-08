@@ -7,11 +7,11 @@
   align-items: center;
   gap: var(--space-12);
   height: var(--header-height);
-  padding-inline: var(--space-20);
+  padding-inline: var(--space-24);
   border-bottom: 1px solid var(--border);
   background: var(--chrome);
   color: var(--text);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
   white-space: nowrap;
 }
 
@@ -25,9 +25,9 @@
   align-items: center;
   gap: var(--space-8);
   height: 28px;
-  padding-inline: var(--space-10);
+  padding-inline: var(--space-12);
   border: 1px solid var(--border);
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -36,7 +36,7 @@
 }
 
 .brand {
-  font-size: var(--size-brand);
+  font-size: var(--size-16);
   font-weight: 600;
 }
 
@@ -46,7 +46,7 @@
 }
 
 a.chip {
-  padding-inline-start: var(--space-10);
+  padding-inline-start: var(--space-12);
 }
 
 .brand:hover,
@@ -103,7 +103,7 @@ a.chip {
   border-radius: var(--radius-pill);
   background: var(--accent);
   color: var(--on-accent);
-  font-size: var(--size-micro);
+  font-size: var(--size-12);
   font-weight: 600;
 }
 
@@ -150,17 +150,17 @@ a.chip {
   display: inline-flex;
   align-items: center;
   height: 28px;
-  padding-inline: var(--space-10);
+  padding-inline: var(--space-12);
   border: 1px solid var(--border);
-  border-radius: var(--radius-6);
+  border-radius: var(--radius-8);
 }
 
 .menu {
   position: absolute;
-  top: calc(100% + var(--space-6));
+  top: calc(100% + var(--space-8));
   z-index: var(--z-dropdown);
   min-width: 200px;
-  padding: var(--space-6);
+  padding: var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
@@ -183,13 +183,13 @@ a.chip {
   align-items: center;
   gap: var(--space-8);
   width: 100%;
-  padding: var(--space-8) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   border: 0;
   border-radius: var(--radius-4);
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: var(--size-body);
+  font-size: var(--size-14);
   text-align: start;
   text-decoration: none;
   cursor: pointer;

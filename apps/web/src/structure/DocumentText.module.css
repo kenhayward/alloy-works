@@ -2,27 +2,27 @@
 .text {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-12);
   margin: 0;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-12);
 }
 
 .heading {
   display: flex;
   align-items: baseline;
-  gap: var(--space-10);
-  margin: var(--space-10) 0 0;
-  font-size: var(--size-doc-title);
+  gap: var(--space-12);
+  margin: var(--space-12) 0 0;
+  font-size: var(--size-20);
   font-weight: 650;
 }
 
 .section .section .heading {
-  font-size: var(--size-body);
+  font-size: var(--size-14);
 }
 
 .number {
@@ -82,7 +82,7 @@
 .text[data-boundaries='shown'] .component,
 .component[data-editing='true'] {
   outline: 1px solid var(--border);
-  outline-offset: var(--space-6);
+  outline-offset: var(--space-8);
 }
 
 .label {
@@ -93,15 +93,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4) var(--space-10);
-  padding: var(--space-4) var(--space-6);
-  border-radius: var(--radius-6);
+  gap: var(--space-4) var(--space-12);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-8);
   background: var(--surface);
   opacity: 0;
   pointer-events: none;
   color: var(--muted);
   font-family: var(--sans);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .component:hover > .label,
@@ -140,8 +140,8 @@
 
 .version {
   padding: var(--space-4) var(--space-8);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -156,7 +156,7 @@
 
 .versions {
   position: absolute;
-  top: calc(100% + var(--space-6));
+  top: calc(100% + var(--space-8));
   right: 0;
   z-index: var(--z-dropdown);
   display: flex;
@@ -173,7 +173,7 @@
 }
 
 .versions > button {
-  padding: var(--space-6) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   border: 0;
   border-radius: var(--radius-4);
   background: transparent;
@@ -194,17 +194,17 @@
 
 .versions .versionsSaid {
   margin: 0;
-  padding: var(--space-6) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   color: var(--muted);
 }
 
 .open {
   flex-shrink: 0;
   padding: var(--space-4) var(--space-12);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
   color: var(--text);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .open:hover {
@@ -213,7 +213,7 @@
 }
 
 .body {
-  margin-top: var(--space-6);
+  margin-top: var(--space-8);
   line-height: 1.6;
 }
 
@@ -223,8 +223,8 @@
 
 /* Text that opens its component's editor when clicked (interface slice 13). */
 .body[data-opens='true'] {
-  margin-inline: calc(-1 * var(--space-6));
-  padding-inline: var(--space-6);
+  margin-inline: calc(-1 * var(--space-8));
+  padding-inline: var(--space-8);
   border-radius: var(--radius-4);
   cursor: text;
 }
@@ -234,21 +234,21 @@
 }
 
 .body[data-opens='true']:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .cannot {
-  margin: var(--space-10) 0 0;
+  margin: var(--space-12) 0 0;
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 /* What a card says of its component before it is opened: read only, or who holds it (CNT-074). */
 .state {
-  margin: var(--space-6) 0 0;
+  margin: var(--space-8) 0 0;
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 /* The node a link took the reader to, its heading marked until they choose another (STR-045), as the

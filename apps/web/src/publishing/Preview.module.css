@@ -9,7 +9,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .head {
@@ -21,7 +21,7 @@
 .head h3 {
   flex: 1;
   margin: 0;
-  font-size: var(--size-body);
+  font-size: var(--size-14);
 }
 
 .close {

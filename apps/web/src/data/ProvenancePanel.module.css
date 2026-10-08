@@ -3,7 +3,7 @@
 .panel {
   display: grid;
   gap: var(--space-8);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .heading {

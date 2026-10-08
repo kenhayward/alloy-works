@@ -6,16 +6,16 @@
 .form {
   display: grid;
   gap: var(--space-12);
-  padding: var(--space-18) var(--space-20) var(--space-20);
+  padding: var(--space-16) var(--space-24) var(--space-24);
 }
 
 .heading {
   display: flex;
   align-items: center;
-  gap: var(--space-10);
+  gap: var(--space-12);
   margin: 0 0 var(--space-4);
   padding-inline-end: var(--space-40);
-  font-size: var(--size-modal-title);
+  font-size: var(--size-16);
   font-weight: 600;
 }
 
@@ -36,13 +36,13 @@
 }
 
 .field label {
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .field input {
-  padding: var(--space-4) var(--space-10);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  padding: var(--space-4) var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
   background: var(--surface);
 }
 
@@ -53,7 +53,7 @@
 .complaint,
 .warning {
   margin: 0;
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .complaint {
@@ -61,24 +61,24 @@
 }
 
 .warning {
-  color: var(--warn-text);
+  color: var(--warn);
 }
 
 .hint {
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .note {
   margin: 0;
   color: var(--muted);
-  font-size: var(--size-body-small);
+  font-size: var(--size-13);
 }
 
 .selected {
   border-radius: var(--radius-4);
   background: var(--accent-weak);
-  box-shadow: 0 0 0 1px var(--ring);
+  box-shadow: 0 0 0 1px var(--accent);
   color: inherit;
 }
 
@@ -88,7 +88,7 @@
   justify-content: space-between;
   gap: var(--space-12);
   margin-top: var(--space-4);
-  padding-top: var(--space-14);
+  padding-top: var(--space-16);
   border-top: 1px solid var(--border);
 }
 

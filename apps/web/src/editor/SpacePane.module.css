@@ -3,14 +3,14 @@
   padding: var(--space-12) var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
-  background: var(--surface-2);
-  font-size: var(--size-body-small);
+  background: var(--sunken);
+  font-size: var(--size-13);
 }
 
 .overline {
   margin: 0 var(--space-8) var(--space-8);
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -26,7 +26,7 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-8);
-  padding: var(--space-6) var(--space-10);
+  padding: var(--space-8) var(--space-12);
   border-inline-start: 3px solid transparent;
   border-radius: var(--radius-4);
   color: var(--text);
@@ -53,6 +53,6 @@
 
 .number {
   color: var(--muted);
-  font-size: var(--size-label);
+  font-size: var(--size-12);
   font-variant-numeric: tabular-nums;
 }

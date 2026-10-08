@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  margin-bottom: var(--space-10);
+  margin-bottom: var(--space-12);
 }
 
 .form input {
@@ -14,13 +14,13 @@
 .layout {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-28);
+  gap: var(--space-32);
 }
 
 .facets {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-12);
   width: var(--pane-filter);
   flex-shrink: 0;
 }
@@ -34,7 +34,7 @@
 .facet legend {
   margin-bottom: var(--space-4);
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -56,19 +56,19 @@
 }
 
 .result {
-  padding: var(--space-10) 0;
+  padding: var(--space-12) 0;
   border-bottom: 1px solid var(--border);
 }
 
 .result h2 {
   margin: var(--space-4) 0;
-  font-size: var(--size-label);
+  font-size: var(--size-12);
 }
 
 .about {
   margin: 0;
   color: var(--muted);
-  font-size: var(--size-overline);
+  font-size: var(--size-12);
 }
 
 .passage {
