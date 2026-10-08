@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 
 export const ConnectionParams = z.object({ id: LowercaseUuid });
 export type ConnectionParams = z.infer<typeof ConnectionParams>;
@@ -628,6 +628,7 @@ export const connectionRoutes = {
         description: 'No such space in this environment, or none the caller may read',
         schema: ErrorBody,
       },
+      409: { description: SPACE_ARCHIVED, schema: ErrorBody },
     },
   },
   getConnection: {

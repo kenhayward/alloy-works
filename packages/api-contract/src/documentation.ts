@@ -12,7 +12,10 @@ export const documentationGroups = [
   {
     name: 'Content',
     tags: [
-      { name: 'Spaces', description: 'Find spaces and create content in them.' },
+      {
+        name: 'Spaces',
+        description: 'Find, make, rename and archive spaces, and create content in them.',
+      },
       { name: 'Components', description: 'Read, edit and version reusable components.' },
       {
         name: 'Documents',
@@ -100,7 +103,7 @@ const operationTags = {
     'completeGoogleSignIn',
     'signOut',
   ],
-  Spaces: ['listSpaces', 'listComponentTypes'],
+  Spaces: ['listSpaces', 'createSpace', 'updateSpace', 'listComponentTypes'],
   Components: [
     'listComponents',
     'getComponent',
@@ -387,7 +390,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Redeems a one-time code at the environment hostname and creates a signed-in browser session.',
   signOut:
     'Ends the current browser session wherever it is in use. A personal API token cannot sign out a session.',
-  listSpaces: 'Lists spaces the caller can read and whether they may create a component in each.',
+  listSpaces:
+    'Lists spaces the caller can read, marking those archived, and whether they may create a component in each; never in an archived one. Pass archived=false to leave archived spaces out.',
+  createSpace:
+    'Makes a space. Needs administer on the environment. The name is normalised to NFC and trimmed, and must be unique in the environment, archived spaces included.',
+  updateSpace:
+    'Renames a space, archives it or restores it. Needs administer on the environment. Nothing new can be made in an archived space, and nothing already in it changes; the last space not archived cannot be archived.',
   listComponentTypes:
     'Lists component types usable for a new component in this space, marking the default.',
   openStream:

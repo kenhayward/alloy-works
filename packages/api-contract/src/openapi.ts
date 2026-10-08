@@ -30,8 +30,13 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
       : node.type;
     if (type === 'object' || node.properties) {
       const properties = (node.properties ?? {}) as Record<string, Json>;
+      // The required members, and as many optional ones as `minProperties` asks besides: a body that
+      // must name at least one change (updateSpace) shows its first.
+      const required = (node.required ?? []) as string[];
+      const optional = Object.keys(properties).filter((name) => !required.includes(name));
+      const wanted = Math.max(0, Number(node.minProperties ?? 0) - required.length);
       return Object.fromEntries(
-        ((node.required ?? []) as string[]).map((name) => [
+        [...required, ...optional.slice(0, wanted)].map((name) => [
           name,
           name === 'level'
             ? 'tenant'

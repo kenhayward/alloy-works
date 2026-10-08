@@ -282,12 +282,12 @@ describe('creating a component through the service', () => {
   it('lists the spaces the caller may read, saying in which of them they may create', async () => {
     const ada = await call('ada', 'GET', '/v1/spaces');
     expect(ada.json<{ items: unknown[] }>().items).toEqual([
-      { id: general, name: 'General', mayCreate: true },
-      { id: quality, name: 'Quality', mayCreate: false },
+      { id: general, name: 'General', archived: false, mayCreate: true },
+      { id: quality, name: 'Quality', archived: false, mayCreate: false },
     ]);
     const alice = await call('alice', 'GET', '/v1/spaces');
     expect(alice.json<{ items: unknown[] }>().items).toEqual([
-      { id: general, name: 'General', mayCreate: false },
+      { id: general, name: 'General', archived: false, mayCreate: false },
     ]);
     expect((await call(undefined, 'GET', '/v1/spaces')).statusCode).toBe(401);
   });

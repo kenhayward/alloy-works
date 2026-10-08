@@ -162,7 +162,20 @@ export {
 } from './realtime.js';
 export { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
-export { createSpace, listSpacesFor, type Space, type SpaceForPrincipal } from './spaces.js';
+export {
+  archiveSpace,
+  createSpace,
+  listSpacesFor,
+  readSpace,
+  renameSpace,
+  restoreSpace,
+  SpaceArchived,
+  SpaceRefused,
+  type Space,
+  type SpaceForPrincipal,
+  type SpaceRefusal,
+  type SpaceState,
+} from './spaces.js';
 export {
   createArtifact,
   latestVersion,

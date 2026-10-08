@@ -5,7 +5,7 @@ import { QueryDefinitionUsesView } from './bindings.js';
 import { SqlRefusal } from './connections.js';
 import type { RouteContract } from './contract.js';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 
 export const QueryDefinitionParams = z.object({ id: LowercaseUuid });
 export type QueryDefinitionParams = z.infer<typeof QueryDefinitionParams>;
@@ -190,7 +190,10 @@ export const queryDefinitionRoutes = {
         description: 'No such space in this environment, or none the caller may read',
         schema: ErrorBody,
       },
-      409: onTheConnection,
+      409: {
+        ...onTheConnection,
+        description: `${onTheConnection.description}; ${SPACE_ARCHIVED}`,
+      },
     },
   },
   getQueryDefinition: {

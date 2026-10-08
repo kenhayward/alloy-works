@@ -77,6 +77,10 @@ const WIRE_CODES = {
   'version.not_held': 'version_not_held',
   'table.too_long': 'table_too_long',
   'definition.unreadable': 'definition_unreadable',
+  'space.archived': 'space_archived',
+  'space.name_invalid': 'space_name_invalid',
+  'space.name_taken': 'space_name_taken',
+  'space.last': 'space_last',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

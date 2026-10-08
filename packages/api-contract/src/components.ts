@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 
 /** A component, by the id its artifact carries. */
 export const ComponentParams = z.object({ id: z.uuid() });
@@ -28,7 +28,12 @@ export const SpaceList = z.object({
     z.object({
       id: z.string(),
       name: z.string(),
-      mayCreate: z.boolean().describe('Whether the caller may create a component in this space'),
+      archived: z
+        .boolean()
+        .describe('Archived: nothing new is made in it, and what it holds is unchanged'),
+      mayCreate: z
+        .boolean()
+        .describe('Whether the caller may create a component in this space; never in one archived'),
     }),
   ),
   next: nextCursor,
@@ -36,6 +41,55 @@ export const SpaceList = z.object({
 export const PageQuery = z.object(pageQuery);
 export type PageQuery = z.infer<typeof PageQuery>;
 export type SpaceList = z.infer<typeof SpaceList>;
+
+export const SpaceListQuery = z.object({
+  ...pageQuery,
+  archived: z
+    .literal('false')
+    .optional()
+    .describe('false: leave archived spaces out. Absent: list them too, marked'),
+});
+export type SpaceListQuery = z.infer<typeof SpaceListQuery>;
+
+/** A space as Administration shows it (the SP1 plan, SP-F). */
+export const SpaceView = z.object({
+  id: z.string(),
+  name: z.string(),
+  archived: z.boolean(),
+  archivedAt: z.string().nullable().describe('When it was archived; null while it is not'),
+  archivedBy: z
+    .string()
+    .nullable()
+    .describe('The principal who archived it; null while it is not archived'),
+});
+export type SpaceView = z.infer<typeof SpaceView>;
+
+const spaceName = z
+  .string()
+  .describe(
+    'Normalised to NFC and trimmed, then 1 to 200 characters with no control character; unique in the environment, archived spaces included, with case counting',
+  );
+
+export const CreateSpaceBody = z.strictObject({ name: spaceName });
+export type CreateSpaceBody = z.infer<typeof CreateSpaceBody>;
+
+export const UpdateSpaceBody = z
+  .strictObject({
+    name: spaceName.optional(),
+    archived: z
+      .boolean()
+      .optional()
+      .describe('true archives it, false restores it; either again changes nothing'),
+  })
+  .refine((body) => body.name !== undefined || body.archived !== undefined, {
+    message: 'Name a change: a name, archived, or both',
+  })
+  .meta({ minProperties: 1 });
+export type UpdateSpaceBody = z.infer<typeof UpdateSpaceBody>;
+
+/** A space, by its id, as the routes that change it name it. */
+export const SpaceIdParams = z.object({ id: LowercaseUuid });
+export type SpaceIdParams = z.infer<typeof SpaceIdParams>;
 
 export const ComponentTypeList = z.object({
   items: z.array(
@@ -219,6 +273,11 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 
+const spaceForbidden = {
+  description: 'The caller may not administer this environment',
+  schema: ErrorBody,
+} as const;
+
 /** Finding and opening components (the editor plan's decision 9, and component-editor.md, "The API"). */
 export const componentRoutes = {
   listComponents: {
@@ -243,10 +302,11 @@ export const componentRoutes = {
     operationId: 'listSpaces',
     method: 'GET',
     path: '/v1/spaces',
-    summary: 'The spaces the caller may read, and whether they may create a component in each',
+    summary:
+      'The spaces the caller may read, whether each is archived, and whether they may create a component in each',
     tenantScoped: true,
     access: { check: 'session' },
-    query: PageQuery,
+    query: SpaceListQuery,
     responses: {
       200: { description: 'A page of the spaces, by name', schema: SpaceList },
       400: {
@@ -254,6 +314,50 @@ export const componentRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
+    },
+  },
+  createSpace: {
+    operationId: 'createSpace',
+    method: 'POST',
+    path: '/v1/spaces',
+    summary: 'Make a space',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    body: CreateSpaceBody,
+    responses: {
+      200: { description: 'Made', schema: SpaceView },
+      400: {
+        description: 'space_name_invalid: not a name a space may take',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: spaceForbidden,
+      409: { description: 'space_name_taken: another space has that name', schema: ErrorBody },
+    },
+  },
+  updateSpace: {
+    operationId: 'updateSpace',
+    method: 'PATCH',
+    path: '/v1/spaces/{id}',
+    summary: 'Rename a space, archive it or restore it',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    params: SpaceIdParams,
+    body: UpdateSpaceBody,
+    responses: {
+      200: { description: 'The space as it now is', schema: SpaceView },
+      400: {
+        description: 'space_name_invalid: not a name a space may take; or no change named',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: spaceForbidden,
+      404: { description: 'No such space in this environment', schema: ErrorBody },
+      409: {
+        description:
+          'space_name_taken: another space has that name; space_last: the last space not archived cannot be archived',
+        schema: ErrorBody,
+      },
     },
   },
   listComponentTypes: {
@@ -312,7 +416,7 @@ export const componentRoutes = {
         schema: ErrorBody,
       },
       409: {
-        description: 'component_type_missing: no such component type in this environment',
+        description: `component_type_missing: no such component type in this environment; ${SPACE_ARCHIVED}`,
         schema: ErrorBody,
       },
     },

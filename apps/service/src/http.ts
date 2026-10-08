@@ -10,6 +10,7 @@ import Fastify, {
 import type { z } from 'zod';
 import type { LogLevel } from './config.js';
 import { AppError, toErrorBody } from './errors.js';
+import { spaceRefusal } from './spaces.js';
 
 export interface HttpOptions {
   readonly logLevel: LogLevel;
@@ -130,7 +131,8 @@ export function createHttp(
   });
 
   app.setErrorHandler((error, request, reply) => {
-    const { status, body } = toErrorBody(error, request.id);
+    // A creation in an archived space is refused wherever it was tried (the SP1 plan, SP-C).
+    const { status, body } = toErrorBody(spaceRefusal(error) ?? error, request.id);
     logFailure(request, error, status);
     return reply.status(status).send(body);
   });
