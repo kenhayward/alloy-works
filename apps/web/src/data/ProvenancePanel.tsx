@@ -7,6 +7,7 @@ import {
   failureHeld,
   shownValue,
   type BindingState,
+  type ProvenanceShown,
   type Taken,
 } from '../structure/bindingContexts.js';
 import { whoseView } from '../structure/ownView.js';
@@ -21,6 +22,33 @@ export const ROWS_SHOWN = 200;
 
 /** How many characters of a checksum are shown until the whole is asked for. */
 const CHECKSUM_SHOWN = 12;
+
+/** How a person whose own view a value is signed in, in words (DAT-024). */
+const SIGNED_IN: Readonly<Record<string, string>> = {
+  organisation: "signed in through the organisation's provider",
+  google: 'signed in with Google',
+  token: 'acting through a personal API token',
+};
+
+/**
+ * Whose view a value is (DAT-024; bindings.md, "Provenance, from the value"): the service account, or
+ * the person by name, how they signed in, and the name the source saw them by.
+ */
+function whoseViewSaid(
+  provenance: ProvenanceShown,
+  by: { readonly id: string; readonly displayName: string | null },
+): string {
+  if (provenance.identity === 'service') return 'The service account';
+  const whose = whoseView(provenance, by) ?? "A person's own view";
+  const route = provenance.signInRoute ? SIGNED_IN[provenance.signInRoute] : undefined;
+  return [
+    whose,
+    ...(route === undefined ? [] : [route]),
+    provenance.asSeen
+      ? `seen by the source as ${provenance.asSeen}`
+      : 'as the source showed it to them',
+  ].join(', ');
+}
 
 const MODES = {
   checked: 'Checked - looked for each time the document is opened',
@@ -189,11 +217,7 @@ export function ProvenancePanel({
             : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
         </dd>
         <dt>Whose view</dt>
-        <dd>
-          {provenance.identity === 'service'
-            ? 'The service account'
-            : `${whoseView(provenance, held.by) ?? "A person's own view"}, as the source showed it to them`}
-        </dd>
+        <dd>{whoseViewSaid(provenance, held.by)}</dd>
         <dt>Fetched</dt>
         <dd>{longDate(provenance.at)}</dd>
         <dt>Rows</dt>
