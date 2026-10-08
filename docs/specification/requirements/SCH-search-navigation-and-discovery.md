@@ -128,7 +128,7 @@ people learn to double-check.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
 | **SCH-018** | Results must be narrowable by type, space, metadata value, workflow state, owner, date and condition value                                                                                                                                                                   | T1      | Superseded by SCH-059 |
 | **SCH-059** | Results must be narrowable by type, space, metadata value, owner and date                                                                                                                                                                                                    | T1      | Specified             |
-| **SCH-060** | Results must be narrowable by workflow state                                                                                                                                                                                                                                 | T3      | Specified             |
+| **SCH-060** | Results must be narrowable by workflow state                                                                                                                                                                                                                                 | T9      | Specified             |
 | **SCH-061** | Results must be narrowable by condition value                                                                                                                                                                                                                                | T4      | Specified             |
 | **SCH-052** | Component type must be a filter and a facet over components, and a field must facet across every artifact that carries it, whichever schema applied it and at whichever place (**MET-001**, **MET-034**)                                                                     | T1      | Superseded by SCH-062 |
 | **SCH-062** | Component type must be a filter and a facet over components, and a field must facet across every artifact that carries it, whichever schema applied it, at a component, a document or a section (**MET-001**, **MET-034**)                                                   | T1      | Specified             |
@@ -148,7 +148,7 @@ people learn to double-check.
 | ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Tranche | Status    |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | **SCH-068** | Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document that cannot publish, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032) | T3      | Specified |
-| **SCH-069** | Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read                                                                                                                                                                                                                                    | T3      | Specified |
+| **SCH-069** | Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read                                                                                                                                                                                                                                    | T7      | Specified |
 
 **Home is two personal listings, not a search.** SCH-068 is what is waiting on a person and SCH-069
 where they left off; both are filtered as any listing is (SCH-032). Neither is the inbox (**COL-063**),
@@ -349,3 +349,19 @@ issues [#467](https://github.com/kenhayward/alloy-works/issues/467) and
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 67, of which 9 superseded | 69, of which 9 superseded |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                      | Change                                 |
+| ----------------------------------------------------------------------------------- | -------------------------------------- |
+| Narrowing by workflow state needs workflow                                          | **SCH-060 moved to T9**                |
+| Home's recently opened list is navigation, not collaboration, beside saved searches | **SCH-069 moved to T7**. SCH-068 stays |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 69, of which 9 superseded | 69, of which 9 superseded |

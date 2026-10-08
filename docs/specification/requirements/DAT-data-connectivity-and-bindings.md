@@ -391,8 +391,8 @@ in the revenue table" is a defect.
 | **DAT-110** | A single value larger than the result size limit must fail the execution                                                                                                                                                                                                                                                                                                                            | T2      | Specified |
 | **DAT-051** | Exceeding any limit must be a named failure rather than a truncated result                                                                                                                                                                                                                                                                                                                          | T2      | Specified |
 | **DAT-052** | A query definition must be able to declare how long its result may be cached, and the default must be no caching rather than some                                                                                                                                                                                                                                                                   | T7      | Specified |
-| **DAT-053** | Query execution volume and cost must be attributable to a tenant, a query and a document (**ADM**)                                                                                                                                                                                                                                                                                                  | T3      | Specified |
-| **DAT-071** | The total volume of query execution a tenant may run at once - across document creations, checks for and acceptances of source revisions, and sample runs - must be limited and throttled, and this area owns that limit (**ADM** owns reporting its cost, DAT-053). A throttled execution must be a named, retryable failure, never a truncated or partial result (DAT-045, DAT-051) (**DAT-Q06**) | T3      | Specified |
+| **DAT-053** | Query execution volume and cost must be attributable to a tenant, a query and a document (**ADM**)                                                                                                                                                                                                                                                                                                  | T4      | Specified |
+| **DAT-071** | The total volume of query execution a tenant may run at once - across document creations, checks for and acceptances of source revisions, and sample runs - must be limited and throttled, and this area owns that limit (**ADM** owns reporting its cost, DAT-053). A throttled execution must be a named, retryable failure, never a truncated or partial result (DAT-045, DAT-051) (**DAT-Q06**) | T4      | Specified |
 
 **DAT-071 fills an ownership vacuum review found, rather than a missing line.** Every limit here was
 per query (DAT-050), and per-query limits say nothing about a document with four hundred bindings
@@ -629,3 +629,18 @@ half, and the rest becomes a row of its own.
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
 | Requirements | 116, of which 14 superseded | 118, of which 15 superseded |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                                      | Change                              |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Query cost attributed and a tenant's execution limited grow with bulk generation, not collaboration | **DAT-053 and DAT-071 moved to T4** |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 118, of which 15 superseded | 118, of which 15 superseded |

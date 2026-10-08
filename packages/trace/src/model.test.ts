@@ -4,11 +4,11 @@ import { attestationIsSubstantial, isRecordOf, recordsNamed, TRANCHES } from './
 
 /**
  * The tranches are Project_Scope.md section 12's table, and nothing else checks the two agree. T7 and
- * T8 arrived with the re-tranching of 2026-09-29 (ADR-0033).
+ * T8 arrived with the re-tranching of 2026-09-29 (ADR-0033), T9 with workflow's leaving T3 (ADR-0047).
  */
 describe('the tranches a requirement may name', () => {
-  it('are T1 to T8, in order, and Constraint', () => {
-    expect(TRANCHES).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'Constraint']);
+  it('are T1 to T9, in order, and Constraint', () => {
+    expect(TRANCHES).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'Constraint']);
   });
 });
 

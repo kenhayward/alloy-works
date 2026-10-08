@@ -210,7 +210,7 @@ footnote requirement under tables while the corpus still parsed, so nothing woul
 Paste the row into the section it belongs in, and put `Fixes #<issue>` in the pull request body.
 
 If the filer gave no tranche, the row carries `T?`, which **the parser refuses** - so a missing
-tranche cannot be forgotten into the corpus. The tranches it accepts are `T1` to `T8`, the phases in
+tranche cannot be forgotten into the corpus. The tranches it accepts are `T1` to `T9`, the phases in
 [`Project_Scope.md`](../specification/Project_Scope.md) section 12, and `Constraint`, for a rule about
 how the product is built rather than a thing to build.
 

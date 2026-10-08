@@ -634,7 +634,7 @@
       "id": "API-057",
       "area": "API",
       "statement": "Submitting a job (API-040) or a bulk operation must be safely retryable: an idempotency key or equivalent must make a retry return the original work rather than starting a second export, publication, cohort or report. Where an operation cannot be idempotent, the specification must say what a retry does",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 57
@@ -760,7 +760,7 @@
       "id": "API-040",
       "area": "API",
       "statement": "Work that can outlive a request must be submitted as a job and must return a job identity immediately, rather than holding the request open until it finishes",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 130
@@ -769,7 +769,7 @@
       "id": "API-041",
       "area": "API",
       "statement": "A job's state must be pollable - accepted, running, succeeded, failed or cancelled - with when it started and, where it is knowable, how far it has got",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 131
@@ -778,7 +778,7 @@
       "id": "API-042",
       "area": "API",
       "statement": "A job must be cancellable, and a cancelled job must state what it had already done and what it had not",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 132
@@ -787,7 +787,7 @@
       "id": "API-043",
       "area": "API",
       "statement": "A failed job must report its failure in the same structured shape as a synchronous error (API-005, API-006), and must remain inspectable after it has finished",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 133
@@ -796,7 +796,7 @@
       "id": "API-044",
       "area": "API",
       "statement": "Exporting at scale must be a job (**IMP-018**, **IMP-020**) rather than something a caller assembles by paging every resource",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 134
@@ -2893,7 +2893,7 @@
       "id": "CNT-159",
       "area": "CNT",
       "statement": "An author must be able to choose which revision of a component a document references, from the document view, without leaving it",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 510
@@ -2956,7 +2956,7 @@
       "id": "CNT-163",
       "area": "CNT",
       "statement": "The view must show when a reference tracks the latest approved revision, and which revision that is (**REU-050**, **LIF-038**)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 517
@@ -4630,7 +4630,7 @@
       "id": "DAT-053",
       "area": "DAT",
       "statement": "Query execution volume and cost must be attributable to a tenant, a query and a document (**ADM**)",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 394
@@ -4639,7 +4639,7 @@
       "id": "DAT-071",
       "area": "DAT",
       "statement": "The total volume of query execution a tenant may run at once - across document creations, checks for and acceptances of source revisions, and sample runs - must be limited and throttled, and this area owns that limit (**ADM** owns reporting its cost, DAT-053). A throttled execution must be a named, retryable failure, never a truncated or partial result (DAT-045, DAT-051) (**DAT-Q06**)",
-      "tranche": "T3",
+      "tranche": "T4",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 395
@@ -6979,7 +6979,7 @@
       "id": "LIF-001",
       "area": "LIF",
       "statement": "Workflow states must be declared per artifact type and configurable per tenant, not fixed by the product",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 37
@@ -6988,7 +6988,7 @@
       "id": "LIF-002",
       "area": "LIF",
       "statement": "Transitions must be declared: from which state, to which, and what they require",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 38
@@ -6997,7 +6997,7 @@
       "id": "LIF-003",
       "area": "LIF",
       "statement": "A transition must be able to require a permission, an approval, or both",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 39
@@ -7006,7 +7006,7 @@
       "id": "LIF-004",
       "area": "LIF",
       "statement": "A transition must be able to require conditions to be met: no unresolved suggestions, no open threads, no failed bindings, no missing required sections",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 40
@@ -7015,7 +7015,7 @@
       "id": "LIF-005",
       "area": "LIF",
       "statement": "An artifact must be in exactly one state at a time, and the state must be visible wherever it appears",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 41
@@ -7033,7 +7033,7 @@
       "id": "LIF-007",
       "area": "LIF",
       "statement": "Workflow definitions must be versioned, and an artifact must record the definition version it is moving under",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 43
@@ -7078,7 +7078,7 @@
       "id": "LIF-061",
       "area": "LIF",
       "statement": "A transition must be able to require a reason, recorded with it. Whether one is required is the workflow definition's to declare, and **LIF-Q01** may make it mandatory for a named regime",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 48
@@ -7087,7 +7087,7 @@
       "id": "LIF-050",
       "area": "LIF",
       "statement": "Producing a publication is **PUB**'s act and **PUB**'s artifact (**PUB-047**, **PUB-048**). This area owns only that a gate must be able to require or permit it (LIF-003), and that producing one is an audited event (LIF-026)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 49
@@ -7096,7 +7096,7 @@
       "id": "LIF-008",
       "area": "LIF",
       "statement": "An approval must record who approved, when, against which version, and against which gate",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 74
@@ -7105,7 +7105,7 @@
       "id": "LIF-009",
       "area": "LIF",
       "statement": "A gate must be able to require more than one approver, and to require them to be distinct people",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 75
@@ -7114,7 +7114,7 @@
       "id": "LIF-010",
       "area": "LIF",
       "statement": "A gate must be able to require that the approver is not the author",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 76
@@ -7141,7 +7141,7 @@
       "id": "LIF-013",
       "area": "LIF",
       "statement": "Passing a gate must designate a revision (**VER-013**), and must be able to take a baseline (**VER-021**)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 79
@@ -7159,7 +7159,7 @@
       "id": "LIF-051",
       "area": "LIF",
       "statement": "A gate must be refusable as well as passable: an approver must be able to reject, and the rejection must record who, when, against which version, against which gate, and the reason given",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 81
@@ -7168,7 +7168,7 @@
       "id": "LIF-052",
       "area": "LIF",
       "statement": "A rejection must return the artifact to a declared state, and the rework path must be expressible in the workflow definition (LIF-002) rather than improvised around it",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 82
@@ -7186,7 +7186,7 @@
       "id": "LIF-036",
       "area": "LIF",
       "statement": "Workflow states, transitions and gates must be declarable for a component as well as for a document (LIF-001), and a component must be approvable on its own",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 110
@@ -7204,7 +7204,7 @@
       "id": "LIF-038",
       "area": "LIF",
       "statement": "Passing a component's gate must designate a component revision (LIF-013), and a document must be able to reference a component at **its latest approved revision** as well as pinned or floating at latest (**REU-050**, **STR-058**, **CNT-162**, **CNT-163**)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 112
@@ -7213,7 +7213,7 @@
       "id": "LIF-039",
       "area": "LIF",
       "statement": "A document's gate must be able to require that every component it assembles is at an approved revision, and must name any that are not (LIF-004)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 113
@@ -7231,7 +7231,7 @@
       "id": "LIF-041",
       "area": "LIF",
       "statement": "Where a newer revision of a component is approved, every document referencing its latest approved revision must be able to see that the reference has moved before a publish carries it (**CNT-159**, **CNT-161**, **CNT-163**)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 115
@@ -7294,7 +7294,7 @@
       "id": "LIF-015",
       "area": "LIF",
       "statement": "An artifact must be able to carry an effective date, distinct from the date it was approved",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 159
@@ -7303,7 +7303,7 @@
       "id": "LIF-016",
       "area": "LIF",
       "statement": "An artifact must be able to carry a review-by date",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 160
@@ -7312,7 +7312,7 @@
       "id": "LIF-017",
       "area": "LIF",
       "statement": "Periodic review must be promptable, to a named owner, before the date rather than after",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 161
@@ -7321,7 +7321,7 @@
       "id": "LIF-018",
       "area": "LIF",
       "statement": "Content past its review date must be visible as such wherever it is used, including in documents that reference it",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 162
@@ -7330,7 +7330,7 @@
       "id": "LIF-059",
       "area": "LIF",
       "statement": "What happens when a review date passes with nobody acting must be declared in the workflow definition - a state change, an escalation to a named owner, or visibility alone - rather than decided by the product (LIF-017, **LIF-Q06**)",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 163
@@ -7339,7 +7339,7 @@
       "id": "LIF-060",
       "area": "LIF",
       "statement": "Where an effective date is in the future, the approved revision must be immutable until it: any further change is a new revision through the gate again, and the artifact becoming effective must itself be an audited event that nobody has to perform",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 164
@@ -7528,7 +7528,7 @@
       "id": "LIF-065",
       "area": "LIF",
       "statement": "A gate must be able to require that a document's profile is complete - every axis its conditional content depends on explicitly set (**REU-053**) - before it is issued",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 208
@@ -8518,7 +8518,7 @@
       "id": "PUB-089",
       "area": "PUB",
       "statement": "A layout must be able to declare an approval page, showing the approvals recorded for what is published",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 76
@@ -10651,7 +10651,7 @@
       "id": "SCH-060",
       "area": "SCH",
       "statement": "Results must be narrowable by workflow state",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 131
@@ -10786,7 +10786,7 @@
       "id": "SCH-069",
       "area": "SCH",
       "statement": "Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 151
@@ -13567,7 +13567,7 @@
       "id": "VER-012",
       "area": "VER",
       "statement": "A revision must be a designation applied to an existing version, not a second snapshot beside it",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
       "line": 87
@@ -13576,7 +13576,7 @@
       "id": "VER-013",
       "area": "VER",
       "statement": "A revision must be created only when a lifecycle gate is passed (**LIF**), never by an author acting alone",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
       "line": 88
@@ -13585,7 +13585,7 @@
       "id": "VER-014",
       "area": "VER",
       "statement": "A revision must record who designated it, when, and against which gate",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
       "line": 89
@@ -13594,7 +13594,7 @@
       "id": "VER-015",
       "area": "VER",
       "statement": "Revisions must be numbered sequentially from 1, and something never issued must be presentable as revision 0",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "VER-versioning-baselines-and-comparison.md",
       "line": 90

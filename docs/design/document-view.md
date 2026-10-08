@@ -34,8 +34,8 @@ One scroll keeps. **CNT-076**, a document of several hundred components against 
 derive from the permissions, so a mode a user cannot have is never offered - is what this design builds
 ([Modes](#modes)), and is claimed above; IAM-081, the review mode's half, is T3's with CNT-155.
 
-**Not claimed, T3**: CNT-155 and CNT-157, the review mode and what it offers; CNT-159, choosing a
-revision; CNT-161, an audited re-point; CNT-163, showing latest-approved. An approved reference is shown,
+**Not claimed, T3**: CNT-155 and CNT-157, the review mode and what it offers; CNT-161, an audited
+re-point. **T9**: CNT-159, choosing a revision; CNT-163, showing latest-approved. An approved reference is shown,
 as it is in the outline, as "waiting on revisions", and is never offered: nothing is approved in T1.
 
 ## What the page does today

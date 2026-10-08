@@ -792,7 +792,8 @@ own sketch plan when its turn comes.
 
 ## T3
 
-[ADR-0045](../decisions/0045-t3-is-the-collaboration.md)'s tranche, slice by slice.
+[ADR-0045](../decisions/0045-t3-is-the-collaboration.md)'s tranche, slice by slice, without workflow, which
+[ADR-0047](../decisions/0047-workflow-leaves-t3-for-t9.md) moved to T9.
 
 | #   | Plan                                                          | Builds                                                                                                                                                                                               | Status                   |
 | --- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
