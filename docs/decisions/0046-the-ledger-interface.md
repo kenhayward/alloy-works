@@ -15,7 +15,8 @@ it, and the reasons for them are not in any diff.
 ## Decision
 
 1. **Themes**: Light, Dark and Auto, applied as `data-theme` on `<html>`; Auto follows
-   `prefers-color-scheme`. Each person chooses, and the choice is remembered.
+   `prefers-color-scheme`, and in the desktop shell the system theme. Each person chooses, the
+   choice is remembered on each device, and Auto is the default.
 2. **The header follows the theme.** The rule that the header band is dark in every theme goes, and
    with it `--header-bg`, `--header-text` and `--header-btn-border`.
 3. **Navigation is a 76px labelled module rail on every screen**, grouped Author (Components,
