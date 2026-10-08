@@ -38,7 +38,9 @@ footnotes is a spreadsheet-grade subsystem and that is not what this product is.
 | **TAB-003** | A column header must be able to carry a unit, and units must be presentable separately from values                                                                                                                                                                                                                                                                                   | T2         | Specified             |
 | **TAB-004** | A column the query did not return must fail rather than render empty (**DAT-086**)                                                                                                                                                                                                                                                                                                   | T2         | Specified             |
 | **TAB-005** | Column width should be governed by the table style, with a declared override where a column must not wrap                                                                                                                                                                                                                                                                            | T2         | Superseded by TAB-035 |
-| **TAB-035** | Column width must be governed by the table style, with a declared override where a column must not wrap                                                                                                                                                                                                                                                                              | T2         | Specified             |
+| **TAB-035** | Column width must be governed by the table style, with a declared override where a column must not wrap                                                                                                                                                                                                                                                                              | T2         | Superseded by TAB-052 |
+| **TAB-052** | A column must be able to declare that it must not wrap, and must then not wrap in any output | T2 | Specified |
+| **TAB-053** | Column width must be governed by the table style, a column that must not wrap excepted (**TAB-052**) | T3 | Specified |
 | **TAB-036** | Every declaration this area names - which columns appear and in what order, headers, units, width overrides, sorts, grouping, totals, formatting overrides, the empty state, any reshaping and the wide-table strategy - must live in the table's definition and must address a column by the key the query declares (**DAT-080**, **DAT-012**), never by its position in the result | Constraint | Specified             |
 | **TAB-048** | Selecting the same result column more than once must be refused unless each selection carries a distinct header, so that a value shown twice - raw and rounded, say - is a deliberate presentation rather than a duplicated column                                                                                                                                                   | T2         | Specified             |
 
@@ -322,3 +324,17 @@ Each row moves whole and keeps its identifier; only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 51, of which 4 superseded | 51, of which 4 superseded |
+
+### From the T2 audit against the code (2026-10-08)
+
+[The T2 audit](<../../reviews/T2 - Audit against the code.md>) read every T2 requirement not yet
+`Covered` against the code. Ken approved its recommendations on 2026-10-08. A row split by tranche is
+superseded by its T2 half, and the rest becomes a row of its own.
+
+| What was found                                                                                                                         | Change                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| TAB-035's no-wrap override is built and shown in the PDF and in Word; no table style has a width member, and columns share the measure | **TAB-035 superseded by TAB-052**, a column declaring it must not wrap, in every output, T2, with **TAB-053**, column width governed by the table style, in T3 beside the style work there |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 51, of which 4 superseded | 53, of which 5 superseded |
