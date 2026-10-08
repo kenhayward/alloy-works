@@ -143,6 +143,17 @@ people learn to double-check.
 | **SCH-044** | A saved search must record what it referenced - term identities, metadata values, facet dimensions - and where one has been renamed, deprecated or removed, re-evaluation must surface that rather than silently resolving to whatever is current (**LIB-037**, **LIB-055**) | T7      | Specified             |
 | **SCH-046** | The facet dimensions available must be declared rather than open-ended: which metadata fields facet, how dates bucket into declared ranges, and that facet counts recompute against the other facets in force                                                                | T1      | Specified             |
 
+### Home
+
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Tranche | Status    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **SCH-068** | Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document that cannot publish, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032) | T3      | Specified |
+| **SCH-069** | Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read                                                                                                                                                                                                                                    | T3      | Specified |
+
+**Home is two personal listings, not a search.** SCH-068 is what is waiting on a person and SCH-069
+where they left off; both are filtered as any listing is (SCH-032). Neither is the inbox (**COL-063**),
+which holds what others sent.
+
 ## 7. Structural queries
 
 | ID          | Requirement                                                                                                                                                                                                                            | Tranche    | Status    |
@@ -322,3 +333,19 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 67, of which 9 superseded | 67, of which 9 superseded |
+
+### From the Ledger interface's review, 2026-10-08
+
+Not a review of this area. The Ledger redesign draws two lists on Home;
+[ADR-0046](../../decisions/0046-the-ledger-interface.md) builds nothing drawn without a row. Filed as
+issues [#467](https://github.com/kenhayward/alloy-works/issues/467) and
+[#468](https://github.com/kenhayward/alloy-works/issues/468).
+
+| What was found                                                                                                                                 | Change                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| A person finds a document that cannot publish, unversioned changes, a stale publication or an untested connection only by opening each in turn | **SCH-068**, T3: Home lists what is waiting on them, each with its one action |
+| Returning to work means finding it again through a module list                                                                                 | **SCH-069**, T3: Home lists what they most recently opened                    |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 67, of which 9 superseded | 69, of which 9 superseded |
