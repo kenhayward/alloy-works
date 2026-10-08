@@ -199,7 +199,7 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     expect(version?.spaceId).toBe(general);
   });
 
-  it('records an asset ingested and an upload refused as the system, for its uploader, keeping no refused bytes', async () => {
+  it('AST-037 records an asset ingested and an upload refused as the system, for its uploader, the refused never referenceable and its bytes kept nowhere', async () => {
     const image = await sharp({
       create: { width: 5, height: 3, channels: 3, background: { r: 1, g: 2, b: 3 } },
     })
@@ -225,11 +225,11 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
     }
     expect(events[1]!.subjectVersion).toBe(asset.assetVersionId);
     expect(events[2]).toMatchObject({ outcome: 'refused', detail: { reason: 'undecodable' } });
-    // Audited, and the file kept nowhere (AST-037).
+    // Audited, never referenceable, and the file kept nowhere (AST-037).
+    expect(await uploadOf(refused.id)).toMatchObject({ state: 'refused', assetVersionId: null });
     expect(await gone(refused.key)).toBe(true);
   });
 
-  // Not cited as AST-037: no design claims it yet, though its refusal is audited (above).
   it('AST-006 AST-051 refuses a file whose structure is sound but whose pixels do not decode, and keeps no bytes', async () => {
     const broken = pngHolding(8, 8, deflateSync(Buffer.alloc(3)));
     const { id, key } = await uploaded(broken);

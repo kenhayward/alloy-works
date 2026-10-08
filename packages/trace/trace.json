@@ -15716,6 +15716,10 @@
         {
           "id": "AST-026",
           "howItIsMet": "An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's"
+        },
+        {
+          "id": "AST-037",
+          "howItIsMet": "A refused upload is recorded on its row, `refused`, never deleted and naming no asset version, so nothing can place it; its bytes are removed; and the refusal is on the audit log, `asset.refused` ([audit.md](audit.md)), at the door and after the check alike"
         }
       ]
     },
@@ -18694,21 +18698,27 @@
       "kind": "title"
     },
     {
+      "id": "LIF-063",
+      "file": "apps/service/src/audit-census.test.ts",
+      "line": 246,
+      "kind": "title"
+    },
+    {
+      "id": "AST-037",
+      "file": "apps/service/src/audit-data.test.ts",
+      "line": 254,
+      "kind": "title"
+    },
+    {
       "id": "DAT-007",
       "file": "apps/service/src/audit-data.test.ts",
       "line": 53,
       "kind": "title"
     },
     {
-      "id": "LIF-026",
-      "file": "apps/service/src/audit-data.test.ts",
-      "line": 131,
-      "kind": "title"
-    },
-    {
       "id": "IAM-013",
       "file": "apps/service/src/audit-refusals.test.ts",
-      "line": 44,
+      "line": 63,
       "kind": "title"
     },
     {
@@ -18852,13 +18862,13 @@
     {
       "id": "DAT-097",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 829,
+      "line": 862,
       "kind": "title"
     },
     {
-      "id": "LIF-026",
+      "id": "IAM-013",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 239,
+      "line": 607,
       "kind": "title"
     },
     {
@@ -19254,7 +19264,7 @@
     {
       "id": "IAM-013",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 278,
+      "line": 284,
       "kind": "title"
     },
     {
@@ -20266,15 +20276,15 @@
       "kind": "title"
     },
     {
-      "id": "AST-051",
+      "id": "AST-037",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 233,
+      "line": 202,
       "kind": "title"
     },
     {
-      "id": "LIF-026",
+      "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 202,
+      "line": 233,
       "kind": "title"
     },
     {
@@ -20317,12 +20327,6 @@
       "id": "CNT-085",
       "file": "apps/worker/src/marks.test.ts",
       "line": 276,
-      "kind": "title"
-    },
-    {
-      "id": "LIF-026",
-      "file": "apps/worker/src/publish.test.ts",
-      "line": 674,
       "kind": "title"
     },
     {
@@ -20700,79 +20704,67 @@
     {
       "id": "DAT-007",
       "file": "packages/db/src/audit-content.test.ts",
-      "line": 253,
+      "line": 325,
       "kind": "title"
     },
     {
-      "id": "LIF-026",
+      "id": "LIF-027",
       "file": "packages/db/src/audit-content.test.ts",
-      "line": 141,
-      "kind": "title"
-    },
-    {
-      "id": "LIF-063",
-      "file": "packages/db/src/audit-content.test.ts",
-      "line": 141,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "ADM-002",
       "file": "packages/db/src/audit-identity.test.ts",
-      "line": 124,
+      "line": 121,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "packages/db/src/audit-identity.test.ts",
-      "line": 530,
+      "line": 554,
       "kind": "title"
     },
     {
       "id": "IAM-037",
       "file": "packages/db/src/audit-identity.test.ts",
-      "line": 376,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "IAM-060",
       "file": "packages/db/src/audit-identity.test.ts",
-      "line": 447,
-      "kind": "title"
-    },
-    {
-      "id": "LIF-027",
-      "file": "packages/db/src/audit-identity.test.ts",
-      "line": 606,
+      "line": 473,
       "kind": "title"
     },
     {
       "id": "LIF-029",
       "file": "packages/db/src/audit-identity.test.ts",
-      "line": 161,
+      "line": 158,
       "kind": "title"
     },
     {
       "id": "LIF-025",
       "file": "packages/db/src/audit.test.ts",
-      "line": 208,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "LIF-030",
       "file": "packages/db/src/audit.test.ts",
-      "line": 186,
+      "line": 196,
       "kind": "title"
     },
     {
       "id": "LIF-031",
       "file": "packages/db/src/audit.test.ts",
-      "line": 381,
+      "line": 391,
       "kind": "title"
     },
     {
       "id": "LIF-032",
       "file": "packages/db/src/audit.test.ts",
-      "line": 312,
+      "line": 322,
       "kind": "title"
     },
     {
@@ -21150,19 +21142,19 @@
     {
       "id": "SCH-054",
       "file": "packages/db/src/search.test.ts",
-      "line": 165,
+      "line": 166,
       "kind": "title"
     },
     {
       "id": "SCH-055",
       "file": "packages/db/src/search.test.ts",
-      "line": 339,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "SCH-066",
       "file": "packages/db/src/search.test.ts",
-      "line": 382,
+      "line": 383,
       "kind": "title"
     },
     {
@@ -21354,7 +21346,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 160,
+      "line": 173,
       "kind": "title"
     },
     {

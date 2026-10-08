@@ -251,7 +251,7 @@ describe('content and data on the audit log, through the service', () => {
     expect(previewing).toEqual([]);
   });
 
-  it('records an upload refused at the door as its uploader, keeping none of its bytes', async () => {
+  it('AST-037 records an upload refused at the door as its uploader, never referenceable and keeping none of its bytes', async () => {
     const upload = (
       await ok(
         h.call('ada', 'POST', `/v1/spaces/${h.general}/asset-uploads`, { alternative: null }),
@@ -284,10 +284,10 @@ describe('content and data on the audit log, through the service', () => {
     const row = (
       await queryAs(
         h.db.adminUrl,
-        `select state, object_key from ${h.tenant.schema}.asset_upload where id = $1`,
+        `select state, object_key, asset_version_id from ${h.tenant.schema}.asset_upload where id = $1`,
         [upload],
       )
     ).rows[0];
-    expect(row).toEqual({ state: 'refused', object_key: null });
+    expect(row).toEqual({ state: 'refused', object_key: null, asset_version_id: null });
   });
 });
