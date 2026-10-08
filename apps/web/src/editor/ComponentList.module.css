@@ -6,13 +6,12 @@
   margin: 0 var(--space-28) var(--space-10) 0;
 }
 
+/* The filter's own headings, in sentence case as the Ledger draws them. */
 .overline {
   padding: 0;
-  color: var(--muted);
-  font-size: var(--size-overline);
+  color: var(--text);
+  font-size: var(--size-13);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .clear {
@@ -73,9 +72,42 @@
   font-size: var(--size-label);
 }
 
-.scope {
-  padding-inline-start: var(--space-12);
-  border-inline-start: 1px solid var(--border);
+.chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-12);
+  padding: 0;
+  list-style: none;
+}
+
+/* The chip's own remove button, small inside it but a 24px target (WCAG 2.5.8). */
+.unchoose {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  min-height: 24px;
+  margin-block: -4px;
+  margin-inline-end: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: inherit;
+}
+
+.where {
+  display: block;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+tr[data-shown='true'] > td {
+  background: var(--accent-weak);
+}
+
+tr[data-shown='true'] > td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .table {
@@ -131,4 +163,11 @@
 .actions {
   width: 1%;
   padding-block: var(--space-4);
+  white-space: nowrap;
+}
+
+/* Show here and the row menu side by side. */
+td.actions > * {
+  display: inline-flex;
+  vertical-align: middle;
 }

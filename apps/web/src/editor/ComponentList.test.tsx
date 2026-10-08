@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentList } from './ComponentList.js';
+import { content } from './test/componentEditor.js';
 
 const GENERAL = '1a1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
 const TRAINING = '2b1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
@@ -55,6 +56,30 @@ function service({ creatable = true } = {}) {
         ],
       });
     }
+    if (url.pathname === `/v1/components/${PRINTER}/versions`) {
+      return json(200, {
+        items: [
+          {
+            id: 'v2',
+            number: '0.2',
+            createdAt: new Date(2025, 11, 3, 11, 0).toISOString(),
+            author: { id: 'p1', name: 'Ada' },
+            note: 'Final torque raised',
+          },
+          {
+            id: 'v1',
+            number: '0.1',
+            createdAt: new Date(2025, 10, 21, 9, 0).toISOString(),
+            author: { id: 'p2', name: 'Grace' },
+            note: null,
+          },
+        ],
+        next: null,
+      });
+    }
+    if (url.pathname === `/v1/components/${PRINTER}`) {
+      return json(200, { id: PRINTER, content: content('Unbox the printer.', 'Keep the box.') });
+    }
     if (url.pathname !== '/v1/components') return json(404, {});
     const spaces = url.searchParams.get('spaces');
     asked.push(spaces ?? 'all');
@@ -71,20 +96,18 @@ function service({ creatable = true } = {}) {
 afterEach(() => window.localStorage.clear());
 
 describe('the components list', () => {
-  it('shows each component as a row: title linking to it, type, space, version, language, when changed and by whom', async () => {
+  it('shows each component as a row: title linking to it, its space and language beneath, type, version, when changed and by whom', async () => {
     const { client } = service();
     render(<ComponentList client={client} principalId="p9" />);
 
     const link = await screen.findByRole('link', { name: 'Replace the toner' });
     expect(link).toHaveAttribute('href', `#/components/${TONER}`);
     const cells = within(link.closest('tr')!).getAllByRole('cell');
-    // The eighth cell holds the row menu.
-    expect(cells.slice(0, 7).map((cell) => cell.textContent)).toEqual([
-      'Replace the toner',
+    expect(within(cells[0]!).getByText('Training, en-GB')).toBeInTheDocument();
+    // The sixth cell holds the row's buttons.
+    expect(cells.slice(1, 5).map((cell) => cell.textContent)).toEqual([
       'Topic',
-      'Training',
       '0.2',
-      'en-GB',
       '3 Dec 2025',
       'Grace',
     ]);
@@ -103,12 +126,58 @@ describe('the components list', () => {
     );
     expect(screen.getByRole('link', { name: 'Install the printer' })).toBeInTheDocument();
     expect(asked).toContain(GENERAL);
-    expect(screen.getByText(/Space: General/)).toBeInTheDocument();
     expect(screen.getByText(/^1 component you may read\. Showing 1 to 1\./)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /General/ })).not.toBeChecked();
+  });
+
+  it('shows each chosen filter as a chip above the list, which removes it', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /General/ }));
+    const chips = await screen.findByRole('list', { name: 'Filtered by' });
+    await userEvent.click(within(chips).getByRole('button', { name: 'Remove General' }));
+
+    expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Filtered by' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /General/ })).not.toBeChecked();
+  });
+
+  it('shows the chosen component beside the list: its facts, Open, Give access, its text and its latest versions', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    const show = await screen.findByRole('button', { name: 'Show Install the printer here' });
+
+    await userEvent.click(show);
+
+    expect(show).toHaveAttribute('aria-pressed', 'true');
+    const panel = screen.getByRole('complementary', { name: 'Install the printer' });
+    for (const fact of ['Topic', '0.2', 'General', 'en-GB']) {
+      expect(within(panel).getByText(fact, { selector: '[data-tone]' })).toBeInTheDocument();
+    }
+    expect(within(panel).getByRole('link', { name: 'Open' })).toHaveAttribute(
+      'href',
+      `#/components/${PRINTER}`,
+    );
+    expect(within(panel).getByRole('link', { name: 'Give access' })).toHaveAttribute(
+      'href',
+      `#/components/${PRINTER}/access`,
+    );
+    expect(await within(panel).findByText('Unbox the printer. Keep the box.')).toBeInTheDocument();
+    const versions = within(panel).getByRole('list', { name: 'Versions' });
+    expect(
+      within(versions)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['0.2Ada, 3 DecFinal torque raised', '0.1Grace, 21 Nov']);
+
+    await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('complementary', { name: 'Install the printer' })).toBeNull();
+    expect(show).toHaveFocus();
   });
 
   it('opens New component as a dialog from the primary button', async () => {
@@ -183,6 +252,6 @@ describe('the components list', () => {
 
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     const cells = within(link.closest('tr')!).getAllByRole('cell');
-    expect(cells[6]).toHaveTextContent('You');
+    expect(cells[4]).toHaveTextContent('You');
   });
 });

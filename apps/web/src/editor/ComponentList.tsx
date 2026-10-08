@@ -11,9 +11,13 @@ import {
 } from '../listing/Listing.js';
 import { useCreatableSpaces } from '../spaces.js';
 import { Modal } from '../layouts/Modal.js';
+import { Chip } from '../parts/Chip.js';
+import { IconButton } from '../parts/IconButton.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { whenChanged } from './changed.js';
+import { ComponentDetail } from './ComponentDetail.js';
+import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
 import { RowMenu } from './RowMenu.js';
@@ -53,6 +57,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
+  // The row shown in the panel beside the list, and each row's button, to give the focus back to.
+  const [shown, setShown] = useState<string | null>(null);
+  const showButtons = useRef(new Map<string, HTMLButtonElement>());
   // undefined: nothing has failed. Otherwise the cursor whose page did not arrive (null for the
   // first), so "Try again" retries exactly that page rather than starting over.
   const [failed, setFailed] = useState<string | null | undefined>(undefined);
@@ -127,7 +134,27 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
 
   const toggle = (id: string) =>
     setChosen((held) => (held.includes(id) ? held.filter((one) => one !== id) : [...held, id]));
-  const named = spaces.filter((space) => chosen.includes(space.id)).map((space) => space.name);
+  // Each filter chosen, as a chip that removes it: spaces by name, then types.
+  const filters = [
+    ...spaces
+      .filter((space) => chosen.includes(space.id))
+      .map((space) => ({
+        key: `space-${space.id}`,
+        name: space.name,
+        remove: () => toggle(space.id),
+      })),
+    ...typesChosen.map((type) => ({
+      key: `type-${type}`,
+      name: type,
+      remove: () => setTypesChosen((held) => toggled(held, type)),
+    })),
+  ];
+  const shownItem = items.find((item) => item.id === shown) ?? null;
+  const closeShown = () => {
+    const button = shown === null ? undefined : showButtons.current.get(shown);
+    setShown(null);
+    button?.focus();
+  };
 
   const filter = (
     <>
@@ -170,7 +197,19 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   );
 
   return (
-    <ListLayout filter={filter}>
+    <ListLayout
+      filter={filter}
+      detail={
+        shownItem === null ? null : (
+          <ComponentDetail
+            key={shownItem.id}
+            client={client}
+            item={shownItem}
+            onClose={closeShown}
+          />
+        )
+      }
+    >
       <section aria-labelledby="components-heading">
         <div className={styles['titleRow']}>
           <h1 id="components-heading">Components</h1>
@@ -197,10 +236,25 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
           {`${total} ${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
-          {named.length > 0 && (
-            <span className={styles['scope']}>{`Space: ${named.join(', ')}`}</span>
-          )}
         </p>
+        {filters.length > 0 && (
+          <ul className={styles['chosen']} aria-label="Filtered by">
+            {filters.map((each) => (
+              <li key={each.key}>
+                <Chip tone="accent">
+                  {each.name}
+                  <IconButton
+                    label={`Remove ${each.name}`}
+                    className={styles['unchoose']}
+                    onClick={each.remove}
+                  >
+                    <Icon name="Close" size={10} />
+                  </IconButton>
+                </Chip>
+              </li>
+            ))}
+          </ul>
+        )}
         <p role="status" className={styles['status']}>
           {notice}
         </p>
@@ -215,9 +269,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                 <tr>
                   <th scope="col">Title</th>
                   <th scope="col">Type</th>
-                  <th scope="col">Space</th>
                   <th scope="col">Version</th>
-                  <th scope="col">Language</th>
                   <th scope="col">Changed</th>
                   <th scope="col">By</th>
                   <td aria-hidden="true" />
@@ -225,16 +277,17 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id}>
+                  <tr key={item.id} data-shown={item.id === shown}>
                     <td>
                       <a className={styles['title']} href={`#/components/${item.id}`}>
                         {item.title}
                       </a>
+                      <span className={styles['where']}>
+                        {`${item.space.name}, ${item.language}`}
+                      </span>
                     </td>
                     <td className={styles['muted']}>{item.type ?? ''}</td>
-                    <td className={styles['muted']}>{item.space.name}</td>
-                    <td>{item.version}</td>
-                    <td className={styles['code']}>{item.language}</td>
+                    <td className={styles['code']}>{item.version}</td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
                     </td>
@@ -246,6 +299,17 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                           : (item.changedBy.name ?? '')}
                     </td>
                     <td className={styles['actions']}>
+                      <IconButton
+                        label={`Show ${item.title} here`}
+                        pressed={item.id === shown}
+                        ref={(element) => {
+                          if (element) showButtons.current.set(item.id, element);
+                          else showButtons.current.delete(item.id);
+                        }}
+                        onClick={() => (item.id === shown ? closeShown() : setShown(item.id))}
+                      >
+                        <Icon name="Contents" size={14} />
+                      </IconButton>
                       <RowMenu
                         client={client}
                         id={item.id}

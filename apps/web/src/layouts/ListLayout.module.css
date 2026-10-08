@@ -1,13 +1,24 @@
-/* Layout A: the filter pane (240px, or a 40px rail) and the list beside it. */
+/* Layout A: the filter pane (240px, or a 40px rail), the list, and the chosen row's panel. */
 .layout {
   display: grid;
   grid-template-columns: var(--pane-filter) minmax(0, 1fr);
-  gap: var(--space-14);
+  gap: var(--space-16);
   align-items: start;
 }
 
 .layout[data-collapsed='true'] {
   grid-template-columns: var(--pane-filter-rail) minmax(0, 1fr);
+}
+
+/* From 1366px the panel takes a column of its own; below, it stands over the list (LG-J). */
+@media (min-width: 1366px) {
+  .layout[data-detail='true'] {
+    grid-template-columns: var(--pane-filter) minmax(0, 1fr) var(--dock-panel);
+  }
+
+  .layout[data-detail='true'][data-collapsed='true'] {
+    grid-template-columns: var(--pane-filter-rail) minmax(0, 1fr) var(--dock-panel);
+  }
 }
 
 .filter {

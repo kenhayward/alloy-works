@@ -171,6 +171,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         });
       }
 
+      // The chosen component beside the list (LG6a).
+      await page.goto(`${SERVICE}/#/components`);
+      await page
+        .getByRole('button', { name: /^Show .+ here$/ })
+        .first()
+        .click();
+      await check('the chosen component beside the list', {
+        shows: page.getByRole('list', { name: 'Versions' }),
+      });
+
       // Search, from search and commands in the header (ADR-0046).
       await page
         .getByRole('button', { name: 'Search components, documents, or run a command' })
