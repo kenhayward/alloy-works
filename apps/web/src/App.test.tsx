@@ -63,6 +63,28 @@ describe('App', () => {
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
   });
 
+  it('moves between the header band, the module rail and the page with F6, and back with Shift-F6', async () => {
+    render(
+      <App
+        bridge={desktopBridge}
+        environment={noPanel}
+        workspace={<button type="button">In the page</button>}
+      />,
+    );
+    const rail = screen.getByRole('navigation', { name: 'Modules' });
+
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(within(rail).getByRole('link', { name: 'Home' })).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('button', { name: 'In the page' })).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveFocus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(screen.getByRole('button', { name: 'In the page' })).toHaveFocus();
+  });
+
   it('puts one status bar along the foot of every page, after the page', () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
     const bar = screen.getByRole('contentinfo');

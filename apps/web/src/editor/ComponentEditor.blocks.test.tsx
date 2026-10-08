@@ -6,9 +6,10 @@ import {
   setListAttributes,
   type EditorView,
 } from '@alloy-works/editor';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { RegionKeys } from '../shell/regions.js';
 import { shimRangeMeasurement } from '../test/range.js';
 import { CHOOSING_PRESENTATION } from '../theme/presentation.fixture.js';
 import {
@@ -358,10 +359,40 @@ describe('the regions of the view', () => {
     // They take the focus only once a change has claimed the lock, which the press above did.
     const save = await screen.findByRole('button', { name: 'Save version' });
     await waitFor(() => expect(save).toBeEnabled());
+    // One tab stop for them all, the arrows moving along it, as every toolbar is (LG6b).
+    expect(
+      within(screen.getByRole('toolbar', { name: 'Component' }))
+        .getAllByRole('button')
+        .filter((button) => button.tabIndex === 0),
+    ).toHaveLength(1);
 
     save.focus();
     await userEvent.keyboard('{F6}');
     expect(title).toHaveFocus();
+  });
+
+  it("CNT-077 hands F6 on to the application's own regions past either end of its ring, where it stands in one", async () => {
+    const { surface } = open({ 'GET /v1/components/{id}': () => json(200, opened()) }, quick);
+    await surface();
+    const { title, text } = landings();
+    // The application around it: the header band before it, and the page it stands in.
+    const band = document.createElement('header');
+    band.setAttribute('data-app-region', '');
+    band.innerHTML = '<a href="#/">Alloy Works</a>';
+    document.body.prepend(band);
+    screen.getByRole('article').parentElement!.setAttribute('data-app-region', '');
+    render(<RegionKeys />);
+
+    text.focus();
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('link', { name: 'Alloy Works' })).toHaveFocus();
+    await userEvent.keyboard('{F6}');
+    expect(screen.getByRole('group', { name: 'Component header' })).toHaveFocus();
+
+    title.focus();
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
+    expect(screen.getByRole('link', { name: 'Alloy Works' })).toHaveFocus();
+    band.remove();
   });
 
   it('CNT-077 moves backwards between the regions with Shift-F6', async () => {

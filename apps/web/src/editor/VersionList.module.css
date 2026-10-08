@@ -1,0 +1,35 @@
+/* A component's versions, newest first. */
+.versions {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.number {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.who {
+  display: grid;
+}
+
+.note {
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}

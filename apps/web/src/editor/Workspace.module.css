@@ -1,9 +1,26 @@
 /* Layout B around an open component: the space pane, then the editor. */
 .triptych {
   display: grid;
-  grid-template-columns: var(--pane-space) minmax(0, 1fr);
-  gap: var(--space-14);
+  grid-template-columns: var(--pane-space) minmax(0, 1fr) var(--dock-panel);
+  gap: var(--space-16);
   align-items: start;
+}
+
+/* Below 1366px the space pane gives way first, so the text keeps its room (the LG plan, LG-J). */
+@media (max-width: 1365px) {
+  .triptych {
+    grid-template-columns: minmax(0, 1fr) var(--dock-panel);
+  }
+
+  .triptych > :first-child {
+    display: none;
+  }
+}
+
+.trail {
+  margin-bottom: var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-13);
 }
 
 .editor {

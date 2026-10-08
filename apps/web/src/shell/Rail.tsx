@@ -31,7 +31,7 @@ export function Rail({ module, fetch: given, about = null }: RailProps) {
   const admin = useRef<HTMLButtonElement>(null);
 
   return (
-    <nav className={styles['rail']} aria-label="Modules">
+    <nav className={styles['rail']} aria-label="Modules" data-app-region>
       <a className={styles['item']} href="#/" aria-current={module === null ? 'page' : undefined}>
         <ModuleIcon name="Home" />
         <span className={styles['label']}>Home</span>

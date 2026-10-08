@@ -7,7 +7,6 @@ import { Connections } from '../data/Connections.js';
 import { connectionAddress, connectionLink, queryDefinitionAddress } from '../data/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
 import { QueryDefinitions } from '../data/QueryDefinitions.js';
-import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
@@ -20,6 +19,7 @@ import { TemplateList } from '../structure/TemplateList.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
+import { ComponentDock } from './ComponentDock.js';
 import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
 import styles from './Workspace.module.css';
@@ -81,6 +81,8 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   const [attempt, setAttempt] = useState(0);
   // The space the open component turned out to be in, for the pane beside the editor; kept with the
   // component it belongs to, so the pane never shows one component's space beside another.
+  // Where an open component's fields are set: its Attributes panel, once that is there (LG6b).
+  const [fieldsHost, setFieldsHost] = useState<HTMLElement | null>(null);
   const [placed, setPlaced] = useState<{
     readonly component: string;
     readonly space: { readonly id: string; readonly name: string };
@@ -143,14 +145,10 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           <div />
         )}
         <div className={styles['editor']}>
-          <p>
-            <a href="#/components">Back to components</a>{' '}
-            <ManageAccessLink
-              client={client}
-              target={`artifact:${opened}`}
-              href={`#/components/${opened}/access`}
-            />
-          </p>
+          <nav aria-label="Breadcrumb" className={styles['trail']}>
+            <a href="#/components">Components</a>
+            {placed?.component === opened && <span>{` / ${placed.space.name}`}</span>}
+          </nav>
           {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
           <PresentationProvider client={client}>
             <ZoomControl />
@@ -161,12 +159,15 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
               principalId={me}
               onSpace={(space) => setPlaced({ component: opened, space })}
               linked={address?.block ? { block: address.block, arrival: arrivals } : null}
+              fieldsHost={fieldsHost}
             />
           </PresentationProvider>
         </div>
+        <ComponentDock key={opened} client={client} id={opened} onFieldsHost={setFieldsHost} />
       </div>
     );
   }
+
   const searched = searchAddress(hash);
   if (searched !== null) {
     return (

@@ -483,6 +483,22 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         hides: [page.getByRole('group', { name: /^Base direction/ })],
       });
 
+      // The panels beside it, named in words (LG6b): Versions and Access, then Attributes again.
+      const componentPanels = page.getByRole('tablist', { name: 'Component panels' });
+      await componentPanels.getByRole('tab', { name: 'Versions' }).click();
+      await check('the Versions panel', {
+        shows: page
+          .getByRole('tabpanel', { name: 'Versions' })
+          .getByRole('list', { name: 'Versions' }),
+      });
+      await componentPanels.getByRole('tab', { name: 'Access' }).click();
+      await check('the Access panel', {
+        shows: page
+          .getByRole('tabpanel', { name: 'Access' })
+          .getByText(/is set on its access page/),
+      });
+      await componentPanels.getByRole('tab', { name: 'Attributes' }).click();
+
       // Recovery: the author's saved text listed.
       await button('Saved text').click();
       const recovery = page.getByRole('region', { name: 'Saved text' });

@@ -84,6 +84,7 @@ import { EditorToolbar } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
 import { BoundTablePanel } from './BoundTablePanel.js';
 import { FigurePanel } from './FigurePanel.js';
+import { Toolbar } from '../parts/Toolbar.js';
 import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
@@ -171,6 +172,12 @@ export interface ComponentEditorProps {
   readonly onView?: (view: EditorView) => void;
   /** Told the space of the component once it has opened, for the space pane beside the editor. */
   readonly onSpace?: (space: { readonly id: string; readonly name: string }) => void;
+  /**
+   * Where the fields of the component's type are set, where that is somewhere other than beneath the
+   * surface: the Attributes panel beside it (the LG plan, LG6b). Null while that place is not there
+   * yet; left out, they stand beneath the surface. Their state is the editor's either way.
+   */
+  readonly fieldsHost?: HTMLElement | null;
   /** Its section number, where it is open in place in a document; there is none standalone. */
   readonly number?: string;
   /**
@@ -391,6 +398,7 @@ export function ComponentEditor({
   sessionId,
   onView,
   onSpace,
+  fieldsHost,
   number,
   onDone,
   openAt,
@@ -1598,11 +1606,19 @@ export function ComponentEditor({
       recoveryRegion.current,
       place.current,
       metadataRegion.current,
-    ].filter((region) => region !== null);
+      // A region in a panel that is not shown, such as the fields in Attributes while Versions is,
+      // is no stop: the focus cannot land in what is hidden.
+    ].filter(
+      (region): region is HTMLElement => region !== null && region.closest('[hidden]') === null,
+    );
     if (ring.length === 0) return;
-    event.preventDefault();
     const at = ring.findIndex((region) => region.contains(document.activeElement));
     const back = event.shiftKey;
+    // Past either end, inside the application, the key goes on to its own regions - the header band,
+    // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
+    const past = at >= 0 && (back ? at === 0 : at === ring.length - 1);
+    if (past && event.currentTarget.closest('[data-app-region]') !== null) return;
+    event.preventDefault();
     const next =
       at < 0 ? (back ? ring.length - 1 : 0) : (at + (back ? -1 : 1) + ring.length) % ring.length;
     land(ring[next]!);
@@ -1830,6 +1846,8 @@ export function ComponentEditor({
             role="group"
             aria-label="Component header"
             tabIndex={-1}
+            // Where the application's F6 enters this editor's own ring (`RegionKeys`).
+            data-region-entry
           >
             {number !== undefined && (
               <span className={styles['number']} title={size}>
@@ -1867,7 +1885,7 @@ export function ComponentEditor({
           {(mayCut || onDone) && (
             <>
               <span className={styles['divider']} aria-hidden="true" />
-              <div className={styles['actions']} role="toolbar" aria-label="Component">
+              <Toolbar label="Component" className={styles['actions']}>
                 {/* The author's own saved text, listed while editing: the lock is already this
                     session's, so nothing is claimed (final review of W11.2, D1). */}
                 {mayCut && (
@@ -1905,7 +1923,7 @@ export function ComponentEditor({
                   <Icon name="Done editing" />
                   Done
                 </button>
-              </div>
+              </Toolbar>
             </>
           )}
         </div>
@@ -2147,28 +2165,33 @@ export function ComponentEditor({
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they
                 arise"). A change is a change like any typed on the surface, and claims the lock. */}
-            {shown.fields.length > 0 && (
-              <section
-                ref={metadataRegion}
-                aria-label={`Fields of ${shown.type.name}`}
-                className={styles['fields']}
-              >
-                <FieldsForm
-                  key={valuesDrawn}
-                  fields={shown.fields}
-                  schemas={shown.schemas}
-                  values={values}
-                  people={people}
-                  readOnly={!mayFormat || loaded.state !== 'open'}
-                  onChange={(next) => {
-                    heldValues.current = next;
-                    setValues(next);
-                    recorder.current?.values(next);
-                    controls.current?.changed();
-                  }}
-                />
-              </section>
-            )}
+            {shown.fields.length > 0 &&
+              (() => {
+                const fieldsSection = (
+                  <section
+                    ref={metadataRegion}
+                    aria-label={`Fields of ${shown.type.name}`}
+                    className={styles['fields']}
+                  >
+                    <FieldsForm
+                      key={valuesDrawn}
+                      fields={shown.fields}
+                      schemas={shown.schemas}
+                      values={values}
+                      people={people}
+                      readOnly={!mayFormat || loaded.state !== 'open'}
+                      onChange={(next) => {
+                        heldValues.current = next;
+                        setValues(next);
+                        recorder.current?.values(next);
+                        controls.current?.changed();
+                      }}
+                    />
+                  </section>
+                );
+                if (fieldsHost === undefined) return fieldsSection;
+                return fieldsHost === null ? null : createPortal(fieldsSection, fieldsHost);
+              })()}
             {offered !== null && (
               <div>
                 <label>
