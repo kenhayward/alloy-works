@@ -1,4 +1,4 @@
-/* The header band: dark in every theme, 44px, the mark left and the account right. */
+/* The header band: the theme's chrome, 44px, the mark left and the account right. */
 .band {
   position: sticky;
   top: 0;
@@ -8,8 +8,9 @@
   gap: var(--space-12);
   height: var(--header-height);
   padding-inline: var(--space-20);
-  background: var(--header-bg);
-  color: var(--header-text);
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  color: var(--text);
   font-size: var(--size-body-small);
   white-space: nowrap;
 }
@@ -25,10 +26,10 @@
   gap: var(--space-8);
   height: 28px;
   padding-inline: var(--space-10);
-  border: 1px solid var(--header-btn-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-6);
   background: transparent;
-  color: var(--header-text);
+  color: var(--text);
   font: inherit;
   text-decoration: none;
   cursor: pointer;
@@ -50,11 +51,10 @@ a.chip {
 
 .brand:hover,
 .chip:hover {
-  border-color: var(--header-text);
+  border-color: var(--strong-border);
 }
 
-/* Specific enough to beat base.css's pale hover for every button, which put the account chip's white
-   text on --accent-weak at 1.08:1 under the pointer (axe, W13.2): on the band a hover is its border. */
+/* Specific enough to beat base.css's pale hover for every button: on the band a hover is its border. */
 .chip:hover:not(:disabled) {
   background: transparent;
 }
@@ -63,14 +63,46 @@ a.chip {
   display: block;
 }
 
+/* One mark for each ground: data-theme is always set, Auto resolved to one or the other. */
+:global([data-theme='dark']) .onLight,
+:global([data-theme='light']) .onDark {
+  display: none;
+}
+
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  border-color: var(--strong-border);
+  background: transparent;
+}
+
+.icon {
+  display: block;
+}
+
+.item[aria-pressed='true'] {
+  font-weight: 600;
+}
+
 .initials {
   display: inline-grid;
   place-items: center;
   width: 22px;
   height: 22px;
   border-radius: var(--radius-pill);
-  background: var(--mark-slate);
-  color: var(--header-text);
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: var(--size-micro);
   font-weight: 600;
 }
@@ -78,7 +110,7 @@ a.chip {
 .hairline {
   width: 1px;
   height: 18px;
-  background: var(--header-btn-border);
+  background: var(--border);
 }
 
 .module {
@@ -94,7 +126,7 @@ a.chip {
   align-items: center;
   height: 28px;
   padding-inline: var(--space-10);
-  border: 1px solid var(--header-btn-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-6);
 }
 

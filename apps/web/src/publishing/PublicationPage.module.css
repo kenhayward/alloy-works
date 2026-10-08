@@ -11,7 +11,7 @@
   min-height: 70vh;
   padding: var(--space-16);
   border-radius: var(--radius-8);
-  background: var(--doc-canvas);
+  background: var(--desk);
 }
 
 .viewer {

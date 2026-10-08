@@ -1,18 +1,18 @@
-/* Home, drawn in docs/interface/screens/Home.html: the module cards over the dark backdrop. */
+/* Home, drawn in docs/interface/screens/Home.html: the module cards over the page's ground. */
 .backdrop {
   margin: calc(-1 * (var(--space-4) + var(--space-20))) calc(-1 * var(--space-24)) 0;
   padding: var(--space-40) var(--space-24);
   min-height: calc(100vh - var(--header-height));
-  background: var(--header-bg);
+  background: var(--bg);
 }
 
 .panel {
   max-width: 1180px;
   margin: 0 auto;
   padding: var(--space-28);
-  border: 1px solid var(--header-btn-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-14);
-  background: var(--panel-translucent);
+  background: var(--chrome);
   box-shadow: var(--shadow-card);
 }
 
@@ -21,8 +21,6 @@
   font-size: var(--size-greeting);
 }
 
-/* In the text's own colour, not muted: the panel is translucent over the dark backdrop, so it is grey
-   where it stands, and muted text on it measured 2.2:1 against WCAG's 4.5 (axe, W13.2). */
 .environment {
   margin: var(--space-4) 0 var(--space-20);
   color: var(--text);
@@ -41,7 +39,7 @@
   gap: var(--space-10);
   padding: var(--space-18) var(--space-18) var(--space-14);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--module-components);
+  border-top: 3px solid var(--accent);
   border-radius: var(--radius-10);
   background: var(--surface);
   color: var(--text);
@@ -53,14 +51,6 @@
 .card:hover {
   transform: translateY(-2px);
   text-decoration: none;
-}
-
-.card[data-module='documents'] {
-  border-top-color: var(--module-documents);
-}
-
-.card[data-module='publications'] {
-  border-top-color: var(--module-publications);
 }
 
 .name {

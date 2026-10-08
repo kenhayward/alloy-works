@@ -72,14 +72,18 @@ from `tokens.css` and take the geometry from the drawing.
 ## Themes
 
 [`apps/web/src/theme/tokens.css`](../../apps/web/src/theme/tokens.css) is the whole palette as
-custom properties. Light is built; Dark and Auto come in LG2, from the values in
-[the Ledger tokens](handoffs/ledger/README.md#tokens), applied as `data-theme` on `<html>`.
+custom properties: the [Ledger tokens](handoffs/ledger/README.md#tokens) in a Light and a Dark block,
+applied as `data-theme` on `<html>` by `theme/themes.ts`, which resolves Auto by the system and keeps
+the choice in this browser.
 
-That costs almost nothing **provided nothing outside `tokens.css` ever writes a colour**: Dark is a
-`[data-theme="dark"]` block and Auto a `prefers-color-scheme` mapping, and no component changes. A
+That costs almost nothing **provided nothing outside `tokens.css` ever writes a colour**: no component knows
+which theme it is in. A
 single hard-coded hex in a component is the thing that makes it expensive, so treat one as a bug.
 
-- **The header follows the theme**, as everything else does (ADR-0046). `--header-*` goes in LG2.
+- **The header follows the theme**, as everything else does (ADR-0046).
+- **A component's text is paper in both themes.** `.aw-canvas` takes Light's tokens, so the
+  publishing theme's own colours (STY-036) keep their contrast; the drawings' dark editor surface
+  is wrong, as their Plex text is.
 - **The document palette is separate.** `--doc-*` describes a rendered publication - the page, the
   navy Word headings, the grey desk behind it - and must never be used for interface chrome, nor
   the interface palette for a publication. They are two vocabularies sharing a window.

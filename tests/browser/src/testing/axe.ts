@@ -100,8 +100,37 @@ async function arrived(state: string, { shows, hides = [] }: Arrival): Promise<v
  *
  * **The state must be there when axe runs, and still there when it finishes**: `shows` is what it is
  * known by and `hides` what it has left behind, each asked before and after, never waited for.
+ *
+ * **On the product's own pages, in every theme** (ADR-0046): Light, under the state's own name, then
+ * Dark, as `<state>, in Dark`, the page's Auto following the browser's emulated preference; left in
+ * Light. A page that sets no `data-theme` - the allow-list's own - is checked once, as it is.
  */
 export async function checkAxe(
+  page: Page,
+  state: string,
+  meta: TaskMeta,
+  options: Arrival & { readonly within?: string; readonly allowed?: readonly Allowed[] },
+): Promise<void> {
+  const themed = await page.evaluate(() => document.documentElement.dataset['theme'] !== undefined);
+  if (!themed) return checkAxeOnce(page, state, meta, options);
+  for (const theme of ['light', 'dark'] as const) {
+    await inTheme(page, theme);
+    await checkAxeOnce(page, theme === 'light' ? state : `${state}, in Dark`, meta, options);
+  }
+  await inTheme(page, 'light');
+}
+
+/** The page in `theme`, by the preference its Auto follows, once it has applied it. */
+async function inTheme(page: Page, theme: 'light' | 'dark'): Promise<void> {
+  await page.emulateMedia({ colorScheme: theme });
+  await page.waitForFunction(
+    (wanted) => document.documentElement.dataset['theme'] === wanted,
+    theme,
+    { timeout: 5_000 },
+  );
+}
+
+async function checkAxeOnce(
   page: Page,
   state: string,
   meta: TaskMeta,

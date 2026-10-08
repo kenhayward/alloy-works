@@ -20,6 +20,7 @@ import {
   resolveRendererTarget,
   spellCheckerChoice,
   spellingMenu,
+  windowBackground,
   type RendererTarget,
 } from './shell.js';
 
@@ -40,6 +41,7 @@ function createWindow(): void {
     width: 1280,
     height: 800,
     show: false,
+    backgroundColor: windowBackground(nativeTheme.shouldUseDarkColors),
     // Windows and Linux take the window icon from here. macOS ignores it and uses the bundle.
     icon: windowIconPath(app.getAppPath()),
     webPreferences: {

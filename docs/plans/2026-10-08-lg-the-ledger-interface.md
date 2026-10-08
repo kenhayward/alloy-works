@@ -72,3 +72,12 @@ designs that own these keep them.
 Theme per device, Auto by default (LG-B); the five stray hexes were issue numbers in comments, and
 are dropped; drawn-ahead items as LG-H; the ring, lozenges and diff pairs (LG-A); narrow windows
 (LG-J); the mode switch beside Preview (LG-I).
+
+## Changed while building
+
+| Found                                                                                                                                                    | Change                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LG2: the publishing theme's own ink (navy headings) would stand on the dark surface the drawings give the editor, and an inherited colour is the theme's | `.aw-canvas` takes Light's tokens and sets its colour again, and in Dark the paper's ground: a component's text is paper in both themes (decision 7, STY-036). The drawings are wrong, as with Plex |
+| LG2: the shared aliases must be declared wherever a theme is, since a custom property is computed where it is declared                                   | One block for `:root`, `[data-theme]` and `.aw-canvas`                                                                                                                                              |
+| LG2: Auto as a `prefers-color-scheme` block would repeat Dark's                                                                                          | `themes.ts` resolves Auto and sets `data-theme` to Light or Dark; the CSS holds one block a theme                                                                                                   |
+| LG2: axe in Dark                                                                                                                                         | `checkAxe` checks every page of the product's in Light, then as `<state>, in Dark`, so every suite's states are checked in both                                                                     |

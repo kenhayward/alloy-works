@@ -45,6 +45,20 @@ html {
   scroll-padding-bottom: var(--status-height, 0px);
 }
 
+/*
+ * The paper a component's text is set on is paper in every theme (ADR-0046): tokens.css gives
+ * .aw-canvas Light's tokens, so the publishing theme's own colours (STY-036) and whatever stands in
+ * the text keep their contrast. Its colour is set again, since an inherited one is the theme around
+ * it; in Dark it takes the paper's ground too, where in Light the ground behind it already is.
+ */
+.aw-canvas {
+  color: var(--text);
+}
+
+[data-theme='dark'] .aw-canvas {
+  background: var(--surface);
+}
+
 h1 {
   margin: 0 0 var(--space-16);
   font-size: var(--size-page-title);
