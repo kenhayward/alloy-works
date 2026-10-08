@@ -281,6 +281,8 @@ describe('signing in with a Google account', () => {
   }
 
   it('IAM-013 records a Google sign-in, an uninvited account, a provider error, and a hand-off redeemed late or elsewhere', async () => {
+    // Earlier tests' failures naming nobody are forgotten, so these are recorded (at most one a minute).
+    await queryAs(db.adminUrl, `delete from ${dev.schema}.sign_in_failure_tally`);
     const signedIn = await recorded(() => signInWithGoogle(DEV, 'alice'));
     const alice = signedIn.find((event) => event.kind === 'authentication.signed_in')!;
     expect(alice).toMatchObject({
@@ -292,7 +294,11 @@ describe('signing in with a Google account', () => {
 
     const uninvited = await recorded(async () => callback((await atGoogle(DEV, 'grace')).back));
     expect(uninvited.map((event) => [event.kind, event.actorKind, event.detail])).toEqual([
-      ['authentication.sign_in_failed', 'anonymous', { route: 'google', failure: 'not_invited' }],
+      [
+        'authentication.sign_in_failed',
+        'anonymous',
+        { route: 'google', failure: 'not_invited', count: 1 },
+      ],
     ]);
 
     // Google's error, for an attempt the state signed: its kind, never its words.
@@ -306,7 +312,7 @@ describe('signing in with a Google account', () => {
       [
         'authentication.sign_in_failed',
         'anonymous',
-        { route: 'google', failure: 'provider_error' },
+        { route: 'google', failure: 'provider_error', count: 1 },
       ],
     ]);
     expect(JSON.stringify(errored)).not.toContain('access_denied');

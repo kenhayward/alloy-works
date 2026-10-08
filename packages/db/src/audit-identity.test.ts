@@ -52,8 +52,6 @@ describe('identity, access and administration on the audit log', () => {
   let author: string;
   let reader: string;
   let acting: AuditContext;
-  /** Every event the suite read, for LIF-027's look at them all. */
-  const seen: ReadEvent[] = [];
 
   const person = (subject: string, name: string) =>
     service.withTenant(
@@ -88,7 +86,6 @@ describe('identity, access and administration on the audit log', () => {
     const events = await service.withTenant(tenant, (trx) => auditEvents(trx, before), {
       actorKind: 'system',
     });
-    seen.push(...events);
     return { answer, events };
   }
 
@@ -373,6 +370,35 @@ describe('identity, access and administration on the audit log', () => {
     expect(events[0]!.labels['actor']!.text).toBe('Joan');
   });
 
+  it("erases a token's name with its holder's labels", async () => {
+    const hedy = await person('hedy', 'Hedy');
+    const { events } = await recorded(() =>
+      service.withTenant(
+        tenant,
+        (trx) =>
+          issueApiToken(trx, {
+            principalId: hedy,
+            name: 'Hedy export',
+            tokenHash: 'e'.repeat(64),
+            scopes: [],
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          }),
+        { actorKind: 'person', actor: hedy, actorLabel: 'Hedy' },
+      ),
+    );
+    expect(events[0]!.labels['subject']).toMatchObject({ text: 'Hedy export', refersTo: hedy });
+    await service.withTenant(tenant, (trx) => eraseLabels(trx, hedy), acting);
+    const after = await service.withTenant(
+      tenant,
+      async (trx) =>
+        (await auditEvents(trx, String(Number(events[0]!.sequence) - 1))).find(
+          (event) => event.sequence === events[0]!.sequence,
+        )!,
+      { actorKind: 'system' },
+    );
+    expect(after.labels['subject']).toMatchObject({ text: 'erased', erased: true });
+  });
+
   it('IAM-037 records a token issued, one use a minute under concurrent requests, and its revocation', async () => {
     const now = new Date();
     const { answer: token, events: issued } = await asAda((trx) =>
@@ -491,7 +517,6 @@ describe('identity, access and administration on the audit log', () => {
         ['tenant.administrator_claimed', 'person', principal],
       ]);
       expect(claim[1]!.labels['named_by']!.text).toBe('provisioning');
-      seen.push(...named, ...claim);
     });
 
     it('ADM-002 records a lapsed first administrator replaced, one event per row it removes', async () => {
@@ -524,7 +549,6 @@ describe('identity, access and administration on the audit log', () => {
       ]);
       expect(events[0]!.labels['grantee']!.text).toBe('grace@example.com');
       expect(events[1]!.labels['invitee']!.text).toBe('grace@example.com');
-      seen.push(...events);
     });
 
     it('IAM-013 records every session a closed route issued as ended, before its row goes', async () => {
@@ -599,20 +623,66 @@ describe('identity, access and administration on the audit log', () => {
       });
       // Nothing of the client secret reaches the log.
       expect(JSON.stringify(all)).not.toContain('an-invented-secret');
-      seen.push(...all);
+    });
+
+    it("records the vendor's act on a route only where it changes something", async () => {
+      const provider = { issuer: ISSUER, clientId: 'alloy', clientSecret: 'an-invented-secret' };
+      await configureOrganisationSignIn(db.adminUrl, fresh, provider, KEY);
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      let before = await newest();
+      // The same again, and closing what is closed, change nothing.
+      await configureOrganisationSignIn(db.adminUrl, fresh, provider, KEY);
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      await closeSignInRoute(db.adminUrl, fresh, 'google');
+      await closeSignInRoute(db.adminUrl, fresh, 'google');
+      expect((await eventsOf(before)).map((event) => event.kind)).toEqual(['sign_in_route.closed']);
+      before = await newest();
+      // Another client, another secret, a domain added: each a change.
+      await configureOrganisationSignIn(
+        db.adminUrl,
+        fresh,
+        { ...provider, clientId: 'other' },
+        KEY,
+      );
+      await configureOrganisationSignIn(
+        db.adminUrl,
+        fresh,
+        { ...provider, clientId: 'other', clientSecret: 'another-invented-one' },
+        KEY,
+      );
+      await permitGoogleSignIn(db.adminUrl, fresh);
+      await permitGoogleSignIn(db.adminUrl, fresh, { domains: ['example.com'] });
+      expect((await eventsOf(before)).map((event) => event.detail['route'])).toEqual([
+        'organisation',
+        'organisation',
+        'google',
+        'google',
+      ]);
     });
   });
 
-  it('LIF-027 each event carries who, what, when and the subject acted on', () => {
-    expect(seen.length).toBeGreaterThan(40);
-    const started = Date.now() - 10 * 60 * 1000;
-    for (const event of seen) {
-      expect(event.kind, event.kind).toMatch(/^[a-z_]+\.[a-z_]+$/);
-      expect(['person', 'token', 'system', 'vendor'], event.kind).toContain(event.actorKind);
-      if (event.actorKind === 'person' || event.actorKind === 'token') {
-        expect(event.actor, event.kind).toMatch(/^[0-9a-f-]{36}$/);
-        expect(event.labels['actor'], event.kind).toBeDefined();
-      }
+  it('gives every identity event who, what, when and the subject acted on, and no version', async () => {
+    const started = Date.now() - 60 * 1000;
+    const { events } = await asAda(async (trx) => {
+      const space = await createSpace(trx, `Checked ${Date.now()}`);
+      const group = await createGroup(trx, `Checked ${Date.now()}`);
+      if (!('group' in group)) throw new Error(group.refused);
+      await grant(trx, {
+        roleId: reader,
+        subject: { principal: grace },
+        level: { kind: 'space', id: space.id },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+    });
+    expect(events.map((event) => event.kind)).toEqual([
+      'space.made',
+      'group.made',
+      'access.granted',
+    ]);
+    for (const event of events) {
+      expect(event, event.kind).toMatchObject({ actorKind: 'person', actor: ada });
+      expect(event.labels['actor']?.text, event.kind).toBe('Ada');
       expect(event.at.getTime(), event.kind).toBeGreaterThan(started);
       expect(event.subjectKind, event.kind).not.toBeNull();
       // None of these acts is on a versioned artifact, so none names a version.

@@ -56,6 +56,7 @@ import {
   parseDraftDefinition,
   readImageHeader,
   type AccessFacts,
+  type AuditContext,
   type ConnectionProblem,
   type DataFailureCode,
   type DefinitionProblem,
@@ -70,6 +71,7 @@ import type { FastifyRequest } from 'fastify';
 import { administerOrAbove, notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
 import { AfterCommit } from '../after-commit.js';
+import { contextOf } from '../audit.js';
 import { authorityEnded, watchAuthority, type AuthorityEnded } from '../authority.js';
 import { AppError } from '../errors.js';
 import { cursorFor, pageAsked } from '../listing.js';
@@ -437,6 +439,7 @@ export function connectionHandlers(
     connection: StoredConnection,
     { sealed, credentialId }: Usable,
     by: string,
+    context: AuditContext | undefined,
     signal?: AbortSignal,
   ): Promise<TestView> {
     // As the account, always: a test checks the account (D7-G).
@@ -457,20 +460,24 @@ export function connectionHandlers(
       // A failure a test cannot give is not an answer this service can record.
       throw dataRefused(503, 'connector_unavailable');
     }
-    const recordedAt = await db.withTenant(tenant, (trx) =>
-      recordConnectionTest(trx, {
-        connectionId: connection.id,
-        versionId: connection.version.id,
-        credentialId,
-        by,
-        ...(tested.outcome === 'ok'
-          ? { outcome: 'ok', findings: tested.findings, failure: null }
-          : {
-              outcome: 'failed',
-              findings: [],
-              failure: tested.failure.code as ConnectionTestFailure,
-            }),
-      }),
+    // As whoever asked for it: its event is theirs (DAT-007; the AU1 plan, AU1-K).
+    const recordedAt = await db.withTenant(
+      tenant,
+      (trx) =>
+        recordConnectionTest(trx, {
+          connectionId: connection.id,
+          versionId: connection.version.id,
+          credentialId,
+          by,
+          ...(tested.outcome === 'ok'
+            ? { outcome: 'ok', findings: tested.findings, failure: null }
+            : {
+                outcome: 'failed',
+                findings: [],
+                failure: tested.failure.code as ConnectionTestFailure,
+              }),
+        }),
+      context,
     );
     const at = recordedAt.toISOString();
     return tested.outcome === 'ok'
@@ -663,6 +670,7 @@ export function connectionHandlers(
               connection,
               { sealed, credentialId: set.credentialId },
               principalId,
+              contextOf(request),
               signal,
             ),
           );
@@ -700,7 +708,9 @@ export function connectionHandlers(
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4).
       return new AfterCommit(() =>
-        whileHeld(request, (signal) => test(tenant, connection, usable, principalId, signal)),
+        whileHeld(request, (signal) =>
+          test(tenant, connection, usable, principalId, contextOf(request), signal),
+        ),
       );
     },
 

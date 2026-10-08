@@ -215,6 +215,8 @@ export async function inviteFirstAdministrator(
         subject: { kind: 'principal', id: principalId! },
         detail: { principal: principalId! },
       },
+      // `named_by` is the vendor's own words for its authority, naming no principal of the tenant's,
+      // so no erasure of a person reaches it (the AU1 review, L9).
       labels(invitee, labelled('named_by', input.namedBy)),
     );
     if (granted.rows[0]) {

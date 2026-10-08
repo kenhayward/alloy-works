@@ -255,9 +255,20 @@ const routeClosed = () =>
  */
 export function buildApp(options: AppOptions): FastifyInstance {
   const { db, oidc, secrets } = options;
-  // Both error handlers - the app's and the raw-body routes' - record a refused authorisation first.
-  const failed = (request: FastifyRequest, error: unknown) => recordRefusal(db, request, error);
+  // Both error handlers - the app's and the raw-body routes' - note a refused authorisation, and it is
+  // written once the reply has gone, so a hidden 404 is no slower than a true one (the AU1 review, M5).
+  // A failure to write it is logged at error by `recordRefusal`.
+  const refusals = new WeakMap<FastifyRequest, unknown>();
+  const failed = async (request: FastifyRequest, error: unknown) => {
+    refusals.set(request, error);
+  };
   const app = createHttp(options, options.rendererRoot ? rendererFallback : undefined, failed);
+  app.addHook('onResponse', async (request) => {
+    const error = refusals.get(request);
+    if (error === undefined) return;
+    refusals.delete(request);
+    await recordRefusal(db, request, error);
+  });
   void app.register(cookie);
   if (options.rendererRoot) serveRenderer(app, options.rendererRoot);
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {

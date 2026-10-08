@@ -96,6 +96,8 @@ const Binding = z.strictObject({
   binding: Identifier,
   dataset: Id.optional(),
   version: Id.optional(),
+  /** A check's finding for the binding: its result unchanged, or a revision waiting. */
+  outcome: z.enum(['unchanged', 'revision']).optional(),
 });
 
 interface KindSpec {
@@ -125,7 +127,12 @@ export const auditKindSpecs = {
   ),
   'authentication.sign_in_failed': kind(
     ['IAM-013'],
-    z.strictObject({ route: SignInRoute, failure: z.enum(signInFailures) }),
+    z.strictObject({
+      route: SignInRoute,
+      failure: z.enum(signInFailures),
+      /** For a failure naming nobody: how many since the route's last, at most one a minute. */
+      count: z.int().positive().optional(),
+    }),
     'apps/service/src/audit.ts',
   ),
   'authentication.signed_out': kind(
@@ -138,7 +145,7 @@ export const auditKindSpecs = {
     SESSIONS,
   ),
   'access.refused': kind(['IAM-013', 'LIF-026'], AccessRefusedDetail, 'apps/service/src/audit.ts'),
-  'access.granted': kind(['ADM-002', 'LIF-026'], Grant, 'packages/db/src/grants.ts'),
+  'access.granted': kind(['ADM-002', 'LIF-026', 'IAM-050'], Grant, 'packages/db/src/grants.ts'),
   'access.revoked': kind(['ADM-002', 'LIF-026'], Grant, 'packages/db/src/grants.ts'),
   'group.made': kind(['ADM-002'], empty, 'packages/db/src/groups.ts'),
   'group.deleted': kind(['ADM-002'], empty, 'packages/db/src/groups.ts'),
@@ -192,12 +199,12 @@ export const auditKindSpecs = {
   'space.archived': kind(['ADM-002', 'ADM-049'], empty, 'packages/db/src/spaces.ts'),
   'space.restored': kind(['ADM-002', 'ADM-049'], empty, 'packages/db/src/spaces.ts'),
   'settings.changed': kind(
-    ['ADM-002'],
+    ['ADM-002', 'COL-060', 'LOC-036'],
     z.strictObject({ settings: z.array(AuditName).min(1) }),
     'apps/service/src/settings.ts',
   ),
   'content.version_cut': kind(
-    ['LIF-026'],
+    ['LIF-026', 'DAT-013'],
     z.strictObject({ kind: AuditName, parent: Id.nullable(), author: Id.optional() }),
     'packages/db/src/versions.ts',
   ),
@@ -210,37 +217,47 @@ export const auditKindSpecs = {
   'connection.credential_set': kind(['DAT-007'], empty, 'packages/db/src/connections.ts'),
   'connection.tested': kind(
     ['DAT-007'],
-    z.strictObject({ outcome: AuditName, findings: z.array(AuditName) }),
+    z.strictObject({
+      outcome: AuditName,
+      findings: z.array(AuditName),
+      /** A failed test's code (DAT-007): never the source's words. */
+      failure: AuditName.optional(),
+    }),
     'packages/db/src/connections.ts',
   ),
   'connection.retired': kind(['DAT-007'], empty, 'packages/db/src/connections.ts'),
   'binding.resolved': kind(['LIF-026'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.checked': kind(['LIF-026'], Binding, 'apps/service/src/data/bindings.ts'),
-  'binding.accepted': kind(['LIF-026'], Binding, 'apps/service/src/data/bindings.ts'),
+  'binding.accepted': kind(['LIF-026', 'DAT-037'], Binding, 'apps/service/src/data/bindings.ts'),
   'binding.confirmed': kind(['LIF-026'], Binding, 'apps/service/src/data/bindings.ts'),
   'dataset.named': kind(['LIF-026'], empty, 'packages/db/src/datasets.ts'),
   'asset.ingested': kind(['LIF-064'], empty, 'packages/db/src/assets.ts'),
   'asset.refused': kind(
     ['AST-037', 'LIF-064'],
     z.strictObject({ reason: AuditName }),
-    'apps/service/src/assets.ts',
+    'packages/db/src/assets.ts',
   ),
   'asset.replaced': kind(['LIF-064'], empty, LATER),
   'asset.relicensed': kind(['LIF-064'], empty, LATER),
   'publication.requested': kind(
     ['LIF-026'],
-    z.strictObject({ document: Id, format: AuditName }),
+    z.strictObject({ request: Id, formats: z.array(AuditName).min(1) }),
     'packages/db/src/publishing.ts',
   ),
-  'publication.produced': kind(['LIF-026'], empty, 'apps/worker/src/jobs/publish.ts'),
+  // A publication's events are about the document version it publishes: the subject.
+  'publication.produced': kind(
+    ['LIF-026', 'LIF-050'],
+    z.strictObject({ request: Id, publication: Id }),
+    'apps/worker/src/jobs/publish.ts',
+  ),
   'publication.failed': kind(
     ['LIF-026'],
-    z.strictObject({ code: AuditName }),
+    z.strictObject({ request: Id, codes: z.array(AuditName) }),
     'apps/worker/src/jobs/publish.ts',
   ),
   // AU2's: an audit export made and downloaded.
-  'export.produced': kind(['LIF-026'], empty, LATER),
-  'export.downloaded': kind(['LIF-026'], empty, LATER),
+  'export.produced': kind(['LIF-026', 'IMP-023'], empty, LATER),
+  'export.downloaded': kind(['LIF-026', 'IMP-044'], empty, LATER),
   'audit.label_erased': kind(
     ['VER-038'],
     z.strictObject({ labels: z.int().nonnegative() }),
@@ -258,25 +275,39 @@ export const auditKindSpecs = {
   'revision.designated': kind(['LIF-026'], empty, LATER),
   'baseline.made': kind(['LIF-026'], empty, LATER),
   'baseline.superseded': kind(['LIF-026'], empty, LATER),
-  'content.restored': kind(['LIF-026'], empty, LATER),
+  'content.restored': kind(['LIF-026', 'CNT-170'], empty, LATER),
   'reference.repointed': kind(['CNT-161'], empty, LATER),
   'lock.taken': kind(['COL-009'], empty, LATER),
   'suggestion.accepted': kind(['COL-024'], empty, LATER),
   'suggestion.rejected': kind(['COL-024'], empty, LATER),
   'template.moved': kind(['TPL-033'], empty, LATER),
   'binding.revised': kind(['DAT-058', 'LIF-064'], empty, LATER),
-  'relationship.made': kind(['LIF-064'], empty, LATER),
-  'relationship.changed': kind(['LIF-064'], empty, LATER),
-  'relationship.removed': kind(['LIF-064'], empty, LATER),
+  'relationship.made': kind(['LIF-064', 'REL-011'], empty, LATER),
+  'relationship.changed': kind(['LIF-064', 'REL-033'], empty, LATER),
+  'relationship.removed': kind(['LIF-064', 'REL-011'], empty, LATER),
   'generation.run': kind(['LIF-064'], empty, LATER),
-  'generation.accepted': kind(['LIF-064'], empty, LATER),
+  'generation.accepted': kind(['LIF-064', 'GEN-024', 'LOC-041'], empty, LATER),
   'generation.discarded': kind(['LIF-064'], empty, LATER),
   'publication.shared_accessed': kind(['LIF-064'], empty, LATER),
-  'support.granted': kind(['LIF-064'], empty, LATER),
-  'support.used': kind(['LIF-064'], empty, LATER),
-  'support.revoked': kind(['LIF-064'], empty, LATER),
+  'support.granted': kind(['LIF-064', 'ADM-042'], empty, LATER),
+  'support.used': kind(['LIF-064', 'ADM-024'], empty, LATER),
+  'support.revoked': kind(['LIF-064', 'ADM-042'], empty, LATER),
   'channel.changed': kind(['LIF-064'], empty, LATER),
-  'tool.used': kind(['LIF-064'], empty, LATER),
+  'tool.used': kind(['LIF-064', 'API-023'], empty, LATER),
+  // Declared for the requirements that say their act is audited (LIF-063), each emitted by the design
+  // that builds its act.
+  'secret.accessed': kind(['ADM-009'], empty, LATER),
+  'tenant.closed': kind(['ADM-030', 'LIF-066'], empty, LATER),
+  'webhook.changed': kind(['API-055', 'LIF-064'], empty, LATER),
+  'extension.changed': kind(['API-059', 'LIF-064'], empty, LATER),
+  'organisation.changed': kind(['IAM-068'], empty, LATER),
+  'import.restored': kind(['IMP-048'], empty, LATER),
+  'library.changed': kind(['LIB-056'], empty, LATER),
+  'line.merged': kind(['LIF-045'], empty, LATER),
+  'revision.effective': kind(['LIF-060'], empty, LATER),
+  'component.type_changed': kind(['MET-014'], empty, LATER),
+  'theme.moved': kind(['STY-026', 'STY-066'], empty, LATER),
+  'style.changed': kind(['STY-032'], empty, LATER),
 } as const satisfies Record<string, KindSpec>;
 
 export type AuditKind = keyof typeof auditKindSpecs;
