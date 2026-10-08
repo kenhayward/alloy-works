@@ -83,6 +83,41 @@ describe('a publication at its own address', () => {
     );
   });
 
+  it('heads the publication with a trail to the publications, its title, its facts, its downloads and its document', async () => {
+    open(
+      json(200, {
+        ...record,
+        outputs: [
+          {
+            format: 'pdf',
+            bytes: 30_000,
+            sha256: 'a'.repeat(64),
+            standard: 'ua-1',
+            download: LINK,
+          },
+        ],
+      }),
+    );
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'The dosing report' });
+    const head = title.closest('header')!;
+    expect(
+      within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByRole('link', {
+        name: 'Publications',
+      }),
+    ).toHaveAttribute('href', '#/publications');
+    expect(within(head).getByRole('link', { name: 'Download the PDF' })).toHaveAttribute(
+      'href',
+      LINK,
+    );
+    expect(within(head).getByRole('link', { name: 'Open the document' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+    expect(within(head).getByText('from 0.3')).toHaveAttribute('data-tone', 'neutral');
+    expect(within(head).getByText('Not approved')).toHaveAttribute('data-tone', 'warn');
+  });
+
   it('shows the publication itself in the page, and what it was made from beside it', async () => {
     const VIEW = 'http://store.example.test/t_acme/sha256/abc?X-Amz-Signature=v';
     open(
@@ -172,15 +207,19 @@ describe('a publication at its own address', () => {
       }),
     );
     const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
-    expect(within(aside).getByRole('link', { name: 'Download the PDF' })).toHaveAttribute(
+    // Each to save from the page's head, each file's size beside it in the record (LG6d).
+    const head = screen
+      .getByRole('heading', { level: 1, name: 'The dosing report' })
+      .closest('header')!;
+    expect(within(head).getByRole('link', { name: 'Download the PDF' })).toHaveAttribute(
       'href',
       LINK,
     );
-    expect(within(aside).getByRole('link', { name: 'Download the Word document' })).toHaveAttribute(
+    expect(within(head).getByRole('link', { name: 'Download the Word document' })).toHaveAttribute(
       'href',
       WORD,
     );
-    expect(aside).toHaveTextContent('Download the Word document (20 KB)');
+    expect(aside).toHaveTextContent('Word document (20 KB)');
     // Shown in the page: the PDF, and only the PDF, whose view link is its alone.
     expect(screen.getByTitle('The dosing report')).toHaveAttribute('src', VIEW);
     expect(document.querySelectorAll('iframe')).toHaveLength(1);

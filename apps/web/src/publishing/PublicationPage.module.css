@@ -7,6 +7,83 @@
   align-items: start;
 }
 
+/* The head across both columns (the Ledger, ADR-0046): the trail, the title and what can be taken
+ * away, then its facts as chips and who published it. */
+.head {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-8);
+}
+
+.trail {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--size-20);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-16);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary:hover {
+  background: var(--accent);
+  filter: brightness(0.95);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.published {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
 .canvas {
   min-height: 70vh;
   padding: var(--space-16);
@@ -37,16 +114,27 @@
   font-size: var(--size-body-small);
 }
 
-.record h2 {
-  margin: 0 0 var(--space-6);
-  font-size: var(--size-release-title);
+.recordTitle {
+  margin: 0 0 var(--space-8);
+  font-size: var(--size-16);
+}
+
+.section {
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--border);
+}
+
+.label {
+  margin: 0 0 var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-13);
+  font-weight: 600;
 }
 
 .notApproved {
-  color: var(--warn-text);
-  font-weight: 700;
-  font-size: var(--size-label);
-  letter-spacing: 0.04em;
+  color: var(--warn);
+  font-weight: 600;
 }
 
 @media (max-width: 1000px) {
