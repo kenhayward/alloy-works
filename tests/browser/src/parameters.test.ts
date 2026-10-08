@@ -132,7 +132,11 @@ describe('template parameters, in Chromium (the TP1 plan, task 5)', () => {
       expect(await create.getAttribute('aria-disabled')).toBeNull();
       await page.keyboard.press('Enter');
 
-      // The document, its field seeded by the parameter.
+      // The document, its field seeded by the parameter, in its Document panel (LG6c).
+      await page
+        .getByRole('tablist', { name: 'Document panels' })
+        .getByRole('tab', { name: 'Document' })
+        .click();
       const panel = page.getByRole('region', { name: 'Parameters' });
       await panel.waitFor();
       const fields = page.getByRole('region', { name: 'Fields of this document' });

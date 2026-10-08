@@ -13,9 +13,9 @@ import {
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
-import { DocumentPage } from './DocumentPage.js';
+import { DOCK_KEY, DocumentPage } from './DocumentPage.js';
 import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import {
   client,
@@ -47,6 +47,9 @@ import {
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
+
+// The panel beside the text a test chose is not the next test's (LG6c).
+afterEach(() => window.localStorage.removeItem(DOCK_KEY));
 
 describe("a section's title holding an equation (equations 3)", () => {
   const NS = 'http://www.w3.org/1998/Math/MathML';
@@ -616,6 +619,7 @@ describe("a document's fields and its sections'", () => {
   }
 
   it("shows the document's fields, each as it arises, and saves what is typed as its next version", async () => {
+    window.localStorage.setItem(DOCK_KEY, 'document');
     const { fetch, sent } = templated();
     open(fetch);
     const fields = await screen.findByRole('region', { name: 'Fields of this document' });

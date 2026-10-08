@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DOCK_KEY } from '../structure/DocumentPage.js';
 import { Workspace } from './Workspace.js';
 
 /** The environment's layout, as every `DocumentView` carries it: what the page numbers with. */
@@ -178,6 +179,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   window.location.hash = '';
+  window.localStorage.removeItem(DOCK_KEY);
 });
 
 describe('the workspace', () => {
@@ -844,6 +846,8 @@ describe('the workspace', () => {
   });
 
   it('takes the reader to a listed figure whose link is the address already shown', async () => {
+    // The lists stand in their own panel beside the text (LG6c).
+    window.localStorage.setItem(DOCK_KEY, 'lists');
     const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
     const PRINTER = 'cccccccc-0000-4000-8000-000000000001';
     const INTRODUCTION = 'iiiiiiiiiiiiiiiiiiiiiiiiii';

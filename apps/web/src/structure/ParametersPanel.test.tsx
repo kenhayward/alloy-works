@@ -1,7 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import type { TemplateParameter } from '@alloy-works/domain';
 import { documentOffer, ParametersPanel } from './ParametersPanel.js';
@@ -15,6 +15,7 @@ import {
   section,
   service,
 } from './test/documentPage.js';
+import { DOCK_KEY } from './DocumentPage.js';
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
@@ -53,7 +54,11 @@ const panel = () => screen.findByRole('region', { name: 'Parameters' });
 const saves = (sent: { url: string; body: unknown }[]) =>
   sent.filter((each) => each.url === PARAMETERS && each.body !== undefined);
 
+// The panel beside the text a test chose is not the next test's (LG6c).
+afterEach(() => window.localStorage.removeItem(DOCK_KEY));
+
 describe('the Parameters panel (the TP1 plan, TP1-I)', () => {
+  beforeEach(() => window.localStorage.setItem(DOCK_KEY, 'document'));
   it('TPL-020 shows each parameter with its value, and in its History each change with who made it and when', async () => {
     const fake = withParameters();
     open(fake.fetch);

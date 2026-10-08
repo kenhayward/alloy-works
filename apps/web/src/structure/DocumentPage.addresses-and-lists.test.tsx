@@ -17,7 +17,7 @@ import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
-import { DocumentPage } from './DocumentPage.js';
+import { DOCK_KEY, DocumentPage } from './DocumentPage.js';
 import { documentAddress } from './links.js';
 import { LINK_WAITS_MS } from './position.js';
 import { NewDocument } from './NewDocument.js';
@@ -62,6 +62,9 @@ import {
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
 shimRangeMeasurement();
+
+// The panel beside the text a test chose is not the next test's (LG6c).
+afterEach(() => window.localStorage.removeItem(DOCK_KEY));
 
 describe('New document', () => {
   const made = {
@@ -642,6 +645,7 @@ describe('the address of every node', () => {
     });
 
     it('CNT-156 offers in Reading moving through the document and nothing that changes it, and in Authoring its editing', async () => {
+      window.localStorage.setItem(DOCK_KEY, 'publishing');
       const { text } = await openAs({ document: true, component: true, publish: true });
       const body = () => within(text).getByText('Unbox the printer.').closest('[data-opens]');
       // Authoring: the outline's acts, and the text opens its editor.
@@ -1780,6 +1784,7 @@ describe('the address of every node', () => {
 });
 
 describe('the lists of figures, tables and equations', () => {
+  beforeEach(() => window.localStorage.setItem(DOCK_KEY, 'lists'));
   afterEach(() => window.history.replaceState(null, '', '#'));
 
   it('lists what each occurrence holds, numbered in the page, and renumbers a move without asking for a number', async () => {
@@ -2033,6 +2038,7 @@ describe('the lists of figures, tables and equations', () => {
 });
 
 describe("the layout's scheme in the page", () => {
+  beforeEach(() => window.localStorage.setItem(DOCK_KEY, 'lists'));
   afterEach(() => window.history.replaceState(null, '', '#'));
 
   it('STR-036 numbers the outline with the scheme of the layout the document is published under', async () => {
@@ -2118,7 +2124,51 @@ describe("the layout's scheme in the page", () => {
   });
 });
 
+describe('the document page as the Ledger draws it (LG6c)', () => {
+  it('heads the page with a trail back to the documents, and the mode switch beside Preview', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), { mayPublish: true });
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
+    await screen.findByRole('treeitem', { name: 'Method' });
+
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(trail).getByRole('link', { name: 'Documents' })).toHaveAttribute(
+      'href',
+      '#/documents',
+    );
+    const mode = screen.getByRole('radiogroup', { name: 'Mode' });
+    expect(mode.parentElement).toContainElement(screen.getByRole('button', { name: 'Preview' }));
+  });
+
+  it('sets the panels beside the text, named in words: the part, the lists and publishing', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), { mayPublish: true });
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
+    await screen.findByRole('treeitem', { name: 'Method' });
+
+    const tabs = screen.getByRole('tablist', { name: 'Document panels' });
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['Part', 'Lists', 'Publishing']);
+    expect(within(tabs).getByRole('tab', { name: 'Part' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tabpanel', { name: 'Part' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publish as PDF' })).toBeNull();
+
+    await userEvent.click(within(tabs).getByRole('tab', { name: 'Publishing' }));
+    const publishing = screen.getByRole('tabpanel', { name: 'Publishing' });
+    expect(within(publishing).getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
+    await userEvent.click(within(tabs).getByRole('tab', { name: 'Lists' }));
+    expect(screen.getByRole('tabpanel', { name: 'Lists' })).toHaveTextContent(
+      'This document has no figures, tables or equations.',
+    );
+  });
+});
+
 describe('publishing from the document page', () => {
+  beforeEach(() => window.localStorage.setItem(DOCK_KEY, 'publishing'));
   it('names a refused place by where it is in the outline, and nothing of a component the author may not read', async () => {
     const GONE = 'gggggggggggggggggggggggggg';
     const fake = service(
