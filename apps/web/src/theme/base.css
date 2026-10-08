@@ -111,22 +111,24 @@ textarea {
   color: inherit;
 }
 
+/* A button on the Ledger's scales (LG5): 32px, 8px corners, the strong border, a quiet hover. */
 button {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
-  min-height: 30px;
+  gap: var(--space-8);
+  min-height: 32px;
   padding: var(--space-4) var(--space-12);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-6);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
   background: var(--surface);
   color: var(--text);
-  font-size: var(--size-body-small);
+  font-size: var(--size-14);
+  font-weight: 500;
   cursor: pointer;
 }
 
 button:hover:not(:disabled) {
-  background: var(--accent-weak);
+  background: var(--sunken);
 }
 
 button[aria-pressed='true'] {

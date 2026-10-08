@@ -1,0 +1,112 @@
+/* The shared parts (ADR-0046; the LG plan, LG5), on the Ledger's scales. */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  margin-inline: var(--space-4);
+  background: var(--border);
+}
+
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--sunken);
+}
+
+.iconButton[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.iconButton[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 36px;
+  padding: 0 var(--space-12);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-14);
+}
+
+.tab:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 2px var(--space-8);
+  border-radius: var(--radius-4);
+  background: var(--sunken);
+  color: var(--text);
+  font-size: var(--size-12);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.chip[data-tone='accent'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.chip[data-tone='warn'] {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.chip[data-tone='info'] {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.chip[data-tone='ok'] {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.chip[data-tone='danger'] {
+  background: var(--danger-bg);
+  color: var(--danger);
+}

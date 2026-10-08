@@ -103,39 +103,6 @@
   }
 }
 
-.lozenge {
-  display: inline-block;
-  padding: 1px var(--space-8);
-  border-radius: var(--radius-pill);
-  font-size: var(--size-micro);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.lozenge[data-kind='published'] {
-  background: var(--state-published-bg);
-  color: var(--state-published-fg);
-}
-
-.lozenge[data-kind='changedSince'],
-.lozenge[data-kind='notApproved'] {
-  background: var(--state-behind-bg);
-  color: var(--state-behind-fg);
-}
-
-.lozenge[data-kind='neverPublished'] {
-  background: var(--state-never-bg);
-  color: var(--state-never-fg);
-}
-
-.lozenge[data-kind='beingEdited'],
-.lozenge[data-kind='notYoursToRead'] {
-  background: var(--state-private-bg);
-  color: var(--state-private-fg);
-}
-
 /* The save state's dot, beside its words. */
 .save {
   display: inline-flex;

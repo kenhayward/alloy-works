@@ -1,7 +1,8 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import { kept, keep, PaneToggle, type Pane } from '../layouts/PaneWidth.js';
+import { PanelTabs } from '../parts/PanelTabs.js';
 import styles from './OutlineTabs.module.css';
 
 /** One tab of the outline pane: what it is called and the glyph beside its name. */
@@ -60,25 +61,6 @@ export function OutlineTabs({
   onChoose: (key: string) => void;
   tabs?: readonly OutlineTab[];
 }) {
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const from = offered.findIndex((tab) => tab.key === chosen);
-    const count = offered.length;
-    const to =
-      event.key === 'ArrowRight'
-        ? (from + 1) % count
-        : event.key === 'ArrowLeft'
-          ? (from - 1 + count) % count
-          : event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? count - 1
-              : null;
-    if (to === null) return;
-    event.preventDefault();
-    onChoose(offered[to]!.key);
-    tabs.current[to]?.focus();
-  };
   return (
     <div className={styles['strip']}>
       <a
@@ -89,32 +71,19 @@ export function OutlineTabs({
       >
         <Icon name="Back" size={15} />
       </a>
-      <div
+      <PanelTabs
+        label="Outline pane"
+        tabs={offered.map((tab) => ({
+          key: tab.key,
+          label: tab.label,
+          icon: <Icon name={tab.icon} size={14} />,
+        }))}
+        chosen={chosen}
+        onChoose={onChoose}
+        ids={tabIds}
         className={styles['tabs']}
-        role="tablist"
-        aria-label="Outline pane"
-        onKeyDown={onKeyDown}
-      >
-        {offered.map((tab, index) => (
-          <button
-            key={tab.key}
-            ref={(element) => {
-              tabs.current[index] = element;
-            }}
-            type="button"
-            role="tab"
-            id={tabIds(tab.key).tab}
-            className={styles['tab']}
-            aria-selected={tab.key === chosen}
-            aria-controls={tabIds(tab.key).panel}
-            tabIndex={tab.key === chosen ? 0 : -1}
-            onClick={() => onChoose(tab.key)}
-          >
-            <Icon name={tab.icon} size={14} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        tabClassName={styles['tab']}
+      />
       <span className={styles['spacer']} />
       <PaneToggle label="outline pane" pane={pane} />
     </div>

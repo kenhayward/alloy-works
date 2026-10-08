@@ -42,6 +42,7 @@ import { createPortal } from 'react-dom';
 import '@alloy-works/editor/style.css';
 
 import { Icon } from '../editor/Icon.js';
+import { Toolbar } from '../parts/Toolbar.js';
 import styles from './OutlinePanel.module.css';
 import { revealInPane } from './reveal.js';
 
@@ -906,7 +907,7 @@ export function OutlinePanel({
           >
             {instead}
             {instead === undefined && editable && (
-              <div role="toolbar" aria-label="Outline" className={styles['toolbar']}>
+              <Toolbar label="Outline" className={styles['toolbar']}>
                 {/* Nothing here is disabled while an act is in flight, because a control that is disabled
               under the focus drops it to the page body in a real browser: each waits instead, and
               Undo says it has nothing to undo through aria-disabled, where it can keep the focus. */}
@@ -930,7 +931,7 @@ export function OutlinePanel({
                 >
                   <Icon name="Add component" />
                 </button>
-                <span className={styles['divider']} aria-hidden="true" />
+                <Toolbar.Divider className={styles['divider']} />
                 <button
                   type="button"
                   className={styles['act']}
@@ -946,7 +947,7 @@ export function OutlinePanel({
                 <span className={styles['overline']} aria-hidden="true">
                   Outline
                 </span>
-              </div>
+              </Toolbar>
             )}
             {instead === undefined && (
               <>
