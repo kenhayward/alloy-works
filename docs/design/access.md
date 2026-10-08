@@ -103,9 +103,12 @@ the tenant, archived spaces included, compared exactly (SP-B).
 **Archiving** (`space.archived_at`, `archived_by`) stops new content in a space and changes nothing
 already there (SP-C): `createArtifact` refuses a component, document, template, connection or query
 definition made in an archived space, `409 space_archived`, holding the space `FOR SHARE` while
-archiving takes it `FOR UPDATE`, so no creation commits into a space archived a moment before. An
-asset, a dataset and a publication are exempt: each is an edit, a refresh or a publish of what is
-already there. What is in an archived space is read, edited, versioned and published as before, its
+archiving takes it `FOR UPDATE`, so no creation commits into a space archived a moment before. Three
+kinds are exempt, so they are still made there. An **asset**: uploading an image makes an asset
+artifact in the space, and adding an image is part of editing what is already in it, which archiving
+leaves allowed. A **dataset**: derived data a run makes, a new version of a dataset or a new dataset
+for new parameters, never authored content. A **publication**: what publishing what is already there
+makes. What is in an archived space is read, edited, versioned and published as before, its
 grants kept; no decision reads archiving. The last space not archived cannot be archived, counted with
 every live space held `FOR UPDATE` (SP-D). `GET /v1/spaces` marks an archived space, never says one may
 be created in, and leaves them out on `?archived=false` (SP-E). Who archived is kept until a restore

@@ -127,7 +127,7 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     expect(await inTenant((trx) => objectInUse(trx, key('c'), upload.id))).toBe(false);
   });
 
-  it('records an image uploaded to an archived space: adding one to what is there is an edit (SP-C)', async () => {
+  it('records an image uploaded to an archived space, the one thing made there: adding an image is part of editing what is already in it (SP-C)', async () => {
     const archived = await inTenant(async (trx) => {
       const space = await createSpace(trx, 'Archived figures');
       await archiveSpace(trx, space.id, ada);

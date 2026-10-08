@@ -198,6 +198,10 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
               : 'This space or template is no longer open to you. Choose another.',
           );
           void loadSpaces();
+        } else if (response.status === 409 && error?.code === 'space_archived') {
+          // Archived since the spaces were read (the SP1 plan, SP-C): the re-read stops offering it.
+          setNotice('This space has been archived. Choose another.');
+          void loadSpaces();
         } else if (response.status === 400 && error?.code === 'template_unresolved') {
           setNotice(
             'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',

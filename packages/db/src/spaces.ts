@@ -147,6 +147,11 @@ export async function archiveSpace(
   id: string,
   by: string,
 ): Promise<SpaceState | undefined> {
+  // Every live space is held, not only this one, so the count is of rows nobody else can archive
+  // meanwhile. A creation holds its one space FOR SHARE, so this waits for it and it never waits on
+  // this while holding another: no deadlock today. A transaction that ever created in two spaces would
+  // hold the first while asking for the second, and could meet this holding the second and asking for
+  // the first; Postgres would then refuse one of them with 40P01, and that path would need a retry.
   const held = await trx
     .selectFrom('space')
     .select(['id', 'archived_at'])
@@ -195,6 +200,8 @@ export async function restoreSpace(
 export async function checkSpaceLive(trx: TenantTransaction, spaceId: string): Promise<void> {
   // Read through `to_jsonb`, so an environment migrated only to before 0059 - which only a test
   // writes - reads as live rather than failing, as `search.ts`'s `projected` reads a missing table.
+  // The key is a string the compiler does not check, so the refusal tests pin it: a misspelling reads
+  // every space as live, and `space-archive.test.ts` and the service's `space-routes.test.ts` fail.
   const { rows } = await sql<{ archived: string | null }>`
     select to_jsonb(space) ->> 'archived_at' as archived
       from space where id = ${spaceId} for share`.execute(trx);

@@ -253,6 +253,47 @@ describe('New component', () => {
     );
   });
 
+  it('says the space has been archived on a 409 space_archived, and re-reads the spaces it offers', async () => {
+    let spacesCall = 0;
+    const answer = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      });
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        spacesCall += 1;
+        return answer(200, {
+          items: spacesCall === 1 ? SPACES.items : [SPACES.items[2]],
+          next: null,
+        });
+      }
+      if (url.endsWith('/component-types')) return answer(200, TYPES);
+      if (url === `/v1/spaces/${SPACES.items[0]!.id}/components`) {
+        return answer(409, { code: 'space_archived', message: 'Archived.', traceId: 't' });
+      }
+      return answer(500, {});
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'This space has been archived. Choose another.',
+    );
+    await waitFor(() =>
+      expect(
+        [...screen.getByLabelText('Where').querySelectorAll('option')].map(
+          (option) => option.textContent,
+        ),
+      ).toEqual(['Regulatory']),
+    );
+  });
+
   it('says a component type is no longer available on a 409, and re-reads the types it offers', async () => {
     let typesCall = 0;
     const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {

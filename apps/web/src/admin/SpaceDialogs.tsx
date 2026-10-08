@@ -49,6 +49,12 @@ function Naming({
       setSaid('Give the space a name.');
       return;
     }
+    // In code points, as the service counts (SP-B): `maxLength` would count UTF-16 units, and stop a
+    // name of 200 characters from outside the Basic Multilingual Plane at 100.
+    if ([...trimmed.normalize('NFC')].length > 200) {
+      setSaid('A space name is at most 200 characters.');
+      return;
+    }
     setBusy(true);
     try {
       const { data, error } =
@@ -78,7 +84,7 @@ function Naming({
         <h2 id="space-name-heading">{heading}</h2>
         <label>
           Name
-          <input value={name} maxLength={200} onChange={(event) => setName(event.target.value)} />
+          <input value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <p className={styles['muted']}>
           {space === null

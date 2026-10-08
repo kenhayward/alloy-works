@@ -120,7 +120,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `PATCH /v1/spaces/{id}`). A name is unique in the environment, archived spaces included. Nothing new -
   a component, a document, a template, a connection or a query definition - can be made in an archived
   space; everything already in it is read, edited, published and refreshed as before, and keeps its
-  access. The last space not archived cannot be archived. An archived space is marked in the list of
+  access. The one thing still made there is an image added while editing what is in it: uploading
+  one makes an image in the space, because adding an image is part of editing. The last space not archived cannot be archived. An archived space is marked in the list of
   spaces and offered nowhere as a place to make something.
 
   **This is not yet audited.** Who archived a space is kept until it is restored; nothing records a

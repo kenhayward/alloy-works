@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -893,6 +893,29 @@ describe('Spaces in Administration', () => {
       await screen.findByText('This is the last space not archived, so it cannot be archived.'),
     ).toBeInTheDocument();
     expect(within(row(table, 'General')).queryByRole('cell', { name: 'Archived' })).toBeNull();
+  });
+
+  it('counts a name in characters as the service does, not in UTF-16 units', async () => {
+    const { client, sent } = spacesService();
+    const { dialog } = await openSpaces(client);
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'New space' }));
+    const making = screen.getByRole('dialog', { name: 'New space' });
+    const name = within(making).getByRole('textbox', { name: 'Name' });
+    // Each a character outside the Basic Multilingual Plane: two UTF-16 units, one code point.
+    const wide = String.fromCodePoint(0x1d538);
+    fireEvent.change(name, { target: { value: wide.repeat(201) } });
+    await userEvent.click(within(making).getByRole('button', { name: 'Make space' }));
+    expect(within(making).getByRole('status')).toHaveTextContent(
+      'A space name is at most 200 characters.',
+    );
+    expect(sent).toEqual([]);
+    fireEvent.change(name, { target: { value: wide.repeat(200) } });
+    await userEvent.click(within(making).getByRole('button', { name: 'Make space' }));
+    await waitFor(() =>
+      expect(sent).toEqual([
+        { method: 'POST', path: '/v1/spaces', body: { name: wide.repeat(200) } },
+      ]),
+    );
   });
 
   it('offers none of it to one who administers only a space', async () => {
