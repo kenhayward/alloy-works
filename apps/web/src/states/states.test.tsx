@@ -36,9 +36,22 @@ describe('the states kit', () => {
     expect(spinner).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('a lozenge carries its kind', () => {
-    render(<Lozenge kind="changedSince">Changed since</Lozenge>);
+  it('a lozenge carries its kind, as a chip in the tone its state means', () => {
+    render(
+      <>
+        <Lozenge kind="changedSince">Changed since</Lozenge>
+        <Lozenge kind="published">Published</Lozenge>
+        <Lozenge kind="notApproved">Not approved</Lozenge>
+        <Lozenge kind="beingEdited">Being edited by Grace</Lozenge>
+        <Lozenge kind="neverPublished">Never published</Lozenge>
+      </>,
+    );
 
     expect(screen.getByText('Changed since')).toHaveAttribute('data-kind', 'changedSince');
+    expect(screen.getByText('Changed since')).toHaveAttribute('data-tone', 'warn');
+    expect(screen.getByText('Published')).toHaveAttribute('data-tone', 'ok');
+    expect(screen.getByText('Not approved')).toHaveAttribute('data-tone', 'warn');
+    expect(screen.getByText('Being edited by Grace')).toHaveAttribute('data-tone', 'info');
+    expect(screen.getByText('Never published')).toHaveAttribute('data-tone', 'neutral');
   });
 });

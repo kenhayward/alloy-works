@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import styles from './Modal.module.css';
 
 const FOCUSABLE =
@@ -76,15 +77,9 @@ export function Modal({
         onKeyDown={onKeyDown}
       >
         <div className={styles['body']}>{children}</div>
-        <button
-          type="button"
-          className={styles['close']}
-          aria-label="Close"
-          title="Close"
-          onClick={onClose}
-        >
+        <IconButton label="Close" className={styles['close']} onClick={onClose}>
           <Icon name="Close" size={13} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

@@ -8,8 +8,9 @@ import {
   type EditorCommand,
   type EditorView,
 } from '@alloy-works/editor';
-import { Fragment, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+import { Fragment, type Ref } from 'react';
 
+import { Toolbar } from '../parts/Toolbar.js';
 import { Icon } from './Icon.js';
 import styles from './EditorToolbar.module.css';
 
@@ -165,36 +166,6 @@ export function EditorToolbar({
   imagePlaceable = true,
   ref,
 }: EditorToolbarProps) {
-  const [tabStop, setTabStop] = useState(0);
-  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
-  // The registry's buttons, then Paste as Markdown where it is offered: one ring either way.
-  const count =
-    EDITOR_COMMANDS.length +
-    (onPasteMarkdown ? 1 : 0) +
-    (onInsertFigure ? 1 : 0) +
-    (onInsertImage ? 1 : 0);
-  // Where the Figure button stands in the ring: after Paste as Markdown where that is offered.
-  const figureAt = EDITOR_COMMANDS.length + (onPasteMarkdown ? 1 : 0);
-  // And the Image button's, after Figure's where that is offered.
-  const imageAt = figureAt + (onInsertFigure ? 1 : 0);
-
-  const moveTo = (index: number) => {
-    const at = (index + count) % count;
-    setTabStop(at);
-    buttons.current[at]?.focus();
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const from = buttons.current.indexOf(event.target as HTMLButtonElement);
-    if (from < 0) return;
-    if (event.key === 'ArrowRight') moveTo(from + 1);
-    else if (event.key === 'ArrowLeft') moveTo(from - 1);
-    else if (event.key === 'Home') moveTo(0);
-    else if (event.key === 'End') moveTo(count - 1);
-    else return;
-    event.preventDefault();
-  };
-
   /**
    * Whether a press would do nothing, which is what `aria-disabled` says. Asked of the command for
    * a block action, and of the range rule for a mark that prompts; a mark that applies where it
@@ -231,17 +202,10 @@ export function EditorToolbar({
   };
 
   return (
-    <div
-      ref={ref}
-      role="toolbar"
-      aria-label="Formatting"
-      className={styles['toolbar']}
-      // So the region ring has somewhere to land even if the row were ever empty. One button always
-      // carries the roving stop today, so this is the fallback and not the usual landing.
-      tabIndex={-1}
-      onKeyDown={onKeyDown}
-    >
-      {EDITOR_COMMANDS.map((command, index) => (
+    // One tab stop, the arrows, Home and End along it: the shared toolbar's (LG5). The registry's
+    // buttons, then Paste as Markdown, Figure and Image where they are offered: one ring either way.
+    <Toolbar ref={ref} label="Formatting" className={styles['toolbar']}>
+      {EDITOR_COMMANDS.map((command) => (
         // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each of
         // them is a duplicate React key - a `console.error`, which the console gate turns into a
         // failure with no obvious cause. The registry's own test proves the labels are unique.
@@ -251,11 +215,7 @@ export function EditorToolbar({
             className={styles['button']}
             // The registry's label is the only name a screen reader gets: the face is an icon.
             aria-label={command.label}
-            ref={(element) => {
-              buttons.current[index] = element;
-            }}
             aria-disabled={unavailable(command)}
-            tabIndex={index === tabStop ? 0 : -1}
             // The shortcut spelled out rather than drawn with symbols, for the reason the registry
             // gives: a screen reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has
             // no glyph for it.
@@ -266,23 +226,17 @@ export function EditorToolbar({
           >
             <Icon name={command.label} />
           </button>
-          {GROUP_ENDS.has(command.label) && (
-            <span className={styles['divider']} data-divider aria-hidden="true" />
-          )}
+          {GROUP_ENDS.has(command.label) && <Toolbar.Divider className={styles['divider']} />}
         </Fragment>
       ))}
       {onPasteMarkdown && (
         <>
-          <span className={styles['divider']} data-divider aria-hidden="true" />
+          <Toolbar.Divider className={styles['divider']} />
           <button
             type="button"
             className={styles['button']}
             aria-label="Paste as Markdown"
-            ref={(element) => {
-              buttons.current[EDITOR_COMMANDS.length] = element;
-            }}
             aria-disabled={!enabled || view === null}
-            tabIndex={tabStop === EDITOR_COMMANDS.length ? 0 : -1}
             title="Paste as Markdown"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
@@ -298,11 +252,7 @@ export function EditorToolbar({
           type="button"
           className={styles['button']}
           aria-label="Figure"
-          ref={(element) => {
-            buttons.current[figureAt] = element;
-          }}
           aria-disabled={!enabled || view === null || !figurePlaceable}
-          tabIndex={tabStop === figureAt ? 0 : -1}
           title="Figure"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
@@ -317,11 +267,7 @@ export function EditorToolbar({
           type="button"
           className={styles['button']}
           aria-label="Image"
-          ref={(element) => {
-            buttons.current[imageAt] = element;
-          }}
           aria-disabled={!enabled || view === null || !imagePlaceable}
-          tabIndex={tabStop === imageAt ? 0 : -1}
           title="Image"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
@@ -331,6 +277,6 @@ export function EditorToolbar({
           <Icon name="Image" />
         </button>
       )}
-    </div>
+    </Toolbar>
   );
 }

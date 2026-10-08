@@ -1711,6 +1711,12 @@ describe('the address of every node', () => {
       expect(button).toHaveAttribute('title', name);
       expect(button.querySelector('[data-icon]')).toHaveAttribute('aria-hidden', 'true');
     }
+    // And they are one tab stop, the arrows moving along them, as every toolbar is (LG5).
+    expect(
+      within(toolbar)
+        .getAllByRole('button')
+        .filter((button) => button.tabIndex === 0),
+    ).toHaveLength(1);
 
     // Each row is drawn with its glyph and indented by its depth, not by nested list padding.
     const row = (name: string) =>
