@@ -641,8 +641,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Connections to your own data.** **Connections**, beside Templates, lists the connections you may
   read, by space, with whether each has its password and how its last test went. Somebody who may
   administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
-  database's host, port, database, account and TLS, an HTTPS API's base URL and the header its
-  secret is sent in, or an S3 bucket's endpoint, region, name and how it is addressed. A connection's page saves a change to its
+  database's host, port, database, account and TLS, an HTTP API's base URL and the header its
+  secret is sent in, or an S3 bucket's endpoint, region, name and how it is addressed. An endpoint or base URL may be plain `http`, for a source on your own machine or network; nothing yet lets a tenant refuse it. A connection's page saves a change to its
   settings as a new version, and says so if somebody else saved one first. Its password is typed
   into a field that empties as it is sent and never shows it again, anywhere: the page says only
   whether it is set, by whom and when, and setting or replacing it tests the connection straight
@@ -723,7 +723,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   only to somebody who may read the connection. A definition's page shows, under **Used by** and
   before **Save version**, the components that bind it and the documents holding a result of it -
   those you may read linked, and how many more. A sample keeps nothing.
-- **HTTPS APIs.** A connection to an HTTPS API holds its base URL and the header its secret is sent
+- **HTTP APIs.** A connection to an HTTP API holds its base URL, `https` or plain `http`, and the header its secret is sent
   in, exactly as set - write `Bearer` and a space before a token where the API asks for one - never
   in a URL; it runs as its own secret alone. Its query definition is a request: GET or POST, path
   segments, query pairs, headers and, for a POST, a JSON body's members, each fixed text or a
@@ -1348,7 +1348,7 @@ Named explicitly so nobody has to read the source to find out:
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.
 - A connection reaches PostgreSQL, as its own account or as each person by a role the database's administrator
-  made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,
+  made, an HTTP API by its own secret or an S3 bucket by a static key pair, each answering JSON,
   JSON Lines, CSV or XLSX; no S3 role, instance credentials or anonymous bucket, and no
   connection runs with a person's own token from their sign-in provider
   ([ADR-0041](decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md));

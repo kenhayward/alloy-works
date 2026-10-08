@@ -239,7 +239,8 @@ async function signedExchange(
   observe?: (chunk: Buffer) => void,
 ): Promise<Exchanged> {
   const { source } = settings;
-  const { host, port } = bucketHost(source);
+  const { host, port, secure } = bucketHost(source);
+  const usual = secure ? 443 : 80;
   const path = source.pathStyle ? `/${source.bucket}${objectPath}` : objectPath || '/';
   const named = host.includes(':') ? `[${host}]` : host;
   const signer = new SignatureV4({
@@ -253,13 +254,13 @@ async function signedExchange(
   });
   const signed = await signer.sign({
     method,
-    protocol: 'https:',
+    protocol: secure ? 'https:' : 'http:',
     hostname: host,
-    ...(port === 443 ? {} : { port }),
+    ...(port === usual ? {} : { port }),
     path,
     query: {},
     headers: {
-      host: port === 443 ? named : `${named}:${port}`,
+      host: port === usual ? named : `${named}:${port}`,
       'x-amz-content-sha256': EMPTY_PAYLOAD,
       ...(method === 'GET' ? { 'x-amz-checksum-mode': 'ENABLED' } : {}),
     },
@@ -268,6 +269,7 @@ async function signedExchange(
     {
       host,
       port,
+      secure,
       path,
       method,
       headers: Object.entries(signed.headers).map(([name, value]) => [name.toLowerCase(), value]),

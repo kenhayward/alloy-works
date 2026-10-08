@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual, type Hash } from 'node:crypto';
-import type { IncomingHttpHeaders } from 'node:http';
+import { request as httpRequest, type IncomingHttpHeaders } from 'node:http';
 import { request as httpsRequest, type RequestOptions } from 'node:https';
 import { rootCertificates } from 'node:tls';
 import type { LookupFunction } from 'node:net';
@@ -13,7 +13,8 @@ import { guardedAddress, normaliseHost, type Lookup } from './guard.js';
 /**
  * The one HTTPS client (the D6 plan, D6-B), for an HTTP source and S3 alike: the host guarded and
  * resolved once, the socket's lookup pinned to the address checked, so a rebinding answer is never
- * asked for; HTTPS only, by `node:https` with an agent of its own and no proxy read from anywhere; no
+ * asked for; HTTPS by `node:https`, or plain HTTP by `node:http` where the connection names `http`
+ * (ADR-0048), with an agent of its own and no proxy read from anywhere; no
  * redirect followed; one deadline over the whole exchange, headers and body, the request destroyed
  * at it (DAT-109); the body counted as it arrives and again after decoding - gzip, deflate or brotli,
  * one at a time - either past the limit `byte_limit` (DAT-110); and what the response states of
@@ -30,6 +31,8 @@ export interface Exchange {
   readonly method: 'GET' | 'POST' | 'HEAD';
   readonly headers: readonly (readonly [string, string])[];
   readonly body?: string;
+  /** Over TLS, unless the connection names plain `http` (ADR-0048). */
+  readonly secure?: boolean;
 }
 
 export interface ExchangePolicy {
@@ -134,11 +137,14 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
     lookup: pinned,
     family: guarded.family,
 
+    maxHeaderSize: 16 * 1024,
+  };
+  const secure = asked.secure !== false;
+  const tls: RequestOptions = {
     ...(byName ? { servername: asked.host } : {}),
     ...(policy.ca === undefined ? {} : { ca: [...rootCertificates, policy.ca] }),
     minVersion: 'TLSv1.2',
     rejectUnauthorized: true,
-    maxHeaderSize: 16 * 1024,
   };
 
   return new Promise<Exchanged>((resolve) => {
@@ -152,7 +158,7 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
       if (!outcome.ok) request.destroy();
       resolve(outcome);
     };
-    const request = httpsRequest(options);
+    const request = secure ? httpsRequest({ ...options, ...tls }) : httpRequest(options);
     timers.push(
       setTimeout(
         () => finish(failed(dataFailure('timeout'))),
@@ -166,7 +172,7 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
       ),
     );
     request.on('socket', (socket) => {
-      socket.once('secureConnect', () => {
+      socket.once(secure ? 'secureConnect' : 'connect', () => {
         connected = true;
       });
     });
@@ -295,13 +301,19 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
   });
 }
 
-/** A base URL's parts: its host as stored, its port, and its path, empty or segments. */
+/**
+ * A base URL's parts: its host as stored, its port, its path, empty or segments, and whether it is
+ * reached over TLS - port 443, or 80 for plain `http`, unless it names one.
+ */
 export function baseUrlParts(baseUrl: string): {
   readonly host: string;
   readonly port: number;
   readonly path: string;
+  readonly secure: boolean;
 } {
-  const match = /^https:\/\/(\[[^\]]+\]|[^/:]+)(?::([0-9]+))?(.*)$/.exec(baseUrl)!;
-  const host = match[1]!.startsWith('[') ? match[1]!.slice(1, -1) : match[1]!;
-  return { host, port: match[2] === undefined ? 443 : Number(match[2]), path: match[3] ?? '' };
+  const match = /^(https?):\/\/(\[[^\]]+\]|[^/:]+)(?::([0-9]+))?(.*)$/.exec(baseUrl)!;
+  const secure = match[1] === 'https';
+  const host = match[2]!.startsWith('[') ? match[2]!.slice(1, -1) : match[2]!;
+  const port = match[3] === undefined ? (secure ? 443 : 80) : Number(match[3]);
+  return { host, port, path: match[4] ?? '', secure };
 }

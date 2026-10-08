@@ -160,7 +160,7 @@ In `packages/domain/src/data/connection.ts`, a zod schema and a check:
   source:                              // by type
     | { host: string, port: number, database: string, account: string,                  // postgres, sqlServer
         tls: 'require' | 'verifyFull' }
-    | { baseUrl: string, secretHeader: string }                                           // http: https only
+    | { baseUrl: string, secretHeader: string }                                           // http: http or https (ADR-0048)
     | { endpoint: string, region: string, bucket: string, pathStyle: boolean },           // s3
   identity:
     | { kind: 'service' }

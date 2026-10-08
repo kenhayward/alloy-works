@@ -1,11 +1,11 @@
 import type { Settings } from './shapes.js';
 
-/** The types of source a connection reaches: a PostgreSQL database, an HTTPS API or an S3 bucket (D6). */
+/** The types of source a connection reaches: a PostgreSQL database, an HTTP API or an S3 bucket (D6). */
 export type SourceType = Settings['type'];
 
 export const TYPE_LABELS: Readonly<Record<SourceType, string>> = {
   postgres: 'A PostgreSQL database',
-  http: 'An HTTPS API',
+  http: 'An HTTP API',
   s3: 'An S3 bucket',
 };
 
@@ -151,16 +151,16 @@ export function settingsOf(
 export function draftProblem(draft: Draft): string | null {
   if (draft.name.trim() === '') return 'A connection needs a name.';
   if (draft.type === 'http') {
-    if (!/^https:\/\/[^/?#]+/.test(draft.baseUrl.trim())) {
-      return 'A base URL starts https:// and names its host.';
+    if (!/^https?:\/\/[^/?#]+/.test(draft.baseUrl.trim())) {
+      return 'A base URL starts http:// or https:// and names its host.';
     }
     if (draft.secretHeader.trim() === '')
       return 'A connection needs the header its secret is sent in.';
     return null;
   }
   if (draft.type === 's3') {
-    if (!/^https:\/\/[^/?#]+$/.test(draft.endpoint.trim())) {
-      return 'An endpoint starts https:// and names its host, and nothing after it.';
+    if (!/^https?:\/\/[^/?#]+$/.test(draft.endpoint.trim())) {
+      return 'An endpoint starts http:// or https:// and names its host, and its port if it needs one, as https://storage.example.com:9000.';
     }
     if (draft.region.trim() === '') return 'A connection needs the region of its bucket.';
     if (draft.bucket.trim() === '') return 'A connection needs the name of its bucket.';

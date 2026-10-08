@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import {
+  createServer as createPlainServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 import { createServer, type Server } from 'node:https';
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -196,42 +200,46 @@ export interface FakeStore {
 }
 
 /**
- * A fake store, HTTPS by the development S3 CA, answering each request by `answer`: no signature is
- * checked here - the suite's SeaweedFS checks those - only what was asked is remembered.
+ * A fake store, HTTPS by the development S3 CA or, `plain`, HTTP (ADR-0048), answering each request
+ * by `answer`: no signature is checked here - the suite's SeaweedFS checks those - only what was
+ * asked is remembered.
  */
 export async function startFakeStore(
   answer: (request: IncomingMessage) => FakeAnswer,
+  { plain = false }: { readonly plain?: boolean } = {},
 ): Promise<FakeStore> {
   const seen: FakeStore['seen'] = [];
   const sockets = new Set<{ destroy(): void }>();
-  const server = createServer(
-    { key: read('server-key.pem'), cert: read('server.pem') },
-    (request: IncomingMessage, response: ServerResponse) => {
-      seen.push({
-        method: request.method ?? '',
-        rawPath: request.url ?? '',
-        headers: { ...request.headers },
-      });
-      request.resume();
-      const answered = answer(request);
-      if (answered === 'abandon') return;
-      if (answered === 'short') {
-        response.writeHead(200, { 'content-length': '1000' });
-        response.write('id,site\n');
-        setTimeout(() => response.socket?.destroy(), 50);
-        return;
-      }
-      const body =
-        typeof answered.body === 'string'
-          ? Buffer.from(answered.body)
-          : (answered.body ?? Buffer.alloc(0));
-      response.writeHead(answered.status ?? 200, {
-        'content-length': String(body.length),
-        ...answered.headers,
-      });
-      response.end(request.method === 'HEAD' ? undefined : body);
-    },
-  );
+  const handle = (request: IncomingMessage, response: ServerResponse) => {
+    seen.push({
+      method: request.method ?? '',
+      rawPath: request.url ?? '',
+      headers: { ...request.headers },
+    });
+    request.resume();
+    const answered = answer(request);
+    if (answered === 'abandon') return;
+    if (answered === 'short') {
+      response.writeHead(200, { 'content-length': '1000' });
+      response.write('id,site\n');
+      setTimeout(() => response.socket?.destroy(), 50);
+      return;
+    }
+    const body =
+      typeof answered.body === 'string'
+        ? Buffer.from(answered.body)
+        : (answered.body ?? Buffer.alloc(0));
+    response.writeHead(answered.status ?? 200, {
+      'content-length': String(body.length),
+      ...answered.headers,
+    });
+    response.end(request.method === 'HEAD' ? undefined : body);
+  };
+  const server = (
+    plain
+      ? createPlainServer(handle)
+      : createServer({ key: read('server-key.pem'), cert: read('server.pem') }, handle)
+  ) as Server;
   server.on('connection', (socket) => {
     sockets.add(socket);
     socket.on('close', () => sockets.delete(socket));

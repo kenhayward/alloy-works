@@ -46,7 +46,7 @@ export interface DefinitionPlaces {
   readonly connections: readonly Place[];
   /** Those of them on which the caller may write SQL as well (DAT-101). */
   readonly sql: ReadonlySet<string>;
-  /** Those of them that reach an HTTPS API, whose query is a request template (the D6 plan). */
+  /** Those of them that reach an HTTP API, whose query is a request template (the D6 plan). */
   readonly http: ReadonlySet<string>;
   /** The S3 connections among them, whose query is a file read by its key (the D6 plan, task 2). */
   readonly s3: ReadonlySet<string>;

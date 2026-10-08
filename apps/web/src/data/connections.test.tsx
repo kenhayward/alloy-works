@@ -427,6 +427,42 @@ describe('the Connections list', () => {
     });
   });
 
+  it('makes an S3 connection on a plain http endpoint and its port (ADR-0048)', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ administers: [QUALITY] });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 's3');
+    await user.type(within(dialog).getByLabelText('Name'), 'Scratch bucket');
+    await user.clear(within(dialog).getByLabelText('Endpoint'));
+    await user.type(within(dialog).getByLabelText('Endpoint'), 'http://192.0.2.10:8333');
+    await user.type(within(dialog).getByLabelText('Bucket'), 'scratch');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(asked.some((each) => each.method === 'POST')).toBe(true));
+    expect(asked.find((each) => each.method === 'POST')?.body).toMatchObject({
+      settings: { source: { endpoint: 'http://192.0.2.10:8333' } },
+    });
+  });
+
+  it("refuses an S3 endpoint that is neither http nor https, saying a port is the endpoint's to name", async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ administers: [QUALITY] });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 's3');
+    await user.type(within(dialog).getByLabelText('Name'), 'Scratch bucket');
+    await user.clear(within(dialog).getByLabelText('Endpoint'));
+    await user.type(within(dialog).getByLabelText('Endpoint'), 'ftp://192.0.2.10:8333');
+    await user.type(within(dialog).getByLabelText('Bucket'), 'scratch');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'An endpoint starts http:// or https:// and names its host, and its port if it needs one, as https://storage.example.com:9000.',
+    );
+    expect(asked.some((each) => each.method === 'POST')).toBe(false);
+  });
+
   it('leaves an archived space out of where a new connection may be made', async () => {
     const user = userEvent.setup();
     const { client } = service({ administers: [QUALITY, SHELVED] });
@@ -466,7 +502,7 @@ describe('an HTTP connection on its own page', () => {
     const { client, asked } = service({ connection: view({ settings: http }) });
     render(<ConnectionPage client={client} id={READINGS} />);
     await screen.findByRole('heading', { name: 'Readings API' });
-    expect(screen.getByText('HTTPS API, in General')).toBeInTheDocument();
+    expect(screen.getByText('HTTP API, in General')).toBeInTheDocument();
     // Its type is not offered to change; its fields are the API's.
     expect(screen.queryByLabelText('Type')).toBeNull();
     expect(screen.getByLabelText('Base URL')).toHaveValue('https://api.example.test/v1');

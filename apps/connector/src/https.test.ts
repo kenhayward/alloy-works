@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { createServer as createHttpServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { createServer as createTlsServer } from 'node:tls';
 import { fileURLToPath } from 'node:url';
 
@@ -158,5 +160,43 @@ describe('the guarded HTTPS client', () => {
         else process.env[name] = saved[name];
       }
     }
+  });
+
+  // ADR-0048: a source over plain http, reached through the same guard, deadline and limits.
+  describe('over plain http', () => {
+    let plain: Server;
+    let port: number;
+    beforeAll(async () => {
+      plain = createHttpServer((_request, response) => {
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ count: 2 }));
+      });
+      await new Promise<void>((resolve) => plain.listen(0, '127.0.0.1', resolve));
+      port = (plain.address() as AddressInfo).port;
+    });
+    afterAll(async () => {
+      await new Promise((resolve) => plain.close(resolve));
+    });
+
+    it('reads a response when the connection is not secure, and never dials a host the guard refuses', async () => {
+      const answered = await exchange(asked('/v1/readings', { port, secure: false }), policy());
+      expect(answered.ok && JSON.parse(answered.body.toString('utf8'))).toEqual({ count: 2 });
+      // TLS asked of a plain server fails to reach; plain asked of a TLS one, likewise.
+      expect(code(await exchange(asked('/v1/readings', { port }), policy()))).toBe(
+        'connection_failed',
+      );
+      expect(code(await exchange(asked('/v1/readings', { secure: false }), policy()))).not.toBe(
+        'ok',
+      );
+      // Loopback denied, as in production: refused before anything is dialled.
+      expect(
+        code(
+          await exchange(
+            asked('/v1/readings', { port, secure: false }),
+            policy({ deny: ['127.0.0.0/8'] }),
+          ),
+        ),
+      ).toBe('connection_failed');
+    });
   });
 });
