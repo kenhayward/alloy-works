@@ -202,7 +202,8 @@ Not a later pass. The screens are drawn with real elements and the build should 
 - Every toolbar is one tab stop with arrow keys along it, `aria-pressed` on the toggles: the shared
   `Toolbar` in `apps/web/src/parts/`, with `IconButton`, `PanelTabs` and `Chip` (LG5).
   The outline tree is one tab stop with arrow keys, `Alt` and the arrows to move a node.
-- `F6` and `Shift-F6` move between the header, the toolbar, the list panel and the text.
+- `F6` and `Shift-F6` move between the header band, the module rail and the page, and inside the
+  component editor between its header, its toolbar, its panels and the text (LG6b).
 - Text at 4.5:1 against what is behind it, 3:1 from 24px.
 - Version numbers, counters and section numbers use `font-variant-numeric: tabular-nums`.
 

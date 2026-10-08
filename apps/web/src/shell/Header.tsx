@@ -212,7 +212,7 @@ export function Header({
   };
 
   return (
-    <header className={styles['band']}>
+    <header className={styles['band']} data-app-region>
       <a className={styles['brand']} href="#/">
         <img
           className={`${styles['mark']} ${styles['onLight']}`}

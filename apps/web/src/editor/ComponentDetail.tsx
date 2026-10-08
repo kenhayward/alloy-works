@@ -6,21 +6,13 @@ import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Icon } from './Icon.js';
 import styles from './ComponentDetail.module.css';
+import { VersionList } from './VersionList.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Page['items'][number];
 
-interface Version {
-  readonly number: string;
-  readonly createdAt: string;
-  readonly author: string | null;
-  readonly note: string | null;
-}
-
 /** As many words of the text as the panel shows before it stops. */
 const EXCERPT = 280;
-
-const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 /** The component's text as words, block by block, cut short where it runs long; null if unreadable. */
 function excerptOf(content: unknown): string | null {
@@ -48,36 +40,16 @@ export function ComponentDetail({
   onClose: () => void;
 }) {
   const [text, setText] = useState<string | null | undefined>(undefined);
-  const [versions, setVersions] = useState<readonly Version[] | null | undefined>(undefined);
 
   useEffect(() => {
     let current = true;
     setText(undefined);
-    setVersions(undefined);
     client
       .GET('/v1/components/{id}', { params: { path: { id: item.id } } })
       .then(({ data }) => {
         if (current) setText(data ? excerptOf(data.content) : null);
       })
       .catch(() => current && setText(null));
-    client
-      .GET('/v1/components/{id}/versions', {
-        params: { path: { id: item.id }, query: { limit: '3' } },
-      })
-      .then(({ data }) => {
-        if (!current) return;
-        setVersions(
-          data
-            ? data.items.map((each) => ({
-                number: each.number,
-                createdAt: each.createdAt,
-                author: each.author?.name ?? null,
-                note: each.note,
-              }))
-            : null,
-        );
-      })
-      .catch(() => current && setVersions(null));
     return () => {
       current = false;
     };
@@ -122,20 +94,7 @@ export function ComponentDetail({
         <h3 id={`${heading}-versions`} className={styles['label']}>
           Versions
         </h3>
-        {versions === null && <p className={styles['muted']}>The versions could not be read.</p>}
-        {versions !== null && versions !== undefined && (
-          <ul className={styles['versions']} aria-label="Versions">
-            {versions.map((version) => (
-              <li key={version.number} className={styles['version']}>
-                <span className={styles['number']}>{version.number}</span>
-                <span className={styles['who']}>
-                  {`${version.author ?? 'Unknown'}, ${day.format(new Date(version.createdAt))}`}
-                  {version.note !== null && <span className={styles['note']}>{version.note}</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <VersionList client={client} id={item.id} limit={3} />
       </section>
     </aside>
   );

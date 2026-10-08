@@ -181,8 +181,16 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
           timeout: 20_000,
         })
         .toContain('North weir');
+      // The Component toolbar is one tab stop (LG6b): Tab reaches it, End goes along it to Done.
       const done = page.getByRole('button', { name: 'Done editing' });
-      await tabTo(page, done);
+      await tabTo(
+        page,
+        page.getByRole('toolbar', { name: 'Component' }).locator('button[tabindex="0"]'),
+      );
+      await page.keyboard.press('End');
+      await expect
+        .poll(() => done.evaluate((element) => element === document.activeElement))
+        .toBe(true);
       await page.keyboard.press('Enter');
       await surface.waitFor({ state: 'hidden' });
 

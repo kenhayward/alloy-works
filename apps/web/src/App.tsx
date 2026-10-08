@@ -8,6 +8,7 @@ import { CommandPalette, useCommandKey } from './shell/CommandPalette.js';
 import { Header } from './shell/Header.js';
 import { moduleOf } from './shell/moduleOf.js';
 import { Rail } from './shell/Rail.js';
+import { RegionKeys } from './shell/regions.js';
 import { StatusProvider } from './shell/Status.js';
 
 interface AppProps {
@@ -69,9 +70,12 @@ export function App({
             </div>
           }
         />
-        <main className={styles['page']}>{workspace}</main>
+        <main className={styles['page']} data-app-region>
+          {workspace}
+        </main>
       </div>
       {searching && <CommandPalette onClose={() => setSearching(false)} />}
+      <RegionKeys />
     </StatusProvider>
   );
 }
