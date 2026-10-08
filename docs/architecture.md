@@ -750,19 +750,20 @@ served by `registerDocs` and a stand-in `/v1/me` and upload route.
 Every act writes its event in its own transaction, designed in [`design/audit.md`](design/audit.md) and
 built by [AU1](plans/2026-10-08-au1-the-log-written.md); reading and exporting it are AU2's.
 
-| Where                                    | Holds                                                                                                                                                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: audit/`                         | The closed list of kinds, each with its requirements, its strict `detail` and the module that writes it; the audit context; `labelFor`                                                                   |
-| `db: migrations/tenant/0060_audit`       | `audit_event` and `audit_label`, insert-only by grants and guard triggers; the kinds checked; `erase_labels`, the one way a label changes                                                                |
-| `db: src/audit.ts`                       | `recordEvent` and `recordEventSql`, which read the transaction's context and refuse an event with none; `setAuditContext`; `eraseLabels`; `artifactPlace`, a subject's space, version and labels         |
-| `db: src/tenant-database.ts`, `admin.ts` | `withTenant` writes a context once per transaction; `asAdministrator` names the vendor                                                                                                                   |
-| `db: src/versions.ts`                    | `content.version_cut` for every version inserted, naming its author where that is not who acts                                                                                                           |
-| `service: src/audit.ts`                  | `contextOf` a request's principal, token and trace id; refusals and failed sign-ins in a short transaction of their own                                                                                  |
-| `service: src/audit-census.test.ts`      | Every operationId, GETs included, with its kinds or why it writes none, and every writer that is not a route - jobs, sweeps, the vendor's functions, development's setup - pinned to where each is found |
+| Where                                        | Holds                                                                                                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: audit/`                             | The closed list of kinds, each with its requirements, its strict `detail` and the module that writes it; the audit context; `labelFor`                                                                   |
+| `db: migrations/tenant/0061_audit_hardening` | `erase_labels`' search path pinned, pg_temp last; `sign_in_failure_tally`, throttling failures naming nobody; the kinds the review added                                                                 |
+| `db: migrations/tenant/0060_audit`           | `audit_event` and `audit_label`, insert-only by grants and guard triggers; the kinds checked; `erase_labels`, the one way a label changes                                                                |
+| `db: src/audit.ts`                           | `recordEvent` and `recordEventSql`, which read the transaction's context and refuse an event with none; `setAuditContext`; `eraseLabels`; `artifactPlace`, a subject's space, version and labels         |
+| `db: src/tenant-database.ts`, `admin.ts`     | `withTenant` writes a context once per transaction; `asAdministrator` names the vendor                                                                                                                   |
+| `db: src/versions.ts`                        | `content.version_cut` for every version inserted, naming its author where that is not who acts                                                                                                           |
+| `service: src/audit.ts`                      | `contextOf` a request's principal, token and trace id; refusals and failed sign-ins in a short transaction of their own                                                                                  |
+| `service: src/audit-census.test.ts`          | Every operationId, GETs included, with its kinds or why it writes none, and every writer that is not a route - jobs, sweeps, the vendor's functions, development's setup - pinned to where each is found |
 
 A worker job acts as `system`, naming who asked (`requestedBy`). Nothing in the product updates or
-deletes an event; a migration's own test, standing a schema before 0060, records nothing
-(`AUDIT_LOG_KEPT`).
+deletes an event; a migration's own test, standing a schema before 0060 in a transaction naming
+nobody, records nothing (`AUDIT_LOG_KEPT`), and one naming somebody fails.
 
 ## The editor and its session
 

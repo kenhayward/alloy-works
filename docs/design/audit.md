@@ -134,7 +134,11 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 `hold.applied`, `hold.removed`, `artifact.archived`, `artifact.deleted`, `revision.designated`,
 `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`
-(TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`,
+(TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`, and those the AU1 review
+added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,
+`tenant.closed`, `webhook.changed`, `extension.changed`, `organisation.changed`, `import.restored`,
+`library.changed`, `line.merged`, `revision.effective`, `component.type_changed`, `theme.moved`,
+`style.changed`,
 `publication.shared_accessed`, `support.*`, `channel.changed`, `tool.used`. A design emitting one
 cites it in its tests.
 
@@ -152,6 +156,10 @@ cites it in its tests.
   logs where an investigation needs them.
 - **Acts that delete their own history** write their event first: revoking a grant or a token, signing
   out, restoring a space (which clears `archived_by`), and a sweep ending sessions (`system` actor).
+- **A failed sign-in naming nobody** is recorded at most once a minute per route and failure, its
+  `count` the failures since the last (0061's tally), so an unauthenticated caller cannot write
+  without limit; one naming a principal is an event each. **A refusal is written once its reply has
+  gone**, so a hidden 404 is answered as fast as a true one.
 - **Who acts** is the transaction's audit context, written once per transaction (the AU1 plan,
   AU1-D): the request's person or token, a job's `system` naming who asked (`requestedBy`), the
   vendor's functions. An event in a transaction with none is refused.

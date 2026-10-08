@@ -15,8 +15,9 @@ topmost version matches `version.json`. Up to 0.132.3, every pull request had it
 - **An audit log.** The environment records every act in its own audit log, in the same step as the
   act and naming who did it: sign-ins, sign-outs and failed sign-ins, refused access, tokens, access,
   groups, invitations, spaces and settings, every version of everything, connections (which settings
-  changed, never a credential), values and datasets, images, and publications. Nothing can change or
-  delete an entry. Reading it comes next.
+  changed, never a credential), values and datasets, images, and publications. Repeated failed
+  sign-ins from somebody unknown are counted in one entry a minute. Nothing can change or delete an
+  entry. Reading it comes next.
 
 ### Changed
 
