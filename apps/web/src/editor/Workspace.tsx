@@ -33,18 +33,6 @@ export interface WorkspaceProps {
 /** A publication's own address (PUB-047). */
 const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
 
-/** What sits above each listing: the kinds of thing a person can open, and Search, each a link. */
-function Places() {
-  return (
-    <nav aria-label="Workspace">
-      <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
-      <a href="#/publications">Publications</a> <a href="#/templates">Templates</a>{' '}
-      <a href="#/connections">Connections</a> <a href="#/query-definitions">Query definitions</a>{' '}
-      <a href="#/search">Search</a>
-    </nav>
-  );
-}
-
 /**
  * The address after `#`, followed as it changes: a hash never reaches the service or a reload's path.
  * `arrivals` counts every change, so an address that arrives again - a link to the node already named,
@@ -183,7 +171,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (searched !== null) {
     return (
       <>
-        <Places />
         <SearchPage
           client={client}
           query={searched}
@@ -236,7 +223,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (hash === '#/query-definitions') {
     return (
       <>
-        <Places />
         <QueryDefinitions client={client} />
       </>
     );
@@ -244,7 +230,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (hash === '#/connections') {
     return (
       <>
-        <Places />
         <Connections client={client} />
       </>
     );
@@ -252,7 +237,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (hash === '#/templates') {
     return (
       <>
-        <Places />
         <TemplateList client={client} />
       </>
     );
@@ -260,7 +244,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (hash === '#/publications') {
     return (
       <>
-        <Places />
         <PublicationList client={client} />
       </>
     );
@@ -269,7 +252,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (publication) {
     return (
       <>
-        <Places />
         <PublicationPage key={publication} client={client} id={publication} />
       </>
     );
@@ -307,7 +289,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (documents) {
     return (
       <>
-        <Places />
         <DocumentList
           client={client}
           onOpen={(id) => {
@@ -319,7 +300,6 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   }
   return (
     <>
-      <Places />
       <ComponentList client={client} principalId={me} />
     </>
   );

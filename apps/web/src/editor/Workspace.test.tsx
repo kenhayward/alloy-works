@@ -238,12 +238,11 @@ describe('the workspace', () => {
     expect(await screen.findByText('There are no components you may read.')).toBeInTheDocument();
   });
 
-  it('opens Search from its link, holding the query in the address', async () => {
+  it('opens Search at its address, holding the query in it', async () => {
     window.location.hash = '#/search?q=lever';
     const nothing = { outcome: 'empty', message: 'Type what to look for.' };
     render(<Workspace fetch={serviceThat({ search: nothing })} />);
     expect(await screen.findByRole('heading', { level: 1, name: 'Search' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Search' })).toHaveAttribute('href', '#/search');
     expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('lever');
     expect(await screen.findByRole('status')).toHaveTextContent('Type what to look for.');
     const box = screen.getByRole('searchbox', { name: 'Search' });
@@ -579,7 +578,7 @@ describe('the workspace', () => {
     expect(screen.getAllByRole('link', { name: 'Replace the toner' })).toHaveLength(1);
   });
 
-  it('offers Documents beside Components, and lists the documents the address asks for', async () => {
+  it('lists the documents the address asks for, and the components no longer', async () => {
     const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
@@ -604,12 +603,7 @@ describe('the workspace', () => {
     }) as unknown as typeof fetch;
 
     render(<Workspace fetch={fetching} />);
-    const documents = await screen.findByRole('link', { name: 'Documents' });
-    expect(documents).toHaveAttribute('href', '#/documents');
-    expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute(
-      'href',
-      '#/components',
-    );
+    expect(await screen.findByRole('heading', { name: 'Components' })).toBeInTheDocument();
 
     window.location.hash = '#/documents';
     fireEvent(window, new HashChangeEvent('hashchange'));

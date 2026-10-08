@@ -90,18 +90,19 @@ single hard-coded hex in a component is the thing that makes it expensive, so tr
 
 ## The shell
 
-A 44px header band across the top, then a row of panes filling the rest of the viewport.
+A 44px header band across the top; under it the 76px module rail, then the page; the status bar
+along the foot (ADR-0046, built in LG4).
 
-In the band, left to right: the mark, a link to Home, where each module is chosen; a hairline; the current module's
-name at 70% opacity; then, pushed right, the environment name and the account chip. The account chip
-holds API tokens, Administration, Theme and Sign out. API tokens is a modal, as Administration is,
-built in W12.2 ahead of any drawing of it. Module pages sit 4px under the band.
+In the band, left to right: the mark, a link to Home, and the environment name; search and commands
+in the middle, which Ctrl K opens too; then Theme and the account chip, which holds API tokens and
+Sign out. In a component's text Ctrl K stays Link. Search and commands goes to a module or searches
+for what is typed; the commands that open a dialog come later.
 
-**Three modules**, each with a colour used only on its Home card and inside
-itself: Components (`--module-components`), Documents (`--module-documents`), Publications
-(`--module-publications`).
+**The rail** names Home, then the modules in three groups - Author (Components, Documents,
+Templates), Publish (Publications), Data (Connections, Query definitions) - and Admin at its foot. The
+module the page is in is marked. One accent: no module has a colour of its own.
 
-**Administration is not a module.** It is a modal from the account chip - environment, spaces,
+**Administration is not a module.** It is a modal from the rail's foot - environment, spaces,
 people and invitations, roles, groups, component types, layouts, about and release notes. New
 component, New document, Give access and the removal confirmations are modals too. A modal is never
 a route: it opens over the screen that asked for it, 40px from the top, and Escape closes it.

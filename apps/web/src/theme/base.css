@@ -216,13 +216,6 @@ nav ol {
   list-style: none;
 }
 
-nav[aria-label='Workspace'] {
-  display: flex;
-  gap: var(--space-16);
-  margin-bottom: var(--space-16);
-  font-size: var(--size-body-small);
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
