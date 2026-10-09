@@ -889,8 +889,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   name, what it may do besides reading, which it always may, and the day it works until the start of,
   from tomorrow to a year away, 90 days unless you change it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
   in the browser. **Revoke** asks first, and the next request with the token is refused.
-- **An administrator revokes anybody's tokens.** In Administration's People, **Tokens** beside a person
-  lists theirs, each with **Revoke**, which is how a person's tokens go when they leave, without waiting
+- **An administrator revokes anybody's tokens.** In Administration's People - a table of each person's kind and status,
+  found by name and shown by kind, a page at a time - **API tokens** beside a person opens theirs in a
+  panel beside the list, with what they may do across the environment and why, each token with
+  **Revoke**, which asks first, and the waiting or lapsed invitations in a tab of their own, each
+  withdrawn after asking, with **Invite people** to invite by address; revoking which is how a person's tokens go when they leave, without waiting
   for each to expire. Through the API it is `GET /v1/principals/{id}/tokens` and `DELETE
 /v1/principals/{id}/tokens/{token}`, which need administering the environment and a signed-in
   session.

@@ -28,6 +28,7 @@ const everything: Answers = {
         { id: 'p2', name: null, email: 'ivy@example.test', kind: 'external', invited: true },
       ],
       next: null,
+      total: 2,
     }),
   '/v1/invitations': () =>
     json(200, {
@@ -107,8 +108,9 @@ describe('Administration', () => {
 
     await userEvent.click(section('People'));
     const people = await screen.findByRole('table', { name: 'People' });
-    expect(within(people).getByRole('cell', { name: 'Ada' })).toBeInTheDocument();
-    expect(within(people).getByText(/invited and not signed in yet/)).toBeInTheDocument();
+    expect(within(people).getByRole('row', { name: /^Ada ada@example\.test/ })).toBeInTheDocument();
+    expect(within(people).getByRole('cell', { name: 'Invited' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: /^Waiting invitations/ }));
     const waiting = await screen.findByRole('table', { name: 'Waiting invitations' });
     expect(within(waiting).getByRole('cell', { name: 'ivy@example.test' })).toBeInTheDocument();
 
@@ -133,89 +135,13 @@ describe('Administration', () => {
     render(<Administration client={client} about={null} />);
 
     await userEvent.click(section('People'));
-    // Said of the people and of the invitations, each refused.
-    expect(await screen.findAllByText('You may not manage access here.')).toHaveLength(2);
+    // Said of the people, and of the invitations in their own tab, each refused.
+    expect(await screen.findAllByText('You may not manage access here.')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('tab', { name: /^Waiting invitations/ }));
+    expect(await screen.findAllByText('You may not manage access here.')).toHaveLength(1);
     await userEvent.click(section('Spaces'));
     expect(await screen.findByRole('table', { name: 'Spaces' })).toBeInTheDocument();
     expect(screen.queryByText('You may not manage access here.')).toBeNull();
-  });
-
-  it("lets an administrator open a person's tokens from People, and revoke one after asking", async () => {
-    const token = {
-      id: '11111111-1111-4111-8111-111111111111',
-      name: 'Nightly import',
-      scopes: ['edit'],
-      createdAt: '2026-09-01T09:00:00.000Z',
-      expiresAt: '2026-12-01T09:00:00.000Z',
-      lastUsedAt: null,
-    };
-    const deleted: string[] = [];
-    const answers: Record<string, () => Response> = {
-      ...everything,
-      '/v1/principals/p1/tokens': () => json(200, { items: [token], next: null }),
-    };
-    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const request = input instanceof Request ? input : new Request(String(input), init);
-      const url = new URL(request.url);
-      if (request.method === 'DELETE') {
-        deleted.push(url.pathname);
-        return json(200, { revoked: token.id });
-      }
-      const answer = answers[url.pathname];
-      return answer ? answer() : json(404, {});
-    }) as unknown as typeof fetch;
-    const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
-    render(<Administration client={client} about={null} />);
-
-    await userEvent.click(section('People'));
-    const people = await screen.findByRole('table', { name: 'People' });
-    // Somebody invited who has not signed in yet has no tokens to list.
-    expect(within(people).queryByRole('button', { name: /^Tokens of ivy/ })).toBeNull();
-    await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
-    const tokens = await screen.findByRole('table', { name: 'Tokens of Ada' });
-    expect(within(tokens).getByRole('cell', { name: 'Nightly import' })).toBeInTheDocument();
-    expect(within(tokens).getByRole('cell', { name: 'read, edit' })).toBeInTheDocument();
-
-    await userEvent.click(within(tokens).getByRole('button', { name: 'Revoke Nightly import' }));
-    expect(deleted).toEqual([]);
-    await userEvent.click(screen.getByRole('button', { name: 'Revoke token' }));
-    expect(await screen.findByText('Revoked Nightly import.')).toBeInTheDocument();
-    expect(deleted).toEqual([`/v1/principals/p1/tokens/${token.id}`]);
-    expect(screen.queryByRole('table', { name: 'Tokens of Ada' })).toBeNull();
-    expect(screen.getByText('Ada has no API tokens.')).toBeInTheDocument();
-    expect(tokens).not.toBeInTheDocument();
-
-    // And back to the people.
-    await userEvent.click(screen.getByRole('button', { name: 'Back to people' }));
-    expect(await screen.findByRole('table', { name: 'People' })).toBeInTheDocument();
-  });
-
-  it("keeps focus in Administration going to a person's tokens and back, though each button that had it goes", async () => {
-    const answers: Record<string, () => Response> = {
-      ...everything,
-      '/v1/principals/p1/tokens': () => json(200, { items: [], next: null }),
-    };
-    const { client } = service(answers);
-    render(<Administration client={client} about={null} />);
-    const dialog = screen.getByRole('region', { name: 'Administration' });
-
-    await userEvent.click(section('People'));
-    const people = await screen.findByRole('table', { name: 'People' });
-    await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
-    // On the person's tokens heading, which the Tokens button gave way to.
-    expect(document.activeElement).toBe(
-      within(dialog).getByRole('heading', { name: 'Tokens of Ada' }),
-    );
-    expect(await screen.findByText('Ada has no API tokens.')).toBeInTheDocument();
-
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to people' }));
-    // Back on the Tokens button it left from.
-    expect(document.activeElement).toBe(
-      within(screen.getByRole('table', { name: 'People' })).getByRole('button', {
-        name: 'Tokens of Ada',
-      }),
-    );
-    expect(dialog).toContainElement(document.activeElement as HTMLElement);
   });
 
   it('says which version this is in About, beside what it is given', async () => {
@@ -244,6 +170,303 @@ const administering =
       ],
     });
   };
+
+/** The service as People meets it: people a page at a time, invitations, tokens, and why. */
+function peopleService() {
+  const people = [
+    { id: 'p1', name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
+    { id: 'p2', name: 'Marta', email: 'marta@partner.test', kind: 'external', invited: false },
+    { id: 'p3', name: 'Publishing robot', email: null, kind: 'service', invited: false },
+    { id: 'p4', name: null, email: 'sam@example.test', kind: 'user', invited: true },
+  ];
+  const invitation = (id: string, email: string, lapsed: boolean, external: boolean) => ({
+    id,
+    email,
+    person: 'p4',
+    external,
+    invitedBy: { id: 'p1', name: 'Ada' },
+    createdAt: '2026-10-01T09:00:00.000Z',
+    expiresAt: '2026-10-17T09:00:00.000Z',
+    lapsed,
+    acceptedAt: null,
+    acceptedThrough: null,
+  });
+  const invitations = [
+    invitation('i1', 'sam@example.test', false, false),
+    invitation('i2', 'jo@cro.test', false, true),
+    invitation('i3', 'old@example.test', true, false),
+  ];
+  const tokens = [
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'CI publishing',
+      scopes: ['publish'],
+      createdAt: '2026-09-01T09:00:00.000Z',
+      expiresAt: '2027-03-12T09:00:00.000Z',
+      lastUsedAt: '2026-10-04T09:00:00.000Z',
+    },
+  ];
+  const sent: { method: string; path: string; body: unknown }[] = [];
+  const asked: URL[] = [];
+  const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    const url = new URL(request.url);
+    asked.push(url);
+    const text = request.method === 'GET' ? '' : await request.clone().text();
+    const body = text === '' ? undefined : JSON.parse(text);
+    if (request.method !== 'GET') sent.push({ method: request.method, path: url.pathname, body });
+    const route = `${request.method} ${url.pathname}`;
+    if (route === 'GET /v1/tenant') return json(200, { name: 'Development' });
+    if (route === 'GET /v1/principals') {
+      const limit = Number(url.searchParams.get('limit') ?? '100');
+      const from = Number(url.searchParams.get('cursor') ?? '0');
+      const page = people.slice(from, from + limit);
+      const next = from + limit < people.length ? String(from + limit) : null;
+      return json(200, { items: page, next, total: people.length });
+    }
+    if (route === 'GET /v1/invitations')
+      return json(200, { items: invitations, next: null, total: invitations.length });
+    if (route === 'POST /v1/invitations') {
+      const { email, external } = body as { email: string; external?: boolean };
+      const made = invitation(`i${invitations.length + 1}`, email, false, external ?? false);
+      invitations.push(made);
+      return json(200, { invitation: made, renewed: false });
+    }
+    const withdrawing = /^DELETE \/v1\/invitations\/(\w+)$/.exec(route);
+    if (withdrawing) {
+      invitations.splice(
+        invitations.findIndex((each) => each.id === withdrawing[1]),
+        1,
+      );
+      return json(200, { withdrawn: withdrawing[1] });
+    }
+    if (route === 'GET /v1/principals/p1/tokens') return json(200, { items: tokens, next: null });
+    if (route.startsWith('DELETE /v1/principals/p1/tokens/')) {
+      tokens.splice(0, 1);
+      return json(200, { revoked: 'x' });
+    }
+    if (route === 'GET /v1/access/explain') {
+      return json(200, {
+        principal: url.searchParams.get('principal'),
+        target: url.searchParams.get('target'),
+        permissions: [
+          {
+            permission: 'read',
+            allowed: true,
+            reason: 'allowed',
+            level: 'tenant',
+            checked: ['tenant'],
+            grants: [
+              {
+                role: 'Reader',
+                effect: 'allow',
+                subject: { principal: 'p1' },
+                through: null,
+                groupName: null,
+              },
+            ],
+          },
+        ],
+      });
+    }
+    return json(200, { items: [], next: null, total: 0 });
+  }) as unknown as typeof fetch;
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    sent,
+    asked,
+  };
+}
+
+describe('People in Administration', () => {
+  const openPeople = async (client: ReturnType<typeof peopleService>['client']) => {
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('People'));
+    const table = await screen.findByRole('table', { name: 'People' });
+    return { table, page: screen.getByRole('region', { name: 'Administration' }) };
+  };
+  const row = (table: HTMLElement, name: RegExp) => within(table).getByRole('row', { name });
+
+  it('lists each person with their kind and status, found by name and shown by kind', async () => {
+    const { client } = peopleService();
+    const { table, page } = await openPeople(client);
+    expect(within(page).getByRole('tab', { name: 'People 4' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(
+      within(row(table, /Marta/))
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent),
+    ).toEqual(['MMarta marta@partner.test', 'Outside', 'Signed in', '']);
+    expect(
+      within(row(table, /Publishing robot/)).getByRole('cell', { name: 'Active' }),
+    ).toBeInTheDocument();
+    expect(
+      within(row(table, /sam@example/)).getByRole('cell', { name: 'Invited' }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      within(within(page).getByRole('group', { name: 'Show' })).getByRole('button', {
+        name: 'Services',
+      }),
+    );
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    await userEvent.click(
+      within(within(page).getByRole('group', { name: 'Show' })).getByRole('button', {
+        name: 'All',
+      }),
+    );
+    await userEvent.type(
+      within(page).getByRole('searchbox', { name: 'Name or address' }),
+      'partner',
+    );
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+  });
+
+  it("opens a person's tokens beside the list, revokes one only after asking, and gives the focus back", async () => {
+    const { client, sent } = peopleService();
+    const { table } = await openPeople(client);
+    // Somebody invited has signed in nowhere, so has no tokens to show, and says why.
+    const theirs = within(row(table, /sam@example/)).getByRole('button', {
+      name: /^API tokens of/,
+    });
+    expect(theirs).toHaveAttribute('aria-disabled', 'true');
+    expect(theirs).toHaveAttribute('title', 'Not signed in yet, so no tokens');
+
+    const opener = within(row(table, /^Ada /)).getByRole('button', { name: 'API tokens of Ada' });
+    await userEvent.click(opener);
+    const panel = screen.getByRole('complementary', { name: 'Ada' });
+    expect(document.activeElement).toBe(within(panel).getByRole('heading', { name: 'Ada' }));
+    expect(await within(panel).findByRole('tab', { name: 'API tokens 1' })).toBeInTheDocument();
+    const tokens = await within(panel).findByRole('list', { name: 'Tokens of Ada' });
+    expect(tokens).toHaveTextContent('CI publishing');
+    expect(tokens).toHaveTextContent('May publish');
+    expect(tokens).toHaveTextContent('Until 12 Mar 2027');
+    expect(tokens).toHaveTextContent('Used 4 Oct');
+
+    await userEvent.click(within(tokens).getByRole('button', { name: 'Revoke CI publishing' }));
+    const asking = screen.getByRole('dialog', { name: 'Revoke CI publishing?' });
+    await userEvent.click(within(asking).getByRole('button', { name: 'Keep it' }));
+    expect(sent).toEqual([]);
+    await userEvent.click(within(tokens).getByRole('button', { name: 'Revoke CI publishing' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog', { name: 'Revoke CI publishing?' })).getByRole('button', {
+        name: 'Revoke token',
+      }),
+    );
+    expect(await within(panel).findByText('Revoked CI publishing.')).toBeInTheDocument();
+    expect(within(panel).getByText('Ada has no API tokens.')).toBeInTheDocument();
+    expect(sent.map((each) => each.method)).toEqual(['DELETE']);
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it('says what a person may do across the environment, and why, from More actions', async () => {
+    const { client, asked } = peopleService();
+    const { table } = await openPeople(client);
+    await userEvent.click(
+      within(row(table, /^Ada /)).getByRole('button', { name: 'More actions for Ada' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'What they may do' }));
+    const panel = screen.getByRole('complementary', { name: 'Ada' });
+    expect(within(panel).getByRole('tab', { name: 'What they may do' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    const answers = await within(panel).findByRole('table', {
+      name: 'What Ada may do across the whole environment',
+    });
+    expect(answers).toHaveTextContent(
+      'Allowed at the whole environment, by Reader allowed to Ada.',
+    );
+    const explained = asked.find((url) => url.pathname === '/v1/access/explain')!;
+    expect([explained.searchParams.get('principal'), explained.searchParams.get('target')]).toEqual(
+      ['p1', 'tenant'],
+    );
+  });
+
+  it('pages the people, saying how many are shown of how many there are', async () => {
+    const { client, asked } = peopleService();
+    const { table, page } = await openPeople(client);
+    // Fifty a page: every one of four on the first, so nothing more is offered.
+    expect(
+      asked.find(
+        (url) =>
+          url.pathname === '/v1/principals' &&
+          url.searchParams.has('cursor') === false &&
+          url.searchParams.get('limit') === '50',
+      ),
+    ).toBeDefined();
+    expect(within(table).getAllByRole('row')).toHaveLength(5);
+    expect(within(page).queryByRole('button', { name: 'Show more' })).toBeNull();
+  });
+
+  it('lists the invitations waiting or lapsed, and withdraws one only after asking', async () => {
+    const { client, sent } = peopleService();
+    const { page } = await openPeople(client);
+    await userEvent.click(within(page).getByRole('tab', { name: 'Waiting invitations 2' }));
+    const waiting = await within(page).findByRole('table', { name: 'Waiting invitations' });
+    expect(within(waiting).getByRole('row', { name: /^jo@cro\.test/ })).toHaveTextContent(
+      'From outside',
+    );
+    expect(within(waiting).getByRole('row', { name: /^sam@example\.test/ })).toHaveTextContent(
+      '17 October 2026',
+    );
+    expect(page).toHaveTextContent('2 waiting');
+    await userEvent.click(
+      within(within(page).getByRole('group', { name: 'Show' })).getByRole('button', {
+        name: 'Lapsed',
+      }),
+    );
+    expect(within(page).getByRole('table', { name: 'Waiting invitations' })).toHaveTextContent(
+      'old@example.test',
+    );
+    await userEvent.click(
+      within(within(page).getByRole('group', { name: 'Show' })).getByRole('button', {
+        name: 'Waiting',
+      }),
+    );
+
+    await userEvent.click(
+      within(page).getByRole('button', { name: 'Withdraw the invitation to jo@cro.test' }),
+    );
+    const asking = screen.getByRole('dialog', { name: 'Withdraw the invitation to jo@cro.test?' });
+    expect(asking).toHaveTextContent('Everything granted to them goes with it.');
+    await userEvent.click(within(asking).getByRole('button', { name: 'Withdraw' }));
+    expect(
+      await screen.findByText(
+        'Withdrew the invitation to jo@cro.test, and everything granted to them.',
+      ),
+    ).toBeInTheDocument();
+    expect(sent).toEqual([{ method: 'DELETE', path: '/v1/invitations/i2', body: undefined }]);
+    expect(
+      await within(page).findByRole('tab', { name: 'Waiting invitations 1' }),
+    ).toBeInTheDocument();
+  });
+
+  it('invites somebody by address, from outside the organisation where they are', async () => {
+    const { client, sent } = peopleService();
+    const { page } = await openPeople(client);
+    await userEvent.click(within(page).getByRole('button', { name: 'Invite people' }));
+    const inviting = screen.getByRole('dialog', { name: 'Invite people' });
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(within(inviting).getByRole('status')).toHaveTextContent('Give the address to invite.');
+    await userEvent.type(
+      within(inviting).getByRole('textbox', { name: 'Address' }),
+      'lee@lab.test',
+    );
+    await userEvent.click(
+      within(inviting).getByRole('checkbox', { name: 'From outside the organisation' }),
+    );
+    await userEvent.click(within(inviting).getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByText('Invited lee@lab.test.')).toBeInTheDocument();
+    expect(sent).toEqual([
+      { method: 'POST', path: '/v1/invitations', body: { email: 'lee@lab.test', external: true } },
+    ]);
+  });
+});
 
 describe("Administration's menu", () => {
   it('counts each section from its listing, and leaves a count out where the reader may not see it', async () => {

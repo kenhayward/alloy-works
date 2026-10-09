@@ -1,14 +1,13 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
 import { AccessPanel } from '../access/AccessPanel.js';
 import { permissionName, type AccessAt } from '../access/describe.js';
 import { administersAt } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
-import { Empty } from '../states/Empty.js';
 import styles from './Administration.module.css';
 import { Groups } from './Groups.js';
+import { People } from './People.js';
 import { Shown, useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Spaces } from './Spaces.js';
@@ -96,106 +95,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
   return counts;
 }
 
-interface PersonRow {
-  readonly id: string;
-  readonly name: string | null;
-  readonly email: string | null;
-  readonly kind: string;
-  readonly invited: boolean;
-}
-interface InvitationRow {
-  readonly id: string;
-  readonly email: string;
-  readonly expiresAt: string | null;
-  readonly lapsed: boolean;
-}
 interface RoleRow {
   readonly id: string;
   readonly name: string;
   readonly permissions: readonly string[];
-}
-
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-
-const nameOf = (person: PersonRow) => person.name ?? person.email ?? 'Somebody';
-
-/**
- * One person's API tokens, for an administrator: each revoked after asking, which is how a departed
- * person's tokens go without waiting for each to expire (service-foundations.md, TK-E).
- */
-function PersonTokens({
-  client,
-  person,
-  onBack,
-}: {
-  client: Client;
-  person: PersonRow;
-  onBack: () => void;
-}) {
-  const [load] = useState(
-    () => () =>
-      everyPage<ShownToken>((cursor) =>
-        client.GET('/v1/principals/{id}/tokens', {
-          params: { path: { id: person.id }, query: cursor ? { cursor } : {} },
-        }),
-      ),
-  );
-  const read = useListing<ShownToken>(load, true);
-  const [revoked, setRevoked] = useState<ReadonlySet<string>>(new Set());
-  const [status, setStatus] = useState('');
-  const name = nameOf(person);
-  const heading = useRef<HTMLHeadingElement>(null);
-
-  // The Tokens button, which had focus, has gone with the people: focus comes here, inside the dialog,
-  // rather than falling to the page, where Escape would not close Administration.
-  useEffect(() => {
-    heading.current?.focus();
-  }, []);
-
-  const revoke = async (token: ShownToken) => {
-    const gone = () => setRevoked((was) => new Set(was).add(token.id));
-    try {
-      const { response, error } = await client.DELETE('/v1/principals/{id}/tokens/{token}', {
-        params: { path: { id: person.id, token: token.id } },
-      });
-      if (response.ok) {
-        gone();
-        setStatus(`Revoked ${token.name}.`);
-      } else if (response.status === 404) {
-        gone();
-        setStatus(`${token.name} had already been revoked.`);
-      } else {
-        setStatus(refusal(error, `${token.name} could not be revoked.`));
-      }
-    } catch {
-      setStatus(`${token.name} could not be revoked.`);
-    }
-  };
-
-  return (
-    <>
-      <button type="button" onClick={onBack}>
-        Back to people
-      </button>
-      <h2 ref={heading} tabIndex={-1}>{`Tokens of ${name}`}</h2>
-      <Shown read={read} failed="The tokens could not be loaded.">
-        {(rows) => (
-          <TokenTable
-            label={`Tokens of ${name}`}
-            tokens={rows.filter((token) => !revoked.has(token.id))}
-            empty={
-              <Empty>
-                <p>{`${name} has no API tokens.`}</p>
-              </Empty>
-            }
-            onRevoke={revoke}
-          />
-        )}
-      </Shown>
-      <p role="status">{status}</p>
-    </>
-  );
 }
 
 /**
@@ -246,7 +149,6 @@ export function Administration({
   const shown = useSection();
   const counts = useCounts(client);
   const title = SECTIONS.find((each) => each.slug === shown)!;
-  const [tokensOf, setTokensOf] = useState<PersonRow | null>(null);
   /** The space, or the environment, whose Access is open in place of its section. */
   const [accessAt, setAccessAt] = useState<AccessAt | null>(null);
   /**
@@ -303,16 +205,6 @@ export function Administration({
           params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
         }),
       ),
-    people: () =>
-      everyPage<PersonRow>((cursor) =>
-        client.GET('/v1/principals', {
-          params: { query: { level: 'tenant', ...(cursor ? { cursor } : {}) } },
-        }),
-      ),
-    invitations: () =>
-      everyPage<InvitationRow>((cursor) =>
-        client.GET('/v1/invitations', { params: { query: cursor ? { cursor } : {} } }),
-      ),
     roles: () =>
       everyPage<RoleRow>((cursor) =>
         client.GET('/v1/roles', {
@@ -324,8 +216,6 @@ export function Administration({
   // still there to take focus back.
   const [spacesRead, setSpacesRead] = useState(0);
   const spaces = useListing<SpaceRow>(loads.spaces, shown === 'spaces', spacesRead);
-  const people = useListing<PersonRow>(loads.people, shown === 'people');
-  const invitations = useListing<InvitationRow>(loads.invitations, shown === 'people');
   const roles = useListing<RoleRow>(loads.roles, shown === 'roles');
 
   useEffect(() => {
@@ -338,16 +228,15 @@ export function Administration({
     for (const space of spaces.rows) askAdminister(`space:${space.id}`);
   }, [spaces, askAdminister]);
 
-  // Back to people, spaces or the environment takes itself away: focus goes to the button it was
+  // Back to the environment takes itself away: focus goes to the button it was
   // reached from, or to the section's heading where that is not shown, and never falls out of the
   // dialog.
   useEffect(() => {
-    if (tokensOf !== null || accessAt !== null || leftFrom === null) return;
+    if (accessAt !== null || leftFrom === null) return;
     (backTo.current ?? sectionHeading.current)?.focus();
-  }, [tokensOf, accessAt, leftFrom]);
+  }, [accessAt, leftFrom]);
 
   useEffect(() => {
-    setTokensOf(null);
     setAccessAt(null);
     setLeftFrom(null);
   }, [shown]);
@@ -435,80 +324,7 @@ export function Administration({
             onChanged={() => setSpacesRead((count) => count + 1)}
           />
         )}
-        {shown === 'people' && tokensOf !== null && (
-          <PersonTokens
-            client={client}
-            person={tokensOf}
-            onBack={() => {
-              setLeftFrom(tokensOf.id);
-              setTokensOf(null);
-            }}
-          />
-        )}
-        {shown === 'people' && tokensOf === null && (
-          <>
-            <Shown read={people} failed="The people could not be loaded.">
-              {(rows) => (
-                <table aria-label="People">
-                  <tbody>
-                    {rows.map((person) => (
-                      <tr key={person.id}>
-                        <td>{nameOf(person)}</td>
-                        <td className={styles['muted']}>
-                          {[
-                            person.name !== null ? person.email : null,
-                            person.kind === 'external' ? 'from outside the organisation' : null,
-                            person.invited ? 'invited and not signed in yet' : null,
-                          ]
-                            .filter((each) => each !== null)
-                            .join(', ')}
-                        </td>
-                        <td className={styles['act']}>
-                          {!person.invited && (
-                            <button
-                              ref={person.id === leftFrom ? backTo : undefined}
-                              type="button"
-                              aria-label={`Tokens of ${nameOf(person)}`}
-                              onClick={() => setTokensOf(person)}
-                            >
-                              Tokens
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </Shown>
-            <h2>Waiting invitations</h2>
-            <Shown read={invitations} failed="Invitations could not be loaded.">
-              {(rows) => {
-                const waiting = rows.filter((invitation) => !invitation.lapsed);
-                return waiting.length === 0 ? (
-                  <Empty>
-                    <p>Nobody is waiting to accept an invitation.</p>
-                  </Empty>
-                ) : (
-                  <table aria-label="Waiting invitations">
-                    <tbody>
-                      {waiting.map((invitation) => (
-                        <tr key={invitation.id}>
-                          <td>{invitation.email}</td>
-                          <td className={styles['muted']}>
-                            {invitation.expiresAt === null
-                              ? 'Waiting'
-                              : `Waiting until ${day(invitation.expiresAt)}`}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                );
-              }}
-            </Shown>
-          </>
-        )}
+        {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && (
           <Shown read={roles} failed="The roles could not be loaded.">
