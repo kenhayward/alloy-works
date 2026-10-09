@@ -30,20 +30,23 @@ export function Section({
   count,
   aside,
   acts,
+  region = true,
   hint,
   children,
 }: {
   readonly heading: string;
-  readonly count?: number;
+  readonly count?: number | string;
   /** Beside the heading, before the acts: a Describe's status. */
   readonly aside?: ReactNode;
   readonly acts?: ReactNode;
+  /** A landmark named by its heading; not where its one field takes the heading's words. */
+  readonly region?: boolean;
   readonly hint?: ReactNode;
   readonly children?: ReactNode;
 }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className={styles['section']}>
+    <section {...(region ? { 'aria-labelledby': id } : {})} className={styles['section']}>
       <div className={styles['head']}>
         <h3 id={id}>{heading}</h3>
         {count !== undefined && <Chip>{count}</Chip>}

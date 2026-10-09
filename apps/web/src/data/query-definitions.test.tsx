@@ -1437,7 +1437,7 @@ describe('the builder (D4)', () => {
     return { user, ...made };
   };
   const pick = async (user: User, ...names: string[]) => {
-    const columns = screen.getByRole('group', { name: 'Columns to return' });
+    const columns = screen.getByRole('region', { name: 'Columns to return' });
     for (const name of names) {
       await user.click(within(columns).getByRole('checkbox', { name }));
     }
@@ -1469,10 +1469,9 @@ describe('the builder (D4)', () => {
     await user.type(named, 'site_name');
     await addParameter(user, 'site', 'integer');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
-    const filter = screen.getByRole('group', { name: 'Filter 1' });
-    await user.selectOptions(within(filter).getByLabelText('Column'), 'id');
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
-    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'equal');
+    await user.selectOptions(screen.getByLabelText('Column of filter 1'), 'id');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'site');
+    await user.selectOptions(screen.getByLabelText('Comparison of filter 1'), 'equal');
     await tab(user, 'Details');
     await user.type(screen.getByLabelText('Title'), 'Site built');
 
@@ -1546,7 +1545,7 @@ describe('the builder (D4)', () => {
     await tab(user, 'Query');
     const sql = await screen.findByRole('radio', { name: 'SQL' });
     expect(screen.getByRole('radio', { name: 'Builder' })).toBeChecked();
-    expect(screen.getByRole('group', { name: 'Write the query with' })).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', { name: 'Write the query with' })).toBeInTheDocument();
     await user.click(sql);
     expect(screen.getByLabelText('SQL text')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Describe the source' })).toBeNull();
@@ -1557,10 +1556,9 @@ describe('the builder (D4)', () => {
     await pick(user, 'id');
     const parameter = await addParameter(user, 'site', 'integer');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
-    const filter = screen.getByRole('group', { name: 'Filter 1' });
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'site');
     const offered = () =>
-      within(within(filter).getByLabelText('Comparison'))
+      within(screen.getByLabelText('Comparison of filter 1'))
         .getAllByRole('option')
         .map((each) => each.textContent);
     expect(offered()).toEqual([
@@ -1585,10 +1583,10 @@ describe('the builder (D4)', () => {
     await user.click(within(parameter).getByRole('checkbox', { name: 'A list of values' }));
     expect(offered()).toEqual(['is one of', 'is empty', 'is not empty']);
     // A fixed value is compared as its column's type, and needs no parameter.
-    await user.selectOptions(within(filter).getByLabelText('Column'), 'depth');
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'A fixed value');
+    await user.selectOptions(screen.getByLabelText('Column of filter 1'), 'depth');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'A fixed value');
     expect(offered()).toContain('is at least');
-    expect(within(filter).getByLabelText('Value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Value of filter 1')).toBeInTheDocument();
   });
 
   it('groups by the columns returned and summarises each group, each summary named', async () => {
@@ -1596,17 +1594,15 @@ describe('the builder (D4)', () => {
     await pick(user, 'name');
     await user.click(screen.getByRole('checkbox', { name: 'Group and summarise' }));
     await user.click(screen.getByRole('button', { name: 'Add a summary' }));
-    const count = screen.getByRole('group', { name: 'Summary 1' });
-    expect(within(count).getByLabelText('Summary')).toHaveValue('count');
-    expect(within(count).getByLabelText('Of')).toHaveDisplayValue('Every row');
+    expect(screen.getByLabelText('Summary 1')).toHaveValue('count');
+    expect(screen.getByLabelText('Of summary 1')).toHaveDisplayValue('Every row');
     await user.click(screen.getByRole('button', { name: 'Add a summary' }));
-    const average = screen.getByRole('group', { name: 'Summary 2' });
-    await user.selectOptions(within(average).getByLabelText('Summary'), 'average');
-    await user.selectOptions(within(average).getByLabelText('Of'), 'depth');
-    await user.clear(within(average).getByLabelText('Name'));
-    await user.type(within(average).getByLabelText('Name'), 'mean_depth');
-    await user.clear(within(average).getByLabelText('Places'));
-    await user.type(within(average).getByLabelText('Places'), '2');
+    await user.selectOptions(screen.getByLabelText('Summary 2'), 'average');
+    await user.selectOptions(screen.getByLabelText('Of summary 2'), 'depth');
+    await user.clear(screen.getByLabelText('Name of summary 2'));
+    await user.type(screen.getByLabelText('Name of summary 2'), 'mean_depth');
+    await user.clear(screen.getByLabelText('Places of summary 2'));
+    await user.type(screen.getByLabelText('Places of summary 2'), '2');
     expect(shownSql()).toContain(
       'pg_catalog.round(pg_catalog.avg("t"."depth"), 2) AS "mean_depth"',
     );
@@ -1677,8 +1673,7 @@ describe('the builder (D4)', () => {
     expect(shownSql()).toContain('FROM (SELECT "id", "name" FROM "sample"."site") AS "t"');
     await addParameter(user, 'site', 'integer');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
-    const filter = screen.getByRole('group', { name: 'Filter 1' });
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'site');
     expect(shownSql()).toContain('WHERE "t"."id" OPERATOR(pg_catalog.=) ($1::pg_catalog.int8)');
     // The SQL is shown, never edited.
     expect(screen.queryByLabelText('SQL text')).toBeNull();
@@ -1733,43 +1728,70 @@ describe('the builder (D4)', () => {
     expect(screen.getByRole('menuitem', { name: 'Retire' })).toBeInTheDocument();
   });
 
-  it('selects every column to return at once, keeping a name already given', async () => {
+  it('selects every column to return by a three-state Select all, keeping a name already given, and clears them', async () => {
     const { user } = await begun();
-    const columns = screen.getByRole('group', { name: 'Columns to return' });
+    const columns = screen.getByRole('region', { name: 'Columns to return' });
+    const all = within(columns).getByRole('checkbox', { name: 'Select all' });
+    expect(all).not.toBeChecked();
     await pick(user, 'id');
+    expect(all).toBePartiallyChecked();
     const named = within(columns).getByLabelText('Name of id');
     await user.clear(named);
     await user.type(named, 'site_id');
-    const all = within(columns).getByRole('button', { name: 'Select all' });
     await user.click(all);
+    expect(all).toBeChecked();
     const boxes = within(columns)
       .getAllByRole('checkbox')
-      .filter((box) => !(box as HTMLInputElement).disabled);
+      .filter((box) => box !== all && !(box as HTMLInputElement).disabled);
     expect(boxes.length).toBeGreaterThan(1);
     for (const box of boxes) expect(box).toBeChecked();
     expect(within(columns).getByLabelText('Name of id')).toHaveValue('site_id');
-    expect(all).toHaveAttribute('aria-disabled', 'true');
+    // Every one ticked, it clears them all.
+    await user.click(all);
+    for (const box of boxes) expect(box).not.toBeChecked();
+    expect(all).not.toBeChecked();
+  });
+
+  it('lays out the builder as one card: the query line, columns to return, filters and summaries a row each, the SQL it runs closed at its foot', async () => {
+    const { user } = await begun();
+    await pick(user, 'id', 'name');
+    const card = screen.getByRole('region', { name: 'Query' });
+    expect(
+      within(card).getByRole('radiogroup', { name: 'Write the query with' }),
+    ).toBeInTheDocument();
+    expect(within(card).getByRole('region', { name: 'Columns to return' })).toHaveTextContent(
+      /2 of \d+/,
+    );
+    await user.click(within(card).getByRole('button', { name: 'Add a filter' }));
+    const filters = within(card).getByRole('table', { name: 'Filters' });
+    expect(within(filters).getAllByRole('row')).toHaveLength(2);
+    await user.click(within(card).getByRole('checkbox', { name: 'Group and summarise' }));
+    await user.click(within(card).getByRole('button', { name: 'Add a summary' }));
+    const summaries = within(card).getByRole('table', { name: 'Summaries' });
+    expect(within(summaries).getAllByRole('row')[1]).toHaveTextContent('Only for an average');
+    expect(within(card).getByRole('region', { name: 'Parameters' })).toBeInTheDocument();
+    const runs = within(card).getByText('The SQL it runs', { selector: 'summary' });
+    expect(runs.closest('details')).not.toHaveAttribute('open');
   });
 
   it('DAT-119 offers Match case on a contains or starts with filter alone, unticked on a new filter, and ignores case until it is ticked', async () => {
     const { user } = await begun();
     await pick(user, 'id', 'name');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
-    const filter = screen.getByRole('group', { name: 'Filter 1' });
-    const matchCase = () => within(filter).queryByRole('checkbox', { name: 'Match case' });
-    await user.selectOptions(within(filter).getByLabelText('Column'), 'name');
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'A fixed value');
+    const matchCase = () => screen.queryByRole('checkbox', { name: 'Match case of filter 1' });
+    await user.selectOptions(screen.getByLabelText('Column of filter 1'), 'name');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'A fixed value');
     expect(matchCase()).toBeNull();
-    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'contains');
+    await user.selectOptions(screen.getByLabelText('Comparison of filter 1'), 'contains');
     expect(matchCase()).not.toBeChecked();
-    await user.type(within(filter).getByLabelText('Value'), 'pfi');
+    await user.type(screen.getByLabelText('Value of filter 1'), 'pfi');
     expect(shownSql()).toContain('pg_catalog."und-x-icu"');
     await user.click(matchCase()!);
     expect(shownSql()).not.toContain('und-x-icu');
     // Another comparison has no choice, and coming back takes the default again.
-    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'is');
+    await user.selectOptions(screen.getByLabelText('Comparison of filter 1'), 'is');
     expect(matchCase()).toBeNull();
-    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'starts with');
+    await user.selectOptions(screen.getByLabelText('Comparison of filter 1'), 'starts with');
     expect(matchCase()).not.toBeChecked();
     expect(shownSql()).toContain('pg_catalog.starts_with(pg_catalog.lower(');
   });
@@ -1790,7 +1812,7 @@ describe('the builder (D4)', () => {
       <QueryDefinitionPage client={service({ held: held(contains()) }).client} id={DEFINITION} />,
     );
     await tab(user, 'Query');
-    const ticked = await screen.findByRole('checkbox', { name: 'Match case' });
+    const ticked = await screen.findByRole('checkbox', { name: 'Match case of filter 1' });
     expect(ticked).toBeChecked();
     expect(shownSql()).not.toContain('und-x-icu');
     unmount();
@@ -1801,7 +1823,9 @@ describe('the builder (D4)', () => {
       />,
     );
     await tab(user, 'Query');
-    expect(await screen.findByRole('checkbox', { name: 'Match case' })).not.toBeChecked();
+    expect(
+      await screen.findByRole('checkbox', { name: 'Match case of filter 1' }),
+    ).not.toBeChecked();
   });
 
   it('opens a built definition in the builder, never as SQL to edit', async () => {
@@ -1811,7 +1835,7 @@ describe('the builder (D4)', () => {
     await tab(user, 'Query');
     expect(await screen.findByRole('radio', { name: 'Builder' })).toBeChecked();
     expect(screen.queryByLabelText('SQL text')).toBeNull();
-    expect(screen.getByRole('group', { name: 'Filter 1' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Column of filter 1')).toBeInTheDocument();
     expect(shownSql()).toContain(' FROM "sample"."site") AS "t"');
     // Turned to SQL by somebody who may write it, it starts empty: the generated SQL is not its.
     await user.click(screen.getByRole('radio', { name: 'SQL' }));
