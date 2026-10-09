@@ -152,28 +152,41 @@ describe("the environment's editing settings through the service", () => {
   it('ADM-002 records the settings a change changed, by name and never by value, as who changed them', async () => {
     const before = await tenantDb.withTenant(tenant, newestEvent);
     const was = await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx));
-    expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
-    // The same window again changes nothing, and records nothing.
-    expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
-    const data = (payload: object) =>
-      app.inject({
+    try {
+      expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
+      // The same window again changes nothing, and records nothing.
+      expect((await call('ada', 'PUT', { iterationRetentionDays: 21 })).statusCode).toBe(200);
+      const data = (payload: object) =>
+        app.inject({
+          method: 'PUT',
+          url: '/v1/settings/data',
+          headers: { host: HOST, cookie: cookies.ada! },
+          payload,
+        });
+      expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
+      expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
+      const events = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+      expect(
+        events.map((event) => [event.kind, event.actorKind, event.actor, event.detail]),
+      ).toEqual([
+        ['settings.changed', 'person', ids.ada, { settings: ['editing.iterationRetentionDays'] }],
+        ['settings.changed', 'person', ids.ada, { settings: ['data.rows', 'data.seconds'] }],
+      ]);
+      // What an act writes - its detail and its labels - never the value. The rest of an event is the
+      // log's own numbers and ids, a transaction id or a uuid among them, which may hold any digits.
+      expect(
+        JSON.stringify(events.map(({ detail, labels }) => ({ detail, labels }))),
+      ).not.toContain('4321');
+    } finally {
+      // Put back whatever happened, so a failure here never leaves the next test a changed window.
+      await call('ada', 'PUT', was);
+      await app.inject({
         method: 'PUT',
         url: '/v1/settings/data',
         headers: { host: HOST, cookie: cookies.ada! },
-        payload,
+        payload: {},
       });
-    expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
-    expect((await data({ rows: 4321, seconds: 17 })).statusCode).toBe(200);
-    const events = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
-    expect(events.map((event) => [event.kind, event.actorKind, event.actor, event.detail])).toEqual(
-      [
-        ['settings.changed', 'person', ids.ada, { settings: ['editing.iterationRetentionDays'] }],
-        ['settings.changed', 'person', ids.ada, { settings: ['data.rows', 'data.seconds'] }],
-      ],
-    );
-    expect(JSON.stringify(events)).not.toContain('4321');
-    await call('ada', 'PUT', was);
-    await data({});
+    }
   });
 
   it('answers a window outside 1 to 365 whole days as a bad request, and changes nothing', async () => {
