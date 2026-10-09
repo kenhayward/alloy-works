@@ -42,7 +42,7 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
   parameter_invalid: 'A value does not fit its parameter.',
   connector_error: 'The connector failed while it was working on this. Try again.',
   source_unsupported:
-    'This source is older than PostgreSQL 14, which the connector cannot check. Use a newer one.',
+    'This source is older than PostgreSQL 14, or was built without ICU, which a filter that ignores case needs. Use a newer source, or one built with ICU.',
   connector_unavailable: 'No connector is available to reach the source. Try again later.',
   connector_busy: 'The connector is busy. Try again in a moment.',
   image_refused:

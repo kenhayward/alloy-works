@@ -87,7 +87,8 @@ describe('the committed trace.json', () => {
     // 1546, from 1543 (2026-10-08): ADR-0045, T3 narrowed to the collaboration - COL-063 and COL-064 supersede COL-033, and ADM-049 is new; 64 rows move whole to T7, PUB-101 to T8, CNT-151, PUB-076 and PUB-080 to T4, and TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn.
     // 1549, from 1546 (2026-10-08): the Ledger's three rows - SCH-068, SCH-069 and CNT-181 (ADR-0046, LG-H).
     // 1550, from 1549 (2026-10-08): ADM-050 (T7), a tenant administrator refusing plain http connections (ADR-0048, issue #487).
-    expect(model.requirements).toHaveLength(1550);
+    // 1551, from 1550 (2026-10-09): DAT-119, Match case in a built filter (the MC plan).
+    expect(model.requirements).toHaveLength(1551);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -243,7 +244,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(660); // 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(661); // 661 (2026-10-09): MC - data.md claims DAT-119. 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -838,8 +839,10 @@ describe('the citations in the committed model', () => {
   // and LIF-027 to the db's audit-content, AST-037 in the service and the worker, IAM-013 in the
   // service's dataset-images.
   // 833 (2026-10-09): DAT-106 in the connector's result.test, a repeated key told from rows out of order.
+  // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
+  // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(833);
+    expect(model.citations).toHaveLength(839);
   });
 
   it('cites no identifier the corpus does not hold', () => {

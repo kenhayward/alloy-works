@@ -61,6 +61,14 @@ export const quoteIdentifier = (name: string) => `"${name.replaceAll('"', '""')}
 const codePointKey = (expression: string) =>
   `(${expression})::pg_catalog.text COLLATE pg_catalog."C"`;
 
+/**
+ * The case-blind key of a text expression (DAT-119, MC-B): lower-cased by Unicode's default mapping
+ * under ICU's root locale - `COLLATE "C"` lowers ASCII alone - then compared by code point, as the
+ * file filter's `toLowerCase()` compares.
+ */
+const foldedKey = (expression: string) =>
+  `pg_catalog.lower((${expression})::pg_catalog.text COLLATE pg_catalog."und-x-icu") COLLATE pg_catalog."C"`;
+
 const columnText = (ref: ColumnRef) =>
   `${quoteIdentifier(ref.source)}.${quoteIdentifier(ref.column)}`;
 
@@ -114,17 +122,24 @@ export function generatePostgres(
     column: string,
     value: () => string,
     type: ValueType,
+    ignoreCase = false,
   ): string => {
     // A text value is compared with the column's code-point key, which also lets a text parameter
-    // compare with an enum or a uuid at all (Q2).
-    const left = type.base === 'text' ? codePointKey(column) : column;
+    // compare with an enum or a uuid at all (Q2); contains and starts with fold both sides where the
+    // comparison ignores case.
+    const left = ignoreCase
+      ? foldedKey(column)
+      : type.base === 'text'
+        ? codePointKey(column)
+        : column;
+    const right = () => (ignoreCase ? foldedKey(value()) : value());
     switch (is) {
       case 'in':
         return `${left} OPERATOR(pg_catalog.=) ANY (${value()})`;
       case 'contains':
-        return `pg_catalog.strpos(${left}, ${value()}) OPERATOR(pg_catalog.>) 0`;
+        return `pg_catalog.strpos(${left}, ${right()}) OPERATOR(pg_catalog.>) 0`;
       case 'startsWith':
-        return `pg_catalog.starts_with(${left}, ${value()})`;
+        return `pg_catalog.starts_with(${left}, ${right()})`;
       default:
         return `${left} OPERATOR(pg_catalog.${OPERATORS[is]!}) ${value()}`;
     }
@@ -136,6 +151,7 @@ export function generatePostgres(
     if ('not' in node) return `(NOT ${condition(node.not)})`;
     const column = columnText(node.column);
     const { is, to } = node;
+    const ignoreCase = node.ignoreCase === true;
     if (is === 'isNull') return `${column} IS NULL`;
     if (is === 'isNotNull') return `${column} IS NOT NULL`;
     if (to === undefined) throw new Error(`The comparison ${is} compares with nothing`);
@@ -152,9 +168,9 @@ export function generatePostgres(
       const write = () => placeholder(number, parameter.type, parameter.list);
       // An optional parameter given no value is true, in the same text whatever it is given (DAT-018).
       // Each placeholder is written in the order it is read.
-      if (parameter.required) return comparison(is, column, write, parameter.type);
+      if (parameter.required) return comparison(is, column, write, parameter.type, ignoreCase);
       const absent = `${write()} IS NULL`;
-      return `(${absent} OR ${comparison(is, column, write, parameter.type)})`;
+      return `(${absent} OR ${comparison(is, column, write, parameter.type, ignoreCase)})`;
     }
     const number = bind(toBound(to.literal));
     return comparison(
@@ -162,6 +178,7 @@ export function generatePostgres(
       column,
       () => placeholder(number, to.type, Array.isArray(to.literal)),
       to.type,
+      ignoreCase,
     );
   };
 

@@ -694,7 +694,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   connection, written as SQL. **The builder** lists the database's tables and views with **Describe
   the source** and builds from one: the columns it returns and the names it returns them as, filters
   comparing a column with a parameter or a fixed value - is, is not, less or greater, at most or at
-  least, is one of, contains, starts with, is empty - under **Match all** or **Match any**, **Group
+  least, is one of, contains, starts with (whatever the capitals, unless **Match case** is ticked), is
+  empty - under **Match all** or **Match any**, **Group
   and summarise** with a count, a sum, an average to the places you choose, a minimum and a maximum,
   and **Return at most** beside a declared order; **The SQL it runs** shows, as you build, the SQL
   the product writes from it, every value sent apart from it. A query definition stores what was

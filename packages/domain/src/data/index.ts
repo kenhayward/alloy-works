@@ -222,6 +222,7 @@ export {
   checkBuilder,
   checkTree,
   comparisons,
+  ignoresCase,
   treeProblem,
 } from './builder.js';
 export type {

@@ -2,7 +2,9 @@ import {
   BindingRefused,
   bindFetch,
   dataFailure,
+  ignoresCase,
   type ChildRequest,
+  type Query,
   type ConnectionSettings,
   type HttpSettings,
   type PostgresSettings,
@@ -37,6 +39,7 @@ import {
   describeRelations,
   OLDEST_SERVER_VERSION,
   readOnlyFindings,
+  hasRootCollation,
   serverVersion,
 } from './postgres.js';
 import { runStatement } from './run.js';
@@ -217,6 +220,18 @@ async function answerHttp(
   return answer;
 }
 
+/** The built query a run or a describe of one sends, if it sends one. */
+function builtQuery(request: ChildRequest): Query | undefined {
+  if (request.kind === 'run') {
+    const { fetch } = request.request.definition;
+    return fetch.kind === 'builder' ? fetch.query : undefined;
+  }
+  if (request.kind === 'describeSql' && 'builder' in request.request) {
+    return request.request.builder.query;
+  }
+  return undefined;
+}
+
 /** A PostgreSQL request, as D1 to D7 built it. */
 async function answerPostgres(
   request: ChildRequest,
@@ -244,6 +259,10 @@ async function answerPostgres(
     }
     try {
       if ((await serverVersion(client)) < OLDEST_SERVER_VERSION)
+        throw failedWith('source_unsupported');
+      // A filter ignoring case lower-cases by ICU's root collation, which a source may lack (MC-F).
+      const tree = builtQuery(request);
+      if (tree !== undefined && ignoresCase(tree) && !(await hasRootCollation(client)))
         throw failedWith('source_unsupported');
       const role = assertedRole(request);
       switch (request.kind) {

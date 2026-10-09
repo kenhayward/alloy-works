@@ -1,11 +1,13 @@
 import { aggregates, type AggregateName, type ValueType } from '@alloy-works/domain';
 import { useId } from 'react';
 
+import { MatchCase } from './MatchCase.js';
 import { Choice, Status } from './Choice.js';
 import {
   BASES,
   COMPARISON_WORDS,
   comparisonsFor,
+  withComparison,
   fitFilter,
   operandOf,
   type BuilderDraft,
@@ -323,7 +325,10 @@ export function BuilderFields({
                       id={id}
                       value={filter.is}
                       onChange={(event) =>
-                        setFilter(at, { ...filter, is: event.target.value as FilterDraft['is'] })
+                        setFilter(
+                          at,
+                          withComparison(filter, event.target.value as FilterDraft['is']),
+                        )
                       }
                     >
                       {comparisonsFor(type, list).map((each) => (
@@ -334,6 +339,7 @@ export function BuilderFields({
                     </select>
                   )}
                 </Choice>
+                <MatchCase filter={filter} onChange={(changed) => setFilter(at, changed)} />
                 {fixed && compares && 'value' in filter.to && (
                   <label>
                     Value

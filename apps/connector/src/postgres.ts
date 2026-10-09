@@ -162,6 +162,18 @@ export async function serverVersion(client: pg.Client): Promise<number> {
   return Number(result.rows[0]?.version);
 }
 
+const ROOT_COLLATION = `select 1 from pg_catalog.pg_collation
+  where collname OPERATOR(pg_catalog.=) 'und-x-icu'`;
+
+/**
+ * Whether the source holds ICU's root collation, by which a built filter ignoring case lower-cases
+ * (DAT-119, the MC plan's MC-F): a source built without ICU has none.
+ */
+export async function hasRootCollation(client: pg.Client): Promise<boolean> {
+  const result = await client.query(ROOT_COLLATION);
+  return result.rows.length > 0;
+}
+
 /**
  * A schema of the account's own, outside the catalogues: not `pg_catalog`, `information_schema` or
  * any `pg_` schema.
@@ -393,6 +405,7 @@ select u.at::pg_catalog.int4 as at,
 /** Every statement the connector writes itself, for the test that holds each to `pg_catalog`'s names. */
 export const CATALOGUE_QUERIES: Readonly<Record<string, string>> = {
   SERVER_VERSION,
+  ROOT_COLLATION,
   MAY_WRITE,
   HOLDS_PRIVILEGE,
   ROLE_UNSAFE,

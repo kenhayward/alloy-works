@@ -2,10 +2,12 @@ import { useId } from 'react';
 
 import type { ValueType } from '@alloy-works/domain';
 
+import { MatchCase } from './MatchCase.js';
 import { Choice } from './Choice.js';
 import {
   COMPARISON_WORDS,
   comparisonsFor,
+  withComparison,
   type FilterDraft,
   type ParameterDraft,
 } from './definitionDraft.js';
@@ -49,7 +51,7 @@ export function FileFields({
   /** A filter whose comparison its column and operand no longer take takes the first they do. */
   const fitted = (filter: FilterDraft): FilterDraft => {
     const allowed = comparisonsFor(typeOf(filter.column), listed(filter));
-    return allowed.includes(filter.is) ? filter : { ...filter, is: allowed[0]! };
+    return allowed.includes(filter.is) ? filter : withComparison(filter, allowed[0]!);
   };
   const setFilter = (at: number, filter: FilterDraft) =>
     onChange({
@@ -142,7 +144,7 @@ export function FileFields({
                   id={id}
                   value={filter.is}
                   onChange={(event) =>
-                    setFilter(at, { ...filter, is: event.target.value as FilterDraft['is'] })
+                    setFilter(at, withComparison(filter, event.target.value as FilterDraft['is']))
                   }
                 >
                   {comparisonsFor(typeOf(filter.column), listed(filter)).map((each) => (
@@ -153,6 +155,7 @@ export function FileFields({
                 </select>
               )}
             </Choice>
+            <MatchCase filter={filter} onChange={(changed) => setFilter(at, changed)} />
             {fixed && compares && 'value' in filter.to && (
               <label>
                 Value

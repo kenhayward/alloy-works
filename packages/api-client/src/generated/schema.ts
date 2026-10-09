@@ -2043,6 +2043,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         describeConnectionBody_schema2: {
             fixed: string | boolean | null;
@@ -2164,6 +2166,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         sampleConnectionBody_schema2: {
             fixed: string | boolean | null;
@@ -2224,6 +2228,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         getDocumentBindings200_schema0: {
             fixed: string | boolean | null;
@@ -2555,6 +2561,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         getQueryDefinition200_schema2: {
             fixed: string | boolean | null;
@@ -2615,6 +2623,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion200_schema0: {
             sources: ({
@@ -2708,6 +2718,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion200_schema2: {
             fixed: string | boolean | null;
@@ -2768,6 +2780,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion400_schema0: {
             sources: ({
@@ -2861,6 +2875,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion400_schema2: {
             fixed: string | boolean | null;
@@ -2921,6 +2937,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion409_schema0: {
             sources: ({
@@ -3014,6 +3032,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersion409_schema2: {
             fixed: string | boolean | null;
@@ -3074,6 +3094,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersionBody_schema0: {
             sources: ({
@@ -3167,6 +3189,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         recordQueryDefinitionVersionBody_schema2: {
             fixed: string | boolean | null;
@@ -3227,6 +3251,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition200_schema0: {
             sources: ({
@@ -3320,6 +3346,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition200_schema2: {
             fixed: string | boolean | null;
@@ -3380,6 +3408,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition400_schema0: {
             sources: ({
@@ -3473,6 +3503,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition400_schema2: {
             fixed: string | boolean | null;
@@ -3533,6 +3565,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition409_schema0: {
             sources: ({
@@ -3626,6 +3660,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinition409_schema2: {
             fixed: string | boolean | null;
@@ -3686,6 +3722,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinitionBody_schema0: {
             sources: ({
@@ -3779,6 +3817,8 @@ export interface components {
                     column: string;
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createQueryDefinitionBody_schema2: {
             fixed: string | boolean | null;
@@ -3839,6 +3879,8 @@ export interface components {
                     base: "boolean";
                 };
             };
+            /** @constant */
+            ignoreCase?: true;
         };
         createTemplateBody_schema0: {
             key: string;

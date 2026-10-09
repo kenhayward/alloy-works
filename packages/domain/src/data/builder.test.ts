@@ -704,3 +704,48 @@ describe("The builder's format", () => {
     expect(parseDraftDefinition(draft)).toEqual(draft);
   });
 });
+
+describe('Match case in a built filter', () => {
+  const named = (is: 'contains' | 'startsWith' | 'equal', over: object = {}) =>
+    sites({
+      where: {
+        column: ref('s', 'name'),
+        is,
+        to: { literal: 'pfi', type: { base: 'text' } },
+        ...over,
+      } as Condition,
+    });
+
+  it('DAT-119 stores a choice to ignore case on contains and starts with over text', () => {
+    expect(refusedAt(named('contains', { ignoreCase: true }))).toEqual([]);
+    expect(refusedAt(named('startsWith', { ignoreCase: true }))).toEqual([]);
+  });
+
+  it('DAT-119 refuses ignoring case written false, beside another comparison, or against a list', () => {
+    expect(refusedAt(named('contains', { ignoreCase: false }))).not.toEqual([]);
+    expect(refusedAt(named('equal', { ignoreCase: true }))).toContain(
+      'fetch.query.where.ignoreCase',
+    );
+    expect(
+      refusedAt(
+        sites({
+          where: {
+            column: ref('s', 'name'),
+            is: 'in',
+            to: { literal: ['Ada'], type: { base: 'text' } },
+            ignoreCase: true,
+          },
+        }),
+      ),
+    ).toContain('fetch.query.where.ignoreCase');
+  });
+
+  it('DAT-119 leaves a comparison stored without the choice as it was, matching case', () => {
+    const stored = named('contains');
+    expect(refusedAt(stored)).toEqual([]);
+    expect(canonicalJson(queryOf(stored).where)).not.toContain('ignoreCase');
+    expect(generatePostgres(stored, {}, 'run').text).toContain(
+      'pg_catalog.strpos(("s"."name")::pg_catalog.text COLLATE pg_catalog."C", ($1::pg_catalog.text)) OPERATOR(pg_catalog.>) 0',
+    );
+  });
+});
