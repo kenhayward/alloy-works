@@ -692,12 +692,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Columns**, **Rows**, **Sample** and, once saved, **Used by** - under a strip saying what it runs against, how many of its columns are confirmed and what uses it, with **Save version** at the top, held until every column is confirmed, and **Retire** under **More actions**; the tab is in the address. Details is the connection, a title and a description;
   the query, **built** without writing any SQL or, where they hold the permission **write SQL** on the
   connection, written as SQL. **The builder** lists the database's tables and views with **Describe
-  the source** and builds from one: the columns it returns and the names it returns them as, filters
+  the source** and builds from one, on one card: the columns it returns and the names it returns
+  them as, three across, with **Select all**, filters a row each
   comparing a column with a parameter or a fixed value - is, is not, less or greater, at most or at
   least, is one of, contains, starts with (whatever the capitals, unless **Match case** is ticked), is
   empty - under **Match all** or **Match any**, **Group
   and summarise** with a count, a sum, an average to the places you choose, a minimum and a maximum,
-  and **Return at most** beside a declared order; **The SQL it runs** shows, as you build, the SQL
+  and **Return at most** beside a declared order; **The SQL it runs**, opened at the card's foot,
+  shows as you build the SQL
   the product writes from it, every value sent apart from it. A query definition stores what was
   built and never its SQL, which is written again each time it runs. Text is compared, sorted and
   grouped by code point, so `Ada` and `ada` are never one group. A table or column whose name is not
