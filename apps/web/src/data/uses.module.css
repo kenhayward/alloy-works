@@ -1,0 +1,68 @@
+/* A Used by tab's list (ADR-0050, decision 8): a card, headed and counted, rows of --list-row. */
+.list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+
+.count {
+  font-family: var(--mono);
+}
+
+.items {
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.items li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--list-row);
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--size-13);
+}
+
+.items li:last-child {
+  border-bottom: 0;
+}
+
+.items a {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.others {
+  margin: 0;
+  padding: 10px 18px;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.foot {
+  margin-top: auto;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}

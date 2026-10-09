@@ -1799,13 +1799,22 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
 - **Parts.** `Toolbar` (one tab stop, the arrows), `IconButton`, `PanelTabs` and `Chip`, used by
   every toolbar, panel strip and state; and, for Administration (ADR-0049), `SidePanel` (440px,
   docked from 1366px, floating below; focus in, Escape, focus back to its opener), `ConfirmDialog`
-  (480px, acting once) and `RowActions` (two icons keyed by slot, then a More actions menu).
+  (480px, acting once) and `RowActions` (two icons keyed by slot, then a More actions menu); for a
+  detail page (ADR-0050), `DetailPage` (header, `StateStrip`, `PanelTabs` with a warn tone, a name
+  and a count, the chosen panel filling the window; the tab in the address, replaced not pushed),
+  `Tooltip` (described by its value, hover or focus, Escape) and `Pager` (ten to a page).
 - **Administration** is a page at `#/admin/<section>` ([ADR-0049](decisions/0049-administration-is-a-page.md),
   built by [the AD plan](plans/2026-10-09-ad-administration-page.md)): a menu grouped Environment,
   People and access and System, counted from each listing's `total`; Overview, Spaces, People,
   Groups, Roles (a grid by the domain's permissions) and About, whose release notes are the
   changelog's newest entry, read by `vite.config.ts` at build. A row's details open in `SidePanel`
   beside its list. About's other content reaches the page from `App` through `AboutContext`.
+- **A connection and a query definition** are each a `DetailPage`
+  ([ADR-0050](decisions/0050-a-detail-page-is-a-header-a-strip-and-tabs.md), built by
+  [the DP plan](plans/2026-10-09-dp-detail-pages.md)), at `#/connections/<id>/<tab>` and
+  `#/query-definitions/<id>/<tab>`; the Workspace keeps the page mounted as the tab changes, so its
+  draft holds. A definition's Save version is in the header, `aria-disabled` until every column is
+  confirmed; Used by is `PagedUses`, paging the whole listing in the page.
 - **Layouts.** A: a filter pane, the list and the chosen row beside it from 1366px, over it below.
   B: the space pane, the editor and its panels (Attributes, where the editor portals its fields;
   Versions; Access). C: the outline, the text, and Part, Document, Lists and Publishing beside it,
@@ -3142,9 +3151,9 @@ naming and counting the definitions the same way, and the credential route's ans
 `dependents` when its test fails. The renderer's **Query definitions**, beside Connections, lists them
 in layout A with a space facet and offers **New query definition** where the person may edit a space
 and use some connection; a definition's page (`QueryDefinitionPage.tsx`, its draft held by
-`definitionDraft.ts`) is written in steps - the connection and title, the query - built, or SQL - and its parameters,
-**Describe** with each column confirmed, the key, order, empty and limits, **Run sample** - and saved
-once every column is confirmed. A connection's page shows **Used by**. Compose gives the connector
+`definitionDraft.ts`) is written in tabs - Details, the Query - built, or SQL - and its parameters, Columns with
+**Describe** and each column confirmed, Rows (key, order, empty and limits), Sample with **Run
+sample** - and saved once every column is confirmed. A connection's page shows **Used by**. Compose gives the connector
 `mem_limit: 3g` (D2-J), a backstop for what the byte count does not see: a `Buffer` lives outside the
 heap `--max-old-space-size` bounds. A run at a result's ceiling peaked at about 370 MiB in its child
 and about 90 MiB more in the supervisor parsing its answer (measured under `tsx` on Windows), so the

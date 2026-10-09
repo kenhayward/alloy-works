@@ -5,7 +5,12 @@ import { AccessPanel } from '../access/AccessPanel.js';
 import { Administration } from '../admin/Administration.js';
 import { ConnectionPage } from '../data/ConnectionPage.js';
 import { Connections } from '../data/Connections.js';
-import { connectionAddress, connectionLink, queryDefinitionAddress } from '../data/links.js';
+import {
+  connectionAddress,
+  connectionLink,
+  queryDefinitionAddress,
+  queryDefinitionTab,
+} from '../data/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
 import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { Home } from '../home/Home.js';
@@ -275,12 +280,24 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     }
     if (connection) {
       return (
-        <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
+        <ConnectionPage
+          key={connection.connection}
+          client={client}
+          id={connection.connection}
+          tab={connection.tab}
+        />
       );
     }
     const definition = queryDefinitionAddress(hash);
     if (definition !== null) {
-      return <QueryDefinitionPage key={definition} client={client} id={definition} />;
+      return (
+        <QueryDefinitionPage
+          key={definition}
+          client={client}
+          id={definition}
+          tab={queryDefinitionTab(hash)}
+        />
+      );
     }
     if (hash === '#/query-definitions') {
       return (

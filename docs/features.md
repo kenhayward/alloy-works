@@ -647,7 +647,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   read, by space, with whether each has its password and how its last test went. Somebody who may
   administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
   database's host, port, database, account and TLS, an HTTP API's base URL and the header its
-  secret is sent in, or an S3 bucket's endpoint, region, name and how it is addressed. An endpoint or base URL may be plain `http`, for a source on your own machine or network; nothing yet lets a tenant refuse it. A connection's page saves a change to its
+  secret is sent in, or an S3 bucket's endpoint, region, name and how it is addressed. An endpoint or base URL may be plain `http`, for a source on your own machine or network; nothing yet lets a tenant refuse it. A connection's page has a tab each for **Settings**, **Credential**, **Tables** and **Used by**, under a strip saying whether its credential is set, how its last test went and what uses it; the tab is in the address. It saves a change to its
   settings as a new version, and says so if somebody else saved one first. Its password is typed
   into a field that empties as it is sent and never shows it again, anywhere: the page says only
   whether it is set, by whom and when, and setting or replacing it tests the connection straight
@@ -662,7 +662,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   views the account may read, with their columns; it leaves out, and counts, a table or column whose
   name holds a control character such as a tab, and says when the list was cut short, past 2,000
   tables or past what one answer can carry.
-  **Retire** stops a connection running anything, and **Reinstate** starts it again, each a version.
+  **Retire** stops a connection running anything, and **Reinstate** starts it again, each a version, both under **More actions**.
   Testing and listing tables need **use connection**, which an administrator grants on purpose, from
   **Manage access** on the connection or its space, by giving the starting role **Query builder**
   (use connection) or **Query writer** (use connection and write SQL); no default grant gives either. The password is sealed
@@ -670,7 +670,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
   database only in a way that never sends the password itself. A connection's page lists, under
   **Used by**, the query definitions that name it and the documents holding results from it - those
-  you may read by title, and how many more - and a connection a query definition still uses cannot be retired: the page names what to retire
+  you may read by title, ten to a page, and how many more - and a connection a query definition still uses cannot be retired: the page names what to retire
   first.
 - **Running as each person.** A PostgreSQL connection's **Runs as** is the connection's account, or
   each person, by the email they sign in with or by their identifier at the organisation's sign-in.
@@ -688,7 +688,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   database up, and what it trusts.
 - **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
   read, by space, each with its connection. Somebody who may edit in a space and use a connection
-  writes one there with **New query definition**, in steps: the connection, a title and a description;
+  writes one there with **New query definition**, a tab for each step - **Details**, **Query**,
+  **Columns**, **Rows**, **Sample** and, once saved, **Used by** - under a strip saying what it runs against, how many of its columns are confirmed and what uses it, with **Save version** at the top, held until every column is confirmed, and **Retire** under **More actions**; the tab is in the address. Details is the connection, a title and a description;
   the query, **built** without writing any SQL or, where they hold the permission **write SQL** on the
   connection, written as SQL. **The builder** lists the database's tables and views with **Describe
   the source** and builds from one: the columns it returns and the names it returns them as, filters

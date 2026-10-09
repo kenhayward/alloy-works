@@ -295,7 +295,7 @@ describe('a pager', () => {
 });
 
 describe('a detail page', () => {
-  it('is a header, a state strip and tabs, one panel showing, labelled by its tab', () => {
+  it('is a header, a state strip and tabs, one panel showing, labelled by its tab', async () => {
     render(
       <DetailPage
         trail={<a href="#/connections">Connections</a>}
@@ -313,7 +313,7 @@ describe('a detail page', () => {
         chosen="credential"
         link={(tab) => `#/connections/c1/${tab}`}
       >
-        <p>The credential</p>
+        {(tab) => <p>{`The ${tab}`}</p>}
       </DetailPage>,
     );
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Connections');
@@ -325,6 +325,9 @@ describe('a detail page', () => {
       'aria-controls',
       panel.id,
     );
+    // Shown as chosen without waiting for the address to come back.
+    await userEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    expect(screen.getByRole('tabpanel', { name: 'Settings' })).toHaveTextContent('The settings');
   });
 
   it('puts the chosen tab in the address in place of the last, so Back leaves the page', async () => {
@@ -343,7 +346,7 @@ describe('a detail page', () => {
         chosen="settings"
         link={(tab) => `#/connections/c1/${tab}`}
       >
-        <p>Settings</p>
+        {(tab) => <p>{tab}</p>}
       </DetailPage>,
     );
     await userEvent.click(screen.getByRole('tab', { name: 'Credential' }));

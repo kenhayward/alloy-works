@@ -3,6 +3,25 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.147.1 - 2026-10-09 (PR #505)
+
+### Changed
+
+- **A connection's page has tabs.** Settings, Credential, Tables and Used by each have a tab, under a
+  strip saying whether its credential is set, how its last test went and what uses it. Test is at the
+  top of the page, and Retire and Reinstate are under More actions. Its settings are two to a row.
+- **A query definition's page has tabs.** Details, Query, Columns, Rows, Sample and Used by each
+  have a tab, under a strip saying what it runs against, how many of its columns are confirmed and
+  what uses it. Save version is at the top from every tab, and says why while a column is still to
+  confirm; Columns turns amber until each is. Builder or SQL is a switch on the Query tab, beside its
+  parameters and the SQL it runs.
+- **Rows and Sample as drawn.** Rows sets the key, the order, with a column removed by its bin, and
+  the maximums side by side. Sample shows the first rows beside the SQL that ran, with the row count
+  and, on hover or focus, the checksum.
+- **Used by pages.** What uses a connection or a query definition is listed ten to a page.
+- **A tab can be linked.** The tab open is in the address, such as `#/connections/<id>/tables`, so a
+  link opens it.
+
 ## 0.147.0 - 2026-10-09 (PR #500)
 
 ### Added
