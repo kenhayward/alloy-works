@@ -1803,7 +1803,8 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   detail page (ADR-0050), `DetailPage` (header, `StateStrip`, `PanelTabs` with a warn tone, a name
   and a count, the chosen panel filling the window; the tab in the address, replaced not pushed),
   `Tooltip` (described by its value, hover or focus, Escape) and `Pager` (ten to a page); and
-  `Segmented` (ADR-0051), one choice of a few, a radio group of one tab stop.
+  `Segmented` (ADR-0051), one choice of a few, a radio group of one tab stop; and `RowTable` (the
+  QF plan), a list edited in place, a row a line of fixed widths, numbered, with a bin.
 - **Administration** is a page at `#/admin/<section>` ([ADR-0049](decisions/0049-administration-is-a-page.md),
   built by [the AD plan](plans/2026-10-09-ad-administration-page.md)): a menu grouped Environment,
   People and access and System, counted from each listing's `total`; Overview, Spaces, People,
