@@ -3,6 +3,48 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.147.0 - 2026-10-09 (PR #500)
+
+### Added
+
+- **Administration is a page.** Admin on the rail opens it at its Overview: what the environment
+  holds, each count a way to its section, the environment itself, and who holds what across it, its
+  Access beside the page. A menu groups Environment, People and access and System, each section
+  counted and a link of its own.
+- **Release notes in About.** About and release notes says what changed in the version you are
+  running.
+- **Development sources on your own network.** `deploy\BringUpDev.cmd` checks the checkout is a
+  clean `main`, pulls it, builds and starts the development stack, and lets its connector reach a
+  source on your machine or network, such as an S3 store on a port of its own.
+
+### Changed
+
+- **Every Administration section in one shape.** Spaces, People, Groups and Roles each have a search
+  or filters and a table with a head. A row's actions are icons, with the rest under More actions;
+  removing anything asks first. A space's Access, a person's API tokens and what they may do, and a
+  group's members each open in a panel beside the list, which keeps your place. Waiting invitations
+  have a tab of their own, Invite people invites by address, and Roles are a grid of the
+  environment's roles by permission.
+- **People, invitations and groups through the API say how many there are in all.**
+- **Modules keep your place.** Leaving a component, a document, a connection or a query definition
+  for another module and coming back by the rail finds it as you left it, unsaved changes and scroll
+  included. Lists are read afresh.
+- **Plain http for sources.** An HTTP API's base URL and an S3 endpoint may now start http://, for a
+  source on your own machine or network. A type once called "An HTTPS API" is now "An HTTP API".
+- **Workflow has a phase of its own.** States, gates, approvals and revisions move from T3 to a new
+  T9, built after T3; API jobs and query cost limits move to T4, and Home's recently opened list to
+  T7.
+
+### Fixed
+
+- **A repeated key is named as one.** A sample whose rows share a key now says which row repeats it
+  and to choose a key that is unique, rather than blaming the order and suggesting SQL a file cannot
+  have.
+- **Where an S3 file is.** A query definition on an S3 bucket asks where the file is in the bucket, a
+  folder or the file name per segment, and shows the path it will read.
+- **New connection fits its fields.** The dialog is wider, no field runs past its edge, and an S3
+  endpoint's message says a port may be named.
+
 ## 0.146.0 - 2026-10-08 (PR #483)
 
 ### Added

@@ -58,7 +58,13 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                   {`${rows.length} ${rows.length === 1 ? 'role' : 'roles'}, ${permissions.length} permissions`}
                 </p>
               </div>
-              <div className={styles['scroller']}>
+              {/* Scrolled sideways where the window is narrower than the grid, so reached by keyboard too. */}
+              <div
+                className={styles['scroller']}
+                role="region"
+                aria-label="Roles by permission"
+                tabIndex={0}
+              >
                 <table aria-label="Roles" className={`${styles['table']} ${styles['grid']}`}>
                   <thead>
                     <tr>
