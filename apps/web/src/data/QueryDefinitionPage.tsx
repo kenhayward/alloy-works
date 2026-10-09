@@ -380,7 +380,12 @@ function TypeFields({
   );
 }
 
-/** One parameter's declaration (DAT-010): its name, type, whether required or a list, and what it permits. */
+/**
+ * One parameter's declaration (DAT-010), open (the postgres query handoff): a band on one line - its
+ * name, type, what it permits, required, a list, and for SQL whether it chooses a fragment - with a
+ * second line for what that needs (a decimal's digits, the values listed, a range), and its fragments
+ * a row each.
+ */
 function ParameterFields({
   index,
   parameter,
@@ -394,153 +399,174 @@ function ParameterFields({
   readonly onChange: (parameter: ParameterDraft) => void;
 }) {
   const variation = parameter.variation.length > 0;
+  const { base } = parameter.type;
+  const own =
+    base === 'decimal' || base === 'time' || base === 'localDateTime' || base === 'instant';
+  const permits = !variation && parameter.permitted !== 'none';
+  const setFragment = (at: number, over: Partial<ParameterDraft['variation'][number]>) =>
+    onChange({
+      ...parameter,
+      variation: parameter.variation.map((held, place) =>
+        place === at ? { ...held, ...over } : held,
+      ),
+    });
   return (
-    <fieldset className={styles['parameter']}>
-      <legend>{`Parameter ${index + 1}`}</legend>
-      <label>
-        Name
+    <div role="group" aria-label={`Parameter ${index + 1}`} className={styles['band']}>
+      <div className={styles['bandLine']}>
         <input
+          aria-label="Name"
+          className={styles['bandName']}
           value={parameter.name}
           spellCheck={false}
           onChange={(event) => onChange({ ...parameter, name: event.target.value })}
         />
-      </label>
-      <TypeFields type={parameter.type} onChange={(type) => onChange({ ...parameter, type })} />
-      <label className={styles['check']}>
-        <input
-          type="checkbox"
-          checked={parameter.required}
-          onChange={(event) => onChange({ ...parameter, required: event.target.checked })}
-        />
-        Required
-      </label>
-      <label className={styles['check']}>
-        <input
-          type="checkbox"
-          checked={parameter.list}
-          onChange={(event) => onChange({ ...parameter, list: event.target.checked })}
-        />
-        A list of values
-      </label>
-      {!built && (
-        <label className={styles['check']}>
-          <input
-            type="checkbox"
-            checked={variation}
+        <span className={styles['bandType']}>
+          <TypeFields
+            part="base"
+            type={parameter.type}
+            onChange={(type) => onChange({ ...parameter, type })}
+          />
+        </span>
+        {!variation && (
+          <select
+            aria-label="Permits"
+            className={styles['bandPermits']}
+            value={parameter.permitted}
             onChange={(event) =>
               onChange({
                 ...parameter,
-                variation: event.target.checked ? [{ key: '', sql: '' }] : [],
-                permitted: 'none',
+                permitted: event.target.value as ParameterDraft['permitted'],
               })
             }
+          >
+            <option value="none">Any value of its type</option>
+            <option value="values">Only the values listed</option>
+            <option value="range">Only values in a range</option>
+          </select>
+        )}
+        <label className={styles['check']}>
+          <input
+            type="checkbox"
+            checked={parameter.required}
+            onChange={(event) => onChange({ ...parameter, required: event.target.checked })}
           />
-          Chooses a fragment of SQL, placed at a marker with a hash
+          Required
         </label>
-      )}
-      {!variation && (
-        <Choice label="Permits">
-          {(id) => (
-            <select
-              id={id}
-              value={parameter.permitted}
+        <label className={styles['check']}>
+          <input
+            type="checkbox"
+            checked={parameter.list}
+            onChange={(event) => onChange({ ...parameter, list: event.target.checked })}
+          />
+          A list of values
+        </label>
+        {!built && (
+          <label
+            className={styles['check']}
+            title="Chooses a fragment of SQL, placed at a marker with a hash"
+          >
+            <input
+              type="checkbox"
+              checked={variation}
               onChange={(event) =>
                 onChange({
                   ...parameter,
-                  permitted: event.target.value as ParameterDraft['permitted'],
+                  variation: event.target.checked ? [{ key: '', sql: '' }] : [],
+                  permitted: 'none',
                 })
               }
-            >
-              <option value="none">Any value of its type</option>
-              <option value="values">Only the values listed</option>
-              <option value="range">Only values in a range</option>
-            </select>
-          )}
-        </Choice>
-      )}
-      {!variation && parameter.permitted === 'values' && (
-        <Choice label="Permitted values, one to a line">
-          {(id) => (
-            <textarea
-              id={id}
-              rows={3}
-              value={parameter.values}
-              onChange={(event) => onChange({ ...parameter, values: event.target.value })}
+            />
+            Chooses a fragment of SQL
+          </label>
+        )}
+      </div>
+      {(own || permits) && (
+        <div className={styles['bandMore']}>
+          {own && (
+            <TypeFields
+              part="own"
+              type={parameter.type}
+              onChange={(type) => onChange({ ...parameter, type })}
             />
           )}
-        </Choice>
-      )}
-      {!variation && parameter.permitted === 'range' && (
-        <>
-          <label>
-            Lowest
-            <input
-              value={parameter.minimum}
-              onChange={(event) => onChange({ ...parameter, minimum: event.target.value })}
-            />
-          </label>
-          <label>
-            Highest
-            <input
-              value={parameter.maximum}
-              onChange={(event) => onChange({ ...parameter, maximum: event.target.value })}
-            />
-          </label>
-        </>
-      )}
-      {variation &&
-        parameter.variation.map((each, at) => (
-          <div key={at} className={styles['fragment']}>
+          {permits && parameter.permitted === 'values' && (
             <label>
-              {`Key ${at + 1}`}
-              <input
-                value={each.key}
-                spellCheck={false}
-                onChange={(event) =>
-                  onChange({
-                    ...parameter,
-                    variation: parameter.variation.map((held, place) =>
-                      place === at ? { ...held, key: event.target.value } : held,
-                    ),
-                  })
-                }
+              Permitted values, one to a line
+              <textarea
+                rows={2}
+                value={parameter.values}
+                onChange={(event) => onChange({ ...parameter, values: event.target.value })}
               />
             </label>
-            <label>
-              {`Fragment ${at + 1}`}
-              <input
-                className={styles['code']}
-                value={each.sql}
-                spellCheck={false}
-                onChange={(event) =>
-                  onChange({
-                    ...parameter,
-                    variation: parameter.variation.map((held, place) =>
-                      place === at ? { ...held, sql: event.target.value } : held,
-                    ),
-                  })
-                }
-              />
-            </label>
-          </div>
-        ))}
+          )}
+          {permits && parameter.permitted === 'range' && (
+            <>
+              <label>
+                Lowest
+                <input
+                  value={parameter.minimum}
+                  onChange={(event) => onChange({ ...parameter, minimum: event.target.value })}
+                />
+              </label>
+              <label>
+                Highest
+                <input
+                  value={parameter.maximum}
+                  onChange={(event) => onChange({ ...parameter, maximum: event.target.value })}
+                />
+              </label>
+            </>
+          )}
+        </div>
+      )}
       {variation && (
-        <button
-          type="button"
-          onClick={() =>
-            onChange({ ...parameter, variation: [...parameter.variation, { key: '', sql: '' }] })
-          }
-        >
-          Add a fragment
-        </button>
+        <div className={styles['bandFragments']}>
+          <RowTable
+            label={`Fragments of parameter ${index + 1}`}
+            columns={[{ head: 'Key', width: 230 }, { head: 'Fragment' }]}
+            rows={parameter.variation.map((each, at) => ({
+              key: at,
+              cells: [
+                <input
+                  key="key"
+                  aria-label={`Key ${at + 1}`}
+                  value={each.key}
+                  spellCheck={false}
+                  onChange={(event) => setFragment(at, { key: event.target.value })}
+                />,
+                <input
+                  key="sql"
+                  aria-label={`Fragment ${at + 1}`}
+                  className={styles['code']}
+                  value={each.sql}
+                  spellCheck={false}
+                  onChange={(event) => setFragment(at, { sql: event.target.value })}
+                />,
+              ],
+              remove: `Remove fragment ${at + 1}`,
+              onRemove: () =>
+                onChange({
+                  ...parameter,
+                  variation: parameter.variation.filter((_, place) => place !== at),
+                }),
+            }))}
+          />
+          <Act
+            words="Add a fragment"
+            onClick={() =>
+              onChange({ ...parameter, variation: [...parameter.variation, { key: '', sql: '' }] })
+            }
+          />
+        </div>
       )}
-    </fieldset>
+    </div>
   );
 }
 
 /**
  * The parameters, a line each (the query file handoff, QF-A): its name, what it takes in words, its
- * pencil opening its fields under the line (QF-B), and its bin.
+ * pencil opening it as a band in place (QF-B, the postgres query handoff), and its bin. The pencil
+ * and the bin keep their places, open or closed, so the focus stays where it was.
  */
 function ParameterLines({
   parameters,
@@ -562,21 +588,35 @@ function ParameterLines({
       {parameters.map((parameter, at) => {
         const open = opened.has(at);
         return (
-          <li key={at}>
+          <li key={at} {...(open ? { 'data-open': 'true' } : {})}>
             <div className={styles['parameterLine']}>
-              <span className={styles['parameterName']}>
-                {parameter.name === '' ? 'Not named yet' : parameter.name}
-              </span>
-              <span className={styles['hint']}>{parameterSummary(parameter)}</span>
+              {open ? (
+                <ParameterFields
+                  key="fields"
+                  index={at}
+                  built={built}
+                  parameter={parameter}
+                  onChange={(changed) => onChange(at, changed)}
+                />
+              ) : (
+                <span key="said" className={styles['parameterSaid']}>
+                  <span className={styles['parameterName']}>
+                    {parameter.name === '' ? 'Not named yet' : parameter.name}
+                  </span>
+                  <span className={styles['hint']}>{parameterSummary(parameter)}</span>
+                </span>
+              )}
               <IconButton
+                key="edit"
                 label={`Edit parameter ${at + 1}`}
                 className={styles['lineIcon']}
                 aria-expanded={open}
                 onClick={() => onOpen(at)}
               >
-                <Icon name="Edit" />
+                <Icon name={open ? 'Move up' : 'Edit'} />
               </IconButton>
               <IconButton
+                key="remove"
                 label={`Remove parameter ${at + 1}`}
                 className={styles['lineIcon']}
                 onClick={() => onRemove(at)}
@@ -584,14 +624,6 @@ function ParameterLines({
                 <Icon name="Delete" />
               </IconButton>
             </div>
-            {open && (
-              <ParameterFields
-                index={at}
-                built={built}
-                parameter={parameter}
-                onChange={(changed) => onChange(at, changed)}
-              />
-            )}
           </li>
         );
       })}
@@ -768,7 +800,6 @@ export function QueryDefinitionPage({
   const working = useRef(false);
   const ids = useId();
   const heldId = `${ids}-held`;
-  const parametersId = `${ids}-parameters`;
   // The draft as it is now, for an answer that arrives after it was asked for.
   const latest = useRef(draft);
   latest.current = draft;
@@ -1558,10 +1589,10 @@ export function QueryDefinitionPage({
         </section>
       );
     }
-    // HTTP: the request beside its parameters, until PQ3.
+    // HTTP: one card too (PQ-E), its request as it is until an HTTP handoff, then its parameters.
     return (
-      <div className={styles['split']}>
-        <section className={styles['card']} aria-label="Query">
+      <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
+        <div className={styles['httpBody']}>
           <div className={styles['form']}>
             <HttpFields
               http={draft.http}
@@ -1569,20 +1600,15 @@ export function QueryDefinitionPage({
               onChange={(http) => changeStatement({ http })}
             />
           </div>
-        </section>
-        <div className={styles['beside']}>
-          <section className={styles['card']} aria-labelledby={parametersId}>
-            <div className={styles['cardHead']}>
-              <h2 id={parametersId}>Parameters</h2>
-              <button type="button" onClick={addParameter}>
-                Add parameter
-              </button>
-            </div>
-            {draft.parameters.length === 0 && <p className={styles['hint']}>None yet.</p>}
-            {parameterLines}
-          </section>
         </div>
-      </div>
+        <Section
+          heading="Parameters"
+          count={draft.parameters.length}
+          acts={<Act words="Add parameter" onClick={addParameter} />}
+        >
+          {parameterLines}
+        </Section>
+      </section>
     );
   }
 

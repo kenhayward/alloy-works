@@ -730,18 +730,26 @@ describe('the query definition page', () => {
     await user.click(edit);
     expect(edit).toHaveAttribute('aria-expanded', 'true');
     const fields = within(parameters).getByRole('group', { name: 'Parameter 1' });
+    // Open, it is a band of its fields in place of its line; closed, its line says what changed.
+    expect(line).not.toHaveTextContent('any value of its type');
     await user.click(within(fields).getByLabelText('A list of values'));
-    expect(line).toHaveTextContent('Integer, required, a list, any value of its type');
+    // An SQL parameter may choose a fragment: its fragments are a row each.
+    await user.click(within(fields).getByLabelText('Chooses a fragment of SQL'));
+    expect(
+      within(fields).getByRole('table', { name: 'Fragments of parameter 1' }),
+    ).toBeInTheDocument();
+    await user.click(within(fields).getByLabelText('Chooses a fragment of SQL'));
     await user.click(edit);
     expect(within(parameters).queryByRole('group', { name: 'Parameter 1' })).toBeNull();
+    expect(line).toHaveTextContent('Integer, required, a list, any value of its type');
     // A new one opens with its fields, to be named.
     await user.click(within(parameters).getByRole('button', { name: 'Add parameter' }));
     expect(within(parameters).getByRole('group', { name: 'Parameter 2' })).toBeInTheDocument();
     await user.click(within(parameters).getByRole('button', { name: 'Remove parameter 1' }));
     expect(within(parameters).getAllByRole('listitem')).toHaveLength(1);
-    expect(within(parameters).getByRole('group', { name: 'Parameter 1' })).toHaveTextContent(
-      'Name',
-    );
+    expect(
+      within(within(parameters).getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
+    ).toHaveValue('');
   });
 
   it('lays out the Columns tab a column a row, Confirm and Confirmed in one place, Confirm all counting what is left', async () => {

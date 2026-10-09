@@ -3,6 +3,28 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.148.0 - 2026-10-09 (PR #518)
+
+### Added
+
+- **Match case on a text filter.** A built query's or a file's "contains" or "starts with" filter
+  now finds text whatever its capitals, so `pfizer` finds `Pfizer Inc`. Tick **Match case** to match
+  capitals exactly. Filters saved before keep matching case.
+- **Confirm all and Select all.** A query definition's Columns tab confirms every typed column at
+  once, and the builder's Columns to return selects every column at once, or clears them all.
+
+### Changed
+
+- **The Columns tab is a column a row.** Each column's type and the type's own fields sit side by
+  side, a column waiting to be confirmed is tinted, Confirm and Confirmed share one place, and
+  Confirm all counts the columns left.
+- **A PostgreSQL definition's Query tab is one card.** Builder or SQL is a switch on the line with
+  the table or view; Columns to return lists the columns three across; filters and summaries are
+  each a row of a table; and the SQL a built query runs is shown on request at the card's foot.
+- **A parameter opens as a band.** Its name, type, what it permits, whether it is required or a
+  list, and for SQL whether it chooses a fragment sit on one line, its fragments a row each, for
+  every kind of connection. An HTTP definition's Query tab is one card too.
+
 ## 0.147.3 - 2026-10-09 (PR #512)
 
 ### Changed

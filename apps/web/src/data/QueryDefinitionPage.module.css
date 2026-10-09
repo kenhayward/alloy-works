@@ -85,96 +85,6 @@
   border-top: 1px solid var(--border);
 }
 
-/* Query: the query beside its parameters and the SQL it runs. */
-.split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: var(--space-16);
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .split {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.beside {
-  display: grid;
-  gap: var(--space-16);
-}
-
-/* Builder or SQL, a two-way switch (ADR-0050, decision 5). */
-.switch {
-  display: inline-flex;
-  gap: 2px;
-  margin: 0;
-  padding: 3px;
-  border: 0;
-  border-radius: var(--radius-8);
-  background: var(--sunken);
-}
-
-.switch label {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: var(--size-13);
-  cursor: pointer;
-}
-
-.switch input {
-  position: absolute;
-  opacity: 0;
-  inset: 0;
-  margin: 0;
-  cursor: pointer;
-}
-
-.switch label:has(input:checked) {
-  background: var(--surface);
-  box-shadow: var(--shadow-rest);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.switch label:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-/* Columns: a table with a row held in warn until it is confirmed. */
-.columns {
-  border-collapse: collapse;
-  margin: 0 -18px;
-  width: calc(100% + 36px);
-}
-
-.columns th {
-  padding: 10px 18px;
-  letter-spacing: normal;
-  text-transform: none;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: var(--size-12);
-  font-weight: 600;
-  text-align: start;
-}
-
-.columns td {
-  padding: 8px 18px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-
-.columns tr[data-held='true'] td {
-  background: var(--warn-bg);
-}
-
 .source {
   color: var(--muted);
   font-family: var(--mono);
@@ -219,16 +129,6 @@
 /* Details and Rows fill their card, as drawn. */
 .narrow .form {
   max-width: none;
-}
-
-/* A column's type needs no label of its own beside its name; its digits and places keep theirs. */
-.columns .type > .choice:first-child > label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .form > button {
@@ -811,4 +711,105 @@
 
 .runs[open] > summary {
   margin-bottom: var(--space-8);
+}
+
+/* A parameter's line: what it is said to be, then its pencil and bin at the line's end. */
+.parameterLine {
+  justify-content: space-between;
+}
+
+.parameterSaid {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+/* An open parameter (the postgres query handoff): a sunken band edge to edge, its fields on a line. */
+.parameterLines > li[data-open='true'] {
+  margin-inline: -18px;
+  padding: var(--space-8) 18px;
+  background: var(--sunken);
+}
+
+.parameterLines > li[data-open='true'] > .parameterLine {
+  align-items: flex-start;
+}
+
+.band {
+  display: grid;
+  flex: 1;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.bandLine,
+.bandMore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.band input:not([type='checkbox']),
+.band select {
+  height: var(--row-control);
+  min-height: 0;
+}
+
+.band .check {
+  min-height: 0;
+  margin: 0;
+}
+
+.bandName {
+  width: 110px;
+}
+
+.bandType select {
+  width: 170px;
+}
+
+.bandPermits {
+  width: 210px;
+}
+
+.bandMore > label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.bandMore textarea {
+  min-width: 18rem;
+}
+
+.bandFragments {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-8);
+}
+
+.bandFragments > table {
+  width: 100%;
+}
+
+/* HTTP's request, as it is, at the head of its one card (PQ-E). */
+.httpBody {
+  padding: var(--space-16) 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Opened, the summary already says what the figure is; its caption still names it. */
+.runs figcaption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
