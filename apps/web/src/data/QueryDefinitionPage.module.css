@@ -549,3 +549,39 @@
 .first [data-number] {
   text-align: end;
 }
+
+/* A format's fields on one line, each label beside its field (the query file handoff). */
+.formatLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) 22px;
+}
+
+.formatLine .choice,
+.formatLine label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  font-size: var(--size-13);
+  white-space: nowrap;
+}
+
+.formatLine .choice > label {
+  margin: 0;
+  color: var(--muted);
+}
+
+.formatLine select,
+.formatLine input:not([type='checkbox']) {
+  width: auto;
+  height: var(--row-control);
+  min-height: 0;
+}
+
+/* A file's query: one card of sections, each edge to edge. */
+.fileCard {
+  gap: 0;
+  padding: 0;
+}

@@ -1,0 +1,67 @@
+/* A file's Query tab, one card of sections (the query file handoff). */
+.section {
+  margin: 0;
+  padding: 10px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section:last-child {
+  border-bottom: 0;
+}
+
+.section > p {
+  margin: 2px 0 0;
+}
+
+.section > table,
+.section > div:not(.head) {
+  margin-top: var(--space-8);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.reads {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline-end: 12px;
+  border-inline-end: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.reads code {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--sunken);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font-size: var(--size-13);
+  font-weight: 500;
+}
+
+.mono {
+  font-family: var(--mono);
+}

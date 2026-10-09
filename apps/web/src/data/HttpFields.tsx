@@ -12,6 +12,12 @@ import styles from './QueryDefinitionPage.module.css';
  */
 
 /** A part's value: fixed text, or a parameter chosen by name. */
+/** A part made fixed, emptied, or a parameter, the first offered. */
+export const partOfKind = (
+  kind: PartDraft['kind'],
+  parameters: readonly ParameterDraft[],
+): PartDraft => ({ kind, text: kind === 'parameter' ? (parameters[0]?.name ?? '') : '' });
+
 export function PartField({
   label,
   part,
@@ -31,10 +37,7 @@ export function PartField({
             id={id}
             value={part.kind}
             onChange={(event) =>
-              onChange({
-                kind: event.target.value as PartDraft['kind'],
-                text: event.target.value === 'parameter' ? (parameters[0]?.name ?? '') : '',
-              })
+              onChange(partOfKind(event.target.value as PartDraft['kind'], parameters))
             }
           >
             <option value="fixed">Fixed</option>

@@ -91,6 +91,10 @@
   --grid-row: 36px;
   --icon-button-sm: 26px;
   --format-dialog: 600px;
+  /* A list edited in place (the query file handoff): its rows, the controls in them, its bins. */
+  --edit-row: 40px;
+  --row-control: 30px;
+  --row-button: 28px;
 
   /* A rendered publication: paper in every theme. The desk around it is --desk, which a theme sets. */
   --doc-page: #ffffff;
