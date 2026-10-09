@@ -2,7 +2,7 @@
 
 > Building [the details handoff](../interface/handoffs/details/README.md) under
 > [ADR-0050](../decisions/0050-a-detail-page-is-a-header-a-strip-and-tabs.md). **Full tier, five
-> PRs**, a contract change only if DP-D is taken. Ken's answers to DP-C to DP-G are its pre-flight.
+> PRs**, a contract change only if DP-D is taken. Ken agreed DP-C to DP-G on 9 October 2026, its pre-flight.
 
 **Goal:** both pages as a header, a state strip and tabs, in Light and Dark, with no string reworded
 that the handoff keeps and no requirement that passes today failing.

@@ -1,6 +1,6 @@
 # 0050 - A detail page is a header, a state strip and tabs
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-09
 
 ## Context
