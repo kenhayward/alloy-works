@@ -13,6 +13,10 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **Connection and query definition pages.** [`handoffs/details/`](handoffs/details/README.md)
+> redraws both as a header, a state strip and tabs ([ADR-0050](../decisions/0050-a-detail-page-is-a-header-a-strip-and-tabs.md)),
+> built by [the DP plan](../plans/2026-10-09-dp-detail-pages.md).
+
 > **Administration is a page.** [`handoffs/admin/`](handoffs/admin/README.md) redraws it as a
 > console page in the Ledger shell ([ADR-0049](../decisions/0049-administration-is-a-page.md)),
 > built by [the AD plan](../plans/2026-10-09-ad-administration-page.md); it replaces the
