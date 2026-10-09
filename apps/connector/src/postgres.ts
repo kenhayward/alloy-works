@@ -163,7 +163,8 @@ export async function serverVersion(client: pg.Client): Promise<number> {
 }
 
 const ROOT_COLLATION = `select 1 from pg_catalog.pg_collation
-  where collname OPERATOR(pg_catalog.=) 'und-x-icu'`;
+  where collname OPERATOR(pg_catalog.=) 'und-x-icu'
+    and collnamespace OPERATOR(pg_catalog.=) 'pg_catalog'::pg_catalog.regnamespace`;
 
 /**
  * Whether the source holds ICU's root collation, by which a built filter ignoring case lower-cases
