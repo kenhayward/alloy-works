@@ -1555,10 +1555,28 @@ export function QueryDefinitionPage({
   }
 
   function columnsPanel() {
+    // Every column with a type and not yet confirmed: what Confirm all confirms at once.
+    const confirmable = draft.columns.some((each) => !each.confirmed && each.type.base !== '');
     return (
       <section className={styles['card']} aria-label="Columns">
         <div className={styles['cardHead']}>
           <Status lines={described} />
+          {draft.columns.length > 0 && (
+            <button
+              type="button"
+              aria-disabled={!confirmable}
+              onClick={() =>
+                confirmable &&
+                change({
+                  columns: draft.columns.map((each) =>
+                    each.type.base === '' ? each : { ...each, confirmed: true },
+                  ),
+                })
+              }
+            >
+              Confirm all
+            </button>
+          )}
           {mayRun && (
             <button type="button" disabled={busy !== null} onClick={describe}>
               {draft.mode === 'http' || draft.mode === 'file' ? 'Sample for columns' : 'Describe'}
