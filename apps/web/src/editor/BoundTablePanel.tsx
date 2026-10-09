@@ -40,6 +40,7 @@ import { createPortal } from 'react-dom';
 import { IconButton } from '../parts/IconButton.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import { Segmented } from '../parts/Segmented.js';
+import { Tooltip } from '../parts/Tooltip.js';
 import { useStatus } from '../shell/Status.js';
 import styles from './BoundTablePanel.module.css';
 import { Icon } from './Icon.js';
@@ -114,6 +115,14 @@ export const BOUND_TABLE_WORDS = {
   noteStands: (column: string) =>
     `A note stands on ${column}. Remove the note before taking the column out of the table.`,
 } as const;
+
+/** Each alignment's glyph on its segment, its name in full the segment's name. */
+const ALIGN_ICONS: Readonly<Record<ColumnAlignment, string>> = {
+  start: 'Align start',
+  centre: 'Align centre',
+  end: 'Align end',
+  decimal: 'Align decimal',
+};
 
 /** A note as the panel lists it: what it stands on, in words. */
 export function noteOnWords(anchor: BoundNoteAnchor, header: (column: string) => string): string {
@@ -190,7 +199,9 @@ export function BoundTablePanel({
   const [declared, setDeclared] = useState<readonly TableColumn[] | 'unreadable' | null>(null);
   // The definition's key, read with its columns where the document holds none (TB3.3).
   const [declaredKey, setDeclaredKey] = useState<readonly string[] | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
+  const [said, setSaid] = useState<{ readonly text: string; readonly at: number | null } | null>(
+    null,
+  );
   const [formatting, setFormattingNow] = useState<number | null>(null);
   // The Format button that opened the dialog, which takes the focus back as it closes.
   const formatOpener = useRef<HTMLElement | null>(null);
@@ -268,25 +279,23 @@ export function BoundTablePanel({
     enabled && setBoundTable(next, { typed })(view.state, view.dispatch);
 
   /** Sets the columns, saying why where the walk would refuse them. */
-  const setColumns = (columns: readonly BoundColumn[], typed = false): boolean => {
-    if (columns.length === 0) {
-      setSaid(BOUND_TABLE_WORDS.lastColumn);
+  const setColumns = (
+    columns: readonly BoundColumn[],
+    typed = false,
+    at: number | null = null,
+  ): boolean => {
+    const refuse = (text: string) => {
+      setSaid({ text, at });
       return false;
-    }
+    };
+    if (columns.length === 0) return refuse(BOUND_TABLE_WORDS.lastColumn);
     if (columns.some((each) => each.header.trim() === '')) {
-      setSaid(BOUND_TABLE_WORDS.needsHeader);
-      return false;
+      return refuse(BOUND_TABLE_WORDS.needsHeader);
     }
     const repeated = repeatedColumn(columns);
-    if (repeated !== null) {
-      setSaid(repeatedWords(repeated));
-      return false;
-    }
+    if (repeated !== null) return refuse(repeatedWords(repeated));
     const noted = noteColumnDropped(table.notes, columns);
-    if (noted !== null) {
-      setSaid(BOUND_TABLE_WORDS.noteStands(noted));
-      return false;
-    }
+    if (noted !== null) return refuse(BOUND_TABLE_WORDS.noteStands(noted));
     setSaid(null);
     return change({ columns }, typed);
   };
@@ -296,7 +305,7 @@ export function BoundTablePanel({
     const columns = [...table.columns];
     const [moved] = columns.splice(at, 1);
     columns.splice(at + by, 0, moved!);
-    setColumns(columns);
+    setColumns(columns, false, at + by);
   };
   const unshown = offered.find(
     (each) => !table.columns.some((shown) => shown.column === each.name),
@@ -464,11 +473,10 @@ export function BoundTablePanel({
           </button>
         )}
       </div>
-      {said !== null && (
-        <p role="alert" className={styles['complaint']}>
-          {said}
-        </p>
-      )}
+      <p role="status" className={styles['hidden']}>
+        {said?.text ?? ''}
+      </p>
+      {said !== null && said.at === null && <p className={styles['complaint']}>{said.text}</p>}
       <div
         role="tabpanel"
         id={ids('columns').panel}
@@ -478,6 +486,18 @@ export function BoundTablePanel({
       >
         <fieldset className={styles['group']}>
           <legend className={styles['hidden']}>{BOUND_TABLE_WORDS.columns}</legend>
+          <div className={`${styles['column']} ${styles['head']}`} aria-hidden="true">
+            <span />
+            <span className={styles['index']}>#</span>
+            <span>{BOUND_TABLE_WORDS.column}</span>
+            <span>{BOUND_TABLE_WORDS.header}</span>
+            <span>{BOUND_TABLE_WORDS.unit}</span>
+            <span>{BOUND_TABLE_WORDS.unitPlace}</span>
+            <span>{BOUND_TABLE_WORDS.align}</span>
+            <Icon name="Wrap" />
+            <Icon name="Format" />
+            <Icon name="Delete" />
+          </div>
           {table.columns.map((column, at) => (
             <ColumnFields
               key={at}
@@ -486,9 +506,16 @@ export function BoundTablePanel({
               count={table.columns.length}
               offered={offered}
               enabled={enabled}
-              onColumns={(next, typed) => setColumns(withColumn(at, next), typed)}
+              onColumns={(next, typed) => setColumns(withColumn(at, next), typed, at)}
               onMove={(by) => move(at, by)}
-              onRemove={() => setColumns(table.columns.filter((_, index) => index !== at))}
+              onRemove={() =>
+                setColumns(
+                  table.columns.filter((_, index) => index !== at),
+                  false,
+                  at,
+                )
+              }
+              refused={said !== null && said.at === at ? said.text : null}
               onFormat={(opener) => {
                 formatOpener.current = opener;
                 setFormatting(at);
@@ -597,7 +624,11 @@ export function BoundTablePanel({
             onDone={(format: FieldFormat | undefined) => {
               const at = formatting!;
               const rest = without(formattingColumn, 'format');
-              setColumns(withColumn(at, format === undefined ? rest : { ...rest, format }));
+              setColumns(
+                withColumn(at, format === undefined ? rest : { ...rest, format }),
+                false,
+                at,
+              );
               setFormatting(null);
             }}
             onCancel={() => setFormatting(null)}
@@ -818,6 +849,8 @@ interface ColumnFieldsProps {
   readonly onFormat: (opener: HTMLElement) => void;
   /** Told as the focus comes into the row and leaves it. */
   readonly onFocused?: (focused: boolean) => void;
+  /** Why a change to this row was refused, or null. */
+  readonly refused?: string | null;
 }
 
 /** One column's fields: its header and unit typed as drafts, refused ones kept until put right. */
@@ -832,6 +865,7 @@ function ColumnFields({
   onRemove,
   onFormat,
   onFocused,
+  refused = null,
 }: ColumnFieldsProps) {
   const [header, setHeader] = useState(column.header);
   const [unit, setUnit] = useState(column.unit?.text ?? '');
@@ -851,128 +885,131 @@ function ColumnFields({
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onFocused?.(false);
       }}
     >
-      <label className={styles['inline']}>
-        {BOUND_TABLE_WORDS.column}
-        <select
-          value={column.column}
-          disabled={!enabled}
-          onChange={(event) => onColumns({ ...column, column: event.target.value }, false)}
+      <span className={styles['moves']}>
+        <IconButton
+          label={BOUND_TABLE_WORDS.up}
+          className={styles['move']}
+          aria-disabled={!enabled || at === 0}
+          onClick={() => at > 0 && enabled && onMove(-1)}
         >
-          {namesOffered(offered, column.column).map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className={styles['inline']}>
-        {BOUND_TABLE_WORDS.header}
-        <input
-          value={header}
-          disabled={!enabled}
-          aria-invalid={header.trim() === ''}
-          maxLength={200}
-          onChange={(event) => {
-            setHeader(event.target.value);
-            onColumns({ ...column, header: event.target.value }, true);
-          }}
-        />
-      </label>
-      <label className={styles['inline']}>
-        {BOUND_TABLE_WORDS.unit}
-        <input
-          value={unit}
-          disabled={!enabled}
-          maxLength={40}
-          size={6}
-          onChange={(event) => {
-            const text = event.target.value;
-            setUnit(text);
-            onColumns(text === '' ? bare : { ...column, unit: { text, place: unitPlace } }, true);
-          }}
-        />
-      </label>
-      <label className={styles['inline']}>
-        {BOUND_TABLE_WORDS.unitPlace}
-        <select
-          value={unitPlace}
-          disabled={!enabled || column.unit === undefined}
-          onChange={(event) =>
-            column.unit !== undefined &&
-            onColumns(
-              {
-                ...column,
-                unit: { ...column.unit, place: event.target.value as 'header' | 'value' },
-              },
-              false,
-            )
-          }
+          <Icon name="Move up" />
+        </IconButton>
+        <IconButton
+          label={BOUND_TABLE_WORDS.down}
+          className={styles['move']}
+          aria-disabled={!enabled || at === count - 1}
+          onClick={() => at < count - 1 && enabled && onMove(1)}
         >
-          {Object.entries(BOUND_TABLE_WORDS.unitPlaces).map(([value, words]) => (
-            <option key={value} value={value}>
-              {words}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className={styles['inline']}>
-        {BOUND_TABLE_WORDS.align}
-        <select
-          value={column.align ?? 'style'}
-          disabled={!enabled}
-          onChange={(event) => {
-            const rest = without(column, 'align');
-            const value = event.target.value;
-            onColumns(
-              value === 'style' ? rest : { ...rest, align: value as ColumnAlignment },
-              false,
-            );
-          }}
-        >
-          {(['style', ...COLUMN_ALIGNMENTS] as const).map((value) => (
-            <option key={value} value={value}>
-              {BOUND_TABLE_WORDS.aligns[value]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className={styles['inline']}>
-        <input
-          type="checkbox"
-          checked={column.wrap !== false}
-          disabled={!enabled}
-          onChange={(event) => {
-            const rest = without(column, 'wrap');
-            onColumns(event.target.checked ? rest : { ...rest, wrap: false }, false);
-          }}
-        />
-        {BOUND_TABLE_WORDS.wrap}
-      </label>
-      <button
-        type="button"
-        aria-disabled={!enabled || at === 0}
-        onClick={() => at > 0 && enabled && onMove(-1)}
+          <Icon name="Move down" />
+        </IconButton>
+      </span>
+      {/* Its number, marked where a change to this row was refused, the reason beside it (ADR-0051). */}
+      <span className={styles['index']}>
+        {refused === null ? (
+          at + 1
+        ) : (
+          <span className={styles['refused']}>
+            <Tooltip tip={refused}>{at + 1}</Tooltip>
+          </span>
+        )}
+      </span>
+      <select
+        aria-label={BOUND_TABLE_WORDS.column}
+        value={column.column}
+        disabled={!enabled}
+        onChange={(event) => onColumns({ ...column, column: event.target.value }, false)}
       >
-        {BOUND_TABLE_WORDS.up}
-      </button>
-      <button
-        type="button"
-        aria-disabled={!enabled || at === count - 1}
-        onClick={() => at < count - 1 && enabled && onMove(1)}
+        {namesOffered(offered, column.column).map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <input
+        aria-label={BOUND_TABLE_WORDS.header}
+        value={header}
+        disabled={!enabled}
+        aria-invalid={header.trim() === ''}
+        maxLength={200}
+        onChange={(event) => {
+          setHeader(event.target.value);
+          onColumns({ ...column, header: event.target.value }, true);
+        }}
+      />
+      <input
+        aria-label={BOUND_TABLE_WORDS.unit}
+        value={unit}
+        disabled={!enabled}
+        maxLength={40}
+        onChange={(event) => {
+          const text = event.target.value;
+          setUnit(text);
+          onColumns(text === '' ? bare : { ...column, unit: { text, place: unitPlace } }, true);
+        }}
+      />
+      <Segmented
+        label={BOUND_TABLE_WORDS.unitPlace}
+        value={unitPlace}
+        disabled={!enabled || column.unit === undefined}
+        onChange={(place) =>
+          column.unit !== undefined &&
+          onColumns(
+            { ...column, unit: { ...column.unit, place: place as 'header' | 'value' } },
+            false,
+          )
+        }
+        options={[
+          { value: 'header', label: 'Header', name: BOUND_TABLE_WORDS.unitPlaces.header },
+          { value: 'value', label: 'Value', name: BOUND_TABLE_WORDS.unitPlaces.value },
+        ]}
+      />
+      <Segmented
+        label={BOUND_TABLE_WORDS.align}
+        value={column.align ?? 'style'}
+        disabled={!enabled}
+        onChange={(chosen) => {
+          const rest = without(column, 'align');
+          onColumns(
+            chosen === 'style' ? rest : { ...rest, align: chosen as ColumnAlignment },
+            false,
+          );
+        }}
+        options={(['style', ...COLUMN_ALIGNMENTS] as const).map((each) =>
+          each === 'style'
+            ? { value: each, label: 'Style', name: BOUND_TABLE_WORDS.aligns.style }
+            : { value: each, name: BOUND_TABLE_WORDS.aligns[each], icon: ALIGN_ICONS[each] },
+        )}
+      />
+      <IconButton
+        label={BOUND_TABLE_WORDS.wrap}
+        pressed={column.wrap !== false}
+        className={styles['toggle']}
+        aria-disabled={!enabled}
+        onClick={() => {
+          if (!enabled) return;
+          const rest = without(column, 'wrap');
+          onColumns(column.wrap !== false ? { ...rest, wrap: false } : rest, false);
+        }}
       >
-        {BOUND_TABLE_WORDS.down}
-      </button>
-      <button type="button" aria-disabled={!enabled} onClick={() => enabled && onRemove()}>
-        {BOUND_TABLE_WORDS.remove}
-      </button>
-      <button
-        type="button"
+        <Icon name="Wrap" />
+      </IconButton>
+      <IconButton
+        label={BOUND_TABLE_WORDS.format}
+        className={styles['bin']}
         aria-haspopup="dialog"
         aria-disabled={!enabled}
         onClick={(event) => enabled && onFormat(event.currentTarget)}
       >
-        {BOUND_TABLE_WORDS.format}
-      </button>
+        <Icon name="Format" />
+      </IconButton>
+      <IconButton
+        label={BOUND_TABLE_WORDS.remove}
+        className={styles['bin']}
+        aria-disabled={!enabled}
+        onClick={() => enabled && onRemove()}
+      >
+        <Icon name="Delete" />
+      </IconButton>
     </div>
   );
 }

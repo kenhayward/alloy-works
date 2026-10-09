@@ -1802,7 +1802,8 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   (480px, acting once) and `RowActions` (two icons keyed by slot, then a More actions menu); for a
   detail page (ADR-0050), `DetailPage` (header, `StateStrip`, `PanelTabs` with a warn tone, a name
   and a count, the chosen panel filling the window; the tab in the address, replaced not pushed),
-  `Tooltip` (described by its value, hover or focus, Escape) and `Pager` (ten to a page).
+  `Tooltip` (described by its value, hover or focus, Escape) and `Pager` (ten to a page); and
+  `Segmented` (ADR-0051), one choice of a few, a radio group of one tab stop.
 - **Administration** is a page at `#/admin/<section>` ([ADR-0049](decisions/0049-administration-is-a-page.md),
   built by [the AD plan](plans/2026-10-09-ad-administration-page.md)): a menu grouped Environment,
   People and access and System, counted from each listing's `total`; Overview, Spaces, People,
@@ -3806,7 +3807,12 @@ source as children, and an atom body drawn by `boundTableView`'s `fillBoundTable
 decoration - which `render.ts` shares, so the read text draws the same table. `tables.ts` holds
 `insertBoundTable`, `setBoundTable`, `setBoundTablePart`, `changeTableBinding` and `deleteBoundTable`;
 the Value dialog places `As a table`, and `BoundTablePanel` and `FormatDialog` in `apps/web` shape it,
-each change one transaction. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
+each change one transaction. The panel is a band of fixed height under the toolbar
+([ADR-0051](decisions/0051-the-bound-table-panel-is-a-band-of-tabs.md)): the value in one line, the
+table's toggles, Columns, Sort and Notes tabs, a column a row, refusals marked on their row and said
+in a live region. `boundTableFocus.ts` outlines the table the cursor is in and marks the column
+focused in the panel, by decorations outside the history; `Status.place` says where in the status
+bar. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
 
 | Where                                                     | What                                                  |
 | --------------------------------------------------------- | ----------------------------------------------------- |

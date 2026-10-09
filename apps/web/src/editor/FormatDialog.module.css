@@ -1,0 +1,48 @@
+/* The Format dialog (ADR-0051, decision 7): a member a row, its name and the style's word on the left,
+   its field on the right. */
+.rows {
+  display: grid;
+  margin-inline: calc(-1 * var(--space-24));
+  border-top: 1px solid var(--border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-16);
+  padding: 10px var(--space-24);
+  border-bottom: 1px solid var(--border);
+}
+
+.name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--space-8);
+}
+
+.name label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hint {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.field :is(input, select) {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.field label {
+  margin: 0;
+}

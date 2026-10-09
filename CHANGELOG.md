@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.147.2 - 2026-10-09 (PR #509)
+
+### Changed
+
+- **The Bound table panel is a band of tabs.** It keeps one height under the toolbar while the cursor
+  is in the table, so the text no longer jumps, and its lists scroll inside it. Its first line is the
+  value, with its definition as a link, then the table's settings as toggles; Columns, Sort and Notes
+  each have a counted tab.
+- **A column is one row.** Each column's column, header, unit, where the unit stands, alignment, wrap,
+  Format and Remove sit side by side, alignment and the unit's place chosen from a few segments.
+- **You can see which table and column you are in.** The table is outlined while you are in it, the
+  column whose row you are in is highlighted, and the status bar says which.
+- **Refusals are quiet.** A change the table refuses is marked on its row's number, the reason shown
+  as you point at it or reach it, and said once to a screen reader.
+- **The Format dialog lays out a member a row**, its name on the left with the table style's value
+  under it, and a Set badge where the column sets it.
+- **The value of a binding in one line.** The Value panel is a single line, its acts as icons.
+
 ## 0.147.1 - 2026-10-09 (PR #505)
 
 ### Changed
