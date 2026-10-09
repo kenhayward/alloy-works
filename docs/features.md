@@ -148,8 +148,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
-  in it holds that role there. Groups lists each group with where its members come from and who they
-  are. A group is the environment's own, whose members the administrator chooses there from the
+  in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who
+  they are; **Members** opens a group's members in a panel beside the list, and Delete, under More
+  actions, asks first, naming who loses what. A group is the environment's own, whose members the administrator chooses there from the
   environment's people, or stands for one value your organisation's sign-in says a person is in - a
   directory group - and then its members are whoever signed in last saying so, shown and not changeable
   by hand. A group is deleted after asking, with everything granted to it. At every sign-in through

@@ -432,3 +432,19 @@
   align-items: center;
   gap: var(--space-8);
 }
+
+/* Groups (AD6): where a group's members come from, and their faces. */
+.fromColumn {
+  width: 180px;
+}
+
+.faces > span[aria-hidden] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.faces .initials {
+  margin-inline-end: -6px;
+  border: 2px solid var(--surface);
+}
