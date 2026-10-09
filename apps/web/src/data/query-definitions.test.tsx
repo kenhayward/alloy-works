@@ -1696,6 +1696,59 @@ describe('the builder (D4)', () => {
     expect(screen.getByRole('menuitem', { name: 'Retire' })).toBeInTheDocument();
   });
 
+  it('DAT-119 offers Match case on a contains or starts with filter alone, unticked on a new filter, and ignores case until it is ticked', async () => {
+    const { user } = await begun();
+    await pick(user, 'id', 'name');
+    await user.click(screen.getByRole('button', { name: 'Add a filter' }));
+    const filter = screen.getByRole('group', { name: 'Filter 1' });
+    const matchCase = () => within(filter).queryByRole('checkbox', { name: 'Match case' });
+    await user.selectOptions(within(filter).getByLabelText('Column'), 'name');
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'A fixed value');
+    expect(matchCase()).toBeNull();
+    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'contains');
+    expect(matchCase()).not.toBeChecked();
+    await user.type(within(filter).getByLabelText('Value'), 'pfi');
+    expect(shownSql()).toContain('pg_catalog."und-x-icu"');
+    await user.click(matchCase()!);
+    expect(shownSql()).not.toContain('und-x-icu');
+    // Another comparison has no choice, and coming back takes the default again.
+    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'is');
+    expect(matchCase()).toBeNull();
+    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'starts with');
+    expect(matchCase()).not.toBeChecked();
+    expect(shownSql()).toContain('pg_catalog.starts_with(pg_catalog.lower(');
+  });
+
+  it('DAT-119 opens a stored contains filter with Match case ticked unless it ignores case', async () => {
+    const user = userEvent.setup();
+    const contains = (over: Record<string, unknown> = {}) =>
+      builtFetch({
+        where: {
+          column: { source: 't', column: 'name' },
+          is: 'contains',
+          to: { literal: 'Pf', type: { base: 'text' } },
+          ...over,
+        },
+      });
+    const held = (fetch: unknown) => view({ fetch, parameters: [] });
+    const { unmount } = render(
+      <QueryDefinitionPage client={service({ held: held(contains()) }).client} id={DEFINITION} />,
+    );
+    await tab(user, 'Query');
+    const ticked = await screen.findByRole('checkbox', { name: 'Match case' });
+    expect(ticked).toBeChecked();
+    expect(shownSql()).not.toContain('und-x-icu');
+    unmount();
+    render(
+      <QueryDefinitionPage
+        client={service({ held: held(contains({ ignoreCase: true })) }).client}
+        id={DEFINITION}
+      />,
+    );
+    await tab(user, 'Query');
+    expect(await screen.findByRole('checkbox', { name: 'Match case' })).not.toBeChecked();
+  });
+
   it('opens a built definition in the builder, never as SQL to edit', async () => {
     const user = userEvent.setup();
     const { client } = service({ held: view({ fetch: builtFetch() }) });
@@ -2050,6 +2103,50 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     await user.click(within(filters).getByRole('button', { name: 'Remove filter 2' }));
     // One filter matches by itself: all or any is not asked.
     expect(within(filters).queryByRole('radiogroup', { name: 'Match' })).toBeNull();
+  });
+
+  it("DAT-119 offers Match case in a file filter's row beside its value, for contains and starts with alone", async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      held: view({
+        parameters: [],
+        fetch: {
+          kind: 'file',
+          key: [{ fixed: 'sites.csv' }],
+          format: { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' },
+          where: {
+            and: [
+              {
+                column: 'site',
+                is: 'contains',
+                to: { literal: 'north', type: { base: 'text' } },
+                ignoreCase: true,
+              },
+              { column: 'site', is: 'startsWith', to: { literal: 'N', type: { base: 'text' } } },
+              { column: 'site', is: 'equal', to: { literal: 'North', type: { base: 'text' } } },
+            ],
+          },
+        },
+        columns: [{ name: 'site', from: { header: 'site' }, type: { base: 'text' } }],
+        key: [],
+        order: 'multiset',
+      }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
+    const filters = await screen.findByRole('table', { name: 'Filters' });
+    const rows = within(filters).getAllByRole('row');
+    // Ignoring case, unticked; stored without the setting, ticked; an equal comparison offers none.
+    const first = within(rows[1]!).getByRole('checkbox', { name: 'Match case of filter 1' });
+    expect(first).not.toBeChecked();
+    expect(
+      within(rows[2]!).getByRole('checkbox', { name: 'Match case of filter 2' }),
+    ).toBeChecked();
+    expect(within(rows[3]!).queryByRole('checkbox')).toBeNull();
+    await user.click(first);
+    expect(first).toBeChecked();
+    await user.selectOptions(within(rows[1]!).getByLabelText('Comparison of filter 1'), 'equal');
+    expect(within(rows[1]!).queryByRole('checkbox')).toBeNull();
   });
 
   it('shows the object a file definition reads to somebody who may only read it', async () => {

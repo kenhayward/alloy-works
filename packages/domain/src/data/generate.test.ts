@@ -277,6 +277,10 @@ describe("PostgreSQL's generator", () => {
         where: {
           and: [
             compare('code', 'startsWith', { parameter: 'prefix' }),
+            {
+              ...compare('name', 'contains', { literal: 'n', type: { base: 'text' } }),
+              ignoreCase: true,
+            } as Condition,
             { not: compare('opened', 'less', { literal: '2020-01-01', type: { base: 'date' } }) },
             compare('ratio', 'isNotNull'),
           ],
@@ -553,5 +557,30 @@ describe("PostgreSQL's generator", () => {
       text: 'select id from sample.site where id =  ($1::int8)  order by id',
       values: ['1'],
     });
+  });
+});
+
+describe("PostgreSQL's generator, ignoring case", () => {
+  it('DAT-119 lower-cases both sides by Unicode before contains and starts with compare them by code point', () => {
+    const folded = (is: Comparison, to: Operand) =>
+      ({ ...compare('name', is, to), ignoreCase: true }) as Condition;
+    const definition = filtered(
+      {
+        and: [
+          folded('contains', { parameter: 'part' }),
+          folded('startsWith', { literal: 'Pf', type: { base: 'text' } }),
+        ],
+      },
+      [parameter('part', { base: 'text' }, { required: false })],
+    );
+    expect(checkQueryDefinition(definition)).toEqual([]);
+    const { text, values } = generatePostgres(definition, { part: 'ZER' }, 'run');
+    const key =
+      'pg_catalog.lower(("s"."name")::pg_catalog.text COLLATE pg_catalog."und-x-icu") COLLATE pg_catalog."C"';
+    expect(text).toContain(
+      `WHERE ((($1::pg_catalog.text) IS NULL OR pg_catalog.strpos(${key}, pg_catalog.lower((($1::pg_catalog.text))::pg_catalog.text COLLATE pg_catalog."und-x-icu") COLLATE pg_catalog."C") OPERATOR(pg_catalog.>) 0) AND pg_catalog.starts_with(${key}, pg_catalog.lower((($2::pg_catalog.text))::pg_catalog.text COLLATE pg_catalog."und-x-icu") COLLATE pg_catalog."C"))`,
+    );
+    // The values are bound as given: the source folds them, never the product.
+    expect(values).toEqual(['ZER', 'Pf']);
   });
 });

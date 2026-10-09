@@ -138,6 +138,8 @@ export interface FilterDraft {
   /** A parameter by name, or a fixed value as typed, compared as its type. */
   readonly to:
     { readonly parameter: string } | { readonly value: string; readonly type: ValueType };
+  /** Match case ticked, where the comparison offers it (DAT-119, MC-C); unticked when absent. */
+  readonly matchCase?: true;
 }
 
 /** One summary of a group (D4-I): an aggregate of a column, or a count of every row. */
@@ -406,6 +408,29 @@ export function comparisonsFor(type: ValueType | null, list: boolean): Compariso
   return ['equal', 'notEqual', ...nulls];
 }
 
+/** Whether a comparison offers Match case (DAT-119, MC-C): contains and starts with alone. */
+export const offersMatchCase = (is: Comparison) => is === 'contains' || is === 'startsWith';
+
+/** A filter with Match case unticked. */
+export const withoutMatchCase = ({ column, is, to }: FilterDraft): FilterDraft => ({
+  column,
+  is,
+  to,
+});
+
+/** A filter given another comparison, Match case dropped where that one does not offer it (MC-C). */
+export function withComparison(filter: FilterDraft, is: Comparison): FilterDraft {
+  return offersMatchCase(is) ? { ...filter, is } : { ...withoutMatchCase(filter), is };
+}
+
+/** The stored member for a filter's case: ignoring it where offered and Match case is unticked. */
+export const ignoreCaseOf = (filter: FilterDraft): { ignoreCase?: true } =>
+  offersMatchCase(filter.is) && filter.matchCase !== true ? { ignoreCase: true } : {};
+
+/** The draft's member for a stored comparison: Match case ticked where offered and not ignored. */
+export const matchCaseOf = (is: Comparison, ignoreCase: true | undefined): { matchCase?: true } =>
+  offersMatchCase(is) && ignoreCase !== true ? { matchCase: true } : {};
+
 /** What a filter compares with: its parameter's type and whether it is a list, or its value's type. */
 export function operandOf(
   filter: FilterDraft,
@@ -438,7 +463,7 @@ export function fitFilter(filter: FilterDraft, parameters: readonly ParameterDra
   }
   const { type, list } = operandOf(fitted, parameters);
   const allowed = comparisonsFor(type, list);
-  return allowed.includes(fitted.is) ? fitted : { ...fitted, is: allowed[0]! };
+  return allowed.includes(fitted.is) ? fitted : withComparison(fitted, allowed[0]!);
 }
 
 /** A builder draft's filters fitted to the parameters declared now. */
@@ -454,11 +479,16 @@ function conditionOf(filter: FilterDraft, alias: string): Condition {
   const column = { source: alias, column: filter.column };
   if (filter.is === 'isNull' || filter.is === 'isNotNull') return { column, is: filter.is };
   if ('parameter' in filter.to) {
-    return { column, is: filter.is, to: { parameter: filter.to.parameter } };
+    return {
+      column,
+      is: filter.is,
+      to: { parameter: filter.to.parameter },
+      ...ignoreCaseOf(filter),
+    };
   }
   const { type, value } = filter.to;
   const literal: CanonicalValue = canonical(type.base, type.base === 'text' ? value : value.trim());
-  return { column, is: filter.is, to: { literal, type } };
+  return { column, is: filter.is, to: { literal, type }, ...ignoreCaseOf(filter) };
 }
 
 const PLACES = /^(0|[1-9][0-9]{0,3})$/;
@@ -570,6 +600,7 @@ export function builderDraftOf(
                 value: to.literal === null ? '' : String(to.literal as string | boolean),
                 type: to.type,
               },
+      ...matchCaseOf(condition.is, condition.ignoreCase),
     });
   }
   const columns: PickedColumn[] = [];
@@ -691,12 +722,18 @@ function whereOf(
         column: filter.column,
         is: filter.is,
         to: { parameter: filter.to.parameter },
+        ...ignoreCaseOf(filter),
       });
     } else {
       const type = declared.type as ValueType;
       const { value } = filter.to;
       const literal = canonical(type.base, type.base === 'text' ? value : value.trim());
-      comparisons.push({ column: filter.column, is: filter.is, to: { literal, type } });
+      comparisons.push({
+        column: filter.column,
+        is: filter.is,
+        to: { literal, type },
+        ...ignoreCaseOf(filter),
+      });
     }
   }
   if (comparisons.length === 0) return undefined;

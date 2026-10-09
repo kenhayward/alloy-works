@@ -65,6 +65,26 @@
   font-weight: 500;
 }
 
+/* A filter's value and its Match case, side by side in the row's last cell. */
+.value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.value > input {
+  flex: 1;
+  min-width: 0;
+  height: var(--row-control);
+  min-height: 0;
+}
+
+.value > label {
+  margin: 0;
+  min-height: 0;
+  white-space: nowrap;
+}
+
 .mono {
   font-family: var(--mono);
 }

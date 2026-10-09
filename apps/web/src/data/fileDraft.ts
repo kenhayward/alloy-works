@@ -1,6 +1,6 @@
 import type { FileCondition, FileFetch } from '@alloy-works/domain';
 
-import type { FilterDraft } from './definitionDraft.js';
+import { matchCaseOf, type FilterDraft } from './definitionDraft.js';
 import {
   draftOfPart,
   formatDraftOf,
@@ -34,10 +34,11 @@ export const NEW_FILE: FileDraft = {
 function filterOf(condition: FileCondition): FilterDraft | undefined {
   if (!('column' in condition)) return undefined;
   const { column, is, to } = condition;
+  const matchCase = matchCaseOf(is, condition.ignoreCase);
   if (to === undefined) return { column, is, to: { value: '', type: { base: 'text' } } };
-  if ('parameter' in to) return { column, is, to: { parameter: to.parameter } };
+  if ('parameter' in to) return { column, is, to: { parameter: to.parameter }, ...matchCase };
   if (Array.isArray(to.literal)) return undefined;
-  return { column, is, to: { value: String(to.literal), type: to.type } };
+  return { column, is, to: { value: String(to.literal), type: to.type }, ...matchCase };
 }
 
 /** A stored file fetch as the page holds it, or why the page cannot show it to edit. */

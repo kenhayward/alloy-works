@@ -896,3 +896,94 @@ describe(
     });
   },
 );
+
+describe('a built filter ignoring case, against the source', { timeout: LOADED_TIMEOUT_MS }, () => {
+  const cased = { alias: 'c', table: { schema: 'sample', name: 'mc_cased' } };
+  const named = (where: Query['where']) =>
+    built(
+      {
+        sources: [cased],
+        joins: [],
+        select: [
+          { name: 'id', of: ref('c', 'id') },
+          { name: 'name', of: ref('c', 'name') },
+        ],
+        ...(where ? { where } : {}),
+        groupBy: [],
+      },
+      { id: { base: 'integer' } },
+    );
+  const text = (literal: string) => ({ literal, type: { base: 'text' as const } });
+  const ids = (answer: RunAnswer) => ok(answer).result.rows.map((row) => row[0]);
+
+  beforeAll(() =>
+    asSuperuser(async (client) => {
+      await client.query(`drop table if exists sample.mc_cased`);
+      await client.query(`create table sample.mc_cased (id integer primary key, name text)`);
+      await client.query(
+        `insert into sample.mc_cased values (1, 'Pfizer Inc'), (2, 'ÉCOLE NORMALE'), (3, 'ΣΟΦΙΑΣ')`,
+      );
+      await client.query(`grant select on sample.mc_cased to reader`);
+    }),
+  );
+  afterAll(() => asSuperuser((client) => client.query(`drop table if exists sample.mc_cased`)));
+
+  it('DAT-119 a built contains or starts with that ignores case finds a name whatever its capitals', async () => {
+    const folded = (is: 'contains' | 'startsWith', value: string) => ({
+      column: ref('c', 'name'),
+      is,
+      to: text(value),
+      ignoreCase: true as const,
+    });
+    expect(ids(await asReader(named(folded('contains', 'pfizer'))))).toEqual(['1']);
+    expect(ids(await asReader(named(folded('startsWith', 'école'))))).toEqual(['2']);
+    // Unicode's lower-casing, as the file filter's: a final sigma too.
+    expect(ids(await asReader(named(folded('contains', 'φιας'))))).toEqual(['3']);
+  });
+
+  it('DAT-119 a built contains stored without the choice still matches case', async () => {
+    const exact = (value: string) => ({
+      column: ref('c', 'name'),
+      is: 'contains' as const,
+      to: text(value),
+    });
+    expect(ids(await asReader(named(exact('pfizer'))))).toEqual([]);
+    expect(ids(await asReader(named(exact('Pfizer'))))).toEqual(['1']);
+  });
+
+  it('DAT-119 refuses a filter that ignores case on a source without ICU by name, and runs one that does not', async () => {
+    const database = 'mc_no_icu';
+    await asSuperuser(async (client) => {
+      await client.query(`drop database if exists ${database}`);
+      await client.query(`create database ${database}`);
+    }, 'postgres');
+    try {
+      await asSuperuser(async (client) => {
+        await client.query(`drop collation pg_catalog."und-x-icu"`);
+        await client.query(`create schema sample`);
+        await client.query(`create table sample.mc_cased (id integer primary key, name text)`);
+        await client.query(`insert into sample.mc_cased values (1, 'Pfizer Inc')`);
+        await client.query(`grant usage on schema sample to reader`);
+        await client.query(`grant select on sample.mc_cased to reader`);
+      }, database);
+      const there = settings({ database });
+      const folded = named({
+        column: ref('c', 'name'),
+        is: 'contains',
+        to: text('pfizer'),
+        ignoreCase: true,
+      });
+      const refused = await run(there, PASSWORDS.reader, folded);
+      expect(refused).toMatchObject({ outcome: 'failed', failure: { code: 'source_unsupported' } });
+      const described = await describeBuilt(there, PASSWORDS.reader, queryOf(folded));
+      expect(described).toMatchObject({ failure: { code: 'source_unsupported' } });
+      const exact = named({ column: ref('c', 'name'), is: 'contains', to: text('Pfizer') });
+      expect(ids(await run(there, PASSWORDS.reader, exact))).toEqual(['1']);
+    } finally {
+      await asSuperuser(
+        (client) => client.query(`drop database if exists ${database} with (force)`),
+        'postgres',
+      );
+    }
+  });
+});

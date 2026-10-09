@@ -9,12 +9,14 @@ import { Segmented } from '../parts/Segmented.js';
 import {
   COMPARISON_WORDS,
   comparisonsFor,
+  withComparison,
   type FilterDraft,
   type ParameterDraft,
 } from './definitionDraft.js';
 import styles from './FileFields.module.css';
 import type { FileDraft } from './fileDraft.js';
 import { FormatFields } from './FormatFields.js';
+import { MatchCase } from './MatchCase.js';
 import { partOfKind } from './HttpFields.js';
 import { NEW_PART, type PartDraft } from './httpDraft.js';
 import pageStyles from './QueryDefinitionPage.module.css';
@@ -92,7 +94,7 @@ export function FileFields({
   /** A filter whose comparison its column and operand no longer take takes the first they do. */
   const fitted = (filter: FilterDraft): FilterDraft => {
     const allowed = comparisonsFor(typeOf(filter.column), listed(filter));
-    return allowed.includes(filter.is) ? filter : { ...filter, is: allowed[0]! };
+    return allowed.includes(filter.is) ? filter : withComparison(filter, allowed[0]!);
   };
   const setFilter = (at: number, filter: FilterDraft) =>
     onChange({
@@ -276,7 +278,7 @@ export function FileFields({
                     aria-label={`Comparison of filter ${n}`}
                     value={filter.is}
                     onChange={(event) =>
-                      setFilter(at, { ...filter, is: event.target.value as FilterDraft['is'] })
+                      setFilter(at, withComparison(filter, event.target.value as FilterDraft['is']))
                     }
                   >
                     {comparisonsFor(typeOf(filter.column), listed(filter)).map((each) => (
@@ -285,24 +287,32 @@ export function FileFields({
                       </option>
                     ))}
                   </select>,
-                  !compares ? null : 'value' in filter.to ? (
-                    <input
-                      key="value"
-                      aria-label={`Value of filter ${n}`}
-                      value={filter.to.value}
-                      onChange={(event) =>
-                        setFilter(at, {
-                          ...filter,
-                          to: {
-                            ...(filter.to as { value: string; type: ValueType }),
-                            value: event.target.value,
-                          },
-                        })
-                      }
-                    />
-                  ) : (
-                    <span key="value" className={pageStyles['hint']}>
-                      {`The value of ${filter.to.parameter}`}
+                  !compares ? null : (
+                    <span key="value" className={styles['value']}>
+                      {'value' in filter.to ? (
+                        <input
+                          aria-label={`Value of filter ${n}`}
+                          value={filter.to.value}
+                          onChange={(event) =>
+                            setFilter(at, {
+                              ...filter,
+                              to: {
+                                ...(filter.to as { value: string; type: ValueType }),
+                                value: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      ) : (
+                        <span className={pageStyles['hint']}>
+                          {`The value of ${filter.to.parameter}`}
+                        </span>
+                      )}
+                      <MatchCase
+                        filter={filter}
+                        name={`Match case of filter ${n}`}
+                        onChange={(changed) => setFilter(at, changed)}
+                      />
                     </span>
                   ),
                 ],

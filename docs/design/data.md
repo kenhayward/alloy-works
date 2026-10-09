@@ -70,6 +70,7 @@ checksummed result or one named failure.
 | **DAT-021** | The connector's suite runs the spike's case 5 values - 3,792 hostile and ill-typed - through every parameter type and every binder, and each is refused by name or bound inert                                                                                                                                                                                                                                                                               |
 | **DAT-099** | A database definition's fetch is `builder`, a saved query tree, unless it is `sql`; the connector generates the dialect's SQL from the tree at each run, and provenance keeps what ran                                                                                                                                                                                                                                                                       |
 | **DAT-100** | The tree's format, version 1, admits several sources, joins, nested queries as sources, grouping and aggregates from the start, though T2's screens offer one source                                                                                                                                                                                                                                                                                         |
+| **DAT-119** | A text `contains` or `startsWith` carries `ignoreCase: true` where Match case is unticked, as it is on a new filter; absent, it matches case, as every comparison stored before it does. Both sides are lower-cased under ICU's root collation, a file's by `toLowerCase()`, alike (the MC plan)                                                                                                                                                             |
 | **DAT-101** | Saving a definition whose fetch is `sql` needs `write_sql`, a permission of its own decided at the connection it names                                                                                                                                                                                                                                                                                                                                       |
 | **DAT-102** | A `sql` fetch is refused, `sql_not_permitted`, on a PostgreSQL connection whose identity is asserted, when saved and when run                                                                                                                                                                                                                                                                                                                                |
 | **DAT-103** | The connection test checks, where the source can say - PostgreSQL's catalogues, and SQL Server's once built (ADR-0038) - that the account holds no write privilege, and a `sql` fetch is refused on a connection whose last test did not find it read-only                                                                                                                                                                                                   |
@@ -597,7 +598,8 @@ value is a typed filter the connector applies to its canonical rows.
     | { not: Condition }
     | { column: ColumnRef, is: Comparison, to?: { parameter: string }
                                               | { literal: CanonicalValue | CanonicalValue[], type: ValueType }
-                                              | { column: ColumnRef } }
+                                              | { column: ColumnRef },
+        ignoreCase?: true }                    // contains and startsWith alone (DAT-119)
   Comparison = 'equal' | 'notEqual' | 'less' | 'lessOrEqual' | 'greater' | 'greaterOrEqual'
              | 'in' | 'contains' | 'startsWith' | 'isNull' | 'isNotNull'
   ```
@@ -807,7 +809,10 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   so. A multiset sorts the rows by their canonical text, code point by code point. **The builder
   compares text by code point wherever it compares it** (D4-G): a text filter compares
   `(x)::pg_catalog.text COLLATE pg_catalog."C"` with its value, `contains` and `startsWith` are `strpos` and
-  `starts_with` on that key, and a text-declared column is ordered by it, grouped by itself and it, and
+  `starts_with` on that key - or, where the comparison ignores case (DAT-119), on both sides
+  lower-cased under ICU's root collation, `lower((x)::text COLLATE "und-x-icu") COLLATE "C"`, since
+  `COLLATE "C"` lowers ASCII alone; a source without that collation is `source_unsupported`, and
+  SQL Server's generator, when built, must honour it too - and a text-declared column is ordered by it, grouped by itself and it, and
   its minimum and maximum taken over it - in a nested query too, where a text-declared column reads one
   of its columns. So a `citext` column or one under a nondeterministic collation never merges `Ada` and
   `ada` into one group, whose spelling would move the checksum with the rows' physical order, and an
@@ -1080,7 +1085,7 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                                                                                                                                                                     |
 | `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                                                                                                                                                                        |
 | `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`)                                                                                                                                                      |
-| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check                                                                                                                                                         |
+| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check, or lacks ICU's root collation a filter ignoring case needs (DAT-119)                                                                                   |
 | `connector_error`         | connector   | The connector's child ended without an answer                                                                                                                                                                                                       |
 | `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source                                                                                                                                                                   |
 | `connector_busy`          | product     | The connector was running as many requests as it may                                                                                                                                                                                                |

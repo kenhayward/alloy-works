@@ -190,3 +190,59 @@ describe("a file's typed filter", () => {
     ).toEqual(['The filter names river, which is not a column']);
   });
 });
+
+describe("a file's typed filter, ignoring case", () => {
+  const named: Column[] = [
+    { name: 'id', from: { header: 'id' }, type: { base: 'integer' } },
+    { name: 'name', from: { header: 'name' }, type: { base: 'text' } },
+  ];
+  const people: CanonicalValue[][] = [
+    ['1', 'Pfizer Inc'],
+    ['2', 'ÉCOLE NORMALE'],
+    ['3', 'ΣΟΦΙΑΣ'],
+  ];
+  const keptBy = (where: FileCondition) =>
+    people.filter(fileFilter(where, named, [], {})).map((row) => row[0]);
+  const text = (literal: string) => ({ literal, type: { base: 'text' as const } });
+
+  it('DAT-119 finds a name whatever its capitals where the filter ignores case, and matches case where it does not', () => {
+    expect(
+      keptBy({ column: 'name', is: 'contains', to: text('pfizer'), ignoreCase: true }),
+    ).toEqual(['1']);
+    expect(keptBy({ column: 'name', is: 'contains', to: text('pfizer') })).toEqual([]);
+    expect(
+      keptBy({ column: 'name', is: 'startsWith', to: text('école'), ignoreCase: true }),
+    ).toEqual(['2']);
+    // Unicode's lower-casing, as the source's ICU root locale: a final sigma too.
+    expect(keptBy({ column: 'name', is: 'contains', to: text('φιας'), ignoreCase: true })).toEqual([
+      '3',
+    ]);
+  });
+
+  it('DAT-119 refuses ignoring case beside a comparison that is not contains or starts with', () => {
+    const found: string[] = [];
+    checkFileCondition(
+      { column: 'name', is: 'equal', to: text('Ada'), ignoreCase: true },
+      named,
+      [],
+      (path) => found.push(path),
+    );
+    expect(found).toEqual(['fetch.where.ignoreCase']);
+    expect(() =>
+      fileConditionSchema.parse({
+        column: 'name',
+        is: 'contains',
+        to: text('a'),
+        ignoreCase: false,
+      }),
+    ).toThrow();
+    expect(
+      fileConditionSchema.parse({
+        column: 'name',
+        is: 'contains',
+        to: text('a'),
+        ignoreCase: true,
+      }),
+    ).toMatchObject({ ignoreCase: true });
+  });
+});

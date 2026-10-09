@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  caseProblem,
   comparisons,
   literalProblem,
   treeProblem,
@@ -29,7 +30,7 @@ export type FileCondition =
   | { and: FileCondition[] }
   | { or: FileCondition[] }
   | { not: FileCondition }
-  | { column: string; is: Comparison; to?: FileOperand | undefined };
+  | { column: string; is: Comparison; to?: FileOperand | undefined; ignoreCase?: true | undefined };
 
 const operandSchema = z.union([
   z.strictObject({ parameter: z.string() }),
@@ -50,6 +51,7 @@ const conditionSchema: z.ZodType<FileCondition> = z.lazy(() =>
       column: sourceName('A column'),
       is: z.enum(comparisons),
       to: operandSchema.optional(),
+      ignoreCase: z.literal(true).optional(),
     }),
   ]),
 );
@@ -92,6 +94,8 @@ export function checkFileCondition(
       return;
     }
     const { is, to } = node;
+    const caseWrong = caseProblem(node);
+    if (caseWrong !== undefined) problem(`${path}.ignoreCase`, caseWrong);
     if (is === 'isNull' || is === 'isNotNull') {
       if (to !== undefined) problem(`${path}.to`, 'Is empty and is not empty compare with nothing');
       return;
@@ -160,7 +164,11 @@ function compared(
   is: Comparison,
   cell: CanonicalValue,
   value: CanonicalValue,
+  ignoreCase = false,
 ): boolean {
+  // Unicode's default lower-casing, as the source's ICU root locale folds a built query (DAT-119).
+  const text = (each: CanonicalValue) =>
+    ignoreCase ? (each as string).toLowerCase() : (each as string);
   const order = () => compareCanonical(type, cell, value);
   switch (is) {
     case 'equal':
@@ -176,9 +184,9 @@ function compared(
     case 'greaterOrEqual':
       return order() >= 0;
     case 'contains':
-      return (cell as string).includes(value as string);
+      return text(cell).includes(text(value));
     case 'startsWith':
-      return (cell as string).startsWith(value as string);
+      return text(cell).startsWith(text(value));
     default:
       return false;
   }
@@ -242,7 +250,7 @@ export function fileFilter(
         compared(type, 'equal', cell, item),
       );
     }
-    return compared(type, node.is, cell, operand as CanonicalValue);
+    return compared(type, node.is, cell, operand as CanonicalValue, node.ignoreCase === true);
   };
   return (row) => evaluate(where, row) === true;
 }

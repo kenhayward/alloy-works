@@ -44,7 +44,7 @@ export type Condition =
   | { and: Condition[] }
   | { or: Condition[] }
   | { not: Condition }
-  | { column: ColumnRef; is: Comparison; to?: Operand | undefined };
+  | { column: ColumnRef; is: Comparison; to?: Operand | undefined; ignoreCase?: true | undefined };
 
 export const aggregates = ['count', 'sum', 'average', 'minimum', 'maximum'] as const;
 export type AggregateName = (typeof aggregates)[number];
@@ -110,6 +110,9 @@ const conditionSchema: z.ZodType<Condition> = z.lazy(() =>
       column: columnRefSchema,
       is: z.enum(comparisons),
       to: operandSchema.optional(),
+      // Absent is matching case, as every comparison stored before DAT-119 does; `true` alone, so
+      // each meaning has one spelling.
+      ignoreCase: z.literal(true).optional(),
     }),
   ]),
 );
@@ -291,6 +294,32 @@ export function typeProblem(is: Comparison, type: ValueType): string | undefined
   return undefined;
 }
 
+/** Why a comparison cannot ignore case: contains and starts with alone choose it (DAT-119, MC-A). */
+export function caseProblem(comparison: { is: Comparison; ignoreCase?: true | undefined }) {
+  return comparison.ignoreCase !== undefined &&
+    comparison.is !== 'contains' &&
+    comparison.is !== 'startsWith'
+    ? 'Ignoring case is a choice of contains and starts with alone'
+    : undefined;
+}
+
+/** Whether a comparison anywhere in the tree ignores case (DAT-119): a join's, the filter's, a nested query's. */
+export function ignoresCase(query: Query): boolean {
+  const condition = (node: Condition): boolean =>
+    'and' in node
+      ? node.and.some(condition)
+      : 'or' in node
+        ? node.or.some(condition)
+        : 'not' in node
+          ? condition(node.not)
+          : node.ignoreCase === true;
+  return (
+    (query.where !== undefined && condition(query.where)) ||
+    query.joins.some((join) => condition(join.on)) ||
+    query.sources.some((source) => 'query' in source && ignoresCase(source.query))
+  );
+}
+
 /** A fixed value's problem against its type: canonical, never null, an integer within 64 bits. */
 export function literalProblem(type: ValueType, value: CanonicalValue): boolean {
   if (value === null || valueProblem(type, value) !== null) return true;
@@ -331,6 +360,8 @@ export function checkTree(query: Query, parameters: readonly Parameter[], proble
     path: string,
   ) => {
     const { is, to } = comparison;
+    const caseWrong = caseProblem(comparison);
+    if (caseWrong !== undefined) problem(`${path}.ignoreCase`, caseWrong);
     if (is === 'isNull' || is === 'isNotNull') {
       if (to !== undefined) problem(`${path}.to`, 'Is empty and is not empty compare with nothing');
       return;
