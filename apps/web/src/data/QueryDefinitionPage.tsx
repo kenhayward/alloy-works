@@ -47,6 +47,7 @@ import { IconButton } from '../parts/IconButton.js';
 import type { PanelTab } from '../parts/PanelTabs.js';
 import { RowActions } from '../parts/RowActions.js';
 import { RowTable } from '../parts/RowTable.js';
+import { Segmented } from '../parts/Segmented.js';
 import type { StripCell } from '../parts/StateStrip.js';
 import { Tooltip } from '../parts/Tooltip.js';
 import styles from './QueryDefinitionPage.module.css';
@@ -1474,76 +1475,100 @@ export function QueryDefinitionPage({
         </section>
       );
     }
+    // Builder or SQL (the postgres query handoff): one card, the query line first, its parameters
+    // after, and for a built query the SQL it runs, closed, at its foot (PQ-A).
+    if (draft.mode === 'builder' || draft.mode === 'sql') {
+      const head = sqlOffered ? (
+        <Segmented
+          label="Write the query with"
+          value={draft.mode}
+          onChange={(mode) => changeStatement({ mode: mode as 'builder' | 'sql' })}
+          options={[
+            { value: 'builder', label: 'Builder', name: 'Builder' },
+            { value: 'sql', label: 'SQL', name: 'SQL' },
+          ]}
+        />
+      ) : (
+        <span className={styles['hint']}>
+          Built from the source&apos;s tables and views. SQL is offered where you may write SQL on
+          the connection.
+        </span>
+      );
+      const named = connections.find((each) => each.id === draft.connection)?.name;
+      return (
+        <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
+          {draft.mode === 'builder' ? (
+            <BuilderFields
+              builder={draft.builder}
+              parameters={draft.parameters}
+              described={source}
+              describedLines={sourceLines}
+              busy={busy !== null}
+              onDescribe={describeSource}
+              onChange={(builder) => changeStatement({ builder })}
+              head={head}
+            />
+          ) : (
+            <>
+              <Section
+                heading="Write the query with"
+                aside={<span className={styles['queryLine']}>{head}</span>}
+                acts={
+                  named !== undefined && (
+                    <span className={styles['hint']}>
+                      {`SQL is offered because you may write SQL on ${named}`}
+                    </span>
+                  )
+                }
+              />
+              <Section
+                heading="SQL text"
+                region={false}
+                hint={
+                  <>
+                    Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
+                    parameter. A value is always sent apart from the SQL, never placed in it.
+                  </>
+                }
+              >
+                <textarea
+                  aria-label="SQL text"
+                  className={`${styles['code']} ${styles['sqlText']}`}
+                  rows={14}
+                  spellCheck={false}
+                  value={draft.sql}
+                  onChange={(event) => changeStatement({ sql: event.target.value })}
+                />
+              </Section>
+            </>
+          )}
+          <Section
+            heading="Parameters"
+            count={draft.parameters.length}
+            acts={<Act words="Add parameter" onClick={addParameter} />}
+          >
+            {parameterLines}
+          </Section>
+          {draft.mode === 'builder' && (
+            <details className={styles['runs']}>
+              <summary>The SQL it runs</summary>
+              <GeneratedSql shown={generatedSql(draft)} />
+            </details>
+          )}
+        </section>
+      );
+    }
+    // HTTP: the request beside its parameters, until PQ3.
     return (
       <div className={styles['split']}>
         <section className={styles['card']} aria-label="Query">
-          {draft.mode === 'http' ? (
-            <div className={styles['form']}>
-              <HttpFields
-                http={draft.http}
-                parameters={draft.parameters}
-                onChange={(http) => changeStatement({ http })}
-              />
-            </div>
-          ) : (
-            <>
-              <div className={styles['cardHead']}>
-                {sqlOffered ? (
-                  <fieldset className={styles['switch']}>
-                    <legend className={styles['hidden']}>Write the query with</legend>
-                    {(['builder', 'sql'] as const).map((mode) => (
-                      <label key={mode}>
-                        <input
-                          type="radio"
-                          name="mode"
-                          checked={draft.mode === mode}
-                          onChange={() => changeStatement({ mode })}
-                        />
-                        {mode === 'builder' ? 'Builder' : 'SQL'}
-                      </label>
-                    ))}
-                  </fieldset>
-                ) : (
-                  <p className={styles['hint']}>
-                    Built from the source&apos;s tables and views. SQL is offered where you may
-                    write SQL on the connection.
-                  </p>
-                )}
-              </div>
-              <div className={styles['form']}>
-                {draft.mode === 'builder' ? (
-                  <BuilderFields
-                    builder={draft.builder}
-                    parameters={draft.parameters}
-                    described={source}
-                    describedLines={sourceLines}
-                    busy={busy !== null}
-                    onDescribe={describeSource}
-                    onChange={(builder) => changeStatement({ builder })}
-                  />
-                ) : (
-                  <>
-                    <Choice label="SQL text">
-                      {(id) => (
-                        <textarea
-                          id={id}
-                          className={styles['code']}
-                          rows={14}
-                          spellCheck={false}
-                          value={draft.sql}
-                          onChange={(event) => changeStatement({ sql: event.target.value })}
-                        />
-                      )}
-                    </Choice>
-                    <p className={styles['hint']}>
-                      Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
-                      parameter. A value is always sent apart from the SQL, never placed in it.
-                    </p>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+          <div className={styles['form']}>
+            <HttpFields
+              http={draft.http}
+              parameters={draft.parameters}
+              onChange={(http) => changeStatement({ http })}
+            />
+          </div>
         </section>
         <div className={styles['beside']}>
           <section className={styles['card']} aria-labelledby={parametersId}>
@@ -1556,11 +1581,6 @@ export function QueryDefinitionPage({
             {draft.parameters.length === 0 && <p className={styles['hint']}>None yet.</p>}
             {parameterLines}
           </section>
-          {draft.mode === 'builder' && (
-            <section className={styles['card']}>
-              <GeneratedSql shown={generatedSql(draft)} />
-            </section>
-          )}
         </div>
       </div>
     );

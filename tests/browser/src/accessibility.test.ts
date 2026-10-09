@@ -1044,6 +1044,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await tabTo(page.getByLabel('Title', { exact: true }));
       await page.keyboard.type(title);
       await openTab('Query');
+      // The SQL it runs is closed at the card's foot (PQ-A): opened, as an author checking it would.
+      await tabTo(page.locator('summary', { hasText: 'The SQL it runs' }));
+      await page.keyboard.press('Enter');
       await check('a new built query', {
         shows: [
           page.getByRole('radio', { name: 'Builder', exact: true }),
@@ -1058,7 +1061,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const table = page.getByLabel('Table or view', { exact: true });
       await arrive({ shows: table });
       await choose(table, 'sample.site');
-      const columns = page.getByRole('group', { name: 'Columns to return' });
+      const columns = page.getByRole('region', { name: 'Columns to return' });
       for (const name of ['id', 'name']) {
         await tabTo(columns.getByRole('checkbox', { name, exact: true }));
         await page.keyboard.press('Space');
@@ -1077,10 +1080,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.type('Integer');
       await tabTo(page.getByRole('button', { name: 'Add a filter' }));
       await page.keyboard.press('Enter');
-      const filter = page.getByRole('group', { name: 'Filter 1' });
       await check('a filter on a parameter', {
         shows: [
-          filter.getByLabel('Comparison', { exact: true }),
+          page.getByLabel('Comparison of filter 1', { exact: true }),
           page.getByText(/OPERATOR\(pg_catalog\.=\) \(\$1::pg_catalog\.int8\)/),
         ],
       });
@@ -1092,7 +1094,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('Enter');
       await check('grouped, with a summary', {
         shows: [
-          page.getByRole('group', { name: 'Summary 1' }),
+          page.getByLabel('Summary 1', { exact: true }),
           page.getByText(/pg_catalog\.count\(\*\) AS "count"/),
         ],
       });
@@ -1139,7 +1141,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [
           page.getByRole('heading', { name: title, level: 1 }),
           page.getByText('Version 0.1'),
-          page.getByRole('group', { name: 'Filter 1' }),
+          page.getByLabel('Column of filter 1', { exact: true }),
         ],
       });
 
