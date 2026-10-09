@@ -505,6 +505,19 @@ describe('the workspace', () => {
     expect(screen.getByRole('region', { name: 'This template' })).toBeInTheDocument();
   });
 
+  it("keeps a connection's page as it is while its tab changes in the address", async () => {
+    const CONNECTION = 'ffffffff-0000-4000-8000-000000000002';
+    window.location.hash = `#/connections/${CONNECTION}/credential`;
+    render(<Workspace fetch={accessService({}, { connections: { [CONNECTION]: 'Readings' } })} />);
+    // Not answered here, which is beside the point: the same page, not a fresh one, says so.
+    const said = await screen.findByText('The connection could not be loaded.');
+
+    const oldURL = window.location.href;
+    window.location.hash = `#/connections/${CONNECTION}/tables`;
+    fireEvent(window, new HashChangeEvent('hashchange', { oldURL, newURL: window.location.href }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/connections/${CONNECTION}/tables`));
+    expect(screen.getByText('The connection could not be loaded.')).toBe(said);
+  });
   it('opens the access page of the connection the address names, with a way back to it', async () => {
     const CONNECTION = 'ffffffff-0000-4000-8000-000000000002';
     window.location.hash = `#/connections/${CONNECTION}/access`;

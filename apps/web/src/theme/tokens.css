@@ -78,6 +78,14 @@
   --row: 54px;
   --row-head: 38px;
   --icon-button: 32px;
+  /* A detail page (ADR-0050): its tabs, its strip's squares, its narrow columns, its pager and lists. */
+  --tab: 42px;
+  --strip-icon: 28px;
+  --col-check: 34px;
+  --col-index: 34px;
+  --col-icon: 36px;
+  --pager-button: 28px;
+  --list-row: 38px;
 
   /* A rendered publication: paper in every theme. The desk around it is --desk, which a theme sets. */
   --doc-page: #ffffff;

@@ -110,6 +110,15 @@ const ADMIN: Record<string, readonly string[]> = {
   Revoke: [BIN],
   Withdraw: [BIN],
   'Invite people': [PERSON, 'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M19 8v6M16 11h6'],
+  // A detail page's (ADR-0050): its strip, its header and its pager.
+  Credential: ['M4 15a4 4 0 1 0 8 0a4 4 0 1 0-8 0', 'm11 12 9-9M17 6l3 3M15 8l2 2'],
+  'Needs attention': ['M12 4 2.5 20h19z', 'M12 10v4.5M12 17.2v.01'],
+  'Used by': ['M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z'],
+  Connection: ['M9 3v5M15 3v5', 'M6 8h12v3a6 6 0 0 1-12 0z', 'M12 17v4'],
+  Checksum: ['M9 4 7 20M17 4l-2 16', 'M4.5 9h16M3.5 15h16'],
+  Test: ['M13 3 5 13.5h6L10 21l8-10.5h-6z'],
+  'Previous page': ['m14.5 6-6 6 6 6'],
+  'Next page': ['m9.5 6 6 6-6 6'],
 };
 /** Three dots, filled. */
 const MORE = [

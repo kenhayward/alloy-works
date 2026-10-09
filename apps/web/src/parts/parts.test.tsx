@@ -6,11 +6,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { Icon } from '../editor/Icon.js';
 import { Chip } from './Chip.js';
 import { ConfirmDialog } from './ConfirmDialog.js';
+import { DetailPage } from './DetailPage.js';
 import { IconButton } from './IconButton.js';
+import { Pager } from './Pager.js';
 import { PanelTabs } from './PanelTabs.js';
 import { RowActions } from './RowActions.js';
 import { SidePanel } from './SidePanel.js';
+import { StateStrip } from './StateStrip.js';
 import { Toolbar } from './Toolbar.js';
+import { Tooltip } from './Tooltip.js';
 
 describe('a grouped toolbar', () => {
   function Tools() {
@@ -151,6 +155,202 @@ describe('panel tabs', () => {
   });
 });
 
+describe("a detail page's tabs", () => {
+  function Tabs({ onChoose = () => {} }: { onChoose?: (key: string) => void }) {
+    const [chosen, setChosen] = useState('details');
+    return (
+      <PanelTabs
+        label="Query definition"
+        tabs={[
+          { key: 'details', label: 'Details' },
+          { key: 'columns', label: 'Columns', name: 'Columns, 2 to confirm', tone: 'warn' },
+          { key: 'rows', label: 'Rows', disabled: true },
+          { key: 'used-by', label: 'Used by', count: 160 },
+        ]}
+        chosen={chosen}
+        onChoose={(key) => {
+          onChoose(key);
+          setChosen(key);
+        }}
+        ids={(key) => ({ tab: `tab-${key}`, panel: `panel-${key}` })}
+      />
+    );
+  }
+
+  it('names a tab apart from its label, in warn where it holds the page back, and counts', () => {
+    render(<Tabs />);
+    const held = screen.getByRole('tab', { name: 'Columns, 2 to confirm' });
+    expect(held).toHaveTextContent(/^Columns$/);
+    expect(held).toHaveAttribute('data-tone', 'warn');
+    const used = screen.getByRole('tab', { name: 'Used by, 160' });
+    expect(used).toHaveTextContent('Used by160');
+  });
+
+  it('passes over a tab not yet available, which a click does not choose', async () => {
+    const chose = vi.fn();
+    render(<Tabs onChoose={chose} />);
+    const rows = screen.getByRole('tab', { name: 'Rows' });
+    expect(rows).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(rows);
+    expect(chose).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Columns, 2 to confirm' }));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Used by, 160' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('tab', { name: 'Columns, 2 to confirm' })).toHaveFocus();
+  });
+});
+
+describe('a state strip', () => {
+  it('names what the page depends on, cell by cell, each in its tone', () => {
+    render(
+      <StateStrip
+        cells={[
+          {
+            key: 'credential',
+            icon: 'Credential',
+            tone: 'muted',
+            label: 'Credential',
+            value: 'Set',
+            detail: 'by Ada on 2 October 2026',
+          },
+          {
+            key: 'columns',
+            icon: 'Needs attention',
+            tone: 'warn',
+            label: 'Columns',
+            value: '3 of 5 confirmed',
+            detail: 'confirm the rest to save',
+          },
+        ]}
+      />,
+    );
+    const strip = screen.getByRole('group', { name: 'State' });
+    const cells = within(strip).getAllByRole('listitem');
+    expect(cells.map((cell) => cell.textContent)).toEqual([
+      'CredentialSet by Ada on 2 October 2026',
+      'Columns3 of 5 confirmed confirm the rest to save',
+    ]);
+    expect(cells[1]).toHaveAttribute('data-tone', 'warn');
+  });
+});
+
+describe('a tooltip', () => {
+  it('describes its button with the value, shown on hover or focus and gone on Escape', async () => {
+    render(<Tooltip tip="9f2c41ab07de">Checksum</Tooltip>);
+    const button = screen.getByRole('button', { name: 'Checksum' });
+    expect(button).toHaveAccessibleDescription('9f2c41ab07de');
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    await userEvent.hover(button);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('9f2c41ab07de');
+    await userEvent.unhover(button);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    await userEvent.tab();
+    expect(screen.getByRole('tooltip')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(button).toHaveFocus();
+  });
+});
+
+describe('a pager', () => {
+  function Paged({ total }: { total: number }) {
+    const [page, setPage] = useState(0);
+    return <Pager label="Pages of components" total={total} page={page} onPage={setPage} />;
+  }
+
+  it('says where the reader is, ten to a page, and moves a page at a time', async () => {
+    render(<Paged total={148} />);
+    const pager = screen.getByRole('navigation', { name: 'Pages of components' });
+    expect(pager).toHaveTextContent('1 to 10 of 148');
+    expect(pager).toHaveTextContent('Page 1 of 15');
+    const previous = within(pager).getByRole('button', { name: 'Previous page' });
+    expect(previous).toHaveAttribute('aria-disabled', 'true');
+
+    await userEvent.click(within(pager).getByRole('button', { name: 'Next page' }));
+    expect(pager).toHaveTextContent('11 to 20 of 148');
+    await userEvent.click(previous);
+    expect(pager).toHaveTextContent('Page 1 of 15');
+    await userEvent.click(previous);
+    expect(pager).toHaveTextContent('Page 1 of 15');
+  });
+
+  it('pages the last page short, and offers no paging where one page holds them all', async () => {
+    const { unmount } = render(<Paged total={12} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByRole('navigation')).toHaveTextContent('11 to 12 of 12');
+    expect(screen.getByRole('button', { name: 'Next page' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    unmount();
+
+    render(<Paged total={4} />);
+    expect(screen.getByRole('navigation')).toHaveTextContent('1 to 4 of 4');
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+describe('a detail page', () => {
+  it('is a header, a state strip and tabs, one panel showing, labelled by its tab', () => {
+    render(
+      <DetailPage
+        trail={<a href="#/connections">Connections</a>}
+        title="LIMS staging"
+        chips={<Chip>Version 4</Chip>}
+        actions={<button type="button">Test</button>}
+        strip={[
+          { key: 'test', icon: 'Done editing', tone: 'ok', label: 'Last test', value: 'Connected' },
+        ]}
+        label="Connection"
+        tabs={[
+          { key: 'settings', label: 'Settings' },
+          { key: 'credential', label: 'Credential' },
+        ]}
+        chosen="credential"
+        link={(tab) => `#/connections/c1/${tab}`}
+      >
+        <p>The credential</p>
+      </DetailPage>,
+    );
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Connections');
+    expect(screen.getByRole('heading', { level: 1, name: 'LIMS staging' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'State' })).toHaveTextContent('Last testConnected');
+    const panel = screen.getByRole('tabpanel', { name: 'Credential' });
+    expect(panel).toHaveTextContent('The credential');
+    expect(screen.getByRole('tab', { name: 'Credential' })).toHaveAttribute(
+      'aria-controls',
+      panel.id,
+    );
+  });
+
+  it('puts the chosen tab in the address in place of the last, so Back leaves the page', async () => {
+    window.location.hash = '#/connections/c1/settings';
+    const before = window.history.length;
+    render(
+      <DetailPage
+        trail={null}
+        title="LIMS staging"
+        strip={[]}
+        label="Connection"
+        tabs={[
+          { key: 'settings', label: 'Settings' },
+          { key: 'credential', label: 'Credential' },
+        ]}
+        chosen="settings"
+        link={(tab) => `#/connections/c1/${tab}`}
+      >
+        <p>Settings</p>
+      </DetailPage>,
+    );
+    await userEvent.click(screen.getByRole('tab', { name: 'Credential' }));
+    expect(window.location.hash).toBe('#/connections/c1/credential');
+    expect(window.history.length).toBe(before);
+  });
+});
 describe('a chip', () => {
   it('says its words, in the tone that means its status', () => {
     render(
@@ -400,6 +600,14 @@ describe("Administration's glyphs", () => {
       'Revoke',
       'Withdraw',
       'Invite people',
+      'Credential',
+      'Needs attention',
+      'Used by',
+      'Connection',
+      'Checksum',
+      'Test',
+      'Previous page',
+      'Next page',
       'More actions',
     ];
     const { container } = render(
