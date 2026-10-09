@@ -514,7 +514,7 @@ in Administration's Groups. Nothing manages a role or a principal's kind.
 | `service: src/invitations.ts`                    | The invitations routes: listing, inviting or renewing, and withdrawing with the principal's grants                                                                                                                                                                                                                                                                                                                                                                       |
 | `service: src/groups.ts`                         | The groups routes: listing with members, making the environment's own or a provider's, setting an own group's members, deleting with grants                                                                                                                                                                                                                                                                                                                              |
 | `web: src/access/`                               | The access panel, `AccessPanel` with `at` - a component, document or template, a space or the environment - and its levels from there up: giving to a person, or to a group where `GET /v1/groups` answers, removing, an explanation per person naming a group by its name, and, to an administrator of the environment, inviting; `ManageAccessLink`, offered where `GET /v1/access` says administer, by `administersAt`, which Administration's Access buttons ask too |
-| `web: src/admin/`                                | Administration: Access at each space and the environment in place of its section, and Groups - listed with source and members, made, an own group's members chosen, deleted after asking - with focus kept inside as a view or a row goes                                                                                                                                                                                                                                |
+| `web: src/admin/`                                | Administration, a page (ADR-0049): its menu and counts in `Administration`, and a file per section - `Overview`, `Spaces`, `People`, `Groups`, `Roles`, `About` - each a table in one shape, details in `SidePanel`, removals in `ConfirmDialog`                                                                                                                                                                                                                         |
 | `service: src/access.ts`                         | `authorise`: 404 for a target missing or unreadable, 403 naming the permission, in the transaction the handler runs in                                                                                                                                                                                                                                                                                                                                                   |
 
 **Four properties, because each is a decision rather than an implementation detail.**
@@ -633,7 +633,7 @@ sign-in, so a test holding the user can move them between two.
 A person issues themselves a token for a script (W12.1, [ADR-0028](decisions/0028-personal-api-tokens-in-t1.md),
 service-foundations.md's TK-A to TK-F). It acts as them, can do no more than they may, can be limited to
 less, and expires. An administrator of the environment lists and revokes anybody's (W12.2, TK-E), and
-both are done from the renderer: API tokens from the account chip, and Tokens on a person in
+both are done from the renderer: API tokens from the account chip, and API tokens on a person in
 Administration's People.
 
 **The request path.** For every route that checks anything, the hook reads `Authorization` before the
@@ -700,8 +700,8 @@ The list shows the expiry to the minute, under Works until, and what each may do
 answer's secret is shown in that dialog, with Copy, and lives in its state alone: never in
 storage, the address or a log, and gone however the dialog closes. `TokenTable` is the list, each row
 with Revoke, which asks first in a dialog of its own and keeps focus in the list once the row has gone;
-Administration's People gives each person who has signed in a Tokens button showing theirs in it,
-focus moving to their heading and back to the button, so it never falls out of the dialog. A
+Administration's People opens a person's tokens in its side panel instead, each revoked after asking,
+focus coming to the panel's own words once a token's button has gone. A
 refusal is said in the service's own `message` where it gave one.
 
 ### The API reference
@@ -1789,12 +1789,23 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   colours keep their contrast. The desktop window's first paint is the system theme's `--bg`
   (`windowBackground` in `shell.ts`). `colours.test.ts` holds the blocks equal and every text pair
   at 4.5:1.
-- **The shell.** The header band, the 76px module rail (Home; Author, Publish, Data; Admin, which
-  opens Administration), the page and the status bar. Ctrl K opens search and commands everywhere a
+- **The shell.** The header band, the 76px module rail (Home; Author, Publish, Data; Admin, a link to
+  Administration's page), the page and the status bar. The workspace keeps one page per module
+  visited, hidden while another is open, so unsaved work survives a trip elsewhere; Home, the lists
+  and Administration are read afresh instead. The rail links each other module to where it was left
+  (`useLeftAt`, from the `hashchange`'s `oldURL`). Ctrl K opens search and commands everywhere a
   field has not taken the key (a component's text keeps it for Link). `RegionKeys` moves F6 between
   the band, the rail and the page; the component editor's own ring hands the key on past its ends.
 - **Parts.** `Toolbar` (one tab stop, the arrows), `IconButton`, `PanelTabs` and `Chip`, used by
-  every toolbar, panel strip and state.
+  every toolbar, panel strip and state; and, for Administration (ADR-0049), `SidePanel` (440px,
+  docked from 1366px, floating below; focus in, Escape, focus back to its opener), `ConfirmDialog`
+  (480px, acting once) and `RowActions` (two icons keyed by slot, then a More actions menu).
+- **Administration** is a page at `#/admin/<section>` ([ADR-0049](decisions/0049-administration-is-a-page.md),
+  built by [the AD plan](plans/2026-10-09-ad-administration-page.md)): a menu grouped Environment,
+  People and access and System, counted from each listing's `total`; Overview, Spaces, People,
+  Groups, Roles (a grid by the domain's permissions) and About, whose release notes are the
+  changelog's newest entry, read by `vite.config.ts` at build. A row's details open in `SidePanel`
+  beside its list. About's other content reaches the page from `App` through `AboutContext`.
 - **Layouts.** A: a filter pane, the list and the chosen row beside it from 1366px, over it below.
   B: the space pane, the editor and its panels (Attributes, where the editor portals its fields;
   Versions; Access). C: the outline, the text, and Part, Document, Lists and Publishing beside it,
@@ -3672,7 +3683,8 @@ database, `http` on an API, `file` on a bucket - on save, on a sample and at the
 
 **One guarded HTTPS client** (`apps/connector/src/https.ts`, D6-B) carries the API, S3 and, later, the
 token exchange: the host guarded and resolved once and the socket pinned to the checked address
-(`lookup`), `servername` the host, HTTPS only, no agent or proxy, **no redirect followed** - a 3xx,
+(`lookup`), `servername` the host, HTTPS, or plain HTTP by `node:http` where the connection names
+`http` ([ADR-0048](decisions/0048-plain-http-sources-until-t7.md)), no agent or proxy, **no redirect followed** - a 3xx,
 401, 403 or 407 is `connection_failed`, so a redirect to loopback reads as a guarded host does - any
 other non-2xx `source_refused` with its status alone. One deadline covers the whole exchange; the
 body is counted raw and again decoded (`gzip`, `deflate`, `br`), `Content-Length` and RFC 9530's
@@ -3875,7 +3887,10 @@ worker and the connector. The connector is on `connector-private` and `connector
 later: 27.x refuses the option, so compose cannot make the networks), and the service on `connector-private` beside the default network; `tests/e2e`'s
 `connector-isolation.test.ts` asks Docker, on every CI run, that the connector reaches its source and
 none of the platform by name, by address or through the host - a port published on every address and
-a process on the host included - and that the worker has no route to it. The `sources` profile adds
+a process on the host included - and that the worker has no route to it. `deploy/compose.lan.yaml`, for development only, adds a third,
+routed network so the connector reaches sources on the machine and its network, the guard then holding it
+from the platform by `CONNECTOR_DENY` (Docker's bridge ranges and Docker Desktop's); `deploy/BringUpDev.cmd`
+brings the development stack up with it. The `sources` profile adds
 `source-postgres`, the development source, seeded from `deploy/sources/postgres.sql`, on
 `connector-egress` alone. Two of those services answer to a name rather than only a container: the object store is also
 `store.localhost` and the provider `idp.localhost`. Any `*.localhost` name resolves to the local
