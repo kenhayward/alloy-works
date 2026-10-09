@@ -749,8 +749,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         hides: [dialog],
       });
 
+      // Its tabs (ADR-0050), reached by the arrows from the one chosen.
+      const tabs = page.getByRole('tablist', { name: 'Connection' });
+      const nextTab = async (from: string) => {
+        await tabTo(tabs.getByRole('tab', { name: from }));
+        await page.keyboard.press('ArrowRight');
+      };
+
       // Its password set, which tests it straight after, against the development source.
-      const credential = page.getByRole('region', { name: 'Credential' });
+      await nextTab('Settings');
+      const credential = page.getByRole('tabpanel', { name: 'Credential' });
       await tabTo(credential.getByLabel('Password'));
       await page.keyboard.type('source-reader-dev-password');
       await tabTo(credential.getByRole('button', { name: 'Set' }));
@@ -760,12 +768,27 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
 
       // Its tables, listed.
+      await nextTab('Credential');
       await tabTo(page.getByRole('button', { name: 'List tables' }));
       await page.keyboard.press('Enter');
       const tables = page.getByRole('table', { name: 'Tables and views' });
       await check("a connection's tables", {
         shows: tables.getByRole('cell', { name: 'sample.site', exact: true }),
       });
+
+      // What uses it, and its More actions open.
+      await nextTab('Tables');
+      await check("a connection's uses", {
+        shows: page
+          .getByRole('tabpanel', { name: /^Used by/ })
+          .getByRole('region', { name: 'Documents' }),
+      });
+      await tabTo(page.getByRole('button', { name: `More actions for ${name}` }));
+      await page.keyboard.press('Enter');
+      await check("a connection's More actions", {
+        shows: page.getByRole('menuitem', { name: 'Retire' }),
+      });
+      await page.keyboard.press('Escape');
     });
   });
   it("passes axe on Query definitions and a definition's steps, each worked by keyboard alone", async ({

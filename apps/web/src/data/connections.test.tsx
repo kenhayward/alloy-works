@@ -289,6 +289,27 @@ afterEach(() => {
   window.location.hash = '';
 });
 
+/** Opens a tab of the page (ADR-0050) by the start of its name, and gives its panel. */
+async function tab(user: ReturnType<typeof userEvent.setup>, name: string) {
+  const named = new RegExp(`^${name}`);
+  await user.click(await screen.findByRole('tab', { name: named }));
+  return screen.getByRole('tabpanel', { name: named });
+}
+
+/** Retire or Reinstate, from the header's More actions. */
+async function fromMore(user: ReturnType<typeof userEvent.setup>, action: 'Retire' | 'Reinstate') {
+  await user.click(await screen.findByRole('button', { name: 'More actions for Readings' }));
+  await user.click(screen.getByRole('menuitem', { name: action }));
+}
+
+/** Whether the header's More actions offers Retire or Reinstate now. */
+async function offers(user: ReturnType<typeof userEvent.setup>, action: 'Retire' | 'Reinstate') {
+  await user.click(await screen.findByRole('button', { name: 'More actions for Readings' }));
+  const item = await screen.findByRole('menuitem', { name: action });
+  await user.keyboard('{Escape}');
+  return item;
+}
+
 describe('the Connections list', () => {
   it('lists the connections the person may read, by space, with whether each is ready', async () => {
     const { client } = service();
@@ -492,7 +513,7 @@ describe('the Connections list', () => {
 
 describe('an HTTP connection on its own page', () => {
   const http = settings({
-    name: 'Readings API',
+    name: 'Readings',
     type: 'http',
     source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
   });
@@ -501,28 +522,29 @@ describe('an HTTP connection on its own page', () => {
     const user = userEvent.setup();
     const { client, asked } = service({ connection: view({ settings: http }) });
     render(<ConnectionPage client={client} id={READINGS} />);
-    await screen.findByRole('heading', { name: 'Readings API' });
+    await screen.findByRole('heading', { name: 'Readings', level: 1 });
     expect(screen.getByText('HTTP API, in General')).toBeInTheDocument();
     // Its type is not offered to change; its fields are the API's.
     expect(screen.queryByLabelText('Type')).toBeNull();
     expect(screen.getByLabelText('Base URL')).toHaveValue('https://api.example.test/v1');
     expect(screen.getByLabelText('Secret header')).toHaveValue('x-api-key');
-    expect(screen.queryByRole('button', { name: 'List tables' })).toBeNull();
-    await user.type(screen.getByLabelText('Secret'), CANARY);
-    await user.click(screen.getByRole('button', { name: 'Set' }));
+    expect(screen.queryByRole('tab', { name: 'Tables' })).toBeNull();
+    const credential = await tab(user, 'Credential');
+    await user.type(within(credential).getByLabelText('Secret'), CANARY);
+    await user.click(within(credential).getByRole('button', { name: 'Set' }));
     await waitFor(() =>
       expect(asked.some((each) => each.method === 'PUT' && each.path.endsWith('/credential'))).toBe(
         true,
       ),
     );
-    expect(screen.getByLabelText('Secret')).toHaveValue('');
+    expect(within(credential).getByLabelText('Secret')).toHaveValue('');
     expect(document.body.textContent).not.toContain(CANARY);
   });
 });
 
 describe('an S3 connection on its own page', () => {
   const s3 = settings({
-    name: 'Readings bucket',
+    name: 'Readings',
     type: 's3',
     source: {
       endpoint: 'https://s3.example.test',
@@ -536,15 +558,16 @@ describe('an S3 connection on its own page', () => {
     const user = userEvent.setup();
     const { client, asked } = service({ connection: view({ settings: s3 }) });
     render(<ConnectionPage client={client} id={READINGS} />);
-    await screen.findByRole('heading', { name: 'Readings bucket' });
+    await screen.findByRole('heading', { name: 'Readings', level: 1 });
     expect(screen.getByText('S3 bucket, in General')).toBeInTheDocument();
     expect(screen.queryByLabelText('Type')).toBeNull();
     expect(screen.getByLabelText('Endpoint')).toHaveValue('https://s3.example.test');
     expect(screen.getByLabelText('Bucket')).toHaveValue('alloy-readings');
-    expect(screen.queryByRole('button', { name: 'List tables' })).toBeNull();
-    await user.type(screen.getByLabelText('Access key id'), 'AKIAINVENTED');
-    await user.type(screen.getByLabelText('Secret access key'), CANARY);
-    await user.click(screen.getByRole('button', { name: 'Set' }));
+    expect(screen.queryByRole('tab', { name: 'Tables' })).toBeNull();
+    const credential = await tab(user, 'Credential');
+    await user.type(within(credential).getByLabelText('Access key id'), 'AKIAINVENTED');
+    await user.type(within(credential).getByLabelText('Secret access key'), CANARY);
+    await user.click(within(credential).getByRole('button', { name: 'Set' }));
     await waitFor(() =>
       expect(asked.some((each) => each.method === 'PUT' && each.path.endsWith('/credential'))).toBe(
         true,
@@ -554,25 +577,25 @@ describe('an S3 connection on its own page', () => {
       accessKeyId: 'AKIAINVENTED',
       secretAccessKey: CANARY,
     });
-    expect(screen.getByLabelText('Secret access key')).toHaveValue('');
-    expect(screen.getByLabelText('Access key id')).toHaveValue('');
+    expect(within(credential).getByLabelText('Secret access key')).toHaveValue('');
+    expect(within(credential).getByLabelText('Access key id')).toHaveValue('');
     expect(document.body.textContent).not.toContain(CANARY);
   });
 });
+
+const SET = {
+  set: true,
+  setBy: { id: 'ada', name: 'Ada' },
+  setAt: '2026-09-30T09:00:00Z',
+  targetChanged: false,
+};
 
 describe('a connection on its own page', () => {
   it('DAT-075 tests a connection from its page and says it connected, or the one reason it did not', async () => {
     const user = userEvent.setup();
     let answer = () => json(200, { outcome: 'ok', findings: [], at: '2026-09-30T10:00:00.000Z' });
     const { client, asked } = service({
-      connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: false,
-        },
-      }),
+      connection: view({ credential: SET }),
       test: () => answer(),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
@@ -613,12 +636,45 @@ describe('a connection on its own page', () => {
     ).toBeInTheDocument();
   });
 
+  it('DAT-075 answers a test whichever tab is open, and sets the last test in the strip', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      connection: view({
+        credential: SET,
+        lastTest: {
+          outcome: 'ok',
+          findings: [],
+          at: '2026-09-30T09:30:00.000Z',
+          by: { id: 'ada', name: 'Ada' },
+          version: FIRST,
+          credentialCurrent: true,
+        },
+      }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const strip = await screen.findByRole('group', { name: 'State' });
+    const cells = within(strip).getAllByRole('listitem');
+    expect(cells.map((cell) => cell.textContent)).toEqual([
+      'CredentialSet by Ada on 30 September 2026',
+      'Last testConnected on 30 September 2026 by Ada',
+      'Used by0 query definitions and 0 documents',
+    ]);
+    expect(cells[1]).toHaveAttribute('data-tone', 'ok');
+
+    await tab(user, 'Used by');
+    await user.click(screen.getByRole('button', { name: 'Test' }));
+    expect(await screen.findByText('Connected.')).toBeInTheDocument();
+  });
+
   it('DAT-004 shows whether a credential is set, by whom and when, and never shows one', async () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     const { container } = render(<ConnectionPage client={client} id={READINGS} />);
-    const credential = await screen.findByRole('region', { name: 'Credential' });
+    const credential = await tab(user, 'Credential');
     expect(within(credential).getByText('Not set.')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'State' })).getAllByRole('listitem')[0],
+    ).toHaveTextContent('CredentialNot set');
     const field = within(credential).getByLabelText('Password');
     expect(field).toHaveAttribute('type', 'password');
     await user.type(field, CANARY);
@@ -639,54 +695,46 @@ describe('a connection on its own page', () => {
   });
 
   it('says a password set before this version of the product must be set again, without saying anything changed', async () => {
+    const user = userEvent.setup();
     const { client } = service({
-      connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: true,
-          setBeforeBinding: true,
-        },
-      }),
+      connection: view({ credential: { ...SET, targetChanged: true, setBeforeBinding: true } }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
+    const credential = await tab(user, 'Credential');
     expect(
-      await screen.findByText(
+      within(credential).getByText(
         'Set by Ada on 30 September 2026, before this version of the product. Set the password again to use this connection.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/host, port, database/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Set again' })).toBeInTheDocument();
+    expect(within(credential).getByRole('button', { name: 'Set again' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'State' })).toHaveTextContent('Set again to use');
   });
 
   it('says the password must be set again once a version changes where the connection signs in', async () => {
     const user = userEvent.setup();
-    const setBy = { id: 'ada', name: 'Ada' };
     const { client } = service({
-      connection: view({
-        credential: { set: true, setBy, setAt: '2026-09-30T09:00:00Z', targetChanged: false },
-      }),
+      connection: view({ credential: SET }),
       version: (sent) =>
         json(
           200,
           view({
             settings: sent.settings,
             version: { id: SECOND, number: '0.2' } as never,
-            credential: { set: true, setBy, setAt: '2026-09-30T09:00:00Z', targetChanged: true },
+            credential: { ...SET, targetChanged: true },
           }),
         ),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const credential = await screen.findByRole('region', { name: 'Credential' });
-    expect(within(credential).getByText('Set by Ada on 30 September 2026.')).toBeInTheDocument();
-    const saving = screen.getByRole('region', { name: 'Settings' });
+    const saving = await tab(user, 'Settings');
     const host = within(saving).getByLabelText('Host');
     await user.clear(host);
     await user.type(host, 'db2.example.test');
     await user.click(within(saving).getByRole('button', { name: 'Save version' }));
+    await screen.findByText('Version 0.2');
+    const credential = await tab(user, 'Credential');
     expect(
-      await within(credential).findByText(
+      within(credential).getByText(
         'Set by Ada on 30 September 2026, before the host, port, database, account or TLS changed. Set the password again to use this connection.',
       ),
     ).toBeInTheDocument();
@@ -695,12 +743,6 @@ describe('a connection on its own page', () => {
 
   it("says a connection's last test was of an earlier version, and forgets an answer on the page once a version is cut", async () => {
     const user = userEvent.setup();
-    const credential = {
-      set: true,
-      setBy: { id: 'ada', name: 'Ada' },
-      setAt: '2026-09-30T09:00:00Z',
-      targetChanged: false,
-    };
     const lastTest = {
       outcome: 'ok',
       findings: [],
@@ -709,34 +751,34 @@ describe('a connection on its own page', () => {
       version: '88888888-8888-4888-8888-888888888888',
       credentialCurrent: true,
     };
-    const { client } = service({ connection: view({ credential, lastTest }) });
+    const { client } = service({ connection: view({ credential: SET, lastTest }) });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const testing = await screen.findByRole('region', { name: 'Test' });
-    expect(
-      within(testing).getByText(
-        'Not tested since this version. The last test, of an earlier version, was on 30 September 2026 by Ada.',
-      ),
-    ).toBeInTheDocument();
-    expect(within(testing).queryByText(/connected/i)).toBeNull();
+    const strip = await screen.findByRole('group', { name: 'State' });
+    const last = within(strip).getAllByRole('listitem')[1]!;
+    expect(last).toHaveTextContent(
+      'Not tested since this version The last test, of an earlier version, was on 30 September 2026 by Ada.',
+    );
+    expect(last).toHaveAttribute('data-tone', 'warn');
 
     // Tested now, then a version cut: the answer on the page was the earlier version's, so it goes.
-    await user.click(within(testing).getByRole('button', { name: 'Test' }));
-    expect(await within(testing).findByText('Connected.')).toBeInTheDocument();
-    const saving = screen.getByRole('region', { name: 'Settings' });
+    await user.click(screen.getByRole('button', { name: 'Test' }));
+    expect(await screen.findByText('Connected.')).toBeInTheDocument();
+    const saving = await tab(user, 'Settings');
     await user.type(within(saving).getByLabelText('Description'), ' Again.');
     await user.click(within(saving).getByRole('button', { name: 'Save version' }));
     await waitFor(() => expect(screen.queryByText('Connected.')).toBeNull());
 
     // And across Retire and Reinstate, with what the credential's own test said.
-    await user.type(
-      within(screen.getByRole('region', { name: 'Credential' })).getByLabelText('Password'),
-      CANARY,
-    );
-    await user.click(screen.getByRole('button', { name: 'Replace' }));
+    const credential = await tab(user, 'Credential');
+    await user.type(within(credential).getByLabelText('Password'), CANARY);
+    await user.click(within(credential).getByRole('button', { name: 'Replace' }));
     expect(await screen.findByText('Connected.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Retire' }));
-    await user.click(await screen.findByRole('button', { name: 'Reinstate' }));
-    await screen.findByRole('button', { name: 'Retire' });
+    await fromMore(user, 'Retire');
+    await screen.findByText('Retired', { selector: '[data-tone]' });
+    await fromMore(user, 'Reinstate');
+    await waitFor(() =>
+      expect(screen.queryByText('Retired', { selector: '[data-tone]' })).toBeNull(),
+    );
     expect(screen.queryByText('Connected.')).toBeNull();
   });
 
@@ -765,7 +807,7 @@ describe('a connection on its own page', () => {
           : undefined!,
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const saving = await screen.findByRole('region', { name: 'Settings' });
+    const saving = await tab(user, 'Settings');
     const host = within(saving).getByLabelText('Host');
     await user.clear(host);
     await user.type(host, 'db2.example.test');
@@ -787,62 +829,69 @@ describe('a connection on its own page', () => {
     expect(within(saving).getByLabelText('Description')).toHaveValue('Moved to the new server.');
   });
 
-  it('keeps a change typed into the settings while the connection is tested', async () => {
+  it('keeps a change typed into the settings while the connection is tested, and while another tab is open', async () => {
     const user = userEvent.setup();
-    const { client } = service({
-      connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: false,
-        },
-      }),
-    });
+    const { client } = service({ connection: view({ credential: SET }) });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const saving = await screen.findByRole('region', { name: 'Settings' });
+    let saving = await tab(user, 'Settings');
     await user.type(within(saving).getByLabelText('Description'), ' Unsaved.');
     await user.click(screen.getByRole('button', { name: 'Test' }));
     expect(await screen.findByText('Connected.')).toBeInTheDocument();
+    await tab(user, 'Tables');
+    saving = await tab(user, 'Settings');
     expect(within(saving).getByLabelText('Description')).toHaveValue(
       'The sites and their readings. Unsaved.',
     );
   });
 
-  it('retires a connection and reinstates it, each a version', async () => {
+  it('opens at the tab its address names, and names the tab chosen in the address', async () => {
+    const user = userEvent.setup();
+    window.location.hash = `#/connections/${READINGS}/tables`;
+    const { client } = service();
+    render(<ConnectionPage client={client} id={READINGS} tab="tables" />);
+    expect(await screen.findByRole('tab', { name: 'Tables' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await tab(user, 'Credential');
+    expect(window.location.hash).toBe(`#/connections/${READINGS}/credential`);
+  });
+
+  it('retires a connection and reinstates it, each a version, from More actions', async () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     render(<ConnectionPage client={client} id={READINGS} />);
-    await user.click(await screen.findByRole('button', { name: 'Retire' }));
-    expect(await screen.findByRole('button', { name: 'Reinstate' })).toBeInTheDocument();
-    expect(screen.getByText('Retired')).toBeInTheDocument();
+    await fromMore(user, 'Retire');
+    expect(await screen.findByText('Retired', { selector: '[data-tone]' })).toBeInTheDocument();
+    await offers(user, 'Reinstate');
     // A retired connection runs nothing, so nothing offers to run it.
     expect(screen.queryByRole('button', { name: 'Test' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Reinstate' }));
-    expect(await screen.findByRole('button', { name: 'Retire' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Tables' })).toBeNull();
+    await fromMore(user, 'Reinstate');
+    await waitFor(() =>
+      expect(screen.queryByText('Retired', { selector: '[data-tone]' })).toBeNull(),
+    );
+    await offers(user, 'Retire');
     const versions = asked.filter((each) => each.path.endsWith('/versions'));
     expect(
       versions.map((each) => (each.body as { settings: { retired: boolean } }).settings.retired),
     ).toEqual([true, false]);
   });
 
-  it('heads a connection with a trail back to the connections and its facts as chips, and sets what uses it beside its parts', async () => {
-    const { client } = service({
-      uses: () =>
-        json(200, {
-          definitions: { readable: [], others: 0 },
-          documents: { readable: [], others: 0 },
-        }),
-    });
+  it('heads a connection with a trail back to the connections and its facts as chips, then its state and tabs', async () => {
+    const { client } = service();
     render(<ConnectionPage client={client} id={READINGS} />);
     const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(within(trail).getByRole('link', { name: 'Connections' })).toHaveAttribute(
       'href',
       '#/connections',
     );
-    const beside = screen.getByRole('complementary', { name: 'Beside the connection' });
-    expect(await within(beside).findByRole('region', { name: 'Used by' })).toBeInTheDocument();
     expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('tablist', { name: 'Connection' }))
+        .getAllByRole('tab')
+        .map((each) => each.textContent),
+    ).toEqual(['Settings', 'Credential', 'Tables', 'Used by0']);
   });
 
   it('says which query definitions use a connection, and why retiring it was refused', async () => {
@@ -865,33 +914,36 @@ describe('a connection on its own page', () => {
       uses: () => json(200, { definitions: naming, documents: { readable: [], others: 0 } }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
-    expect(await within(used).findByRole('link', { name: 'Site by id' })).toHaveAttribute(
+    const used = await tab(user, 'Used by');
+    const definitions = within(used).getByRole('region', { name: 'Query definitions' });
+    expect(within(definitions).getByRole('link', { name: 'Site by id' })).toHaveAttribute(
       'href',
       '#/query-definitions/88888888-8888-4888-8888-888888888888',
     );
-    expect(within(used).getByText('And 2 more you may not read.')).toBeInTheDocument();
+    expect(within(definitions).getByText('And 2 more you may not read.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Used by, 3' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'State' })).toHaveTextContent(
+      'Used by3 query definitions and 0 documents',
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Retire' }));
-    const retiring = screen.getByRole('region', { name: 'Retiring' });
+    await fromMore(user, 'Retire');
     expect(
-      await within(retiring).findByText(
-        'This connection is used by a query definition that is not retired.',
-      ),
+      await screen.findByText('This connection is used by a query definition that is not retired.'),
     ).toBeInTheDocument();
     expect(
-      within(retiring).getByText('Retire these first: Site by id, and 2 more you may not read.'),
+      screen.getByText('Retire these first: Site by id, and 2 more you may not read.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Retire' })).toBeInTheDocument();
+    await offers(user, 'Retire');
   });
 
-  it('DAT-064 shows the documents holding results from a connection beside its definitions, above Retire', async () => {
+  it('DAT-064 shows the documents holding results from a connection beside its definitions', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       uses: () =>
         json(200, {
           definitions: {
             readable: [
-              { id: '88888888-8888-4888-8888-888888888888', title: 'Site by id', retired: false },
+              { id: '88888888-8888-4888-8888-888888888888', title: 'Site by id', retired: true },
             ],
             others: 0,
           },
@@ -902,22 +954,45 @@ describe('a connection on its own page', () => {
         }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
-    const documents = await within(used).findByRole('heading', { name: 'Documents' });
-    expect(within(used).getByRole('heading', { name: 'Query definitions' })).toBeInTheDocument();
-    expect(within(used).getByRole('link', { name: 'Harbour report' })).toHaveAttribute(
+    const used = await tab(user, 'Used by');
+    const definitions = within(used).getByRole('region', { name: 'Query definitions' });
+    expect(within(definitions).getByRole('listitem')).toHaveTextContent('Site by idRetired');
+    const documents = within(used).getByRole('region', { name: 'Documents' });
+    expect(within(documents).getByRole('link', { name: 'Harbour report' })).toHaveAttribute(
       'href',
       '#/documents/99999999-9999-4999-8999-999999999999',
     );
-    expect(within(used).getByText('And 3 more you may not read.')).toBeInTheDocument();
-    // Shown before Retire, so what retiring leaves is seen before it is asked for.
-    const retire = screen.getByRole('button', { name: 'Retire' });
+    expect(within(documents).getByText('And 3 more you may not read.')).toBeInTheDocument();
+  });
+
+  it('pages a long list of what uses a connection, ten at a time', async () => {
+    const user = userEvent.setup();
+    const readable = Array.from({ length: 12 }, (_, at) => ({
+      id: `99999999-9999-4999-8999-${String(at).padStart(12, '0')}`,
+      title: `Report ${at + 1}`,
+    }));
+    const { client } = service({
+      uses: () =>
+        json(200, {
+          definitions: { readable: [], others: 0 },
+          documents: { readable, others: 0 },
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const documents = within(await tab(user, 'Used by')).getByRole('region', { name: 'Documents' });
+    expect(within(documents).getAllByRole('link')).toHaveLength(10);
+    const pages = within(documents).getByRole('navigation', { name: 'Pages of documents' });
+    expect(pages).toHaveTextContent('1 to 10 of 12');
+    await user.click(within(pages).getByRole('button', { name: 'Next page' }));
     expect(
-      documents.compareDocumentPosition(retire) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      within(documents)
+        .getAllByRole('link')
+        .map((each) => each.textContent),
+    ).toEqual(['Report 11', 'Report 12']);
   });
 
   it('counts the documents holding results from a connection that the person may not read, never naming them', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       uses: () =>
         json(200, {
@@ -926,10 +1001,8 @@ describe('a connection on its own page', () => {
         }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
-    expect(
-      await within(used).findByText('Held by 1 document you may not read.'),
-    ).toBeInTheDocument();
+    const used = await tab(user, 'Used by');
+    expect(within(used).getByText('Held by 1 document you may not read.')).toBeInTheDocument();
     expect(within(used).queryByRole('link')).toBeNull();
   });
 
@@ -937,15 +1010,17 @@ describe('a connection on its own page', () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     render(<ConnectionPage client={client} id={READINGS} />);
-    const saving = await screen.findByRole('region', { name: 'Settings' });
+    const saving = await tab(user, 'Settings');
     await user.type(within(saving).getByLabelText('Description'), ' Unsaved.');
-    await user.click(screen.getByRole('button', { name: 'Retire' }));
-    await screen.findByRole('button', { name: 'Reinstate' });
+    await fromMore(user, 'Retire');
+    await screen.findByText('Retired', { selector: '[data-tone]' });
     expect(within(saving).getByLabelText('Description')).toHaveValue(
       'The sites and their readings. Unsaved.',
     );
-    await user.click(screen.getByRole('button', { name: 'Reinstate' }));
-    await screen.findByRole('button', { name: 'Retire' });
+    await fromMore(user, 'Reinstate');
+    await waitFor(() =>
+      expect(screen.queryByText('Retired', { selector: '[data-tone]' })).toBeNull(),
+    );
     expect(within(saving).getByLabelText('Description')).toHaveValue(
       'The sites and their readings. Unsaved.',
     );
@@ -969,19 +1044,13 @@ describe('a connection on its own page', () => {
       });
     let none = false;
     const { client } = service({
-      connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: false,
-        },
-      }),
+      connection: view({ credential: SET }),
       describe: () => (none ? unavailable() : undefined!),
       test: () => (none ? unavailable() : undefined!),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    await user.click(await screen.findByRole('button', { name: 'List tables' }));
+    const listing = await tab(user, 'Tables');
+    await user.click(within(listing).getByRole('button', { name: 'List tables' }));
     const tables = await screen.findByRole('table', { name: 'Tables and views' });
     expect(within(tables).getByText('sample.site')).toBeInTheDocument();
     expect(within(tables).getByText('id, name')).toBeInTheDocument();
@@ -997,12 +1066,7 @@ describe('a connection on its own page', () => {
   it('says a pass made with an earlier credential is no test of the one set now', async () => {
     const { client } = service({
       connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T10:00:00Z',
-          targetChanged: false,
-        },
+        credential: { ...SET, setAt: '2026-09-30T10:00:00Z' },
         lastTest: {
           outcome: 'ok',
           findings: [],
@@ -1014,26 +1078,18 @@ describe('a connection on its own page', () => {
       }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const testing = await screen.findByRole('region', { name: 'Test' });
-    expect(
-      within(testing).getByText(
-        'Not tested since the credential was set. The last test, with an earlier credential, was on 30 September 2026 by Ada.',
-      ),
-    ).toBeInTheDocument();
-    expect(within(testing).queryByText(/connected/i)).toBeNull();
+    const strip = await screen.findByRole('group', { name: 'State' });
+    const last = within(strip).getAllByRole('listitem')[1]!;
+    expect(last).toHaveTextContent(
+      'Not tested since the credential was set The last test, with an earlier credential, was on 30 September 2026 by Ada.',
+    );
+    expect(within(last).queryByText(/connected/i)).toBeNull();
   });
 
   it('says when the list of tables was cut short, and how many tables and columns were left out', async () => {
     const user = userEvent.setup();
     const { client } = service({
-      connection: view({
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: false,
-        },
-      }),
+      connection: view({ credential: SET }),
       describe: () =>
         json(200, {
           relations: [
@@ -1049,7 +1105,8 @@ describe('a connection on its own page', () => {
         }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    await user.click(await screen.findByRole('button', { name: 'List tables' }));
+    const listing = await tab(user, 'Tables');
+    await user.click(within(listing).getByRole('button', { name: 'List tables' }));
     await screen.findByRole('table', { name: 'Tables and views' });
     expect(
       screen.getByText(
@@ -1064,14 +1121,23 @@ describe('a connection on its own page', () => {
   });
 
   it('offers a reader none of what changes or uses a connection', async () => {
+    const user = userEvent.setup();
     const { client } = service({ connection: view({ mayAdminister: false, mayUse: false }) });
     render(<ConnectionPage client={client} id={READINGS} />);
     expect(await screen.findByRole('heading', { name: 'Readings', level: 1 })).toBeInTheDocument();
     expect(screen.getByText('source-postgres')).toBeInTheDocument();
-    for (const name of ['Save version', 'Set', 'Test', 'List tables', 'Retire']) {
+    await tab(user, 'Credential');
+    for (const name of [
+      'Save version',
+      'Set',
+      'Test',
+      'List tables',
+      'More actions for Readings',
+    ]) {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
     expect(screen.queryByLabelText('Password')).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Tables' })).toBeNull();
   });
 });
 
@@ -1086,7 +1152,7 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     render(<ConnectionPage client={client} id={READINGS} />);
-    const saving = await screen.findByRole('region', { name: 'Settings' });
+    const saving = await tab(user, 'Settings');
     const runsAs = within(saving).getByLabelText('Runs as');
     expect(runsAs).toHaveValue('service');
     await user.selectOptions(runsAs, 'email');
@@ -1110,6 +1176,7 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
   });
 
   it('says to a reader whom the connection runs as', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       connection: view({
         mayAdminister: false,
@@ -1117,7 +1184,7 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
       }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
-    const shown = await screen.findByRole('region', { name: 'Settings' });
+    const shown = await tab(user, 'Settings');
     expect(shown).toHaveTextContent(
       "Runs asEach person, by their identifier at the organisation's sign-in",
     );
@@ -1126,15 +1193,7 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
   it("words the account check's findings, and a person's unsafe role, for the source's administrator", async () => {
     const user = userEvent.setup();
     const { client } = service({
-      connection: view({
-        settings: settings({ identity: asserted('email') }),
-        credential: {
-          set: true,
-          setBy: { id: 'ada', name: 'Ada' },
-          setAt: '2026-09-30T09:00:00Z',
-          targetChanged: false,
-        },
-      }),
+      connection: view({ settings: settings({ identity: asserted('email') }), credential: SET }),
       test: () =>
         json(200, {
           outcome: 'ok',
@@ -1157,7 +1216,8 @@ describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
         "This account can read data, create objects, or owns functions, procedures or views of its own, so nothing runs as each person until the source's administrator removes those privileges.",
       ),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'List tables' }));
+    const listing = await tab(user, 'Tables');
+    await user.click(within(listing).getByRole('button', { name: 'List tables' }));
     expect(
       await screen.findByText(/Your role at the source can sign in, create objects/),
     ).toBeInTheDocument();

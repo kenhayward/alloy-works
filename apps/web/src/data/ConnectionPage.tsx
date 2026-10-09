@@ -1,12 +1,17 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Notice } from '../states/Notice.js';
 import { documentLink } from '../structure/links.js';
+import { Icon } from '../editor/Icon.js';
 import { Chip } from '../parts/Chip.js';
+import { DetailPage } from '../parts/DetailPage.js';
+import type { PanelTab } from '../parts/PanelTabs.js';
+import { RowActions } from '../parts/RowActions.js';
+import type { StripCell } from '../parts/StateStrip.js';
 import styles from './ConnectionPage.module.css';
-import { connectionAccessLink, queryDefinitionLink } from './links.js';
+import { connectionAccessLink, connectionLink, queryDefinitionLink } from './links.js';
 import {
   KEY_PAIR_HINT,
   PATH_STYLE_LABELS,
@@ -33,7 +38,7 @@ import {
   type Settings,
   type Tested,
 } from './shapes.js';
-import { isUses, UsedList, type Uses } from './uses.js';
+import { isUses, PagedUses, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -151,24 +156,6 @@ function credentialText(
     : `${set}.`;
 }
 
-/**
- * The last test in words - and, where it was of an earlier version, or made with an earlier
- * credential, only that: a pass of settings since changed says nothing of these (the D1 fix, C7), and
- * a pass with a password since replaced says nothing of the new one.
- */
-function lastTestText(view: ConnectionView): string {
-  const last = view.lastTest;
-  if (last === null) return 'Not tested yet.';
-  const when = `on ${longDate(last.at)} by ${nameOf(last.by)}`;
-  if (last.version !== view.version.id) {
-    return `Not tested since this version. The last test, of an earlier version, was ${when}.`;
-  }
-  if (!last.credentialCurrent) {
-    return `Not tested since the credential was set. The last test, with an earlier credential, was ${when}.`;
-  }
-  return `Last tested ${when}: ${last.outcome === 'ok' ? 'connected' : 'could not connect'}.`;
-}
-
 /** The query definitions naming a connection: those the caller may read, and how many more (D2-O). */
 interface Naming {
   readonly readable: readonly {
@@ -215,17 +202,52 @@ function inUseText(naming: Naming): string {
   return `Retire these first: ${titles.join(', ')}${more}.`;
 }
 
-/** One of the page's parts, a region named by its heading. */
-function Part({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
-  const id = useId();
-  return (
-    <section aria-labelledby={id} className={styles['part']}>
-      <h2 id={id}>{title}</h2>
-      {children}
-    </section>
-  );
+/** "1 query definition", "2 documents". */
+const counted = (count: number, one: string, many: string) =>
+  `${count} ${count === 1 ? one : many}`;
+
+/** The strip's Credential cell (ADR-0050, decision 4): set, by whom and when, or what it lacks. */
+function credentialCell(credential: ConnectionView['credential']): StripCell {
+  const base = { key: 'credential', icon: 'Credential', label: 'Credential' } as const;
+  if (!credential.set) return { ...base, tone: 'warn', value: 'Not set' };
+  const by = `by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
+  if (credential.setBeforeBinding || credential.targetChanged) {
+    return { ...base, tone: 'warn', value: 'Set again to use', detail: `set ${by}` };
+  }
+  return { ...base, tone: 'ok', value: 'Set', detail: by };
 }
 
+/**
+ * The strip's Last test cell: its answer, by whom and when - or, where it was of an earlier version or
+ * an earlier credential, only that, since it says nothing of these (the D1 fix, C7).
+ */
+function lastTestCell(view: ConnectionView): StripCell {
+  const base = { key: 'last-test', label: 'Last test' } as const;
+  const last = view.lastTest;
+  if (last === null) return { ...base, icon: 'Test', tone: 'muted', value: 'Not tested yet' };
+  const when = `on ${longDate(last.at)} by ${nameOf(last.by)}`;
+  if (last.version !== view.version.id) {
+    return {
+      ...base,
+      icon: 'Needs attention',
+      tone: 'warn',
+      value: 'Not tested since this version',
+      detail: `The last test, of an earlier version, was ${when}.`,
+    };
+  }
+  if (!last.credentialCurrent) {
+    return {
+      ...base,
+      icon: 'Needs attention',
+      tone: 'warn',
+      value: 'Not tested since the credential was set',
+      detail: `The last test, with an earlier credential, was ${when}.`,
+    };
+  }
+  return last.outcome === 'ok'
+    ? { ...base, icon: 'Done editing', tone: 'ok', value: 'Connected', detail: when }
+    : { ...base, icon: 'Needs attention', tone: 'warn', value: 'Could not connect', detail: when };
+}
 function SettingsList({ settings }: { readonly settings: Settings }) {
   if (settings.type === 's3') {
     return (
@@ -285,7 +307,16 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
  * when, and set or replaced through a password field that is emptied once sent (DAT-004); a test and
  * its tables, for whoever may use it; retiring and reinstating, each a version; and its access.
  */
-export function ConnectionPage({ client, id }: { readonly client: Client; readonly id: string }) {
+export function ConnectionPage({
+  client,
+  id,
+  tab = null,
+}: {
+  readonly client: Client;
+  readonly id: string;
+  /** The tab the address names, or null for Settings (ADR-0050). */
+  readonly tab?: string | null;
+}) {
   const [connection, setConnection] = useState<ConnectionView | 'missing' | 'failed' | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -560,16 +591,35 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       }
     });
 
+  const usedBy =
+    uses === null || uses === 'failed'
+      ? null
+      : {
+          definitions: uses.definitions.readable.length + uses.definitions.others,
+          documents: uses.documents.readable.length + uses.documents.others,
+        };
+  const tabs: PanelTab[] = [
+    { key: 'settings', label: 'Settings' },
+    { key: 'credential', label: 'Credential' },
+    ...(view.mayUse && !retired && type === 'postgres' ? [{ key: 'tables', label: 'Tables' }] : []),
+    {
+      key: 'used-by',
+      label: 'Used by',
+      ...(usedBy === null ? {} : { count: usedBy.definitions + usedBy.documents }),
+    },
+  ];
+
   return (
-    <article className={styles['page']}>
-      {/* The head (the Ledger, ADR-0046): where it is, what it is, its facts as chips. */}
-      <header className={styles['head']}>
-        <nav aria-label="Breadcrumb" className={styles['trail']}>
+    <DetailPage
+      trail={
+        <>
           <a href="#/connections">Connections</a>
-          <span>{` / ${view.space.name}`}</span>
-        </nav>
-        <h1>{view.settings.name}</h1>
-        <p className={styles['meta']}>
+          {` / ${view.space.name}`}
+        </>
+      }
+      title={view.settings.name}
+      chips={
+        <>
           <Chip>{`${http ? 'HTTP API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in ${view.space.name}`}</Chip>
           <Chip className={styles['mono']}>{`Version ${view.version.number}`}</Chip>
           {retired && <Chip tone="warn">Retired</Chip>}
@@ -578,123 +628,105 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
             target={`artifact:${view.id}`}
             href={connectionAccessLink(view.id)}
           />
-        </p>
-      </header>
-
-      {/* What uses it, read before the parts that change it: beside them on the page. */}
-      <aside className={styles['side']} aria-label="Beside the connection">
-        <Part title="Used by">
-          {uses === null ? null : uses === 'failed' ? (
-            <p>What uses this connection could not be read.</p>
-          ) : uses.definitions.readable.length === 0 &&
-            uses.definitions.others === 0 &&
-            uses.documents.readable.length === 0 &&
-            uses.documents.others === 0 ? (
-            <p>Nothing uses this connection.</p>
-          ) : (
-            <>
-              {(uses.definitions.readable.length > 0 || uses.definitions.others > 0) && (
-                <h3>Query definitions</h3>
-              )}
-              {uses.definitions.readable.length > 0 && (
-                <ul>
-                  {uses.definitions.readable.map((each) => (
-                    <li key={each.id}>
-                      <a href={queryDefinitionLink(each.id)}>{each.title}</a>
-                      {each.retired && ' (retired)'}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {uses.definitions.others > 0 && (
-                <p>
-                  {uses.definitions.readable.length > 0
-                    ? `And ${uses.definitions.others} more you may not read.`
-                    : `Used by ${unread(uses.definitions.others)}.`}
-                </p>
-              )}
-              <UsedList
-                heading="Documents"
-                uses={uses.documents}
-                link={documentLink}
-                counted={(others) =>
-                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
-                }
-              />
-            </>
-          )}
-        </Part>
-      </aside>
-      <div className={styles['main']}>
-        <Part title="Settings">
-          {view.mayAdminister && draft !== null ? (
-            <div className={styles['form']}>
-              <SettingsFields draft={draft} onChange={setDraft} typeFixed />
-              <button type="button" className="primary" disabled={busy !== null} onClick={save}>
-                Save version
-              </button>
-            </div>
-          ) : (
-            <SettingsList settings={view.settings} />
-          )}
-          <p role="status">{saved}</p>
-        </Part>
-
-        <Part title="Credential">
-          <p>{credentialText(view.credential, type)}</p>
-          {view.mayAdminister && !retired && (
-            <div className={styles['form']}>
-              {s3 && (
-                <>
-                  <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
-                  <label>
-                    Access key id
-                    <input
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={keyId}
-                      onChange={(event) => setKeyId(event.target.value)}
-                    />
-                  </label>
-                </>
-              )}
-              <label>
-                {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={secret}
-                  onChange={(event) => setSecret(event.target.value)}
-                />
-              </label>
-              <button type="button" disabled={busy !== null} onClick={setCredential}>
-                {!view.credential.set
-                  ? 'Set'
-                  : view.credential.targetChanged
-                    ? 'Set again'
-                    : 'Replace'}
-              </button>
-              <p className={styles['hint']}>
-                It is sealed as soon as it is sent and never shown again, here or anywhere. The
-                connection is tested with it straight after.
-              </p>
-            </div>
-          )}
-          <TestAnswer tested={rotation} />
-        </Part>
-
-        {view.mayUse && !retired && (
-          <Part title="Test">
-            <p>{lastTestText(view)}</p>
+        </>
+      }
+      actions={
+        <>
+          {view.mayUse && !retired && (
             <button type="button" disabled={busy !== null} onClick={test}>
+              <Icon name="Test" />
               Test
             </button>
-            <TestAnswer tested={tested} />
-          </Part>
-        )}
-
-        {view.mayUse && !retired && type === 'postgres' && (
-          <Part title="Tables">
+          )}
+          {view.mayAdminister && (
+            <RowActions
+              subject={view.settings.name}
+              shown={[]}
+              more={[{ label: retired ? 'Reinstate' : 'Retire', onSelect: () => retire(!retired) }]}
+            />
+          )}
+        </>
+      }
+      strip={[
+        credentialCell(view.credential),
+        lastTestCell(view),
+        {
+          key: 'used-by',
+          icon: 'Used by',
+          tone: 'muted',
+          label: 'Used by',
+          value:
+            uses === 'failed'
+              ? 'Could not be read'
+              : usedBy === null
+                ? ''
+                : counted(usedBy.definitions, 'query definition', 'query definitions'),
+          ...(usedBy === null
+            ? {}
+            : { detail: `and ${counted(usedBy.documents, 'document', 'documents')}` }),
+        },
+      ]}
+      notice={
+        <>
+          <TestAnswer tested={tested} />
+          <div role="status">
+            {retiring?.map((line, at) => (
+              <p key={at}>{line}</p>
+            ))}
+          </div>
+        </>
+      }
+      label="Connection"
+      tabs={tabs}
+      chosen={tab}
+      link={(key) => connectionLink(view.id, key)}
+    >
+      {(open) =>
+        open === 'credential' ? (
+          <section className={styles['card']} aria-label="Credential">
+            <p>{credentialText(view.credential, type)}</p>
+            {view.mayAdminister && !retired && (
+              <div className={styles['form']}>
+                {s3 && (
+                  <>
+                    <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
+                    <label>
+                      Access key id
+                      <input
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={keyId}
+                        onChange={(event) => setKeyId(event.target.value)}
+                      />
+                    </label>
+                  </>
+                )}
+                <label>
+                  {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={secret}
+                    onChange={(event) => setSecret(event.target.value)}
+                  />
+                </label>
+                <button type="button" disabled={busy !== null} onClick={setCredential}>
+                  {!view.credential.set
+                    ? 'Set'
+                    : view.credential.targetChanged
+                      ? 'Set again'
+                      : 'Replace'}
+                </button>
+                <p className={styles['hint']}>
+                  It is sealed as soon as it is sent and never shown again, here or anywhere. The
+                  connection is tested with it straight after.
+                </p>
+              </div>
+            )}
+            <TestAnswer tested={rotation} />
+          </section>
+        ) : open === 'tables' ? (
+          <section className={styles['card']} aria-label="Tables">
             <button type="button" disabled={busy !== null} onClick={describe}>
               List tables
             </button>
@@ -733,27 +765,48 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
                 {leftOutText(tables.leftOut) && <p>{leftOutText(tables.leftOut)}</p>}
               </>
             )}
-          </Part>
-        )}
-
-        {view.mayAdminister && (
-          <Part title={retired ? 'Reinstating' : 'Retiring'}>
-            <p>
-              {retired
-                ? 'A retired connection runs nothing. Reinstating it lets it be tested and used again.'
-                : 'A retired connection runs nothing. Everything already kept from it stays as it is.'}
-            </p>
-            <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
-              {retired ? 'Reinstate' : 'Retire'}
-            </button>
-            <div role="status">
-              {retiring?.map((line, at) => (
-                <p key={at}>{line}</p>
-              ))}
+          </section>
+        ) : open === 'used-by' ? (
+          uses === null ? null : uses === 'failed' ? (
+            <p>What uses this connection could not be read.</p>
+          ) : (
+            <div className={styles['lists']}>
+              <PagedUses
+                heading="Query definitions"
+                uses={uses.definitions}
+                link={queryDefinitionLink}
+                counted={(others) => `Used by ${unread(others)}.`}
+              />
+              <PagedUses
+                heading="Documents"
+                uses={uses.documents}
+                link={documentLink}
+                counted={(others) =>
+                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+                }
+              />
             </div>
-          </Part>
-        )}
-      </div>
-    </article>
+          )
+        ) : (
+          <section className={styles['card']} aria-label="Settings">
+            {view.mayAdminister && draft !== null ? (
+              <>
+                <div className={styles['fields']}>
+                  <SettingsFields draft={draft} onChange={setDraft} typeFixed />
+                </div>
+                <footer className={styles['foot']}>
+                  <p role="status">{saved}</p>
+                  <button type="button" className="primary" disabled={busy !== null} onClick={save}>
+                    Save version
+                  </button>
+                </footer>
+              </>
+            ) : (
+              <SettingsList settings={view.settings} />
+            )}
+          </section>
+        )
+      }
+    </DetailPage>
   );
 }

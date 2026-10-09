@@ -561,3 +561,12 @@
   opacity: var(--opacity-disabled);
   cursor: default;
 }
+
+/* Its status lines take no room until one says something. */
+.detailNotice {
+  margin-top: calc(-1 * var(--space-12));
+}
+
+.detailNotice p {
+  margin: var(--space-8) 0 0;
+}

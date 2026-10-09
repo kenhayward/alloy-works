@@ -275,7 +275,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     }
     if (connection) {
       return (
-        <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
+        <ConnectionPage
+          key={connection.connection}
+          client={client}
+          id={connection.connection}
+          tab={connection.tab}
+        />
       );
     }
     const definition = queryDefinitionAddress(hash);
