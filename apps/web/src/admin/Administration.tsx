@@ -7,11 +7,11 @@ import { permissionName, type AccessAt } from '../access/describe.js';
 import { administersAt } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
-import { Notice } from '../states/Notice.js';
-import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { Groups } from './Groups.js';
-import { SpaceDialog, type SpaceAct, type SpaceRow } from './SpaceDialogs.js';
+import { Shown, useListing } from './listing.js';
+import type { SpaceRow } from './SpaceDialogs.js';
+import { Spaces } from './Spaces.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -94,72 +94,6 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     };
   }, [client]);
   return counts;
-}
-
-/** The access page's sentence, for the same refusal. */
-const NOT_YOURS = 'You may not manage access here.';
-
-/** What a section read: its rows, refused, or failed; null while it is being read. */
-type Read<T> = { readonly rows: readonly T[] } | 'refused' | 'failed' | null;
-
-/**
- * Reads a listing to its end, answering 403 as refused and anything else that fails as failed. A new
- * `generation` reads it again, keeping what was shown until the new read answers.
- */
-function useListing<T>(
-  load: () => Promise<{ readonly items: T[] } | { readonly status: number }>,
-  active: boolean,
-  generation = 0,
-): Read<T> {
-  const [read, setRead] = useState<Read<T>>(null);
-  const [readAt, setReadAt] = useState(-1);
-  useEffect(() => {
-    if (!active || (read !== null && readAt === generation)) return undefined;
-    let current = true;
-    load()
-      .then((answer) => {
-        if (!current) return;
-        setReadAt(generation);
-        if ('items' in answer) setRead({ rows: answer.items });
-        else setRead(answer.status === 403 ? 'refused' : 'failed');
-      })
-      .catch(() => {
-        if (!current) return;
-        setReadAt(generation);
-        setRead('failed');
-      });
-    return () => {
-      current = false;
-    };
-  }, [active, load, read, readAt, generation]);
-  return read;
-}
-
-function Shown<T>({
-  read,
-  failed,
-  children,
-}: {
-  read: Read<T>;
-  failed: string;
-  children: (rows: readonly T[]) => React.ReactNode;
-}) {
-  if (read === null) return <Waiting>Loading...</Waiting>;
-  if (read === 'refused') {
-    return (
-      <Notice tone="refused">
-        <p>{NOT_YOURS}</p>
-      </Notice>
-    );
-  }
-  if (read === 'failed') {
-    return (
-      <Notice tone="failed">
-        <p>{failed}</p>
-      </Notice>
-    );
-  }
-  return <>{children(read.rows)}</>;
 }
 
 interface PersonRow {
@@ -389,8 +323,6 @@ export function Administration({
   // Read again after each change to a space, in place, so the button a dialog was opened from is
   // still there to take focus back.
   const [spacesRead, setSpacesRead] = useState(0);
-  const [spaceAct, setSpaceAct] = useState<SpaceAct | null>(null);
-  const [spaceSaid, setSpaceSaid] = useState('');
   const spaces = useListing<SpaceRow>(loads.spaces, shown === 'spaces', spacesRead);
   const people = useListing<PersonRow>(loads.people, shown === 'people');
   const invitations = useListing<InvitationRow>(loads.invitations, shown === 'people');
@@ -463,12 +395,12 @@ export function Administration({
         <h1 ref={sectionHeading} tabIndex={-1}>
           {title.title}
         </h1>
-        {(shown === 'overview' || shown === 'spaces') && accessAt !== null && (
+        {shown === 'overview' && accessAt !== null && (
           <AccessHere
             key={accessAt.kind === 'space' ? accessAt.id : 'tenant'}
             client={client}
             at={accessAt}
-            back={shown === 'spaces' ? 'Back to spaces' : 'Back to the environment'}
+            back="Back to the environment"
             onBack={leaveAccess}
           />
         )}
@@ -494,90 +426,14 @@ export function Administration({
             )}
           </>
         )}
-        {shown === 'spaces' && accessAt === null && (
-          <>
-            {mayChangeSpaces && (
-              <p>
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() => setSpaceAct({ kind: 'new' })}
-                >
-                  New space
-                </button>
-              </p>
-            )}
-            <Shown read={spaces} failed="The spaces could not be loaded.">
-              {(rows) => (
-                <table aria-label="Spaces">
-                  <tbody>
-                    {rows.map((space) => (
-                      <tr key={space.id}>
-                        <td>{space.name}</td>
-                        <td className={styles['muted']}>
-                          {space.archived
-                            ? 'Archived'
-                            : space.mayCreate
-                              ? 'You may create here'
-                              : ''}
-                        </td>
-                        <td className={styles['act']}>
-                          {mayChangeSpaces && (
-                            <>
-                              <button
-                                type="button"
-                                aria-label={`Rename ${space.name}`}
-                                onClick={() => setSpaceAct({ kind: 'rename', space })}
-                              >
-                                Rename
-                              </button>{' '}
-                              <button
-                                type="button"
-                                aria-label={`${space.archived ? 'Restore' : 'Archive'} ${space.name}`}
-                                onClick={() =>
-                                  setSpaceAct({
-                                    kind: space.archived ? 'restore' : 'archive',
-                                    space,
-                                  })
-                                }
-                              >
-                                {space.archived ? 'Restore' : 'Archive'}
-                              </button>{' '}
-                            </>
-                          )}
-                          {administers.get(`space:${space.id}`) === true && (
-                            <button
-                              ref={space.id === leftFrom ? backTo : undefined}
-                              type="button"
-                              aria-label={`Access to the space ${space.name}`}
-                              onClick={() =>
-                                setAccessAt({ kind: 'space', id: space.id, name: space.name })
-                              }
-                            >
-                              Access
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </Shown>
-            <p role="status">{spaceSaid}</p>
-            {spaceAct !== null && (
-              <SpaceDialog
-                client={client}
-                act={spaceAct}
-                onClose={() => setSpaceAct(null)}
-                onDone={(said) => {
-                  setSpaceAct(null);
-                  setSpaceSaid(said);
-                  setSpacesRead((count) => count + 1);
-                }}
-              />
-            )}
-          </>
+        {shown === 'spaces' && (
+          <Spaces
+            client={client}
+            read={spaces}
+            mayChange={mayChangeSpaces}
+            administers={(space) => administers.get(`space:${space}`) === true}
+            onChanged={() => setSpacesRead((count) => count + 1)}
+          />
         )}
         {shown === 'people' && tokensOf !== null && (
           <PersonTokens

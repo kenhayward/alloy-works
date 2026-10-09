@@ -327,6 +327,39 @@ describe("a row's actions", () => {
     expect(screen.queryByRole('button', { name: /More actions/ })).toBeNull();
   });
 
+  it('keeps a button as an action arrives beside it, and as one in its slot gives way to another', () => {
+    const access = {
+      label: 'Access',
+      name: 'Access to Training',
+      icon: 'Access',
+      onSelect: () => {},
+    };
+    const rename = {
+      label: 'Rename',
+      name: 'Rename Training',
+      icon: 'Rename',
+      slot: 'change',
+      onSelect: () => {},
+    };
+    const restore = {
+      label: 'Restore',
+      name: 'Restore Training',
+      icon: 'Restore',
+      slot: 'change',
+      onSelect: () => {},
+    };
+    const { rerender } = render(<RowActions subject="Training" shown={[restore]} more={[]} />);
+    const button = screen.getByRole('button', { name: 'Restore Training' });
+    button.focus();
+    // Access, read later, arrives first in the row: Restore is still the button it was.
+    rerender(<RowActions subject="Training" shown={[access, restore]} more={[]} />);
+    expect(screen.getByRole('button', { name: 'Restore Training' })).toBe(button);
+    // Restored, its Restore becomes Rename in the same place, the focus still on it.
+    rerender(<RowActions subject="Training" shown={[access, rename]} more={[]} />);
+    expect(screen.getByRole('button', { name: 'Rename Training' })).toBe(button);
+    expect(button).toHaveFocus();
+  });
+
   it('puts the rest under More actions, worked by the arrows, Escape giving the focus back', async () => {
     const picked: string[] = [];
     render(<RowActions subject="General" {...actions(picked)} />);

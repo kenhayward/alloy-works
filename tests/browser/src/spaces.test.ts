@@ -65,7 +65,11 @@ describe("Administration's Spaces in a browser", () => {
       await page.keyboard.press('Enter');
       await status(`Renamed ${made} to ${renamed}.`);
 
-      await administration.getByRole('button', { name: `Archive ${renamed}` }).press('Enter');
+      // Archive is under the row's More actions, a menu opened on its first item.
+      await administration
+        .getByRole('button', { name: `More actions for ${renamed}` })
+        .press('Enter');
+      await page.getByRole('menuitem', { name: 'Archive' }).press('Enter');
       const archiving = page.getByRole('dialog', { name: `Archive ${renamed}?` });
       await checkAxe(page, 'Administration, archiving a space', task.meta, {
         shows: archiving.getByRole('button', { name: 'Archive space' }),
@@ -84,6 +88,18 @@ describe("Administration's Spaces in a browser", () => {
         .press('Enter');
       await status(`Restored ${renamed}.`);
       await page.keyboard.press('Escape');
+
+      // Its Access, in the side panel beside the list; Escape closes it.
+      await administration
+        .getByRole('button', { name: `Access to the space ${renamed}` })
+        .press('Enter');
+      const panel = page.getByRole('complementary', { name: `Access to ${renamed}` });
+      await panel.getByRole('region', { name: `The space ${renamed}`, exact: true }).waitFor();
+      await checkAxe(page, "Administration, a space's access", task.meta, {
+        shows: panel.getByRole('region', { name: `The space ${renamed}`, exact: true }),
+      });
+      await page.keyboard.press('Escape');
+      await panel.waitFor({ state: 'detached' });
 
       expect(await offeredWhere(page)).toContain(renamed);
     });
