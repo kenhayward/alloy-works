@@ -188,3 +188,115 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A section's shape (ADR-0049, decision 3): its sentence and action, a toolbar, then its table. */
+.lead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-24);
+  margin: calc(-1 * var(--space-8)) 0 var(--space-16);
+}
+
+.lead p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+}
+
+.search {
+  width: min(280px, 100%);
+}
+
+.segments {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.segments button {
+  min-height: 28px;
+  padding: 0 var(--space-12);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.segments button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.counted {
+  margin: 0 0 0 auto;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+/* From 1366px the side panel takes a column beside the list; below, it floats over it. */
+@media (min-width: 1366px) {
+  .withPanel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--drawer);
+    gap: var(--space-24);
+    align-items: start;
+  }
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+}
+
+.table th {
+  height: var(--row-head);
+  padding: 0 var(--space-12);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  text-align: start;
+}
+
+.table td {
+  height: var(--row);
+  padding: 0 var(--space-12);
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table tr[data-current='true'] td {
+  background: var(--accent-weak);
+}
+
+.table tr[data-archived='true'] td:first-child {
+  color: var(--muted);
+}
+
+.statusColumn {
+  width: 110px;
+}
+
+.accessColumn {
+  width: 140px;
+}
+
+.actionsColumn {
+  width: 124px;
+}

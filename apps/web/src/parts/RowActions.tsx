@@ -12,6 +12,11 @@ export interface RowAction {
   /** Its glyph in `Icon`. */
   readonly icon: string;
   readonly onSelect: () => void;
+  /**
+   * Which button it is, where two actions take turns in one place - Rename and Restore - so the button,
+   * and the focus on it, stays as one becomes the other. Its name otherwise.
+   */
+  readonly slot?: string;
   /** Why it cannot be taken here, said as its tooltip; it stays reachable but does nothing. */
   readonly unavailable?: string;
 }
@@ -76,7 +81,7 @@ export function RowActions({
     <div className={styles['rowActions']}>
       {shown.map((action) => (
         <IconButton
-          key={action.name}
+          key={action.slot ?? action.name}
           label={action.name}
           tooltip={action.unavailable ?? action.label}
           className={`${styles['iconButton']} ${styles['rowIcon']}`}

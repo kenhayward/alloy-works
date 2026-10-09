@@ -103,7 +103,7 @@ describe('Administration', () => {
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
     expect(within(spaces).getByRole('cell', { name: 'General' })).toBeInTheDocument();
-    expect(within(spaces).getAllByRole('cell', { name: 'You may create here' })).toHaveLength(1);
+    expect(within(spaces).getAllByRole('cell', { name: 'May create' })).toHaveLength(1);
 
     await userEvent.click(section('People'));
     const people = await screen.findByRole('table', { name: 'People' });
@@ -298,7 +298,7 @@ describe('Access from Administration', () => {
     grantedAt: '2026-09-17T09:00:00.000Z',
   };
 
-  it('opens Access at a space from its row in Spaces, and at the environment from Overview, each with a way back', async () => {
+  it('opens Access at a space in a side panel beside Spaces, and at the environment from Overview with a way back', async () => {
     const { client, asked } = service(answering);
     render(<Administration client={client} about={null} />);
     const dialog = screen.getByRole('region', { name: 'Administration' });
@@ -320,23 +320,24 @@ describe('Access from Administration', () => {
     await userEvent.click(
       await within(spaces).findByRole('button', { name: 'Access to the space General' }),
     );
-    expect(
-      await within(dialog).findByRole('heading', { name: 'Access to the space General' }),
-    ).toBeInTheDocument();
-    await within(within(dialog).getByRole('region', { name: 'The space General' })).findByText(
+    const panel = await screen.findByRole('complementary', { name: 'Access to General' });
+    expect(panel).toHaveTextContent("Space. Grants here add to the environment's.");
+    await within(within(panel).getByRole('region', { name: 'The space General' })).findByText(
       'Nothing is granted here.',
     );
+    // The list stays where it was beside it.
+    expect(screen.getByRole('table', { name: 'Spaces' })).toBe(spaces);
     // Asked at the space, and at the environment above it.
     expect(
       asked
         .filter((url) => url.pathname === '/v1/grants')
         .map((url) => url.searchParams.get('level')),
     ).toEqual(['tenant', 'space:s1', 'tenant']);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to spaces' }));
-    expect(await screen.findByRole('table', { name: 'Spaces' })).toBeInTheDocument();
+    await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('complementary')).toBeNull();
   });
 
-  it('keeps focus in Administration opening Access and going back, though the button that had it goes', async () => {
+  it('keeps focus in Administration opening Access and leaving it, at a space and at the environment', async () => {
     const { client } = service(answering);
     render(<Administration client={client} about={null} />);
     const dialog = screen.getByRole('region', { name: 'Administration' });
@@ -346,15 +347,15 @@ describe('Access from Administration', () => {
     await userEvent.click(
       await within(spaces).findByRole('button', { name: 'Access to the space Training' }),
     );
-    // On the way back, which the Access button gave way to.
+    // On the side panel's heading, which takes the focus as it opens.
+    const panel = screen.getByRole('complementary', { name: 'Access to Training' });
     expect(document.activeElement).toBe(
-      within(dialog).getByRole('button', { name: 'Back to spaces' }),
+      within(panel).getByRole('heading', { name: 'Access to Training' }),
     );
-    await within(dialog).findByRole('heading', { name: 'Access to the space Training' });
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to spaces' }));
-    // Back on the Access button it left from.
+    await userEvent.keyboard('{Escape}');
+    // Back on the Access button that opened it.
     expect(document.activeElement).toBe(
       within(screen.getByRole('table', { name: 'Spaces' })).getByRole('button', {
         name: 'Access to the space Training',
@@ -857,8 +858,9 @@ describe('Spaces in Administration', () => {
     ).toBeInTheDocument();
 
     await userEvent.click(
-      await within(table).findByRole('button', { name: 'Archive Regulatory affairs' }),
+      await within(table).findByRole('button', { name: 'More actions for Regulatory affairs' }),
     );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Archive' }));
     const archiving = screen.getByRole('dialog', { name: 'Archive Regulatory affairs?' });
     expect(archiving).toHaveTextContent('Nothing new can be made in it.');
     expect(archiving).toHaveTextContent('Nothing already in it changes');
@@ -886,6 +888,37 @@ describe('Spaces in Administration', () => {
     ]);
   });
 
+  it('shows the spaces in a table with a head, found by name and shown all, active or archived, counted', async () => {
+    const { client } = spacesService();
+    const { table, dialog } = await openSpaces(client);
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((head) => head.textContent),
+    ).toEqual(['Name', 'Status', 'Your access', 'Actions']);
+    expect(within(row(table, 'General')).getByRole('cell', { name: 'Active' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(
+      'A space holds components and documents, and has access of its own.',
+    );
+    const counted = () => within(dialog).getByText(/^\d+ spaces?$/).textContent;
+    const before = counted();
+
+    await userEvent.type(within(dialog).getByRole('searchbox', { name: 'Find a space' }), 'gen');
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(counted()).toBe('1 space');
+    await userEvent.clear(within(dialog).getByRole('searchbox', { name: 'Find a space' }));
+
+    const show = within(dialog).getByRole('group', { name: 'Show' });
+    expect(within(show).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(within(show).getByRole('button', { name: 'Archived' }));
+    expect(within(table).queryByRole('row', { name: /^General/ })).toBeNull();
+    await userEvent.click(within(show).getByRole('button', { name: 'All' }));
+    expect(counted()).toBe(before);
+  });
+
   it('says why a space was not made or archived: a name taken, and the last space', async () => {
     const { client, sent } = spacesService();
     const { table, dialog } = await openSpaces(client);
@@ -903,7 +936,10 @@ describe('Spaces in Administration', () => {
     await userEvent.click(within(making).getByRole('button', { name: 'Cancel' }));
 
     for (const name of ['Training', 'General']) {
-      await userEvent.click(await within(table).findByRole('button', { name: `Archive ${name}` }));
+      await userEvent.click(
+        await within(table).findByRole('button', { name: `More actions for ${name}` }),
+      );
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Archive' }));
       await userEvent.click(
         within(screen.getByRole('dialog', { name: `Archive ${name}?` })).getByRole('button', {
           name: 'Archive space',

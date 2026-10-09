@@ -49,6 +49,11 @@ export interface AccessPanelProps {
    * opens inside a section, as it does in Administration.
    */
   readonly headingLevel?: HeadingLevel;
+  /**
+   * Whether its title is seen. A host that heads it already, such as Administration's side panel,
+   * keeps it for screen readers alone, still naming the section and still taking the focus it is given.
+   */
+  readonly titled?: boolean;
 }
 
 /** The grants at one level, or why they are not shown. */
@@ -170,7 +175,7 @@ const EXPLAIN_UNREADABLE = 'What they may do could not be shown. Try again.';
  * chosen person may do here and why. Every list is read again from the service after each change, so
  * what is shown is what the service holds rather than what this page expected it to.
  */
-export function AccessPanel({ at, client, headingLevel = 2 }: AccessPanelProps) {
+export function AccessPanel({ at, client, headingLevel = 2, titled = true }: AccessPanelProps) {
   const Title = HEADINGS[headingLevel - 2]!;
   const CardTitle = HEADINGS[headingLevel - 1]!;
   // What the panel is opened on, as values rather than the object it arrives in, so a parent that
@@ -706,7 +711,11 @@ export function AccessPanel({ at, client, headingLevel = 2 }: AccessPanelProps) 
 
   return hold(
     <section aria-labelledby={id('heading')} className={styles['page']}>
-      <Title id={id('heading')} tabIndex={-1} className={styles['title']}>
+      <Title
+        id={id('heading')}
+        tabIndex={-1}
+        className={titled ? styles['title'] : styles['unseen']}
+      >
         Access to {opened.title}
       </Title>
       <div data-column="granted" className={styles['granted']}>

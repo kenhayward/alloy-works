@@ -125,7 +125,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and no page shows a template on its own, so its access is reached from its row in Templates.
 
 - **Spaces.** An administrator of the whole environment makes a space, renames one, and archives or
-  restores one, from Administration's **Spaces** and through the API (`POST /v1/spaces`,
+  restores one, from Administration's **Spaces** - a table of each space's status and your access,
+  found by name and shown all, active or archived, Access and Rename on each row as icons and Archive
+  under More actions, a space's Access opening in a panel beside the list - and through the API (`POST /v1/spaces`,
   `PATCH /v1/spaces/{id}`). A name is unique in the environment, archived spaces included. Nothing new -
   a component, a document, a template, a connection or a query definition - can be made in an archived
   space; everything already in it is read, edited, published and refreshed as before, and keeps its
