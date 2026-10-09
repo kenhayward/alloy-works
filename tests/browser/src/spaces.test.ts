@@ -10,17 +10,17 @@ import { withPage } from './testing/page.js';
  * choice of where; restored, it is back. The space is the test's own, so General is never touched.
  */
 
-/** Administration's Spaces, opened from the module rail's foot by keyboard. */
+/** Administration's Spaces, opened from the module rail's foot by keyboard, then its menu. */
 async function openSpaces(page: Page) {
   await page.goto(`${SERVICE}/#/`);
   await page
     .getByRole('navigation', { name: 'Modules' })
-    .getByRole('button', { name: 'Admin' })
+    .getByRole('link', { name: 'Admin' })
     .press('Enter');
-  const administration = page.getByRole('dialog', { name: 'Administration' });
+  const administration = page.getByRole('region', { name: 'Administration' });
   await administration
-    .getByRole('navigation', { name: 'Sections' })
-    .getByRole('button', { name: 'Spaces', exact: true })
+    .getByRole('navigation', { name: 'Sections of Administration' })
+    .getByRole('link', { name: /^Spaces/ })
     .press('Enter');
   await administration.getByRole('table', { name: 'Spaces' }).waitFor();
   return administration;

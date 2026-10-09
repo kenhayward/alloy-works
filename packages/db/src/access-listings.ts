@@ -156,6 +156,15 @@ export async function listRoles(
   return paged(rows, page.limit);
 }
 
+/** How many principals `listPrincipals` lists, signed in or invited: Administration's count (AD-A). */
+export async function countPrincipals(trx: TenantTransaction): Promise<number> {
+  const row = await trx
+    .selectFrom('principal')
+    .select((eb) => eb.fn.countAll<string>().as('count'))
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 /**
  * Everybody who is a principal of this tenant - who has signed in, or was invited by address and has
  * not yet - a page at a time in the order of their ids.

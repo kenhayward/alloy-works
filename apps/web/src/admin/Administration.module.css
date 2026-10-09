@@ -1,73 +1,107 @@
-/* The Administration modal, drawn in docs/interface/screens/Administration.html. */
+/* Administration, a page (ADR-0049): the grouped menu, then the section it names. */
 .administration {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
-  gap: var(--space-16) var(--space-24);
-  min-height: 420px;
+  grid-template-columns: var(--pane-admin-menu) minmax(0, 1fr);
+  gap: var(--space-32);
+  align-items: start;
 }
 
-.head {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-16);
-  padding-inline-end: var(--space-40);
-}
-
-.head h2 {
-  margin: 0;
-  font-size: var(--size-16);
-}
-
-.environment {
-  color: var(--muted);
-  font-size: var(--size-13);
-}
-
-.sections {
+.menu {
+  position: sticky;
+  top: var(--header-height);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.section {
-  justify-content: flex-start;
-  padding: var(--space-8) var(--space-12);
-  border: 0;
-  border-radius: var(--radius-8);
-  background: transparent;
-  font-size: var(--size-14);
-  text-align: start;
+.menuTitle {
+  margin: 0;
+  font-size: var(--size-16);
+  font-weight: 600;
 }
 
-.section[aria-current='true'] {
+.environment {
+  margin: 0 0 var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.menuGroup ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuGroupName {
+  margin: var(--space-16) 0 var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-8);
+  color: var(--text);
+  font-size: var(--size-14);
+  text-decoration: none;
+}
+
+.section:hover {
+  background: var(--sunken);
+}
+
+.section[aria-current='page'] {
   background: var(--accent-weak);
-  color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.count {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-12);
 }
 
 .shown {
   min-width: 0;
+  font-size: var(--size-14);
+}
+
+.trail {
+  color: var(--muted);
   font-size: var(--size-13);
 }
 
-.shown h3 {
-  margin-top: 0;
-  font-size: var(--size-16);
+.shown h1 {
+  margin: var(--space-4) 0 var(--space-16);
+  font-size: var(--size-20);
 }
 
 /* A heading focus is moved to, as a person's tokens open or close, rather than a stop of its own. */
-.shown h3:focus,
-.shown h4:focus {
+.shown h1:focus,
+.shown h2:focus {
   outline: none;
 }
 
-.shown h4 {
-  margin: var(--space-16) 0 var(--space-8);
-  color: var(--muted);
-  font-size: var(--size-12);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.shown h2 {
+  margin: var(--space-24) 0 var(--space-8);
+  font-size: var(--size-16);
+}
+
+/* Below 1024px the menu stands above the section. */
+@media (max-width: 1023.98px) {
+  .administration {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .menu {
+    position: static;
+  }
 }
 
 .shown table {

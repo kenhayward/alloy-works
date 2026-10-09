@@ -276,6 +276,26 @@ describe('the listings through the service', () => {
     expect((await get(`/v1/components?sort=title&cursor=${first.next}`)).statusCode).toBe(200);
   });
 
+  it('counts the people, invitations and groups on every page, as many as a walk to the end finds', async () => {
+    for (const listing of ['/v1/principals?level=tenant', '/v1/invitations', '/v1/groups']) {
+      const join = listing.includes('?') ? '&' : '?';
+      let seen = 0;
+      let cursor: string | null = null;
+      const totals = new Set<number>();
+      do {
+        const answer = await get(
+          `${listing}${join}limit=1${cursor === null ? '' : `&cursor=${cursor}`}`,
+        );
+        expect(answer.statusCode, listing).toBe(200);
+        const page = answer.json<{ items: unknown[]; next: string | null; total: number }>();
+        seen += page.items.length;
+        totals.add(page.total);
+        cursor = page.next;
+      } while (cursor !== null);
+      expect([...totals], listing).toEqual([seen]);
+    }
+  });
+
   it('API-007 pages every listing by an opaque cursor over a stable order', async () => {
     // Two waiting invitations, so the invitations listing has pages to turn.
     for (const email of ['ivy@example.com', 'joan@example.com']) {

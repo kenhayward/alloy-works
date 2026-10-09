@@ -222,28 +222,26 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.press('Escape');
       await leave(page.getByRole('dialog'));
 
+      // Administration is a page, opened by Admin at the rail's foot (ADR-0049).
       await page
         .getByRole('navigation', { name: 'Modules' })
-        .getByRole('button', { name: 'Admin' })
+        .getByRole('link', { name: 'Admin' })
         .click();
-      const administration = page.getByRole('dialog', { name: 'Administration' });
+      const administration = page.getByRole('region', { name: 'Administration' });
       await check('Administration', {
-        shows: [
-          heading('Environment', 3),
-          administration.locator('dd', { hasText: 'Development' }),
-        ],
+        shows: [heading('Overview', 1), administration.locator('dd', { hasText: 'Development' })],
       });
-      const sections = page.getByRole('navigation', { name: 'Sections' });
+      const sections = page.getByRole('navigation', { name: 'Sections of Administration' });
       for (const [section, table] of [
         ['Spaces', 'Spaces'],
-        ['People and invitations', 'People'],
+        ['People', 'People'],
         ['Roles', 'Roles'],
         ['Groups', 'Groups'],
       ] as const) {
-        await sections.getByRole('button', { name: section, exact: true }).click();
+        await sections.getByRole('link', { name: new RegExp(`^${section}`) }).click();
         await check(`Administration, ${section}`, {
           shows: [
-            heading(section, 3),
+            heading(section, 1),
             administration
               .getByRole('table', { name: table })
               .getByRole('row')

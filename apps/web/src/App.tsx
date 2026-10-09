@@ -6,6 +6,7 @@ import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
 import { CommandPalette, useCommandKey } from './shell/CommandPalette.js';
 import { Header } from './shell/Header.js';
+import { AboutContext } from './shell/about.js';
 import { moduleOf } from './shell/moduleOf.js';
 import { Rail } from './shell/Rail.js';
 import { RegionKeys } from './shell/regions.js';
@@ -53,29 +54,30 @@ export function App({
     // The status bar's owner: one live region for the application, at the foot of every page
     // (interface slice 15). The provider draws the bar after what it holds.
     <StatusProvider>
-      <Header onSearch={() => setSearching(true)} />
-      <div className={styles['frame']}>
-        {/* The scaffolding's environment panel and the delivery line live in Administration's
-            About (interface slice 12), which the rail's foot opens (ADR-0046). */}
-        <Rail
-          module={moduleOf(hash)}
-          about={
-            <div className={styles['scaffolding']}>
-              {environment}
-              <p>
-                {platform === null
-                  ? 'Checking which delivery this is...'
-                  : `Running as ${platform.delivery} on ${platform.runtime}`}
-              </p>
-            </div>
-          }
-        />
-        <main className={styles['page']} data-app-region>
-          {workspace}
-        </main>
-      </div>
-      {searching && <CommandPalette onClose={() => setSearching(false)} />}
-      <RegionKeys />
+      {/* The scaffolding's environment panel and the delivery line live in Administration's About
+          (interface slice 12), a page since ADR-0049. */}
+      <AboutContext.Provider
+        value={
+          <div className={styles['scaffolding']}>
+            {environment}
+            <p>
+              {platform === null
+                ? 'Checking which delivery this is...'
+                : `Running as ${platform.delivery} on ${platform.runtime}`}
+            </p>
+          </div>
+        }
+      >
+        <Header onSearch={() => setSearching(true)} />
+        <div className={styles['frame']}>
+          <Rail module={moduleOf(hash)} />
+          <main className={styles['page']} data-app-region>
+            {workspace}
+          </main>
+        </div>
+        {searching && <CommandPalette onClose={() => setSearching(false)} />}
+        <RegionKeys />
+      </AboutContext.Provider>
     </StatusProvider>
   );
 }

@@ -222,6 +222,7 @@ export {
   createGroup,
   deleteGroup,
   groupNames,
+  countGroups,
   listGroups,
   readGroup,
   setGroupMembers,
@@ -249,6 +250,7 @@ export {
 } from './grants.js';
 export {
   listGrants,
+  countPrincipals,
   listPrincipals,
   listRoles,
   readGrant,
@@ -286,6 +288,7 @@ export {
   INVITATION_DAYS,
   invite,
   invitedAddress,
+  countInvitations,
   listInvitations,
   readInvitation,
   withdrawInvitation,

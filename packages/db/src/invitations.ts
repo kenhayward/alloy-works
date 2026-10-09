@@ -143,6 +143,16 @@ export async function listInvitations(
   return paged(rows.map(stored), page.limit);
 }
 
+/** How many invitations `listInvitations` lists, waiting, lapsed or accepted (AD-A). */
+export async function countInvitations(trx: TenantTransaction): Promise<number> {
+  const row = await trx
+    .selectFrom('invitation as i')
+    .innerJoin('principal as p', 'p.id', 'i.principal_id')
+    .select((eb) => eb.fn.countAll<string>().as('count'))
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 /**
  * Invites an address, making the principal a grant can name before anybody has signed in as it; or,
  * where an invitation already waits for the address, renews it for another `INVITATION_DAYS` and keeps

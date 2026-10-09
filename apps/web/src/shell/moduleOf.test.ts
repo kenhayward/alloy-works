@@ -24,6 +24,12 @@ describe('the module an address belongs to', () => {
     expect(moduleOf(`#/documents/${COMPONENT}/nodes/${NODE}`)).toBe('Documents');
   });
 
+  it('names Administration for its page and each of its sections, which no module holds', () => {
+    expect(moduleOf('#/admin')).toBe('Administration');
+    expect(moduleOf('#/admin/spaces')).toBe('Administration');
+    expect(moduleOf('#/administrator')).toBe('Components');
+  });
+
   it('names Templates for the templates list', () => {
     expect(moduleOf('#/templates')).toBe('Templates');
   });

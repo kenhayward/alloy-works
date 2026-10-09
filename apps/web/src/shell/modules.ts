@@ -2,7 +2,7 @@ import type { ModuleName } from './moduleOf.js';
 
 /** A module as the rail, Home and search and commands name it. */
 export interface Module {
-  readonly name: Exclude<ModuleName, 'Search'>;
+  readonly name: Exclude<ModuleName, 'Search' | 'Administration'>;
   readonly href: string;
   /** What it is for, as Home says it. */
   readonly about: string;

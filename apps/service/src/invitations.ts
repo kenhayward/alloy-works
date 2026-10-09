@@ -9,6 +9,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   invite,
+  countInvitations,
   listInvitations,
   withdrawInvitation,
   type InvitationRefusal,
@@ -79,6 +80,7 @@ export function invitationHandlers() {
       return {
         items: page.items.map((each) => invitationView(each, now)),
         next: cursorAfter(page.after),
+        total: await countInvitations(trx),
       };
     },
 

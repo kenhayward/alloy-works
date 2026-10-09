@@ -27,6 +27,7 @@ export type GroupView = z.infer<typeof GroupView>;
 export const GroupList = z.object({
   items: z.array(GroupView),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+  total: z.number().int().describe('How many groups there are in all, on every page alike'),
 });
 export type GroupList = z.infer<typeof GroupList>;
 

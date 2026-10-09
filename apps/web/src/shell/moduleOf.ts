@@ -6,7 +6,8 @@ export type ModuleName =
   | 'Templates'
   | 'Connections'
   | 'Query definitions'
-  | 'Search';
+  | 'Search'
+  | 'Administration';
 
 /**
  * The module an address belongs to, which the header band names. Only the first segment counts:
@@ -21,5 +22,6 @@ export function moduleOf(hash: string): ModuleName | null {
   if (/^#\/connections(?:\/|$)/.test(hash)) return 'Connections';
   if (/^#\/query-definitions(?:\/|$)/.test(hash)) return 'Query definitions';
   if (/^#\/search(?:\?|$)/.test(hash)) return 'Search';
+  if (/^#\/admin(?:\/|$)/.test(hash)) return 'Administration';
   return 'Components';
 }
