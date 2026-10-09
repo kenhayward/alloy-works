@@ -128,6 +128,18 @@ describe("a PostgreSQL definition's Query tab, in Chromium (the PQ plan)", () =>
       // The SQL it runs, opened from the card's foot (PQ-A).
       await card.locator('summary', { hasText: 'The SQL it runs' }).click();
       await card.getByText(/GROUP BY/).waitFor();
+      // A parameter opened is a band of its fields on one line, in place of its line (PQ3).
+      const parameters = card.getByRole('region', { name: 'Parameters' });
+      await parameters.getByRole('button', { name: 'Edit parameter 1' }).click();
+      const band = parameters.getByRole('group', { name: 'Parameter 1' });
+      await band.getByLabel('Permits', { exact: true }).waitFor();
+      await checkAxe(page, 'a parameter opened as a band', task.meta, { shows: [band] });
+      const tops = await band
+        .locator('input:not([type="checkbox"]), select')
+        .evaluateAll((fields) =>
+          fields.map((field) => Math.round(field.getBoundingClientRect().top)),
+        );
+      expect(new Set(tops).size).toBe(1);
     });
   });
 });
