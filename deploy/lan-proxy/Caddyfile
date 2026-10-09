@@ -1,0 +1,28 @@
+# Development only: ends TLS for other machines on your network (deploy/compose.lan.yaml). The
+# service's sign-in cookies are Secure, which a browser keeps only over https or from localhost.
+# Certificates come from Caddy's own local authority; its root is served at /lan-proxy/root.crt on
+# the provider's port, for a laptop to trust.
+{
+	local_certs
+	skip_install_trust
+	auto_https disable_redirects
+	# A browser sends no server name when it is given an address, so name the one it was given.
+	default_sni {$ALLOY_LAN_ADDRESS}
+}
+
+https://{$ALLOY_LAN_ADDRESS}:{$LAN_SERVICE_PORT} {
+	reverse_proxy service:{$SERVICE_PORT}
+}
+
+https://{$ALLOY_LAN_ADDRESS}:{$LAN_IDP_PORT} {
+	handle /lan-proxy/root.crt {
+		root * /ca
+		rewrite * /root.crt
+		file_server
+	}
+	reverse_proxy stand-in-idp:{$IDP_PORT}
+}
+
+https://{$ALLOY_LAN_ADDRESS}:{$LAN_STORE_PORT} {
+	reverse_proxy seaweedfs:{$STORE_PORT}
+}

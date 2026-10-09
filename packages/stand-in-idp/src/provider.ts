@@ -40,6 +40,11 @@ export interface StandInOptions {
    */
   readonly issuer?: string;
   /**
+   * Believes a proxy's X-Forwarded-Proto and X-Forwarded-Host, so behind one that ends TLS it sends
+   * the browser on by https. Development only: anybody who can reach it can claim either.
+   */
+  readonly trustProxy?: boolean;
+  /**
    * Publishes a key other than the one it signs with, under the same key id, so every ID token it
    * issues arrives as a forged or tampered one would: well formed, and failing its signature check.
    * For a test that a client refuses such a token.
@@ -242,6 +247,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
     );
   });
 
+  provider.proxy = options.trustProxy ?? false;
   server.on('request', provider.callback());
   return {
     issuer,

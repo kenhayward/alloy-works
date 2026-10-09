@@ -15,6 +15,8 @@ const idp = await startStandInProvider({
   // In a container it must listen on every address, and say the name it is reached by.
   host: process.env.STAND_IN_HOST ?? '127.0.0.1',
   ...(process.env.STAND_IN_ISSUER ? { issuer: process.env.STAND_IN_ISSUER } : {}),
+  // Behind deploy/compose.lan.yaml's proxy, which ends TLS for other machines.
+  trustProxy: process.env.STAND_IN_TRUST_PROXY === 'true',
   clients: [
     { clientId: 'alloy-dev', clientSecret: 'stand-in-dev-secret', redirectUris },
     // Plays the product's one Google client, returning only to the sign-in address.

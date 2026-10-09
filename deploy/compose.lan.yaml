@@ -1,9 +1,26 @@
-# Development only, and opt-in: lets the connector reach sources on this machine and your network,
-# such as a SeaweedFS or MinIO on a port of its own, beside the stack's seeded `sources`.
+# Development only, and opt-in: opens the stack to your network both ways.
 #
 #   docker compose -f deploy/compose.yaml -f deploy/compose.lan.yaml up -d --build --wait
 #
-# or deploy\BringUpDev.cmd. compose.yaml alone keeps the connector on two internal, isolated networks
+# or deploy\BringUpDev.cmd. Either needs ALLOY_LAN_ADDRESS, this machine's address on the network, in
+# the environment or deploy/.env; BringUpDev.cmd finds it when it is not set.
+#
+# IN: other machines use the stack through `lan-proxy`, which ends TLS at
+# https://<ALLOY_LAN_ADDRESS>:8443 (the app), :9443 (the stand-in provider) and :8343 (the store).
+# The service's sign-in cookies are Secure, which a browser keeps only over https or from localhost,
+# and a sign-in redirect and a signed download link carry the address that made them, so the provider
+# and the store move behind the proxy too: the issuer and the store's endpoint become those https
+# addresses, for this machine as well. The containers reach them through the host, trusting the
+# proxy's local authority; a laptop trusts it by installing
+# https://<ALLOY_LAN_ADDRESS>:9443/lan-proxy/root.crt, or accepts each address's warning once. Sign in
+# through the organisation's provider: Google's still returns to signin.localhost. People are kept by
+# issuer, so on an existing installation Ada and Grace come back as new principals: what the setup
+# seeds reaches them, anything granted to the old ones by hand does not. The ports must be let through the host's firewall, and anybody
+# on the network can reach the stack and its development-only keys: never on a network you do not
+# trust.
+#
+# OUT: the connector reaches sources on this machine and your network, such as a SeaweedFS or MinIO on
+# a port of its own, beside the stack's seeded `sources`. compose.yaml alone keeps the connector on two internal, isolated networks
 # with no route anywhere (deploy/README.md, "The connector and its two networks"); this file adds a
 # third, ordinary one with a route out. With it, the network no longer holds the connector away from
 # the platform: its address guard does. Its own networks' gateways and addresses are refused at start
@@ -13,8 +30,8 @@
 #   by address; and
 # - 192.168.65.0/24, Docker Desktop's own, where host.docker.internal reaches the host's loopback.
 #
-# The platform's ports are published on 127.0.0.1 alone, so the host's LAN address does not reach them
-# either. A source in 172.16.0.0/12 cannot be reached with this file; set ALLOY_LAN_DENY in deploy/.env
+# The proxy's ports are on the host's LAN address, which the connector may dial, but the store behind
+# it refuses anyone without a credential, and the connector holds none. A source in 172.16.0.0/12 cannot be reached with this file; set ALLOY_LAN_DENY in deploy/.env
 # to ranges of your own if your network uses those. Never in production, and never under the suites:
 # tests/e2e's connector-isolation.test.ts asserts the isolation this file gives up.
 services:
@@ -24,5 +41,80 @@ services:
     networks:
       - connector-lan
 
+  lan-proxy:
+    image: caddy:2.10.2-alpine
+    environment:
+      ALLOY_LAN_ADDRESS: ${ALLOY_LAN_ADDRESS:?set ALLOY_LAN_ADDRESS to this machine's address on the network}
+      LAN_SERVICE_PORT: ${LAN_SERVICE_PORT:-8443}
+      LAN_IDP_PORT: ${LAN_IDP_PORT:-9443}
+      LAN_STORE_PORT: ${LAN_STORE_PORT:-8343}
+      SERVICE_PORT: ${SERVICE_PORT:-8088}
+      IDP_PORT: ${IDP_PORT:-9090}
+      STORE_PORT: ${STORE_PORT:-8333}
+    volumes:
+      - ./lan-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - lan-proxy-data:/data
+      - lan-proxy-ca:/ca
+    # On every address, the one place this stack is: each the same number inside and out, as the
+    # addresses that name them are reached from the containers too.
+    ports:
+      - '0.0.0.0:${LAN_SERVICE_PORT:-8443}:${LAN_SERVICE_PORT:-8443}'
+      - '0.0.0.0:${LAN_IDP_PORT:-9443}:${LAN_IDP_PORT:-9443}'
+      - '0.0.0.0:${LAN_STORE_PORT:-8343}:${LAN_STORE_PORT:-8343}'
+    healthcheck:
+      # Its authority's root exists once it has issued. Healthy once the root alone, never its key, is
+      # copied where the containers below read it at start, readable by their own users.
+      test:
+        - CMD-SHELL
+        - cp /data/caddy/pki/authorities/local/root.crt /ca/root.crt && chmod 644 /ca/root.crt
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  stand-in-idp:
+    environment:
+      STAND_IN_ISSUER: https://${ALLOY_LAN_ADDRESS}:${LAN_IDP_PORT:-9443}
+      STAND_IN_TRUST_PROXY: 'true'
+      STAND_IN_REDIRECT_URIS: http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://127.0.0.1:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback
+
+  setup:
+    environment:
+      STAND_IN_ISSUER: https://${ALLOY_LAN_ADDRESS}:${LAN_IDP_PORT:-9443}
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_LAN_ADDRESS}:${LAN_STORE_PORT:-8343}
+      DEV_EXTRA_HOSTNAME: 127.0.0.1,${ALLOY_LAN_ADDRESS}
+      NODE_EXTRA_CA_CERTS: /lan-proxy/root.crt
+    volumes:
+      - lan-proxy-ca:/lan-proxy:ro
+    depends_on:
+      lan-proxy:
+        condition: service_healthy
+
+  service:
+    environment:
+      GOOGLE_ISSUER: https://${ALLOY_LAN_ADDRESS}:${LAN_IDP_PORT:-9443}
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_LAN_ADDRESS}:${LAN_STORE_PORT:-8343}
+      # The proxy, on the default network: Docker gives its bridges addresses in this range.
+      TRUST_PROXY: ${ALLOY_LAN_TRUST_PROXY:-172.16.0.0/12}
+      NODE_EXTRA_CA_CERTS: /lan-proxy/root.crt
+    volumes:
+      - lan-proxy-ca:/lan-proxy:ro
+    depends_on:
+      lan-proxy:
+        condition: service_healthy
+
+  worker:
+    environment:
+      OBJECT_STORE_ENDPOINT: https://${ALLOY_LAN_ADDRESS}:${LAN_STORE_PORT:-8343}
+      NODE_EXTRA_CA_CERTS: /lan-proxy/root.crt
+    volumes:
+      - lan-proxy-ca:/lan-proxy:ro
+    depends_on:
+      lan-proxy:
+        condition: service_healthy
+
 networks:
   connector-lan: {}
+
+volumes:
+  lan-proxy-data: {}
+  lan-proxy-ca: {}

@@ -29,6 +29,11 @@ export interface Config {
    * it every data act is refused `connector_unavailable`.
    */
   readonly connectorUrl?: string;
+  /**
+   * The addresses or ranges of a proxy whose X-Forwarded-Proto and X-Forwarded-Host are believed:
+   * development's TLS proxy for other machines (deploy/compose.lan.yaml). Without it, none is.
+   */
+  readonly trustProxy?: string;
 }
 
 export class ConfigError extends Error {}
@@ -46,6 +51,9 @@ function isConnectorUrl(value: string): boolean {
     return false;
   }
 }
+
+/** One or more IP addresses or CIDR ranges, separated by commas. */
+const PROXY_ADDRESSES = /^[0-9a-f:.]+(\/\d{1,3})?(,[0-9a-f:.]+(\/\d{1,3})?)*$/i;
 
 const Environment = z
   .object({
@@ -88,6 +96,10 @@ const Environment = z
         error: 'must be an http or https address, with no credentials in it',
       })
       .optional(),
+    TRUST_PROXY: z
+      .string()
+      .regex(PROXY_ADDRESSES, { error: 'must be addresses or ranges, separated by commas' })
+      .optional(),
   })
   .refine((env) => (env.GOOGLE_CLIENT_ID === undefined) === (env.SIGN_IN_HOST === undefined), {
     error: 'must be set together, or neither: the Google route needs both',
@@ -125,6 +137,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     OBJECT_STORE_REGION,
     RENDERER_ROOT,
     CONNECTOR_URL,
+    TRUST_PROXY,
   } = result.data;
   return {
     databaseUrl: DATABASE_URL,
@@ -146,6 +159,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       : {}),
     ...(RENDERER_ROOT !== undefined ? { rendererRoot: RENDERER_ROOT } : {}),
     ...(CONNECTOR_URL !== undefined ? { connectorUrl: CONNECTOR_URL } : {}),
+    ...(TRUST_PROXY !== undefined ? { trustProxy: TRUST_PROXY } : {}),
   };
 }
 
@@ -163,5 +177,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     objectStore: config.objectStore?.bucket ?? 'none',
     rendererRoot: config.rendererRoot ?? 'none',
     connector: config.connectorUrl === undefined ? 'none' : new URL(config.connectorUrl).host,
+    trustProxy: config.trustProxy ?? 'none',
   };
 }

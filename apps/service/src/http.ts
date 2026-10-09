@@ -21,6 +21,8 @@ export interface HttpOptions {
    * routes served to the contract's, both ways (API-003). Registered first, so it hears every one.
    */
   readonly onRoute?: (route: { readonly method: string; readonly url: string }) => void;
+  /** A proxy's addresses or ranges, whose forwarded protocol and host are believed (`Config`). */
+  readonly trustProxy?: string;
 }
 
 /** What a route's failure is told to before it is answered (`createHttp`). */
@@ -97,6 +99,7 @@ export function createHttp(
     genReqId: (request) => requestIdOf(request.headers[REQUEST_ID_HEADER]),
     // Fastify 5.12 deprecates the top-level requestIdLogLabel option, with a warning on stderr.
     logController: new LogController({ requestIdLogLabel: 'traceId' }),
+    ...(options.trustProxy ? { trustProxy: options.trustProxy } : {}),
   });
 
   if (options.onRoute) {

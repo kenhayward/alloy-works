@@ -258,3 +258,55 @@ describe('a stand-in reached by another name', () => {
     }
   });
 });
+
+describe('a stand-in behind a proxy that ends TLS', () => {
+  it('sends the browser on by https when told to trust the proxy, so it can be reached from another machine', async () => {
+    const issuer = 'https://idp.alloy.test:9443';
+    const idp = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      issuer,
+      trustProxy: true,
+    });
+    try {
+      const start = new URL('/auth', issuer);
+      start.search = new URLSearchParams({
+        client_id: 'alloy',
+        response_type: 'code',
+        redirect_uri: REDIRECT,
+        scope: 'openid',
+        code_challenge: await client.calculatePKCECodeChallenge(client.randomPKCECodeVerifier()),
+        code_challenge_method: 'S256',
+        login_hint: 'ada',
+      }).toString();
+      // Knocks where it listens, as the proxy does, saying how the browser arrived.
+      const jar = new Map<string, string>();
+      const sentTo: string[] = [];
+      let next = start;
+      for (let hop = 0; hop < 10 && next.origin === issuer; hop++) {
+        const response = await fetch(new URL(next.pathname + next.search, idp.boundTo), {
+          redirect: 'manual',
+          headers: {
+            'x-forwarded-host': 'idp.alloy.test:9443',
+            'x-forwarded-proto': 'https',
+            cookie: [...jar].map(([name, value]) => `${name}=${value}`).join('; '),
+          },
+        });
+        for (const cookie of response.headers.getSetCookie()) {
+          const pair = cookie.split(';')[0] ?? '';
+          jar.set(pair.slice(0, pair.indexOf('=')), pair.slice(pair.indexOf('=') + 1));
+        }
+        const location = response.headers.get('location');
+        if (!location) break;
+        sentTo.push(location);
+        next = new URL(location, next);
+      }
+      expect(sentTo.filter((location) => location.startsWith('http:'))).toEqual([
+        expect.stringMatching(
+          /^http:\/\/acme\.alloy\.test\/v1\/sign-in\/organisation\/callback\?code=/,
+        ),
+      ]);
+    } finally {
+      await idp.close();
+    }
+  });
+});
