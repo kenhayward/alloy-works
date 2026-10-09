@@ -674,3 +674,8 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* A row still waiting on the person: a column not yet confirmed. */
+.rowTable tr[data-held='true'] > td {
+  background: var(--warn-bg);
+}

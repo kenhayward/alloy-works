@@ -28,12 +28,15 @@ const segmentText = (part: PartDraft) => (part.kind === 'parameter' ? `{${part.t
 export function Section({
   heading,
   count,
+  aside,
   acts,
   hint,
   children,
 }: {
   readonly heading: string;
   readonly count?: number;
+  /** Beside the heading, before the acts: a Describe's status. */
+  readonly aside?: ReactNode;
   readonly acts?: ReactNode;
   readonly hint?: ReactNode;
   readonly children?: ReactNode;
@@ -44,6 +47,7 @@ export function Section({
       <div className={styles['head']}>
         <h3 id={id}>{heading}</h3>
         {count !== undefined && <Chip>{count}</Chip>}
+        {aside}
         <span className={styles['spacer']} />
         {acts}
       </div>

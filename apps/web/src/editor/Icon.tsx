@@ -155,6 +155,7 @@ const ADMIN: Record<string, readonly string[]> = {
   Columns: [GRID, 'M9.3 4.5v15M14.7 4.5v15'],
   Sort: ['M7 4v16M3.5 7.5 7 4l3.5 3.5M14 7h7M14 12h5M14 17h3'],
   Add: ['M12 5v14M5 12h14'],
+  Confirmed: ['m5 12.5 4.5 4.5L19 7'],
   Edit: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
 };
 /** Three dots, filled. */

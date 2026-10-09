@@ -744,7 +744,7 @@ describe('the query definition page', () => {
     );
   });
 
-  it('confirms every column with a type at once, from beside Describe', async () => {
+  it('lays out the Columns tab a column a row, Confirm and Confirmed in one place, Confirm all counting what is left', async () => {
     const user = userEvent.setup();
     const { client } = service();
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
@@ -753,15 +753,31 @@ describe('the query definition page', () => {
     await user.type(screen.getByLabelText('SQL text'), ' ');
     expectHeld();
     const panel = await tab(user, 'Columns');
-    const all = within(panel).getByRole('button', { name: 'Confirm all' });
-    // Confirm all comes before Describe, at the top of the tab.
+    const columns = within(panel).getByRole('table', { name: 'Columns' });
+    expect(
+      within(columns)
+        .getAllByRole('columnheader')
+        .map((head) => head.textContent),
+    ).toEqual(['#', 'Name', 'At the source', 'Type', 'Of the type', 'Confirmed']);
+    const [, id, name] = within(columns).getAllByRole('row');
+    expect(id).toHaveAttribute('data-held', 'true');
+    expect(within(id!).getByLabelText('Type of id')).toHaveValue('integer');
+    // Confirm all says how many are left, and comes before Describe at the top of the tab.
+    const all = within(panel).getByRole('button', { name: 'Confirm all 2' });
     expect(
       all.compareDocumentPosition(within(panel).getByRole('button', { name: 'Describe' })),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    await user.click(all);
-    const columns = within(panel).getByRole('table', { name: 'Columns' });
+    // Confirming one swaps its button for Confirmed in the same cell.
+    await user.click(within(id!).getByRole('button', { name: 'Confirm id' }));
+    expect(id).not.toHaveAttribute('data-held');
+    expect(within(id!).getByText('Confirmed')).toBeInTheDocument();
+    await user.click(within(panel).getByRole('button', { name: 'Confirm all 1' }));
+    expect(within(name!).getByText('Confirmed')).toBeInTheDocument();
     expect(within(columns).queryByRole('button', { name: /^Confirm / })).toBeNull();
-    expect(all).toHaveAttribute('aria-disabled', 'true');
+    expect(within(panel).getByRole('button', { name: 'Confirm all' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expectSavable();
   });
 
@@ -867,7 +883,7 @@ describe('the query definition page', () => {
       within(screen.getByRole('table', { name: 'Columns' }))
         .getAllByRole('row')
         .slice(1)
-        .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+        .map((row) => within(row).getAllByRole('cell')[1]!.textContent),
     ).toEqual(['id', 'name']);
   });
 
@@ -998,7 +1014,7 @@ describe('the query definition page', () => {
       within(screen.getByRole('table', { name: 'Columns' }))
         .getAllByRole('row')
         .slice(1)
-        .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+        .map((row) => within(row).getAllByRole('cell')[1]!.textContent),
     ).toEqual(['id', 'name']);
   });
 
