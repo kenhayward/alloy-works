@@ -3,6 +3,7 @@ import { useId, type ReactNode } from 'react';
 import type { ValueType } from '@alloy-works/domain';
 
 import { Icon } from '../editor/Icon.js';
+import { Chip } from '../parts/Chip.js';
 import { RowTable } from '../parts/RowTable.js';
 import { Segmented } from '../parts/Segmented.js';
 import {
@@ -21,14 +22,16 @@ import pageStyles from './QueryDefinitionPage.module.css';
 /** A segment as the path shows it: its text, or its parameter's name in braces. */
 const segmentText = (part: PartDraft) => (part.kind === 'parameter' ? `{${part.text}}` : part.text);
 
-/** A section of the card: its heading, its acts on the heading's line, its hint beneath. */
-function Section({
+/** A section of the card: its heading, its count, its acts on the heading's line, its hint beneath. */
+export function Section({
   heading,
+  count,
   acts,
   hint,
   children,
 }: {
   readonly heading: string;
+  readonly count?: number;
   readonly acts?: ReactNode;
   readonly hint?: ReactNode;
   readonly children?: ReactNode;
@@ -38,6 +41,8 @@ function Section({
     <section aria-labelledby={id} className={styles['section']}>
       <div className={styles['head']}>
         <h3 id={id}>{heading}</h3>
+        {count !== undefined && <Chip>{count}</Chip>}
+        <span className={styles['spacer']} />
         {acts}
       </div>
       {hint !== undefined && <p className={pageStyles['hint']}>{hint}</p>}
@@ -47,7 +52,7 @@ function Section({
 }
 
 /** An act on a heading's line, in words beside its glyph: "Add segment". */
-function Act({ words, onClick }: { readonly words: string; readonly onClick: () => void }) {
+export function Act({ words, onClick }: { readonly words: string; readonly onClick: () => void }) {
   return (
     <button type="button" className={styles['act']} onClick={onClick}>
       <Icon name="Add" size={13} />
