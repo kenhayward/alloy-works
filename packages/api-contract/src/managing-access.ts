@@ -90,6 +90,10 @@ export const PrincipalList = z.object({
     }),
   ),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+  total: z
+    .number()
+    .int()
+    .describe('How many people, signed in or invited there are in all, on every page alike'),
 });
 export type PrincipalList = z.infer<typeof PrincipalList>;
 

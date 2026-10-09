@@ -1,7 +1,3 @@
-import { createApiClient } from '@alloy-works/api-client';
-import { useMemo, useRef, useState } from 'react';
-
-import { Administration } from '../admin/Administration.js';
 import { ModuleIcon } from './ModuleIcon.js';
 import type { ModuleName } from './moduleOf.js';
 import { MODULE_GROUPS } from './modules.js';
@@ -11,28 +7,21 @@ import styles from './Rail.module.css';
 export interface RailProps {
   /** The module the page is in; null on Home. */
   readonly module: ModuleName | null;
-  /** Given in tests; the browser's own otherwise. */
-  readonly fetch?: typeof fetch;
-  /** What Administration's About holds beside the version. */
-  readonly about?: React.ReactNode;
 }
+
+/** Administration's start: its Overview. */
+const ADMINISTRATION = '#/admin/overview';
 
 /**
  * The labelled module rail on every screen (ADR-0046, decision 3): Home, then the modules grouped
- * Author, Publish and Data, and Admin at its foot, which opens Administration. Each a link or a
- * button reached by Tab; the one the page is in is `aria-current`. Each other module's link goes back
+ * Author, Publish and Data, and Admin at its foot, which opens Administration's page (ADR-0049). Each
+ * a link reached by Tab; the one the page is in is `aria-current`. Each other module's link goes back
  * to where it was left, its page kept as it was (the workspace keeps it); the one the page is in starts
  * it over.
  */
-export function Rail({ module, fetch: given, about = null }: RailProps) {
-  const origin = window.location.origin;
-  const client = useMemo(
-    () => createApiClient({ baseUrl: origin, ...(given ? { fetch: given } : {}) }),
-    [origin, given],
-  );
-  const [administering, setAdministering] = useState(false);
+export function Rail({ module }: RailProps) {
   const leftAt = useLeftAt();
-  const admin = useRef<HTMLButtonElement>(null);
+  const administering = module === 'Administration';
 
   return (
     <nav className={styles['rail']} aria-label="Modules" data-app-region>
@@ -56,26 +45,15 @@ export function Rail({ module, fetch: given, about = null }: RailProps) {
           ))}
         </ul>
       ))}
-      <button
-        ref={admin}
-        type="button"
+      <a
         className={`${styles['item']} ${styles['foot']}`}
+        href={administering ? ADMINISTRATION : (leftAt.get('Administration') ?? ADMINISTRATION)}
         title="Administration"
-        onClick={() => setAdministering(true)}
+        aria-current={administering ? 'page' : undefined}
       >
         <ModuleIcon name="Admin" />
         <span className={styles['label']}>Admin</span>
-      </button>
-      {administering && (
-        <Administration
-          client={client}
-          about={about}
-          onClose={() => {
-            setAdministering(false);
-            admin.current?.focus();
-          }}
-        />
-      )}
+      </a>
     </nav>
   );
 }

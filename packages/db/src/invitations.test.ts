@@ -6,6 +6,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { grant, removeGrant } from './grants.js';
 import {
   claimInvitation,
+  countInvitations,
   invite,
   listInvitations,
   readInvitation,
@@ -210,6 +211,8 @@ describe('inviting somebody by address, before they sign in', () => {
         acceptedAt: expect.any(Date),
       }),
     ]);
+    // Counted as listed, accepted ones too.
+    await expect(service.withTenant(production, countInvitations)).resolves.toBe(page.items.length);
     await expect(may(production, invited.principalId, 'edit')).resolves.toBe(true);
   });
 

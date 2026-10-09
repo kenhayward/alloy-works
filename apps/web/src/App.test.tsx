@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App.js';
+import { useAbout } from './shell/about.js';
 import type { PlatformBridge } from './platform/bridge.js';
 
 const desktopBridge: PlatformBridge = {
@@ -29,12 +30,15 @@ const signedIn = vi.fn(async (input: string | URL | Request, init?: RequestInit)
   return json(200, { items: [], next: null });
 });
 
-/** Opens Administration's About from the account chip, where the scaffolding's panel now sits. */
-async function openAbout() {
-  const rail = screen.getByRole('navigation', { name: 'Modules' });
-  await userEvent.click(within(rail).getByRole('button', { name: 'Admin' }));
-  await userEvent.click(screen.getByRole('button', { name: /^About/ }));
+/**
+ * A workspace that shows what the shell gives Administration's About, as the page does at
+ * : the scaffolding's panel and the delivery line, which only About holds.
+ */
+function ShowsAbout() {
+  return <section aria-label="About">{useAbout()}</section>;
 }
+const aboutWorkspace = <ShowsAbout />;
+const about = () => screen.getByRole('region', { name: 'About' });
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -110,18 +114,16 @@ describe('App', () => {
     ).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
 
-    await openAbout();
-    expect(
-      within(screen.getByRole('dialog', { name: 'Administration' })).getByText('the environment'),
-    ).toBeInTheDocument();
+    // Given to Administration's About alone.
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
+    expect(within(about()).getByText('the environment')).toBeInTheDocument();
   });
 
   it('names the delivery it is running under, in About', async () => {
     vi.stubGlobal('fetch', signedIn);
-    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
 
-    await openAbout();
-    expect(await screen.findByText(/desktop/i)).toBeInTheDocument();
+    expect(await within(about()).findByText(/desktop/i)).toBeInTheDocument();
     expect(screen.getByText(/Electron 44\.3\.0/)).toBeInTheDocument();
   });
 
@@ -129,9 +131,8 @@ describe('App', () => {
     // The panel's own behaviour is Environment.test.tsx's business; what is proved here is that
     // the page renders it, which is the only reason a person sees it at all.
     vi.stubGlobal('fetch', signedIn);
-    render(<App bridge={desktopBridge} workspace={noWorkspace} />);
+    render(<App bridge={desktopBridge} workspace={aboutWorkspace} />);
 
-    await openAbout();
     expect(await screen.findByRole('heading', { name: 'Environment' })).toBeInTheDocument();
     expect(signedIn).toHaveBeenCalled();
   });
@@ -142,9 +143,8 @@ describe('App', () => {
       getPlatformInfo: () => new Promise(() => {}),
       setSpellCheckLanguages: async () => {},
     };
-    render(<App bridge={pending} environment={noPanel} workspace={noWorkspace} />);
+    render(<App bridge={pending} environment={noPanel} workspace={aboutWorkspace} />);
 
-    await openAbout();
-    expect(screen.getByText(/checking/i)).toBeInTheDocument();
+    expect(within(about()).getByText(/checking/i)).toBeInTheDocument();
   });
 });

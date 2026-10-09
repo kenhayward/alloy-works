@@ -1,5 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { listGrants, listPrincipals, listRoles, readGrant } from './access-listings.js';
+import {
+  countPrincipals,
+  listGrants,
+  listPrincipals,
+  listRoles,
+  readGrant,
+} from './access-listings.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { grant, type NewGrant } from './grants.js';
 import { createGroup } from './groups.js';
@@ -270,6 +276,10 @@ describe('listing grants, roles and people, for managing access', () => {
     const first = await service.withTenant(production, (trx) => listPrincipals(trx, { limit: 1 }));
     expect(first.items).toHaveLength(1);
     expect(first.after).toBe(first.items[0]!.id);
+  });
+
+  it('counts the people the listing lists, whatever the page, for Administration to show', async () => {
+    await expect(service.withTenant(production, countPrincipals)).resolves.toBe(2);
   });
 
   it('lists nothing at a level the tenant does not hold, and never another environment grant', async () => {

@@ -11,6 +11,7 @@ import type {
 import {
   createGroup,
   deleteGroup,
+  countGroups,
   listGroups,
   readGroup,
   setGroupMembers,
@@ -79,7 +80,11 @@ export function groupHandlers() {
         ...(after === undefined ? {} : { after }),
         limit: pageLimit(query.limit),
       });
-      return { items: page.items.map(groupView), next: cursorAfter(page.after) };
+      return {
+        items: page.items.map(groupView),
+        next: cursorAfter(page.after),
+        total: await countGroups(trx),
+      };
     },
 
     createGroup: async (request: FastifyRequest, { trx }: Authorised): Promise<GroupMade> => {

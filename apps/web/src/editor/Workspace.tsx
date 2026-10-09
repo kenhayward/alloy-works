@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
+import { Administration } from '../admin/Administration.js';
 import { ConnectionPage } from '../data/ConnectionPage.js';
 import { Connections } from '../data/Connections.js';
 import { connectionAddress, connectionLink, queryDefinitionAddress } from '../data/links.js';
@@ -10,6 +11,7 @@ import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
+import { useAbout } from '../shell/about.js';
 import { hashOf, placeOf, type Place } from '../shell/places.js';
 import { componentAddress, searchAddress, searchLink } from '../search/links.js';
 import { SearchPage } from '../search/SearchPage.js';
@@ -46,7 +48,12 @@ const LISTS = new Set([
   '#/connections',
   '#/query-definitions',
 ]);
-const isWork = (hash: string) => !LISTS.has(hash);
+const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
+
+/** Administration, given About's content from the shell. */
+function AdministrationPage({ client }: { client: ReturnType<typeof createApiClient> }) {
+  return <Administration client={client} about={useAbout()} />;
+}
 
 /** A publication's own address (PUB-047). */
 const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
@@ -177,6 +184,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   /** The page an address names, as it was chosen before pages were kept. */
   function pageFor(hash: string, arrivals: number, me: string): React.JSX.Element {
     if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
+    if (/^#\/admin(?:\/|$)/.test(hash)) return <AdministrationPage client={client} />;
     const address = componentAddress(hash);
     const opened = address?.component;
     if (opened && address?.access) {

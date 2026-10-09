@@ -8,6 +8,7 @@ import {
   createGroup,
   deleteGroup,
   groupNames,
+  countGroups,
   listGroups,
   setGroupMembers,
   syncProviderGroups,
@@ -194,6 +195,7 @@ describe('groups: made, filled, deleted, and followed from the provider (access.
       const found = everything.find((each) => each.id === listed);
       expect(found).toMatchObject({ name: 'Listed', source: 'tenant', providerValue: null });
       expect(found?.members.map((each) => each.name)).toEqual(['Ada', 'Grace']);
+      await expect(within(countGroups)).resolves.toBe(everything.length);
     });
 
     it('lists nothing after a cursor it did not give out', async () => {

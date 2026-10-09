@@ -1,7 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Administration } from './Administration.js';
 
@@ -66,18 +66,24 @@ function service(answers: Answers) {
   return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked };
 }
 
-const section = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
+/** A section's link in Administration's menu, its count after its name. */
+const section = (name: string) => screen.getByRole('link', { name: new RegExp(`^${name}`) });
+
+// Each test opens Administration at its start, as Admin on the rail does.
+beforeEach(() => {
+  window.location.hash = '#/admin/overview';
+});
 
 describe('Administration', () => {
-  it('opens on Environment, and moves between the sections it can answer', async () => {
+  it('opens on Overview, and moves between the sections it can answer by its menu', async () => {
     const { client } = service(everything);
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
 
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
-    expect(section('Environment')).toHaveAttribute('aria-current', 'true');
-    // Beside the heading, and in the section.
+    const dialog = screen.getByRole('region', { name: 'Administration' });
+    expect(section('Overview')).toHaveAttribute('aria-current', 'page');
+    // In the menu, and in the section.
     expect(await within(dialog).findAllByText('Development')).toHaveLength(2);
-    for (const name of ['Spaces', 'People and invitations', 'Roles', 'Groups', 'About']) {
+    for (const name of ['Spaces', 'People', 'Roles', 'Groups', 'About and release notes']) {
       expect(section(name)).toBeInTheDocument();
     }
     // What nothing answers yet is not offered.
@@ -85,20 +91,21 @@ describe('Administration', () => {
       expect(screen.queryByRole('button', { name: new RegExp(`^${name}`) })).toBeNull();
     }
     await userEvent.click(section('Roles'));
-    expect(section('Roles')).toHaveAttribute('aria-current', 'true');
-    expect(section('Environment')).not.toHaveAttribute('aria-current');
+    expect(await screen.findByRole('heading', { name: 'Roles', level: 1 })).toBeInTheDocument();
+    expect(section('Roles')).toHaveAttribute('aria-current', 'page');
+    expect(section('Overview')).not.toHaveAttribute('aria-current');
   });
 
   it('lists the spaces, the people and the waiting invitations, and the roles with what each holds', async () => {
     const { client, asked } = service(everything);
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
 
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
     expect(within(spaces).getByRole('cell', { name: 'General' })).toBeInTheDocument();
     expect(within(spaces).getAllByRole('cell', { name: 'You may create here' })).toHaveLength(1);
 
-    await userEvent.click(section('People and invitations'));
+    await userEvent.click(section('People'));
     const people = await screen.findByRole('table', { name: 'People' });
     expect(within(people).getByRole('cell', { name: 'Ada' })).toBeInTheDocument();
     expect(within(people).getByText(/invited and not signed in yet/)).toBeInTheDocument();
@@ -123,9 +130,9 @@ describe('Administration', () => {
       '/v1/invitations': refused,
       '/v1/roles': refused,
     });
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
 
-    await userEvent.click(section('People and invitations'));
+    await userEvent.click(section('People'));
     // Said of the people and of the invitations, each refused.
     expect(await screen.findAllByText('You may not manage access here.')).toHaveLength(2);
     await userEvent.click(section('Spaces'));
@@ -158,9 +165,9 @@ describe('Administration', () => {
       return answer ? answer() : json(404, {});
     }) as unknown as typeof fetch;
     const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
 
-    await userEvent.click(section('People and invitations'));
+    await userEvent.click(section('People'));
     const people = await screen.findByRole('table', { name: 'People' });
     // Somebody invited who has not signed in yet has no tokens to list.
     expect(within(people).queryByRole('button', { name: /^Tokens of ivy/ })).toBeNull();
@@ -189,11 +196,10 @@ describe('Administration', () => {
       '/v1/principals/p1/tokens': () => json(200, { items: [], next: null }),
     };
     const { client } = service(answers);
-    const onClose = vi.fn();
-    render(<Administration client={client} about={null} onClose={onClose} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
 
-    await userEvent.click(section('People and invitations'));
+    await userEvent.click(section('People'));
     const people = await screen.findByRole('table', { name: 'People' });
     await userEvent.click(within(people).getByRole('button', { name: 'Tokens of Ada' }));
     // On the person's tokens heading, which the Tokens button gave way to.
@@ -210,18 +216,13 @@ describe('Administration', () => {
       }),
     );
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
-    // So Escape still closes Administration.
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('says which version this is in About, beside what it is given', async () => {
     const { client } = service(everything);
-    render(
-      <Administration client={client} about={<p>the environment panel</p>} onClose={vi.fn()} />,
-    );
+    render(<Administration client={client} about={<p>the environment panel</p>} />);
 
-    await userEvent.click(section('About'));
+    await userEvent.click(section('About and release notes'));
     expect(screen.getByText(/^Version \d+\.\d+\.\d+$/)).toBeInTheDocument();
     expect(screen.getByText('the environment panel')).toBeInTheDocument();
   });
@@ -244,6 +245,38 @@ const administering =
     });
   };
 
+describe("Administration's menu", () => {
+  it('counts each section from its listing, and leaves a count out where the reader may not see it', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/principals': () => json(200, { items: [], next: 'more', total: 31 }),
+      '/v1/groups': () => json(403, { code: 'forbidden', message: 'x', traceId: 't' }),
+    });
+    render(<Administration client={client} about={null} />);
+    await waitFor(() => expect(section('People')).toHaveTextContent('People31'));
+    expect(section('Spaces')).toHaveTextContent('Spaces2');
+    expect(section('Roles')).toHaveTextContent('Roles1');
+    expect(section('Groups')).toHaveTextContent(/^Groups$/);
+    // Grouped as the drawing has them.
+    expect(
+      within(screen.getByRole('list', { name: 'People and access' }))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['#/admin/people', '#/admin/groups', '#/admin/roles']);
+  });
+
+  it('opens the section the address names, and Overview for one it does not know', async () => {
+    const { client } = service(everything);
+    window.location.hash = '#/admin/roles';
+    const { unmount } = render(<Administration client={client} about={null} />);
+    expect(screen.getByRole('heading', { name: 'Roles', level: 1 })).toBeInTheDocument();
+    unmount();
+    window.location.hash = '#/admin/nowhere';
+    render(<Administration client={client} about={null} />);
+    expect(screen.getByRole('heading', { name: 'Overview', level: 1 })).toBeInTheDocument();
+  });
+});
+
 describe('Access from Administration', () => {
   const answering: Answers = {
     ...everything,
@@ -265,10 +298,10 @@ describe('Access from Administration', () => {
     grantedAt: '2026-09-17T09:00:00.000Z',
   };
 
-  it('opens Access at a space from its row in Spaces, and at the environment from Environment, each with a way back', async () => {
+  it('opens Access at a space from its row in Spaces, and at the environment from Overview, each with a way back', async () => {
     const { client, asked } = service(answering);
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
@@ -305,9 +338,8 @@ describe('Access from Administration', () => {
 
   it('keeps focus in Administration opening Access and going back, though the button that had it goes', async () => {
     const { client } = service(answering);
-    const onClose = vi.fn();
-    render(<Administration client={client} about={null} onClose={onClose} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
@@ -329,7 +361,7 @@ describe('Access from Administration', () => {
       }),
     );
 
-    await userEvent.click(section('Environment'));
+    await userEvent.click(section('Overview'));
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
     );
@@ -340,15 +372,13 @@ describe('Access from Administration', () => {
     expect(document.activeElement).toBe(
       within(dialog).getByRole('button', { name: 'Access to the whole environment' }),
     );
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('heads Access below the section it opens in, and its cards below that', async () => {
+  it('heads Access below the page it opens in, and its cards below that', async () => {
     const { client } = service(answering);
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
-    expect(within(dialog).getByRole('heading', { name: 'Environment', level: 3 })).toBeTruthy();
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
+    expect(within(dialog).getByRole('heading', { name: 'Overview', level: 1 })).toBeTruthy();
 
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
@@ -356,11 +386,11 @@ describe('Access from Administration', () => {
     expect(
       await within(dialog).findByRole('heading', {
         name: 'Access to the whole environment',
-        level: 4,
+        level: 2,
       }),
     ).toBeInTheDocument();
     expect(
-      within(dialog).getByRole('heading', { name: 'The whole environment', level: 5 }),
+      within(dialog).getByRole('heading', { name: 'The whole environment', level: 3 }),
     ).toBeInTheDocument();
   });
 
@@ -369,8 +399,8 @@ describe('Access from Administration', () => {
       ...answering,
       '/v1/access': administering('space:s1'),
     });
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
     await within(dialog).findAllByText('Development');
 
     await userEvent.click(section('Spaces'));
@@ -381,7 +411,7 @@ describe('Access from Administration', () => {
     expect(
       within(spaces).queryByRole('button', { name: 'Access to the space Training' }),
     ).toBeNull();
-    await userEvent.click(section('Environment'));
+    await userEvent.click(section('Overview'));
     expect(
       within(dialog).queryByRole('button', { name: 'Access to the whole environment' }),
     ).toBeNull();
@@ -413,9 +443,8 @@ describe('Access from Administration', () => {
       return answer ? answer(url) : json(404, {});
     }) as unknown as typeof fetch;
     const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
-    const onClose = vi.fn();
-    render(<Administration client={client} about={null} onClose={onClose} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
@@ -430,11 +459,9 @@ describe('Access from Administration', () => {
         within(level).getByRole('heading', { name: 'The whole environment' }),
       ),
     );
-    // Still inside the dialog, so Tab stays in it and Escape still closes it.
+    // Still inside Administration.
     await userEvent.tab();
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("keeps focus in Administration once a level's Try again gives way to what it read", async () => {
@@ -446,9 +473,8 @@ describe('Access from Administration', () => {
           ? json(500, { code: 'internal', message: 'broken', traceId: 't' })
           : json(200, { items: [], next: null }),
     });
-    const onClose = vi.fn();
-    render(<Administration client={client} about={null} onClose={onClose} />);
-    const dialog = screen.getByRole('dialog', { name: 'Administration' });
+    render(<Administration client={client} about={null} />);
+    const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
@@ -463,8 +489,6 @@ describe('Access from Administration', () => {
         within(level).getByRole('heading', { name: 'The whole environment' }),
       ),
     );
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -564,11 +588,10 @@ function groupsService(authors: readonly string[] = ['p2']) {
 
 describe('Groups in Administration', () => {
   const openGroups = async (client: ReturnType<typeof groupsService>['client']) => {
-    const onClose = vi.fn();
-    render(<Administration client={client} about={null} onClose={onClose} />);
+    render(<Administration client={client} about={null} />);
     await userEvent.click(section('Groups'));
     const table = await screen.findByRole('table', { name: 'Groups' });
-    return { table, onClose, dialog: screen.getByRole('dialog', { name: 'Administration' }) };
+    return { table, dialog: screen.getByRole('region', { name: 'Administration' }) };
   };
   const row = (table: HTMLElement, name: string) =>
     within(table).getByRole('row', { name: new RegExp(`^${name}`) });
@@ -582,7 +605,7 @@ describe('Groups in Administration', () => {
       ...everything,
       '/v1/groups': () => json(401, { code: 'unauthenticated', message: 'x', traceId: 't' }),
     });
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
     await userEvent.click(section('Groups'));
     expect(
       await screen.findByText('You are signed out. Sign in again to manage access.'),
@@ -700,7 +723,7 @@ describe('Groups in Administration', () => {
 
   it('deletes a group only after asking, saying its grants go with it, and keeps focus in Administration', async () => {
     const { client, sent } = groupsService();
-    const { table, dialog, onClose } = await openGroups(client);
+    const { table, dialog } = await openGroups(client);
 
     await userEvent.click(
       within(row(table, 'Authors')).getByRole('button', { name: 'Delete Authors' }),
@@ -728,8 +751,6 @@ describe('Groups in Administration', () => {
     // The Delete button that had focus has gone with its row: focus stays in Administration.
     await waitFor(() => expect(document.activeElement).not.toBe(document.body));
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -803,10 +824,10 @@ function spacesService(administers: readonly string[] = ['tenant', 'space:s1', '
 
 describe('Spaces in Administration', () => {
   const openSpaces = async (client: ReturnType<typeof spacesService>['client']) => {
-    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    render(<Administration client={client} about={null} />);
     await userEvent.click(section('Spaces'));
     const table = await screen.findByRole('table', { name: 'Spaces' });
-    return { table, dialog: screen.getByRole('dialog', { name: 'Administration' }) };
+    return { table, dialog: screen.getByRole('region', { name: 'Administration' }) };
   };
   const row = (table: HTMLElement, name: string) =>
     within(table).getByRole('row', { name: new RegExp(`^${name}`) });

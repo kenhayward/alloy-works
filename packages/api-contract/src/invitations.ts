@@ -30,6 +30,12 @@ export type InvitationView = z.infer<typeof InvitationView>;
 export const InvitationList = z.object({
   items: z.array(InvitationView),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+  total: z
+    .number()
+    .int()
+    .describe(
+      'How many invitations, waiting, lapsed or accepted there are in all, on every page alike',
+    ),
 });
 export type InvitationList = z.infer<typeof InvitationList>;
 

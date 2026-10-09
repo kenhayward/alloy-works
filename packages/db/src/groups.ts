@@ -78,6 +78,15 @@ function groupOf(row: {
   return { id: row.id, name: row.name, source: row.source, providerValue: row.provider_value };
 }
 
+/** How many groups `listGroups` lists: Administration's count (AD-A). */
+export async function countGroups(trx: TenantTransaction): Promise<number> {
+  const row = await trx
+    .selectFrom('access_group')
+    .select((eb) => eb.fn.countAll<string>().as('count'))
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
+
 /**
  * The tenant's groups, a page at a time in the order of their ids, each with its members in the order
  * of their names. Who may see them - `administer` at the tenant - is the caller's to decide first.

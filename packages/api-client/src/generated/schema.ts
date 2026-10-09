@@ -26751,7 +26751,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "items": [],
-                     *       "next": "example"
+                     *       "next": "example",
+                     *       "total": -9007199254740991
                      *     }
                      */
                     "application/json": {
@@ -26773,6 +26774,8 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
+                        /** @description How many groups there are in all, on every page alike */
+                        total: number;
                     };
                 };
             };
@@ -27329,7 +27332,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "items": [],
-                     *       "next": "example"
+                     *       "next": "example",
+                     *       "total": -9007199254740991
                      *     }
                      */
                     "application/json": {
@@ -27356,6 +27360,8 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
+                        /** @description How many invitations, waiting, lapsed or accepted there are in all, on every page alike */
+                        total: number;
                     };
                 };
             };
@@ -28066,7 +28072,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "items": [],
-                     *       "next": "example"
+                     *       "next": "example",
+                     *       "total": -9007199254740991
                      *     }
                      */
                     "application/json": {
@@ -28084,6 +28091,8 @@ export interface operations {
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
+                        /** @description How many people, signed in or invited there are in all, on every page alike */
+                        total: number;
                     };
                 };
             };

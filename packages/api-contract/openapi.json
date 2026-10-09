@@ -91800,16 +91800,24 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many groups there are in all, on every page alike"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total"
                   ]
                 },
                 "example": {
                   "items": [],
-                  "next": "example"
+                  "next": "example",
+                  "total": -9007199254740991
                 }
               }
             },
@@ -93195,16 +93203,24 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many invitations, waiting, lapsed or accepted there are in all, on every page alike"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total"
                   ]
                 },
                 "example": {
                   "items": [],
-                  "next": "example"
+                  "next": "example",
+                  "total": -9007199254740991
                 }
               }
             },
@@ -94846,16 +94862,24 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many people, signed in or invited there are in all, on every page alike"
                     }
                   },
                   "required": [
                     "items",
-                    "next"
+                    "next",
+                    "total"
                   ]
                 },
                 "example": {
                   "items": [],
-                  "next": "example"
+                  "next": "example",
+                  "total": -9007199254740991
                 }
               }
             },

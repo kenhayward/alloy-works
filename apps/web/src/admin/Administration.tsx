@@ -5,7 +5,6 @@ import { refusal, TokenTable, type ShownToken } from '../account/TokenTable.js';
 import { AccessPanel } from '../access/AccessPanel.js';
 import { permissionName, type AccessAt } from '../access/describe.js';
 import { administersAt } from '../access/ManageAccessLink.js';
-import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
@@ -17,18 +16,85 @@ import { SpaceDialog, type SpaceAct, type SpaceRow } from './SpaceDialogs.js';
 type Client = ReturnType<typeof createApiClient>;
 
 /**
- * The sections the service can answer. Component types and layouts are drawn and wait: no route lists
- * layouts, and component types are listed a space at a time.
+ * The sections the service can answer, in the menu's groups (ADR-0049, decision 2), each at
+ * `#/admin/<slug>`. Component types and layouts are drawn and wait: no route lists layouts, and
+ * component types are listed a space at a time.
  */
 const SECTIONS = [
-  'Environment',
-  'Spaces',
-  'People and invitations',
-  'Roles',
-  'Groups',
-  'About',
+  { slug: 'overview', title: 'Overview', group: 'Environment' },
+  { slug: 'spaces', title: 'Spaces', group: 'Environment' },
+  { slug: 'people', title: 'People', group: 'People and access' },
+  { slug: 'groups', title: 'Groups', group: 'People and access' },
+  { slug: 'roles', title: 'Roles', group: 'People and access' },
+  { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
-type Section = (typeof SECTIONS)[number];
+type Section = (typeof SECTIONS)[number]['slug'];
+const GROUPS = ['Environment', 'People and access', 'System'] as const;
+
+/** The section an address names: Overview for `#/admin` and for anything it does not know. */
+export function sectionOf(hash: string): Section {
+  const slug = /^#\/admin\/([a-z]+)$/.exec(hash)?.[1];
+  return SECTIONS.find((each) => each.slug === slug)?.slug ?? 'overview';
+}
+
+/** The section the address names, followed as it changes. */
+function useSection(): Section {
+  const [section, setSection] = useState(() => sectionOf(window.location.hash));
+  useEffect(() => {
+    const follow = () => setSection(sectionOf(window.location.hash));
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, []);
+  return section;
+}
+
+/**
+ * How many each section holds, for the menu (AD-A): a listing's `total`, or the rows of one that is a
+ * page already; nothing where the reader may not see it, or it could not be read.
+ */
+function useCounts(client: Client): Partial<Record<Section, number>> {
+  const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
+  useEffect(() => {
+    let current = true;
+    const count = (section: Section, read: () => Promise<number | undefined>) => {
+      read()
+        .then((found) => {
+          if (current && found !== undefined) setCounts((was) => ({ ...was, [section]: found }));
+        })
+        .catch(() => undefined);
+    };
+    count('spaces', async () => {
+      const read = await everyPage((cursor) =>
+        client.GET('/v1/spaces', {
+          params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+        }),
+      );
+      return 'items' in read ? read.items.length : undefined;
+    });
+    count('people', async () => {
+      const { data } = await client.GET('/v1/principals', {
+        params: { query: { level: 'tenant', limit: '1' } },
+      });
+      return data?.total;
+    });
+    count('groups', async () => {
+      const { data } = await client.GET('/v1/groups', { params: { query: { limit: '1' } } });
+      return data?.total;
+    });
+    count('roles', async () => {
+      const read = await everyPage((cursor) =>
+        client.GET('/v1/roles', {
+          params: { query: { level: 'tenant', ...(cursor ? { cursor } : {}) } },
+        }),
+      );
+      return 'items' in read ? read.items.length : undefined;
+    });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  return counts;
+}
 
 /** The access page's sentence, for the same refusal. */
 const NOT_YOURS = 'You may not manage access here.';
@@ -178,7 +244,7 @@ function PersonTokens({
       <button type="button" onClick={onBack}>
         Back to people
       </button>
-      <h4 ref={heading} tabIndex={-1}>{`Tokens of ${name}`}</h4>
+      <h2 ref={heading} tabIndex={-1}>{`Tokens of ${name}`}</h2>
       <Shown read={read} failed="The tokens could not be loaded.">
         {(rows) => (
           <TokenTable
@@ -224,28 +290,28 @@ function AccessHere({
       <button ref={button} type="button" onClick={onBack}>
         {back}
       </button>
-      <AccessPanel at={at} client={client} headingLevel={4} />
+      <AccessPanel at={at} client={client} headingLevel={2} />
     </>
   );
 }
 
 /**
- * Administration, from the account chip: a modal over the page that asked for it, never a route
- * (docs/interface/README.md). The environment, its spaces, its people and invitations, its roles, its
- * groups and what this is - each read when its section is first shown, each saying for itself where
- * the reader may not see it - and Access at the environment and at each space.
+ * Administration, a page at `#/admin/<section>` opened by Admin on the rail (ADR-0049): a grouped
+ * menu, each entry with its count, and the section it names - the environment, its spaces, its people
+ * and invitations, its groups, its roles and what this is - each read when it is first shown, each
+ * saying for itself where the reader may not see it, and Access at the environment and at each space.
  */
 export function Administration({
   client,
   about,
-  onClose,
 }: {
   client: Client;
   /** What About holds beside the version: the scaffolding's environment panel, for now. */
   about: React.ReactNode;
-  onClose: () => void;
 }) {
-  const [shown, setShown] = useState<Section>('Environment');
+  const shown = useSection();
+  const counts = useCounts(client);
+  const title = SECTIONS.find((each) => each.slug === shown)!;
   const [tokensOf, setTokensOf] = useState<PersonRow | null>(null);
   /** The space, or the environment, whose Access is open in place of its section. */
   const [accessAt, setAccessAt] = useState<AccessAt | null>(null);
@@ -325,17 +391,14 @@ export function Administration({
   const [spacesRead, setSpacesRead] = useState(0);
   const [spaceAct, setSpaceAct] = useState<SpaceAct | null>(null);
   const [spaceSaid, setSpaceSaid] = useState('');
-  const spaces = useListing<SpaceRow>(loads.spaces, shown === 'Spaces', spacesRead);
-  const people = useListing<PersonRow>(loads.people, shown === 'People and invitations');
-  const invitations = useListing<InvitationRow>(
-    loads.invitations,
-    shown === 'People and invitations',
-  );
-  const roles = useListing<RoleRow>(loads.roles, shown === 'Roles');
+  const spaces = useListing<SpaceRow>(loads.spaces, shown === 'spaces', spacesRead);
+  const people = useListing<PersonRow>(loads.people, shown === 'people');
+  const invitations = useListing<InvitationRow>(loads.invitations, shown === 'people');
+  const roles = useListing<RoleRow>(loads.roles, shown === 'roles');
 
   useEffect(() => {
     // Spaces are made, renamed and archived by an administrator of the environment (SP-A).
-    if (shown === 'Environment' || shown === 'Spaces') askAdminister('tenant');
+    if (shown === 'overview' || shown === 'spaces') askAdminister('tenant');
   }, [shown, askAdminister]);
   const mayChangeSpaces = administers.get('tenant') === true;
   useEffect(() => {
@@ -351,6 +414,12 @@ export function Administration({
     (backTo.current ?? sectionHeading.current)?.focus();
   }, [tokensOf, accessAt, leftFrom]);
 
+  useEffect(() => {
+    setTokensOf(null);
+    setAccessAt(null);
+    setLeftFrom(null);
+  }, [shown]);
+
   const leaveAccess = () => {
     if (accessAt === null) return;
     setLeftFrom(accessAt.kind === 'space' ? accessAt.id : 'tenant');
@@ -358,235 +427,136 @@ export function Administration({
   };
 
   return (
-    <Modal labelledBy="administration-heading" onClose={onClose}>
-      <div className={styles['administration']}>
-        <div className={styles['head']}>
-          <h2 id="administration-heading">Administration</h2>
-          {environment !== null && <span className={styles['environment']}>{environment}</span>}
-        </div>
-        <nav className={styles['sections']} aria-label="Sections">
-          {SECTIONS.map((section) => (
-            <button
-              key={section}
-              type="button"
-              className={styles['section']}
-              aria-current={shown === section ? 'true' : undefined}
-              onClick={() => {
-                setShown(section);
-                setTokensOf(null);
-                setAccessAt(null);
-                setLeftFrom(null);
-              }}
-            >
-              {section}
-            </button>
-          ))}
+    <section className={styles['administration']} aria-label="Administration">
+      <nav className={styles['menu']} aria-label="Sections of Administration">
+        <p className={styles['menuTitle']}>Administration</p>
+        {environment !== null && <p className={styles['environment']}>{environment}</p>}
+        {GROUPS.map((group) => (
+          <div key={group} className={styles['menuGroup']}>
+            <p className={styles['menuGroupName']} id={`admin-group-${group.replace(/ /g, '-')}`}>
+              {group}
+            </p>
+            <ul aria-labelledby={`admin-group-${group.replace(/ /g, '-')}`}>
+              {SECTIONS.filter((each) => each.group === group).map((section) => (
+                <li key={section.slug}>
+                  <a
+                    href={`#/admin/${section.slug}`}
+                    className={styles['section']}
+                    aria-current={shown === section.slug ? 'page' : undefined}
+                  >
+                    <span>{section.title}</span>
+                    {counts[section.slug] !== undefined && (
+                      <span className={styles['count']}>{counts[section.slug]}</span>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+      <div className={styles['shown']}>
+        <nav aria-label="Breadcrumb" className={styles['trail']}>
+          <a href="#/admin/overview">Administration</a>
+          <span>{` / ${title.group}`}</span>
         </nav>
-        <div className={styles['shown']}>
-          <h3 ref={sectionHeading} tabIndex={-1}>
-            {shown}
-          </h3>
-          {(shown === 'Environment' || shown === 'Spaces') && accessAt !== null && (
-            <AccessHere
-              key={accessAt.kind === 'space' ? accessAt.id : 'tenant'}
-              client={client}
-              at={accessAt}
-              back={shown === 'Spaces' ? 'Back to spaces' : 'Back to the environment'}
-              onBack={leaveAccess}
-            />
-          )}
-          {shown === 'Environment' && accessAt === null && (
-            <>
-              <dl>
-                <dt>Name</dt>
-                <dd>{environment ?? ''}</dd>
-                <dt>Address</dt>
-                <dd>{window.location.host}</dd>
-              </dl>
-              {administers.get('tenant') === true && (
-                <p>
-                  <button
-                    ref={leftFrom === 'tenant' ? backTo : undefined}
-                    type="button"
-                    aria-label="Access to the whole environment"
-                    onClick={() => setAccessAt({ kind: 'tenant' })}
-                  >
-                    Access
-                  </button>
-                </p>
-              )}
-            </>
-          )}
-          {shown === 'Spaces' && accessAt === null && (
-            <>
-              {mayChangeSpaces && (
-                <p>
-                  <button
-                    type="button"
-                    className="primary"
-                    onClick={() => setSpaceAct({ kind: 'new' })}
-                  >
-                    New space
-                  </button>
-                </p>
-              )}
-              <Shown read={spaces} failed="The spaces could not be loaded.">
-                {(rows) => (
-                  <table aria-label="Spaces">
-                    <tbody>
-                      {rows.map((space) => (
-                        <tr key={space.id}>
-                          <td>{space.name}</td>
-                          <td className={styles['muted']}>
-                            {space.archived
-                              ? 'Archived'
-                              : space.mayCreate
-                                ? 'You may create here'
-                                : ''}
-                          </td>
-                          <td className={styles['act']}>
-                            {mayChangeSpaces && (
-                              <>
-                                <button
-                                  type="button"
-                                  aria-label={`Rename ${space.name}`}
-                                  onClick={() => setSpaceAct({ kind: 'rename', space })}
-                                >
-                                  Rename
-                                </button>{' '}
-                                <button
-                                  type="button"
-                                  aria-label={`${space.archived ? 'Restore' : 'Archive'} ${space.name}`}
-                                  onClick={() =>
-                                    setSpaceAct({
-                                      kind: space.archived ? 'restore' : 'archive',
-                                      space,
-                                    })
-                                  }
-                                >
-                                  {space.archived ? 'Restore' : 'Archive'}
-                                </button>{' '}
-                              </>
-                            )}
-                            {administers.get(`space:${space.id}`) === true && (
+        <h1 ref={sectionHeading} tabIndex={-1}>
+          {title.title}
+        </h1>
+        {(shown === 'overview' || shown === 'spaces') && accessAt !== null && (
+          <AccessHere
+            key={accessAt.kind === 'space' ? accessAt.id : 'tenant'}
+            client={client}
+            at={accessAt}
+            back={shown === 'spaces' ? 'Back to spaces' : 'Back to the environment'}
+            onBack={leaveAccess}
+          />
+        )}
+        {shown === 'overview' && accessAt === null && (
+          <>
+            <dl>
+              <dt>Name</dt>
+              <dd>{environment ?? ''}</dd>
+              <dt>Address</dt>
+              <dd>{window.location.host}</dd>
+            </dl>
+            {administers.get('tenant') === true && (
+              <p>
+                <button
+                  ref={leftFrom === 'tenant' ? backTo : undefined}
+                  type="button"
+                  aria-label="Access to the whole environment"
+                  onClick={() => setAccessAt({ kind: 'tenant' })}
+                >
+                  Access
+                </button>
+              </p>
+            )}
+          </>
+        )}
+        {shown === 'spaces' && accessAt === null && (
+          <>
+            {mayChangeSpaces && (
+              <p>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => setSpaceAct({ kind: 'new' })}
+                >
+                  New space
+                </button>
+              </p>
+            )}
+            <Shown read={spaces} failed="The spaces could not be loaded.">
+              {(rows) => (
+                <table aria-label="Spaces">
+                  <tbody>
+                    {rows.map((space) => (
+                      <tr key={space.id}>
+                        <td>{space.name}</td>
+                        <td className={styles['muted']}>
+                          {space.archived
+                            ? 'Archived'
+                            : space.mayCreate
+                              ? 'You may create here'
+                              : ''}
+                        </td>
+                        <td className={styles['act']}>
+                          {mayChangeSpaces && (
+                            <>
                               <button
-                                ref={space.id === leftFrom ? backTo : undefined}
                                 type="button"
-                                aria-label={`Access to the space ${space.name}`}
+                                aria-label={`Rename ${space.name}`}
+                                onClick={() => setSpaceAct({ kind: 'rename', space })}
+                              >
+                                Rename
+                              </button>{' '}
+                              <button
+                                type="button"
+                                aria-label={`${space.archived ? 'Restore' : 'Archive'} ${space.name}`}
                                 onClick={() =>
-                                  setAccessAt({ kind: 'space', id: space.id, name: space.name })
+                                  setSpaceAct({
+                                    kind: space.archived ? 'restore' : 'archive',
+                                    space,
+                                  })
                                 }
                               >
-                                Access
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Shown>
-              <p role="status">{spaceSaid}</p>
-              {spaceAct !== null && (
-                <SpaceDialog
-                  client={client}
-                  act={spaceAct}
-                  onClose={() => setSpaceAct(null)}
-                  onDone={(said) => {
-                    setSpaceAct(null);
-                    setSpaceSaid(said);
-                    setSpacesRead((count) => count + 1);
-                  }}
-                />
-              )}
-            </>
-          )}
-          {shown === 'People and invitations' && tokensOf !== null && (
-            <PersonTokens
-              client={client}
-              person={tokensOf}
-              onBack={() => {
-                setLeftFrom(tokensOf.id);
-                setTokensOf(null);
-              }}
-            />
-          )}
-          {shown === 'People and invitations' && tokensOf === null && (
-            <>
-              <Shown read={people} failed="The people could not be loaded.">
-                {(rows) => (
-                  <table aria-label="People">
-                    <tbody>
-                      {rows.map((person) => (
-                        <tr key={person.id}>
-                          <td>{nameOf(person)}</td>
-                          <td className={styles['muted']}>
-                            {[
-                              person.name !== null ? person.email : null,
-                              person.kind === 'external' ? 'from outside the organisation' : null,
-                              person.invited ? 'invited and not signed in yet' : null,
-                            ]
-                              .filter((each) => each !== null)
-                              .join(', ')}
-                          </td>
-                          <td className={styles['act']}>
-                            {!person.invited && (
-                              <button
-                                ref={person.id === leftFrom ? backTo : undefined}
-                                type="button"
-                                aria-label={`Tokens of ${nameOf(person)}`}
-                                onClick={() => setTokensOf(person)}
-                              >
-                                Tokens
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Shown>
-              <h4>Waiting invitations</h4>
-              <Shown read={invitations} failed="Invitations could not be loaded.">
-                {(rows) => {
-                  const waiting = rows.filter((invitation) => !invitation.lapsed);
-                  return waiting.length === 0 ? (
-                    <Empty>
-                      <p>Nobody is waiting to accept an invitation.</p>
-                    </Empty>
-                  ) : (
-                    <table aria-label="Waiting invitations">
-                      <tbody>
-                        {waiting.map((invitation) => (
-                          <tr key={invitation.id}>
-                            <td>{invitation.email}</td>
-                            <td className={styles['muted']}>
-                              {invitation.expiresAt === null
-                                ? 'Waiting'
-                                : `Waiting until ${day(invitation.expiresAt)}`}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  );
-                }}
-              </Shown>
-            </>
-          )}
-          {shown === 'Groups' && <Groups client={client} />}
-          {shown === 'Roles' && (
-            <Shown read={roles} failed="The roles could not be loaded.">
-              {(rows) => (
-                <table aria-label="Roles">
-                  <tbody>
-                    {rows.map((role) => (
-                      <tr key={role.id}>
-                        <td className={styles['strong']}>{role.name}</td>
-                        <td className={styles['muted']}>
-                          {role.permissions.map(permissionName).join(', ')}
+                                {space.archived ? 'Restore' : 'Archive'}
+                              </button>{' '}
+                            </>
+                          )}
+                          {administers.get(`space:${space.id}`) === true && (
+                            <button
+                              ref={space.id === leftFrom ? backTo : undefined}
+                              type="button"
+                              aria-label={`Access to the space ${space.name}`}
+                              onClick={() =>
+                                setAccessAt({ kind: 'space', id: space.id, name: space.name })
+                              }
+                            >
+                              Access
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -594,18 +564,124 @@ export function Administration({
                 </table>
               )}
             </Shown>
-          )}
-          {shown === 'About' && (
-            <>
-              <p>{`Version ${__APP_VERSION__}`}</p>
-              {about}
-            </>
-          )}
-        </div>
+            <p role="status">{spaceSaid}</p>
+            {spaceAct !== null && (
+              <SpaceDialog
+                client={client}
+                act={spaceAct}
+                onClose={() => setSpaceAct(null)}
+                onDone={(said) => {
+                  setSpaceAct(null);
+                  setSpaceSaid(said);
+                  setSpacesRead((count) => count + 1);
+                }}
+              />
+            )}
+          </>
+        )}
+        {shown === 'people' && tokensOf !== null && (
+          <PersonTokens
+            client={client}
+            person={tokensOf}
+            onBack={() => {
+              setLeftFrom(tokensOf.id);
+              setTokensOf(null);
+            }}
+          />
+        )}
+        {shown === 'people' && tokensOf === null && (
+          <>
+            <Shown read={people} failed="The people could not be loaded.">
+              {(rows) => (
+                <table aria-label="People">
+                  <tbody>
+                    {rows.map((person) => (
+                      <tr key={person.id}>
+                        <td>{nameOf(person)}</td>
+                        <td className={styles['muted']}>
+                          {[
+                            person.name !== null ? person.email : null,
+                            person.kind === 'external' ? 'from outside the organisation' : null,
+                            person.invited ? 'invited and not signed in yet' : null,
+                          ]
+                            .filter((each) => each !== null)
+                            .join(', ')}
+                        </td>
+                        <td className={styles['act']}>
+                          {!person.invited && (
+                            <button
+                              ref={person.id === leftFrom ? backTo : undefined}
+                              type="button"
+                              aria-label={`Tokens of ${nameOf(person)}`}
+                              onClick={() => setTokensOf(person)}
+                            >
+                              Tokens
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Shown>
+            <h2>Waiting invitations</h2>
+            <Shown read={invitations} failed="Invitations could not be loaded.">
+              {(rows) => {
+                const waiting = rows.filter((invitation) => !invitation.lapsed);
+                return waiting.length === 0 ? (
+                  <Empty>
+                    <p>Nobody is waiting to accept an invitation.</p>
+                  </Empty>
+                ) : (
+                  <table aria-label="Waiting invitations">
+                    <tbody>
+                      {waiting.map((invitation) => (
+                        <tr key={invitation.id}>
+                          <td>{invitation.email}</td>
+                          <td className={styles['muted']}>
+                            {invitation.expiresAt === null
+                              ? 'Waiting'
+                              : `Waiting until ${day(invitation.expiresAt)}`}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              }}
+            </Shown>
+          </>
+        )}
+        {shown === 'groups' && <Groups client={client} />}
+        {shown === 'roles' && (
+          <Shown read={roles} failed="The roles could not be loaded.">
+            {(rows) => (
+              <table aria-label="Roles">
+                <tbody>
+                  {rows.map((role) => (
+                    <tr key={role.id}>
+                      <td className={styles['strong']}>{role.name}</td>
+                      <td className={styles['muted']}>
+                        {role.permissions.map(permissionName).join(', ')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Shown>
+        )}
+        {shown === 'about' && (
+          <>
+            <p>{`Version ${__APP_VERSION__}`}</p>
+            {about}
+          </>
+        )}
         <p className={styles['foot']}>
           Changes here take effect for everybody in this environment.
         </p>
       </div>
-    </Modal>
+    </section>
   );
 }

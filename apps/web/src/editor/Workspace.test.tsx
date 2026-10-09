@@ -235,6 +235,15 @@ describe('the workspace', () => {
     }
   });
 
+  it('opens Administration at its address, at the section it names', async () => {
+    window.location.hash = '#/admin/about';
+    render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
+    expect(
+      await screen.findByRole('heading', { name: 'About and release notes', level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Administration' })).toBeInTheDocument();
+  });
+
   it('says so when there is nothing to read', async () => {
     render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
     expect(await screen.findByText('There are no components you may read.')).toBeInTheDocument();

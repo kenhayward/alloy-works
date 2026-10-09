@@ -14,6 +14,7 @@ import type {
 import {
   grant,
   listGrants,
+  countPrincipals,
   listPrincipals,
   listRoles,
   readGrant,
@@ -124,7 +125,11 @@ export function managingAccessHandlers() {
         ...(after === undefined ? {} : { after }),
         limit: pageLimit(query.limit),
       });
-      return { items: [...page.items], next: cursorAfter(page.after) };
+      return {
+        items: [...page.items],
+        next: cursorAfter(page.after),
+        total: await countPrincipals(trx),
+      };
     },
 
     makeGrant: async (
