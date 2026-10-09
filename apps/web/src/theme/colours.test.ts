@@ -143,6 +143,8 @@ const TEXT_ON: readonly (readonly [string, string])[] = [
   ['--ok', '--ok-bg'],
   ['--danger', '--surface'],
   ['--danger', '--danger-bg'],
+  // A removal's filled button, Administration's one colour (ADR-0049).
+  ['--on-danger', '--danger'],
   ['--info', '--surface'],
   ['--info', '--info-bg'],
 ];

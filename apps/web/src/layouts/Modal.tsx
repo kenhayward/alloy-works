@@ -11,18 +11,19 @@ const FIELD = 'input:not([disabled]), select:not([disabled]), textarea:not([disa
 /**
  * A modal over the screen that asked for it, never a route (docs/interface/README.md): 40px from the
  * top, named by the heading inside it, closed by Escape or its close button. Focus starts on its
- * first field - or on the dialog, until content that loads late brings one - stays inside while it
- * is open, and goes back to whatever opened it.
+ * first field - or what the dialog marks `data-autofocus`, or on the dialog, until content that loads
+ * late brings one - stays inside while it is open, and goes back to whatever opened it. `dialog` is a
+ * confirmation's 480px, 120px from the top, with no close button but its own (ADR-0049).
  */
 export function Modal({
   labelledBy,
-  wide = false,
+  size = 'standard',
   onClose,
   children,
 }: {
   labelledBy: string;
-  /** 760px rather than 600px, for a form whose fields hold long values or choices. */
-  wide?: boolean;
+  /** 600px; 760px for a form whose fields hold long values or choices; 480px for a confirmation. */
+  size?: 'standard' | 'wide' | 'dialog';
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -32,7 +33,8 @@ export function Modal({
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const box = dialog.current;
     if (!box) return undefined;
-    const first = () => box.querySelector<HTMLElement>(FIELD);
+    const first = () =>
+      box.querySelector<HTMLElement>('[data-autofocus]') ?? box.querySelector<HTMLElement>(FIELD);
     (first() ?? box).focus();
     // A form that reads what it offers after it mounts brings its first field late: focus it then,
     // unless the person has already moved on.
@@ -69,10 +71,14 @@ export function Modal({
   };
 
   return (
-    <div className={styles['scrim']}>
+    <div className={styles['scrim']} data-size={size}>
       <div
         ref={dialog}
-        className={wide ? `${styles['dialog']} ${styles['wide']}` : styles['dialog']}
+        className={
+          size === 'standard'
+            ? styles['dialog']
+            : `${styles['dialog']} ${styles[size === 'dialog' ? 'confirm' : size]}`
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
@@ -80,9 +86,11 @@ export function Modal({
         onKeyDown={onKeyDown}
       >
         <div className={styles['body']}>{children}</div>
-        <IconButton label="Close" className={styles['close']} onClick={onClose}>
-          <Icon name="Close" size={13} />
-        </IconButton>
+        {size !== 'dialog' && (
+          <IconButton label="Close" className={styles['close']} onClick={onClose}>
+            <Icon name="Close" size={13} />
+          </IconButton>
+        )}
       </div>
     </div>
   );

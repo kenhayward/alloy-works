@@ -23,6 +23,15 @@
   width: min(760px, 100%);
 }
 
+/* A confirmation: narrower, and lower, so it sits over what it asks about. */
+.confirm {
+  width: min(var(--dialog), 100%);
+}
+
+.scrim[data-size='dialog'] {
+  padding-top: 120px;
+}
+
 .dialog:focus {
   outline: none;
 }

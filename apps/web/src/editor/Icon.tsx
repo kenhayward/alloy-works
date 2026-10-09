@@ -84,6 +84,41 @@ const PATHS: Record<string, readonly string[]> = {
 };
 
 /**
+ * Administration's actions (ADR-0049, the admin handoff's own shapes), drawn on a 24px grid at a
+ * heavier stroke, each circle written as two arcs. Delete, Revoke and Withdraw are the one bin.
+ */
+const BIN = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6';
+const PERSON = 'M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0';
+const ADMIN: Record<string, readonly string[]> = {
+  Rename: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
+  Access: [
+    'M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z',
+    'M10 11a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+    'M12 13v3',
+  ],
+  Archive: [
+    'M4 4h16a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z',
+    'M5 9v11h14V9M10 13h4',
+  ],
+  Restore: ['M9 14 4 9l5-5', 'M4 9h10a6 6 0 0 1 0 12h-3'],
+  'API tokens': ['M4 15a4 4 0 1 0 8 0a4 4 0 1 0-8 0', 'm11 12 9-9M17 6l3 3M15 8l2 2'],
+  Members: [
+    PERSON,
+    'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.5 3.5 5.2',
+  ],
+  Delete: [BIN],
+  Revoke: [BIN],
+  Withdraw: [BIN],
+  'Invite people': [PERSON, 'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M19 8v6M16 11h6'],
+};
+/** Three dots, filled. */
+const MORE = [
+  'M10.4 5a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0',
+  'M10.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0',
+  'M10.4 19a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0',
+];
+
+/**
  * An icon for an editor command or act, keyed by the command's own label: 16px on the toolbar, and
  * larger where a dialog shows the command that opened it. Always hidden from
  * assistive technology: the button it sits in carries the name. A label with no drawing renders
@@ -113,6 +148,32 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
         fill="currentColor"
       >
         <path d={TRIANGLE} />
+      </svg>
+    );
+  }
+  if (name === 'More actions' || ADMIN[name] !== undefined) {
+    const more = name === 'More actions';
+    return (
+      <svg
+        className={styles['path']}
+        data-icon={name}
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill={more ? 'currentColor' : 'none'}
+        {...(more
+          ? {}
+          : {
+              stroke: 'currentColor',
+              strokeWidth: 1.8,
+              strokeLinecap: 'round',
+              strokeLinejoin: 'round',
+            })}
+      >
+        {(more ? MORE : ADMIN[name]!).map((d) => (
+          <path key={d} d={d} />
+        ))}
       </svg>
     );
   }

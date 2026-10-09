@@ -3,9 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { Icon } from '../editor/Icon.js';
 import { Chip } from './Chip.js';
+import { ConfirmDialog } from './ConfirmDialog.js';
 import { IconButton } from './IconButton.js';
 import { PanelTabs } from './PanelTabs.js';
+import { RowActions } from './RowActions.js';
+import { SidePanel } from './SidePanel.js';
 import { Toolbar } from './Toolbar.js';
 
 describe('a grouped toolbar', () => {
@@ -157,5 +161,225 @@ describe('a chip', () => {
     );
     expect(screen.getByText('Not approved')).toHaveAttribute('data-tone', 'warn');
     expect(screen.getByText('en-GB')).toHaveAttribute('data-tone', 'neutral');
+  });
+});
+
+describe('a side panel', () => {
+  function Listing() {
+    const [open, setOpen] = useState<string | null>(null);
+    return (
+      <>
+        {['General', 'Regulatory'].map((name) => (
+          <button key={name} type="button" onClick={() => setOpen(name)}>
+            {`Access to ${name}`}
+          </button>
+        ))}
+        <button type="button">Elsewhere</button>
+        {open !== null && (
+          <SidePanel
+            key={open}
+            heading={`Access to ${open}`}
+            description="Space. Grants here add to the environment's."
+            icon="Access"
+            onClose={() => setOpen(null)}
+          >
+            <button type="button">Grant access</button>
+          </SidePanel>
+        )}
+      </>
+    );
+  }
+
+  it('is named by its heading, takes the focus, closes on Escape and gives it back to its opener', async () => {
+    render(<Listing />);
+    const opener = screen.getByRole('button', { name: 'Access to General' });
+    await userEvent.click(opener);
+    const panel = screen.getByRole('complementary', { name: 'Access to General' });
+    expect(within(panel).getByRole('heading', { name: 'Access to General' })).toHaveFocus();
+    expect(panel).toHaveTextContent("Space. Grants here add to the environment's.");
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it('closes by its button, and never takes the focus back from a row chosen while it was open', async () => {
+    render(<Listing />);
+    await userEvent.click(screen.getByRole('button', { name: 'Access to General' }));
+    // Another row's panel replaces it: focus goes to the new one, not back to the first opener.
+    await userEvent.click(screen.getByRole('button', { name: 'Access to Regulatory' }));
+    const panel = screen.getByRole('complementary', { name: 'Access to Regulatory' });
+    expect(within(panel).getByRole('heading', { name: 'Access to Regulatory' })).toHaveFocus();
+    await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Access to Regulatory' })).toHaveFocus();
+  });
+});
+
+describe('a confirmation', () => {
+  it('asks first: named by its question, focus on keeping, Keep it acting on nothing and the danger button acting once', async () => {
+    const remove = vi.fn(() => Promise.resolve());
+    const keep = vi.fn();
+    render(
+      <ConfirmDialog
+        question="Delete Reviewers?"
+        sentence="Everything granted to this group is deleted with it, so its members lose whatever they held only through it."
+        detail="5 members: Alice Byrne, Ada Nolan, Marta Silva and 2 more"
+        keep="Keep it"
+        act="Delete group"
+        onKeep={keep}
+        onAct={remove}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Delete Reviewers?' });
+    expect(dialog).toHaveTextContent('5 members: Alice Byrne, Ada Nolan, Marta Silva and 2 more');
+    expect(within(dialog).getByRole('button', { name: 'Keep it' })).toHaveFocus();
+    const act = within(dialog).getByRole('button', { name: 'Delete group' });
+    expect(act).toHaveAttribute('data-tone', 'danger');
+    await userEvent.dblClick(act);
+    expect(remove).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Keep it' }));
+    expect(keep).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps on Escape', async () => {
+    const keep = vi.fn();
+    render(
+      <ConfirmDialog
+        question="Revoke CI publishing?"
+        sentence="Revoking a token ends it at once, without waiting for it to expire."
+        keep="Keep it"
+        act="Revoke"
+        onKeep={keep}
+        onAct={() => Promise.resolve()}
+      />,
+    );
+    await userEvent.keyboard('{Escape}');
+    expect(keep).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a row's actions", () => {
+  const actions = (picked: string[]) => ({
+    shown: [
+      {
+        label: 'Access',
+        name: 'Access to General',
+        icon: 'Access',
+        onSelect: () => picked.push('access'),
+      },
+      {
+        label: 'Rename',
+        name: 'Rename General',
+        icon: 'Rename',
+        onSelect: () => picked.push('rename'),
+      },
+    ],
+    more: [
+      { label: 'Archive', onSelect: () => picked.push('archive') },
+      { label: 'Delete', onSelect: () => picked.push('delete'), danger: true },
+    ],
+  });
+
+  it('shows at most two as icon buttons, each named for its row and titled with its action', async () => {
+    const picked: string[] = [];
+    render(<RowActions subject="General" {...actions(picked)} />);
+    const access = screen.getByRole('button', { name: 'Access to General' });
+    expect(access).toHaveAttribute('title', 'Access');
+    expect(access.querySelector('svg[data-icon="Access"]')).not.toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Rename General' }));
+    expect(picked).toEqual(['rename']);
+    expect(() =>
+      render(
+        <RowActions
+          subject="Too many"
+          shown={[
+            ...actions([]).shown,
+            { label: 'x', name: 'x', icon: 'Delete', onSelect: () => {} },
+          ]}
+          more={[]}
+        />,
+      ),
+    ).toThrow(/at most two/);
+  });
+
+  it('says why an action cannot be taken, and does not take it', async () => {
+    const picked: string[] = [];
+    render(
+      <RowActions
+        subject="sam.okafor@acme.example"
+        shown={[
+          {
+            label: 'API tokens',
+            name: 'API tokens of sam.okafor@acme.example',
+            icon: 'API tokens',
+            onSelect: () => picked.push('tokens'),
+            unavailable: 'Not signed in yet, so no tokens',
+          },
+        ]}
+        more={[]}
+      />,
+    );
+    const tokens = screen.getByRole('button', { name: 'API tokens of sam.okafor@acme.example' });
+    expect(tokens).toHaveAttribute('aria-disabled', 'true');
+    expect(tokens).toHaveAttribute('title', 'Not signed in yet, so no tokens');
+    await userEvent.click(tokens);
+    expect(picked).toEqual([]);
+    expect(screen.queryByRole('button', { name: /More actions/ })).toBeNull();
+  });
+
+  it('puts the rest under More actions, worked by the arrows, Escape giving the focus back', async () => {
+    const picked: string[] = [];
+    render(<RowActions subject="General" {...actions(picked)} />);
+    const more = screen.getByRole('button', { name: 'More actions for General' });
+    expect(more).toHaveAttribute('aria-haspopup', 'menu');
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    more.focus();
+    await userEvent.keyboard('{Enter}');
+    const menu = screen.getByRole('menu', { name: 'More actions for General' });
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    expect(within(menu).getByRole('menuitem', { name: 'Archive' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(within(menu).getByRole('menuitem', { name: 'Delete' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(within(menu).getByRole('menuitem', { name: 'Archive' })).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(more).toHaveFocus();
+
+    await userEvent.click(more);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    expect(picked).toEqual(['delete']);
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(more).toHaveFocus();
+  });
+});
+
+describe("Administration's glyphs", () => {
+  it('draws each action Administration names, on its own grid', () => {
+    const names = [
+      'Rename',
+      'Access',
+      'Archive',
+      'Restore',
+      'API tokens',
+      'Members',
+      'Delete',
+      'Revoke',
+      'Withdraw',
+      'Invite people',
+      'More actions',
+    ];
+    const { container } = render(
+      <>
+        {names.map((name) => (
+          <Icon key={name} name={name} />
+        ))}
+      </>,
+    );
+    expect([...container.querySelectorAll('svg')].map((svg) => svg.dataset['icon'])).toEqual(names);
+    for (const svg of container.querySelectorAll('svg')) {
+      expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(svg.querySelectorAll('path').length).toBeGreaterThan(0);
+    }
   });
 });
