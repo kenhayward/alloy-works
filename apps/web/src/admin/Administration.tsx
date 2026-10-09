@@ -1,15 +1,16 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AccessPanel } from '../access/AccessPanel.js';
-import { permissionName, type AccessAt } from '../access/describe.js';
 import { administersAt } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
+import { About } from './About.js';
 import { Groups } from './Groups.js';
+import { Overview } from './Overview.js';
 import { People } from './People.js';
-import { Shown, useListing } from './listing.js';
+import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
+import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -95,43 +96,6 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
   return counts;
 }
 
-interface RoleRow {
-  readonly id: string;
-  readonly name: string;
-  readonly permissions: readonly string[];
-}
-
-/**
- * Access at a space or the environment, in place of the section that opened it (access.md, GP-E): the
- * Access panel at that level, with a way back that takes focus as the button that opened it goes.
- */
-function AccessHere({
-  client,
-  at,
-  back,
-  onBack,
-}: {
-  client: Client;
-  at: AccessAt;
-  back: string;
-  onBack: () => void;
-}) {
-  const button = useRef<HTMLButtonElement>(null);
-  // The Access button, which had focus, has gone with the section: focus comes here, inside the
-  // dialog, rather than falling to the page, where Escape would not close Administration.
-  useEffect(() => {
-    button.current?.focus();
-  }, []);
-  return (
-    <>
-      <button ref={button} type="button" onClick={onBack}>
-        {back}
-      </button>
-      <AccessPanel at={at} client={client} headingLevel={2} />
-    </>
-  );
-}
-
 /**
  * Administration, a page at `#/admin/<section>` opened by Admin on the rail (ADR-0049): a grouped
  * menu, each entry with its count, and the section it names - the environment, its spaces, its people
@@ -149,14 +113,6 @@ export function Administration({
   const shown = useSection();
   const counts = useCounts(client);
   const title = SECTIONS.find((each) => each.slug === shown)!;
-  /** The space, or the environment, whose Access is open in place of its section. */
-  const [accessAt, setAccessAt] = useState<AccessAt | null>(null);
-  /**
-   * Whose tokens, or which space's or the environment's Access, was last left by its way back, so
-   * focus goes back to the button that opened it.
-   */
-  const [leftFrom, setLeftFrom] = useState<string | null>(null);
-  const backTo = useRef<HTMLButtonElement>(null);
   const sectionHeading = useRef<HTMLHeadingElement>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   /**
@@ -228,25 +184,6 @@ export function Administration({
     for (const space of spaces.rows) askAdminister(`space:${space.id}`);
   }, [spaces, askAdminister]);
 
-  // Back to the environment takes itself away: focus goes to the button it was
-  // reached from, or to the section's heading where that is not shown, and never falls out of the
-  // dialog.
-  useEffect(() => {
-    if (accessAt !== null || leftFrom === null) return;
-    (backTo.current ?? sectionHeading.current)?.focus();
-  }, [accessAt, leftFrom]);
-
-  useEffect(() => {
-    setAccessAt(null);
-    setLeftFrom(null);
-  }, [shown]);
-
-  const leaveAccess = () => {
-    if (accessAt === null) return;
-    setLeftFrom(accessAt.kind === 'space' ? accessAt.id : 'tenant');
-    setAccessAt(null);
-  };
-
   return (
     <section className={styles['administration']} aria-label="Administration">
       <nav className={styles['menu']} aria-label="Sections of Administration">
@@ -284,36 +221,12 @@ export function Administration({
         <h1 ref={sectionHeading} tabIndex={-1}>
           {title.title}
         </h1>
-        {shown === 'overview' && accessAt !== null && (
-          <AccessHere
-            key={accessAt.kind === 'space' ? accessAt.id : 'tenant'}
+        {shown === 'overview' && (
+          <Overview
             client={client}
-            at={accessAt}
-            back="Back to the environment"
-            onBack={leaveAccess}
+            environment={environment}
+            administers={administers.get('tenant') === true}
           />
-        )}
-        {shown === 'overview' && accessAt === null && (
-          <>
-            <dl>
-              <dt>Name</dt>
-              <dd>{environment ?? ''}</dd>
-              <dt>Address</dt>
-              <dd>{window.location.host}</dd>
-            </dl>
-            {administers.get('tenant') === true && (
-              <p>
-                <button
-                  ref={leftFrom === 'tenant' ? backTo : undefined}
-                  type="button"
-                  aria-label="Access to the whole environment"
-                  onClick={() => setAccessAt({ kind: 'tenant' })}
-                >
-                  Access
-                </button>
-              </p>
-            )}
-          </>
         )}
         {shown === 'spaces' && (
           <Spaces
@@ -326,33 +239,8 @@ export function Administration({
         )}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
-        {shown === 'roles' && (
-          <Shown read={roles} failed="The roles could not be loaded.">
-            {(rows) => (
-              <table aria-label="Roles">
-                <tbody>
-                  {rows.map((role) => (
-                    <tr key={role.id}>
-                      <td className={styles['strong']}>{role.name}</td>
-                      <td className={styles['muted']}>
-                        {role.permissions.map(permissionName).join(', ')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Shown>
-        )}
-        {shown === 'about' && (
-          <>
-            <p>{`Version ${__APP_VERSION__}`}</p>
-            {about}
-          </>
-        )}
-        <p className={styles['foot']}>
-          Changes here take effect for everybody in this environment.
-        </p>
+        {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'about' && <About about={about} />}
       </div>
     </section>
   );

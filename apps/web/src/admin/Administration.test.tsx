@@ -68,7 +68,10 @@ function service(answers: Answers) {
 }
 
 /** A section's link in Administration's menu, its count after its name. */
-const section = (name: string) => screen.getByRole('link', { name: new RegExp(`^${name}`) });
+const section = (name: string) =>
+  within(screen.getByRole('navigation', { name: 'Sections of Administration' })).getByRole('link', {
+    name: new RegExp(`^${name}`),
+  });
 
 // Each test opens Administration at its start, as Admin on the rail does.
 beforeEach(() => {
@@ -116,7 +119,9 @@ describe('Administration', () => {
 
     await userEvent.click(section('Roles'));
     const roles = await screen.findByRole('table', { name: 'Roles' });
-    expect(within(roles).getByRole('cell', { name: 'read, create, edit' })).toBeInTheDocument();
+    expect(
+      within(within(roles).getByRole('row', { name: /^Author/ })).getAllByText('Holds'),
+    ).toHaveLength(3);
 
     // Read at the environment's own level.
     expect(asked.find((url) => url.pathname === '/v1/roles')?.searchParams.get('level')).toBe(
@@ -468,6 +473,141 @@ describe('People in Administration', () => {
   });
 });
 
+/** The environment as Overview reads it: spaces, people, invitations, groups, roles and grants. */
+const overview: Answers = {
+  ...everything,
+  '/v1/spaces': () =>
+    json(200, {
+      items: [
+        { id: 's1', name: 'General', archived: false, mayCreate: true },
+        { id: 's2', name: 'Training', archived: true, mayCreate: false },
+      ],
+      next: null,
+    }),
+  '/v1/groups': () =>
+    json(200, {
+      items: [
+        { id: 'g1', name: 'Authors', source: 'tenant', providerValue: null, members: [] },
+        { id: 'g2', name: 'Everyone', source: 'provider', providerValue: 'staff', members: [] },
+      ],
+      next: null,
+      total: 2,
+    }),
+  '/v1/access': administering('tenant'),
+  '/v1/grants': () =>
+    json(200, {
+      items: [
+        {
+          id: 'a1',
+          role: { id: 'r9', name: 'Administrator' },
+          subject: { principal: { id: 'p1', name: 'Ada', email: 'ada@example.test' } },
+          level: 'tenant',
+          effect: 'allow',
+          expiresAt: null,
+          extends: null,
+          grantedBy: { id: 'p1', name: 'Ada' },
+          grantedAt: '2026-09-17T09:00:00.000Z',
+        },
+        {
+          id: 'a2',
+          role: { id: 'r1', name: 'Reader' },
+          subject: { group: { id: 'g2', name: 'Everyone' } },
+          level: 'tenant',
+          effect: 'allow',
+          expiresAt: null,
+          extends: null,
+          grantedBy: { id: 'p1', name: 'Ada' },
+          grantedAt: '2026-09-17T09:00:00.000Z',
+        },
+      ],
+      next: null,
+    }),
+};
+
+describe("Administration's Overview, Roles and About", () => {
+  it('opens on what the environment holds, each count a way to its section, and who holds what across it', async () => {
+    const { client } = service(overview);
+    render(<Administration client={client} about={null} />);
+    const page = screen.getByRole('region', { name: 'Administration' });
+    expect(page).toHaveTextContent(
+      'Changes in Administration take effect at once, for everybody in this environment.',
+    );
+    const counted = within(page).getByRole('list', { name: 'What this environment holds' });
+    await waitFor(() =>
+      expect(within(counted).getByRole('link', { name: '2 Spaces, 1 archived' })).toHaveAttribute(
+        'href',
+        '#/admin/spaces',
+      ),
+    );
+    expect(await within(counted).findByRole('link', { name: '2 People' })).toBeInTheDocument();
+    expect(
+      within(counted).getByRole('link', { name: '1 Waiting invitations' }),
+    ).toBeInTheDocument();
+    expect(
+      within(counted).getByRole('link', { name: '2 Groups, 1 from sign-in' }),
+    ).toBeInTheDocument();
+    expect(within(counted).getByRole('link', { name: '1 Roles' })).toBeInTheDocument();
+
+    const environment = within(page).getByRole('region', { name: 'This environment' });
+    expect(environment).toHaveTextContent('Development');
+    expect(environment).toHaveTextContent('General, Training');
+    const access = within(page).getByRole('region', { name: 'Access to the whole environment' });
+    expect(
+      await within(access).findByRole('row', { name: 'Administrator Ada' }),
+    ).toBeInTheDocument();
+    expect(
+      within(access).getByRole('row', { name: 'Reader the group Everyone' }),
+    ).toBeInTheDocument();
+    expect(
+      within(page).getByRole('region', { name: 'About' }).querySelector('a[href="#/admin/about"]'),
+    ).toHaveTextContent('Release notes');
+  });
+
+  it("shows the environment's roles as a grid of the permissions, saying which may only be denied", async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/roles': () =>
+        json(200, {
+          items: [
+            { id: 'r1', name: 'Reader', permissions: ['read'] },
+            { id: 'r2', name: 'Editing', permissions: ['edit'] },
+          ],
+          next: null,
+        }),
+    });
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('Roles'));
+    const grid = await screen.findByRole('table', { name: 'Roles' });
+    const heads = within(grid)
+      .getAllByRole('columnheader')
+      .map((head) => head.textContent);
+    expect(heads[0]).toBe('Role');
+    expect(heads).toContain('read');
+    expect(heads).toContain('write SQL');
+    const reader = within(grid).getByRole('row', { name: /^Reader/ });
+    expect(within(reader).getAllByText('Holds')).toHaveLength(1);
+    expect(within(grid).getByRole('rowheader', { name: 'Editing Deny only' })).toBeInTheDocument();
+    const page = screen.getByRole('region', { name: 'Administration' });
+    expect(page).toHaveTextContent(/2 roles, \d+ permissions/);
+    expect(page).toHaveTextContent(
+      /^.*People from outside the organisation are refused .*, whatever their roles say\./,
+    );
+    await userEvent.type(within(page).getByRole('searchbox', { name: 'Find a role' }), 'edit');
+    expect(within(grid).getAllByRole('row')).toHaveLength(2);
+  });
+
+  it("says in About what changed in this version, from the changelog's newest entry", async () => {
+    const { client } = service(everything);
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('About and release notes'));
+    const notes = __RELEASE_NOTES__!;
+    expect(
+      await screen.findByRole('heading', { name: `What changed in ${notes.version}` }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(notes.sections[0]!.items[0]!.title)).toBeInTheDocument();
+  });
+});
+
 describe("Administration's menu", () => {
   it('counts each section from its listing, and leaves a count out where the reader may not see it', async () => {
     const { client } = service({
@@ -521,22 +661,22 @@ describe('Access from Administration', () => {
     grantedAt: '2026-09-17T09:00:00.000Z',
   };
 
-  it('opens Access at a space in a side panel beside Spaces, and at the environment from Overview with a way back', async () => {
+  it('opens Access in a side panel at a space from Spaces, and at the environment from Overview', async () => {
     const { client, asked } = service(answering);
     render(<Administration client={client} about={null} />);
     const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Manage access to the whole environment' }),
     );
-    expect(
-      await within(dialog).findByRole('heading', { name: 'Access to the whole environment' }),
-    ).toBeInTheDocument();
-    await within(within(dialog).getByRole('region', { name: 'The whole environment' })).findByText(
-      'Nothing is granted here.',
-    );
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to the environment' }));
-    expect(within(dialog).queryByRole('heading', { name: /^Access to/ })).toBeNull();
+    const environment = screen.getByRole('complementary', {
+      name: 'Access to the whole environment',
+    });
+    await within(
+      within(environment).getByRole('region', { name: 'The whole environment' }),
+    ).findByText('Nothing is granted here.');
+    await userEvent.click(within(environment).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('complementary')).toBeNull();
 
     await userEvent.click(section('Spaces'));
     const spaces = await screen.findByRole('table', { name: 'Spaces' });
@@ -550,12 +690,12 @@ describe('Access from Administration', () => {
     );
     // The list stays where it was beside it.
     expect(screen.getByRole('table', { name: 'Spaces' })).toBe(spaces);
-    // Asked at the space, and at the environment above it.
+    // Asked at the environment by Overview and by its Access, then at the space and the environment above it.
     expect(
       asked
         .filter((url) => url.pathname === '/v1/grants')
         .map((url) => url.searchParams.get('level')),
-    ).toEqual(['tenant', 'space:s1', 'tenant']);
+    ).toEqual(['tenant', 'tenant', 'space:s1', 'tenant']);
     await userEvent.click(within(panel).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('complementary')).toBeNull();
   });
@@ -587,34 +727,34 @@ describe('Access from Administration', () => {
 
     await userEvent.click(section('Overview'));
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Manage access to the whole environment' }),
     );
     expect(document.activeElement).toBe(
-      within(dialog).getByRole('button', { name: 'Back to the environment' }),
+      within(
+        screen.getByRole('complementary', { name: 'Access to the whole environment' }),
+      ).getByRole('heading', { name: 'Access to the whole environment', level: 2 }),
     );
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Back to the environment' }));
+    await userEvent.keyboard('{Escape}');
     expect(document.activeElement).toBe(
-      within(dialog).getByRole('button', { name: 'Access to the whole environment' }),
+      within(dialog).getByRole('button', { name: 'Manage access to the whole environment' }),
     );
   });
 
-  it('heads Access below the page it opens in, and its cards below that', async () => {
+  it("heads the environment's Access in its side panel, and its cards below that", async () => {
     const { client } = service(answering);
     render(<Administration client={client} about={null} />);
     const dialog = screen.getByRole('region', { name: 'Administration' });
     expect(within(dialog).getByRole('heading', { name: 'Overview', level: 1 })).toBeTruthy();
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Manage access to the whole environment' }),
     );
+    const panel = screen.getByRole('complementary', { name: 'Access to the whole environment' });
     expect(
-      await within(dialog).findByRole('heading', {
-        name: 'Access to the whole environment',
-        level: 2,
-      }),
+      within(panel).getByRole('heading', { name: 'Access to the whole environment', level: 2 }),
     ).toBeInTheDocument();
     expect(
-      within(dialog).getByRole('heading', { name: 'The whole environment', level: 3 }),
+      await within(panel).findByRole('heading', { name: 'The whole environment', level: 4 }),
     ).toBeInTheDocument();
   });
 
@@ -637,7 +777,7 @@ describe('Access from Administration', () => {
     ).toBeNull();
     await userEvent.click(section('Overview'));
     expect(
-      within(dialog).queryByRole('button', { name: 'Access to the whole environment' }),
+      within(dialog).queryByRole('button', { name: 'Manage access to the whole environment' }),
     ).toBeNull();
     // Asked once of the environment and once of each space, and not again on coming back.
     expect(
@@ -671,7 +811,7 @@ describe('Access from Administration', () => {
     const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Manage access to the whole environment' }),
     );
     await userEvent.click(
       await within(dialog).findByRole('button', { name: 'Remove: Allowed Author to Ada' }),
@@ -701,7 +841,7 @@ describe('Access from Administration', () => {
     const dialog = screen.getByRole('region', { name: 'Administration' });
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Access to the whole environment' }),
+      await within(dialog).findByRole('button', { name: 'Manage access to the whole environment' }),
     );
     const level = await within(dialog).findByRole('region', { name: 'The whole environment' });
     await within(level).findByText('What is granted here could not be loaded.');

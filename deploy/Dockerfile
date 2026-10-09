@@ -50,7 +50,8 @@ RUN pnpm install --frozen-lockfile \
       --filter "@alloy-works/web..." \
       --filter "@alloy-works/connector..."
 # version.json too: the renderer's build reads the canonical version from it for Administration's About.
-COPY tsconfig.base.json version.json ./
+# CHANGELOG.md for the renderer's About, whose release notes its build reads (ADR-0049, AD7).
+COPY tsconfig.base.json version.json CHANGELOG.md ./
 COPY packages/ packages/
 COPY apps/connector/ apps/connector/
 COPY apps/service/ apps/service/

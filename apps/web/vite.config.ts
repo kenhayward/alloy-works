@@ -1,12 +1,32 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 // The canonical version (CLAUDE.md), so About cannot drift from it.
 import { version } from '../../version.json';
+import { latestEntry } from './src/release-notes.js';
+
+// About's release notes: the changelog's newest entry alone, not its whole history (ADR-0049, AD7).
+// Found by walking up from where Vite runs - the package, or the repo root - since a config loaded by
+// a module runner has no file URL of its own to resolve against. Nowhere to be found, About has none.
+function changelog(): string | null {
+  for (let at = process.cwd(); ; at = dirname(at)) {
+    const candidate = join(at, 'CHANGELOG.md');
+    if (existsSync(candidate)) return readFileSync(candidate, 'utf8');
+    if (dirname(at) === at) return null;
+  }
+}
+const found = changelog();
+const releaseNotes = found === null ? null : latestEntry(found);
 
 export default defineConfig({
   plugins: [react()],
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __RELEASE_NOTES__: JSON.stringify(releaseNotes),
+  },
   // The desktop shell loads this build from disk with a file:// URL, so every asset reference
   // has to be relative. An absolute /assets/... path resolves to the filesystem root there.
   base: './',
