@@ -937,9 +937,13 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('a sample run', {
         shows: [
           sample.getByRole('table', { name: 'The first rows' }),
-          sample.getByText(/^Checksum [0-9a-f]{12}\.$/),
+          sample.getByRole('button', { name: 'Checksum' }),
         ],
       });
+
+      // Its checksum, shown beside its button as the focus reaches it.
+      await tabTo(sample.getByRole('button', { name: 'Checksum' }));
+      await check('a checksum shown', { shows: page.getByRole('tooltip') });
 
       // Saved, and its own page.
       await tabTo(page.getByRole('button', { name: 'Save version' }));
@@ -1122,7 +1126,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('a built query sampled', {
         shows: [
           sample.getByRole('table', { name: 'The first rows' }),
-          sample.getByText(/^Checksum [0-9a-f]{12}\.$/),
+          sample.getByRole('button', { name: 'Checksum' }),
         ],
       });
 

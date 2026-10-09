@@ -566,7 +566,16 @@ describe('the query definition page', () => {
         .map((each) => each.textContent),
     ).toEqual(['idname', '1North', '2South']);
     expect(within(sample).getByText('2 rows.')).toBeInTheDocument();
-    expect(within(sample).getByText('Checksum 0123456789ab.')).toBeInTheDocument();
+    expect(within(sample).getByText('2 rows', { selector: '[data-tone]' })).toBeInTheDocument();
+    // The checksum kept out of the way, its value a description of the button saying what it is.
+    expect(within(sample).getByRole('button', { name: 'Checksum' })).toHaveAccessibleDescription(
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    );
+    expect(
+      within(sample).getByText(
+        'Each value was sent apart from the SQL, where it reads $1, $2 and so on.',
+      ),
+    ).toBeInTheDocument();
     expect(
       within(sample).getByText('select id, name from sample.site where id = $1::int8 order by id'),
     ).toBeInTheDocument();
@@ -586,6 +595,32 @@ describe('the query definition page', () => {
     expect(within(sample).queryByRole('table', { name: 'The first rows' })).toBeNull();
   });
 
+  it('keys, orders and limits the rows on their own tab, an order column removed by its bin', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const rows = await tab(user, 'Rows');
+    expect(within(rows).getByRole('group', { name: 'Key' })).toBeInTheDocument();
+    // Declared already, by its key.
+    const order = within(rows).getByRole('table', { name: 'The order' });
+    const before = within(order).getAllByRole('row').length;
+    await user.click(within(rows).getByRole('button', { name: 'Add a column to the order' }));
+    expect(within(order).getAllByRole('row')).toHaveLength(before + 1);
+    expect(within(order).getByLabelText(`Order column ${before}`)).toBeInTheDocument();
+    await user.click(within(order).getByRole('button', { name: 'Remove order column 1' }));
+    expect(within(order).getAllByRole('row')).toHaveLength(before);
+
+    const maximum = within(rows).getByRole('group', { name: 'Maximum' });
+    const most = within(maximum).getByLabelText('Rows');
+    await user.clear(most);
+    await user.type(most, '500');
+    await user.click(saveVersion());
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/versions'))?.body).toMatchObject({
+        definition: { limits: { rows: 500 } },
+      }),
+    );
+  });
   it('says in words when SQL may not run on the connection, and what a value refused was', async () => {
     const user = userEvent.setup();
     let answer = json(409, {

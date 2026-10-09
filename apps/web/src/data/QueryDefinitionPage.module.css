@@ -349,3 +349,203 @@
   font-size: 15px;
   font-weight: 600;
 }
+
+/* Rows: the key, its order, and what it may return, three cards side by side as drawn. */
+.rows {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  gap: var(--space-16);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .rows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.plain {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.plain label {
+  margin: 0;
+}
+
+.order {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.order th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+}
+
+.order td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.order select {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.order .index {
+  width: var(--col-index);
+  color: var(--muted);
+  text-align: end;
+}
+
+.order .direction {
+  width: 160px;
+}
+
+.order .remove {
+  width: var(--col-icon);
+}
+
+.bin {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+}
+
+.bin:hover {
+  color: var(--danger);
+}
+
+.add {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: var(--size-13);
+  font-weight: 500;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 220px;
+  margin: 0;
+}
+
+.maximum {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.maximum legend {
+  padding: 0 4px;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.maximum label {
+  display: grid;
+  grid-template-columns: 160px auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.maximum input {
+  box-sizing: border-box;
+  width: 100%;
+  text-align: end;
+}
+
+/* Sample: its values in a row, then the first rows beside the SQL that ran. */
+.sample {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-12);
+}
+
+.values > .hint {
+  flex: 1;
+  align-self: center;
+  margin: 0;
+}
+
+.values label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+}
+
+.ran {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: var(--space-16);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .ran {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.first {
+  width: calc(100% + 36px);
+  margin: calc(-1 * var(--space-12)) -18px calc(-1 * var(--space-16));
+  border-collapse: collapse;
+}
+
+.first th {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+}
+
+.first td {
+  padding: 6px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}
+
+.first tr:last-child td {
+  border-bottom: 0;
+}
+
+.first [data-number] {
+  text-align: end;
+}

@@ -39,11 +39,14 @@ import { HttpFields } from './HttpFields.js';
 import { formatOf, partOf, requestText, templateOf } from './httpDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
 import { useDefinitionPlaces, type Place } from './places.js';
+import { Icon } from '../editor/Icon.js';
 import { Chip } from '../parts/Chip.js';
 import { DetailPage } from '../parts/DetailPage.js';
+import { IconButton } from '../parts/IconButton.js';
 import type { PanelTab } from '../parts/PanelTabs.js';
 import { RowActions } from '../parts/RowActions.js';
 import type { StripCell } from '../parts/StateStrip.js';
+import { Tooltip } from '../parts/Tooltip.js';
 import styles from './QueryDefinitionPage.module.css';
 import { isRecord, isRelations, refusalText, type Described } from './shapes.js';
 import { isUses, PagedUses, type Uses } from './uses.js';
@@ -133,6 +136,9 @@ interface SampledImage {
   readonly width: number;
   readonly height: number;
 }
+
+/** The bases a sample's rows align to the right, as figures. */
+const NUMBERS: ReadonlySet<string> = new Set(['integer', 'decimal']);
 
 const FORMAT_WORDS = { png: 'PNG', jpeg: 'JPEG' } as const;
 
@@ -1536,15 +1542,22 @@ export function QueryDefinitionPage({
     );
   }
 
+  /** Rows (the details handoff, query-rows-*): its key, its order, and what it may return. */
   function rowsPanel() {
+    const declared = draft.order === 'multiset' ? null : draft.order;
+    const setOrder = (
+      order: readonly { column: string; direction: 'ascending' | 'descending' }[],
+    ) => change({ order: [...order] });
     return (
-      <section className={`${styles['card']} ${styles['narrow']}`} aria-label="Rows">
-        <div className={styles['form']}>
-          <fieldset>
-            <legend>Key</legend>
+      <div className={styles['rows']}>
+        <section className={styles['card']} aria-labelledby={`${ids}-key`}>
+          <div className={styles['cardHead']}>
+            <h2 id={`${ids}-key`}>Key</h2>
+          </div>
+          <fieldset className={styles['plain']} aria-labelledby={`${ids}-key`}>
             {columnNames.length === 0 && <p>Describe the statement to choose its key.</p>}
             {columnNames.map((name) => (
-              <label key={name} className={styles['check']}>
+              <label key={name} className={`${styles['check']} ${styles['mono']}`}>
                 <input
                   type="checkbox"
                   checked={draft.key.includes(name)}
@@ -1560,8 +1573,13 @@ export function QueryDefinitionPage({
               </label>
             ))}
           </fieldset>
-          <fieldset>
-            <legend>Order</legend>
+        </section>
+
+        <section className={styles['card']} aria-labelledby={`${ids}-order`}>
+          <div className={styles['cardHead']}>
+            <h2 id={`${ids}-order`}>Order</h2>
+          </div>
+          <fieldset className={styles['plain']} aria-labelledby={`${ids}-order`}>
             <label className={styles['check']}>
               <input
                 type="radio"
@@ -1586,100 +1604,135 @@ export function QueryDefinitionPage({
                 ? 'Return the rows in a declared order'
                 : 'Check the rows are in the order the SQL sorts them'}
             </label>
-            {draft.order !== 'multiset' && (
-              <>
-                {draft.order.map((each, at) => (
-                  <div key={at} className={styles['fragment']}>
-                    <Choice label={`Order column ${at + 1}`}>
-                      {(id) => (
-                        <select
-                          id={id}
-                          value={each.column}
-                          onChange={(event) =>
-                            change({
-                              order: (draft.order as (typeof each)[]).map((held, place) =>
-                                place === at ? { ...held, column: event.target.value } : held,
-                              ),
-                            })
-                          }
-                        >
-                          {columnNames.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </Choice>
-                    <Choice label={`Direction ${at + 1}`}>
-                      {(id) => (
-                        <select
-                          id={id}
-                          value={each.direction}
-                          onChange={(event) =>
-                            change({
-                              order: (draft.order as (typeof each)[]).map((held, place) =>
-                                place === at
-                                  ? {
-                                      ...held,
-                                      direction: event.target.value as typeof each.direction,
-                                    }
-                                  : held,
-                              ),
-                            })
-                          }
-                        >
-                          <option value="ascending">Ascending</option>
-                          <option value="descending">Descending</option>
-                        </select>
-                      )}
-                    </Choice>
-                  </div>
-                ))}
-                {columnNames.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      change({
-                        order: [
-                          ...(draft.order as readonly {
-                            column: string;
-                            direction: 'ascending' | 'descending';
-                          }[]),
-                          { column: columnNames[0]!, direction: 'ascending' },
-                        ],
-                      })
-                    }
-                  >
-                    Add a column to the order
-                  </button>
-                )}
-                <p className={styles['hint']}>
-                  {draft.mode === 'builder' || draft.mode === 'file'
-                    ? 'The order covers the whole key. Text is ordered by code point.'
-                    : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
-                </p>
-                {draft.mode === 'builder' && (
-                  <label>
-                    Return at most
-                    <input
-                      inputMode="numeric"
-                      value={draft.builder.limit}
-                      onChange={(event) =>
-                        change({ builder: { ...draft.builder, limit: event.target.value } })
-                      }
-                    />
-                  </label>
-                )}
-              </>
-            )}
-            {draft.mode === 'builder' && draft.order === 'multiset' && (
-              <p className={styles['hint']}>
-                Return at most is offered beside a declared order: over rows in no order it would
-                choose them arbitrarily.
-              </p>
-            )}
           </fieldset>
+          {declared !== null && (
+            <>
+              {declared.length > 0 && (
+                <table className={styles['order']}>
+                  <caption className={styles['hidden']}>The order</caption>
+                  <colgroup>
+                    <col className={styles['index']} />
+                    <col />
+                    <col className={styles['direction']} />
+                    <col className={styles['remove']} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Column</th>
+                      <th scope="col">Direction</th>
+                      <th scope="col">
+                        <span className={styles['hidden']}>Remove</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {declared.map((each, at) => (
+                      <tr key={at}>
+                        <td className={styles['index']}>{at + 1}</td>
+                        <td>
+                          <label className={styles['hidden']} htmlFor={`${ids}-order-${at}`}>
+                            {`Order column ${at + 1}`}
+                          </label>
+                          <select
+                            id={`${ids}-order-${at}`}
+                            value={each.column}
+                            onChange={(event) =>
+                              setOrder(
+                                declared.map((held, place) =>
+                                  place === at ? { ...held, column: event.target.value } : held,
+                                ),
+                              )
+                            }
+                          >
+                            {columnNames.map((name) => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <label className={styles['hidden']} htmlFor={`${ids}-direction-${at}`}>
+                            {`Direction ${at + 1}`}
+                          </label>
+                          <select
+                            id={`${ids}-direction-${at}`}
+                            value={each.direction}
+                            onChange={(event) =>
+                              setOrder(
+                                declared.map((held, place) =>
+                                  place === at
+                                    ? {
+                                        ...held,
+                                        direction: event.target.value as typeof each.direction,
+                                      }
+                                    : held,
+                                ),
+                              )
+                            }
+                          >
+                            <option value="ascending">Ascending</option>
+                            <option value="descending">Descending</option>
+                          </select>
+                        </td>
+                        <td>
+                          <IconButton
+                            label={`Remove order column ${at + 1}`}
+                            tooltip="Remove"
+                            className={styles['bin']}
+                            onClick={() => setOrder(declared.filter((_, place) => place !== at))}
+                          >
+                            <Icon name="Delete" />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {columnNames.length > 0 && (
+                <button
+                  type="button"
+                  className={styles['add']}
+                  onClick={() =>
+                    setOrder([...declared, { column: columnNames[0]!, direction: 'ascending' }])
+                  }
+                >
+                  Add a column to the order
+                </button>
+              )}
+              <p className={styles['hint']}>
+                {draft.mode === 'builder' || draft.mode === 'file'
+                  ? 'The order covers the whole key. Text is ordered by code point.'
+                  : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
+              </p>
+              {draft.mode === 'builder' && (
+                <label className={styles['field']}>
+                  Return at most
+                  <input
+                    inputMode="numeric"
+                    value={draft.builder.limit}
+                    onChange={(event) =>
+                      change({ builder: { ...draft.builder, limit: event.target.value } })
+                    }
+                  />
+                </label>
+              )}
+            </>
+          )}
+          {draft.mode === 'builder' && declared === null && (
+            <p className={styles['hint']}>
+              Return at most is offered beside a declared order: over rows in no order it would
+              choose them arbitrarily.
+            </p>
+          )}
+        </section>
+
+        <section className={styles['card']} aria-labelledby={`${ids}-limits`}>
+          <div className={styles['cardHead']}>
+            <h2 id={`${ids}-limits`}>Empty and limits</h2>
+          </div>
           <label className={styles['check']}>
             <input
               type="checkbox"
@@ -1688,111 +1741,136 @@ export function QueryDefinitionPage({
             />
             No rows is a valid answer
           </label>
-          <label>
-            Most rows
-            <input
-              inputMode="numeric"
-              value={draft.limits.rows}
-              onChange={(event) =>
-                change({ limits: { ...draft.limits, rows: event.target.value } })
-              }
-            />
-          </label>
-          <label>
-            Most bytes
-            <input
-              inputMode="numeric"
-              value={draft.limits.bytes}
-              onChange={(event) =>
-                change({ limits: { ...draft.limits, bytes: event.target.value } })
-              }
-            />
-          </label>
-          <label>
-            Most seconds
-            <input
-              inputMode="numeric"
-              value={draft.limits.seconds}
-              onChange={(event) =>
-                change({ limits: { ...draft.limits, seconds: event.target.value } })
-              }
-            />
-          </label>
+          <fieldset className={styles['maximum']}>
+            <legend>Maximum</legend>
+            {(
+              [
+                ['rows', 'Rows'],
+                ['bytes', 'Bytes'],
+                ['seconds', 'Seconds'],
+              ] as const
+            ).map(([limit, label]) => (
+              <label key={limit}>
+                <input
+                  inputMode="numeric"
+                  value={draft.limits[limit]}
+                  onChange={(event) =>
+                    change({ limits: { ...draft.limits, [limit]: event.target.value } })
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
           <p className={styles['hint']}>
             The environment may lower each limit; a run takes the lower of the two.
           </p>
-        </div>
-      </section>
+        </section>
+      </div>
     );
   }
 
+  /** Sample (the details handoff, query-sample-*): its values, then the first rows and what ran. */
   function samplePanel() {
+    const ok =
+      sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'ok' ? sampled : null;
+    const lines =
+      sampled === null
+        ? null
+        : Array.isArray(sampled)
+          ? sampled
+          : sampled.outcome === 'failed'
+            ? [sampled.failure.message]
+            : null;
     return (
-      <section className={styles['card']} aria-label="Sample">
-        <div className={styles['form']}>
-          {draft.parameters.map((parameter, at) => (
-            <ValueField
-              key={at}
-              parameter={parameter}
-              value={typed[parameter.name] ?? ''}
-              onChange={(value) => setTyped((held) => ({ ...held, [parameter.name]: value }))}
-            />
-          ))}
-          <button type="button" disabled={busy !== null} onClick={sample}>
-            Run sample
-          </button>
-        </div>
-        <p className={styles['hint']}>
-          A sample runs the definition exactly as a document would, and keeps nothing.
-        </p>
-        {sampled !== null && Array.isArray(sampled) && <Status lines={sampled} />}
-        {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'failed' && (
-          <Status lines={[sampled.failure.message]} />
-        )}
-        {sampled !== null && !Array.isArray(sampled) && sampled.outcome === 'ok' && (
-          <div role="status">
-            <p>{`${sampled.rowCount} ${sampled.rowCount === 1 ? 'row' : 'rows'}.`}</p>
-            <p>{`Checksum ${sampled.checksum.slice(0, 12)}.`}</p>
-            <table className={styles['table']}>
-              <caption>The first rows</caption>
-              <thead>
-                <tr>
-                  {sampled.columns.map(([name]) => (
-                    <th key={name} scope="col">
-                      {name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sampled.rows.map((row, at) => (
-                  <tr key={at}>
-                    {row.map((value, place) => (
-                      <td key={place}>
-                        {cellWords(value, sampled.columns[place]?.[1], sampled.images)}
-                      </td>
+      <div className={styles['sample']}>
+        <section className={styles['card']} aria-label="Sample values">
+          <div className={styles['values']}>
+            {draft.parameters.map((parameter, at) => (
+              <ValueField
+                key={at}
+                parameter={parameter}
+                value={typed[parameter.name] ?? ''}
+                onChange={(value) => setTyped((held) => ({ ...held, [parameter.name]: value }))}
+              />
+            ))}
+            <button type="button" className="primary" disabled={busy !== null} onClick={sample}>
+              Run sample
+            </button>
+            <p className={styles['hint']}>
+              A sample runs the definition exactly as a document would, and keeps nothing.
+            </p>
+          </div>
+          <Status lines={lines} />
+          {/* Said once a sample has run, for a reader who cannot see the rows arrive. */}
+          <p role="status" className={styles['hidden']}>
+            {ok === null ? '' : `${ok.rowCount} ${ok.rowCount === 1 ? 'row' : 'rows'}.`}
+          </p>
+        </section>
+        {ok !== null && (
+          <div className={styles['ran']}>
+            <section className={styles['card']} aria-labelledby={`${ids}-first`}>
+              <div className={styles['cardHead']}>
+                <h2 id={`${ids}-first`}>The first rows</h2>
+                <Chip tone="ok">{`${ok.rowCount} ${ok.rowCount === 1 ? 'row' : 'rows'}`}</Chip>
+                <Tooltip tip={ok.checksum}>
+                  <Icon name="Checksum" />
+                  Checksum
+                </Tooltip>
+              </div>
+              <table className={styles['first']}>
+                <caption className={styles['hidden']}>The first rows</caption>
+                <thead>
+                  <tr>
+                    {ok.columns.map(([name, base]) => (
+                      <th key={name} scope="col" data-number={NUMBERS.has(base) || undefined}>
+                        {name}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p>
-              {'sql' in sampled.ran
-                ? 'The SQL that ran'
-                : 'object' in sampled.ran
-                  ? 'The object that was read'
-                  : 'The request that was sent'}
-            </p>
-            <pre className={styles['sql']}>
-              {'sql' in sampled.ran
-                ? sampled.ran.sql
-                : 'object' in sampled.ran
-                  ? `${sampled.ran.object.bucket}/${sampled.ran.object.key}`
-                  : requestText(sampled.ran.request as never)}
-            </pre>
+                </thead>
+                <tbody>
+                  {ok.rows.map((row, at) => (
+                    <tr key={at}>
+                      {row.map((value, place) => (
+                        <td
+                          key={place}
+                          data-number={NUMBERS.has(ok.columns[place]?.[1] ?? '') || undefined}
+                        >
+                          {cellWords(value, ok.columns[place]?.[1], ok.images)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+            <section className={styles['card']} aria-labelledby={`${ids}-ran`}>
+              <div className={styles['cardHead']}>
+                <h2 id={`${ids}-ran`}>
+                  {'sql' in ok.ran
+                    ? 'The SQL that ran'
+                    : 'object' in ok.ran
+                      ? 'The object that was read'
+                      : 'The request that was sent'}
+                </h2>
+              </div>
+              <pre className={styles['sql']}>
+                {'sql' in ok.ran
+                  ? ok.ran.sql
+                  : 'object' in ok.ran
+                    ? `${ok.ran.object.bucket}/${ok.ran.object.key}`
+                    : requestText(ok.ran.request as never)}
+              </pre>
+              {'sql' in ok.ran && draft.parameters.length > 0 && (
+                <p className={styles['hint']}>
+                  Each value was sent apart from the SQL, where it reads $1, $2 and so on.
+                </p>
+              )}
+            </section>
           </div>
         )}
-      </section>
+      </div>
     );
   }
 
