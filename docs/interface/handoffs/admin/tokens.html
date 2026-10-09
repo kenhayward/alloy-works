@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Administration tokens</title>
+</head>
+<body>
+
+<style>
+body{margin:0}
+.lw{--bg:#f4f6f8;--chrome:#ffffff;--surface:#ffffff;--sunken:#eef1f4;--text:#15202b;--muted:#56606c;--border:#e1e5ea;--strong-border:#c9d0d8;--accent:#1d6a85;--on-accent:#ffffff;--accent-weak:#e4f1f5;--accent-text:#165a72;--warn:#9a4610;--warn-bg:#fdf0e1;--ok:#1d7148;--ok-bg:#e2f3e9;--danger:#b42318;--danger-bg:#fdecea;--info:#5b3fb8;--info-bg:#efeafc;--mark-a:#11325f;--mark-b:#49888e;--shadow:0 12px 32px rgba(16,24,40,0.14)}
+.lw.dark{--bg:#0d1217;--chrome:#11181f;--surface:#141c24;--sunken:#0f161d;--text:#e5eaef;--muted:#9aa6b2;--border:#232f3a;--strong-border:#34424f;--accent:#5fb6cc;--on-accent:#04222b;--accent-weak:#132f39;--accent-text:#8fd0e0;--warn:#f2a764;--warn-bg:#3a2513;--ok:#5ccf93;--ok-bg:#12301f;--danger:#ff8a80;--danger-bg:#3b1715;--info:#c0adff;--info-bg:#2a2148;--mark-a:#8fd0e0;--mark-b:#63aea2;--shadow:0 12px 32px rgba(0,0,0,0.5)}
+.lw a{color:var(--accent-text)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.rl{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:8px;color:var(--muted)!important;text-decoration:none;font-size:12px}
+.rl.on{background:var(--accent-weak);color:var(--accent-text)!important;font-weight:600}
+.sep{height:1px;background:var(--border);margin:6px}
+.btn{height:34px;padding:0 14px;background:var(--surface);border:1px solid var(--strong-border);border-radius:8px;color:var(--text)!important;font:inherit;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)!important;font-weight:600}
+.sn{display:flex;flex-direction:column;gap:2px}
+.sn a{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:8px;color:var(--text)!important;text-decoration:none;font-size:14px}
+.sn a.on{background:var(--accent-weak);color:var(--accent-text)!important;font-weight:600}
+.sn a span:last-child{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+.sh{padding:16px 10px 6px;font-size:12px;font-weight:600;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.bd.ok{background:var(--ok-bg);color:var(--ok)}.bd.warn{background:var(--warn-bg);color:var(--warn)}.bd.info{background:var(--info-bg);color:var(--info)}.bd.mute{background:var(--sunken);color:var(--muted)}
+.st{display:flex;flex-direction:column;gap:2px;padding:16px 18px;text-decoration:none;color:var(--text)!important}
+.st b{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.st span{font-size:13px;color:var(--muted)}
+.tb2{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px}
+.tb2 th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface)}
+.tb2 td{padding:0 12px;height:54px;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb2 tbody tr:last-child td{border-bottom:0}
+.tb2 tbody tr:hover td{background:var(--sunken)}
+.tb2 tr.sel td{background:var(--accent-weak)}
+.tb2 td.act,.tb2 th.act{text-align:right;overflow:visible;text-overflow:clip}
+.ib2{width:32px;height:32px;display:inline-grid;place-items:center;background:transparent;border:1px solid transparent;border-radius:8px;color:var(--muted);cursor:pointer;vertical-align:middle;padding:0}
+.ib2:hover{background:var(--surface);border-color:var(--border);color:var(--text)}
+.ib2.dng:hover{color:var(--danger)}
+.ib2:disabled{opacity:0.4;cursor:default}
+.av{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;background:var(--accent-weak);color:var(--accent-text);font-size:11px;font-weight:600;flex:none}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.who>span:last-child{min-width:0;overflow:hidden}
+.sub{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srch{box-sizing:border-box;width:280px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--surface);border:1px solid var(--strong-border);border-radius:8px;color:var(--muted)}
+.srch input{flex:1;border:0;background:transparent;color:var(--text);font:inherit;outline:none;min-width:0}
+.seg{display:inline-flex;padding:3px;background:var(--sunken);border-radius:8px;gap:2px}
+.seg button{height:28px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
+.drw{position:absolute;top:0;right:0;bottom:0;width:440px;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.dh{display:flex;align-items:flex-start;gap:12px;padding:18px 20px 14px}
+.tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--border)}
+.tabs button{height:42px;padding:0 10px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tabs button[aria-selected="true"]{border-bottom-color:var(--accent);color:var(--accent-text);font-weight:600}
+.n{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:0 6px;border-radius:999px;background:var(--sunken);color:var(--muted)}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl label{font-size:13px;font-weight:500}
+.fi{height:34px;padding:0 10px;border:1px solid var(--strong-border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.df{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border)}
+.tw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mx th{text-align:left;font-weight:600;padding:0 14px;height:44px;border-bottom:1px solid var(--border);white-space:nowrap}
+.mx td{text-align:center;border-bottom:1px solid var(--border);border-left:1px solid var(--border)}
+.mx tr:last-child th,.mx tr:last-child td{border-bottom:0}
+.mx tr:hover th,.mx tr:hover td{background:var(--sunken)}
+.mx i.y{display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--accent);vertical-align:middle}
+.mx i.y::after{content:'';display:block;width:5px;height:9px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:translate(7.5px,4px) rotate(45deg)}
+.lw{position:relative;--overlay:rgba(15,23,42,0.45);--on-danger:#ffffff}
+.lw.dark{--overlay:rgba(0,0,0,0.6);--on-danger:#2a0b08}
+.scrim{position:absolute;inset:0;z-index:5;display:flex;justify-content:center;align-items:flex-start;padding-top:120px;background:var(--overlay)}
+.dlg{width:480px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.dlg h2{margin:0;font-size:16px;font-weight:600}
+.dlg .bdy{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.dlg .ft{display:flex;justify-content:flex-end;gap:8px;padding:14px 24px;border-top:1px solid var(--border)}
+.btn.dngf{background:var(--danger);border-color:var(--danger);color:var(--on-danger)!important;font-weight:600}
+</style>
+
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 36px 44px; background: #e9ecef; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px; color: #15202b">
+  <div style="display: flex; align-items: flex-end; gap: 24px">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.015em">Administration tokens and parts</h1>
+      <p style="margin: 0; font-size: 14px; color: #46505b">Everything here uses the Ledger tokens already in tokens.css (<span class="mono" style="font-size: 13px">--overlay</span> behind dialogs, <span class="mono" style="font-size: 13px">--shadow-modal</span> on what floats). Administration adds one colour, <span class="mono" style="font-size: 13px">--on-danger</span>, and the six measures below.</p>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+    <section class="lw" aria-label="Light" style="background: var(--bg); color: var(--text); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border)">
+      <div style="display: flex; align-items: baseline; gap: 10px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Light</h2><span class="mono" style="font-size: 12px; color: var(--muted)">[data-theme="light"]</span></div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px"><span class="bd ok">Active</span><span class="bd ok">Allow</span><span class="bd warn">Deny</span><span class="bd warn">Not signed in yet</span><span class="bd info">From outside</span><span class="bd mute">Archived</span><span class="bd mute">Author</span></div>
+      <div style="display: flex; align-items: center; gap: 6px"><button type="button" class="ib2" aria-label="Rename" title="Rename"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="m14 6 4 4"></path></svg></button><button type="button" class="ib2" aria-label="Access" title="Access" style="background: var(--surface); border-color: var(--border); color: var(--accent-text)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"></path><circle cx="12" cy="11" r="2"></circle><path d="M12 13v3"></path></svg></button><button type="button" class="ib2" aria-label="Delete" title="Delete" style="color: var(--danger); background: var(--surface); border-color: var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg></button><button type="button" class="ib2" aria-label="Disabled action" disabled="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"></circle><path d="m11 12 9-9M17 6l3 3M15 8l2 2"></path></svg></button><span style="width: 1px; height: 20px; background: var(--border); margin: 0 6px"></span><button type="button" class="btn">Cancel</button><button type="button" class="btn pri">Make space</button><button type="button" class="btn dngf">Delete group</button></div>
+      <div class="tw">
+        <table class="tb2" aria-label="Sample rows, light"><colgroup><col style="width: 50%"><col style="width: 24%"><col><col style="width: 80px"></colgroup>
+          <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Access</th><th scope="col" class="act"></th></tr></thead>
+          <tbody><tr><td style="font-weight: 600">General</td><td><span class="bd ok">Active</span></td><td style="color: var(--muted)">May create</td><td class="act"><button type="button" class="ib2" aria-label="More actions"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+          <tr class="sel"><td style="font-weight: 600">Regulatory</td><td><span class="bd ok">Active</span></td><td style="color: var(--muted)">Selected</td><td class="act"></td></tr></tbody></table>
+      </div>
+      <div style="position: relative; flex: 1; min-height: 160px; border-radius: 10px; overflow: hidden; background: var(--surface); border: 1px solid var(--border)">
+        <div style="position: absolute; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center">
+          <div class="dlg" style="width: 320px"><div class="bdy" style="padding: 14px 18px"><h2 style="font-size: 14px">Delete Reviewers?</h2><p style="margin: 0; font-size: 12px; color: var(--muted)">Dialog over --overlay, raised with --shadow.</p></div><div class="ft" style="padding: 10px 18px"><button type="button" class="btn" style="height: 28px; font-size: 12px">Keep it</button><button type="button" class="btn dngf" style="height: 28px; font-size: 12px">Delete group</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lw dark" aria-label="Dark" style="background: var(--bg); color: var(--text); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border)">
+      <div style="display: flex; align-items: baseline; gap: 10px"><h2 style="margin: 0; font-size: 16px; font-weight: 600">Dark</h2><span class="mono" style="font-size: 12px; color: var(--muted)">[data-theme="dark"]</span></div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px"><span class="bd ok">Active</span><span class="bd ok">Allow</span><span class="bd warn">Deny</span><span class="bd warn">Not signed in yet</span><span class="bd info">From outside</span><span class="bd mute">Archived</span><span class="bd mute">Author</span></div>
+      <div style="display: flex; align-items: center; gap: 6px"><button type="button" class="ib2" aria-label="Rename" title="Rename"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="m14 6 4 4"></path></svg></button><button type="button" class="ib2" aria-label="Access" title="Access" style="background: var(--surface); border-color: var(--border); color: var(--accent-text)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"></path><circle cx="12" cy="11" r="2"></circle><path d="M12 13v3"></path></svg></button><button type="button" class="ib2" aria-label="Delete" title="Delete" style="color: var(--danger); background: var(--surface); border-color: var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg></button><button type="button" class="ib2" aria-label="Disabled action" disabled="disabled"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"></circle><path d="m11 12 9-9M17 6l3 3M15 8l2 2"></path></svg></button><span style="width: 1px; height: 20px; background: var(--border); margin: 0 6px"></span><button type="button" class="btn">Cancel</button><button type="button" class="btn pri">Make space</button><button type="button" class="btn dngf">Delete group</button></div>
+      <div class="tw">
+        <table class="tb2" aria-label="Sample rows, dark"><colgroup><col style="width: 50%"><col style="width: 24%"><col><col style="width: 80px"></colgroup>
+          <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Access</th><th scope="col" class="act"></th></tr></thead>
+          <tbody><tr><td style="font-weight: 600">General</td><td><span class="bd ok">Active</span></td><td style="color: var(--muted)">May create</td><td class="act"><button type="button" class="ib2" aria-label="More actions"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+          <tr class="sel"><td style="font-weight: 600">Regulatory</td><td><span class="bd ok">Active</span></td><td style="color: var(--muted)">Selected</td><td class="act"></td></tr></tbody></table>
+      </div>
+      <div style="position: relative; flex: 1; min-height: 160px; border-radius: 10px; overflow: hidden; background: var(--surface); border: 1px solid var(--border)">
+        <div style="position: absolute; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center">
+          <div class="dlg" style="width: 320px"><div class="bdy" style="padding: 14px 18px"><h2 style="font-size: 14px">Delete Reviewers?</h2><p style="margin: 0; font-size: 12px; color: var(--muted)">Dialog over --overlay, raised with --shadow.</p></div><div class="ft" style="padding: 10px 18px"><button type="button" class="btn" style="height: 28px; font-size: 12px">Keep it</button><button type="button" class="btn dngf" style="height: 28px; font-size: 12px">Delete group</button></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; font-size: 13px">
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">232</b><span style="display: block; color: #56606c">Admin menu</span></div>
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">440</b><span style="display: block; color: #56606c">Side panel, docked from 1366</span></div>
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">480</b><span style="display: block; color: #56606c">Dialog, 120 from the top</span></div>
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">54 / 38</b><span style="display: block; color: #56606c">Table row / head</span></div>
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">32 / 16</b><span style="display: block; color: #56606c">Icon button / glyph</span></div>
+    <div style="background: #ffffff; border: 1px solid #e1e5ea; border-radius: 10px; padding: 10px 14px"><b class="mono" style="font-weight: 500">2 + more</b><span style="display: block; color: #56606c">Row icons, then a menu</span></div>
+  </div>
+</div>
+
+</body>
+</html>

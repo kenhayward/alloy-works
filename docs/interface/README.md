@@ -13,6 +13,11 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **Administration is a page.** [`handoffs/admin/`](handoffs/admin/README.md) redraws it as a
+> console page in the Ledger shell ([ADR-0049](../decisions/0049-administration-is-a-page.md)),
+> built by [the AD plan](../plans/2026-10-09-ad-administration-page.md); it replaces the
+> `Administration` drawing below and the modal rule it followed.
+
 > **Redesigned as Ledger.** [`handoffs/ledger/`](handoffs/ledger/README.md) is the look of every
 > screen ([ADR-0046](../decisions/0046-the-ledger-interface.md)), built by
 > [the LG plan](../plans/2026-10-08-lg-the-ledger-interface.md): a module rail, a header that follows
@@ -43,21 +48,21 @@ move, not paperwork around it.
 
 `docs/interface/screens/` holds one rendered screen per file:
 
-| File                | Screen                                            |
-| ------------------- | ------------------------------------------------- |
-| `Main`              | The structure map: shell, layouts, routes, tokens |
-| `Home`              | Module cards over the backdrop                    |
-| `Components`        | The components list                               |
-| `NewComponent`      | New component, over the list, and the row menu    |
-| `ComponentEditor`   | A component open in the triptych                  |
-| `Documents`         | The documents list                                |
-| `DocumentOutline`   | A document: outline left, its text in the middle  |
-| `DocumentCollapsed` | The same, both side panes collapsed               |
-| `Publication`       | A publication, read                               |
-| `Access`            | Manage access to a component                      |
-| `Administration`    | The Administration modal                          |
-| `Search`            | Search results                                    |
-| `States`            | Saving, empty, refused, conflict, lozenges        |
+| File                | Screen                                                  |
+| ------------------- | ------------------------------------------------------- |
+| `Main`              | The structure map: shell, layouts, routes, tokens       |
+| `Home`              | Module cards over the backdrop                          |
+| `Components`        | The components list                                     |
+| `NewComponent`      | New component, over the list, and the row menu          |
+| `ComponentEditor`   | A component open in the triptych                        |
+| `Documents`         | The documents list                                      |
+| `DocumentOutline`   | A document: outline left, its text in the middle        |
+| `DocumentCollapsed` | The same, both side panes collapsed                     |
+| `Publication`       | A publication, read                                     |
+| `Access`            | Manage access to a component                            |
+| `Administration`    | The Administration modal, replaced by `handoffs/admin/` |
+| `Search`            | Search results                                          |
+| `States`            | Saving, empty, refused, conflict, lozenges              |
 
 Each is a `.html` file and a `.png` of it at its own size. The HTML is self-contained: no
 stylesheet, no script, no network, no fonts to fetch. Open it in a browser and read the exact
@@ -103,10 +108,12 @@ for what is typed; the commands that open a dialog come later.
 Templates), Publish (Publications), Data (Connections, Query definitions) - and Admin at its foot. The
 module the page is in is marked. One accent: no module has a colour of its own.
 
-**Administration is not a module.** It is a modal from the rail's foot - environment, spaces,
-people and invitations, roles, groups, component types, layouts, about and release notes. New
-component, New document, Give access and the removal confirmations are modals too. A modal is never
-a route: it opens over the screen that asked for it, 40px from the top, and Escape closes it.
+**Administration is a page**, at `#/admin/<section>`, opened by Admin at the rail's foot
+([ADR-0049](../decisions/0049-administration-is-a-page.md)): a grouped menu, each section a table in
+one shape, details in a side panel. Its own dialogs - New space, rename, archive, delete, New group -
+are modals, as are New component, New document, Give access and the removal confirmations. A modal
+is never a route: it opens over the screen that asked for it, 40px from the top, and Escape closes
+it.
 
 ## The four layouts
 

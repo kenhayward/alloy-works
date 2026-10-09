@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                  | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                            | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
+| [0049](0049-administration-is-a-page.md)                                          | Administration is a page                                                      | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |
