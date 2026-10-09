@@ -716,6 +716,34 @@ describe('the query definition page', () => {
     expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}/sample`);
   });
 
+  it('lists a parameter a line, its name and what it takes, its fields opened by its pencil', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
+    const parameters = await screen.findByRole('region', { name: 'Parameters' });
+    const line = within(parameters).getByRole('listitem');
+    expect(line).toHaveTextContent('siteInteger, required, any value of its type');
+    expect(within(parameters).queryByRole('group', { name: 'Parameter 1' })).toBeNull();
+    const edit = within(line).getByRole('button', { name: 'Edit parameter 1' });
+    expect(edit).toHaveAttribute('aria-expanded', 'false');
+    await user.click(edit);
+    expect(edit).toHaveAttribute('aria-expanded', 'true');
+    const fields = within(parameters).getByRole('group', { name: 'Parameter 1' });
+    await user.click(within(fields).getByLabelText('A list of values'));
+    expect(line).toHaveTextContent('Integer, required, a list, any value of its type');
+    await user.click(edit);
+    expect(within(parameters).queryByRole('group', { name: 'Parameter 1' })).toBeNull();
+    // A new one opens with its fields, to be named.
+    await user.click(within(parameters).getByRole('button', { name: 'Add parameter' }));
+    expect(within(parameters).getByRole('group', { name: 'Parameter 2' })).toBeInTheDocument();
+    await user.click(within(parameters).getByRole('button', { name: 'Remove parameter 1' }));
+    expect(within(parameters).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(parameters).getByRole('group', { name: 'Parameter 1' })).toHaveTextContent(
+      'Name',
+    );
+  });
+
   it('holds Save version once the SQL or a parameter changes, until every column is confirmed again', async () => {
     const user = userEvent.setup();
     const { client } = service();
@@ -738,6 +766,7 @@ describe('the query definition page', () => {
 
     // And so with a parameter.
     await tab(user, 'Query');
+    await user.click(screen.getByRole('button', { name: 'Edit parameter 1' }));
     const parameter = screen.getByRole('group', { name: 'Parameter 1' });
     await user.click(within(parameter).getByLabelText('Required'));
     expectHeld();
@@ -874,6 +903,7 @@ describe('the query definition page', () => {
     expectSavable();
 
     // A parameter changed and changed back.
+    await user.click(screen.getByRole('button', { name: 'Edit parameter 1' }));
     const parameter = screen.getByRole('group', { name: 'Parameter 1' });
     await user.click(within(parameter).getByLabelText('Required'));
     expectHeld();
@@ -2010,6 +2040,11 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     expect(within(match).getByRole('radio', { name: 'Match any' })).toHaveAttribute(
       'aria-checked',
       'true',
+    );
+    const card = screen.getByRole('region', { name: 'Query' });
+    const parameters = within(card).getByRole('region', { name: 'Parameters' });
+    expect(within(parameters).getByRole('listitem')).toHaveTextContent(
+      'meaningText, not required, any value of its type',
     );
     await user.click(within(filters).getByRole('button', { name: 'Remove filter 3' }));
     await user.click(within(filters).getByRole('button', { name: 'Remove filter 2' }));

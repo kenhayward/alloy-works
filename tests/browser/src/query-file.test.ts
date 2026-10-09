@@ -86,7 +86,9 @@ describe("a file's Query tab, in Chromium (the QF plan)", () => {
     definition = (made.data as { id: string }).id;
   });
 
-  it('lays out the key, the format and the filters as one card, held to axe', async ({ task }) => {
+  it('lays out the key, the format, the filters and the parameters as one card, held to axe', async ({
+    task,
+  }) => {
     await withPage(async (page) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(`${SERVICE}/#/query-definitions/${definition}/query`);
@@ -103,6 +105,20 @@ describe("a file's Query tab, in Chromium (the QF plan)", () => {
         .locator('tbody tr')
         .evaluateAll((rows) => rows.map((row) => Math.round(row.getBoundingClientRect().height)));
       expect(heights).toEqual([40, 40]);
+      // The format is one line across the card, its parameters a line each at its foot (QF2).
+      const format = page.getByRole('region', { name: 'Format' });
+      const middles = await format.locator('select, input').evaluateAll((fields) =>
+        fields.map((field) => {
+          const box = field.getBoundingClientRect();
+          return box.top + box.height / 2;
+        }),
+      );
+      expect(Math.max(...middles) - Math.min(...middles)).toBeLessThan(2);
+      const parameters = page.getByRole('region', { name: 'Parameters' });
+      await parameters.getByText('Text, not required, any value of its type').waitFor();
+      await parameters.getByRole('button', { name: 'Edit parameter 1' }).click();
+      const fields = parameters.getByRole('group', { name: 'Parameter 1' });
+      await checkAxe(page, "a file's parameter opened", task.meta, { shows: [fields] });
     });
   });
 });
