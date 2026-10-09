@@ -819,10 +819,6 @@ describe('Groups in Administration', () => {
   };
   const row = (table: HTMLElement, name: string) =>
     within(table).getByRole('row', { name: new RegExp(`^${name}`) });
-  const cells = (element: HTMLElement) =>
-    within(element)
-      .getAllByRole('cell')
-      .map((cell) => cell.textContent);
 
   it('says the reader is signed out, not that the groups could not be loaded, when the session is gone', async () => {
     const { client } = service({
@@ -837,19 +833,27 @@ describe('Groups in Administration', () => {
     expect(screen.queryByText('The groups could not be loaded.')).toBeNull();
   });
 
-  it('lists each group with where its members come from and who they are', async () => {
+  it('lists each group with where its members come from and who they are, found by name and counted', async () => {
     const { client } = groupsService();
-    const { table } = await openGroups(client);
-    expect(cells(row(table, 'Authors')).slice(0, 3)).toEqual([
-      'Authors',
-      'This environment',
-      'Grace',
-    ]);
-    expect(cells(row(table, 'Readers')).slice(0, 3)).toEqual([
-      'Readers',
-      "The organisation's sign-in, as readers",
-      'Alice',
-    ]);
+    const { table, dialog } = await openGroups(client);
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((head) => head.textContent),
+    ).toEqual(['Name', 'From', 'Members', 'Actions']);
+    for (const [group, cellsOf] of [
+      ['Authors', ['Authors', 'This environment', '1 member: Grace']],
+      ['Readers', ['Readers', 'Sign-in, readers', '1 member: Alice']],
+    ] as const) {
+      for (const name of cellsOf) {
+        expect(within(row(table, group)).getByRole('cell', { name }), name).toBeInTheDocument();
+      }
+    }
+    expect(dialog).toHaveTextContent('Grant to a group once, instead of to each person.');
+    expect(within(dialog).getByText('2 groups')).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByRole('searchbox', { name: 'Find a group' }), 'read');
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(within(dialog).getByText('1 group')).toBeInTheDocument();
   });
 
   it("makes a group of the environment's own, or one standing for a value from the organisation's sign-in", async () => {
@@ -863,8 +867,10 @@ describe('Groups in Administration', () => {
     expect(await screen.findByText('Made the group Reviewers.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'New group' })).toBeNull();
     expect(
-      cells(await within(table).findByRole('row', { name: /^Reviewers/ })).slice(0, 3),
-    ).toEqual(['Reviewers', 'This environment', 'Nobody']);
+      within(await within(table).findByRole('row', { name: /^Reviewers/ })).getByRole('cell', {
+        name: 'No members',
+      }),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'New group' }));
     making = screen.getByRole('dialog', { name: 'New group' });
@@ -905,15 +911,25 @@ describe('Groups in Administration', () => {
   it("sets the members of the environment's own group from the people, and shows a sign-in group's members with no way to change them", async () => {
     const { client, sent } = groupsService();
     const { table, dialog } = await openGroups(client);
-    // A group from the sign-in has its members listed, and nothing to change them with.
-    expect(within(row(table, 'Readers')).queryByRole('button', { name: /^Members/ })).toBeNull();
+    // A group from the sign-in has its members listed, and says why they are not chosen here.
+    const theirs = within(row(table, 'Readers')).getByRole('button', {
+      name: 'Members of Readers',
+    });
+    expect(theirs).toHaveAttribute('aria-disabled', 'true');
+    expect(theirs).toHaveAttribute('title', 'Filled by the sign-in provider');
 
     const opener = within(row(table, 'Authors')).getByRole('button', {
       name: 'Members of Authors',
     });
     await userEvent.click(opener);
-    const choosing = await screen.findByRole('dialog', { name: 'Members of Authors' });
+    // Beside the list, which keeps its place.
+    const choosing = await screen.findByRole('complementary', { name: 'Members of Authors' });
+    expect(screen.getByRole('table', { name: 'Groups' })).toBe(table);
     expect(await within(choosing).findByRole('checkbox', { name: /^Grace/ })).toBeChecked();
+    expect(choosing).toHaveTextContent('1 of 3 people chosen');
+    await userEvent.type(within(choosing).getByRole('searchbox', { name: 'Find a person' }), 'Ali');
+    expect(within(choosing).getAllByRole('checkbox')).toHaveLength(1);
+    await userEvent.clear(within(choosing).getByRole('searchbox', { name: 'Find a person' }));
     expect(within(choosing).getByRole('checkbox', { name: /^Ada/ })).not.toBeChecked();
     await userEvent.click(within(choosing).getByRole('checkbox', { name: /^Ada/ }));
     await userEvent.click(within(choosing).getByRole('button', { name: 'Save members' }));
@@ -922,7 +938,12 @@ describe('Groups in Administration', () => {
     expect(sent).toEqual([
       { method: 'PUT', path: '/v1/groups/g1/members', body: { principals: ['p1', 'p2'] } },
     ]);
-    await waitFor(() => expect(cells(row(table, 'Authors'))[2]).toBe('Ada, Grace'));
+    await waitFor(() =>
+      expect(
+        within(row(table, 'Authors')).getByRole('cell', { name: '2 members: Ada, Grace' }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('complementary')).toBeNull();
     // Back where it was opened from, inside Administration.
     expect(document.activeElement).toBe(opener);
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
@@ -934,7 +955,7 @@ describe('Groups in Administration', () => {
     await userEvent.click(
       within(row(table, 'Authors')).getByRole('button', { name: 'Members of Authors' }),
     );
-    const choosing = await screen.findByRole('dialog', { name: 'Members of Authors' });
+    const choosing = await screen.findByRole('complementary', { name: 'Members of Authors' });
     expect(await within(choosing).findByRole('checkbox', { name: /^Alice/ })).toBeChecked();
     await userEvent.click(within(choosing).getByRole('checkbox', { name: /^Ada/ }));
     await userEvent.click(within(choosing).getByRole('button', { name: 'Save members' }));
@@ -950,18 +971,21 @@ describe('Groups in Administration', () => {
     const { table, dialog } = await openGroups(client);
 
     await userEvent.click(
-      within(row(table, 'Authors')).getByRole('button', { name: 'Delete Authors' }),
+      within(row(table, 'Authors')).getByRole('button', { name: 'More actions for Authors' }),
     );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     const asking = screen.getByRole('dialog', { name: 'Delete Authors?' });
     expect(asking).toHaveTextContent(
       'Everything granted to this group is deleted with it, so its members lose whatever they held only through it.',
     );
+    expect(asking).toHaveTextContent('1 member: Grace');
     await userEvent.click(within(asking).getByRole('button', { name: 'Keep it' }));
     expect(sent).toEqual([]);
 
     await userEvent.click(
-      within(row(table, 'Authors')).getByRole('button', { name: 'Delete Authors' }),
+      within(row(table, 'Authors')).getByRole('button', { name: 'More actions for Authors' }),
     );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
     await userEvent.click(
       within(screen.getByRole('dialog', { name: 'Delete Authors?' })).getByRole('button', {
         name: 'Delete group',

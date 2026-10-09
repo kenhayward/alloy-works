@@ -11,6 +11,9 @@ import {
 } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
+import { ConfirmDialog } from '../parts/ConfirmDialog.js';
+import { RowActions } from '../parts/RowActions.js';
+import { SidePanel } from '../parts/SidePanel.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
@@ -23,17 +26,25 @@ type Client = ReturnType<typeof createApiClient>;
  */
 type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'signedOut' | 'failed' | null;
 
-/** Where a group's members come from, as a person reads it. */
-const sourceOf = (group: ShownGroup) =>
-  group.source === 'tenant'
-    ? 'This environment'
-    : `The organisation's sign-in, as ${group.providerValue ?? ''}`;
-
-const membersOf = (group: ShownGroup) =>
-  group.members.length === 0 ? 'Nobody' : group.members.map(personName).join(', ');
-
 const counted = (count: number) =>
   count === 0 ? 'no members' : count === 1 ? '1 member' : `${count} members`;
+const Counted = (count: number) => counted(count).replace(/^n/, 'N');
+
+/** A group's members in words: how many, and who, the first three named and the rest counted. */
+const membersOf = (group: ShownGroup, named = group.members.length) => {
+  if (group.members.length === 0) return 'No members';
+  const names = group.members.slice(0, named).map(personName);
+  const rest = group.members.length - names.length;
+  return `${Counted(group.members.length)}: ${names.join(', ')}${rest > 0 ? ` and ${rest} more` : ''}`;
+};
+
+const initials = (name: string) =>
+  name
+    .split(/[\s.@]+/)
+    .filter((part) => part !== '')
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('');
 
 /**
  * Making a group (access.md, "Groups and Access, as W12 builds them"): a name, and optionally the value
@@ -123,6 +134,7 @@ function Members({
   );
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let current = true;
@@ -162,20 +174,56 @@ function Members({
     }
   };
 
+  const listed = Array.isArray(people)
+    ? people.filter((person) =>
+        `${person.name ?? ''} ${person.email ?? ''}`
+          .toLocaleLowerCase()
+          .includes(query.trim().toLocaleLowerCase()),
+      )
+    : [];
   return (
-    <Modal labelledBy="group-members-heading" onClose={onClose}>
-      <div className={styles['dialog']}>
-        <h2 id="group-members-heading">{`Members of ${group.name}`}</h2>
-        {people === null && <Waiting>Loading...</Waiting>}
-        {people === 'failed' && (
-          <Notice tone="failed">
-            <p>The people could not be loaded.</p>
-          </Notice>
-        )}
-        {Array.isArray(people) && (
+    <SidePanel
+      heading={`Members of ${group.name}`}
+      description={
+        Array.isArray(people) ? `${chosen.size} of ${people.length} people chosen` : undefined
+      }
+      icon="Members"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy || !Array.isArray(people)}
+            onClick={() => void save()}
+          >
+            Save members
+          </button>
+        </>
+      }
+    >
+      {people === null && <Waiting>Loading...</Waiting>}
+      {people === 'failed' && (
+        <Notice tone="failed">
+          <p>The people could not be loaded.</p>
+        </Notice>
+      )}
+      {Array.isArray(people) && (
+        <>
+          <input
+            type="search"
+            className={styles['search']}
+            aria-label="Find a person"
+            placeholder="Find a person"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
           <fieldset className={styles['members']}>
-            <legend>Members</legend>
-            {people.map((person) => (
+            <legend className={styles['hidden']}>Members</legend>
+            {listed.map((person) => (
               <label key={person.id}>
                 <input
                   type="checkbox"
@@ -189,28 +237,19 @@ function Members({
                     })
                   }
                 />{' '}
+                <span className={styles['initials']} aria-hidden="true">
+                  {initials(personName(person))}
+                </span>{' '}
                 {personName(person)}
                 {person.name !== null && person.email !== null ? ` (${person.email})` : ''}
+                {person.kind === 'external' && <span className={styles['muted']}> Outside</span>}
               </label>
             ))}
           </fieldset>
-        )}
-        <p role="status">{said}</p>
-        <div className={styles['actions']}>
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
-            disabled={busy || !Array.isArray(people)}
-            onClick={() => void save()}
-          >
-            Save members
-          </button>
-        </div>
-      </div>
-    </Modal>
+        </>
+      )}
+      <p role="status">{said}</p>
+    </SidePanel>
   );
 }
 
@@ -228,6 +267,7 @@ export function Groups({ client }: { client: Client }) {
   const [deleting, setDeleting] = useState<ShownGroup | null>(null);
   const [status, setStatus] = useState('');
   const [changed, setChanged] = useState(0);
+  const [query, setQuery] = useState('');
   const holder = useRef<HTMLDivElement>(null);
   const mounted = useRef(true);
 
@@ -309,64 +349,122 @@ export function Groups({ client }: { client: Client }) {
     );
   }
 
+  const shown = read.rows.filter((group) =>
+    group.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+  );
   return (
     <div ref={holder} className={styles['holder']} tabIndex={-1}>
-      <p>
-        A group holds roles as a person does. The environment's own groups have the members chosen
-        here; a group from the organisation's sign-in has whoever signs in with its value.
-      </p>
-      <p>
+      <div className={styles['lead']}>
+        <p>Grant to a group once, instead of to each person.</p>
         <button type="button" className="primary" onClick={() => setMaking(true)}>
           New group
         </button>
-      </p>
+      </div>
       {read.rows.length === 0 ? (
         <Empty>
           <p>There are no groups yet.</p>
         </Empty>
       ) : (
-        <table aria-label="Groups">
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">From</th>
-              <th scope="col">Members</th>
-              <th scope="col">
-                <span className={styles['hidden']}>Change</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {read.rows.map((group) => (
-              <tr key={group.id}>
-                <td className={styles['strong']}>{group.name}</td>
-                <td className={styles['muted']}>{sourceOf(group)}</td>
-                <td>{membersOf(group)}</td>
-                <td className={styles['act']}>
-                  {group.source === 'tenant' && (
-                    <>
-                      <button
-                        type="button"
-                        aria-label={`Members of ${group.name}`}
-                        onClick={() => setFilling(group)}
-                      >
-                        Members
-                      </button>{' '}
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="danger"
-                    aria-label={`Delete ${group.name}`}
-                    onClick={() => setDeleting(group)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <div className={styles['toolbar']}>
+            <input
+              type="search"
+              className={styles['search']}
+              aria-label="Find a group"
+              placeholder="Find a group"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <p className={styles['counted']}>
+              {`${shown.length} ${shown.length === 1 ? 'group' : 'groups'}`}
+            </p>
+          </div>
+          <div className={filling === null ? undefined : styles['withPanel']}>
+            <table aria-label="Groups" className={styles['table']}>
+              <colgroup>
+                <col />
+                <col className={styles['fromColumn']} />
+                <col className={styles['fromColumn']} />
+                <col className={styles['actionsColumn']} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">From</th>
+                  <th scope="col">Members</th>
+                  <th scope="col">
+                    <span className={styles['hidden']}>Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((group) => (
+                  <tr key={group.id} data-current={filling?.id === group.id ? 'true' : undefined}>
+                    <td className={styles['strong']}>{group.name}</td>
+                    <td className={styles['muted']}>
+                      {group.source === 'tenant' ? (
+                        'This environment'
+                      ) : (
+                        <>
+                          Sign-in, <code>{group.providerValue ?? ''}</code>
+                        </>
+                      )}
+                    </td>
+                    <td>
+                      {group.members.length === 0 && group.source !== 'tenant' ? (
+                        <span className={styles['muted']}>Filled at sign-in</span>
+                      ) : (
+                        <span className={styles['faces']}>
+                          <span aria-hidden="true">
+                            {group.members.slice(0, 3).map((member) => (
+                              <span key={member.id} className={styles['initials']}>
+                                {initials(personName(member))}
+                              </span>
+                            ))}{' '}
+                            {group.members.length === 0 ? 'No members' : group.members.length}
+                          </span>
+                          <span className={styles['hidden']}>{membersOf(group)}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <RowActions
+                        subject={group.name}
+                        shown={[
+                          {
+                            label: 'Members',
+                            name: `Members of ${group.name}`,
+                            icon: 'Members',
+                            onSelect: () => setFilling(group),
+                            ...(group.source === 'tenant'
+                              ? {}
+                              : { unavailable: 'Filled by the sign-in provider' }),
+                          },
+                        ]}
+                        more={[
+                          { label: 'Delete', danger: true, onSelect: () => setDeleting(group) },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filling !== null && (
+              <Members
+                key={filling.id}
+                client={client}
+                group={filling}
+                onClose={() => setFilling(null)}
+                onSet={(count) => {
+                  setStatus(`${filling.name} now has ${counted(count)}.`);
+                  setFilling(null);
+                  void load();
+                }}
+              />
+            )}
+          </div>
+        </>
       )}
       <p role="status">{status}</p>
       {making && (
@@ -380,36 +478,16 @@ export function Groups({ client }: { client: Client }) {
           }}
         />
       )}
-      {filling !== null && (
-        <Members
-          client={client}
-          group={filling}
-          onClose={() => setFilling(null)}
-          onSet={(count) => {
-            setStatus(`${filling.name} now has ${counted(count)}.`);
-            setFilling(null);
-            void load();
-          }}
-        />
-      )}
       {deleting !== null && (
-        <Modal labelledBy="delete-group-heading" onClose={() => setDeleting(null)}>
-          <section aria-labelledby="delete-group-heading" className={styles['dialog']}>
-            <h2 id="delete-group-heading">{`Delete ${deleting.name}?`}</h2>
-            <p>
-              Everything granted to this group is deleted with it, so its members lose whatever they
-              held only through it.
-            </p>
-            <div className={styles['actions']}>
-              <button type="button" onClick={() => setDeleting(null)}>
-                Keep it
-              </button>
-              <button type="button" className="danger" onClick={() => void remove(deleting)}>
-                Delete group
-              </button>
-            </div>
-          </section>
-        </Modal>
+        <ConfirmDialog
+          question={`Delete ${deleting.name}?`}
+          sentence="Everything granted to this group is deleted with it, so its members lose whatever they held only through it."
+          {...(deleting.members.length === 0 ? {} : { detail: membersOf(deleting, 3) })}
+          keep="Keep it"
+          act="Delete group"
+          onKeep={() => setDeleting(null)}
+          onAct={() => remove(deleting)}
+        />
       )}
     </div>
   );
