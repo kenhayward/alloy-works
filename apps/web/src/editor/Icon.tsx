@@ -88,6 +88,14 @@ const PATHS: Record<string, readonly string[]> = {
  * heavier stroke, each circle written as two arcs. Delete, Revoke and Withdraw are the one bin.
  */
 const BIN = 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6';
+/** A circle as a path, so every glyph is paths alone. */
+function ring(x: number, y: number, r: number): string {
+  return `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0-${2 * r} 0`;
+}
+/** A table's frame, 17 by 15 with rounded corners. */
+const GRID =
+  'M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 5 4.5z';
+const NOTE = ['M5 4h14v11l-5 5H5z', 'M14 20v-5h5M8.5 9h7M8.5 12.5h4'];
 const PERSON = 'M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0';
 const ADMIN: Record<string, readonly string[]> = {
   Rename: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
@@ -119,6 +127,35 @@ const ADMIN: Record<string, readonly string[]> = {
   Test: ['M13 3 5 13.5h6L10 21l8-10.5h-6z'],
   'Previous page': ['m14.5 6-6 6 6 6'],
   'Next page': ['m9.5 6 6 6-6 6'],
+  // The Bound table band's (ADR-0051), from the handoff's drawings.
+  Provenance: ['M3.5 12a8.5 8.5 0 1 0 2.5-6', 'M3 4v4h4M12 7.5V12l3 2'],
+  Change: ['M4 8h13l-3-3M20 16H7l3 3'],
+  Resolve: ['M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4'],
+  Keep: ['M9 4h6l-1 6 3 3H7l3-3z', 'M12 13v7'],
+  Numbered: ['M9 4 7 20M17 4l-2 16M4 9h17M3 15h17'],
+  'First column heads its row': [GRID, 'M3.5 9.5h17M3.5 14.5h17M9 4.5v15'],
+  'Empty statement': [ring(12, 12, 7.5), 'm6.7 17.3 10.6-10.6'],
+  Note: NOTE,
+  Notes: NOTE,
+  Source: ['M6 4h9l4 4v12H6z', 'M14.5 4v4.5H19M9 13h7M9 16.5h5'],
+  Wide: ['M3 12h18M6.5 8.5 3 12l3.5 3.5M17.5 8.5 21 12l-3.5 3.5'],
+  Wrap: ['M4 6h16M4 12h13a3 3 0 0 1 0 6h-4', 'm15 16-2 2 2 2', 'M4 18h5'],
+  Format: ['M4 7h10M18 7h2M4 17h4M12 17h8', ring(16, 7, 2), ring(10, 17, 2)],
+  'Move up': ['m6 15 6-6 6 6'],
+  'Move down': ['m6 9 6 6 6-6'],
+  'Align start': ['M4 6h16M4 10h10M4 14h16M4 18h10'],
+  'Align centre': ['M4 6h16M7 10h10M4 14h16M7 18h10'],
+  'Align end': ['M4 6h16M10 10h10M4 14h16M10 18h10'],
+  'Align decimal': [
+    'M4 7h6M14 7h6M6 12h4M14 12h3M3 17h7M14 17h6',
+    ring(12, 7, 0.9),
+    ring(12, 12, 0.9),
+    ring(12, 17, 0.9),
+  ],
+  Columns: [GRID, 'M9.3 4.5v15M14.7 4.5v15'],
+  Sort: ['M7 4v16M3.5 7.5 7 4l3.5 3.5M14 7h7M14 12h5M14 17h3'],
+  Add: ['M12 5v14M5 12h14'],
+  Edit: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
 };
 /** Three dots, filled. */
 const MORE = [

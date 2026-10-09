@@ -51,6 +51,7 @@ docs/interface/screens/
 docs/interface/handoffs/ledger/*.html
 docs/interface/handoffs/admin/*.html
 docs/interface/handoffs/details/*.html
+docs/interface/handoffs/bound-table/*.html
 
 # The Word validator's NuGet lock file, written by `dotnet restore` and checked by the image's
 # locked-mode restore; it is NuGet's to format, not Prettier's.

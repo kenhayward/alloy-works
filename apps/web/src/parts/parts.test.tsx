@@ -11,6 +11,7 @@ import { IconButton } from './IconButton.js';
 import { Pager } from './Pager.js';
 import { PanelTabs } from './PanelTabs.js';
 import { RowActions } from './RowActions.js';
+import { Segmented } from './Segmented.js';
 import { SidePanel } from './SidePanel.js';
 import { StateStrip } from './StateStrip.js';
 import { Toolbar } from './Toolbar.js';
@@ -202,6 +203,67 @@ describe("a detail page's tabs", () => {
   });
 });
 
+describe('a segmented control', () => {
+  function Alignment({ disabled = false }: { disabled?: boolean }) {
+    const [chosen, setChosen] = useState('style');
+    return (
+      <>
+        <button type="button">Before</button>
+        <Segmented
+          label="Alignment of Depth"
+          value={chosen}
+          onChange={setChosen}
+          disabled={disabled}
+          options={[
+            { value: 'style', label: 'Style', name: "The table style's" },
+            { value: 'start', name: 'Start', icon: 'Align start' },
+            { value: 'end', name: 'End', icon: 'Align end' },
+          ]}
+        />
+      </>
+    );
+  }
+
+  it('is one choice of several, named in full, one tab stop, the arrows choosing', async () => {
+    render(<Alignment />);
+    const group = screen.getByRole('radiogroup', { name: 'Alignment of Depth' });
+    const style = within(group).getByRole('radio', { name: "The table style's" });
+    expect(style).toHaveAttribute('aria-checked', 'true');
+    expect(style).toHaveTextContent('Style');
+    expect(within(group).getByRole('radio', { name: 'Start' })).toHaveAttribute('title', 'Start');
+
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(style).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    const start = within(group).getByRole('radio', { name: 'Start' });
+    expect(start).toHaveFocus();
+    expect(start).toHaveAttribute('aria-checked', 'true');
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(within(group).getByRole('radio', { name: 'End' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await userEvent.click(style);
+    expect(style).toHaveAttribute('aria-checked', 'true');
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .filter((each) => each.tabIndex === 0),
+    ).toEqual([style]);
+  });
+
+  it('chooses nothing while it is not available, and says so', async () => {
+    render(<Alignment disabled />);
+    const group = screen.getByRole('radiogroup', { name: 'Alignment of Depth' });
+    expect(group).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(within(group).getByRole('radio', { name: 'End' }));
+    expect(within(group).getByRole('radio', { name: "The table style's" })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+});
 describe('a state strip', () => {
   it('names what the page depends on, cell by cell, each in its tone', () => {
     render(
@@ -611,6 +673,29 @@ describe("Administration's glyphs", () => {
       'Test',
       'Previous page',
       'Next page',
+      'Provenance',
+      'Change',
+      'Resolve',
+      'Keep',
+      'Numbered',
+      'First column heads its row',
+      'Empty statement',
+      'Note',
+      'Notes',
+      'Source',
+      'Wide',
+      'Wrap',
+      'Format',
+      'Move up',
+      'Move down',
+      'Align start',
+      'Align centre',
+      'Align end',
+      'Align decimal',
+      'Columns',
+      'Sort',
+      'Add',
+      'Edit',
       'More actions',
     ];
     const { container } = render(
