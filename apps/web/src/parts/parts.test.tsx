@@ -11,6 +11,7 @@ import { IconButton } from './IconButton.js';
 import { Pager } from './Pager.js';
 import { PanelTabs } from './PanelTabs.js';
 import { RowActions } from './RowActions.js';
+import { RowTable } from './RowTable.js';
 import { Segmented } from './Segmented.js';
 import { SidePanel } from './SidePanel.js';
 import { StateStrip } from './StateStrip.js';
@@ -264,6 +265,37 @@ describe('a segmented control', () => {
     );
   });
 });
+describe('a row table', () => {
+  it('lays out a row a line, numbered, each cell under its head, with a bin named for its row', async () => {
+    const removed = vi.fn();
+    render(
+      <RowTable
+        label="Segments of the key"
+        columns={[{ head: 'Fixed or a parameter', width: 200 }, { head: 'Segment' }]}
+        rows={['readings', 'sites.csv'].map((text, at) => ({
+          key: at,
+          cells: [<span key="kind">Fixed</span>, <span key="text">{text}</span>],
+          remove: `Remove segment ${at + 1}`,
+          onRemove: () => removed(at),
+        }))}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'Segments of the key' });
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((head) => head.textContent),
+    ).toEqual(['#', 'Fixed or a parameter', 'Segment', 'Remove']);
+    expect(within(table).getByRole('columnheader', { name: 'Fixed or a parameter' })).toHaveStyle({
+      width: '200px',
+    });
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows.map((row) => row.textContent)).toEqual(['1Fixedreadings', '2Fixedsites.csv']);
+    await userEvent.click(within(rows[1]!).getByRole('button', { name: 'Remove segment 2' }));
+    expect(removed).toHaveBeenCalledWith(1);
+  });
+});
+
 describe('a state strip', () => {
   it('names what the page depends on, cell by cell, each in its tone', () => {
     render(

@@ -1354,7 +1354,10 @@ export function QueryDefinitionPage({
   function queryPanel() {
     return (
       <div className={styles['split']}>
-        <section className={styles['card']} aria-label="Query">
+        <section
+          className={`${styles['card']} ${draft.mode === 'file' ? styles['fileCard'] : ''}`}
+          aria-label="Query"
+        >
           {draft.mode === 'http' ? (
             <div className={styles['form']}>
               <HttpFields
@@ -1364,17 +1367,15 @@ export function QueryDefinitionPage({
               />
             </div>
           ) : draft.mode === 'file' ? (
-            <div className={styles['form']}>
-              <FileFields
-                file={draft.file}
-                parameters={draft.parameters}
-                columns={draft.columns.map((column) => {
-                  const type = valueTypeOf(column.type);
-                  return { name: column.name, type: typeof type === 'string' ? null : type };
-                })}
-                onChange={(file) => changeStatement({ file })}
-              />
-            </div>
+            <FileFields
+              file={draft.file}
+              parameters={draft.parameters}
+              columns={draft.columns.map((column) => {
+                const type = valueTypeOf(column.type);
+                return { name: column.name, type: typeof type === 'string' ? null : type };
+              })}
+              onChange={(file) => changeStatement({ file })}
+            />
           ) : (
             <>
               <div className={styles['cardHead']}>

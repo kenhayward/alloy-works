@@ -1837,7 +1837,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     await user.click(screen.getByRole('button', { name: 'Add segment' }));
     await user.type(screen.getByLabelText('Segment 3'), 'sites.csv');
     // Its segments are the folders of the file's path, then its name, shown joined as S3 reads them.
-    const place = screen.getByRole('group', { name: 'Where the file is in the bucket' });
+    const place = screen.getByRole('region', { name: 'Where the file is in the bucket' });
     expect(place).toHaveTextContent(
       'Each segment is one folder of the path, in order, then the file name: the parts of what S3 calls its key.',
     );
@@ -1866,11 +1866,10 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     // A filter over a confirmed column, compared with a fixed value of its type.
     await tab(user, 'Query');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
-    const filter = screen.getByRole('group', { name: 'Filter 1' });
-    await user.selectOptions(within(filter).getByLabelText('Column'), 'site');
-    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'value');
-    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'startsWith');
-    await user.type(within(filter).getByLabelText('Value'), 'North');
+    await user.selectOptions(screen.getByLabelText('Column of filter 1'), 'site');
+    await user.selectOptions(screen.getByLabelText('Filter 1 compared with'), 'value');
+    await user.selectOptions(screen.getByLabelText('Comparison of filter 1'), 'startsWith');
+    await user.type(screen.getByLabelText('Value of filter 1'), 'North');
     // Filtering changes which rows, never which columns: the confirmations stand.
     expectSavable();
     await user.click(saveVersion());
@@ -1947,6 +1946,73 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
         ],
       },
     });
+  });
+
+  it('lays out a file as drawn: its segments and filters a row each, its format on one line, all or any a switch', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      held: view({
+        parameters: [{ name: 'meaning', type: { base: 'text' }, required: false, list: false }],
+        fetch: {
+          kind: 'file',
+          key: [{ fixed: 'Requirements' }, { fixed: 'uValues.csv' }],
+          format: { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' },
+          where: {
+            and: [
+              { column: 'area', is: 'equal', to: { literal: 'Wall', type: { base: 'text' } } },
+              { column: 'meaning', is: 'equal', to: { parameter: 'meaning' } },
+              { column: 'area', is: 'isNull' },
+            ],
+          },
+        },
+        columns: [
+          { name: 'area', from: { header: 'area' }, type: { base: 'text' } },
+          { name: 'meaning', from: { header: 'meaning' }, type: { base: 'text' } },
+        ],
+        key: [],
+        order: 'multiset',
+      }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
+    const place = await screen.findByRole('region', { name: 'Where the file is in the bucket' });
+    expect(place).toHaveTextContent('Reads Requirements/uValues.csv');
+    const segments = within(place).getByRole('table', { name: 'Segments of the key' });
+    expect(
+      within(segments)
+        .getAllByRole('columnheader')
+        .map((head) => head.textContent),
+    ).toEqual(['#', 'Fixed or a parameter', 'Segment', 'Remove']);
+    expect(within(segments).getAllByRole('row')).toHaveLength(3);
+    expect(within(segments).getByLabelText('Segment 2')).toHaveValue('uValues.csv');
+    expect(within(place).getByRole('button', { name: 'Remove segment 2' })).toBeInTheDocument();
+
+    const format = screen.getByRole('region', { name: 'Format' });
+    expect(within(format).getByLabelText('The file is')).toHaveValue('csv');
+    expect(within(format).getByLabelText('Fields are separated by')).toHaveValue('comma');
+
+    const filters = screen.getByRole('region', { name: 'Filters' });
+    const rows = within(within(filters).getByRole('table', { name: 'Filters' })).getAllByRole('row');
+    expect(rows).toHaveLength(4);
+    expect(within(rows[1]!).getByLabelText('Value of filter 1')).toHaveValue('Wall');
+    // Compared with a parameter, the value is the parameter's; is empty compares with nothing.
+    expect(rows[2]).toHaveTextContent('The value of meaning');
+    expect(within(rows[2]!).queryByRole('textbox')).toBeNull();
+    expect(within(rows[3]!).queryByRole('textbox')).toBeNull();
+    const match = within(filters).getByRole('radiogroup', { name: 'Match' });
+    expect(within(match).getByRole('radio', { name: 'Match all' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.click(within(match).getByRole('radio', { name: 'Match any' }));
+    expect(within(match).getByRole('radio', { name: 'Match any' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.click(within(filters).getByRole('button', { name: 'Remove filter 3' }));
+    await user.click(within(filters).getByRole('button', { name: 'Remove filter 2' }));
+    // One filter matches by itself: all or any is not asked.
+    expect(within(filters).queryByRole('radiogroup', { name: 'Match' })).toBeNull();
   });
 
   it('shows the object a file definition reads to somebody who may only read it', async () => {

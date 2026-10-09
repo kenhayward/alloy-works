@@ -603,3 +603,63 @@
 .segmented[aria-disabled='true'] {
   opacity: var(--opacity-disabled);
 }
+
+/* A list edited in place, a row a line (the query file handoff). */
+.rowTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.rowTable th {
+  height: 28px;
+  padding: 0 var(--space-8);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  text-align: start;
+}
+
+.rowTable td {
+  height: var(--edit-row);
+  padding: var(--space-4) var(--space-8);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.rowTable td > select,
+.rowTable td > input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--row-control);
+}
+
+.rowTable .rowNumber {
+  width: 40px;
+  padding-inline-end: 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+  text-align: end;
+}
+
+.rowTable .rowBin {
+  width: 50px;
+  padding-inline: 6px;
+  text-align: center;
+}
+
+.rowTable .rowIcon {
+  width: var(--row-button);
+  min-height: var(--row-button);
+}
+
+.hiddenText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
