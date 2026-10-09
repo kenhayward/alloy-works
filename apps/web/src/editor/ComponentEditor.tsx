@@ -1612,7 +1612,11 @@ export function ComponentEditor({
       (region): region is HTMLElement => region !== null && region.closest('[hidden]') === null,
     );
     if (ring.length === 0) return;
-    const at = ring.findIndex((region) => region.contains(document.activeElement));
+    // The innermost region holding the focus: the Value panel stands inside the Bound table band.
+    const at = ring.reduce(
+      (found, region, index) => (region.contains(document.activeElement) ? index : found),
+      -1,
+    );
     const back = event.shiftKey;
     // Past either end, inside the application, the key goes on to its own regions - the header band,
     // the rail - rather than wrapping here (the LG plan, LG6b): `RegionKeys` takes it from there.
@@ -1743,6 +1747,41 @@ export function ComponentEditor({
             }
           : null;
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  /** The Value panel, one line, on what `valued` names. */
+  type Valued = NonNullable<typeof valued>;
+  const valuePanel = (valued: Valued) => (
+    <ValuePanel
+      key={`value-${valued.pos}`}
+      ref={valueRegion}
+      binding={valued.binding}
+      shown={valued.shown.text}
+      resolved={valued.shown.resolved}
+      state={bindingStates?.get(valued.binding.id)}
+      // Undefined until the title is answered, so the panel says nothing of it yet.
+      {...(alone ? { title: titles.get(valued.binding.query) } : {})}
+      {...(onProvenance
+        ? {
+            onProvenance: (opener: HTMLElement) => onProvenance(valued.binding.id, opener),
+          }
+        : {})}
+      {...(mayFormat && surface !== null
+        ? {
+            onChange: () =>
+              valued.place === 'figure'
+                ? openFigureValue(surface, valued)
+                : valued.place === 'table'
+                  ? openTableValue(surface, valued)
+                  : openValue(openFootnote(surface) ?? surface),
+          }
+        : {})}
+      {...(bindingActs !== undefined && !bindingActs.pinned
+        ? {
+            onKeep: () => settle(valued.binding.id, 'keep'),
+            onResolve: () => settle(valued.binding.id, 'resolve'),
+          }
+        : {})}
+    />
+  );
   // What the toolbar acts on: the footnote's own text while one is open, and the surface otherwise
   // (footnotes 1, ruling R9). Every button is asked of that state, so a mark applies in the footnote
   // and everything a footnote cannot hold is unavailable there, by its content expression alone.
@@ -2094,7 +2133,8 @@ export function ComponentEditor({
                 onReplace={() => setFigureDialog('Replace image')}
               />
             )}
-            {/* And while the cursor stands in a bound table (TB2-F): its presentation. */}
+            {/* And while the cursor stands in a bound table (TB2-F): its presentation, a band whose
+                first line is its value (ADR-0051). */}
             {surface !== null && boundTable !== null && (
               <BoundTablePanel
                 key={`bound-table-${boundTable.id ?? boundTable.pos}`}
@@ -2104,44 +2144,12 @@ export function ComponentEditor({
                 enabled={mayFormat}
                 client={client}
                 onFormatting={setFormatting}
+                value={valued?.place === 'table' ? valuePanel(valued) : undefined}
               />
             )}
-            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2) or
-                a bound table (TB2-G): what it shows, and its provenance (B1-M). */}
-            {valued !== null && (
-              <ValuePanel
-                key={`value-${valued.pos}`}
-                ref={valueRegion}
-                binding={valued.binding}
-                shown={valued.shown.text}
-                resolved={valued.shown.resolved}
-                state={bindingStates?.get(valued.binding.id)}
-                // Undefined until the title is answered, so the panel says nothing of it yet.
-                {...(alone ? { title: titles.get(valued.binding.query) } : {})}
-                {...(onProvenance
-                  ? {
-                      onProvenance: (opener: HTMLElement) =>
-                        onProvenance(valued.binding.id, opener),
-                    }
-                  : {})}
-                {...(mayFormat && surface !== null
-                  ? {
-                      onChange: () =>
-                        valued.place === 'figure'
-                          ? openFigureValue(surface, valued)
-                          : valued.place === 'table'
-                            ? openTableValue(surface, valued)
-                            : openValue(openFootnote(surface) ?? surface),
-                    }
-                  : {})}
-                {...(bindingActs !== undefined && !bindingActs.pinned
-                  ? {
-                      onKeep: () => settle(valued.binding.id, 'keep'),
-                      onResolve: () => settle(valued.binding.id, 'resolve'),
-                    }
-                  : {})}
-              />
-            )}
+            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
+                what it shows, and its provenance (B1-M), in one line. */}
+            {valued !== null && valued.place !== 'table' && valuePanel(valued)}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (

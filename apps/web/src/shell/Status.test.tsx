@@ -50,6 +50,28 @@ describe('the status bar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Link copied.');
   });
 
+  it('says where the person is within the page beside the notice, never announcing it (ADR-0051)', () => {
+    function Placing({ where }: { where: string | null }) {
+      const status = useStatus();
+      useEffect(() => {
+        status?.place(where);
+      }, [status, where]);
+      return null;
+    }
+    const { rerender } = render(
+      <StatusProvider>
+        <Placing where="Bound table, column 3 of 11" />
+      </StatusProvider>,
+    );
+    expect(screen.getByText('Bound table, column 3 of 11')).toBeInTheDocument();
+    expect(screen.getByRole('status')).not.toHaveTextContent('Bound table');
+    rerender(
+      <StatusProvider>
+        <Placing where={null} />
+      </StatusProvider>,
+    );
+    expect(screen.queryByText(/Bound table/)).toBeNull();
+  });
   it('clears what a page described when the page goes away', () => {
     const { rerender } = render(
       <StatusProvider>

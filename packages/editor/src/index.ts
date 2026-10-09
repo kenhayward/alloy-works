@@ -195,3 +195,8 @@ export type { StyleCheck, TextWhere, Unresolved } from './resolution.js';
 export { NodeSelection, Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';
+export {
+  CURRENT_TABLE_CLASS,
+  FOCUSED_COLUMN_CLASS,
+  focusBoundTableColumn,
+} from './boundTableFocus.js';

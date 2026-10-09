@@ -304,8 +304,9 @@ describe("a document's bound table", () => {
       name: 'Content of Install the printer',
     });
     const panel = await screen.findByRole('group', { name: 'Bound table' });
+    await user.click(within(panel).getByRole('tab', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: 'Add note' });
-    await user.selectOptions(within(adding).getByLabelText('Note on'), 'cell');
+    await user.click(within(adding).getByRole('radio', { name: 'A cell, by its row' }));
     await user.selectOptions(within(adding).getByLabelText('Column'), 'depth');
     await user.type(within(adding).getByLabelText('Where site is'), 'S2');
     await user.click(within(adding).getByRole('button', { name: 'Add note' }));

@@ -1,11 +1,134 @@
-/* The Bound table panel: its table-wide settings in one wrapping row, then a row per column and per sort
-   key, each wrapping as the table panel's row does. */
+/* The Bound table band (ADR-0051): a fixed height under the toolbar, the same on every tab, its first
+   line the value and the table's settings, then its tabs, each list scrolling inside it. */
 
-.panel {
+.band {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  height: min(var(--bound-panel), 38vh);
+  min-height: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
   font-size: var(--size-13);
+}
+
+.band:focus {
+  outline: none;
+}
+
+.first {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-16);
+  padding: 6px var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.settings {
+  display: inline-flex;
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+}
+
+.settings label {
+  margin: 0;
+}
+
+/* A pressed toggle: the weak accent, its text, and a 35% accent border. */
+.toggle {
+  width: 30px;
+  min-height: 30px;
+  color: var(--muted);
+}
+
+.toggle[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.toggle[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.wide {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: var(--space-8);
+  color: var(--muted);
+}
+
+.delete {
+  margin-inline-start: var(--space-8);
+  color: var(--danger);
+}
+
+.unreadable {
+  margin: 6px var(--space-16) 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+.tabsRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+  padding: 0 var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  flex: 1;
+  gap: var(--space-4);
+}
+
+.tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.add[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.panel[hidden] {
+  display: none;
 }
 
 .row,
@@ -13,12 +136,60 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-8) var(--space-8);
+  gap: var(--space-8);
+  min-height: var(--grid-row);
+  padding: 2px var(--space-8) 2px var(--space-16);
+  border-bottom: 1px solid var(--border);
 }
 
-.column {
-  padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--strong-border);
+.index {
+  width: 26px;
+  color: var(--muted);
+  text-align: end;
+}
+
+.columnChoice {
+  width: 300px;
+  max-width: 100%;
+}
+
+.letter {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.words {
+  flex: 1;
+  min-width: 0;
+}
+
+.bin {
+  width: var(--icon-button-sm);
+  min-height: var(--icon-button-sm);
+  color: var(--muted);
+}
+
+.bin:hover:not([aria-disabled='true']) {
+  color: var(--danger);
+}
+
+.adding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+  padding: 10px var(--space-16);
+}
+
+.adding-label {
+  font-weight: 600;
 }
 
 .inline {
@@ -26,27 +197,34 @@
   align-items: center;
   gap: var(--space-8);
   min-height: 24px;
+  margin: 0;
 }
 
 .group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.group legend {
-  padding: 0 0 var(--space-4);
-  font-weight: 600;
-}
-
-.note {
+.hint {
   margin: 0;
+  padding: 10px var(--space-16);
+  color: var(--muted);
 }
 
 .complaint {
   margin: 0;
+  padding: 4px var(--space-16);
   color: var(--danger);
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

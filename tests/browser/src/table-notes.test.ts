@@ -165,8 +165,9 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
       await panel.waitFor();
       const adding = panel.getByRole('group', { name: 'Add note' });
 
-      // A note on the column N1, typed in place beneath the table.
+      // A note on the column N1, typed in place beneath the table, from the Notes tab.
       await regionTo(page, panel);
+      await panel.getByRole('tab', { name: /^Notes/ }).click();
       await adding.getByLabel(/^Column/).selectOption('n1');
       await tabTo(page, adding.getByRole('button', { name: 'Add note' }));
       await page.keyboard.press('Enter');
@@ -174,7 +175,7 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
 
       // A note on the depth of the site whose id is 2, its key typed.
       await regionTo(page, panel);
-      await adding.getByLabel('Note on').selectOption('cell');
+      await adding.getByRole('radio', { name: 'A cell, by its row' }).click();
       await adding.getByLabel(/^Column/).selectOption('depth');
       await tabTo(page, adding.getByLabel('Where id is'));
       await page.keyboard.type('2');

@@ -735,3 +735,18 @@ button.aw-binding:focus-visible {
 .aw-text .aw-label-glyph-missing {
   outline: 1px solid var(--danger);
 }
+
+/* The bound table the cursor stands in, outlined, and the column focused in its panel (ADR-0051). */
+.aw-bound-table-current {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-8);
+}
+
+.aw-bound-table-current .aw-bound-table-body :is(th, td).aw-bound-table-focused {
+  background-image: linear-gradient(var(--accent-weak), var(--accent-weak));
+}
+
+.aw-bound-table-current .aw-bound-table-body thead th.aw-bound-table-focused {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
