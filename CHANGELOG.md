@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.147.3 - 2026-10-09 (PR #512)
+
+### Changed
+
+- **A file's Query tab is one card.** The key's segments and the filters are each a row of a table,
+  edited in place; the format is one line; Match all or any is a switch beside the filters.
+- **A parameter a line.** Each parameter shows its name and what it takes in words, its pencil
+  opening its fields under the line and its bin removing it; a new one opens ready to name. A file's
+  parameters are the last section of its card.
+
 ## 0.147.2 - 2026-10-09 (PR #509)
 
 ### Changed

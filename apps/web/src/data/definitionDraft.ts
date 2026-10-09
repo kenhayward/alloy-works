@@ -92,6 +92,22 @@ export interface ParameterDraft {
   readonly variation: readonly { readonly key: string; readonly sql: string }[];
 }
 
+/** A parameter in words, as its line shows it: "Text, not required, any value of its type". */
+export function parameterSummary(parameter: ParameterDraft): string {
+  const type = BASES.find((each) => each.base === parameter.type.base)?.label ?? 'No type yet';
+  const takes =
+    parameter.variation.length > 0
+      ? 'chooses a fragment of SQL'
+      : parameter.permitted === 'values'
+        ? 'only the values listed'
+        : parameter.permitted === 'range'
+          ? 'only values in a range'
+          : 'any value of its type';
+  return [type, parameter.required ? 'required' : 'not required', parameter.list && 'a list', takes]
+    .filter(Boolean)
+    .join(', ');
+}
+
 export interface ColumnDraft {
   /** The result's column, as the source names it. */
   readonly name: string;

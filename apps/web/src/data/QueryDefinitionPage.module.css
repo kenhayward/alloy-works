@@ -549,3 +549,88 @@
 .first [data-number] {
   text-align: end;
 }
+
+/* A format's fields on one line, each label beside its field (the query file handoff). */
+.formatLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) 22px;
+}
+
+.formatLine .choice,
+.formatLine label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  font-size: var(--size-13);
+  white-space: nowrap;
+}
+
+.formatLine .choice > label {
+  margin: 0;
+  color: var(--muted);
+}
+
+.formatLine select,
+.formatLine input:not([type='checkbox']) {
+  width: auto;
+  height: var(--row-control);
+  min-height: 0;
+}
+
+/* A file's query: one card of sections, each edge to edge. */
+.fileCard {
+  gap: 0;
+  padding: 0;
+}
+
+/* The parameters, a line each, the fields of one opened under its line (QF-A, QF-B). */
+.parameterLines {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parameterLines > li {
+  display: grid;
+  gap: var(--space-8);
+  padding-block: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.parameterLines > li:last-child {
+  border-bottom: 0;
+}
+
+/* An opened parameter's fields keep the form's measure, however wide the card. */
+.parameterLines .parameter {
+  max-width: 40rem;
+}
+
+.parameterLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  font-size: var(--size-13);
+}
+
+.parameterName {
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.parameterLine .lineIcon {
+  width: var(--row-button);
+  min-height: var(--row-button);
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.parameterLine .lineIcon[aria-expanded='true'] {
+  color: var(--accent-text);
+}

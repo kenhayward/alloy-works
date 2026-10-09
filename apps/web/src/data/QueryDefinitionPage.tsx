@@ -11,6 +11,7 @@ import {
   COLUMN_BASES,
   ENCODINGS,
   NEW_PARAMETER,
+  parameterSummary,
   definitionOf,
   draftOf,
   everyColumnConfirmed,
@@ -34,7 +35,7 @@ import {
   type StatementParts,
   type TypeDraft,
 } from './definitionDraft.js';
-import { FileFields } from './FileFields.js';
+import { Act, FileFields, Section } from './FileFields.js';
 import { HttpFields } from './HttpFields.js';
 import { formatOf, partOf, requestText, templateOf } from './httpDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
@@ -372,14 +373,12 @@ function ParameterFields({
   parameter,
   built,
   onChange,
-  onRemove,
 }: {
   readonly index: number;
   readonly parameter: ParameterDraft;
   /** A built query's parameter, which chooses no fragment of SQL (D4-M). */
   readonly built: boolean;
   readonly onChange: (parameter: ParameterDraft) => void;
-  readonly onRemove: () => void;
 }) {
   const variation = parameter.variation.length > 0;
   return (
@@ -522,10 +521,68 @@ function ParameterFields({
           Add a fragment
         </button>
       )}
-      <button type="button" onClick={onRemove}>
-        {`Remove parameter ${index + 1}`}
-      </button>
     </fieldset>
+  );
+}
+
+/**
+ * The parameters, a line each (the query file handoff, QF-A): its name, what it takes in words, its
+ * pencil opening its fields under the line (QF-B), and its bin.
+ */
+function ParameterLines({
+  parameters,
+  built,
+  opened,
+  onOpen,
+  onChange,
+  onRemove,
+}: {
+  readonly parameters: readonly ParameterDraft[];
+  readonly built: boolean;
+  readonly opened: ReadonlySet<number>;
+  readonly onOpen: (at: number) => void;
+  readonly onChange: (at: number, parameter: ParameterDraft) => void;
+  readonly onRemove: (at: number) => void;
+}) {
+  return (
+    <ul className={styles['parameterLines']}>
+      {parameters.map((parameter, at) => {
+        const open = opened.has(at);
+        return (
+          <li key={at}>
+            <div className={styles['parameterLine']}>
+              <span className={styles['parameterName']}>
+                {parameter.name === '' ? 'Not named yet' : parameter.name}
+              </span>
+              <span className={styles['hint']}>{parameterSummary(parameter)}</span>
+              <IconButton
+                label={`Edit parameter ${at + 1}`}
+                className={styles['lineIcon']}
+                aria-expanded={open}
+                onClick={() => onOpen(at)}
+              >
+                <Icon name="Edit" />
+              </IconButton>
+              <IconButton
+                label={`Remove parameter ${at + 1}`}
+                className={styles['lineIcon']}
+                onClick={() => onRemove(at)}
+              >
+                <Icon name="Delete" />
+              </IconButton>
+            </div>
+            {open && (
+              <ParameterFields
+                index={at}
+                built={built}
+                parameter={parameter}
+                onChange={(changed) => onChange(at, changed)}
+              />
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -684,6 +741,8 @@ export function QueryDefinitionPage({
   const places = useDefinitionPlaces(client);
   const [view, setView] = useState<DefinitionView | 'missing' | 'failed' | null>(null);
   const [draft, setDraft] = useState<DefinitionDraft>(() => newDraft(defaultLimits));
+  /** Which parameters show their fields under their line (QF-B). */
+  const [opened, setOpened] = useState<ReadonlySet<number>>(new Set());
   const [space, setSpace] = useState('');
   const [described, setDescribed] = useState<string[] | null>(null);
   const [source, setSource] = useState<Described | null>(null);
@@ -811,6 +870,34 @@ export function QueryDefinitionPage({
    * A change to the query or its parameters, which may change what it returns: asked again of each
    * column. A change of parameters fits the builder's filters to them.
    */
+  const addParameter = () => {
+    setOpened(new Set([...opened, draft.parameters.length]));
+    changeStatement({ parameters: [...draft.parameters, NEW_PARAMETER] });
+  };
+  const removeParameter = (at: number) => {
+    setOpened(
+      new Set(
+        [...opened].filter((each) => each !== at).map((each) => (each > at ? each - 1 : each)),
+      ),
+    );
+    changeStatement({ parameters: draft.parameters.filter((_, place) => place !== at) });
+  };
+  const parameterLines = (
+    <ParameterLines
+      parameters={draft.parameters}
+      built={draft.mode !== 'sql'}
+      opened={opened}
+      onOpen={(at) =>
+        setOpened(
+          opened.has(at)
+            ? new Set([...opened].filter((each) => each !== at))
+            : new Set([...opened, at]),
+        )
+      }
+      onChange={(at, changed) => setParameter(at, changed)}
+      onRemove={removeParameter}
+    />
+  );
   const changeStatement = (over: StatementParts) =>
     setDraft((held) =>
       withStatement(
@@ -1352,6 +1439,29 @@ export function QueryDefinitionPage({
   }
 
   function queryPanel() {
+    // A file's query is one card, its parameters its last section (the query file handoff, QF-A).
+    if (draft.mode === 'file') {
+      return (
+        <section className={`${styles['card']} ${styles['fileCard']}`} aria-label="Query">
+          <FileFields
+            file={draft.file}
+            parameters={draft.parameters}
+            columns={draft.columns.map((column) => {
+              const type = valueTypeOf(column.type);
+              return { name: column.name, type: typeof type === 'string' ? null : type };
+            })}
+            onChange={(file) => changeStatement({ file })}
+          />
+          <Section
+            heading="Parameters"
+            count={draft.parameters.length}
+            acts={<Act words="Add parameter" onClick={addParameter} />}
+          >
+            {parameterLines}
+          </Section>
+        </section>
+      );
+    }
     return (
       <div className={styles['split']}>
         <section className={styles['card']} aria-label="Query">
@@ -1361,18 +1471,6 @@ export function QueryDefinitionPage({
                 http={draft.http}
                 parameters={draft.parameters}
                 onChange={(http) => changeStatement({ http })}
-              />
-            </div>
-          ) : draft.mode === 'file' ? (
-            <div className={styles['form']}>
-              <FileFields
-                file={draft.file}
-                parameters={draft.parameters}
-                columns={draft.columns.map((column) => {
-                  const type = valueTypeOf(column.type);
-                  return { name: column.name, type: typeof type === 'string' ? null : type };
-                })}
-                onChange={(file) => changeStatement({ file })}
               />
             </div>
           ) : (
@@ -1439,30 +1537,12 @@ export function QueryDefinitionPage({
           <section className={styles['card']} aria-labelledby={parametersId}>
             <div className={styles['cardHead']}>
               <h2 id={parametersId}>Parameters</h2>
-              <button
-                type="button"
-                onClick={() =>
-                  changeStatement({ parameters: [...draft.parameters, NEW_PARAMETER] })
-                }
-              >
+              <button type="button" onClick={addParameter}>
                 Add parameter
               </button>
             </div>
             {draft.parameters.length === 0 && <p className={styles['hint']}>None yet.</p>}
-            {draft.parameters.map((parameter, at) => (
-              <ParameterFields
-                key={at}
-                index={at}
-                built={draft.mode !== 'sql'}
-                parameter={parameter}
-                onChange={(changed) => setParameter(at, changed)}
-                onRemove={() =>
-                  changeStatement({
-                    parameters: draft.parameters.filter((_, place) => place !== at),
-                  })
-                }
-              />
-            ))}
+            {parameterLines}
           </section>
           {draft.mode === 'builder' && (
             <section className={styles['card']}>

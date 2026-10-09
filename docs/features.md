@@ -749,7 +749,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   before the endpoint or in its path, and runs as a static access key pair set on its page, the
   access key id and the secret access key each typed into a field that empties as it is sent and is
   never shown again; the store's own policy for that key decides what it may read. **Test** asks the
-  store for the bucket. Its query definition is a file: where it is in the bucket, a folder of its path or its file name a segment, shown joined as it is read, each fixed text
+  store for the bucket. Its query definition is a file, its Query tab one card - a segment a row,
+  the format on one line, a filter a row, a parameter a line - saying where it is in the bucket, a folder of its path or its file name a segment, shown joined as it is read, each fixed text
   or a parameter placed whole - a segment refuses a slash, `.` and `..` - and the format: JSON, JSON
   Lines or CSV, with its delimiter, whether its first record names the fields, and whether an empty
   field is empty or empty text (a quoted `""` is always text). **Sample for columns** reads the
