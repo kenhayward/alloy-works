@@ -844,6 +844,18 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         throw new Error(`${String(target)} was never reached by Tab`);
       };
 
+      /** Opens a tab of the definition's page (ADR-0050): Tab to the chosen one, then the arrows. */
+      const openTab = async (name: string) => {
+        const tabs = page.getByRole('tablist', { name: 'Query definition' });
+        await tabTo(tabs.getByRole('tab', { selected: true }));
+        for (let presses = 0; presses < 8; presses += 1) {
+          const at = await tabs.getByRole('tab', { selected: true }).textContent();
+          if (at?.startsWith(name)) return;
+          await page.keyboard.press('ArrowRight');
+        }
+        throw new Error(`The ${name} tab was never chosen`);
+      };
+
       await page.goto(`${SERVICE}/#/components`);
       await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
       await tabTo(
@@ -883,6 +895,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const title = `Site by id ${Date.now()}`;
       await tabTo(page.getByLabel('Title', { exact: true }));
       await page.keyboard.type(title);
+      await openTab('Query');
       // The builder is offered first; Ada may write SQL on the connection, so SQL is offered too, and
       // chosen by the arrow keys from the radio button Tab reaches.
       await tabTo(page.getByRole('radio', { name: 'Builder', exact: true }));
@@ -896,11 +909,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.keyboard.type('site');
       await tabTo(parameter.getByLabel('Type', { exact: true }));
       await page.keyboard.type('Integer');
-      await check('a statement and its parameter', {
-        shows: [parameter, page.getByRole('button', { name: 'Describe' })],
-      });
+      await check('a statement and its parameter', { shows: [parameter] });
 
       // Described by the source, each column proposed and confirmed.
+      await openTab('Columns');
       await tabTo(page.getByRole('button', { name: 'Describe' }));
       await page.keyboard.press('Enter');
       const columns = page.getByRole('table', { name: 'Columns' });
@@ -916,7 +928,8 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
 
       // Run against a sample value.
-      const sample = page.getByRole('region', { name: 'Sample' });
+      await openTab('Sample');
+      const sample = page.getByRole('tabpanel', { name: 'Sample' });
       await tabTo(sample.getByLabel('site', { exact: true }));
       await page.keyboard.type('1');
       await tabTo(sample.getByRole('button', { name: 'Run sample' }));
@@ -990,6 +1003,18 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         }
         throw new Error(`${String(target)} was never reached by Tab`);
       };
+
+      /** Opens a tab of the definition's page (ADR-0050): Tab to the chosen one, then the arrows. */
+      const openTab = async (name: string) => {
+        const tabs = page.getByRole('tablist', { name: 'Query definition' });
+        await tabTo(tabs.getByRole('tab', { selected: true }));
+        for (let presses = 0; presses < 8; presses += 1) {
+          const at = await tabs.getByRole('tab', { selected: true }).textContent();
+          if (at?.startsWith(name)) return;
+          await page.keyboard.press('ArrowRight');
+        }
+        throw new Error(`The ${name} tab was never chosen`);
+      };
       /** Chooses an option of a select by typing its text, then waits until it is chosen. */
       const choose = async (select: Locator, text: string) => {
         await tabTo(select);
@@ -1014,6 +1039,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const title = `Readings by site ${Date.now()}`;
       await tabTo(page.getByLabel('Title', { exact: true }));
       await page.keyboard.type(title);
+      await openTab('Query');
       await check('a new built query', {
         shows: [
           page.getByRole('radio', { name: 'Builder', exact: true }),
@@ -1068,6 +1094,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
 
       // Described by the source, each column proposed and confirmed.
+      await openTab('Columns');
       await tabTo(page.getByRole('button', { name: 'Describe', exact: true }));
       await page.keyboard.press('Enter');
       const declared = page.getByRole('table', { name: 'Columns' });
@@ -1083,7 +1110,8 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
 
       // Run against a sample value.
-      const sample = page.getByRole('region', { name: 'Sample' });
+      await openTab('Sample');
+      const sample = page.getByRole('tabpanel', { name: 'Sample' });
       await tabTo(sample.getByLabel('site', { exact: true }));
       await page.keyboard.type('1');
       await tabTo(sample.getByRole('button', { name: 'Run sample' }));
@@ -1101,12 +1129,24 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       // Saved, and its own page, opened in the builder.
       await tabTo(page.getByRole('button', { name: 'Save version' }));
       await page.keyboard.press('Enter');
+      await arrive({ shows: page.getByRole('heading', { name: title, level: 1 }) });
+      await openTab('Query');
       await check('a built query definition', {
         shows: [
           page.getByRole('heading', { name: title, level: 1 }),
           page.getByText('Version 0.1'),
           page.getByRole('group', { name: 'Filter 1' }),
         ],
+      });
+
+      // Its rows, and what uses it.
+      await openTab('Rows');
+      await check("a definition's rows", {
+        shows: page.getByRole('tabpanel', { name: 'Rows' }).getByRole('group', { name: 'Key' }),
+      });
+      await openTab('Used by');
+      await check('what uses a definition', {
+        shows: page.getByText('No component binds this query definition yet.'),
       });
     });
   });

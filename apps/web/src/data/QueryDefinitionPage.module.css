@@ -1,79 +1,205 @@
-/* A query definition (docs/interface/handoffs/ledger/query-definition-*): the head, its steps as
- * cards, and what uses it beside them. */
-.page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--dock-panel);
-  gap: var(--space-16);
-  align-items: start;
-}
-
-.head {
-  display: grid;
-  grid-column: 1 / -1;
-  gap: var(--space-8);
-}
-
-.head h1 {
-  margin: 0;
-}
-
-.trail {
-  color: var(--muted);
-  font-size: var(--size-13);
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  margin: 0;
-}
-
+/* A query definition (ADR-0050; docs/interface/handoffs/details/query-*): each tab's panel as cards. */
 .mono {
   font-family: var(--mono);
 }
 
-.main {
+.described {
+  color: var(--muted);
+}
+
+.held {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+/* Save version held: offered, and saying why it does nothing yet (ADR-0050, decision 3). */
+.held + button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.card {
   display: grid;
-  grid-row: 2;
-  grid-column: 1;
-  gap: var(--space-16);
+  align-content: start;
+  gap: var(--space-12);
   min-width: 0;
-}
-
-.side {
-  grid-row: 2;
-  grid-column: 2;
-  position: sticky;
-  top: calc(var(--header-height) + var(--space-16));
-  min-width: 0;
-}
-
-.step {
-  padding: var(--space-16);
+  padding: var(--space-16) 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius-12);
   background: var(--surface);
 }
 
-.step > h2 {
-  margin: 0 0 var(--space-12);
-  font-size: var(--size-16);
+.card > p {
+  margin: 0;
+}
+
+/* Details and Rows: a column of fields, 920px at most, as drawn. */
+.narrow {
+  max-width: 920px;
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: calc(-1 * var(--space-16)) -18px 0;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardHead h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+
+.cardHead [role='status'] {
+  flex: 1;
+}
+
+.cardHead [role='status'] p {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-8);
+  background: var(--warn-bg);
+  font-size: var(--size-13);
+}
+
+.cardHead [role='status']:empty {
+  visibility: hidden;
+}
+
+.card > .cardFoot {
+  margin: 0 -18px calc(-1 * var(--space-16));
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* Query: the query beside its parameters and the SQL it runs. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: var(--space-16);
+  align-items: start;
 }
 
 @media (max-width: 1100px) {
-  .page {
+  .split {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
-  .main,
-  .side {
-    grid-row: auto;
-    grid-column: 1;
-  }
+.beside {
+  display: grid;
+  gap: var(--space-16);
+}
 
-  .side {
-    position: static;
+/* Builder or SQL, a two-way switch (ADR-0050, decision 5). */
+.switch {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.switch label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: var(--size-13);
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch label:has(input:checked) {
+  background: var(--surface);
+  box-shadow: var(--shadow-rest);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.switch label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Columns: a table with a row held in warn until it is confirmed. */
+.columns {
+  border-collapse: collapse;
+  margin: 0 -18px;
+  width: calc(100% + 36px);
+}
+
+.columns th {
+  padding: 10px 18px;
+  letter-spacing: normal;
+  text-transform: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  text-align: start;
+}
+
+.columns td {
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.columns tr[data-held='true'] td {
+  background: var(--warn-bg);
+}
+
+.source {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-13);
+}
+
+.usedBy {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.usedBy > p {
+  margin: 0;
+}
+
+.lists {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-16);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .lists {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -86,6 +212,23 @@
 .form label {
   display: grid;
   gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+}
+
+/* Details and Rows fill their card, as drawn. */
+.narrow .form {
+  max-width: none;
+}
+
+/* A column's type needs no label of its own beside its name; its digits and places keep theirs. */
+.columns .type > .choice:first-child > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .form > button {
@@ -141,6 +284,13 @@
 }
 
 .sql {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  font-size: var(--size-13);
+  line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -174,8 +324,6 @@
   gap: var(--space-4);
 }
 
-/* Each checkbox and radio button's row at least 24px tall, so its 13px target has the spacing WCAG
-   2.5.8 asks of a small one: stacked with no gap they stood closer, and axe failed them. */
 /* A row of its own, tall enough that a 13px box keeps 24px of space from the next (WCAG 2.5.8; axe's
    target-size found 21px once the Ledger's spacing stacked a key's columns, LG2). */
 .check {
@@ -193,6 +341,11 @@
 
 .generated {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-8);
   margin: 0;
+}
+
+.generated figcaption {
+  font-size: 15px;
+  font-weight: 600;
 }

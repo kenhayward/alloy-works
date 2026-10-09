@@ -688,7 +688,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   database up, and what it trusts.
 - **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
   read, by space, each with its connection. Somebody who may edit in a space and use a connection
-  writes one there with **New query definition**, in steps: the connection, a title and a description;
+  writes one there with **New query definition**, a tab for each step - **Details**, **Query**,
+  **Columns**, **Rows**, **Sample** and, once saved, **Used by** - under a strip saying what it runs against, how many of its columns are confirmed and what uses it, with **Save version** at the top, held until every column is confirmed, and **Retire** under **More actions**; the tab is in the address. Details is the connection, a title and a description;
   the query, **built** without writing any SQL or, where they hold the permission **write SQL** on the
   connection, written as SQL. **The builder** lists the database's tables and views with **Describe
   the source** and builds from one: the columns it returns and the names it returns them as, filters

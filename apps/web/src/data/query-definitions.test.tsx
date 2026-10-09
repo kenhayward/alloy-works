@@ -363,6 +363,47 @@ afterEach(() => {
   window.location.hash = '';
 });
 
+type User = ReturnType<typeof userEvent.setup>;
+
+/** Opens a tab of the page (ADR-0050) by the start of its name, and gives its panel. */
+async function tab(user: User, name: string) {
+  const named = new RegExp(`^${name}`);
+  await user.click(await screen.findByRole('tab', { name: named }));
+  return screen.getByRole('tabpanel', { name: named });
+}
+
+/** Save version, in the header whichever tab is open (ADR-0050, decision 3). */
+const saveVersion = () => screen.getByRole('button', { name: 'Save version' });
+
+/** Held: offered, and refusing, until every column is confirmed. */
+function expectHeld() {
+  expect(saveVersion()).toHaveAttribute('aria-disabled', 'true');
+  expect(saveVersion()).toHaveAccessibleDescription('Confirm every column to save.');
+}
+
+function expectSavable() {
+  expect(saveVersion()).toHaveAttribute('aria-disabled', 'false');
+}
+
+/** Retire or Reinstate, from the header's More actions. */
+async function fromMore(user: User, action: 'Retire' | 'Reinstate') {
+  await user.click(await screen.findByRole('button', { name: /^More actions for / }));
+  await user.click(screen.getByRole('menuitem', { name: action }));
+}
+
+/** The connections a new definition may use, once they are read. */
+async function connectionOffered(name: string) {
+  const connection = await screen.findByLabelText('Connection');
+  await waitFor(() =>
+    expect(
+      within(connection)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toContain(name),
+  );
+  return connection;
+}
+
 describe('the Query definitions list', () => {
   it('lists the definitions the person may read, and offers New query definition where they may edit a space and use a connection', async () => {
     const user = userEvent.setup();
@@ -424,16 +465,9 @@ describe('the query definition page', () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     render(<QueryDefinitionPage client={client} id="new" />);
-    const connection = await screen.findByLabelText('Connection');
-    await waitFor(() =>
-      expect(
-        within(connection)
-          .getAllByRole('option')
-          .map((each) => each.textContent),
-      ).toContain('Readings'),
-    );
-    await user.selectOptions(connection, READINGS);
+    await user.selectOptions(await connectionOffered('Readings'), READINGS);
     await user.type(screen.getByLabelText('Title'), 'Site depths');
+    await tab(user, 'Query');
     await user.click(screen.getByRole('radio', { name: 'SQL' }));
     await user.type(
       screen.getByLabelText('SQL text'),
@@ -444,8 +478,9 @@ describe('the query definition page', () => {
     await user.type(within(parameter).getByLabelText('Name'), 'site');
     await user.selectOptions(within(parameter).getByLabelText('Type'), 'integer');
 
-    // Nothing is offered to save before the columns are proposed.
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    // Nothing is saved before the columns are proposed.
+    expectHeld();
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toEqual({
@@ -459,19 +494,29 @@ describe('the query definition page', () => {
     expect(within(id!).getByLabelText('Type of id')).toHaveValue('integer');
     expect(within(name!).getByLabelText('Type of name')).toHaveValue('text');
     expect(within(depth!).getByText('Declare a type for this column')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
 
     await user.click(within(id!).getByRole('button', { name: 'Confirm id' }));
     await user.click(within(name!).getByRole('button', { name: 'Confirm name' }));
-    // Two of three confirmed saves nothing.
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
-    expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+    // Two of three confirmed saves nothing, and the strip and the tab say what is left.
+    expectHeld();
+    await user.click(saveVersion());
+    expect(asked.some((each) => each.path.endsWith('/query-definitions'))).toBe(false);
+    expect(screen.getByRole('group', { name: 'State' })).toHaveTextContent(
+      'Columns2 of 3 confirmed confirm the rest to save',
+    );
+    expect(screen.getByRole('tab', { name: 'Columns, 1 to confirm' })).toHaveAttribute(
+      'data-tone',
+      'warn',
+    );
     await user.selectOptions(within(depth!).getByLabelText('Type of depth'), 'decimal');
     await user.type(within(depth!).getByLabelText('Digits of depth'), '8');
     await user.type(within(depth!).getByLabelText('Places of depth'), '2');
     await user.click(within(depth!).getByRole('button', { name: 'Confirm depth' }));
 
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    expectSavable();
+    expect(screen.getByRole('tab', { name: 'Columns' })).not.toHaveAttribute('data-tone');
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     const made = asked.find((each) => each.path.endsWith('/query-definitions'));
     expect(made?.body).toMatchObject({
@@ -510,7 +555,7 @@ describe('the query definition page', () => {
           : undefined!,
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const sample = await screen.findByRole('region', { name: 'Sample' });
+    const sample = await tab(user, 'Sample');
     await user.type(within(sample).getByLabelText('site'), '1');
     await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
 
@@ -552,7 +597,7 @@ describe('the query definition page', () => {
     });
     const { client } = service({ sample: () => answer });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const sample = await screen.findByRole('region', { name: 'Sample' });
+    const sample = await tab(user, 'Sample');
     await user.type(within(sample).getByLabelText('site'), '1');
     await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
     expect(
@@ -569,7 +614,7 @@ describe('the query definition page', () => {
     expect(await within(sample).findByText('site: x is not of its type.')).toBeInTheDocument();
   });
 
-  it('saves a version from the one shown, and says so when somebody else saved one first', async () => {
+  it('saves a version from the one shown, from any tab, and says so when somebody else saved one first', async () => {
     const user = userEvent.setup();
     let stale = true;
     const { client, asked } = service({
@@ -587,12 +632,14 @@ describe('the query definition page', () => {
     const title = await screen.findByLabelText('Title');
     await user.clear(title);
     await user.type(title, 'Site by its id');
-    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await tab(user, 'Rows');
+    await user.click(saveVersion());
     expect(
       await screen.findByText(
         'Somebody saved a newer version of this query definition. It is shown now; make your change again.',
       ),
     ).toBeInTheDocument();
+    await tab(user, 'Details');
     expect(screen.getByLabelText('Title')).toHaveValue('Renamed elsewhere');
     expect(asked.filter((each) => each.path.endsWith('/versions'))[0]?.body).toMatchObject({
       openedFrom: FIRST,
@@ -601,52 +648,66 @@ describe('the query definition page', () => {
     // Saved again, from the version now shown.
     await user.clear(screen.getByLabelText('Title'));
     await user.type(screen.getByLabelText('Title'), 'Site by its id');
-    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await user.click(saveVersion());
     expect(await screen.findByText('Saved as version 0.3.')).toBeInTheDocument();
     expect(asked.filter((each) => each.path.endsWith('/versions'))[1]?.body).toMatchObject({
       openedFrom: SECOND,
     });
   });
 
-  it('retires a definition and reinstates it, each a version', async () => {
+  it('retires a definition and reinstates it, each a version, from More actions', async () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await user.click(await screen.findByRole('button', { name: 'Retire' }));
+    await fromMore(user, 'Retire');
     expect(await screen.findByText('Retired. It runs nothing now.')).toBeInTheDocument();
     expect(asked.filter((each) => each.path.endsWith('/versions'))[0]?.body).toMatchObject({
       definition: { retired: true },
     });
-    await user.click(await screen.findByRole('button', { name: 'Reinstate' }));
+    await fromMore(user, 'Reinstate');
     expect(await screen.findByText('Reinstated.')).toBeInTheDocument();
   });
 
-  it('withdraws Save version once the SQL or a parameter changes, until every column is confirmed again', async () => {
+  it('opens at the tab its address names, and names the tab chosen in the address', async () => {
+    const user = userEvent.setup();
+    window.location.hash = `#/query-definitions/${DEFINITION}/rows`;
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} tab="rows" />);
+    expect(await screen.findByRole('tab', { name: 'Rows' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await tab(user, 'Sample');
+    expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}/sample`);
+  });
+
+  it('holds Save version once the SQL or a parameter changes, until every column is confirmed again', async () => {
     const user = userEvent.setup();
     const { client } = service();
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Site by id', level: 1 });
+    expectSavable();
     const confirmAll = async () => {
-      const columns = screen.getByRole('table', { name: 'Columns' });
+      const columns = within(await tab(user, 'Columns')).getByRole('table', { name: 'Columns' });
       for (const name of ['id', 'name']) {
         await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
       }
     };
 
     // The SQL changed: what it returns may have too, so each column is to be confirmed again.
+    await tab(user, 'Query');
     await user.type(screen.getByLabelText('SQL text'), ' ');
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
-    expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+    expectHeld();
     await confirmAll();
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
 
     // And so with a parameter.
+    await tab(user, 'Query');
     const parameter = screen.getByRole('group', { name: 'Parameter 1' });
     await user.click(within(parameter).getByLabelText('Required'));
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     await confirmAll();
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
   });
 
   it('asks again about a column whose type the source now proposes otherwise, and keeps the rest confirmed', async () => {
@@ -662,14 +723,14 @@ describe('the query definition page', () => {
         }),
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await screen.findByText('2 columns proposed. Confirm the type of each.');
     const [, id, name] = within(screen.getByRole('table', { name: 'Columns' })).getAllByRole('row');
     expect(within(id!).getByText('Confirmed')).toBeInTheDocument();
     expect(within(name!).getByRole('button', { name: 'Confirm name' })).toBeInTheDocument();
     expect(within(name!).getByLabelText('Type of name')).toHaveValue('date');
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
   });
 
   it("merges a describe's answer into the columns as they are when it arrives, and drops one for SQL since changed", async () => {
@@ -687,11 +748,11 @@ describe('the query definition page', () => {
         parameters: ['bigint'],
       });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
-    const sql = screen.getByLabelText('SQL text');
-    await user.type(sql, ' ');
+    await tab(user, 'Query');
+    await user.type(screen.getByLabelText('SQL text'), ' ');
 
     // A confirmation made while a describe is on its way is kept when it arrives.
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await waitFor(() => expect(answers).toHaveLength(1));
     await user.click(screen.getByRole('button', { name: 'Confirm id' }));
@@ -705,13 +766,15 @@ describe('the query definition page', () => {
     // One answering for SQL changed since it was sent is dropped, and says so.
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await waitFor(() => expect(answers).toHaveLength(2));
-    await user.type(sql, 'x');
+    await tab(user, 'Query');
+    await user.type(screen.getByLabelText('SQL text'), 'x');
     answers[1]!(
       json(200, {
         columns: [{ name: 'other', sourceType: 'text', proposed: { base: 'text' } }],
         parameters: [],
       }),
     );
+    await tab(user, 'Columns');
     expect(
       await screen.findByText('The SQL changed while it was described. Describe it again.'),
     ).toBeInTheDocument();
@@ -751,8 +814,9 @@ describe('the query definition page', () => {
         }),
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
+    await tab(user, 'Query');
     await user.type(screen.getByLabelText('SQL text'), ' ');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await screen.findByText('2 columns proposed. Confirm the type of each.');
     const [, , row] = within(screen.getByRole('table', { name: 'Columns' })).getAllByRole('row');
@@ -767,33 +831,27 @@ describe('the query definition page', () => {
     const user = userEvent.setup();
     const { client } = service({ warehouse: true });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
+    await tab(user, 'Query');
     const sql = screen.getByLabelText('SQL text');
     await user.type(sql, ' x');
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     await user.type(sql, '{Backspace}{Backspace}');
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
 
     // A parameter changed and changed back.
     const parameter = screen.getByRole('group', { name: 'Parameter 1' });
     await user.click(within(parameter).getByLabelText('Required'));
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     await user.click(within(parameter).getByLabelText('Required'));
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
 
     // A connection is part of what the columns were confirmed for.
-    const connection = screen.getByLabelText('Connection');
-    await waitFor(() =>
-      expect(
-        within(connection)
-          .getAllByRole('option')
-          .map((each) => each.textContent),
-      ).toContain('Warehouse'),
-    );
+    await tab(user, 'Details');
+    const connection = await connectionOffered('Warehouse');
     await user.selectOptions(connection, WAREHOUSE);
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     await user.selectOptions(connection, READINGS);
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
   });
 
   it('gives back no confirmation where a describe since has changed the columns, in their names or their order', async () => {
@@ -811,17 +869,17 @@ describe('the query definition page', () => {
           }),
       });
       const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-      await screen.findByRole('heading', { name: 'Site by id' });
-      const sql = screen.getByLabelText('SQL text');
-      await user.type(sql, ' x');
+      await tab(user, 'Query');
+      await user.type(screen.getByLabelText('SQL text'), ' x');
+      await tab(user, 'Columns');
       await user.click(screen.getByRole('button', { name: 'Describe' }));
       await screen.findByText(
         `${described.length} ${described.length === 1 ? 'column' : 'columns'} proposed. Confirm the type of each.`,
       );
       // The SQL as the columns were confirmed for, and the columns not as they were: asked again.
-      await user.type(sql, '{Backspace}{Backspace}');
-      expect(screen.queryByRole('button', { name: 'Save version' }), described.join()).toBeNull();
-      expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+      await tab(user, 'Query');
+      await user.type(screen.getByLabelText('SQL text'), '{Backspace}{Backspace}');
+      expect(saveVersion(), described.join()).toHaveAttribute('aria-disabled', 'true');
       unmount();
     }
   });
@@ -834,24 +892,19 @@ describe('the query definition page', () => {
       describe: () => new Promise<Response>((resolve) => answers.push(resolve)),
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    await screen.findByRole('heading', { name: 'Site by id' });
-    const connection = screen.getByLabelText('Connection');
-    await waitFor(() =>
-      expect(
-        within(connection)
-          .getAllByRole('option')
-          .map((each) => each.textContent),
-      ).toContain('Warehouse'),
-    );
+    await connectionOffered('Warehouse');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await waitFor(() => expect(answers).toHaveLength(1));
-    await user.selectOptions(connection, WAREHOUSE);
+    await tab(user, 'Details');
+    await user.selectOptions(screen.getByLabelText('Connection'), WAREHOUSE);
     answers[0]!(
       json(200, {
         columns: [{ name: 'other', sourceType: 'text', proposed: { base: 'text' } }],
         parameters: [],
       }),
     );
+    await tab(user, 'Columns');
     expect(
       await screen.findByText('The SQL changed while it was described. Describe it again.'),
     ).toBeInTheDocument();
@@ -863,7 +916,7 @@ describe('the query definition page', () => {
     ).toEqual(['id', 'name']);
   });
 
-  it('heads a definition with a trail back to the definitions and its facts as chips, and sets what uses it beside its steps', async () => {
+  it('heads a definition with a trail back to the definitions and its facts as chips, then its state and tabs', async () => {
     const { client } = service({
       uses: {
         components: { readable: [{ id: COMPONENT, title: 'Harbour readings' }], others: 0 },
@@ -876,12 +929,27 @@ describe('the query definition page', () => {
       'href',
       '#/query-definitions',
     );
-    const beside = screen.getByRole('complementary', { name: 'Beside the definition' });
-    expect(await within(beside).findByRole('region', { name: 'Used by' })).toBeInTheDocument();
     expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
+    const runsAgainst = within(screen.getByRole('group', { name: 'State' })).getAllByRole(
+      'listitem',
+    )[0]!;
+    await waitFor(() =>
+      expect(within(runsAgainst).getByRole('link', { name: 'Readings' })).toHaveAttribute(
+        'href',
+        `#/connections/${READINGS}`,
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('tablist', { name: 'Query definition' }))
+          .getAllByRole('tab')
+          .map((each) => each.textContent),
+      ).toEqual(['Details', 'Query', 'Columns', 'Rows', 'Sample', 'Used by1']),
+    );
   });
 
   it('DAT-016 shows where a definition is used before a version is saved', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       uses: {
         components: {
@@ -892,8 +960,15 @@ describe('the query definition page', () => {
       },
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
-    expect(await within(used).findByRole('link', { name: 'Harbour readings' })).toHaveAttribute(
+    // Counted in the strip, above Save version, whichever tab is open.
+    await waitFor(() =>
+      expect(screen.getByRole('group', { name: 'State' })).toHaveTextContent(
+        'Used by3 components and 1 document',
+      ),
+    );
+    const used = await tab(user, 'Used by');
+    const components = within(used).getByRole('region', { name: 'Components' });
+    expect(within(components).getByRole('link', { name: 'Harbour readings' })).toHaveAttribute(
       'href',
       `#/components/${COMPONENT}`,
     );
@@ -901,13 +976,16 @@ describe('the query definition page', () => {
       'href',
       `#/documents/${DOCUMENT}`,
     );
-    expect(within(used).getByText('And 2 more you may not read.')).toBeInTheDocument();
-    // Shown before the act it warns of: the region comes before Save version on the page.
-    const save = screen.getByRole('button', { name: 'Save version' });
-    expect(used.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(components).getByText('And 2 more you may not read.')).toBeInTheDocument();
+    expect(
+      within(used).getByText(
+        'A binding that does not pin a version runs the latest one the next time it is resolved or checked.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('counts the uses a reader may not read, and names none of them', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       uses: {
         components: { readable: [], others: 1 },
@@ -915,25 +993,24 @@ describe('the query definition page', () => {
       },
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
-    expect(
-      await within(used).findByText('Bound by 1 component you may not read.'),
-    ).toBeInTheDocument();
+    const used = await tab(user, 'Used by');
+    expect(within(used).getByText('Bound by 1 component you may not read.')).toBeInTheDocument();
     expect(within(used).getByText('Held by 3 documents you may not read.')).toBeInTheDocument();
     expect(within(used).queryAllByRole('link')).toEqual([]);
   });
 
   it('says so when nothing uses a definition yet', async () => {
+    const user = userEvent.setup();
     const { client } = service();
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const used = await screen.findByRole('region', { name: 'Used by' });
+    const used = await tab(user, 'Used by');
     expect(
-      await within(used).findByText('No component binds this query definition yet.'),
+      within(used).getByText('No component binds this query definition yet.'),
     ).toBeInTheDocument();
   });
 
   it('shows a definition to somebody who may read it and change nothing', async () => {
-    const { client } = service();
+    const user = userEvent.setup();
     const readOnly = view();
     readOnly.mayEdit = false;
     readOnly.mayRun = false;
@@ -944,20 +1021,29 @@ describe('the query definition page', () => {
       }
       return json(200, { items: [], next: null, total: 0, facets: { spaces: [] } });
     }) as unknown as typeof fetch;
-    void client;
     render(
       <QueryDefinitionPage
         client={createApiClient({ baseUrl: 'http://definitions.test', fetch: fetching })}
         id={DEFINITION}
       />,
     );
-    expect(await screen.findByRole('heading', { name: 'Site by id' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Site by id', level: 1 }),
+    ).toBeInTheDocument();
+    await tab(user, 'Query');
     expect(
       screen.getByText('select id, name from sample.site where id = {{site}} order by id'),
     ).toBeInTheDocument();
-    for (const name of ['Save version', 'Describe', 'Run sample', 'Retire']) {
+    for (const name of ['Save version', 'Describe', 'Run sample']) {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
+    expect(screen.queryByRole('button', { name: /^More actions/ })).toBeNull();
+    // Nothing to change on Rows, and nothing to run on Sample.
+    expect(
+      within(screen.getByRole('tablist', { name: 'Query definition' }))
+        .getAllByRole('tab')
+        .map((each) => each.textContent),
+    ).toEqual(['Details', 'Query', 'Columns', 'Used by']);
   });
 
   it('says a connection its reader may not read is one, and links to nothing', async () => {
@@ -993,7 +1079,9 @@ describe('the query definition page', () => {
     }) as unknown as typeof fetch;
     const client = createApiClient({ baseUrl: 'http://definitions.test', fetch: fetching });
     const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    expect(await screen.findByRole('heading', { name: 'Site by id' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Site by id', level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Runs against a connection you may not read/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /connection/i })).toBeNull();
     unmount();
@@ -1042,18 +1130,12 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
         }),
     });
     render(<QueryDefinitionPage client={client} id="new" />);
-    const connection = await screen.findByLabelText('Connection');
-    await waitFor(() =>
-      expect(
-        within(connection)
-          .getAllByRole('option')
-          .map((each) => each.textContent),
-      ).toContain('Readings'),
-    );
-    await user.selectOptions(connection, READINGS);
+    await user.selectOptions(await connectionOffered('Readings'), READINGS);
     await user.type(screen.getByLabelText('Title'), 'Site photographs');
+    await tab(user, 'Query');
     await user.click(screen.getByRole('radio', { name: 'SQL' }));
     await user.type(screen.getByLabelText('SQL text'), PHOTO_SQL);
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     const photo = within(columns).getAllByRole('row')[3]!;
@@ -1070,7 +1152,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
     for (const name of ['id', 'caption', 'photo']) {
       await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
     }
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await user.click(saveVersion());
     expect(
       await screen.findByText(
         'The column photo: Choose the text column that describes it, or mark it decorative.',
@@ -1081,7 +1163,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
     // Choosing withdraws the confirmation, as any change of type does.
     await user.selectOptions(description, 'column:caption');
     await user.click(within(columns).getByRole('button', { name: 'Confirm photo' }));
-    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
       definition: {
@@ -1109,7 +1191,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
       }),
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const columns = within(await tab(user, 'Columns')).getByRole('table', { name: 'Columns' });
     const caption = within(columns).getAllByRole('row')[2]!;
     await user.selectOptions(within(caption).getByLabelText('Type of caption'), 'image');
     const encoding = within(caption).getByLabelText('Encoding of caption');
@@ -1127,6 +1209,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
     expect(within(caption).getByLabelText('Encoding of caption')).toHaveValue('base64');
     expect(within(caption).getByLabelText('Description of caption')).toHaveValue('decorative');
     // A parameter is never an image (DAT-010).
+    await tab(user, 'Query');
     await user.click(screen.getByRole('button', { name: 'Add parameter' }));
     const parameter = screen.getByRole('group', { name: 'Parameter 1' });
     expect(
@@ -1137,6 +1220,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
   });
 
   it('opens a stored image column as declared, and shows one in words to somebody who may only read it', async () => {
+    const user = userEvent.setup();
     const stored = view({
       parameters: [],
       fetch: { kind: 'sql', text: PHOTO_SQL },
@@ -1144,7 +1228,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
     });
     const { client } = service({ held: stored });
     const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const columns = within(await tab(user, 'Columns')).getByRole('table', { name: 'Columns' });
     const photo = within(columns).getAllByRole('row')[3]!;
     expect(within(photo).getByLabelText('Type of photo')).toHaveValue('image');
     expect(within(photo).getByLabelText('Encoding of photo')).toHaveValue('base64');
@@ -1180,7 +1264,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
         id={DEFINITION}
       />,
     );
-    const shown = await screen.findByRole('table', { name: 'Columns' });
+    const shown = within(await tab(user, 'Columns')).getByRole('table', { name: 'Columns' });
     expect(
       within(shown)
         .getAllByRole('row')
@@ -1216,7 +1300,7 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
         }),
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
-    const sample = await screen.findByRole('region', { name: 'Sample' });
+    const sample = await tab(user, 'Sample');
     await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
     const rows = await within(sample).findByRole('table', { name: 'The first rows' });
     expect(
@@ -1236,37 +1320,27 @@ describe('an image column (the D8 plan, D8-A and D8-G)', () => {
 });
 
 describe('the builder (D4)', () => {
-  /** The SQL a built query runs, as the page shows it. */
+  /** The SQL a built query runs, as the Query tab shows it. */
   const shownSql = () => screen.getByRole('figure', { name: 'The SQL it runs' }).textContent ?? '';
 
-  /** A new definition with sample.site chosen: the source described, its table picked. */
+  /** A new definition with sample.site chosen on its Query tab: the source described, its table picked. */
   const begun = async (options: Parameters<typeof service>[0] = {}) => {
     const user = userEvent.setup();
     const made = service(options);
     render(<QueryDefinitionPage client={made.client} id="new" />);
-    const connection = await screen.findByLabelText('Connection');
-    await waitFor(() =>
-      expect(
-        within(connection)
-          .getAllByRole('option')
-          .map((each) => each.textContent),
-      ).toContain('Readings'),
-    );
+    await connectionOffered('Readings');
+    await tab(user, 'Query');
     await user.click(screen.getByRole('button', { name: 'Describe the source' }));
     await user.selectOptions(await screen.findByLabelText('Table or view'), 'sample.site');
     return { user, ...made };
   };
-  const pick = async (user: ReturnType<typeof userEvent.setup>, ...names: string[]) => {
+  const pick = async (user: User, ...names: string[]) => {
     const columns = screen.getByRole('group', { name: 'Columns to return' });
     for (const name of names) {
       await user.click(within(columns).getByRole('checkbox', { name }));
     }
   };
-  const addParameter = async (
-    user: ReturnType<typeof userEvent.setup>,
-    name: string,
-    base: string,
-  ) => {
+  const addParameter = async (user: User, name: string, base: string) => {
     await user.click(screen.getByRole('button', { name: 'Add parameter' }));
     const all = screen.getAllByRole('group', { name: /^Parameter \d+$/ });
     const parameter = all[all.length - 1]!;
@@ -1287,7 +1361,6 @@ describe('the builder (D4)', () => {
           parameters: ['bigint'],
         }),
     });
-    await user.type(screen.getByLabelText('Title'), 'Site built');
     await pick(user, 'id', 'name');
     const named = screen.getByLabelText('Name of name');
     await user.clear(named);
@@ -1298,9 +1371,12 @@ describe('the builder (D4)', () => {
     await user.selectOptions(within(filter).getByLabelText('Column'), 'id');
     await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
     await user.selectOptions(within(filter).getByLabelText('Comparison'), 'equal');
+    await tab(user, 'Details');
+    await user.type(screen.getByLabelText('Title'), 'Site built');
 
-    // Nothing is offered to save before the columns are proposed.
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    // Nothing is saved before the columns are proposed.
+    expectHeld();
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     const query = {
@@ -1328,14 +1404,14 @@ describe('the builder (D4)', () => {
     const [, id, name] = within(columns).getAllByRole('row');
     expect(within(id!).getByLabelText('Type of id')).toHaveValue('integer');
     expect(within(name!).getByLabelText('Type of site_name')).toHaveValue('text');
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     await user.click(within(id!).getByRole('button', { name: 'Confirm id' }));
     // One of two confirmed saves nothing.
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
-    expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+    expectHeld();
     await user.click(within(name!).getByRole('button', { name: 'Confirm site_name' }));
 
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    expectSavable();
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     const made = asked.find((each) => each.path.endsWith('/query-definitions'));
     expect(made?.body).toMatchObject({
@@ -1352,19 +1428,24 @@ describe('the builder (D4)', () => {
   });
 
   it('offers the builder to an author who may not write SQL on the connection, and SQL only to one who may', async () => {
+    const user = userEvent.setup();
     const { unmount } = render(
       <QueryDefinitionPage client={service({ sqlWriter: false }).client} id="new" />,
     );
-    expect(await screen.findByRole('button', { name: 'Describe the source' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText('Connection')).toHaveDisplayValue('Readings'));
+    await tab(user, 'Query');
+    expect(await screen.findByRole('button', { name: 'Describe the source' })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'SQL' })).toBeNull();
     expect(screen.queryByLabelText('SQL text')).toBeNull();
     unmount();
 
     render(<QueryDefinitionPage client={service().client} id="new" />);
+    await connectionOffered('Readings');
+    await tab(user, 'Query');
     const sql = await screen.findByRole('radio', { name: 'SQL' });
     expect(screen.getByRole('radio', { name: 'Builder' })).toBeChecked();
-    await userEvent.setup().click(sql);
+    expect(screen.getByRole('group', { name: 'Write the query with' })).toBeInTheDocument();
+    await user.click(sql);
     expect(screen.getByLabelText('SQL text')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Describe the source' })).toBeNull();
   });
@@ -1429,6 +1510,7 @@ describe('the builder (D4)', () => {
     );
     expect(shownSql()).toContain('GROUP BY');
 
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await screen.findByRole('table', { name: 'Columns' });
     expect(asked.filter((each) => each.path.endsWith('/describe')).at(-1)?.body).toMatchObject({
@@ -1460,11 +1542,13 @@ describe('the builder (D4)', () => {
         }),
     });
     await pick(user, 'id', 'name');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     for (const name of ['id', 'name']) {
       await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
     }
+    await tab(user, 'Rows');
     expect(screen.queryByLabelText('Return at most')).toBeNull();
     expect(
       screen.getByText(/Return at most is offered beside a declared order/),
@@ -1474,9 +1558,10 @@ describe('the builder (D4)', () => {
     );
     await user.click(screen.getByRole('radio', { name: 'Return the rows in a declared order' }));
     await user.type(screen.getByLabelText('Return at most'), '5');
+    await tab(user, 'Query');
     expect(shownSql()).toMatch(/ORDER BY "t"\."id" ASC NULLS LAST\s+LIMIT 5$/);
     // Limiting changes no column, so nothing is to be confirmed again.
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    expectSavable();
   });
 
   it('shows the SQL the tree generates, changing as the tree does', async () => {
@@ -1528,31 +1613,35 @@ describe('the builder (D4)', () => {
         'This query definition can be read here and not changed: it joins more than one source, which this page does not offer yet. Change it through the API.',
       ),
     ).toBeInTheDocument();
+    await tab(user, 'Query');
     expect(shownSql()).toContain('INNER JOIN (SELECT "site" FROM "sample"."reading") AS "r"');
     for (const name of ['Save version', 'Describe', 'Describe the source']) {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
     expect(screen.queryByLabelText('SQL text')).toBeNull();
     // It can still be sampled as it stands, and retired.
-    const sample = screen.getByRole('region', { name: 'Sample' });
+    const sample = await tab(user, 'Sample');
     await user.type(within(sample).getByLabelText('site'), '1');
     await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
     await within(sample).findByRole('table', { name: 'The first rows' });
     expect(asked.find((each) => each.path.endsWith('/sample'))?.body).toMatchObject({
       definition: { fetch: joined },
     });
-    expect(screen.getByRole('button', { name: 'Retire' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^More actions for / }));
+    expect(screen.getByRole('menuitem', { name: 'Retire' })).toBeInTheDocument();
   });
 
   it('opens a built definition in the builder, never as SQL to edit', async () => {
+    const user = userEvent.setup();
     const { client } = service({ held: view({ fetch: builtFetch() }) });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
     expect(await screen.findByRole('radio', { name: 'Builder' })).toBeChecked();
     expect(screen.queryByLabelText('SQL text')).toBeNull();
     expect(screen.getByRole('group', { name: 'Filter 1' })).toBeInTheDocument();
     expect(shownSql()).toContain(' FROM "sample"."site") AS "t"');
     // Turned to SQL by somebody who may write it, it starts empty: the generated SQL is not its.
-    await userEvent.setup().click(screen.getByRole('radio', { name: 'SQL' }));
+    await user.click(screen.getByRole('radio', { name: 'SQL' }));
     expect(screen.getByLabelText('SQL text')).toHaveValue('');
   });
 
@@ -1594,10 +1683,11 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     render(<QueryDefinitionPage client={client} id="new" />);
     const connection = await screen.findByLabelText('Connection');
     await waitFor(() => expect(connection).toHaveValue(API));
+    await user.type(screen.getByLabelText('Title'), 'Sites by API');
     // An HTTP connection's query is a request: no builder, no SQL.
+    await tab(user, 'Query');
     expect(screen.queryByRole('button', { name: 'Describe the source' })).toBeNull();
     expect(screen.queryByLabelText('SQL text')).toBeNull();
-    await user.type(screen.getByLabelText('Title'), 'Sites by API');
     await user.click(screen.getByRole('button', { name: 'Add parameter' }));
     await user.type(
       within(screen.getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
@@ -1609,7 +1699,10 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     await user.selectOptions(screen.getByLabelText('Segment 2: fixed or a parameter'), 'parameter');
     await user.selectOptions(screen.getByLabelText('Segment 2 parameter'), 'site');
     await user.type(screen.getByLabelText('Rows at'), '/items');
+    // The sample's values are the ones sent to propose the columns.
+    await tab(user, 'Sample');
     await user.type(screen.getByLabelText('site'), 'north');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     const request = {
@@ -1618,7 +1711,6 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
       query: [],
       headers: [],
     };
-    // The request is sent with the sample's values, its rows read to propose the columns.
     expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toEqual({
       http: {
         request,
@@ -1627,11 +1719,11 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
         values: { site: 'north' },
       },
     });
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expectHeld();
     for (const name of ['id', 'site/name']) {
       await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
     }
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
       definition: {
@@ -1646,6 +1738,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
   });
 
   it('shows the request an HTTP definition sends to somebody who may only read it, never a URL', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       held: {
         ...view({
@@ -1668,6 +1761,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
       },
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
     expect(
       await screen.findByText('GET /sites/{site}?since=2026-01-01', { exact: false }),
     ).toBeInTheDocument();
@@ -1690,10 +1784,11 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     render(<QueryDefinitionPage client={client} id="new" />);
     const connection = await screen.findByLabelText('Connection');
     await waitFor(() => expect(connection).toHaveValue(BUCKET));
+    await user.type(screen.getByLabelText('Title'), 'Sites from a file');
     // An S3 connection's query is a file: no builder, no SQL, no request.
+    await tab(user, 'Query');
     expect(screen.queryByLabelText('SQL text')).toBeNull();
     expect(screen.queryByLabelText('Method')).toBeNull();
-    await user.type(screen.getByLabelText('Title'), 'Sites from a file');
     await user.click(screen.getByRole('button', { name: 'Add parameter' }));
     await user.type(
       within(screen.getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
@@ -1715,7 +1810,9 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     // A file is CSV unless said; its convention for an empty field is declared.
     expect(screen.getByLabelText('The file is')).toHaveValue('csv');
     await user.selectOptions(screen.getByLabelText('An empty field'), 'never');
+    await tab(user, 'Sample');
     await user.type(screen.getByLabelText('year'), '2026');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     const key = [{ fixed: 'readings' }, { parameter: 'year' }, { fixed: 'sites.csv' }];
@@ -1732,6 +1829,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
       await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
     }
     // A filter over a confirmed column, compared with a fixed value of its type.
+    await tab(user, 'Query');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
     const filter = screen.getByRole('group', { name: 'Filter 1' });
     await user.selectOptions(within(filter).getByLabelText('Column'), 'site');
@@ -1739,7 +1837,8 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     await user.selectOptions(within(filter).getByLabelText('Comparison'), 'startsWith');
     await user.type(within(filter).getByLabelText('Value'), 'North');
     // Filtering changes which rows, never which columns: the confirmations stand.
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    expectSavable();
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
       definition: {
@@ -1785,12 +1884,14 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     const connection = await screen.findByLabelText('Connection');
     await waitFor(() => expect(connection).toHaveValue(BUCKET));
     await user.type(screen.getByLabelText('Title'), 'Readings from a workbook');
+    await tab(user, 'Query');
     await user.click(screen.getByRole('button', { name: 'Add segment' }));
     await user.type(screen.getByLabelText('Segment 1'), 'readings.xlsx');
     await user.selectOptions(screen.getByLabelText('The file is'), 'xlsx');
     // A workbook's sheet is named; CSV's delimiter and convention for null are not asked.
     expect(screen.queryByLabelText('An empty field')).toBeNull();
     await user.type(screen.getByLabelText('Sheet'), 'Readings');
+    await tab(user, 'Columns');
     await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
     const columns = await screen.findByRole('table', { name: 'Columns' });
     const format = { kind: 'xlsx', sheet: 'Readings', headerRow: true };
@@ -1800,7 +1901,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     for (const name of ['id', 'measured']) {
       await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
     }
-    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await user.click(saveVersion());
     await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
     expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
       definition: {
@@ -1814,6 +1915,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
   });
 
   it('shows the object a file definition reads to somebody who may only read it', async () => {
+    const user = userEvent.setup();
     const { client } = service({
       held: {
         ...view({
@@ -1831,6 +1933,7 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
       },
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await tab(user, 'Query');
     expect(await screen.findByText('readings/{year}/sites.csv')).toBeInTheDocument();
   });
 });
