@@ -2,6 +2,8 @@ import { fieldFormatSchema, type ColumnType, type FieldFormat } from '@alloy-wor
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
+import { Chip } from '../parts/Chip.js';
+import layout from './FormatDialog.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 
@@ -160,7 +162,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
     dialog.current?.querySelector<HTMLElement>('select, input')?.focus();
   }, []);
 
-  const set = (name: string, value: string | boolean) => setDraft({ ...draft, [name]: value });
+  const set_ = (name: string, value: string | boolean) => setDraft({ ...draft, [name]: value });
   const unset = (member: keyof FieldFormat) => `${STYLE_SAYS}: ${memberSaid(member, style)}`;
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -184,14 +186,53 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
     stops[event.shiftKey ? stops.length - 1 : 0]?.focus();
   };
 
-  /** A member chosen from a list, its first entry the style's. */
-  const choose = (member: keyof FieldFormat, name: string, words: Record<string, string>) => (
-    <div key={member} className={styles['field']}>
-      <label htmlFor={`${id}-${name}`}>{FORMAT_MEMBERS[member]}</label>
+  /**
+   * One member's row (ADR-0051, decision 7): its name, a Set badge where the column sets it, and under
+   * the name what the table style says; its field on the right.
+   */
+  const row = (
+    member: keyof FieldFormat,
+    name: string,
+    set: boolean,
+    hint: string | null,
+    field: React.ReactNode,
+    more: React.ReactNode = null,
+  ) => (
+    <div key={member} className={layout['row']}>
+      <div className={layout['name']}>
+        <label htmlFor={`${id}-${name}`}>{FORMAT_MEMBERS[member]}</label>
+        {set && <Chip tone="accent">Set</Chip>}
+        {hint !== null && (
+          <span id={`${id}-${name}-style`} className={layout['hint']}>
+            {hint}
+          </span>
+        )}
+      </div>
+      <div className={layout['field']}>
+        {field}
+        {more}
+      </div>
+    </div>
+  );
+
+  /** A member chosen from a list, its first entry the style's, which is said under it once set. */
+  const choose = (
+    member: keyof FieldFormat,
+    name: string,
+    words: Record<string, string>,
+    more: React.ReactNode = null,
+  ) => {
+    const set = String(draft[name]) !== '';
+    return row(
+      member,
+      name,
+      set,
+      set ? unset(member) : null,
       <select
         id={`${id}-${name}`}
         value={String(draft[name])}
-        onChange={(event) => set(name, event.target.value)}
+        {...(set ? { 'aria-describedby': `${id}-${name}-style` } : {})}
+        onChange={(event) => set_(name, event.target.value)}
       >
         <option value="">{unset(member)}</option>
         {Object.entries(words).map(([value, label]) => (
@@ -199,27 +240,35 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
             {label}
           </option>
         ))}
-      </select>
-    </div>
-  );
+      </select>,
+      more,
+    );
+  };
 
-  /** A member typed, the style's said beside it while it is empty. */
-  const typed = (member: keyof FieldFormat, name: string, kind: 'number' | 'text') => (
-    <div key={member} className={styles['field']}>
-      <label htmlFor={`${id}-${name}`}>{FORMAT_MEMBERS[member]}</label>
+  /** A member typed, what the style says under its name, and "Left unset" while it is empty. */
+  const typed = (
+    member: keyof FieldFormat,
+    name: string,
+    kind: 'number' | 'text',
+    more: React.ReactNode = null,
+  ) => {
+    const set = String(draft[name]) !== '';
+    return row(
+      member,
+      name,
+      set,
+      set ? unset(member) : `Left unset. ${unset(member)}`,
       <input
         id={`${id}-${name}`}
         type={kind}
         {...(kind === 'number' ? { min: 0, max: member === 'fraction' ? 6 : 20 } : {})}
         value={String(draft[name])}
         aria-describedby={`${id}-${name}-style`}
-        onChange={(event) => set(name, event.target.value)}
-      />
-      <span id={`${id}-${name}-style`} className={styles['hint']}>
-        {draft[name] === '' ? `Left unset. ${unset(member)}` : unset(member)}
-      </span>
-    </div>
-  );
+        onChange={(event) => set_(name, event.target.value)}
+      />,
+      more,
+    );
+  };
 
   const fields = members.map((member) => {
     switch (member) {
@@ -236,56 +285,56 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
       case 'null':
         return typed(member, 'null', 'text');
       case 'currency':
-        return (
-          <div key={member} className={styles['field']}>
-            {typed(member, 'symbol', 'text')}
-            {draft.symbol !== '' && (
-              <>
-                <label htmlFor={`${id}-position`}>Symbol stands</label>
-                <select
-                  id={`${id}-position`}
-                  value={String(draft.position)}
-                  onChange={(event) => set('position', event.target.value)}
-                >
-                  {Object.entries(FORMAT_WORDS.position).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={draft.space === true}
-                    onChange={(event) => set('space', event.target.checked)}
-                  />
-                  A space between symbol and number
-                </label>
-              </>
-            )}
-          </div>
+        return typed(
+          member,
+          'symbol',
+          'text',
+          draft.symbol !== '' && (
+            <>
+              <label htmlFor={`${id}-position`}>Symbol stands</label>
+              <select
+                id={`${id}-position`}
+                value={String(draft.position)}
+                onChange={(event) => set_('position', event.target.value)}
+              >
+                {Object.entries(FORMAT_WORDS.position).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={draft.space === true}
+                  onChange={(event) => set_('space', event.target.checked)}
+                />
+                A space between symbol and number
+              </label>
+            </>
+          ),
         );
       case 'duration':
-        return (
-          <div key={member} className={styles['field']}>
-            {choose(member, 'from', FORMAT_WORDS.from)}
-            {draft.from !== '' && (
-              <>
-                <label htmlFor={`${id}-show`}>Shown as</label>
-                <select
-                  id={`${id}-show`}
-                  value={String(draft.show)}
-                  onChange={(event) => set('show', event.target.value)}
-                >
-                  {Object.entries(FORMAT_WORDS.show).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
+        return choose(
+          member,
+          'from',
+          FORMAT_WORDS.from,
+          draft.from !== '' && (
+            <>
+              <label htmlFor={`${id}-show`}>Shown as</label>
+              <select
+                id={`${id}-show`}
+                value={String(draft.show)}
+                onChange={(event) => set_('show', event.target.value)}
+              >
+                {Object.entries(FORMAT_WORDS.show).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </>
+          ),
         );
     }
   });
@@ -321,9 +370,9 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
             Format of {header}
           </h2>
           <p className={styles['note']}>
-            Each member left unset takes the table style's, shown beside it.
+            Each member left unset takes the table style's, shown under its name.
           </p>
-          {fields}
+          <div className={layout['rows']}>{fields}</div>
           {said !== null && (
             <p role="alert" className={styles['complaint']}>
               {said}

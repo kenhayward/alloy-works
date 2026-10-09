@@ -125,14 +125,14 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .panel[hidden] {
   display: none;
 }
 
-.row,
-.column {
+.row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -140,6 +140,67 @@
   min-height: var(--grid-row);
   padding: 2px var(--space-8) 2px var(--space-16);
   border-bottom: 1px solid var(--border);
+}
+
+/* A column a row (ADR-0051, decision 4), of fixed widths but for its header, which takes the rest. */
+.column {
+  display: grid;
+  grid-template-columns:
+    50px 26px minmax(140px, 300px) minmax(120px, 1fr) 110px 124px max-content
+    34px 34px 42px;
+  align-items: center;
+  gap: 0 var(--space-12);
+  min-width: 980px;
+  min-height: var(--grid-row);
+  padding: 2px var(--space-8) 2px var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.column > :is(select, input) {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 28px;
+}
+
+.column:focus-within {
+  background: color-mix(in srgb, var(--accent-weak) 60%, transparent);
+}
+
+.head {
+  min-height: 30px;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.head:focus-within {
+  background: none;
+}
+
+.moves {
+  display: inline-flex;
+}
+
+.move {
+  width: 22px;
+  min-height: var(--icon-button-sm);
+  color: var(--muted);
+}
+
+.move[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+/* A row's number marked where a change to it was refused, the reason in its tooltip. */
+.refused button {
+  min-height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--size-12);
+  font-weight: 600;
 }
 
 .index {
@@ -227,4 +288,13 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.refused [role='tooltip'] {
+  right: auto;
+  left: 0;
+  width: max-content;
+  max-width: 320px;
+  font-family: inherit;
+  white-space: normal;
 }

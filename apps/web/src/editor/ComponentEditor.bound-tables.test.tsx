@@ -217,6 +217,17 @@ async function inTable(
 const column = (panel: HTMLElement, n: number) =>
   within(panel).getByRole('group', { name: `Column ${n}` });
 
+/**
+ * A refusal, quiet (ADR-0051, decision 5): said once in the band's live region, and marked on the
+ * row it belongs to, its number described by the reason.
+ */
+function expectRefused(panel: HTMLElement, n: number, words: string) {
+  expect(within(panel).getByRole('status')).toHaveTextContent(words);
+  expect(
+    within(column(panel, n)).getByRole('button', { name: String(n) }),
+  ).toHaveAccessibleDescription(words);
+}
+
 describe('placing a bound table from the Value dialog (TB2-E)', () => {
   it('places a definition of 70 columns, two of them images, as a table of the first 64, says so, and tells the document', async () => {
     const wide: TableColumn[] = [
@@ -259,7 +270,14 @@ describe('placing a bound table from the Value dialog (TB2-E)', () => {
     expect(headers).toHaveLength(64);
     expect(headers[0]).toHaveTextContent('c0');
     expect(headers[63]).toHaveTextContent('c63');
-    expect(await screen.findByRole('status')).toHaveTextContent(columnsLeftOut(6));
+    // Said in the editor's own status, beside the band's live region.
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('status')
+          .some((each) => each.textContent?.includes(columnsLeftOut(6)) === true),
+      ).toBe(true),
+    );
     // The cursor in its empty caption, the panels beside it.
     expect(view.state.selection.$from.parent.type.name).toBe('tableCaption');
     expect(await screen.findByRole('group', { name: 'Bound table' })).toBeInTheDocument();
@@ -291,7 +309,11 @@ describe('the Bound table panel (TB2-F)', () => {
     await userEvent.type(header, 'Depth');
     await userEvent.type(within(depth).getByLabelText('Unit'), 'm');
     expect(bodyOf(view)[0]).toEqual(['Site', 'Depth (m)']);
-    await userEvent.selectOptions(within(depth).getByLabelText('Unit stands'), 'value');
+    await userEvent.click(
+      within(within(depth).getByRole('radiogroup', { name: 'Unit stands' })).getByRole('radio', {
+        name: 'After each value',
+      }),
+    );
     expect(bodyOf(view)[0]).toEqual(['Site', 'Depth']);
     expect(bodyOf(view)[1]).toEqual(['Ash', '2.50 m']);
   });
@@ -371,9 +393,10 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(bodyOf(view)[1]).toEqual(['Ash', 'Ash']);
     const header = within(second).getByLabelText('Header');
     await userEvent.clear(header);
-    expect(within(panel).getByRole('alert')).toHaveTextContent(BOUND_TABLE_WORDS.needsHeader);
+    expectRefused(panel, 2, BOUND_TABLE_WORDS.needsHeader);
+    expect(header).toHaveAttribute('aria-invalid', 'true');
     await userEvent.type(header, 'SITE');
-    expect(within(panel).getByRole('alert')).toHaveTextContent(repeatedWords('site'));
+    expectRefused(panel, 2, repeatedWords('site'));
     expect(header).toHaveValue('SITE');
     expect(bodyOf(view)[0]).toEqual(['Site', 'SIT']);
   });
@@ -381,7 +404,7 @@ describe('the Bound table panel (TB2-F)', () => {
   it('refuses to remove the last column', async () => {
     const { view, panel } = await inTable();
     await userEvent.click(within(column(panel, 1)).getByRole('button', { name: 'Remove' }));
-    expect(within(panel).getByRole('alert')).toHaveTextContent(BOUND_TABLE_WORDS.lastColumn);
+    expectRefused(panel, 1, BOUND_TABLE_WORDS.lastColumn);
     expect(bodyOf(view)[0]).toEqual(['Site']);
   });
 
@@ -558,9 +581,7 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
       note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),
     ]);
     await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Remove' }));
-    expect(within(panel).getByRole('alert')).toHaveTextContent(
-      BOUND_TABLE_WORDS.noteStands('depth'),
-    );
+    expectRefused(panel, 2, BOUND_TABLE_WORDS.noteStands('depth'));
     // Still shown, its note's letter beside its header.
     expect(bodyOf(view)[0]).toEqual(['Site', 'Deptha']);
   });

@@ -829,7 +829,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   names, and saying where it left any out. The **Bound table** band under the toolbar, of fixed height while the cursor is in the table, outlines the table, starts with its value in one line - its definition a link, its mode, when it was fetched, Provenance, Change and Resolve - then sets its table style and Numbered, the header column, the empty statement, note and source as toggles, and holds **Columns**, **Sort** and **Notes** tabs, each counted: each column's column, header,
   unit, alignment, wrap and place in the order, highlighted in the table while its row has the focus and named in the status bar, and a sort of up to four keys; **Format** opens a
   column's format member by member, beside each one left unset the table style's. A header emptied or
-  repeated under the same column is refused, and so is removing the last column. The caption, empty
+  repeated under the same column is refused, and so is removing the last column, each marked on its row, the reason shown as you point at it and said to a screen reader. The caption, empty
   statement, note and source are typed in place. **Change** in the Value panel opens the dialog on its
   binding, resolved at once in a document; a column the new definition lacks stays, shown as missing.
   **On the page**, in a component it shows its headers and the definition that fills it; in a
