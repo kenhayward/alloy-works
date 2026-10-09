@@ -300,3 +300,135 @@
 .actionsColumn {
   width: 124px;
 }
+
+/* People (AD5): who a row is, a person's tokens as cards, and the page's Show more. */
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.who > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.who .name,
+.who .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.initials {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-12);
+}
+
+.more p {
+  margin: 0;
+}
+
+.cards {
+  margin: var(--space-12) 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+}
+
+.cards li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+}
+
+.cards li + li {
+  border-top: 1px solid var(--border);
+}
+
+.cards li > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.cards p {
+  margin: 0;
+}
+
+.dates {
+  color: var(--muted);
+  font-size: var(--size-12);
+  text-align: end;
+}
+
+.bin {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-button);
+  min-height: var(--icon-button);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+}
+
+.bin:hover {
+  color: var(--danger);
+}
+
+.plain {
+  width: 100%;
+  margin-top: var(--space-12);
+  font-size: var(--size-13);
+}
+
+.plain caption {
+  margin-bottom: var(--space-8);
+  font-weight: 600;
+  text-align: start;
+}
+
+.plain th,
+.plain td {
+  padding: var(--space-4) var(--space-8) var(--space-4) 0;
+  text-align: start;
+  vertical-align: top;
+}
+
+.iconColumn {
+  width: 64px;
+}
+
+/* A checkbox beside its words, held apart from a dialog's stacked fields. */
+.check {
+  grid-column: 1 / -1;
+}
+
+.check label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
