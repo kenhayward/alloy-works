@@ -32,3 +32,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A kept page: laid out as if it were the page itself, and gone while another place is open. */
+.kept {
+  display: contents;
+}
+
+.kept[hidden] {
+  display: none;
+}

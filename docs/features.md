@@ -35,7 +35,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 
 - **An interface in Light, Dark or Auto.** Every screen sits beside a labelled module rail - Home;
   Components, Documents and Templates; Publications; Connections and Query definitions; and Admin,
-  which opens Administration - and under a header band in the theme's colours with:
+  which opens Administration. A module left half way through - a component, a document, a connection or
+  a query definition open, a search typed - is as it was on returning to it by the rail, unsaved work
+  and scroll and all; its list is read afresh. Every screen is under a header band in the theme's colours with:
   - the mark, which goes to Home, where every module is listed in its group with how many there are;
   - the environment's name;
   - **search and commands**, which Ctrl K opens too, going to a module or searching for what is typed;

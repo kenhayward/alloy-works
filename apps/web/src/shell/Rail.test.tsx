@@ -18,6 +18,32 @@ const service = vi.fn(async (input: string | URL | Request, init?: RequestInit) 
 afterEach(() => vi.clearAllMocks());
 
 describe('the module rail', () => {
+  it('links each module to where it was left, and the one it is in to its start', () => {
+    const leave = (from: string, to: string) => {
+      window.location.hash = from;
+      const oldURL = window.location.href;
+      window.location.hash = to;
+      window.dispatchEvent(
+        new HashChangeEvent('hashchange', { oldURL, newURL: window.location.href }),
+      );
+    };
+    const { rerender } = render(<Rail module="Components" fetch={service} />);
+    const link = (name: string) =>
+      within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name });
+    expect(link('Query definitions')).toHaveAttribute('href', '#/query-definitions');
+
+    leave('#/query-definitions/new', '#/components');
+    rerender(<Rail module="Components" fetch={service} />);
+    expect(link('Query definitions')).toHaveAttribute('href', '#/query-definitions/new');
+    expect(link('Components')).toHaveAttribute('href', '#/components');
+
+    // Back in it, its own link starts it over.
+    leave('#/components', '#/query-definitions/new');
+    rerender(<Rail module="Query definitions" fetch={service} />);
+    expect(link('Query definitions')).toHaveAttribute('href', '#/query-definitions');
+    expect(link('Components')).toHaveAttribute('href', '#/components');
+  });
+
   it('reaches Home and every module by Tab, in groups, the one it is in marked', async () => {
     render(<Rail module="Documents" fetch={service} />);
 
