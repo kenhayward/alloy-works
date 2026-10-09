@@ -826,9 +826,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   whether it may wrap; a stable sort; whether the first column heads each row; a caption, an empty
   statement, a source and a note. The Value dialog's **Place as** offers **As a table** wherever a
   block may stand, showing the definition's first 64 columns that are not images, headed by their
-  names, and saying where it left any out. The **Bound table** panel beside it sets its table style,
-  Numbered, the header column, the empty statement, note and source, each column's column, header,
-  unit, alignment, wrap and place in the order, and a sort of up to four keys; **Format** opens a
+  names, and saying where it left any out. The **Bound table** band under the toolbar, of fixed height while the cursor is in the table, outlines the table, starts with its value in one line - its definition a link, its mode, when it was fetched, Provenance, Change and Resolve - then sets its table style and Numbered, the header column, the empty statement, note and source as toggles, and holds **Columns**, **Sort** and **Notes** tabs, each counted: each column's column, header,
+  unit, alignment, wrap and place in the order, highlighted in the table while its row has the focus and named in the status bar, and a sort of up to four keys; **Format** opens a
   column's format member by member, beside each one left unset the table style's. A header emptied or
   repeated under the same column is refused, and so is removing the last column. The caption, empty
   statement, note and source are typed in place. **Change** in the Value panel opens the dialog on its

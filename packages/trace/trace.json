@@ -19630,13 +19630,13 @@
     {
       "id": "TAB-037",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 320,
+      "line": 326,
       "kind": "title"
     },
     {
       "id": "TAB-048",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 357,
+      "line": 363,
       "kind": "title"
     },
     {
@@ -19690,7 +19690,7 @@
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2857,
+      "line": 2863,
       "kind": "title"
     },
     {

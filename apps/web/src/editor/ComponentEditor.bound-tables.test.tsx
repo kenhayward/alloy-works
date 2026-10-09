@@ -301,6 +301,7 @@ describe('the Bound table panel (TB2-F)', () => {
       { column: 'site', header: 'Site' },
       { column: 'visits', header: 'Visits' },
     ]);
+    await userEvent.click(within(panel).getByRole('tab', { name: /^Sort/ }));
     await userEvent.click(within(panel).getByRole('button', { name: 'Add sort' }));
     const key = within(panel).getByRole('group', { name: 'Sort 1' });
     await userEvent.selectOptions(within(key).getByLabelText('Column'), 'visits');
@@ -309,7 +310,12 @@ describe('the Bound table panel (TB2-F)', () => {
         .slice(1)
         .map((row) => row[0]),
     ).toEqual(['Birch', 'Dogwood', 'Ash', 'Cedar']);
-    await userEvent.selectOptions(within(key).getByLabelText('Direction of Sort 1'), 'descending');
+    await userEvent.click(
+      within(within(key).getByRole('radiogroup', { name: 'Direction of Sort 1' })).getByRole(
+        'radio',
+        { name: 'Descending' },
+      ),
+    );
     expect(
       bodyOf(view)
         .slice(1)
@@ -381,13 +387,16 @@ describe('the Bound table panel (TB2-F)', () => {
 
   it('adds an empty statement, a note and a source in place, and heads each row by its first column', async () => {
     const { view, panel } = await inTable();
-    await userEvent.click(within(panel).getByRole('checkbox', { name: 'Source' }));
+    await userEvent.click(within(panel).getByRole('button', { name: 'Source' }));
     expect(view.state.selection.$from.parent.type.name).toBe('boundTableSource');
     await userEvent.click(
-      within(panel).getByRole('checkbox', { name: BOUND_TABLE_WORDS.headerColumn }),
+      within(panel).getByRole('button', { name: BOUND_TABLE_WORDS.headerColumn }),
     );
     expect(view.dom.querySelectorAll('[data-bound-table-body] th[scope="row"]')).toHaveLength(4);
-    expect(within(panel).getByRole('checkbox', { name: 'Source' })).toBeChecked();
+    expect(within(panel).getByRole('button', { name: 'Source' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it("offers the columns of the version the document holds, not the definition's latest, and formats by their types (the TB2 final review)", async () => {
@@ -408,6 +417,29 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(within(dialog).getByLabelText('Decimal places')).toBeInTheDocument();
   });
 
+  it('TB2 is a band of counted tabs, its value the first line, the column focused marked in the text', async () => {
+    const { view, panel } = await inTable();
+    expect(
+      within(panel)
+        .getAllByRole('tab')
+        .map((each) => each.getAttribute('aria-label') ?? each.textContent),
+    ).toEqual(['Columns, 1', 'Sort, 0', 'Notes, 0']);
+    expect(within(panel).getByRole('region', { name: 'Value' })).toBeInTheDocument();
+    expect(view.dom.querySelector('figure[data-bound-table]')).toHaveClass(
+      'aw-bound-table-current',
+    );
+
+    await userEvent.click(within(column(panel, 1)).getByLabelText('Header'));
+    expect(
+      [...view.dom.querySelectorAll('.aw-bound-table-focused')].map((cell) => cell.textContent),
+    ).toEqual(bodyOf(view).map((row) => row[0]));
+
+    await userEvent.click(within(panel).getByRole('tab', { name: /^Sort/ }));
+    expect(within(panel).getByRole('tabpanel', { name: /^Sort/ })).toHaveTextContent(
+      BOUND_TABLE_WORDS.sortHint,
+    );
+    expect(view.dom.querySelectorAll('.aw-bound-table-focused')).toHaveLength(0);
+  });
   it('is a region F6 moves to, beside the Value panel', async () => {
     const { view, panel } = await inTable();
     act(() => view.focus());
@@ -423,7 +455,7 @@ describe('the Bound table panel (TB2-F)', () => {
     const { view, panel } = await inTable();
     await userEvent.click(within(panel).getByRole('button', { name: 'Add column' }));
     await userEvent.click(
-      within(panel).getByRole('checkbox', { name: BOUND_TABLE_WORDS.headerColumn }),
+      within(panel).getByRole('button', { name: BOUND_TABLE_WORDS.headerColumn }),
     );
     const mac = /Mac|iP(hone|[oa]d)/.test(navigator.platform);
     act(() => {
@@ -495,8 +527,9 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
   it('adds a note on a cell by key, its value offered from the rows shown, and types its words in place, by keyboard', async () => {
     const user = userEvent.setup();
     const { view, panel } = await inTable(COLUMNS);
+    await user.click(within(panel).getByRole('tab', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
-    await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteOn), 'cell');
+    await user.click(within(adding).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));
     await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteColumn), 'depth');
     const key = within(adding).getByLabelText(BOUND_TABLE_WORDS.keyIs('site'));
     // Its values offered from the rows the page holds.
@@ -547,8 +580,9 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
         },
       ),
     );
+    await user.click(within(panel).getByRole('tab', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
-    await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteOn), 'cell');
+    await user.click(within(adding).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));
     await user.type(within(adding).getByLabelText(BOUND_TABLE_WORDS.keyIs('visits')), 'two');
     await user.click(within(adding).getByRole('button', { name: BOUND_TABLE_WORDS.addNote }));
     expect(within(panel).getByRole('alert')).toHaveTextContent(
@@ -571,9 +605,13 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
       ),
     );
     expect(panel).toHaveTextContent(BOUND_TABLE_WORDS.noKey);
+    await userEvent.click(within(panel).getByRole('tab', { name: /^Notes/ }));
+    const on = within(panel).getByRole('radiogroup', { name: BOUND_TABLE_WORDS.noteOn });
+    expect(on).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(within(on).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));
     expect(
-      within(panel).getByRole('option', { name: BOUND_TABLE_WORDS.noteOns.cell }),
-    ).toBeDisabled();
+      within(on).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.column }),
+    ).toHaveAttribute('aria-checked', 'true');
   });
 
   it("sets Wide on the Bound table panel: the style's, Scale or Rotate", async () => {

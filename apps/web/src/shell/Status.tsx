@@ -18,6 +18,8 @@ import styles from './Status.module.css';
 export interface Status {
   readonly say: (notice: string | null) => void;
   readonly describe: (context: readonly string[] | null) => void;
+  /** Where the person is within the page, such as "Bound table, column 3 of 11"; never announced. */
+  readonly place: (where: string | null) => void;
 }
 
 const StatusContext = createContext<Status | null>(null);
@@ -30,11 +32,15 @@ const StatusContext = createContext<Status | null>(null);
 export function StatusProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [context, setContext] = useState<readonly string[] | null>(null);
-  const status = useMemo<Status>(() => ({ say: setNotice, describe: setContext }), []);
+  const [place, setPlace] = useState<string | null>(null);
+  const status = useMemo<Status>(
+    () => ({ say: setNotice, describe: setContext, place: setPlace }),
+    [],
+  );
   return (
     <StatusContext.Provider value={status}>
       {children}
-      <StatusBar notice={notice} context={context} />
+      <StatusBar notice={notice} context={context} place={place} />
     </StatusContext.Provider>
   );
 }
@@ -59,9 +65,11 @@ const isMove = (notice: string) => notice.startsWith('Moved ');
 export function StatusBar({
   notice,
   context,
+  place = null,
 }: {
   notice: string | null;
   context: readonly string[] | null;
+  place?: string | null;
 }) {
   // How tall the bar stands over the window's foot, one line or wrapped to two, told to the page as
   // `--status-height`: what the window scrolls to stops above it, and the outline pane stuck beside
@@ -87,6 +95,7 @@ export function StatusBar({
         {notice !== null && isMove(notice) && <Icon name="Move" size={13} />}
         {notice}
       </p>
+      {place !== null && <p className={styles['place']}>{place}</p>}
       {context !== null && context.length > 0 && (
         <p className={styles['context']}>
           {context.map((phrase, index) => (

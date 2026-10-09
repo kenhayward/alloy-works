@@ -7,6 +7,9 @@ import {
 } from '@alloy-works/domain';
 import {
   createEditorState,
+  CURRENT_TABLE_CLASS,
+  FOCUSED_COLUMN_CLASS,
+  focusBoundTableColumn,
   fromEditor,
   mountEditor,
   pasteInto,
@@ -117,6 +120,25 @@ const cellsOf = (element: Element) =>
   );
 
 describe('a bound table on the editing surface', () => {
+  it('is outlined while the cursor stands in it, the column focused in its panel marked down its cells', () => {
+    const view = mount(holding(rows(3)));
+    const figure = view.dom.querySelector('figure[data-bound-table]')!;
+    expect(figure).not.toHaveClass(CURRENT_TABLE_CLASS);
+    let caption = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (caption < 0 && node.type.name === 'tableCaption') caption = pos + 1;
+    });
+    view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(caption))));
+    expect(view.dom.querySelector('figure[data-bound-table]')).toHaveClass(CURRENT_TABLE_CLASS);
+
+    focusBoundTableColumn(1)(view.state, view.dispatch);
+    const marked = [...view.dom.querySelectorAll(`.${FOCUSED_COLUMN_CLASS}`)].map(
+      (cell) => cell.textContent,
+    );
+    expect(marked).toEqual(['Depth (m)', '-0.50', '-1.50', '-2.50']);
+    focusBoundTableColumn(null)(view.state, view.dispatch);
+    expect(view.dom.querySelectorAll(`.${FOCUSED_COLUMN_CLASS}`)).toHaveLength(0);
+  });
   it('draws a table labelled by its caption: headers with units, the first 50 rows, and how many more', () => {
     const view = mount(holding(rows(120)));
     const grid = view.dom.querySelector('[data-bound-table-body] table')!;

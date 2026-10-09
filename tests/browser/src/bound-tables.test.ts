@@ -207,12 +207,19 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
       await formatDialog.waitFor({ state: 'hidden' });
       await expect.poll(async () => (await rowsOf(body))[1]).toEqual(['1', 'North weir', '12.5']);
 
-      // Sorted by depth, deepest first, the site with none last.
+      // Sorted by depth, deepest first, the site with none last: the Sort tab, by the arrows from
+      // the tab chosen (ADR-0051).
+      await tabTo(page, panel.getByRole('tab', { selected: true }));
+      await page.keyboard.press('ArrowRight');
+      await panel.getByRole('tabpanel', { name: /^Sort/ }).waitFor();
       await tabTo(page, panel.getByRole('button', { name: 'Add sort' }));
       await page.keyboard.press('Enter');
       const key = panel.getByRole('group', { name: 'Sort 1' });
       await key.getByLabel('Column').selectOption('depth');
-      await key.getByLabel('Direction of Sort 1').selectOption('descending');
+      await key
+        .getByRole('radiogroup', { name: 'Direction of Sort 1' })
+        .getByRole('radio', { name: 'Descending' })
+        .click();
       await expect
         .poll(async () => (await rowsOf(body)).slice(1).map((row) => row[1]))
         .toEqual(['North weir', 'South bank', 'Old mill']);

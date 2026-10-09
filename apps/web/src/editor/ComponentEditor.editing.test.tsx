@@ -2667,8 +2667,13 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     );
     const panel = await screen.findByRole('region', { name: 'Value' });
     expect(panel).toHaveTextContent('1,234.5');
-    expect(panel).toHaveTextContent('Query definition: Readings, version 0.2');
-    expect(panel).toHaveTextContent('Mode: Checked');
+    // In one line (ADR-0051): its definition a link, its version, its mode, when it was fetched.
+    expect(within(panel).getByRole('link', { name: 'Readings' })).toHaveAttribute(
+      'href',
+      `#/query-definitions/${READINGS}`,
+    );
+    expect(panel).toHaveTextContent('Readings version 0.2');
+    expect(panel).toHaveTextContent('Checked, looked for each time the document is opened');
     expect(panel).toHaveTextContent('Fetched 4 October 2026');
     const button = within(panel).getByRole('button', { name: 'Provenance' });
     await userEvent.click(button);
@@ -2695,9 +2700,10 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
       ),
     );
     const panel = await screen.findByRole('region', { name: 'Value' });
-    expect(panel).not.toHaveTextContent('Query definition');
+    expect(within(panel).queryByRole('link')).toBeNull();
+    expect(panel).not.toHaveTextContent('query definition');
     answer(json(200, { id: READINGS, definition: { title: 'Readings' } }));
-    await waitFor(() => expect(panel).toHaveTextContent('Query definition: Readings'));
+    expect(await within(panel).findByRole('link', { name: 'Readings' })).toBeInTheDocument();
   });
 
   it('pastes a copy of a binding as one never resolved, and says so in the paste report', async () => {

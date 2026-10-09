@@ -2,6 +2,7 @@ import type { Node } from 'prosemirror-model';
 import type { Decoration, NodeView } from 'prosemirror-view';
 
 import { FAILED_CLASS, type BoundTableNoteShown, type BoundTableShown } from './bindings.js';
+import { FOCUSED_COLUMN_CLASS } from './boundTableFocus.js';
 import { BOUND_TABLE } from './schema.js';
 
 /** The rows a bound table has beyond those the page shows, in words, or null for none (TB2-D). */
@@ -134,14 +135,32 @@ export function boundTableBodyView(
   dom.setAttribute('contenteditable', 'false');
   let drawn: BoundTableShown | undefined;
   let drawnCaption: string | null = null;
+  let focused: number | null = null;
+  // The column focused in the Bound table panel, marked down its cells (ADR-0051, decision 6).
+  const mark = (column: number | null) => {
+    dom
+      .querySelectorAll(`.${FOCUSED_COLUMN_CLASS}`)
+      .forEach((cell) => cell.classList.remove(FOCUSED_COLUMN_CLASS));
+    if (column === null) return;
+    dom
+      .querySelectorAll(`tr > :nth-child(${column + 1}):not([colspan])`)
+      .forEach((cell) => cell.classList.add(FOCUSED_COLUMN_CLASS));
+  };
   const draw = (from: readonly Decoration[]) => {
     const carried = from.find((each) => each.spec.boundTable !== undefined);
     const shown = (carried?.spec.boundTable as BoundTableShown | undefined) ?? NOTHING_SAID;
     const caption = (carried?.spec.captionId as string | undefined) ?? null;
-    if (shown === drawn && caption === drawnCaption) return;
+    const column =
+      (from.find((each) => each.spec.focusColumn !== undefined)?.spec.focusColumn as
+        number | undefined) ?? null;
+    if (shown === drawn && caption === drawnCaption) {
+      if (column !== focused) mark((focused = column));
+      return;
+    }
     drawn = shown;
     drawnCaption = caption;
     fillBoundTable(dom, shown, caption);
+    mark((focused = column));
   };
   draw(decorations);
   return {

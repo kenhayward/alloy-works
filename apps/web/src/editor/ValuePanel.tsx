@@ -1,13 +1,18 @@
 import type { AnyBinding } from '@alloy-works/domain';
 import { useId, type Ref } from 'react';
 
+import { queryDefinitionLink } from '../data/links.js';
 import { longDate } from '../data/shapes.js';
+import { Chip } from '../parts/Chip.js';
+import { IconButton } from '../parts/IconButton.js';
 import type { BindingState } from '../structure/bindingContexts.js';
-import styles from './TablePanel.module.css';
+import { Icon } from './Icon.js';
+import styles from './ValuePanel.module.css';
 
+/** Each mode's word on its chip, and the rest of what it means, said after it and in its title. */
 const MODES = {
-  checked: 'Checked - looked for each time the document is opened',
-  pinned: 'Pinned - never looked for',
+  checked: ['Checked', 'looked for each time the document is opened'],
+  pinned: ['Pinned', 'never looked for'],
 } as const;
 
 export interface ValuePanelProps {
@@ -43,8 +48,9 @@ export interface ValuePanelProps {
 }
 
 /**
- * **The Value panel** (the B1 plan, B1-M; bindings.md, "Keyboard and accessibility"), in the dock
- * beside the Figure and Table panels while a binding is selected whole: what it shows, its definition,
+ * **The Value panel** (the B1 plan, B1-M; bindings.md, "Keyboard and accessibility"), one line (ADR-0051,
+ * decision 2) - on its own while a binding is selected whole, or the first line of the Bound table band:
+ * what it shows, its definition as a link,
  * its mode and when its value was fetched, and **Provenance**, which opens the whole of it beside the
  * text; **Change**, which opens the Value dialog on it; and in a document **Keep** where what it held
  * may be kept under the binding as it now stands, **Resolve** otherwise (the B2 plan, B2-G).
@@ -62,42 +68,60 @@ export function ValuePanel({
   ref,
 }: ValuePanelProps) {
   const heading = useId();
-  const definition =
+  const unreadable = 'a query definition you cannot read';
+  const named =
     state !== undefined
-      ? state.definition === null
-        ? 'a query definition you cannot read'
-        : `${state.definition.title}, version ${state.definition.version}`
+      ? (state.definition?.title ?? null)
       : title === undefined
-        ? null
-        : (title ?? 'a query definition you cannot read');
+        ? undefined
+        : (title ?? null);
+  const version = state?.definition?.version;
   const held = state?.held ?? null;
+  const [mode, means] = MODES[binding.mode];
   return (
-    <section ref={ref} className={styles['panel']} aria-labelledby={heading} tabIndex={-1}>
-      <h3 id={heading}>Value</h3>
-      <span>{shown}</span>
-      {definition !== null && <span>Query definition: {definition}</span>}
-      <span>Mode: {MODES[binding.mode]}</span>
-      {resolved && held !== null && <span>Fetched {longDate(held.provenance.at)}</span>}
-      {onProvenance && resolved && held !== null && (
-        <button type="button" onClick={(event) => onProvenance(event.currentTarget)}>
-          Provenance
-        </button>
+    <section ref={ref} className={styles['line']} aria-labelledby={heading} tabIndex={-1}>
+      <h3 id={heading} className={styles['hidden']}>
+        Value
+      </h3>
+      <span className={styles['glyph']} aria-hidden="true">
+        <Icon name="Value" />
+      </span>
+      {named !== undefined && (
+        <span className={styles['named']}>
+          {named === null ? unreadable : <a href={queryDefinitionLink(binding.query)}>{named}</a>}
+          {version !== undefined && <span className={styles['mono']}>{` version ${version}`}</span>}
+        </span>
       )}
-      {onChange && (
-        <button type="button" onClick={onChange}>
-          Change
-        </button>
+      <span className={styles['shown']}>{shown}</span>
+      <Chip tone="ok" title={`${mode}: ${means}`}>
+        {mode}
+        <span className={styles['hidden']}>{`, ${means}`}</span>
+      </Chip>
+      {resolved && held !== null && (
+        <span className={styles['muted']}>Fetched {longDate(held.provenance.at)}</span>
       )}
-      {held?.keepable === true && onKeep && (
-        <button type="button" onClick={onKeep}>
-          Keep
-        </button>
-      )}
-      {held?.keepable !== true && onResolve && (
-        <button type="button" onClick={onResolve}>
-          Resolve
-        </button>
-      )}
+      <span className={styles['acts']}>
+        {onProvenance && resolved && held !== null && (
+          <IconButton label="Provenance" onClick={(event) => onProvenance(event.currentTarget)}>
+            <Icon name="Provenance" />
+          </IconButton>
+        )}
+        {onChange && (
+          <IconButton label="Change" onClick={onChange}>
+            <Icon name="Change" />
+          </IconButton>
+        )}
+        {held?.keepable === true && onKeep && (
+          <IconButton label="Keep" onClick={onKeep}>
+            <Icon name="Keep" />
+          </IconButton>
+        )}
+        {held?.keepable !== true && onResolve && (
+          <IconButton label="Resolve" onClick={onResolve}>
+            <Icon name="Resolve" />
+          </IconButton>
+        )}
+      </span>
     </section>
   );
 }
