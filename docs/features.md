@@ -717,7 +717,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and shows the first hundred rows, how many there were, the start of their checksum and the SQL
   that ran - every value sent apart from it, never placed in it - or the one reason it failed, laid
   at the database, the query or the product. **Save version** is offered once you have confirmed
-  every column; **Retire** and **Reinstate** are versions too. A value that does not fit its
+  every column, one at a time or all at once with **Confirm all**; the builder's **Select all** picks
+  every column to return; **Retire** and **Reinstate** are versions too. A value that does not fit its
   parameter is refused by name before anything runs. Text sorts by code point, so a text column the
   rows are ordered by is ordered `COLLATE "C"`, and the page says so when a sample is refused for
   it. SQL runs only on a connection whose latest test found its account read-only, and **write SQL**

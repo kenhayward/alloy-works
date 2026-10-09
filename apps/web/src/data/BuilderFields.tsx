@@ -211,6 +211,33 @@ export function BuilderFields({
         <>
           <fieldset className={styles['parameter']}>
             <legend>Columns to return</legend>
+            {(() => {
+              // Every column the definition may hold, those picked keeping their names and order.
+              const unpicked = available.filter(
+                (column) =>
+                  composed(column.name) &&
+                  !builder.columns.some((each) => each.column === column.name),
+              );
+              return (
+                <button
+                  type="button"
+                  className={styles['selectAll']}
+                  aria-disabled={unpicked.length === 0}
+                  onClick={() =>
+                    unpicked.length > 0 &&
+                    onChange({
+                      ...builder,
+                      columns: [
+                        ...builder.columns,
+                        ...unpicked.map((column) => ({ column: column.name, name: column.name })),
+                      ],
+                    })
+                  }
+                >
+                  Select all
+                </button>
+              );
+            })()}
             {available.map((column) => {
               const picked = builder.columns.find((each) => each.column === column.name);
               return (

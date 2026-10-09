@@ -744,6 +744,27 @@ describe('the query definition page', () => {
     );
   });
 
+  it('confirms every column with a type at once, from beside Describe', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id', level: 1 });
+    await tab(user, 'Query');
+    await user.type(screen.getByLabelText('SQL text'), ' ');
+    expectHeld();
+    const panel = await tab(user, 'Columns');
+    const all = within(panel).getByRole('button', { name: 'Confirm all' });
+    // Confirm all comes before Describe, at the top of the tab.
+    expect(
+      all.compareDocumentPosition(within(panel).getByRole('button', { name: 'Describe' })),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    await user.click(all);
+    const columns = within(panel).getByRole('table', { name: 'Columns' });
+    expect(within(columns).queryByRole('button', { name: /^Confirm / })).toBeNull();
+    expect(all).toHaveAttribute('aria-disabled', 'true');
+    expectSavable();
+  });
+
   it('holds Save version once the SQL or a parameter changes, until every column is confirmed again', async () => {
     const user = userEvent.setup();
     const { client } = service();
@@ -1694,6 +1715,24 @@ describe('the builder (D4)', () => {
     });
     await user.click(screen.getByRole('button', { name: /^More actions for / }));
     expect(screen.getByRole('menuitem', { name: 'Retire' })).toBeInTheDocument();
+  });
+
+  it('selects every column to return at once, keeping a name already given', async () => {
+    const { user } = await begun();
+    const columns = screen.getByRole('group', { name: 'Columns to return' });
+    await pick(user, 'id');
+    const named = within(columns).getByLabelText('Name of id');
+    await user.clear(named);
+    await user.type(named, 'site_id');
+    const all = within(columns).getByRole('button', { name: 'Select all' });
+    await user.click(all);
+    const boxes = within(columns)
+      .getAllByRole('checkbox')
+      .filter((box) => !(box as HTMLInputElement).disabled);
+    expect(boxes.length).toBeGreaterThan(1);
+    for (const box of boxes) expect(box).toBeChecked();
+    expect(within(columns).getByLabelText('Name of id')).toHaveValue('site_id');
+    expect(all).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('DAT-119 offers Match case on a contains or starts with filter alone, unticked on a new filter, and ignores case until it is ticked', async () => {

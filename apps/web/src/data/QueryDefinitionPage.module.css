@@ -634,3 +634,10 @@
 .parameterLine .lineIcon[aria-expanded='true'] {
   color: var(--accent-text);
 }
+
+/* Confirm all and Select all: reachable while there is nothing to do, and looking it. */
+.cardHead button[aria-disabled='true'],
+.selectAll[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
