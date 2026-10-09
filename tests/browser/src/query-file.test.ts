@@ -92,12 +92,12 @@ describe("a file's Query tab, in Chromium (the QF plan)", () => {
       await page.goto(`${SERVICE}/#/query-definitions/${definition}/query`);
       const place = page.getByRole('region', { name: 'Where the file is in the bucket' });
       const filters = page.getByRole('table', { name: 'Filters' });
-      await checkAxe(page, "a file's Query tab", task.meta, {
-        shows: [place.getByRole('table', { name: 'Segments of the key' }), filters],
-      });
       await place.getByText('readings/2026/readings.csv').waitFor();
       await page.getByLabel('Fields are separated by', { exact: true }).waitFor();
       await filters.getByText('The value of site').waitFor();
+      await checkAxe(page, "a file's Query tab", task.meta, {
+        shows: [place.getByRole('table', { name: 'Segments of the key' }), filters],
+      });
       // Each row is one line of the drawn height, however long its fields' words.
       const heights = await filters
         .locator('tbody tr')

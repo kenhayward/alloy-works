@@ -618,7 +618,14 @@
   color: var(--muted);
   font-size: var(--size-12);
   font-weight: 600;
+  letter-spacing: normal;
   text-align: start;
+  text-transform: none;
+}
+
+/* A row of fields, not a row to choose: no hover. */
+.rowTable tbody tr:hover {
+  background: none;
 }
 
 .rowTable td {
@@ -633,6 +640,7 @@
   box-sizing: border-box;
   width: 100%;
   height: var(--row-control);
+  min-height: 0;
 }
 
 .rowTable .rowNumber {
@@ -653,6 +661,9 @@
 .rowTable .rowIcon {
   width: var(--row-button);
   min-height: var(--row-button);
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
 }
 
 .hiddenText {
