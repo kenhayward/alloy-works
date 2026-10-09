@@ -8,6 +8,14 @@ export interface PanelTab {
   readonly label: string;
   /** Drawn before the name, never in its place. */
   readonly icon?: ReactNode;
+  /** Its name where the label says less, such as `Columns, 2 to confirm`. */
+  readonly name?: string;
+  /** `warn` where it holds the page back (ADR-0050, decision 3). */
+  readonly tone?: 'warn';
+  /** How many it lists, drawn after the label and named after it. */
+  readonly count?: number;
+  /** Not available yet: marked so, passed over by the arrows, and a click does nothing. */
+  readonly disabled?: boolean;
 }
 
 /**
@@ -34,9 +42,10 @@ export function PanelTabs({
 }) {
   const elements = useRef<(HTMLButtonElement | null)[]>([]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const from = tabs.findIndex((tab) => tab.key === chosen);
-    const count = tabs.length;
-    const to =
+    const open = tabs.flatMap((tab, index) => (tab.disabled ? [] : [index]));
+    const from = open.indexOf(tabs.findIndex((tab) => tab.key === chosen));
+    const count = open.length;
+    const at =
       event.key === 'ArrowRight'
         ? (from + 1) % count
         : event.key === 'ArrowLeft'
@@ -46,7 +55,8 @@ export function PanelTabs({
             : event.key === 'End'
               ? count - 1
               : null;
-    if (to === null) return;
+    if (at === null || count === 0) return;
+    const to = open[at]!;
     event.preventDefault();
     onChoose(tabs[to]!.key);
     elements.current[to]?.focus();
@@ -71,10 +81,18 @@ export function PanelTabs({
           aria-selected={tab.key === chosen}
           aria-controls={ids(tab.key).panel}
           tabIndex={tab.key === chosen ? 0 : -1}
-          onClick={() => onChoose(tab.key)}
+          {...(tab.disabled ? { 'aria-disabled': true } : {})}
+          {...(tab.tone ? { 'data-tone': tab.tone } : {})}
+          {...(tab.name !== undefined || tab.count !== undefined
+            ? { 'aria-label': tab.name ?? `${tab.label}, ${tab.count}` }
+            : {})}
+          onClick={() => {
+            if (!tab.disabled) onChoose(tab.key);
+          }}
         >
           {tab.icon}
           {tab.label}
+          {tab.count !== undefined && <span className={styles['tabCount']}>{tab.count}</span>}
         </button>
       ))}
     </div>

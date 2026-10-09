@@ -306,3 +306,258 @@
 .menu [role='menuitem'][data-tone='danger'] {
   color: var(--danger);
 }
+
+/* A detail page (ADR-0050): a header, a state strip and tabs, the chosen panel filling the window
+   beneath the page's own padding, so the page does not scroll. Below 800px high it does, rather than
+   squeezing the panel to a few rows. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  height: calc(
+    100vh - var(--header-height) - var(--status-height, 0px) - var(--space-4) - var(--space-24) -
+      var(--space-40)
+  );
+}
+
+@media (max-height: 799.98px) {
+  .detail {
+    height: auto;
+  }
+}
+
+.detailHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-16);
+}
+
+.detailTitle {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detailTitle h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.detailTrail {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.detailTrail a {
+  color: var(--muted);
+}
+
+.detailChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.detailActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.detailTabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detailTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tab);
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-14);
+}
+
+.detailTab:hover:not([aria-disabled='true']) {
+  background: transparent;
+  color: var(--text);
+}
+
+.detailTab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.detailTab[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.detailTab[data-tone='warn'][aria-selected='true'] {
+  border-bottom-color: var(--warn);
+}
+
+.detailTab[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.tabCount {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--sunken);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+  font-weight: 400;
+}
+
+.detailPanel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-height: 799.98px) {
+  .detailPanel {
+    overflow: visible;
+  }
+}
+
+.strip ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+  list-style: none;
+}
+
+.strip li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: 14px 18px;
+  border-inline-start: 1px solid var(--border);
+}
+
+.strip li:first-child {
+  border-inline-start: 0;
+}
+
+.stripIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--strip-icon);
+  height: var(--strip-icon);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+.strip li[data-tone='ok'] .stripIcon {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.strip li[data-tone='warn'] .stripIcon {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.stripText {
+  min-width: 0;
+}
+
+.stripLabel {
+  display: block;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.stripValue {
+  font-weight: 600;
+}
+
+.stripDetail {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.tipAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.tipButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: var(--size-13);
+}
+
+.tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  padding: var(--space-4) var(--space-8);
+  border-radius: 6px;
+  background: var(--text);
+  box-shadow: var(--shadow-modal);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+  white-space: nowrap;
+}
+
+.tip[hidden] {
+  display: none;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--size-13);
+}
+
+.pagerRange {
+  flex: 1;
+  color: var(--muted);
+}
+
+.pagerButton {
+  display: inline-grid;
+  place-items: center;
+  width: var(--pager-button);
+  min-height: var(--pager-button);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+}
+
+.pagerButton[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
