@@ -86,6 +86,11 @@
   --col-icon: 36px;
   --pager-button: 28px;
   --list-row: 38px;
+  /* The Bound table band (ADR-0051): its height, its rows, its small buttons, its Format dialog. */
+  --bound-panel: 300px;
+  --grid-row: 36px;
+  --icon-button-sm: 26px;
+  --format-dialog: 600px;
 
   /* A rendered publication: paper in every theme. The desk around it is --desk, which a theme sets. */
   --doc-page: #ffffff;

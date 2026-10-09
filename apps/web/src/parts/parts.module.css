@@ -570,3 +570,36 @@
 .detailNotice p {
   margin: var(--space-8) 0 0;
 }
+
+/* A segmented control (ADR-0051): sunken, the chosen segment raised on the surface. */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.segmented [role='radio'] {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--icon-button-sm);
+  min-height: var(--icon-button-sm);
+  padding: 0 var(--space-8);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.segmented [role='radio'][aria-checked='true'] {
+  background: var(--surface);
+  box-shadow: var(--shadow-rest);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.segmented[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
