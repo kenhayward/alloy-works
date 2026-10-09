@@ -110,3 +110,199 @@
   background: var(--danger-bg);
   color: var(--danger);
 }
+
+/* Administration's parts (ADR-0049): a side panel, a confirmation, a row's actions and their menu. */
+.sidePanel {
+  display: flex;
+  flex-direction: column;
+  width: min(var(--drawer), 100%);
+  border-inline-start: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Below 1366px it floats over the list, from under the header band to the foot of the window. */
+@media (max-width: 1365.98px) {
+  .sidePanel {
+    position: fixed;
+    top: var(--header-height);
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-dropdown);
+    box-shadow: var(--shadow-modal);
+  }
+}
+
+/* From 1366px it is docked in its column, held in view as the list scrolls. */
+@media (min-width: 1366px) {
+  .sidePanel {
+    position: sticky;
+    top: var(--header-height);
+    max-height: calc(100vh - var(--header-height));
+  }
+}
+
+.sidePanelHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-16) var(--space-16) var(--space-12) var(--space-24);
+  border-bottom: 1px solid var(--border);
+}
+
+.sidePanelIcon,
+.confirmIcon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-8);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.sidePanelTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidePanelTitle h2 {
+  margin: 0;
+  font-size: var(--size-16);
+}
+
+.sidePanelTitle h2:focus {
+  outline: none;
+}
+
+.sidePanelTitle h2:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sidePanelTitle p {
+  margin: var(--space-4) 0 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.sidePanelBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-16) var(--space-24);
+}
+
+.sidePanelFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-24);
+  border-top: 1px solid var(--border);
+}
+
+.confirm {
+  display: flex;
+  gap: var(--space-16);
+  padding-block: var(--space-8) var(--space-16);
+}
+
+.confirm h2 {
+  margin: 0 0 var(--space-8);
+  font-size: var(--size-16);
+}
+
+.confirm p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.confirmIcon {
+  border-radius: 50%;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.confirmDetail {
+  margin-top: var(--space-12);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  font-size: var(--size-13);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-inline: calc(-1 * var(--space-24));
+  margin-bottom: calc(-1 * var(--space-24));
+  padding: var(--space-12) var(--space-24);
+  border-top: 1px solid var(--border);
+}
+
+.danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-danger);
+  font-weight: 600;
+}
+
+.danger[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+
+.rowIcon {
+  width: var(--icon-button);
+  min-height: var(--icon-button);
+  color: var(--muted);
+}
+
+.rowIcon:hover:not([aria-disabled='true']),
+.rowIcon[aria-expanded='true'] {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--accent-text);
+}
+
+.moreAnchor {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-4));
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.menu [role='menuitem'] {
+  justify-content: flex-start;
+  min-height: 32px;
+  padding: 0 var(--space-12);
+  border: 0;
+  background: transparent;
+  text-align: start;
+}
+
+.menu [role='menuitem']:hover,
+.menu [role='menuitem']:focus-visible {
+  background: var(--sunken);
+}
+
+.menu [role='menuitem'][data-tone='danger'] {
+  color: var(--danger);
+}

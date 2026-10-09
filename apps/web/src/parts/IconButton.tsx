@@ -5,11 +5,13 @@ import styles from './parts.module.css';
 /**
  * A button whose face is an icon, named in words (ADR-0046, decision 6): `label` is its name for a
  * screen reader and, with its shortcut spelled out, its title for a pointer. `pressed` makes it a
- * toggle; left out, it claims no pressed state.
+ * toggle; left out, it claims no pressed state. `tooltip` replaces the title where the name says more
+ * than a pointer needs, such as a row's "Access to General" titled "Access".
  */
 export function IconButton({
   label,
   shortcut,
+  tooltip,
   pressed,
   className,
   children,
@@ -18,6 +20,7 @@ export function IconButton({
 }: {
   label: string;
   shortcut?: string | undefined;
+  tooltip?: string | undefined;
   pressed?: boolean | undefined;
   className?: string | undefined;
   children: ReactNode;
@@ -29,7 +32,7 @@ export function IconButton({
       type="button"
       className={className ?? styles['iconButton']}
       aria-label={label}
-      title={shortcut === undefined ? label : `${label} (${shortcut})`}
+      title={tooltip ?? (shortcut === undefined ? label : `${label} (${shortcut})`)}
       {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
       {...rest}
     >

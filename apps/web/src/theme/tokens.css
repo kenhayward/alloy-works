@@ -71,6 +71,14 @@
   --dock-panel: 320px;
   --header-height: 44px;
 
+  /* Administration (ADR-0049): its menu, the side panel, a confirmation, a table's rows, an icon button */
+  --pane-admin-menu: 232px;
+  --drawer: 440px;
+  --dialog: 480px;
+  --row: 54px;
+  --row-head: 38px;
+  --icon-button: 32px;
+
   /* A rendered publication: paper in every theme. The desk around it is --desk, which a theme sets. */
   --doc-page: #ffffff;
   --doc-ink: #1a1a1a;
@@ -102,6 +110,7 @@
   --ok-bg: #e2f3e9;
   --danger: #b42318;
   --danger-bg: #fdecea;
+  --on-danger: #ffffff;
   --info: #5b3fb8;
   --info-bg: #efeafc;
   --mark-a: #11325f;
@@ -139,6 +148,7 @@
   --ok-bg: #12301f;
   --danger: #ff8a80;
   --danger-bg: #3b1715;
+  --on-danger: #2a0b08;
   --info: #c0adff;
   --info-bg: #2a2148;
   --mark-a: #8fd0e0;
