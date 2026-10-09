@@ -46,6 +46,7 @@ import { DetailPage } from '../parts/DetailPage.js';
 import { IconButton } from '../parts/IconButton.js';
 import type { PanelTab } from '../parts/PanelTabs.js';
 import { RowActions } from '../parts/RowActions.js';
+import { RowTable } from '../parts/RowTable.js';
 import type { StripCell } from '../parts/StateStrip.js';
 import { Tooltip } from '../parts/Tooltip.js';
 import styles from './QueryDefinitionPage.module.css';
@@ -233,6 +234,7 @@ function TypeFields({
   name,
   disabled,
   textColumns,
+  part,
 }: {
   readonly type: TypeDraft;
   readonly onChange: (type: TypeDraft) => void;
@@ -241,35 +243,41 @@ function TypeFields({
   readonly disabled?: boolean;
   /** A column's: the definition's text columns, any of which may describe an image. */
   readonly textColumns?: readonly string[];
+  /**
+   * In a table's cells (the postgres query handoff): the type alone, or its own fields alone, each
+   * shown in short words and named in full ("Digits", named "Digits of depth").
+   */
+  readonly part?: 'base' | 'own';
 }) {
   const of = (label: string) => (name === undefined ? label : `${label} of ${name}`);
+  const shown = (label: string) => (part === undefined ? of(label) : label);
+  const named = (label: string) => (part === undefined ? {} : { 'aria-label': of(label) });
   const bases = textColumns === undefined ? BASES : COLUMN_BASES;
+  const base = (id?: string) => (
+    <select
+      {...(id === undefined ? { 'aria-label': of('Type') } : { id })}
+      value={type.base}
+      disabled={disabled}
+      onChange={(event) => onChange({ ...type, base: event.target.value as TypeDraft['base'] })}
+    >
+      {type.base === '' && <option value="">Choose a type</option>}
+      {bases.map((each) => (
+        <option key={each.base} value={each.base}>
+          {each.label}
+        </option>
+      ))}
+    </select>
+  );
+  if (part === 'base') return base();
   return (
-    <span className={styles['type']}>
-      <Choice label={of('Type')}>
-        {(id) => (
-          <select
-            id={id}
-            value={type.base}
-            disabled={disabled}
-            onChange={(event) =>
-              onChange({ ...type, base: event.target.value as TypeDraft['base'] })
-            }
-          >
-            {type.base === '' && <option value="">Choose a type</option>}
-            {bases.map((each) => (
-              <option key={each.base} value={each.base}>
-                {each.label}
-              </option>
-            ))}
-          </select>
-        )}
-      </Choice>
+    <span className={styles[part === 'own' ? 'ownFields' : 'type']}>
+      {part !== 'own' && <Choice label={of('Type')}>{(id) => base(id)}</Choice>}
       {type.base === 'decimal' && (
         <>
           <label>
-            {of('Digits')}
+            {shown('Digits')}
             <input
+              {...named('Digits')}
               inputMode="numeric"
               value={type.precision}
               disabled={disabled}
@@ -277,8 +285,9 @@ function TypeFields({
             />
           </label>
           <label>
-            {of('Places')}
+            {shown('Places')}
             <input
+              {...named('Places')}
               inputMode="numeric"
               value={type.scale}
               disabled={disabled}
@@ -289,8 +298,9 @@ function TypeFields({
       )}
       {(type.base === 'time' || type.base === 'localDateTime' || type.base === 'instant') && (
         <label>
-          {of('Places of a second')}
+          {shown('Places of a second')}
           <input
+            {...named('Places of a second')}
             inputMode="numeric"
             value={type.fraction}
             disabled={disabled}
@@ -300,10 +310,11 @@ function TypeFields({
       )}
       {type.base === 'image' && textColumns !== undefined && (
         <>
-          <Choice label={of('Encoding')}>
+          <Choice label={shown('Encoding')}>
             {(id) => (
               <select
                 id={id}
+                {...named('Encoding')}
                 value={type.encoding}
                 disabled={disabled}
                 onChange={(event) =>
@@ -319,10 +330,11 @@ function TypeFields({
               </select>
             )}
           </Choice>
-          <Choice label={of('Description')}>
+          <Choice label={shown('Description')}>
             {(id) => (
               <select
                 id={id}
+                {...named('Description')}
                 value={
                   type.description === null
                     ? ''
@@ -1554,89 +1566,136 @@ export function QueryDefinitionPage({
     );
   }
 
+  /**
+   * Columns (the postgres query handoff): a column a row - its type and the type's own fields
+   * apart - Confirm and Confirmed one shape in one place, and Confirm all counting what is left.
+   */
   function columnsPanel() {
     // Every column with a type and not yet confirmed: what Confirm all confirms at once.
-    const confirmable = draft.columns.some((each) => !each.confirmed && each.type.base !== '');
+    const left = draft.columns.filter((each) => !each.confirmed && each.type.base !== '').length;
     return (
-      <section className={styles['card']} aria-label="Columns">
-        <div className={styles['cardHead']}>
-          <Status lines={described} />
+      <div className={`${styles['card']} ${styles['fileCard']}`}>
+        <Section
+          heading="Columns"
+          count={draft.columns.length}
+          aside={
+            <span className={styles['statusChip']}>
+              <Status lines={described} />
+            </span>
+          }
+          hint={
+            draft.mode === 'file'
+              ? "Sample for columns reads the file with the sample values and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+              : draft.mode === 'http'
+                ? "Sample for columns sends the request with the sample values and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+                : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'
+          }
+          acts={
+            <>
+              {draft.columns.length > 0 && (
+                <button
+                  type="button"
+                  className={styles['confirmAll']}
+                  aria-disabled={left === 0}
+                  onClick={() =>
+                    left > 0 &&
+                    change({
+                      columns: draft.columns.map((each) =>
+                        each.type.base === '' ? each : { ...each, confirmed: true },
+                      ),
+                    })
+                  }
+                >
+                  <Icon name="Confirmed" />
+                  Confirm all
+                  {left > 0 && (
+                    <>
+                      {' '}
+                      <Chip>{left}</Chip>
+                    </>
+                  )}
+                </button>
+              )}
+              {mayRun && (
+                <button type="button" disabled={busy !== null} onClick={describe}>
+                  {draft.mode === 'http' || draft.mode === 'file'
+                    ? 'Sample for columns'
+                    : 'Describe'}
+                </button>
+              )}
+            </>
+          }
+        >
           {draft.columns.length > 0 && (
-            <button
-              type="button"
-              aria-disabled={!confirmable}
-              onClick={() =>
-                confirmable &&
-                change({
-                  columns: draft.columns.map((each) =>
-                    each.type.base === '' ? each : { ...each, confirmed: true },
-                  ),
-                })
-              }
-            >
-              Confirm all
-            </button>
-          )}
-          {mayRun && (
-            <button type="button" disabled={busy !== null} onClick={describe}>
-              {draft.mode === 'http' || draft.mode === 'file' ? 'Sample for columns' : 'Describe'}
-            </button>
-          )}
-        </div>
-        {draft.columns.length > 0 && (
-          <table className={styles['columns']}>
-            <caption className={styles['hidden']}>Columns</caption>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">At the source</th>
-                <th scope="col">Type</th>
-                <th scope="col">Confirmed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {draft.columns.map((column, at) => (
-                <tr key={column.name} {...(column.confirmed ? {} : { 'data-held': 'true' })}>
-                  <td className={styles['mono']}>{column.name}</td>
-                  <td className={styles['source']}>{column.sourceType ?? 'Not described'}</td>
-                  <td>
+            <RowTable
+              label="Columns"
+              bins={false}
+              columns={[
+                { head: 'Name', width: 240 },
+                { head: 'At the source', width: 200 },
+                { head: 'Type', width: 220 },
+                { head: 'Of the type' },
+                { head: 'Confirmed', width: 136 },
+              ]}
+              rows={draft.columns.map((column, at) => {
+                const typed = (type: TypeDraft) =>
+                  setColumn(at, { ...column, type, confirmed: false });
+                return {
+                  key: column.name,
+                  held: !column.confirmed,
+                  cells: [
+                    <span key="name" className={styles['mono']}>
+                      {column.name}
+                    </span>,
+                    <span key="source" className={styles['source']}>
+                      {column.sourceType ?? 'Not described'}
+                    </span>,
                     <TypeFields
+                      key="type"
+                      part="base"
                       name={column.name}
                       textColumns={textColumns}
                       type={column.type}
-                      onChange={(type) => setColumn(at, { ...column, type, confirmed: false })}
-                    />
-                    {column.type.base === '' && (
-                      <p className={styles['hint']}>Declare a type for this column</p>
-                    )}
-                  </td>
-                  <td>
-                    {column.confirmed ? (
-                      <Chip tone="ok">Confirmed</Chip>
+                      onChange={typed}
+                    />,
+                    column.type.base === '' ? (
+                      <span key="own" className={styles['hint']}>
+                        Declare a type for this column
+                      </span>
+                    ) : (
+                      <TypeFields
+                        key="own"
+                        part="own"
+                        name={column.name}
+                        textColumns={textColumns}
+                        type={column.type}
+                        onChange={typed}
+                      />
+                    ),
+                    column.confirmed ? (
+                      <span key="confirmed" className={styles['confirmed']}>
+                        <Icon name="Confirmed" />
+                        Confirmed
+                      </span>
                     ) : (
                       <button
+                        key="confirmed"
                         type="button"
+                        className={styles['confirm']}
                         aria-label={`Confirm ${column.name}`}
                         disabled={column.type.base === ''}
                         onClick={() => setColumn(at, { ...column, confirmed: true })}
                       >
                         Confirm
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <p className={`${styles['hint']} ${styles['cardFoot']}`}>
-          {draft.mode === 'file'
-            ? "Sample for columns reads the file with the sample values and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-            : draft.mode === 'http'
-              ? "Sample for columns sends the request with the sample values and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-              : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
-        </p>
-      </section>
+                    ),
+                  ],
+                };
+              })}
+            />
+          )}
+        </Section>
+      </div>
     );
   }
 

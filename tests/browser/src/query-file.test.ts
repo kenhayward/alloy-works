@@ -121,4 +121,27 @@ describe("a file's Query tab, in Chromium (the QF plan)", () => {
       await checkAxe(page, "a file's parameter opened", task.meta, { shows: [fields] });
     });
   });
+
+  it('lays out the Columns tab a column a row, one held until it is confirmed, held to axe (PQ1)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(`${SERVICE}/#/query-definitions/${definition}/columns`);
+      const columns = page.getByRole('table', { name: 'Columns' });
+      await columns.getByText('Confirmed').first().waitFor();
+      // A type changed is held until it is confirmed again, its row in warn.
+      await page.getByLabel('Type of depth', { exact: true }).selectOption('decimal');
+      await page.getByRole('button', { name: 'Confirm depth' }).waitFor();
+      await page.getByLabel('Digits of depth', { exact: true }).fill('8');
+      await page.getByLabel('Places of depth', { exact: true }).fill('2');
+      await checkAxe(page, 'the Columns tab, a column held', task.meta, {
+        shows: [columns, page.getByRole('button', { name: 'Confirm all 1' })],
+      });
+      const heights = await columns
+        .locator('tbody tr')
+        .evaluateAll((rows) => rows.map((row) => Math.round(row.getBoundingClientRect().height)));
+      expect(heights).toEqual([40, 40, 40]);
+    });
+  });
 });

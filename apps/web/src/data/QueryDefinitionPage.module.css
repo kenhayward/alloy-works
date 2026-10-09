@@ -641,3 +641,74 @@
   opacity: var(--opacity-disabled);
   cursor: default;
 }
+
+/* Columns (the postgres query handoff): a Describe's status as a chip beside the heading. */
+.statusChip [role='status'] {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.statusChip [role='status'] p {
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-4);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--size-13);
+}
+
+.confirmAll {
+  gap: var(--space-8);
+}
+
+/* Confirm and Confirmed: one shape in one place, so pressing one swaps it for the other. */
+.confirm,
+.confirmed {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 112px;
+  height: 28px;
+  min-height: 0;
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-4);
+  font-size: var(--size-13);
+  font-weight: 500;
+}
+
+.confirmed {
+  border: 1px solid transparent;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+/* A type's own fields in their cell, each label beside its box (the postgres query handoff). */
+.ownFields {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.ownFields label,
+.ownFields .choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-13);
+  white-space: nowrap;
+}
+
+.ownFields input,
+.ownFields select {
+  height: var(--row-control);
+  min-height: 0;
+  color: var(--text);
+}
+
+.ownFields input {
+  width: 64px;
+}
