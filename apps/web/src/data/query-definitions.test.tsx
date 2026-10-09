@@ -1992,7 +1992,9 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     expect(within(format).getByLabelText('Fields are separated by')).toHaveValue('comma');
 
     const filters = screen.getByRole('region', { name: 'Filters' });
-    const rows = within(within(filters).getByRole('table', { name: 'Filters' })).getAllByRole('row');
+    const rows = within(within(filters).getByRole('table', { name: 'Filters' })).getAllByRole(
+      'row',
+    );
     expect(rows).toHaveLength(4);
     expect(within(rows[1]!).getByLabelText('Value of filter 1')).toHaveValue('Wall');
     // Compared with a parameter, the value is the parameter's; is empty compares with nothing.
