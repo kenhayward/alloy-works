@@ -837,8 +837,9 @@ describe('the citations in the committed model', () => {
   // 832 (2026-10-08): the AU1 review - LIF-026 cited nowhere, LIF-063 moved to the service's census
   // and LIF-027 to the db's audit-content, AST-037 in the service and the worker, IAM-013 in the
   // service's dataset-images.
+  // 833 (2026-10-09): DAT-106 in the connector's result.test, a repeated key told from rows out of order.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(832);
+    expect(model.citations).toHaveLength(833);
   });
 
   it('cites no identifier the corpus does not hold', () => {

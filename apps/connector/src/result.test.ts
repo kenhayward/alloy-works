@@ -30,4 +30,21 @@ describe('finishResult', () => {
       rowCount: 1,
     });
   });
+
+  it('DAT-106 tells a key two rows share apart from rows out of order, naming the row', () => {
+    const repeated = [
+      ['North', '1'],
+      ['North', '2'],
+    ];
+    expect(finishResult(repeated, definition('valid'), defaultLimits)).toMatchObject({
+      failure: { code: 'key_repeated', row: 2 },
+    });
+    const backwards = [
+      ['South', '1'],
+      ['North', '2'],
+    ];
+    expect(finishResult(backwards, definition('valid'), defaultLimits)).toMatchObject({
+      failure: { code: 'result_mismatch', row: 2 },
+    });
+  });
 });

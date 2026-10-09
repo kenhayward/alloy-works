@@ -36,6 +36,10 @@ export function finishResult(
     rows,
   };
   const ordered = orderRows(result, definition);
+  // Two rows sharing a key is its own failure: no order fixes it, and a file, sorted here, has no other.
+  if ('mismatch' in ordered && ordered.mismatch === 'key') {
+    return { failure: dataFailure('key_repeated', { row: ordered.row }) };
+  }
   if ('mismatch' in ordered) {
     return {
       failure: dataFailure('result_mismatch', {

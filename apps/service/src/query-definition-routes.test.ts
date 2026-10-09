@@ -675,6 +675,19 @@ describe('query definitions through the service', () => {
     const message = ordered.json<{ failure: { message: string } }>().failure.message;
     expect(message).toContain('row 12');
     expect(message).toContain('COLLATE "C"');
+    expect(message).not.toContain('key');
+    // A key two rows share has words of its own, which no collation fixes.
+    connector.run = {
+      outcome: 'failed',
+      failure: { code: 'key_repeated', attribution: 'query', row: 3 },
+    };
+    const repeated = (await sample('ada', source.id, draft(source.id))).json<{
+      failure: { code: string; message: string };
+    }>().failure;
+    expect(repeated.code).toBe('key_repeated');
+    expect(repeated.message).toBe(
+      'Row 3 repeats the key of an earlier row. A key names each row once: choose key columns that are unique together, or declare no key.',
+    );
     connector.run = {
       outcome: 'failed',
       failure: { code: 'result_mismatch', attribution: 'query', column: 'depth' },

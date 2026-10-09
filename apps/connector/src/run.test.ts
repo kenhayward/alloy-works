@@ -208,7 +208,7 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       [
         'two rows with one key',
         draft('select id from (values (1), (1)) as t (id) order by id', [id]),
-        { code: 'result_mismatch', row: 2 },
+        { code: 'key_repeated', row: 2 },
       ],
       [
         'a null key',

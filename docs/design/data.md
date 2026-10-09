@@ -801,8 +801,9 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   19 of 19 refreshes without it. **A declared order is checked, never imposed** (D2-M): the connector
   compares each row with the one before by the product's comparison - numbers and times by value,
   `false` before `true`, **text by code point**, nulls last ascending and first descending as
-  PostgreSQL's default - and refuses `result_mismatch`, naming the row, where a pair is out of order
-  or two rows share a key. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says
+  PostgreSQL's default - and refuses `result_mismatch`, naming the row, where a pair is out of order,
+  and `key_repeated`, naming the row, where two rows share a key, which no order fixes and which is
+  all a file, sorted by the connector, can fail. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says
   so. A multiset sorts the rows by their canonical text, code point by code point. **The builder
   compares text by code point wherever it compares it** (D4-G): a text filter compares
   `(x)::pg_catalog.text COLLATE pg_catalog."C"` with its value, `contains` and `startsWith` are `strpos` and
@@ -1066,6 +1067,7 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `row_limit`, `byte_limit` | query       | A limit was reached; nothing stored (DAT-051, DAT-110)                                                                                                                                                                                              |
 | `result_incomplete`       | connector   | A stated length, digest or row count did not match what arrived (DAT-108)                                                                                                                                                                           |
 | `result_mismatch`         | query       | Columns or order did not fit the declaration (DAT-106)                                                                                                                                                                                              |
+| `key_repeated`            | query       | Two rows share the declared key (DAT-106)                                                                                                                                                                                                           |
 | `precision_lost` and kin  | query       | A value was not exact in its declared type (DAT-080)                                                                                                                                                                                                |
 | `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                                                                                                                                                                         |
 | `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                                                                                                                                                                                  |

@@ -20,6 +20,8 @@ describe('a data failure', () => {
       byte_limit: 'query',
       result_incomplete: 'connector',
       result_mismatch: 'query',
+      // Two rows sharing a key, apart from a row out of order: a file is sorted, so only this can fail.
+      key_repeated: 'query',
       precision_lost: 'query',
       precision_not_carried: 'query',
       zone_missing: 'query',

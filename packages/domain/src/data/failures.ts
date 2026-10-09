@@ -28,6 +28,7 @@ export const dataFailures = Object.freeze({
   byte_limit: 'query',
   result_incomplete: 'connector',
   result_mismatch: 'query',
+  key_repeated: 'query',
   precision_lost: 'query',
   precision_not_carried: 'query',
   zone_missing: 'query',
