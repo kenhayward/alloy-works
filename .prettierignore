@@ -49,6 +49,7 @@ docs/interface/screens/
 
 # The Ledger handoff, exported the same way: its HTML is a drawing, kept exactly as exported.
 docs/interface/handoffs/ledger/*.html
+docs/interface/handoffs/admin/*.html
 
 # The Word validator's NuGet lock file, written by `dotnet restore` and checked by the image's
 # locked-mode restore; it is NuGet's to format, not Prettier's.
