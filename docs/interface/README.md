@@ -106,7 +106,8 @@ for what is typed; the commands that open a dialog come later.
 
 **The rail** names Home, then the modules in three groups - Author (Components, Documents,
 Templates), Publish (Publications), Data (Connections, Query definitions) - and Admin at its foot. The
-module the page is in is marked. One accent: no module has a colour of its own.
+module the page is in is marked, and its link starts it over; every other module's link goes back to
+where it was left, its page kept as it was, a list excepted, which is read again. One accent: no module has a colour of its own.
 
 **Administration is a page**, at `#/admin/<section>`, opened by Admin at the rail's foot
 ([ADR-0049](../decisions/0049-administration-is-a-page.md)): a grouped menu, each section a table in

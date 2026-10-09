@@ -253,6 +253,66 @@ describe('the workspace', () => {
     expect(window.location.hash).toBe('#/search?q=hand+lever');
   });
 
+  it('keeps a module as it was left while another is open, and shows it again unchanged', async () => {
+    window.location.hash = '#/search?q=lever';
+    const nothing = { outcome: 'empty', message: 'Type what to look for.' };
+    render(
+      <Workspace fetch={serviceThat({ search: nothing, first: { items: [], next: null } })} />,
+    );
+    const box = await screen.findByRole('searchbox', { name: 'Search' });
+    await userEvent.type(box, ' arm');
+
+    const leave = (hash: string) => {
+      const oldURL = window.location.href;
+      window.location.hash = hash;
+      fireEvent(
+        window,
+        new HashChangeEvent('hashchange', { oldURL, newURL: window.location.href }),
+      );
+    };
+    leave('#/components');
+    expect(await screen.findByText('There are no components you may read.')).toBeVisible();
+    // Search is still there, hidden, with what was typed and never sent.
+    expect(screen.getByRole('searchbox', { name: 'Search', hidden: true })).not.toBeVisible();
+
+    leave('#/search?q=lever');
+    const again = await screen.findByRole('searchbox', { name: 'Search' });
+    expect(again).toBe(box);
+    expect(again).toHaveValue('lever arm');
+    // A list is not kept: it is read afresh when next opened.
+    expect(screen.queryByText('There are no components you may read.')).toBeNull();
+  });
+
+  it('reads a list afresh on returning to it, since what it lists may have changed meanwhile', async () => {
+    window.location.hash = '#/components';
+    const fetching = serviceThat({
+      search: { outcome: 'empty', message: 'Type what to look for.' },
+      first: { items: [], next: null },
+    });
+    render(<Workspace fetch={fetching} />);
+    await screen.findByText('There are no components you may read.');
+    const listed = () =>
+      vi
+        .mocked(fetching)
+        .mock.calls.filter(
+          ([input]) =>
+            new URL(input instanceof Request ? input.url : String(input)).pathname ===
+            '/v1/components',
+        ).length;
+    const before = listed();
+
+    for (const hash of ['#/search?q=lever', '#/components']) {
+      const oldURL = window.location.href;
+      window.location.hash = hash;
+      fireEvent(
+        window,
+        new HashChangeEvent('hashchange', { oldURL, newURL: window.location.href }),
+      );
+    }
+    await screen.findByText('There are no components you may read.');
+    await waitFor(() => expect(listed()).toBeGreaterThan(before));
+  });
+
   it('opens the component the address names, under a trail back to the components', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     render(<Workspace fetch={serviceThat({})} />);

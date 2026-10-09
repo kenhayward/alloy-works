@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
 import { ConnectionPage } from '../data/ConnectionPage.js';
@@ -10,6 +10,7 @@ import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
+import { hashOf, placeOf, type Place } from '../shell/places.js';
 import { componentAddress, searchAddress, searchLink } from '../search/links.js';
 import { SearchPage } from '../search/SearchPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
@@ -29,6 +30,23 @@ export interface WorkspaceProps {
   /** Given in tests; the browser's own otherwise. */
   readonly fetch?: typeof fetch;
 }
+
+/**
+ * Home and each module's list, which are read afresh on returning to them rather than kept, since what
+ * they list may have changed while another place was open; every other page is somebody's work.
+ */
+const LISTS = new Set([
+  '',
+  '#',
+  '#/',
+  '#/components',
+  '#/documents',
+  '#/templates',
+  '#/publications',
+  '#/connections',
+  '#/query-definitions',
+]);
+const isWork = (hash: string) => !LISTS.has(hash);
 
 /** A publication's own address (PUB-047). */
 const PUBLICATION = /^#\/publications\/([0-9a-f-]{36})$/;
@@ -74,6 +92,27 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     [origin, given],
   );
   const { hash, arrivals, again } = useHash();
+  const place = placeOf(hash);
+  // Every place visited, at the address it last showed while open: each stays mounted, hidden while
+  // another is open, so what was typed and not yet kept survives a trip to another module.
+  const kept = useRef(new Map<Place, { readonly hash: string; readonly arrivals: number }>());
+  kept.current.set(place, { hash, arrivals });
+  // Where the window was scrolled in each place, given back on returning to it.
+  const scrolled = useRef(new Map<Place, number>());
+  useEffect(() => {
+    const leaving = (event: HashChangeEvent) => {
+      const from = placeOf(hashOf(event.oldURL));
+      if (from !== placeOf(window.location.hash)) {
+        scrolled.current.set(from, document.documentElement.scrollTop);
+      }
+    };
+    window.addEventListener('hashchange', leaving);
+    return () => window.removeEventListener('hashchange', leaving);
+  }, []);
+  useLayoutEffect(() => {
+    const at = scrolled.current.get(place);
+    if (at !== undefined) document.documentElement.scrollTop = at;
+  }, [place]);
   const [me, setMe] = useState<string | null>(null);
   // Asking who is signed in failed for a reason other than nobody being signed in (final review,
   // finding 5): a server error or no answer, which Try again asks about once more.
@@ -123,185 +162,200 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     );
   }
   if (me === null) return null;
-  if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
-  const address = componentAddress(hash);
-  const opened = address?.component;
-  if (opened && address?.access) {
-    return (
-      <>
-        <p>
-          <a href={`#/components/${opened}`}>Back to the component</a>
-        </p>
-        <AccessPanel key={opened} at={{ kind: 'component', id: opened }} client={client} />
-      </>
-    );
-  }
-  if (opened) {
-    return (
-      <div className={styles['triptych']}>
-        {placed?.component === opened ? (
-          <SpacePane client={client} space={placed.space} current={opened} />
-        ) : (
-          <div />
-        )}
-        <div className={styles['editor']}>
-          <nav aria-label="Breadcrumb" className={styles['trail']}>
-            <a href="#/components">Components</a>
-            {placed?.component === opened && <span>{` / ${placed.space.name}`}</span>}
-          </nav>
-          {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
-          <PresentationProvider client={client}>
-            <ZoomControl />
-            <ComponentEditor
-              key={opened}
-              componentId={opened}
-              client={client}
-              principalId={me}
-              onSpace={(space) => setPlaced({ component: opened, space })}
-              linked={address?.block ? { block: address.block, arrival: arrivals } : null}
-              fieldsHost={fieldsHost}
-            />
-          </PresentationProvider>
-        </div>
-        <ComponentDock key={opened} client={client} id={opened} onFieldsHost={setFieldsHost} />
-      </div>
-    );
-  }
-
-  const searched = searchAddress(hash);
-  if (searched !== null) {
-    return (
-      <>
-        <SearchPage
-          client={client}
-          query={searched}
-          onSearch={(query) => {
-            window.location.hash = searchLink(query);
-          }}
-        />
-      </>
-    );
-  }
-  const templateAccess = templateAccessAddress(hash);
-  if (templateAccess !== null) {
-    return (
-      <>
-        <p>
-          <a href="#/templates">Back to templates</a>
-        </p>
-        <AccessPanel
-          key={templateAccess}
-          at={{ kind: 'template', id: templateAccess }}
-          client={client}
-        />
-      </>
-    );
-  }
-  const connection = connectionAddress(hash);
-  if (connection?.access) {
-    return (
-      <>
-        <p>
-          <a href={connectionLink(connection.connection)}>Back to the connection</a>
-        </p>
-        <AccessPanel
-          key={connection.connection}
-          at={{ kind: 'connection', id: connection.connection }}
-          client={client}
-        />
-      </>
-    );
-  }
-  if (connection) {
-    return (
-      <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
-    );
-  }
-  const definition = queryDefinitionAddress(hash);
-  if (definition !== null) {
-    return <QueryDefinitionPage key={definition} client={client} id={definition} />;
-  }
-  if (hash === '#/query-definitions') {
-    return (
-      <>
-        <QueryDefinitions client={client} />
-      </>
-    );
-  }
-  if (hash === '#/connections') {
-    return (
-      <>
-        <Connections client={client} />
-      </>
-    );
-  }
-  if (hash === '#/templates') {
-    return (
-      <>
-        <TemplateList client={client} />
-      </>
-    );
-  }
-  if (hash === '#/publications') {
-    return (
-      <>
-        <PublicationList client={client} />
-      </>
-    );
-  }
-  const publication = PUBLICATION.exec(hash)?.[1];
-  if (publication) {
-    return (
-      <>
-        <PublicationPage key={publication} client={client} id={publication} />
-      </>
-    );
-  }
-  const documents = documentAddress(hash);
-  if (documents?.kind === 'access') {
-    return (
-      <>
-        <p>
-          <a href={documentLink(documents.document)}>Back to the document</a>
-        </p>
-        <AccessPanel
-          key={documents.document}
-          at={{ kind: 'document', id: documents.document }}
-          client={client}
-        />
-      </>
-    );
-  }
-  if (documents?.kind === 'document') {
-    return (
-      <>
-        {/* Back to the documents is the arrow in the outline pane's tab strip (interface slice 15). */}
-        <DocumentPage
-          key={documents.document}
-          client={client}
-          principalId={me}
-          id={documents.document}
-          linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
-          onArriveAgain={again}
-        />
-      </>
-    );
-  }
-  if (documents) {
-    return (
-      <>
-        <DocumentList
-          client={client}
-          onOpen={(id) => {
-            window.location.hash = documentLink(id);
-          }}
-        />
-      </>
-    );
-  }
   return (
     <>
-      <ComponentList client={client} principalId={me} />
+      {[...kept.current]
+        .filter(([at, shown]) => at === place || isWork(shown.hash))
+        .map(([at, shown]) => (
+          <div key={at} className={styles['kept']} hidden={at !== place}>
+            {pageFor(shown.hash, shown.arrivals, me)}
+          </div>
+        ))}
     </>
   );
+
+  /** The page an address names, as it was chosen before pages were kept. */
+  function pageFor(hash: string, arrivals: number, me: string): React.JSX.Element {
+    if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
+    const address = componentAddress(hash);
+    const opened = address?.component;
+    if (opened && address?.access) {
+      return (
+        <>
+          <p>
+            <a href={`#/components/${opened}`}>Back to the component</a>
+          </p>
+          <AccessPanel key={opened} at={{ kind: 'component', id: opened }} client={client} />
+        </>
+      );
+    }
+    if (opened) {
+      return (
+        <div className={styles['triptych']}>
+          {placed?.component === opened ? (
+            <SpacePane client={client} space={placed.space} current={opened} />
+          ) : (
+            <div />
+          )}
+          <div className={styles['editor']}>
+            <nav aria-label="Breadcrumb" className={styles['trail']}>
+              <a href="#/components">Components</a>
+              {placed?.component === opened && <span>{` / ${placed.space.name}`}</span>}
+            </nav>
+            {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
+            <PresentationProvider client={client}>
+              <ZoomControl />
+              <ComponentEditor
+                key={opened}
+                componentId={opened}
+                client={client}
+                principalId={me}
+                onSpace={(space) => setPlaced({ component: opened, space })}
+                linked={address?.block ? { block: address.block, arrival: arrivals } : null}
+                fieldsHost={fieldsHost}
+              />
+            </PresentationProvider>
+          </div>
+          <ComponentDock key={opened} client={client} id={opened} onFieldsHost={setFieldsHost} />
+        </div>
+      );
+    }
+
+    const searched = searchAddress(hash);
+    if (searched !== null) {
+      return (
+        <>
+          <SearchPage
+            client={client}
+            query={searched}
+            onSearch={(query) => {
+              window.location.hash = searchLink(query);
+            }}
+          />
+        </>
+      );
+    }
+    const templateAccess = templateAccessAddress(hash);
+    if (templateAccess !== null) {
+      return (
+        <>
+          <p>
+            <a href="#/templates">Back to templates</a>
+          </p>
+          <AccessPanel
+            key={templateAccess}
+            at={{ kind: 'template', id: templateAccess }}
+            client={client}
+          />
+        </>
+      );
+    }
+    const connection = connectionAddress(hash);
+    if (connection?.access) {
+      return (
+        <>
+          <p>
+            <a href={connectionLink(connection.connection)}>Back to the connection</a>
+          </p>
+          <AccessPanel
+            key={connection.connection}
+            at={{ kind: 'connection', id: connection.connection }}
+            client={client}
+          />
+        </>
+      );
+    }
+    if (connection) {
+      return (
+        <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
+      );
+    }
+    const definition = queryDefinitionAddress(hash);
+    if (definition !== null) {
+      return <QueryDefinitionPage key={definition} client={client} id={definition} />;
+    }
+    if (hash === '#/query-definitions') {
+      return (
+        <>
+          <QueryDefinitions client={client} />
+        </>
+      );
+    }
+    if (hash === '#/connections') {
+      return (
+        <>
+          <Connections client={client} />
+        </>
+      );
+    }
+    if (hash === '#/templates') {
+      return (
+        <>
+          <TemplateList client={client} />
+        </>
+      );
+    }
+    if (hash === '#/publications') {
+      return (
+        <>
+          <PublicationList client={client} />
+        </>
+      );
+    }
+    const publication = PUBLICATION.exec(hash)?.[1];
+    if (publication) {
+      return (
+        <>
+          <PublicationPage key={publication} client={client} id={publication} />
+        </>
+      );
+    }
+    const documents = documentAddress(hash);
+    if (documents?.kind === 'access') {
+      return (
+        <>
+          <p>
+            <a href={documentLink(documents.document)}>Back to the document</a>
+          </p>
+          <AccessPanel
+            key={documents.document}
+            at={{ kind: 'document', id: documents.document }}
+            client={client}
+          />
+        </>
+      );
+    }
+    if (documents?.kind === 'document') {
+      return (
+        <>
+          {/* Back to the documents is the arrow in the outline pane's tab strip (interface slice 15). */}
+          <DocumentPage
+            key={documents.document}
+            client={client}
+            principalId={me}
+            id={documents.document}
+            linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
+            onArriveAgain={again}
+          />
+        </>
+      );
+    }
+    if (documents) {
+      return (
+        <>
+          <DocumentList
+            client={client}
+            onOpen={(id) => {
+              window.location.hash = documentLink(id);
+            }}
+          />
+        </>
+      );
+    }
+    return (
+      <>
+        <ComponentList client={client} principalId={me} />
+      </>
+    );
+  }
 }

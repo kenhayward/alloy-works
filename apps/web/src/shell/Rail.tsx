@@ -5,6 +5,7 @@ import { Administration } from '../admin/Administration.js';
 import { ModuleIcon } from './ModuleIcon.js';
 import type { ModuleName } from './moduleOf.js';
 import { MODULE_GROUPS } from './modules.js';
+import { useLeftAt } from './places.js';
 import styles from './Rail.module.css';
 
 export interface RailProps {
@@ -19,7 +20,9 @@ export interface RailProps {
 /**
  * The labelled module rail on every screen (ADR-0046, decision 3): Home, then the modules grouped
  * Author, Publish and Data, and Admin at its foot, which opens Administration. Each a link or a
- * button reached by Tab; the one the page is in is `aria-current`.
+ * button reached by Tab; the one the page is in is `aria-current`. Each other module's link goes back
+ * to where it was left, its page kept as it was (the workspace keeps it); the one the page is in starts
+ * it over.
  */
 export function Rail({ module, fetch: given, about = null }: RailProps) {
   const origin = window.location.origin;
@@ -28,6 +31,7 @@ export function Rail({ module, fetch: given, about = null }: RailProps) {
     [origin, given],
   );
   const [administering, setAdministering] = useState(false);
+  const leftAt = useLeftAt();
   const admin = useRef<HTMLButtonElement>(null);
 
   return (
@@ -42,7 +46,7 @@ export function Rail({ module, fetch: given, about = null }: RailProps) {
             <li key={each.name}>
               <a
                 className={styles['item']}
-                href={each.href}
+                href={each.name === module ? each.href : (leftAt.get(each.name) ?? each.href)}
                 aria-current={module === each.name ? 'page' : undefined}
               >
                 <ModuleIcon name={each.name} />
