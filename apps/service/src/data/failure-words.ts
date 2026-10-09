@@ -70,9 +70,9 @@ function where(failure: DataFailure): string {
 
 /**
  * A mismatch's words by what it names (D2-M, DAT-106): a column with no row is a column of the result
- * that does not fit its declaration; a row alone is a row out of the declared order or repeating the
- * key of the one before it, which a text sort key not ordered by code point is the likeliest cause of;
- * both is a key with no value.
+ * that does not fit its declaration; a row alone is a row out of the declared order, which a text sort
+ * key not ordered by code point is the likeliest cause of; both is a key with no value. A key two rows
+ * share is `key_repeated`'s own.
  */
 function mismatch(failure: DataFailure): string {
   const { column, row } = failure;
@@ -87,7 +87,7 @@ function mismatch(failure: DataFailure): string {
   }
   if (row !== undefined) {
     return (
-      `Rows are not in the declared order: row ${row} comes before row ${row - 1}, or repeats the key of an earlier row. ` +
+      `Rows are not in the declared order: row ${row} comes before row ${row - 1}. ` +
       'Order text columns with COLLATE "C".'
     );
   }
@@ -132,6 +132,12 @@ function builtRefusal(
  */
 export function failureMessage(failure: DataFailure, built = false): string {
   if (failure.code === 'result_mismatch') return mismatch(failure);
+  if (failure.code === 'key_repeated') {
+    return (
+      `Row ${failure.row ?? 2} repeats the key of an earlier row. ` +
+      'A key names each row once: choose key columns that are unique together, or declare no key.'
+    );
+  }
   if (failure.code === 'source_refused' && failure.status !== undefined) {
     return `The source refused the request with HTTP status ${failure.status}.`;
   }

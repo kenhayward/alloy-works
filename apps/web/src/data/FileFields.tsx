@@ -15,6 +15,9 @@ import { PartField } from './HttpFields.js';
 import { NEW_PART, type PartDraft } from './httpDraft.js';
 import styles from './QueryDefinitionPage.module.css';
 
+/** A segment as the path shows it: its text, or its parameter's name in braces. */
+const segmentText = (part: PartDraft) => (part.kind === 'parameter' ? `{${part.text}}` : part.text);
+
 /**
  * An S3 connection's half of a query definition's Query step (the D6 plan, task 2): the object's key,
  * a segment each, fixed text or one of the parameters below placed whole; the format its rows are
@@ -56,7 +59,11 @@ export function FileFields({
   return (
     <div className={styles['form']}>
       <fieldset className={styles['parameter']}>
-        <legend>The object&apos;s key, in the connection&apos;s bucket</legend>
+        <legend>Where the file is in the bucket</legend>
+        <p className={styles['hint']}>
+          Each segment is one folder of the path, in order, then the file name: the parts of what S3
+          calls its key.
+        </p>
         {file.key.map((part, at) => (
           <div key={at} className={styles['fragment']}>
             <PartField
@@ -78,6 +85,9 @@ export function FileFields({
         <button type="button" onClick={() => onChange({ ...file, key: [...file.key, NEW_PART] })}>
           Add segment
         </button>
+        {file.key.length > 0 && (
+          <p className={styles['hint']}>{`Reads ${file.key.map(segmentText).join('/')}`}</p>
+        )}
       </fieldset>
       <FormatFields draft={file} noun="file" onChange={onChange} />
 

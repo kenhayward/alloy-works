@@ -504,7 +504,7 @@ describe('the query definition page', () => {
                 attribution: 'query',
                 row: 12,
                 message:
-                  'Rows are not in the declared order: row 12 comes before row 11, or repeats the key of an earlier row. Order text columns with COLLATE "C".',
+                  'Rows are not in the declared order: row 12 comes before row 11. Order text columns with COLLATE "C".',
               },
             })
           : undefined!,
@@ -535,7 +535,7 @@ describe('the query definition page', () => {
     await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
     expect(
       await within(sample).findByText(
-        'Rows are not in the declared order: row 12 comes before row 11, or repeats the key of an earlier row. Order text columns with COLLATE "C".',
+        'Rows are not in the declared order: row 12 comes before row 11. Order text columns with COLLATE "C".',
       ),
     ).toBeInTheDocument();
     expect(within(sample).queryByRole('table', { name: 'The first rows' })).toBeNull();
@@ -1706,6 +1706,12 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     await user.selectOptions(screen.getByLabelText('Segment 2 parameter'), 'year');
     await user.click(screen.getByRole('button', { name: 'Add segment' }));
     await user.type(screen.getByLabelText('Segment 3'), 'sites.csv');
+    // Its segments are the folders of the file's path, then its name, shown joined as S3 reads them.
+    const place = screen.getByRole('group', { name: 'Where the file is in the bucket' });
+    expect(place).toHaveTextContent(
+      'Each segment is one folder of the path, in order, then the file name: the parts of what S3 calls its key.',
+    );
+    expect(place).toHaveTextContent('Reads readings/{year}/sites.csv');
     // A file is CSV unless said; its convention for an empty field is declared.
     expect(screen.getByLabelText('The file is')).toHaveValue('csv');
     await user.selectOptions(screen.getByLabelText('An empty field'), 'never');
