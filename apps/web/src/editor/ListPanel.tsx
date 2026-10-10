@@ -1,5 +1,14 @@
-import { setListAttributes, type EditorView } from '@alloy-works/editor';
+import { blockCommand, setListAttributes, type EditorView } from '@alloy-works/editor';
 import { useState, type Ref } from 'react';
+
+import { Icon } from './Icon.js';
+import styles from './ListPanel.module.css';
+
+/** What moves an item a level, set here beside the list's options (ADR-0053). */
+const MOVES = [
+  { action: 'nestItem', label: 'Nest item', said: 'Ctrl or Cmd and right square bracket' },
+  { action: 'liftItem', label: 'Lift item', said: 'Ctrl or Cmd and left square bracket' },
+] as const;
 
 /** What the stored model calls each numbering, and what an author is shown instead. */
 const NUMBERINGS = [
@@ -49,6 +58,8 @@ export interface ListPanelProps {
   readonly view: EditorView;
   readonly list: ListPanelList;
   readonly enabled: boolean;
+  /** Where a nested list takes its identifier from, as the toolbar's own commands do. */
+  readonly newIdentifier: () => string;
   /**
    * The panel's own element. It is one of the regions `F6` moves between (CNT-077), and the view
    * that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
@@ -96,7 +107,7 @@ export interface ListPanelProps {
  * guard that returned early left `1.5` on screen with the document holding `1`, and `-1` clearing a
  * start the author had set, with nothing on the page admitting either.
  */
-export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
+export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanelProps) {
   const numbered = list.kind === 'ordered';
   const held = list.start === null ? '' : String(list.start);
   const [start, setStart] = useState({ typed: held, inModel: held, of: list.id });
@@ -117,28 +128,30 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
     setListAttributes(attrs)(view.state, view.dispatch.bind(view));
 
   return (
-    <div ref={ref} role="group" aria-label="List" tabIndex={-1}>
-      <label>
-        Kind
-        <select
-          value={list.kind}
-          disabled={!enabled}
-          onChange={(event) => {
-            // The answer is read rather than dropped, as the other two fields' are. No refusal is
-            // reachable through this field - the panel offers only the two kinds
-            // `setListAttributes` takes, and it is rendered only over a list that takes them - so
-            // the false branch is a documented invariant: a change that did not happen must not
-            // clear a sentence about the list as it still stands. Leaving `ordered` does clear it,
-            // because the start and the numbering go with it and nothing refused is true any more.
-            if (ask({ kind: event.target.value === 'ordered' ? 'ordered' : 'unordered' })) {
-              setRefused(null);
-            }
-          }}
-        >
-          <option value="unordered">Bulleted</option>
-          <option value="ordered">Numbered</option>
-        </select>
-      </label>
+    <div ref={ref} role="group" aria-label="List" tabIndex={-1} className={styles['panel']}>
+      {/* Nest and Lift, for every list: an item a level in, or out. Unavailable where the command
+          declines - the first item, or a definition list's top level - as the toolbar's are. */}
+      <span className={styles['moves']}>
+        {MOVES.map((move) => (
+          <button
+            key={move.action}
+            type="button"
+            className={styles['move']}
+            aria-label={move.label}
+            title={`${move.label} (${move.said})`}
+            disabled={!enabled}
+            aria-disabled={!blockCommand(move.action, newIdentifier)(view.state, undefined)}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (blockCommand(move.action, newIdentifier)(view.state, view.dispatch.bind(view))) {
+                view.focus();
+              }
+            }}
+          >
+            <Icon name={move.label} />
+          </button>
+        ))}
+      </span>
       {numbered && (
         <>
           <label>
@@ -148,6 +161,7 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
               min={0}
               step={1}
               value={start.typed}
+              title="The number the first item takes"
               disabled={!enabled}
               aria-describedby={blamed('start') ? `${HINT} ${REFUSAL}` : HINT}
               aria-invalid={blamed('start')}
@@ -177,7 +191,9 @@ export function ListPanel({ view, list, enabled, ref }: ListPanelProps) {
               }}
             />
           </label>
-          <p id={HINT}>The number the first item takes</p>
+          <p id={HINT} className={styles['hint']}>
+            The number the first item takes
+          </p>
           {refused !== null && (
             <p id={REFUSAL} role="alert">
               {refused.sentence}

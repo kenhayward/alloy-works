@@ -1,0 +1,51 @@
+/* A list's options on the toolbar's second line (ADR-0053): Nest and Lift, then a numbered list's
+   start and numbering, each label beside its field, the groups well apart. */
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-24);
+}
+
+.panel:focus {
+  outline: none;
+}
+
+.panel > label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.panel input[type='number'] {
+  width: 5rem;
+}
+
+.moves {
+  display: inline-flex;
+  gap: var(--space-4);
+}
+
+.move {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.move[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+/* Said to a screen reader as the box's description; on the line, the box's title says it. */
+.hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
