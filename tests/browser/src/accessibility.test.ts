@@ -308,9 +308,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         button('Bulleted list', true),
       );
       await at(
-        'the cursor in a definition list',
+        // Nest and Lift alone on the toolbar's second line (ADR-0053).
+        'the cursor in a definition list, the List panel open',
         surface.getByText('A definition.'),
-        [],
+        ['List'],
         button('Definition list', true),
       );
       await at(
