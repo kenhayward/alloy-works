@@ -112,6 +112,25 @@
   background: transparent;
 }
 
+/* On a sheet (ADR-0056) the sheet's margins are the surface's: it adds none of its own. */
+:global(.aw-sheet) > .surface {
+  min-height: 0;
+  padding: 0;
+}
+
+/*
+ * Open in place on a document's sheet, the card reaches across the sheet's margins, and its surface's
+ * padding stands its text exactly where the sheet set it, inside the card's 1px edge and the 6pt either
+ * side its own canvas keeps (CNT-075).
+ */
+:global(.aw-sheet) .card[data-in-place='true'] {
+  margin-inline: calc(-1 * var(--sheet-margin) * var(--aw-zoom));
+}
+
+:global(.aw-sheet) .card[data-in-place='true'] .surface {
+  padding-inline: calc(var(--sheet-margin) * var(--aw-zoom) - 6pt * var(--aw-zoom) - 1px);
+}
+
 .surface:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: -2px;

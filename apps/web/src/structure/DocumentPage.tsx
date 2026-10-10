@@ -61,7 +61,7 @@ import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { documentOffer, ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
 import type { ParameterValue } from './ParameterInput.js';
 import { byName } from '../metadata/people.js';
-import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
+import { UnheldFaces, useReachableDesk, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider, usePresentation } from '../theme/presentation.js';
 import {
   holdInPlace,
@@ -1212,6 +1212,8 @@ export function DocumentPage({
   // STR-035, STR-045): the one the outline marks as the current location, and the one the text marks
   // until another is chosen.
   const textColumn = useRef<HTMLDivElement>(null);
+  // The desk the document's sheet stands on (ADR-0056), reached by the keyboard while it scrolls.
+  useReachableDesk(textColumn);
   const [inView, setInView] = useState<string | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
   useReadingPosition(textColumn, setInView, loaded.state === 'open' ? loaded.document.id : null);
@@ -1687,7 +1689,7 @@ export function DocumentPage({
               />
             </div>
           )}
-          <div ref={textColumn} className={styles['text']}>
+          <div ref={textColumn} className={`${styles['text']} aw-desk`}>
             <DocumentText
               outline={document.outline}
               scheme={document.scheme}

@@ -2376,7 +2376,8 @@ export function ComponentEditor({
             {/* On the paper the theme sets text on, at the layout's measure (themes.md, "The theme in
                 the editor"): the same element whether or not the theme has arrived. */}
             <UnheldFaces />
-            <Canvas>
+            {/* On its own, a sheet on a desk; in place, the document's sheet is the paper (ADR-0056). */}
+            <Canvas sheet={onDone === undefined}>
               <div ref={place} className={styles['surface']} tabIndex={-1} />
             </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are

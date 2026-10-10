@@ -13,6 +13,9 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **The editing canvas is a page on a desk.** [`handoffs/canvas/`](handoffs/canvas/README.md)
+> redraws the paper as a centred sheet, with a document bar and zoom in the status bar ([ADR-0056](../decisions/0056-the-editing-canvas-is-a-page-on-a-desk.md)).
+
 > **A figure is one line, and its settings a dialog.** [`handoffs/figure-toolbar/`](handoffs/figure-toolbar/README.md)
 > redraws a figure's second toolbar line and adds Figure settings ([ADR-0055](../decisions/0055-a-figure-is-one-line-and-its-settings-a-dialog.md)).
 

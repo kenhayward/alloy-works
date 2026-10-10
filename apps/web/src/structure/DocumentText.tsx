@@ -46,14 +46,13 @@ import { textOffsetIn } from '../editor/caret.js';
 import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
 import { nodeName, titleText, type Names } from './tree.js';
-import { innerWidth, useCanvas } from '../theme/Canvas.js';
+import { deskRoom, useCanvas } from '../theme/Canvas.js';
 import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
 import { usePresentation } from '../theme/presentation.js';
 import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
-const ownRoom = (element: HTMLElement) => innerWidth(element);
 
 /** The room a component's label keeps from the text it stands beside. */
 const LABEL_GAP = 48;
@@ -85,19 +84,33 @@ function useLabelsPlaced(column: RefObject<HTMLElement | null>) {
     const root = column.current;
     if (root === null) return;
     const place = () => {
+      // On a sheet (ADR-0056) a component is the measure wide, so its label stands beside its
+      // heading's words, where they leave it room, rather than beside its text; where they leave it
+      // none, raised over the space above the component rather than a line of its own, since the
+      // sheet sets the text where the PDF does (STY-080).
+      const sheet = root.classList.contains('aw-sheet');
       for (const component of root.querySelectorAll<HTMLElement>('[data-component]')) {
         const label = component.querySelector<HTMLElement>(':scope > [data-label]');
-        const text = component.querySelector<HTMLElement>('.aw-text');
-        const start = component.getBoundingClientRect().left;
+        const text = sheet
+          ? component.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6')
+          : component.querySelector<HTMLElement>('.aw-text');
+        let right = text?.getBoundingClientRect().right ?? 0;
+        if (sheet && text) {
+          const words = document.createRange();
+          words.selectNodeContents(text);
+          right = words.getBoundingClientRect().right;
+        }
         const above =
           label !== null &&
           text !== null &&
           !labelFits({
             column: component.clientWidth,
-            text: text.getBoundingClientRect().right - start,
+            text: right - component.getBoundingClientRect().left,
             label: label.offsetWidth,
           });
-        component.toggleAttribute('data-label-above', above);
+        // Both, every time: a label placed before the sheet arrived must not keep the line it took.
+        component.toggleAttribute('data-label-above', above && !sheet);
+        component.toggleAttribute('data-label-raised', above && sheet);
       }
     };
     place();
@@ -437,9 +450,10 @@ export function DocumentText({
   /** Told the rows read for its bound tables, by `tableKey`, as they arrive (TB3.3). */
   onTableRows?: (rows: ReadonlyMap<string, TableRows>) => void;
 }) {
-  // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
+  // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072): a
+  // sheet on the desk its parent is (ADR-0056).
   const column = useRef<HTMLElement>(null);
-  const canvas = useCanvas(ownRoom, column as RefObject<HTMLDivElement | null>);
+  const canvas = useCanvas(deskRoom, column as RefObject<HTMLDivElement | null>, true);
   useLabelsPlaced(column);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);

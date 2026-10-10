@@ -59,6 +59,37 @@ html {
   background: var(--surface);
 }
 
+/*
+ * The page on a desk (ADR-0056): the paper is a sheet the measure wide, with margins either side and
+ * above that scale with the zoom, centred on the desk and as tall as its text - no pages, no breaks.
+ * The desk scrolls sideways where it is narrower than the sheet. Its sideways room is the sheet's own,
+ * so the canvas's own scrolling stands down; the margins are wider than any table's outer rule.
+ */
+.aw-desk {
+  /* Read here, in the theme around the sheet, since the sheet takes Light's tokens (base.css above). */
+  --aw-sheet-edge: var(--sheet-edge);
+  --aw-sheet-shadow: var(--sheet-shadow);
+  min-width: 0;
+  padding: var(--desk-gap);
+  overflow-x: auto;
+  background: var(--desk);
+}
+
+.aw-canvas.aw-sheet {
+  box-sizing: content-box;
+  width: calc(var(--aw-measure) * var(--aw-zoom));
+  margin-inline: auto;
+  padding: calc(var(--sheet-top) * var(--aw-zoom)) calc(var(--sheet-margin) * var(--aw-zoom));
+  overflow-x: visible;
+  border: 1px solid var(--aw-sheet-edge);
+  box-shadow: var(--aw-sheet-shadow);
+}
+
+/* Paper unless the theme colours its page: the theme's own rule on .aw-canvas wins (STY-080). */
+:where(.aw-canvas.aw-sheet) {
+  background: var(--surface);
+}
+
 h1 {
   margin: 0 0 var(--space-16);
   font-size: var(--size-20);

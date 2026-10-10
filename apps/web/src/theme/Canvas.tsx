@@ -13,17 +13,31 @@ import { Notice } from '../states/Notice.js';
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
 const PX_PER_PT = 96 / 72;
 
+/** The sheet's interface margin either side of the measure, in CSS pixels at 100% (ADR-0056). */
+export const SHEET_MARGIN = 70;
+
+/**
+ * The zoom at Fit: what sets the measure, and on a sheet its margins too, across `room` CSS pixels;
+ * the printed size where there is no room to measure.
+ */
+export function fitZoom(room: number, measure: number, sheet: boolean): number {
+  if (room <= 0) return 1;
+  return room / (measure * PX_PER_PT + (sheet ? 2 * SHEET_MARGIN : 0));
+}
+
 /**
  * What makes an element the paper a component's text is set on (themes.md, "The theme in the editor"):
  * `.aw-canvas`, under which the theme's rules apply (STY-058), and the layout's measure and the zoom as
  * `--aw-measure` and `--aw-zoom`, which every length the theme writes is multiplied by (CNT-115, ET-E).
  * Nothing until a presentation is ready, so the text is set as it was rather than in half a theme. At
  * Fit, the zoom is whatever sets the measure across the room `room` measures, and the printed size
- * where it cannot be measured.
+ * where it cannot be measured. A `sheet` is the paper as a page on a desk (ADR-0056): `.aw-sheet`
+ * too, its margins scaling with the zoom, and at Fit the room is its desk's, the element's parent.
  */
 export function useCanvas(
   room: (element: HTMLElement) => number,
   given?: RefObject<HTMLDivElement | null>,
+  sheet = false,
 ): {
   ref: RefObject<HTMLDivElement | null>;
   className: string | undefined;
@@ -41,22 +55,20 @@ export function useCanvas(
   useLayoutEffect(() => {
     const element = ref.current;
     if (!fit || measure === undefined || !element) return undefined;
-    const refit = () => {
-      const width = room(element);
-      setFitted(width > 0 ? width / (measure * PX_PER_PT) : 1);
-    };
+    const refit = () => setFitted(fitZoom(room(element), measure, sheet));
     refit();
     if (typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver(refit);
-    observer.observe(element);
+    // A sheet is as wide as its zoom makes it: its desk is what the window resizes.
+    observer.observe(sheet ? (element.parentElement ?? element) : element);
     return () => observer.disconnect();
-  }, [fit, measure, room, ref]);
+  }, [fit, measure, room, ref, sheet]);
 
   if (!ready || !zooming) return { ref, className: undefined, style: undefined };
   const zoom = zooming.zoom === 'fit' ? fitted : zooming.zoom;
   return {
     ref,
-    className: 'aw-canvas',
+    className: sheet ? 'aw-canvas aw-sheet' : 'aw-canvas',
     style: {
       '--aw-measure': `${ready.frame.measure}pt`,
       '--aw-zoom': String(Number(zoom.toFixed(4))),
@@ -85,17 +97,54 @@ const surfaceRoom = (canvas: HTMLElement) => {
 };
 
 /**
- * The paper a component's editing surface stands on. The element is always rendered, whether or not
- * the presentation has arrived, so the surface ProseMirror is mounted in is never remounted when it
- * does.
+ * A desk scrolls sideways where it is narrower than its sheet, and a region that scrolls must take the
+ * keyboard (WCAG 2.1.1, axe's scrollable-region-focusable): a tab stop while it scrolls, none while not.
  */
-export function Canvas({ children }: { children: ReactNode }) {
-  const { ref, className, style } = useCanvas(surfaceRoom);
+export function keepReachable(desk: HTMLElement): void {
+  if (desk.scrollWidth > desk.clientWidth) desk.tabIndex = 0;
+  else desk.removeAttribute('tabindex');
+}
+
+/** Keeps a desk reachable by the keyboard as it, or its sheet, changes size. */
+export function useReachableDesk(desk: RefObject<HTMLElement | null>): void {
+  useLayoutEffect(() => {
+    const element = desk.current;
+    if (!element) return undefined;
+    const check = () => keepReachable(element);
+    check();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(check);
+    observer.observe(element);
+    if (element.firstElementChild) observer.observe(element.firstElementChild);
+    return () => observer.disconnect();
+  });
+}
+
+/** The room a sheet has: its desk's, inside the desk's padding, less the sheet's 1px edges (ADR-0056). */
+export const deskRoom = (element: HTMLElement): number => Math.max(0, parentRoom(element) - 2);
+
+/**
+ * The paper a component's editing surface stands on: on its own, a sheet on a desk (ADR-0056); open
+ * in place, the document's sheet already is the paper, and this is only the measure's holder. The
+ * elements are always rendered, whether or not the presentation has arrived, so the surface
+ * ProseMirror is mounted in is never remounted when it does.
+ */
+export function Canvas({ children, sheet = false }: { children: ReactNode; sheet?: boolean }) {
+  const { ref, className, style } = useCanvas(sheet ? deskRoom : surfaceRoom, undefined, sheet);
+  const desk = useRef<HTMLDivElement>(null);
+  useReachableDesk(desk);
   useStyledImages(ref);
-  return (
+  const paper = (
     <div ref={ref} className={className} style={style}>
       {children}
     </div>
+  );
+  return sheet ? (
+    <div ref={desk} className="aw-desk">
+      {paper}
+    </div>
+  ) : (
+    paper
   );
 }
 

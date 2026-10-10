@@ -80,6 +80,11 @@
   --pane-admin-menu: 232px;
   --drawer: 440px;
   --dialog: 480px;
+  /* The page on a desk (ADR-0056): the margin either side of the measure and above the first line, at
+   * 100% (both scale with the zoom), and the desk above the sheet. Mirrored by SHEET_MARGIN. */
+  --sheet-margin: 70px;
+  --sheet-top: 56px;
+  --desk-gap: 28px;
   /* A figure's second toolbar line and Figure settings (ADR-0055): the line's height, the dialog's
    * width, and its label column. */
   --context-line: 42px;
@@ -142,6 +147,10 @@
   --mark-a: #11325f;
   --mark-b: #49888e;
   --desk: #e6e9ed;
+  /* The sheet's edge and shadow on the desk (ADR-0056), read on the desk: the sheet is .aw-canvas,
+   * which would take Light's in every theme. */
+  --sheet-edge: #cfd5dc;
+  --sheet-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 10px 30px rgba(15, 23, 42, 0.1);
   --overlay: rgba(15, 23, 42, 0.45);
   --panel-translucent: rgba(255, 255, 255, 0.66);
 
@@ -180,6 +189,8 @@
   --mark-a: #8fd0e0;
   --mark-b: #63aea2;
   --desk: #070a0d;
+  --sheet-edge: #2a333d;
+  --sheet-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 14px 40px rgba(0, 0, 0, 0.55);
   --overlay: rgba(0, 0, 0, 0.6);
   --panel-translucent: rgba(20, 28, 36, 0.66);
 

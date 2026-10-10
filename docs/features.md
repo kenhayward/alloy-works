@@ -298,9 +298,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   theme gives it - the environment's on the component's own page, and a document's own on the
   document's page, where the text read before it is opened is set the same way. Running text, lists,
   quotations, table cells, footnotes, captions, a table's note, an attribution and preformatted text
-  each take the style they will print in, and every mark its own. The text is as wide as the printed
-  page's text, at its printed size at 100%; **Zoom** beside it sets 50% to 200%, or **Fit** to the
-  column, and is remembered in this browser. The paper stays white in dark mode. A table is ruled,
+  each take the style they will print in, and every mark its own. The text stands on a page, a sheet
+  as wide as the printed page's text with margins either side, centred on a desk, at its printed size
+  at 100%; **Zoom** beside it sets 50% to 200%, or **Fit** to the desk, and is remembered in this
+  browser. The page stays white in dark mode. A table is ruled,
   filled, banded and padded as its table style says, and a figure and an image in a line are the size
   their image styles give them, from the image's own pixels, as a publication sets them. A table's
   caption and a figure's stand above or below it as its style says, where the publication sets them.
