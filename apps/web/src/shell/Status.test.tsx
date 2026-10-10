@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { StatusBar, StatusProvider, useStatus } from './Status.js';
+import { StatusBar, StatusProvider, StatusTools, useStatus } from './Status.js';
 
 /** A page that says something through the bar, as the document page does. */
 function Saying({ notice, context }: { notice: string | null; context?: readonly string[] }) {
@@ -81,6 +81,33 @@ describe('the status bar', () => {
     expect(screen.getByText('Version 0.9 in General')).toBeInTheDocument();
     rerender(<StatusProvider>{null}</StatusProvider>);
     expect(screen.queryByText('Version 0.9 in General')).toBeNull();
+  });
+
+  it("holds a page's tools at its right, before the context, such as the zoom (ADR-0056)", () => {
+    render(
+      <StatusProvider>
+        <Saying notice={null} context={['1 section']} />
+        <StatusTools>
+          <button type="button">Zoom in</button>
+        </StatusTools>
+      </StatusProvider>,
+    );
+    const bar = document.querySelector('footer')!;
+    const tool = screen.getByRole('button', { name: 'Zoom in' });
+    expect(bar).toContainElement(tool);
+    expect(
+      tool.compareDocumentPosition(screen.getByText('1 section')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('holds the tools where they are, with no shell to hold them', () => {
+    render(
+      <StatusTools>
+        <button type="button">Zoom in</button>
+      </StatusTools>,
+    );
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeInTheDocument();
   });
 
   it('is drawn by the page itself where there is no shell to hold it', () => {

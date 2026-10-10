@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './Status.module.css';
@@ -20,6 +21,8 @@ export interface Status {
   readonly describe: (context: readonly string[] | null) => void;
   /** Where the person is within the page, such as "Bound table, column 3 of 11"; never announced. */
   readonly place: (where: string | null) => void;
+  /** Where a page's tools stand in the bar, such as the zoom (ADR-0056): null until the bar is drawn. */
+  readonly tools: HTMLElement | null;
 }
 
 const StatusContext = createContext<Status | null>(null);
@@ -33,16 +36,27 @@ export function StatusProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [context, setContext] = useState<readonly string[] | null>(null);
   const [place, setPlace] = useState<string | null>(null);
+  const [tools, setTools] = useState<HTMLElement | null>(null);
   const status = useMemo<Status>(
-    () => ({ say: setNotice, describe: setContext, place: setPlace }),
-    [],
+    () => ({ say: setNotice, describe: setContext, place: setPlace, tools }),
+    [tools],
   );
   return (
     <StatusContext.Provider value={status}>
       {children}
-      <StatusBar notice={notice} context={context} place={place} />
+      <StatusBar notice={notice} context={context} place={place} toolsRef={setTools} />
     </StatusContext.Provider>
   );
+}
+
+/**
+ * A page's tools, drawn in the status bar at its right, before the context (ADR-0056): through a
+ * portal, so they keep the page's own context, such as its zoom. Where there is no shell's bar they
+ * stand where they are, and a page drawing its own bar passes them to it as `tools`.
+ */
+export function StatusTools({ children }: { children: ReactNode }) {
+  const host = useStatus()?.tools ?? null;
+  return host === null ? <>{children}</> : createPortal(children, host);
 }
 
 /**
@@ -66,10 +80,16 @@ export function StatusBar({
   notice,
   context,
   place = null,
+  tools,
+  toolsRef,
 }: {
   notice: string | null;
   context: readonly string[] | null;
   place?: string | null;
+  /** A page's own tools, where the page draws its own bar. */
+  tools?: ReactNode;
+  /** Where the shell's bar holds the tools pages send it. */
+  toolsRef?: (element: HTMLElement | null) => void;
 }) {
   // How tall the bar stands over the window's foot, one line or wrapped to two, told to the page as
   // `--status-height`: what the window scrolls to stops above it, and the outline pane stuck beside
@@ -96,6 +116,9 @@ export function StatusBar({
         {notice}
       </p>
       {place !== null && <p className={styles['place']}>{place}</p>}
+      <div ref={toolsRef} className={styles['tools']}>
+        {tools}
+      </div>
       {context !== null && context.length > 0 && (
         <p className={styles['context']}>
           {context.map((phrase, index) => (

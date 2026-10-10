@@ -2015,6 +2015,26 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
       (again.view.dom.closest('.aw-canvas') as HTMLElement).style.getPropertyValue('--aw-zoom'),
     ).toBe('1.5');
     expect(screen.getByLabelText('Zoom')).toHaveValue('1.5');
+
+    // Zoom in and out step through the levels, and the slider moves among them (ADR-0056).
+    const canvasAgain = again.view.dom.closest('.aw-canvas') as HTMLElement;
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(canvasAgain.style.getPropertyValue('--aw-zoom')).toBe('2');
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    const slider = screen.getByRole('slider', { name: 'Zoom level' });
+    expect(slider).toHaveAttribute('aria-valuetext', '200%');
+    fireEvent.change(slider, { target: { value: '0' } });
+    expect(canvasAgain.style.getPropertyValue('--aw-zoom')).toBe('0.5');
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(canvasAgain.style.getPropertyValue('--aw-zoom')).toBe('0.75');
+    window.localStorage.removeItem('alloy-works.zoom');
   });
 
   it("CNT-122 sizes a figure and an image in a line by their image styles, from the image's own pixels, as a publish does", async () => {

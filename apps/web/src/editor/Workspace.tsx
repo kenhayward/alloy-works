@@ -26,6 +26,7 @@ import { documentAddress, documentLink, templateAccessAddress } from '../structu
 import { TemplateList } from '../structure/TemplateList.js';
 import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { OutlineRail } from '../structure/OutlineTabs.js';
+import { StatusTools } from '../shell/Status.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
@@ -257,7 +258,10 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             </nav>
             {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
             <PresentationProvider client={client}>
-              <ZoomControl />
+              {/* In the status bar (ADR-0056), as a document's is. */}
+              <StatusTools>
+                <ZoomControl />
+              </StatusTools>
               <ComponentEditor
                 key={opened}
                 componentId={opened}
