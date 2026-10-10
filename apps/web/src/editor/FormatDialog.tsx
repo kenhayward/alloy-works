@@ -371,6 +371,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
           </h2>
           <p className={styles['note']}>
             Each member left unset takes the table style's, shown under its name.
+            {type?.base === 'text' && ' A text column takes only this one.'}
           </p>
           <div className={layout['rows']}>{fields}</div>
           {said !== null && (

@@ -1,12 +1,13 @@
-/* The Bound table band (ADR-0051): a fixed height under the toolbar, the same on every tab, its first
-   line the value and the table's settings, then its tabs, each list scrolling inside it. */
+/*
+ * The Bound table panel in the Table tab beside the text (ADR-0052): the value, the table's
+ * settings, the columns as pills and the column in hand, sort and notes, and Delete table at its
+ * foot. The panel beside the text scrolls it; nothing in it is wider than the panel.
+ */
 
 .band {
   display: flex;
   flex-direction: column;
-  height: min(var(--bound-panel), 38vh);
   min-height: 0;
-  border-bottom: 1px solid var(--border);
   background: var(--surface);
   font-size: var(--size-13);
 }
@@ -15,26 +16,58 @@
   outline: none;
 }
 
-.first {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-8) var(--space-16);
-  padding: 6px var(--space-16);
+.section {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
   border-bottom: 1px solid var(--border);
 }
 
-.settings {
-  display: inline-flex;
-  flex: none;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 4px;
-  margin-inline-start: auto;
+/* A section's heading: 12px, upper case, muted (the handoff's measures). */
+.heading {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.settings label {
-  margin: 0;
+/* Two columns: a label of --panel-label, then its field. A label wrapping its field lays out as both. */
+.fields {
+  display: grid;
+  grid-template-columns: var(--panel-label) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+}
+
+.fields > label {
+  display: contents;
+}
+
+.fields > label,
+.label {
+  color: var(--muted);
+}
+
+.fields :is(select, input) {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  height: var(--row-control);
+  color: var(--text);
+}
+
+.shows,
+.inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.inline > .unit {
+  width: 96px;
 }
 
 /* A pressed toggle: the weak accent, its text, and a 35% accent border. */
@@ -52,84 +85,154 @@
   opacity: var(--opacity-disabled);
 }
 
-.wide {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-inline-start: var(--space-8);
+.muted {
   color: var(--muted);
 }
 
-.delete {
-  margin-inline-start: var(--space-8);
-  color: var(--danger);
+.format {
+  gap: 6px;
+  min-height: 28px;
+  margin-inline-start: auto;
+  padding: 0 var(--space-12);
+  font-size: var(--size-13);
 }
 
 .unreadable {
-  margin: 6px var(--space-16) 0;
-  padding: 6px 10px;
-  border-radius: var(--radius-8);
+  margin: 0;
+  padding: var(--space-8) var(--space-16);
+  border-bottom: 1px solid var(--border);
   background: var(--sunken);
   color: var(--muted);
 }
 
 .tabsRow {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--space-8);
-  padding: 0 var(--space-16);
+  padding-inline-end: var(--space-12);
   border-bottom: 1px solid var(--border);
 }
 
 .tabs {
-  display: flex;
   flex: 1;
-  gap: var(--space-4);
-}
-
-.tabs [role='tab'] {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 10px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-}
-
-.tabs [role='tab'][aria-selected='true'] {
-  border-bottom-color: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
 }
 
 .add {
+  width: var(--icon-button-sm);
+  min-height: var(--icon-button-sm);
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-text);
+}
+
+.addWords {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
   border: 0;
   background: transparent;
   color: var(--accent-text);
   font-weight: 500;
 }
 
-.add[aria-disabled='true'] {
+:is(.add, .addWords)[aria-disabled='true'] {
   opacity: var(--opacity-disabled);
 }
 
 .panel {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
+  display: grid;
 }
 
 .panel[hidden] {
   display: none;
+}
+
+/* The columns as pills, wrapping: 26px high, a 13px radius; the one in hand pressed. */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--space-12) var(--space-16);
+}
+
+.pill {
+  min-height: 26px;
+  padding: 0 var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-12);
+}
+
+.pill[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* A column a change to which was refused, the reason in its tooltip (ADR-0051, decision 5). */
+.pill.refused {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* The column in hand, on the weak accent. */
+.inHand {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent-weak) 70%, transparent);
+}
+
+.inHandHead {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.inHandHead h4 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.move {
+  width: var(--icon-button-sm);
+  min-height: var(--icon-button-sm);
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.move[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.inHand > .hint {
+  padding: 0;
+}
+
+.foot {
+  padding: var(--space-12) var(--space-16);
+}
+
+.delete {
+  gap: 6px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+}
+
+.delete[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
 }
 
 .row {
@@ -140,67 +243,6 @@
   min-height: var(--grid-row);
   padding: 2px var(--space-8) 2px var(--space-16);
   border-bottom: 1px solid var(--border);
-}
-
-/* A column a row (ADR-0051, decision 4), of fixed widths but for its header, which takes the rest. */
-.column {
-  display: grid;
-  grid-template-columns:
-    50px 26px minmax(140px, 300px) minmax(120px, 1fr) 110px 124px max-content
-    34px 34px 42px;
-  align-items: center;
-  gap: 0 var(--space-12);
-  min-width: 980px;
-  min-height: var(--grid-row);
-  padding: 2px var(--space-8) 2px var(--space-8);
-  border-bottom: 1px solid var(--border);
-}
-
-.column > :is(select, input) {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 28px;
-}
-
-.column:focus-within {
-  background: color-mix(in srgb, var(--accent-weak) 60%, transparent);
-}
-
-.head {
-  min-height: 30px;
-  color: var(--muted);
-  font-size: var(--size-12);
-  font-weight: 600;
-}
-
-.head:focus-within {
-  background: none;
-}
-
-.moves {
-  display: inline-flex;
-}
-
-.move {
-  width: 22px;
-  min-height: var(--icon-button-sm);
-  color: var(--muted);
-}
-
-.move[aria-disabled='true'] {
-  opacity: var(--opacity-disabled);
-}
-
-/* A row's number marked where a change to it was refused, the reason in its tooltip. */
-.refused button {
-  min-height: 22px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: var(--radius-4);
-  background: var(--warn-bg);
-  color: var(--warn);
-  font-size: var(--size-12);
-  font-weight: 600;
 }
 
 .index {
@@ -253,14 +295,6 @@
   font-weight: 600;
 }
 
-.inline {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-height: 24px;
-  margin: 0;
-}
-
 .group {
   display: flex;
   flex-direction: column;
@@ -288,13 +322,4 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-.refused [role='tooltip'] {
-  right: auto;
-  left: 0;
-  width: max-content;
-  max-width: 320px;
-  font-family: inherit;
-  white-space: normal;
 }

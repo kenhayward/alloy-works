@@ -69,6 +69,10 @@
   --pane-collapsed-rail: 46px;
   --dock-rail: 38px;
   --dock-panel: 320px;
+  /* The panel beside the text while it offers a Table tab (ADR-0052), the same width throughout. */
+  --panel-table: 400px;
+  /* The label column of the Table tab's two-column fields. */
+  --panel-label: 92px;
   --header-height: 44px;
 
   /* Administration (ADR-0049): its menu, the side panel, a confirmation, a table's rows, an icon button */
@@ -87,7 +91,6 @@
   --pager-button: 28px;
   --list-row: 38px;
   /* The Bound table band (ADR-0051): its height, its rows, its small buttons, its Format dialog. */
-  --bound-panel: 300px;
   --grid-row: 36px;
   --icon-button-sm: 26px;
   --format-dialog: 600px;

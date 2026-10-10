@@ -199,6 +199,10 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
       // Wide set to Rotate, and the panel held to axe.
       await regionTo(page, panel);
       await panel.getByLabel('Wide').selectOption('rotate');
+      // The Table tab scrolled to its Table section: nothing above it left half in view (ADR-0052).
+      await panel
+        .getByRole('region', { name: 'Table' })
+        .evaluate((element) => element.scrollIntoView({ block: 'start' }));
       await checkAxe(page, "the Bound table panel's notes and Wide", task.meta, {
         shows: [panel, adding],
       });

@@ -128,8 +128,16 @@ export function boundTableBodyView(
   node: Node,
   document: Document,
   decorations: readonly Decoration[],
+  onColumn?: (column: number) => void,
 ): NodeView {
   const dom = document.createElement('div');
+  // A press on one of its cells holds that column in the Table tab (ADR-0052); a note's row, which
+  // spans every column, holds none.
+  dom.addEventListener('mousedown', (event) => {
+    const cell = (event.target as Element | null)?.closest('th, td');
+    if (!cell || cell.hasAttribute('colspan') || cell.parentElement === null) return;
+    onColumn?.(Array.prototype.indexOf.call(cell.parentElement.children, cell));
+  });
   dom.className = 'aw-bound-table-body';
   dom.setAttribute('data-bound-table-body', '');
   dom.setAttribute('contenteditable', 'false');

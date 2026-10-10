@@ -134,6 +134,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   // component it belongs to, so the pane never shows one component's space beside another.
   // Where an open component's fields are set: its Attributes panel, once that is there (LG6b).
   const [fieldsHost, setFieldsHost] = useState<HTMLElement | null>(null);
+  // Where an open component's table is formatted, and whether it holds one (ADR-0052).
+  const [tableHost, setTableHost] = useState<HTMLElement | null>(null);
+  const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
   const [placed, setPlaced] = useState<{
     readonly component: string;
     readonly space: { readonly id: string; readonly name: string };
@@ -204,7 +207,13 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     }
     if (opened) {
       return (
-        <div className={styles['triptych']}>
+        <div
+          className={styles['triptych']}
+          // While it offers a Table tab, the panel is wider, and stays so as the cursor moves (TF-A).
+          {...(heldTable.holds
+            ? { style: { '--dock-panel': 'var(--panel-table)' } as React.CSSProperties }
+            : {})}
+        >
           {placed?.component === opened ? (
             <SpacePane client={client} space={placed.space} current={opened} />
           ) : (
@@ -226,10 +235,19 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
                 onSpace={(space) => setPlaced({ component: opened, space })}
                 linked={address?.block ? { block: address.block, arrival: arrivals } : null}
                 fieldsHost={fieldsHost}
+                tableHost={tableHost}
+                onTable={setHeldTable}
               />
             </PresentationProvider>
           </div>
-          <ComponentDock key={opened} client={client} id={opened} onFieldsHost={setFieldsHost} />
+          <ComponentDock
+            key={opened}
+            client={client}
+            id={opened}
+            onFieldsHost={setFieldsHost}
+            table={heldTable}
+            onTableHost={setTableHost}
+          />
         </div>
       );
     }

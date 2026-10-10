@@ -737,8 +737,9 @@ button.aw-binding:focus-visible {
 }
 
 /* The bound table the cursor stands in, outlined, and the column focused in its panel (ADR-0051). */
+/* The table being edited, whose formatting the Table tab shows (ADR-0052): 2px, the accent at 45%. */
 .aw-bound-table-current {
-  outline: 2px solid var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 4px;
   border-radius: var(--radius-8);
 }

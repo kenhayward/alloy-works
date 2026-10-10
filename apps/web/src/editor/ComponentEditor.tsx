@@ -75,14 +75,23 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
-import { BoundTablePanel } from './BoundTablePanel.js';
+import { BOUND_TABLE_WORDS, BoundTablePanel } from './BoundTablePanel.js';
 import { FigurePanel } from './FigurePanel.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import { Icon } from './Icon.js';
@@ -178,6 +187,17 @@ export interface ComponentEditorProps {
    * yet; left out, they stand beneath the surface. Their state is the editor's either way.
    */
   readonly fieldsHost?: HTMLElement | null;
+  /**
+   * Where a table's formatting is set: the Table tab of the panel beside the text (ADR-0052). Null
+   * while that tab is not there yet; left out, as where a test opens the editor alone, it stands
+   * under the toolbar.
+   */
+  readonly tableHost?: HTMLElement | null;
+  /**
+   * Told whether the component holds a table, and how many times the cursor has entered one: the
+   * page offers the Table tab while it holds one, and chooses it each time the count goes up.
+   */
+  readonly onTable?: (table: { readonly holds: boolean; readonly entered: number }) => void;
   /** Its section number, where it is open in place in a document; there is none standalone. */
   readonly number?: string;
   /**
@@ -389,6 +409,17 @@ function sizeOf(doc: EditorView['state']['doc']): string {
  * ProseMirror view (ADR-0023); the session decides when changes are sent and never cuts a version on
  * its own.
  */
+/** Whether a component's text holds a table, plain or bound (ADR-0052): the Table tab's offer. */
+function holdsATable(doc: EditorView['state']['doc']): boolean {
+  let holds = false;
+  doc.descendants((node) => {
+    if (holds) return false;
+    if (node.type.name === 'tableFigure' || node.type.name === 'boundTable') holds = true;
+    return !holds;
+  });
+  return holds;
+}
+
 export function ComponentEditor({
   componentId,
   client,
@@ -399,6 +430,8 @@ export function ComponentEditor({
   onView,
   onSpace,
   fieldsHost,
+  tableHost,
+  onTable,
   number,
   onDone,
   openAt,
@@ -1648,6 +1681,34 @@ export function ComponentEditor({
     return headerOf(view.state.doc);
   };
 
+  // Whether the component holds a table, and each entry of the cursor into one (ADR-0052): the page
+  // offers the Table tab while it holds one, and chooses it as the cursor enters one. Above the
+  // returns below, as every hook is.
+  const holdsTable = surface !== null && holdsATable(surface.state.doc);
+  const tableKey =
+    surface === null
+      ? null
+      : (() => {
+          const bound = boundTableAt(surface.state);
+          if (bound !== null) return `bound-${bound.pos}`;
+          const plain = tableAt(surface.state);
+          return plain === null ? null : `table-${plain.pos}`;
+        })();
+  const lastTable = useRef<string | null>(null);
+  const [entered, setEntered] = useState(0);
+  useEffect(() => {
+    if (tableKey !== null && tableKey !== lastTable.current) setEntered((count) => count + 1);
+    lastTable.current = tableKey;
+  }, [tableKey]);
+  // Closed, it holds no table, and the next editor's first entry is a new one.
+  const toldTable = useRef(onTable);
+  toldTable.current = onTable;
+  useEffect(() => () => toldTable.current?.({ holds: false, entered: 0 }), []);
+  useEffect(() => {
+    onTable?.({ holds: holdsTable, entered });
+    // Told what changed, not each new callback the page hands down.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdsTable, entered]);
   if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
@@ -1747,10 +1808,63 @@ export function ComponentEditor({
             }
           : null;
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  /** A table's panels, plain or bound, while the cursor stands in one. */
+  const tablePanels = () => (
+    <>
+      {/* And only while the cursor stands in a table: its header counts and its grid's acts. */}
+      {surface !== null && table !== null && (
+        <TablePanel ref={tableRegion} view={surface} table={table} enabled={mayFormat} />
+      )}
+      {/* And while the cursor stands in a bound table (TB2-F): its presentation, a band whose
+          first line is its value (ADR-0051). */}
+      {surface !== null && boundTable !== null && (
+        <BoundTablePanel
+          key={`bound-table-${boundTable.id ?? boundTable.pos}`}
+          ref={boundTableRegion}
+          view={surface}
+          table={boundTable}
+          enabled={mayFormat}
+          client={client}
+          onFormatting={setFormatting}
+          value={valued?.place === 'table' ? valuePanel(valued, true) : undefined}
+        />
+      )}
+    </>
+  );
+  /**
+   * Where those panels stand (ADR-0052): under the toolbar where the page gives them no place, else
+   * in its Table tab, which says where to go while the cursor is in no table.
+   */
+  // A dialog stands over the page: the article is inert behind it, and so is what the editor sets
+  // beside it - the Table tab, the fields in Attributes - which stand outside the article.
+  const behindDialog =
+    asking !== null ||
+    figureDialog !== null ||
+    referring !== null ||
+    equating !== null ||
+    symbolizing !== null ||
+    valuing !== null ||
+    formatting;
+  const placeTables = (panels: ReactNode) => {
+    if (tableHost === undefined) return panels;
+    if (tableHost === null) return null;
+    return createPortal(
+      <div inert={behindDialog}>
+        {table === null && boundTable === null ? (
+          <p className={styles['tableOutside']}>{BOUND_TABLE_WORDS.cursorOutside}</p>
+        ) : (
+          panels
+        )}
+      </div>,
+      tableHost,
+    );
+  };
+
   /** The Value panel, one line, on what `valued` names. */
   type Valued = NonNullable<typeof valued>;
-  const valuePanel = (valued: Valued) => (
+  const valuePanel = (valued: Valued, stacked = false) => (
     <ValuePanel
+      stacked={stacked}
       key={`value-${valued.pos}`}
       ref={valueRegion}
       binding={valued.binding}
@@ -1863,15 +1977,7 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={
-          asking !== null ||
-          figureDialog !== null ||
-          referring !== null ||
-          equating !== null ||
-          symbolizing !== null ||
-          valuing !== null ||
-          formatting
-        }
+        inert={behindDialog}
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -2101,10 +2207,7 @@ export function ComponentEditor({
                 enabled={mayFormat}
               />
             )}
-            {/* And only while the cursor stands in a table: its header counts and its grid's acts. */}
-            {surface !== null && table !== null && (
-              <TablePanel ref={tableRegion} view={surface} table={table} enabled={mayFormat} />
-            )}
+            {placeTables(tablePanels())}
             {/* And only while the cursor stands in a figure: how its alternative text is given,
                 and what can be done to its image. */}
             {surface !== null && figure !== null && (
@@ -2131,20 +2234,6 @@ export function ComponentEditor({
                 enabled={mayFormat}
                 client={client}
                 onReplace={() => setFigureDialog('Replace image')}
-              />
-            )}
-            {/* And while the cursor stands in a bound table (TB2-F): its presentation, a band whose
-                first line is its value (ADR-0051). */}
-            {surface !== null && boundTable !== null && (
-              <BoundTablePanel
-                key={`bound-table-${boundTable.id ?? boundTable.pos}`}
-                ref={boundTableRegion}
-                view={surface}
-                table={boundTable}
-                enabled={mayFormat}
-                client={client}
-                onFormatting={setFormatting}
-                value={valued?.place === 'table' ? valuePanel(valued) : undefined}
               />
             )}
             {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
@@ -2198,7 +2287,9 @@ export function ComponentEditor({
                   </section>
                 );
                 if (fieldsHost === undefined) return fieldsSection;
-                return fieldsHost === null ? null : createPortal(fieldsSection, fieldsHost);
+                return fieldsHost === null
+                  ? null
+                  : createPortal(<div inert={behindDialog}>{fieldsSection}</div>, fieldsHost);
               })()}
             {offered !== null && (
               <div>

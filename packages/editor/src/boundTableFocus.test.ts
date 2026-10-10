@@ -5,8 +5,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   boundTableFocusDecorations,
+  boundTableFocusedColumn,
   CURRENT_TABLE_CLASS,
   focusBoundTableColumn,
+  holdBoundTableColumn,
 } from './boundTableFocus.js';
 import { toEditor } from './mapping.js';
 import { createEditorState } from './state.js';
@@ -102,5 +104,21 @@ describe('the bound table the Bound table panel is about, shown in the text', ()
         .find()
         .some((each) => each.spec.focusColumn !== undefined),
     ).toBe(false);
+  });
+
+  it('holds a column of a table the cursor is not in yet, as a click on its cell does, moving the cursor into the table (ADR-0052)', () => {
+    const outside = into(opened(), 'paragraph');
+    let tablePos = -1;
+    outside.doc.descendants((node, pos) => {
+      if (tablePos < 0 && node.type.name === 'boundTable') tablePos = pos;
+    });
+    let held = outside;
+    holdBoundTableColumn(tablePos, 1)(outside, (tr) => {
+      held = outside.apply(tr);
+    });
+    expect(boundTableFocusedColumn(held)).toBe(1);
+    expect(held.selection.$from.parent.type.name).toBe('tableCaption');
+    expect(held.doc.eq(outside.doc)).toBe(true);
+    expect(undoDepth(held)).toBe(undoDepth(outside));
   });
 });
