@@ -1070,7 +1070,10 @@ describe('the address of every node', () => {
       );
       // What the window scrolls to stops above the status bar as it does below the header.
       const html = declared(read(sheets.base), 'html');
-      expect(html).toContain('scroll-padding-top: var(--header-height)');
+      // And below the in-place band where a document keeps one (ADR-0056).
+      expect(html).toContain(
+        'scroll-padding-top: calc(var(--header-height) + var(--band-height, 0px))',
+      );
       expect(html).toContain('scroll-padding-bottom: var(--status-height, 0px)');
     });
 
