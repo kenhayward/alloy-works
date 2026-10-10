@@ -18,6 +18,7 @@ import {
   type TemplateParameter,
 } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
@@ -720,7 +721,7 @@ export function DocumentPage({
       .catch(() => undefined)
       .finally(() => setBindingsRead((count) => count + 1));
   };
-  // The value whose provenance is open beside the text, and what opened it, to be given the focus back.
+  // The value whose provenance is open over the page, and what opened it, to be given the focus back.
   // `last` is the view of it last read, kept while a re-read answers nothing for it or fails, so the
   // panel, and the focus in it, stay where they are.
   const [provenance, setProvenance] = useState<{
@@ -731,7 +732,8 @@ export function DocumentPage({
   } | null>(null);
   const closeProvenance = () => {
     const opened = provenance;
-    setProvenance(null);
+    // Closed at once, so the page behind it is no longer inert when the focus goes back.
+    flushSync(() => setProvenance(null));
     if (opened === null) return;
     // The text may have been drawn again since: the value's button is then found where it stands.
     const back =
@@ -1563,19 +1565,16 @@ export function DocumentPage({
             hidden={dockPane.collapsed}
           >
             <div className={styles['dockBody']}>
-              {/* A value's provenance stands above the panels, whichever is shown (the B1 plan, B1-M). */}
-              <div className={styles['provenance']}>
-                {/* A value's provenance, beside the text it stands in (the B1 plan, B1-M; DAT-041). */}
-                {provenanceState?.held && (
-                  <ProvenancePanel
-                    client={client}
-                    document={document.id}
-                    language={document.outline.language}
-                    state={provenanceState}
-                    onClose={closeProvenance}
-                  />
-                )}
-              </div>
+              {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
+              {provenanceState?.held && (
+                <ProvenancePanel
+                  client={client}
+                  document={document.id}
+                  language={document.outline.language}
+                  state={provenanceState}
+                  onClose={closeProvenance}
+                />
+              )}
               {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
               <div
                 id={dockIds('table').panel}

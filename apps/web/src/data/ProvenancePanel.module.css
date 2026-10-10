@@ -1,13 +1,16 @@
-/* A value's provenance, in the document page's side column (the B1 plan, B1-M). */
+/* A value's provenance, a modal over the page (the B1 plan, B1-M): its heading, its tabs, a tab's panel. */
 
 .panel {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-12);
+  padding: var(--space-16) var(--space-24) var(--space-24);
   font-size: var(--size-13);
 }
 
 .heading {
   margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
 }
 
 .facts {
@@ -31,8 +34,8 @@
   white-space: pre-wrap;
 }
 
-/* The result's rows scroll within the column rather than widening the page. */
+/* The result's rows scroll within the dialog rather than widening it. */
 .result {
-  max-height: 24rem;
+  max-height: 60vh;
   overflow: auto;
 }

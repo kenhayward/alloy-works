@@ -149,7 +149,7 @@ describe('values in a document, in Chromium (the B1 plan, task 6)', () => {
   const value = (page: Page) => text(page).getByRole('button', { name: /, bound value$/ });
   const failed = (page: Page) =>
     text(page).getByRole('button', { name: /^No value - the query returned no rows/ });
-  const provenance = (page: Page) => page.getByRole('region', { name: 'Provenance' });
+  const provenance = (page: Page) => page.getByRole('dialog', { name: 'Provenance' });
 
   it('passes axe in Reading and Authoring with a value, a failed one and a provenance open', async ({
     task,
@@ -171,7 +171,7 @@ describe('values in a document, in Chromium (the B1 plan, task 6)', () => {
         await checkAxe(page, `a provenance open in ${mode}`, task.meta, {
           shows: [provenance(page), value(page)],
         });
-        await provenance(page).getByRole('button', { name: 'Show the result' }).click();
+        await provenance(page).getByRole('tab', { name: 'Results' }).click();
         await provenance(page).getByRole('table').waitFor();
         await checkAxe(page, `a provenance's result shown in ${mode}`, task.meta, {
           shows: provenance(page).getByRole('table'),

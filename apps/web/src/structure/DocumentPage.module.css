@@ -204,8 +204,7 @@
   overscroll-behavior: contain;
 }
 
-.dockBody [hidden],
-.provenance:empty {
+.dockBody [hidden] {
   display: none;
 }
 
