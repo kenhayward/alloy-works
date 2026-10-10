@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>A component opened on its own, light</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Source+Serif+4:ital,wght@0,400;0,700;1,400;1,700&amp;display=swap">
+<style>
+body{margin:0}
+.lw{--bg:#f4f6f8;--chrome:#ffffff;--surface:#ffffff;--sunken:#eef1f4;--text:#15202b;--muted:#56606c;--border:#e1e5ea;--strong-border:#c9d0d8;--accent:#1d6a85;--on-accent:#ffffff;--accent-weak:#e4f1f5;--accent-text:#165a72;--warn:#9a4610;--warn-bg:#fdf0e1;--ok:#1d7148;--ok-bg:#e2f3e9;--danger:#b42318;--danger-bg:#fdecea;--info:#5b3fb8;--info-bg:#efeafc;--mark-a:#11325f;--mark-b:#49888e}
+.lw.dark{--bg:#0d1217;--chrome:#11181f;--surface:#141c24;--sunken:#0f161d;--text:#e5eaef;--muted:#9aa6b2;--border:#232f3a;--strong-border:#34424f;--accent:#5fb6cc;--on-accent:#04222b;--accent-weak:#132f39;--accent-text:#8fd0e0;--warn:#f2a764;--warn-bg:#3a2513;--ok:#5ccf93;--ok-bg:#12301f;--danger:#ff8a80;--danger-bg:#3b1715;--info:#c0adff;--info-bg:#2a2148;--mark-a:#8fd0e0;--mark-b:#63aea2}
+.lw a{color:var(--accent-text)}
+.rl{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:8px;color:var(--muted)!important;text-decoration:none;font-size:12px}
+.rl.on{background:var(--accent-weak);color:var(--accent-text)!important;font-weight:600}
+.sep{height:1px;background:var(--border);margin:6px}
+.btn{height:34px;padding:0 14px;background:var(--surface);border:1px solid var(--strong-border);border-radius:8px;color:var(--text);font:inherit;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.ib{width:30px;height:30px;display:grid;place-items:center;background:transparent;border:0;border-radius:6px;color:var(--text);font:inherit;cursor:pointer}
+.ib[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent-text)}
+.vs{width:1px;height:20px;background:var(--border);margin:0 6px}
+.sp{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--text);text-decoration:none}
+.sp .mono{margin-left:auto;font-size:12px;color:var(--muted)}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl label{font-size:13px;font-weight:500}
+.fi{height:34px;padding:0 10px;border:1px solid var(--strong-border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit}
+
+.desk{background:var(--desk)}
+.lw{--desk:#e6e9ed;--sheet-edge:#cfd5dc}
+.lw.dark{--desk:#070a0d;--sheet-edge:#2a333d}
+.paper{background:#ffffff;color:#1b1b1b;border:1px solid var(--sheet-edge);box-shadow:0 1px 2px rgba(0,0,0,.10),0 10px 30px rgba(15,23,42,.10);font-family:'Source Serif 4','Georgia','Times New Roman',serif;font-size:15.5px;line-height:1.5}
+.lw.dark .paper{box-shadow:0 1px 2px rgba(0,0,0,.6),0 14px 40px rgba(0,0,0,.55)}
+.paper h1{font-size:24px;margin:0 0 14px;font-weight:700}
+.paper h2{font-size:19px;margin:18px 0 10px;font-weight:700}
+.paper h3{font-size:16.5px;margin:18px 0 6px;font-weight:700}
+.paper p{margin:0 0 8px}
+.paper .cap{font-size:14px;text-align:center;margin:12px 0 6px}
+.paper table{width:100%;border-collapse:collapse;font-size:13.5px}
+.paper th{text-align:left;font-weight:600;border-top:1.5px solid #1b1b1b;border-bottom:1px solid #1b1b1b;padding:6px 8px}
+.paper td{padding:6px 8px;border-bottom:1px solid #d9d9d9;vertical-align:top}
+.hdr{height:52px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--chrome);border-bottom:1px solid var(--border)}
+.chipb{height:34px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:15px}
+.srch{flex:1;max-width:620px;margin:0 auto;height:36px;display:flex;align-items:center;gap:10px;padding:0 12px;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px}
+.kbd{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:1px 6px;border:1px solid var(--border);border-radius:5px}
+.nav{width:84px;flex:none;display:flex;flex-direction:column;gap:4px;padding:10px 6px;background:var(--chrome);border-right:1px solid var(--border)}
+.nav .rl{font-size:12px;text-align:center;line-height:1.25}
+.rail{width:40px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);align-self:flex-start}
+.rail .vt{writing-mode:vertical-rl;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rail .vt.on{color:var(--accent-text)}
+.rail.right .vt{transform:none}
+.ibb{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--border);border-radius:7px;background:transparent;color:var(--text);padding:0}
+.stat{height:28px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--chrome);border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+.seg{display:inline-flex;padding:2px;gap:2px;background:var(--sunken);border-radius:8px}
+.seg button{height:28px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.tb{height:30px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);font:inherit;font-size:13.5px;cursor:pointer}
+.tb.bd{border-color:var(--strong-border)}
+.tb[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent-text)}
+.zs{display:inline-flex;align-items:center;gap:6px}
+.zs .trk{width:110px;height:3px;border-radius:2px;background:var(--strong-border);position:relative}
+.zs .trk::after{content:"";position:absolute;left:46px;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.zs button{width:22px;height:22px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);padding:0;cursor:pointer}
+.mk{position:absolute;width:14px;height:14px;border-color:#b9c0c8;border-style:solid;border-width:0}
+.note{position:absolute;font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;color:var(--muted)}
+</style></head><body><div class="lw" style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+<header class="hdr">
+  <span class="chipb" style="font-weight: 600; font-size: 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M12 7.5 16 10v4.5l-4 2.3-4-2.3V10z"/></svg>Alloy Works</span>
+  <span class="chipb">Development</span>
+  <div class="srch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Search components, documents, or run a command<span class="kbd">Ctrl K</span></div>
+  <button type="button" class="ibb" aria-label="Switch to dark theme" title="Switch to dark theme" style="width: 36px; height: 36px; color: var(--text)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 600">A</span>Ada Moss</span>
+</header>
+<div style="flex: 1; min-height: 0; display: flex"><nav class="nav" aria-label="Modules"><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg>Home</a><a href="#" onclick="return false" class="rl on"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Components</a><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>Documents</a><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 9h16M9 9v11"/></svg>Templates</a><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M8 9h8M8 13h8"/></svg>Publications</a><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5"/></svg>Connections</a><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>Query definitions</a><span style="flex: 1"></span><a href="#" onclick="return false" class="rl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg>Admin</a></nav><main style="flex: 1; min-width: 0; display: flex; flex-direction: column"><div style="flex: 1; min-height: 0; display: flex"><div style="width: 48px; flex: none; display: flex; flex-direction: column; align-items: center; padding-top: 14px; background: var(--chrome); border-right: 1px solid var(--border)"><div class="rail" style="border: 0; background: transparent" aria-label="Components in Clinical, hidden"><button type="button" class="ibb" aria-label="Show this pane"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><span class="vt">Components</span></div></div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--chrome); border-bottom: 1px solid var(--border)">
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <nav aria-label="Breadcrumb" style="font-size: 12.5px; color: var(--muted)"><a href="#" onclick="return false" style="color: var(--muted)">Components</a> / Clinical</nav>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px">
+      <h1 style="margin: 0 6px 0 0; font-size: 18px; font-weight: 600">Study Details</h1>
+      <span class="mono" style="padding: 1px 7px; background: var(--sunken); border-radius: 4px; font-size: 12px">v0.7</span>
+      <span style="padding: 1px 8px; border: 1px solid var(--border); border-radius: 12px">en-GB</span>
+      <span style="padding: 1px 8px; border: 1px solid var(--border); border-radius: 12px">Left to right</span>
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 13px; background: var(--ok-bg); color: var(--ok); font-size: 12.5px; font-weight: 500"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--ok)"></span>Saved</span>
+    </div>
+  </div>
+  <button type="button" class="btn" style="height: 32px">Done</button>
+  <button type="button" class="btn pri" style="height: 32px">Save version</button>
+</div><div role="toolbar" aria-label="Formatting" style="height: 44px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--border)">
+        <select aria-label="Block style" style="height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px"><option>Paragraph</option></select>
+        <span class="vs"></span>
+        <button type="button" class="ib" aria-label="Bold" aria-pressed="false" title="Bold, Ctrl B" style="font-weight: 700">B</button>
+        <button type="button" class="ib" aria-label="Italic" aria-pressed="false" title="Italic, Ctrl I" style="font-style: italic">I</button>
+        <button type="button" class="ib" aria-label="Underline" aria-pressed="false" title="Underline, Ctrl U" style="text-decoration: underline">U</button>
+        <button type="button" class="ib" aria-label="More text marks" title="Subscript, superscript, code, language" style="color: var(--muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <span class="vs"></span>
+        <button type="button" class="ib" aria-label="Bulleted list" title="Bulleted list"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><circle cx="4.5" cy="6" r="1"></circle><circle cx="4.5" cy="12" r="1"></circle><circle cx="4.5" cy="18" r="1"></circle></svg></button>
+        <button type="button" class="ib" aria-label="Numbered list" aria-pressed="true" title="Numbered list"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M4 4.5h1.5V9M4 9h3M4 14.5c1-1 3-.6 3 .8 0 1.2-3 2-3 3.7h3"></path></svg></button>
+        <button type="button" class="ib" aria-label="Definition list" title="Definition list"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h7M8 10h12M4 14h7M8 18h12"></path></svg></button>
+        <button type="button" class="ib" aria-label="Quotation" title="Quotation"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h3v6H5v-4c0-3 1-5 4-6M16 11h3v6h-5v-4c0-3 1-5 4-6"></path></svg></button>
+        <span class="vs"></span>
+        <button type="button" class="ib" aria-label="Link" title="Link, Ctrl K"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></button>
+        <button type="button" class="ib" aria-label="Cross-reference" title="Cross-reference"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7h9v9M17 7 7 17"></path></svg></button>
+        <button type="button" class="ib mono" aria-label="Footnote" title="Footnote" style="font-size: 12px">fn</button>
+        <span class="vs"></span>
+        <button type="button" class="ib" aria-label="Table" title="Table"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"></rect><path d="M3.5 10h17M3.5 15h17M10 4.5v15"></path></svg></button>
+        <button type="button" class="ib" aria-label="Figure" title="Figure"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m4 18 5-5 4 4 3-3 4 4"></path></svg></button>
+        <button type="button" class="ib" aria-label="Equation" title="Equation"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 5H7l5 7-5 7h10"></path></svg></button>
+        <span style="flex: 1"></span></div><div style="flex: 1; min-height: 0; display: flex"><div class="desk" style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden"><div class="paper" style="width: 760px; box-sizing: border-box; padding: 56px 70px 40px; margin: 28px auto 0; flex: none"><div style="">
+<p>This is an introductory paragraph for the component.<span style='display: inline-block; width: 1.5px; height: 18px; background: #1b1b1b; vertical-align: -3px'></span></p>
+<svg width="300" height="150" viewBox="0 0 300 150" aria-hidden="true" style="display:block;margin:6px auto 0">
+<rect x="0" y="0" width="300" height="150" fill="#f1f3f5"/>
+<rect x="80" y="52" width="140" height="60" rx="6" fill="#ffffff" stroke="#6b7480" stroke-width="2"/>
+<rect x="100" y="30" width="100" height="26" fill="#ffffff" stroke="#6b7480" stroke-width="2"/>
+<rect x="104" y="112" width="92" height="20" fill="#ffffff" stroke="#6b7480" stroke-width="2"/>
+<circle cx="200" cy="70" r="4" fill="#2e8b57"/><path d="M95 75h60" stroke="#9aa3ad" stroke-width="2"/></svg>
+<p class="cap"><strong>Figure 1.1</strong> The printer, unpacked</p>
+<p class="cap"><strong>Table 1.1</strong> Studies in the programme</p>
+<table><thead><tr><th style="width: 18%">Study ID</th><th style="width: 18%">Study version</th><th style="width: 22%">Title</th><th>Official title</th></tr></thead>
+<tbody><tr><td>AW-1001</td><td>3</td><td>Dose finding</td><td>A dose-finding study of AW-12 in adults</td></tr>
+<tr><td>AW-1002</td><td>1</td><td>Long-term safety</td><td>An open-label extension of AW-1001</td></tr>
+<tr><td>AW-1007</td><td>2</td><td>Food effect</td><td>The effect of food on AW-12 exposure</td></tr></tbody></table></div></div></div><aside aria-label="Panels" style="width: 320px; flex: none; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border)"><div role="tablist" style="display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border)"><button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0 10px; background: transparent; border: 0; border-bottom: 2px solid var(--accent); color: var(--accent-text); font: inherit; white-space: nowrap; font-weight: 600">Attributes</button><button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font: inherit; white-space: nowrap; font-weight: 400">Used in</button><button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font: inherit; white-space: nowrap; font-weight: 400">Versions</button><button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); font: inherit; white-space: nowrap; font-weight: 400">Access</button></div><div style="padding: 16px; display: flex; flex-direction: column; gap: 14px"><div class="fl"><label>Component type</label><input class="fi" value="Reference"></div><div class="fl"><label>Audience</label><input class="fi" value="Clinical operations"></div><div class="fl"><label>Product</label><input class="fi" value="AW-12"></div></div></aside></div></div></div></main></div>
+<footer class="stat"><span style="flex: 1"></span><span class="zs" role="group" aria-label="Zoom"><button type="button" aria-label="Zoom out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><span class="trk" aria-hidden="true"></span><button type="button" aria-label="Zoom in"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><select aria-label="Zoom" style="height: 22px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 12.5px"><option>100%</option></select></span><span class="vs" style="height: 14px"></span><span style="display: inline-flex; gap: 8px">Version 0.7 in Clinical</span></footer>
+</div></body></html>

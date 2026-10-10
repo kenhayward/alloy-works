@@ -249,6 +249,8 @@ describe('the canvas as a person uses it', () => {
       await page.getByLabel('Show boundaries').check();
       const open = page.locator('section.aw-canvas [data-label] a', { hasText: 'Open' });
       await open.waitFor();
+      // The sheet keeps its width and the desk scrolls sideways to it (ADR-0056).
+      await open.scrollIntoViewIfNeeded();
       const hit = await open.evaluate((link) => {
         const box = link.getBoundingClientRect();
         return link.contains(
@@ -279,8 +281,10 @@ describe('the canvas as a person uses it', () => {
           measure: card.querySelector('.aw-text')!.getBoundingClientRect().width,
         };
       });
-      // At the column's edge, not the measure's: the component is the column wide.
-      expect(boxes.component.width, JSON.stringify(boxes)).toBeGreaterThan(boxes.measure + 1);
+      // On the sheet the component is the measure wide (ADR-0056), and its label at its edge.
+      expect(Math.abs(boxes.component.width - boxes.measure), JSON.stringify(boxes)).toBeLessThan(
+        1,
+      );
       expect(
         Math.abs(boxes.label.right - boxes.component.right),
         JSON.stringify(boxes),
@@ -291,7 +295,7 @@ describe('the canvas as a person uses it', () => {
   });
 
   for (const zoom of ['1', '0.5'] as const) {
-    it(`opens a component in place the column's width, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333)`, async () => {
+    it(`opens a component in place across the sheet, its text where the sheet set it, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {
       const client = api();
       const component = await withAnImage(client, `In place at ${zoom}`);
       const placed = await placing(client, `In place at ${zoom}`, component);
@@ -306,6 +310,14 @@ describe('the canvas as a person uses it', () => {
         });
         expect(hit, "the component's text takes the pointer").toBe(true);
 
+        const read = await page
+          .locator('section.aw-canvas')
+          .getByText(/^Zc2 /)
+          .evaluate((element) => ({
+            text: element.closest('p')!.getBoundingClientRect().left,
+            // Inside its 1px edge, as the card is measured below.
+            sheet: element.closest('section.aw-canvas')!.getBoundingClientRect().left + 1,
+          }));
         await page.locator('section.aw-canvas').getByText(/^Zc2 /).click();
         const card = page.locator('article[data-in-place="true"]');
         await page.getByRole('textbox', { name: /^Content of / }).waitFor();
@@ -321,27 +333,31 @@ describe('the canvas as a person uses it', () => {
               .map((each) => Math.round(each.getBoundingClientRect().top)),
           );
           const box = element.getBoundingClientRect();
+          const first = [...element.querySelectorAll('p')].find((each) =>
+            (each.textContent ?? '').startsWith('Zc2'),
+          )!;
           return {
             card: { left: box.left, right: box.right, width: box.width },
-            column: {
-              left: inside + parseFloat(style.paddingLeft),
-              right: inside + canvas.clientWidth - parseFloat(style.paddingRight),
-            },
+            sheet: { left: inside, right: inside + canvas.clientWidth },
+            text: first.getBoundingClientRect().left,
             viewport: window.innerWidth,
             rows: tops.size,
           };
         });
-        const said = JSON.stringify(shown);
-        // The column's width, whatever the zoom - never the measure's, which squeezed it to 301 pixels
-        // at 50% - and not clipped at its right.
-        expect(shown.card.width, said).toBeGreaterThanOrEqual(
-          shown.column.right - shown.column.left - 1,
-        );
-        expect(shown.card.right, said).toBeLessThanOrEqual(shown.column.right + 0.5);
+        const said = JSON.stringify({ ...shown, read });
+        // Across the sheet inside its edges, its margins and all, whatever the zoom - never the
+        // measure's, which squeezed it to 301 pixels at 50% - and not clipped at its right.
+        expect(Math.abs(shown.card.left - shown.sheet.left), said).toBeLessThan(1);
+        expect(Math.abs(shown.card.right - shown.sheet.right), said).toBeLessThan(1);
         expect(shown.card.right, said).toBeLessThanOrEqual(shown.viewport);
-        // The Formatting toolbar in the rows the column's width lays it out in: two at 1280 pixels,
-        // at any zoom, where the measure's width at 50% made it three.
-        expect(shown.rows, said).toBeLessThanOrEqual(2);
+        // Its text where the sheet set it, read (CNT-075): measured from the sheet, since the desk
+        // scrolls sideways to the caret where it is narrower than the sheet.
+        expect(
+          Math.abs(shown.text - shown.sheet.left - (read.text - read.sheet)),
+          said,
+        ).toBeLessThan(1);
+        // The Formatting toolbar in two rows at 1280 pixels, at the printed size.
+        if (zoom === '1') expect(shown.rows, said).toBeLessThanOrEqual(2);
       });
     });
   }

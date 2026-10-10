@@ -104,6 +104,12 @@
   font-size: var(--size-13);
 }
 
+/* On a sheet with no room beside its heading (ADR-0056): over the space above the component. */
+.component[data-label-raised] > .label {
+  top: auto;
+  bottom: calc(100% + var(--space-8));
+}
+
 /* Where the column leaves it no room beside the text - zoomed in - a line of its own above the text,
    at the end, there whether shown or not, so showing it moves nothing (`labelFits`). */
 .component[data-label-above] > .label {
