@@ -1091,6 +1091,27 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     ).toBeNull();
   });
 
+  it('draws a value as text in its line, a button by its role, so a long one wraps with the text it stands in; Space opens it as Enter does', async () => {
+    const user = userEvent.setup();
+    const { checked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+    });
+    const text = await textRegion();
+    await checked();
+    const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
+    // Never a <button>, whose box a browser draws whole: a wrapped value's second line stood over
+    // whatever followed its caption.
+    expect(button.tagName).toBe('SPAN');
+    expect(button).toHaveAttribute('tabindex', '0');
+    button.focus();
+    await user.keyboard(' ');
+    expect(await screen.findByRole('dialog', { name: 'Provenance' })).toBeInTheDocument();
+    expect(
+      within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
+    ).toBeNull();
+  });
+
   it("DAT-024 says in a value's provenance whose own view it is: the person, how they signed in, and who the source saw", async () => {
     const user = userEvent.setup();
     const asserted = (signInRoute: string, asSeen: string) => {

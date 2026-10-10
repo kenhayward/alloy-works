@@ -134,9 +134,10 @@ export function drawReferences(
 /**
  * Each binding as the surface draws it (the B1 plan, B1-D, B1-L): what it shows, and the words a
  * screen reader is told after it, by the node view's own `fillBinding`. **One the document holds a
- * resolution for is a `<button type="button">`** in the tab order, styled as the text it stands in,
- * carrying `data-binding` - its identifier - and `data-node` - the occurrence, where the context
- * names it - so the page opens its provenance from a click or Enter (DAT-041). Every other is the
+ * resolution for is a button by its role** - a `span` in the tab order, so a long value wraps as the
+ * text it stands in does, where a `<button>`'s box is drawn whole and its second line stood over what
+ * followed (a value in a caption, over its table) - styled as that text, carrying `data-binding` - its identifier - and `data-node` - the occurrence, where the context
+ * names it - so the page opens its provenance from a click, Enter or Space (DAT-041). Every other is the
  * schema's span, filled. The serializer writes the spans in the order `bindingsShown` walks the
  * document in, a footnote's text included.
  */
@@ -151,8 +152,9 @@ export function drawBindings(
     if (span === undefined) return;
     let element: HTMLElement = span;
     if (each.resolved) {
-      element = span.ownerDocument.createElement('button');
-      element.setAttribute('type', 'button');
+      element = span.ownerDocument.createElement('span');
+      element.setAttribute('role', 'button');
+      element.tabIndex = 0;
       element.className = span.className;
       if (context?.kind === 'document' && context.node !== undefined) {
         element.dataset.node = context.node;

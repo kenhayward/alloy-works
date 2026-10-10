@@ -573,7 +573,7 @@
   cursor: default;
 }
 
-button.aw-binding {
+.aw-binding[role='button'] {
   cursor: pointer;
 }
 
@@ -584,7 +584,7 @@ button.aw-binding {
 }
 
 /* The read text's button takes the focus ring the theme's links take. */
-button.aw-binding:focus-visible {
+.aw-binding[role='button']:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
