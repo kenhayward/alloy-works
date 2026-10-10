@@ -12,6 +12,11 @@
   padding: calc(var(--space-4) + var(--space-24)) var(--space-24) var(--space-40);
 }
 
+/* A page on a desk (ADR-0056) runs from the rail to the window's edge, its own bar its gutter. */
+.page:has([data-desk-page]) {
+  padding: 0;
+}
+
 /* The scaffolding's own panel and the delivery line, in Administration's About. */
 .scaffolding {
   margin-top: var(--space-16);

@@ -255,6 +255,7 @@ export function PreviewButton({ preview }: { readonly preview: Previewing }) {
       disabled={preview.asking.state === 'working'}
       onClick={() => void preview.ask()}
     >
+      <Icon name="Preview" size={14} />
       Preview
     </button>
   );

@@ -36,6 +36,7 @@ export function ManageAccessLink({
   href,
   label,
   className,
+  icon,
 }: {
   client: Client;
   /** The artifact, as a target: `artifact:<id>`. */
@@ -44,6 +45,8 @@ export function ManageAccessLink({
   /** The link's accessible name where "Manage access" alone would not say to what. */
   label?: string;
   className?: string;
+  /** A glyph before the words, where the link stands on a bar of icons (ADR-0056). */
+  icon?: React.ReactNode;
 }) {
   const [administers, setAdministers] = useState(false);
   useEffect(() => {
@@ -59,6 +62,7 @@ export function ManageAccessLink({
   if (!administers) return null;
   return (
     <a href={href} className={className} {...(label === undefined ? {} : { 'aria-label': label })}>
+      {icon}
       Manage access
     </a>
   );

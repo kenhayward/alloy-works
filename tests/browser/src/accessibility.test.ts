@@ -610,7 +610,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         ],
       });
 
-      await page.getByLabel('Show boundaries').check();
+      await page.getByRole('button', { name: 'Show boundaries' }).click();
       await check('boundaries shown', { shows: page.locator('[data-boundaries="shown"]') });
 
       await row(/Methods/).click();

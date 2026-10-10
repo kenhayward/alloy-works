@@ -1385,55 +1385,63 @@ export function DocumentPage({
     <PresentationProvider client={client} document={document.id}>
       <Presented onSettled={presented.told} />
       {/* Named by its title and the mode it is in, so a screen reader arriving hears which (CNT-154). */}
-      <article aria-labelledby="document-title document-mode" className={styles['page']}>
+      <article
+        aria-labelledby="document-title document-mode"
+        className={styles['page']}
+        data-desk-page=""
+      >
         <span id="document-mode" hidden>
           {authoring ? 'in Authoring' : 'in Reading'}
         </span>
         {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
-        {/* The page's head (the Ledger, ADR-0046): where it is, then the mode and Preview beside it
-            (the LG plan, LG6c), the zoom, the boundaries and access. */}
-        <div className={styles['head']}>
+        {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
+            Show boundaries and, at its end, access - one line on the chrome over the desk. */}
+        <div className={styles['bar']}>
           <nav aria-label="Breadcrumb" className={styles['trail']}>
             <a href="#/documents">Documents</a>
             <span>{` / ${document.space.name}`}</span>
           </nav>
-          <div className={styles['controls']}>
-            {mayAuthor ? (
-              <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
-                {MODES.map(({ mode, name }) => (
-                  <label key={mode}>
-                    <input
-                      type="radio"
-                      name={`mode-${document.id}`}
-                      checked={(authoring ? 'authoring' : 'reading') === mode}
-                      onChange={() => chooseMode(mode)}
-                    />{' '}
-                    {name}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className={styles['mode']}>Reading</p>
-            )}
-            <PreviewButton preview={preview} />
-            <ZoomControl />
-            <label>
-              <input
-                type="checkbox"
-                checked={boundaries}
-                onChange={(event) => showBoundaries(event.target.checked)}
-              />{' '}
-              Show boundaries
-            </label>
-            {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+          <span className={styles['rule']} aria-hidden="true" />
+          {mayAuthor ? (
+            <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
+              {MODES.map(({ mode, name }) => (
+                <label key={mode}>
+                  <input
+                    type="radio"
+                    name={`mode-${document.id}`}
+                    checked={(authoring ? 'authoring' : 'reading') === mode}
+                    onChange={() => chooseMode(mode)}
+                  />
+                  <Icon name={name} size={14} />
+                  {name}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className={styles['modeShown']}>Reading</p>
+          )}
+          <PreviewButton preview={preview} />
+          <ZoomControl />
+          <button
+            type="button"
+            className={styles['toggle']}
+            aria-pressed={boundaries}
+            onClick={() => showBoundaries(!boundaries)}
+          >
+            <Icon name="Show boundaries" size={14} />
+            Show boundaries
+          </button>
+          {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+          <span className={styles['access']}>
             <ManageAccessLink
               client={client}
               target={`artifact:${document.id}`}
               href={documentAccessLink(document.id)}
+              icon={<Icon name="Manage access" size={14} />}
             />
-          </div>
-          <PreviewSaid preview={preview} />
+          </span>
         </div>
+        <PreviewSaid preview={preview} />
         <UnheldFaces />
         {document.scheme === null && <p>This document's numbering could not be read.</p>}
         <div

@@ -83,6 +83,18 @@ const PATHS: Record<string, readonly string[]> = {
     'M3.5 4c0-1 2-1.8 4.5-1.8s4.5.8 4.5 1.8-2 1.8-4.5 1.8S3.5 5 3.5 4z',
     'M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4M3.5 8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8',
   ],
+  // The document bar's (ADR-0056): an open book, a pencil, an eye, a frame's corners, a lock.
+  Reading: [
+    'M2 3.5h4.5A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5H2z',
+    'M14 3.5H9.5A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5H14z',
+  ],
+  Authoring: ['M3 13l.6-2.6 6.9-6.9 2 2-6.9 6.9z', 'M9.5 4.5l2 2'],
+  Preview: [
+    'M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z',
+    'M6 8a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
+  ],
+  'Show boundaries': ['M2.5 5V2.5H5M11 2.5h2.5V5M13.5 11v2.5H11M5 13.5H2.5V11', 'M5.5 5.5h5v5h-5z'],
+  'Manage access': ['M4 7.5h8v6H4z', 'M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2'],
   // A small picture standing on a line of text: an image in a run, where a figure stands alone.
   Image: ['M2 13h12', 'M5 4.5h6v6H5z', 'M5 9.5 7 7.5l1.5 1.5 1-1 1.5 1.5'],
   // A clipboard holding Markdown's own mark, an M and a downward arrow.

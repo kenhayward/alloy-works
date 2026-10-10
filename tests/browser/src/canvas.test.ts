@@ -246,7 +246,7 @@ describe('the canvas as a person uses it', () => {
     await withPage(async (page) => {
       await page.setViewportSize({ width: 700, height: 900 });
       await openDocument(page, placed, 'Reading', '1');
-      await page.getByLabel('Show boundaries').check();
+      await page.getByRole('button', { name: 'Show boundaries' }).click();
       const open = page.locator('section.aw-canvas [data-label] a', { hasText: 'Open' });
       await open.waitFor();
       // The sheet keeps its width and the desk scrolls sideways to it (ADR-0056).
