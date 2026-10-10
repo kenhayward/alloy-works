@@ -1,4 +1,4 @@
-import { readPaint } from '@alloy-works/conformance';
+﻿import { readPaint } from '@alloy-works/conformance';
 import type { Locator, Page } from 'playwright-core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
@@ -182,7 +182,9 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
         true,
       );
 
-      // The depth column: a header, a unit, its places.
+      // The depth column, taken in hand by its pill (ADR-0052): a header, a unit, its places.
+      await tabTo(page, panel.getByRole('group', { name: 'Columns' }).getByRole('button').nth(2));
+      await page.keyboard.press('Enter');
       const depth = panel.getByRole('group', { name: 'Column 3' });
       const header = depth.getByLabel('Header', { exact: true });
       await tabTo(page, header);
@@ -223,6 +225,8 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
       await expect
         .poll(async () => (await rowsOf(body)).slice(1).map((row) => row[1]))
         .toEqual(['North weir', 'South bank', 'Old mill']);
+      // The Table tab scrolled to its top: nothing in it left half in view (ADR-0052).
+      await panel.evaluate((element) => element.scrollIntoView({ block: 'start' }));
       await checkAxe(page, 'the panels of a bound table', task.meta, {
         shows: [panel, valuePanel],
       });

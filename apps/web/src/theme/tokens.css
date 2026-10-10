@@ -71,6 +71,8 @@
   --dock-panel: 320px;
   /* The panel beside the text while it offers a Table tab (ADR-0052), the same width throughout. */
   --panel-table: 400px;
+  /* The label column of the Table tab's two-column fields. */
+  --panel-label: 92px;
   --header-height: 44px;
 
   /* Administration (ADR-0049): its menu, the side panel, a confirmation, a table's rows, an icon button */

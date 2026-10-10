@@ -1,7 +1,7 @@
 # TF: Table formatting in a tab beside the text
 
 > Building [the table formatting handoff](../interface/handoffs/table-formatting/README.md) under
-> [ADR-0052](../decisions/0052-table-formatting-is-a-tab-beside-the-text.md). **Four PRs**, no
+> [ADR-0052](../decisions/0052-table-formatting-is-a-tab-beside-the-text.md). **Three PRs**, no
 > contract or stored shape. Ken agreed TF-A to TF-E on 10 October 2026, its pre-flight; inline values
 > are left alone for now.
 
@@ -27,4 +27,5 @@ requirement IDs kept.
 | TF3 | Sort and Notes as rows; one of Column, Sort and Notes open, the others folded to a summary                                |
 | TF4 | The read-only view; the close                                                                                             |
 
-Each holds the tab to axe in Light and Dark.
+Each holds the tab to axe in Light and Dark. TF1 and TF2 ride one PR: TF1 alone put the band's
+980px column grid in a 400px tab, and left the tab live behind the Format dialog.

@@ -68,3 +68,40 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* In the Table tab (ADR-0052): what it is and its acts on one line, what it shows on the next. */
+.stacked {
+  flex-wrap: wrap;
+  row-gap: var(--space-4);
+  overflow: visible;
+}
+
+/* Its definition's name ends where it is cut: the link's own box, not only what shows of it, stops
+   short of the acts, so no target lies under another (WCAG 2.5.8). */
+.stacked > .named {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stacked > .named > a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stacked::after {
+  flex-basis: 100%;
+  order: 1;
+  content: '';
+}
+
+.stacked > :not(.glyph, .named, .acts) {
+  order: 2;
+}
+
+.stacked > .shown {
+  max-width: none;
+  margin-inline-start: 28px;
+}

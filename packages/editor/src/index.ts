@@ -196,7 +196,9 @@ export { NodeSelection, Selection } from 'prosemirror-state';
 export type { Command, EditorState, Transaction } from 'prosemirror-state';
 export type { EditorView } from 'prosemirror-view';
 export {
+  boundTableFocusedColumn,
   CURRENT_TABLE_CLASS,
   FOCUSED_COLUMN_CLASS,
   focusBoundTableColumn,
+  holdBoundTableColumn,
 } from './boundTableFocus.js';

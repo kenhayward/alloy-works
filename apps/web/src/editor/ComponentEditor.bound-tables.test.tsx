@@ -214,18 +214,29 @@ async function inTable(
   return { ...opening, view, panel };
 }
 
-const column = (panel: HTMLElement, n: number) =>
+/** The column pills, in order (ADR-0052). */
+const pills = (panel: HTMLElement) =>
+  within(within(panel).getByRole('group', { name: 'Columns' })).getAllByRole('button');
+
+/** The column in hand, as the Table tab shows it: one at a time, its pill pressed to take it. */
+const inHand = (panel: HTMLElement, n: number) =>
   within(panel).getByRole('group', { name: `Column ${n}` });
 
+/** Takes column n in hand by its pill, where it is not already, and answers its fields. */
+async function column(panel: HTMLElement, n: number) {
+  if (within(panel).queryByRole('group', { name: `Column ${n}` }) === null) {
+    await userEvent.click(pills(panel)[n - 1]!);
+  }
+  return inHand(panel, n);
+}
+
 /**
- * A refusal, quiet (ADR-0051, decision 5): said once in the band's live region, and marked on the
- * row it belongs to, its number described by the reason.
+ * A refusal, quiet (ADR-0051, decision 5): said once in the panel's live region, and marked on the
+ * column's pill, described by the reason (ADR-0052).
  */
 function expectRefused(panel: HTMLElement, n: number, words: string) {
   expect(within(panel).getByRole('status')).toHaveTextContent(words);
-  expect(
-    within(column(panel, n)).getByRole('button', { name: String(n) }),
-  ).toHaveAccessibleDescription(words);
+  expect(pills(panel)[n - 1]).toHaveAccessibleDescription(words);
 }
 
 describe('placing a bound table from the Value dialog (TB2-E)', () => {
@@ -291,10 +302,12 @@ describe('the Bound table panel (TB2-F)', () => {
     await userEvent.click(within(panel).getByRole('button', { name: 'Add column' }));
     await userEvent.click(within(panel).getByRole('button', { name: 'Add column' }));
     expect(bodyOf(view)[0]).toEqual(['Site', 'depth', 'visits']);
-    await userEvent.click(within(column(panel, 3)).getByRole('button', { name: 'Move up' }));
+    await userEvent.click(
+      within(await column(panel, 3)).getByRole('button', { name: 'Move left' }),
+    );
     expect(bodyOf(view)[0]).toEqual(['Site', 'visits', 'depth']);
     expect(bodyOf(view)[1]).toEqual(['Ash', '2', '2.50']);
-    await userEvent.click(within(column(panel, 1)).getByRole('button', { name: 'Remove' }));
+    await userEvent.click(within(await column(panel, 1)).getByRole('button', { name: 'Remove' }));
     expect(bodyOf(view)[0]).toEqual(['visits', 'depth']);
   });
 
@@ -303,7 +316,7 @@ describe('the Bound table panel (TB2-F)', () => {
       { column: 'site', header: 'Site' },
       { column: 'depth', header: 'depth' },
     ]);
-    const depth = column(panel, 2);
+    const depth = await column(panel, 2);
     const header = within(depth).getByLabelText('Header');
     await userEvent.clear(header);
     await userEvent.type(header, 'Depth');
@@ -355,7 +368,7 @@ describe('the Bound table panel (TB2-F)', () => {
       holding(binding(), DECLARED, { fields: { decimal: { places: 3, negative: 'parentheses' } } }),
     );
     expect(bodyOf(view)[2]).toEqual(['Birch', '(1.250)']);
-    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Format' }));
+    await userEvent.click(within(await column(panel, 2)).getByRole('button', { name: 'Format' }));
     const dialog = await screen.findByRole('dialog', { name: 'Format of Depth' });
     const places = within(dialog).getByLabelText('Decimal places');
     expect(places).toHaveAccessibleDescription(`Left unset. ${STYLE_SAYS}: 3`);
@@ -372,9 +385,9 @@ describe('the Bound table panel (TB2-F)', () => {
     // One place, rounded half away from zero, still in the style's parentheses.
     expect(bodyOf(view)[2]).toEqual(['Birch', '(1.3)']);
     await waitFor(() =>
-      expect(within(column(panel, 2)).getByRole('button', { name: 'Format' })).toHaveFocus(),
+      expect(within(inHand(panel, 2)).getByRole('button', { name: 'Format' })).toHaveFocus(),
     );
-    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Format' }));
+    await userEvent.click(within(await column(panel, 2)).getByRole('button', { name: 'Format' }));
     const again = await screen.findByRole('dialog', { name: 'Format of Depth' });
     expect(within(again).getByLabelText('Decimal places')).toHaveValue(1);
     expect(within(again).getByLabelText('Negative numbers')).toHaveDisplayValue(
@@ -387,7 +400,7 @@ describe('the Bound table panel (TB2-F)', () => {
       { column: 'site', header: 'Site' },
       { column: 'depth', header: 'Depth' },
     ]);
-    const second = column(panel, 2);
+    const second = await column(panel, 2);
     // The same column under another header is two columns.
     await userEvent.selectOptions(within(second).getByLabelText('Column'), 'site');
     expect(bodyOf(view)[1]).toEqual(['Ash', 'Ash']);
@@ -403,7 +416,7 @@ describe('the Bound table panel (TB2-F)', () => {
 
   it('refuses to remove the last column', async () => {
     const { view, panel } = await inTable();
-    await userEvent.click(within(column(panel, 1)).getByRole('button', { name: 'Remove' }));
+    await userEvent.click(within(await column(panel, 1)).getByRole('button', { name: 'Remove' }));
     expectRefused(panel, 1, BOUND_TABLE_WORDS.lastColumn);
     expect(bodyOf(view)[0]).toEqual(['Site']);
   });
@@ -430,39 +443,59 @@ describe('the Bound table panel (TB2-F)', () => {
     ];
     const { panel } = await inTable(undefined, {}, holding(), latest);
     const options = [
-      ...within(column(panel, 1)).getByLabelText('Column').querySelectorAll('option'),
+      ...within(await column(panel, 1))
+        .getByLabelText('Column')
+        .querySelectorAll('option'),
     ];
     expect(options.map((each) => each.textContent)).toEqual(['site', 'depth', 'visits']);
     await userEvent.click(within(panel).getByRole('button', { name: 'Add column' }));
-    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Format' }));
+    await userEvent.click(within(await column(panel, 2)).getByRole('button', { name: 'Format' }));
     const dialog = await screen.findByRole('dialog', { name: 'Format of depth' });
     // A decimal's members, from the held version's type.
     expect(within(dialog).getByLabelText('Decimal places')).toBeInTheDocument();
   });
 
-  it('TB2 is a band of counted tabs, its value the first line, the column focused marked in the text', async () => {
-    const { view, panel } = await inTable();
-    expect(
-      within(panel)
-        .getAllByRole('tab')
-        .map((each) => each.getAttribute('aria-label') ?? each.textContent),
-    ).toEqual(['Columns, 1', 'Sort, 0', 'Notes, 0']);
+  it('lays out the Table tab: its value, the table, a pill per column and the one in hand, marked in the text (ADR-0052)', async () => {
+    const { view, panel } = await inTable([
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+    ]);
     expect(within(panel).getByRole('region', { name: 'Value' })).toBeInTheDocument();
+    expect(within(panel).getByRole('region', { name: 'Table' })).toHaveTextContent('Shows');
+    expect(within(panel).getByRole('group', { name: 'Shows' })).toContainElement(
+      within(panel).getByRole('button', { name: BOUND_TABLE_WORDS.numbered }),
+    );
     expect(view.dom.querySelector('figure[data-bound-table]')).toHaveClass(
       'aw-bound-table-current',
     );
-
-    await userEvent.click(within(column(panel, 1)).getByLabelText('Header'));
-    expect(
-      [...view.dom.querySelectorAll('.aw-bound-table-focused')].map((cell) => cell.textContent),
-    ).toEqual(bodyOf(view).map((row) => row[0]));
-
+    // The first column in hand: its pill pressed, its section headed, its cells marked.
+    expect(pills(panel).map((pill) => pill.textContent)).toEqual(['Site', 'Depth']);
+    expect(pills(panel)[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(inHand(panel, 1)).toHaveTextContent('Column 1 of 2');
+    const marked = () =>
+      [...view.dom.querySelectorAll('.aw-bound-table-focused')].map((cell) => cell.textContent);
+    expect(marked()).toEqual(bodyOf(view).map((row) => row[0]));
+    // Another pill takes its column in hand, in the panel and the text.
+    await userEvent.click(pills(panel)[1]!);
+    expect(inHand(panel, 2)).toHaveTextContent('Column 2 of 2');
+    expect(marked()).toEqual(bodyOf(view).map((row) => row[1]));
+    // A press on a cell of the text's first column takes it in hand again. jsdom lays nothing out, so
+    // the surface's own handling of the press, then and after, is told there is nothing under it.
+    Object.defineProperty(document, 'elementFromPoint', { value: () => null, configurable: true });
+    act(() => {
+      view.dom
+        .querySelector('[data-bound-table-body] tbody tr td, [data-bound-table-body] tbody tr th')!
+        .dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    await waitFor(() => expect(pills(panel)[0]).toHaveAttribute('aria-pressed', 'true'));
+    // Sort shows: no column is in hand in the text.
     await userEvent.click(within(panel).getByRole('tab', { name: /^Sort/ }));
     expect(within(panel).getByRole('tabpanel', { name: /^Sort/ })).toHaveTextContent(
       BOUND_TABLE_WORDS.sortHint,
     );
     expect(view.dom.querySelectorAll('.aw-bound-table-focused')).toHaveLength(0);
   });
+
   it('stands in the Table tab the page gives it, telling the page it holds a table and each time the cursor enters one (ADR-0052)', async () => {
     const host = document.createElement('div');
     document.body.append(host);
@@ -600,7 +633,7 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
     const { view, panel } = await inTable(COLUMNS, {}, holding(), DECLARED, [
       note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),
     ]);
-    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Remove' }));
+    await userEvent.click(within(await column(panel, 2)).getByRole('button', { name: 'Remove' }));
     expectRefused(panel, 2, BOUND_TABLE_WORDS.noteStands('depth'));
     // Still shown, its note's letter beside its header.
     expect(bodyOf(view)[0]).toEqual(['Site', 'Deptha']);

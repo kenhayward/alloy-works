@@ -1826,7 +1826,7 @@ export function ComponentEditor({
           enabled={mayFormat}
           client={client}
           onFormatting={setFormatting}
-          value={valued?.place === 'table' ? valuePanel(valued) : undefined}
+          value={valued?.place === 'table' ? valuePanel(valued, true) : undefined}
         />
       )}
     </>
@@ -1835,23 +1835,36 @@ export function ComponentEditor({
    * Where those panels stand (ADR-0052): under the toolbar where the page gives them no place, else
    * in its Table tab, which says where to go while the cursor is in no table.
    */
+  // A dialog stands over the page: the article is inert behind it, and so is what the editor sets
+  // beside it - the Table tab, the fields in Attributes - which stand outside the article.
+  const behindDialog =
+    asking !== null ||
+    figureDialog !== null ||
+    referring !== null ||
+    equating !== null ||
+    symbolizing !== null ||
+    valuing !== null ||
+    formatting;
   const placeTables = (panels: ReactNode) => {
     if (tableHost === undefined) return panels;
     if (tableHost === null) return null;
     return createPortal(
-      table === null && boundTable === null ? (
-        <p className={styles['tableOutside']}>{BOUND_TABLE_WORDS.cursorOutside}</p>
-      ) : (
-        panels
-      ),
+      <div inert={behindDialog}>
+        {table === null && boundTable === null ? (
+          <p className={styles['tableOutside']}>{BOUND_TABLE_WORDS.cursorOutside}</p>
+        ) : (
+          panels
+        )}
+      </div>,
       tableHost,
     );
   };
 
   /** The Value panel, one line, on what `valued` names. */
   type Valued = NonNullable<typeof valued>;
-  const valuePanel = (valued: Valued) => (
+  const valuePanel = (valued: Valued, stacked = false) => (
     <ValuePanel
+      stacked={stacked}
       key={`value-${valued.pos}`}
       ref={valueRegion}
       binding={valued.binding}
@@ -1964,15 +1977,7 @@ export function ComponentEditor({
         aria-labelledby="component-title"
         className={styles['card']}
         data-in-place={onDone !== undefined}
-        inert={
-          asking !== null ||
-          figureDialog !== null ||
-          referring !== null ||
-          equating !== null ||
-          symbolizing !== null ||
-          valuing !== null ||
-          formatting
-        }
+        inert={behindDialog}
         onKeyDown={moveRegion}
       >
         <div className={styles['strip']}>
@@ -2282,7 +2287,9 @@ export function ComponentEditor({
                   </section>
                 );
                 if (fieldsHost === undefined) return fieldsSection;
-                return fieldsHost === null ? null : createPortal(fieldsSection, fieldsHost);
+                return fieldsHost === null
+                  ? null
+                  : createPortal(<div inert={behindDialog}>{fieldsSection}</div>, fieldsHost);
               })()}
             {offered !== null && (
               <div>

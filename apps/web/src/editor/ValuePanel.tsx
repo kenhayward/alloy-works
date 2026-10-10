@@ -45,6 +45,8 @@ export interface ValuePanelProps {
   readonly onResolve?: (() => void) | undefined;
   /** The panel's own element: a region `F6` moves between while a binding is selected (CNT-077). */
   readonly ref?: Ref<HTMLElement>;
+  /** In the Table tab: two lines, what it is and its acts, then what it shows (ADR-0052). */
+  readonly stacked?: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ export function ValuePanel({
   onKeep,
   onResolve,
   ref,
+  stacked = false,
 }: ValuePanelProps) {
   const heading = useId();
   const unreadable = 'a query definition you cannot read';
@@ -79,7 +82,12 @@ export function ValuePanel({
   const held = state?.held ?? null;
   const [mode, means] = MODES[binding.mode];
   return (
-    <section ref={ref} className={styles['line']} aria-labelledby={heading} tabIndex={-1}>
+    <section
+      ref={ref}
+      className={stacked ? `${styles['line']} ${styles['stacked']}` : styles['line']}
+      aria-labelledby={heading}
+      tabIndex={-1}
+    >
       <h3 id={heading} className={styles['hidden']}>
         Value
       </h3>

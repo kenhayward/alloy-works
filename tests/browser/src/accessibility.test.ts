@@ -473,7 +473,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.keyboard.press('Escape');
 
-      // The fields beside the text.
+      // The fields beside the text, in Attributes: the Table tab was chosen as the cursor entered the
+      // component's table (ADR-0052).
+      await page
+        .getByRole('tablist', { name: 'Component panels' })
+        .getByRole('tab', { name: 'Attributes' })
+        .click();
       const owner = page.getByRole('combobox', { name: 'Owner' });
       await owner.focus();
       await check('the Fields panel', {

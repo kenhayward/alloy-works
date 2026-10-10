@@ -1,5 +1,5 @@
 import type { EditorState, Command } from 'prosemirror-state';
-import { Plugin, PluginKey } from 'prosemirror-state';
+import { Plugin, PluginKey, TextSelection } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
 import { boundTableAt } from './tables.js';
@@ -36,6 +36,29 @@ export function focusBoundTableColumn(column: number | null): Command {
     if (focusKey.getState(state) === undefined) return false;
     if (focusKey.getState(state) === column) return true;
     dispatch?.(state.tr.setMeta(focusKey, column).setMeta('addToHistory', false));
+    return true;
+  };
+}
+
+/** The column of the current bound table held in the Table tab, or null (ADR-0052). */
+export function boundTableFocusedColumn(state: EditorState): number | null {
+  return focusKey.getState(state) ?? null;
+}
+
+/**
+ * Holds a column of the bound table at `tablePos`, as a click on one of its cells does (ADR-0052):
+ * the cursor goes into the table, at its caption, where it is not in it already, and the column is
+ * the one in hand. Never a change to undo.
+ */
+export function holdBoundTableColumn(tablePos: number, column: number): Command {
+  return (state, dispatch) => {
+    if (focusKey.getState(state) === undefined) return false;
+    const node = state.doc.nodeAt(tablePos);
+    if (node === null || node.type.name !== 'boundTable') return false;
+    const inside = boundTableAt(state)?.pos === tablePos;
+    const tr = state.tr.setMeta(focusKey, column).setMeta('addToHistory', false);
+    if (!inside) tr.setSelection(TextSelection.near(state.doc.resolve(tablePos + 1)));
+    dispatch?.(tr);
     return true;
   };
 }
