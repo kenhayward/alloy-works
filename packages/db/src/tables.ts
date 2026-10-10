@@ -327,6 +327,14 @@ export interface FirstAdministratorTable {
 }
 
 /** Claimed, extended, moved and released: the runtime role may change it, and nothing else may. */
+/** A person's unversioned work on a component, set aside up to a time by Discard (the R2 plan). */
+export interface UnsavedDiscardedTable {
+  artifact_id: string;
+  kind: ColumnType<'component', never, never>;
+  principal_id: string;
+  up_to: Date;
+}
+
 export interface ComponentLockTable {
   artifact_id: string;
   kind: ColumnType<'component', never, never>;
@@ -560,6 +568,7 @@ export interface TenantTables {
   audit_event: AuditEventTable;
   audit_label: AuditLabelTable;
   component_lock: ComponentLockTable;
+  unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;
   profile: ProfileTable;

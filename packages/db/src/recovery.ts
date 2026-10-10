@@ -170,6 +170,14 @@ export async function newestUncutIteration(
     .limit(1)
     .executeTakeFirst();
   if (!newest) return null;
+  // Set aside by Discard (the R2 plan): nothing saved up to then is offered; anything after is.
+  const discarded = await trx
+    .selectFrom('unsaved_discarded')
+    .select('up_to')
+    .where('artifact_id', '=', owner.artifactId)
+    .where('principal_id', '=', owner.principalId)
+    .executeTakeFirst();
+  if (discarded !== undefined && newest.created_at <= discarded.up_to) return null;
   const since = await trx
     .selectFrom('artifact_version')
     .select('id')
@@ -184,4 +192,27 @@ export async function newestUncutIteration(
     }
   }
   return newest.created_at;
+}
+
+/**
+ * **Discard** (the R2 plan): the caller's unversioned work on a component, saved up to `upTo`, is no
+ * longer offered as Recover (`newestUncutIteration`). Nothing is deleted - the iterations stay for
+ * Saved text until the sweep removes them (VER-001, VER-003) - and an earlier time never moves the mark
+ * back. Work saved after it is offered again.
+ */
+export async function discardUnsaved(
+  trx: TenantTransaction,
+  owner: IterationOwner,
+  upTo: Date,
+): Promise<void> {
+  if (!UUID.test(owner.artifactId)) return;
+  await trx
+    .insertInto('unsaved_discarded')
+    .values({ artifact_id: owner.artifactId, principal_id: owner.principalId, up_to: upTo })
+    .onConflict((conflict) =>
+      conflict
+        .columns(['artifact_id', 'principal_id'])
+        .doUpdateSet({ up_to: sql<Date>`greatest(unsaved_discarded.up_to, excluded.up_to)` }),
+    )
+    .execute();
 }

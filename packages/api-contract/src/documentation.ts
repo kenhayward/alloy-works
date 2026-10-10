@@ -110,6 +110,7 @@ const operationTags = {
     'createComponent',
     'listIterations',
     'getIteration',
+    'discardUnsaved',
     'saveIteration',
     'claimLock',
     'releaseLock',
@@ -221,6 +222,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Opens the latest component version with the caller’s editing permissions and current lock. Use its version when submitting a change.',
   listIterations:
     'Lists the caller’s retained editing iterations while their session holds the component lock. Iterations are working saves, not released versions.',
+  discardUnsaved:
+    'Stops offering the caller’s unversioned work on the component for recovery, up to the time given. Nothing is deleted: the iterations stay listed until they expire, and work saved later is offered again.',
   getIteration:
     'Reads one retained editing iteration, including its content and values. The caller must still hold the editing lock.',
   saveIteration:

@@ -308,6 +308,7 @@ export {
   type EditingPolicyAnswer,
 } from './retention.js';
 export {
+  discardUnsaved,
   listIterations,
   newestUncutIteration,
   readIteration,

@@ -934,7 +934,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   was saved. Open the component again and, where changes you saved there were never made into a
   version, it says so above the text - `Changes you saved at 14:02 were never made a version.` - and
   offers **Recover**, even where somebody else has made a version since without your changes, and
-  **Dismiss**, which puts the notice away in that tab until something newer is saved. Where
+  **Dismiss**, which puts the notice away in that tab until something newer is saved, and **Discard**,
+  which, once you confirm, stops offering those changes anywhere, though Saved text still lists them
+  until they expire. Where
   another window of yours is editing the component, it says `You are editing this component in another
 window.` and offers **Recover here** instead. Either starts editing, taking the component over from
   your other window if one has it, and opens **Saved text**, a dialog listing what you saved, newest

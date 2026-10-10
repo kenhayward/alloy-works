@@ -12,7 +12,7 @@ import { claimLock, ITERATION_RETENTION_DAYS, latestSequence, saveIteration } fr
 import { migrate } from './migrate.js';
 import { cutVersion } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
-import { listIterations, newestUncutIteration, readIteration } from './recovery.js';
+import { discardUnsaved, listIterations, newestUncutIteration, readIteration } from './recovery.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
@@ -360,6 +360,42 @@ describe('reading iterations back for Recovery', () => {
     expect(await uncut('ada')).not.toBeNull();
     await ada.save('Unbox the printer and keep the box.');
     expect(await uncut('ada')).toBeNull();
+  });
+
+  it('offers none of the work the caller discarded, and offers it again once something newer is saved, keeping every iteration (the R2 plan)', async () => {
+    const made = await component();
+    const uncut = (who: 'ada' | 'grace') =>
+      service.withTenant(tenant, (trx) =>
+        newestUncutIteration(trx, { artifactId: made.id, principalId: people[who] }),
+      );
+    const ada = await made.session('ada');
+    await ada.save('Unbox the printer.');
+    const savedAt = (await uncut('ada'))!;
+
+    await service.withTenant(tenant, (trx) =>
+      discardUnsaved(trx, { artifactId: made.id, principalId: people.ada }, savedAt),
+    );
+    expect(await uncut('ada')).toBeNull();
+    // Hers alone: nothing of Grace's is set aside, or offered.
+    expect(await uncut('grace')).toBeNull();
+    // Discarding is no deletion: the iteration is still listed for Saved text.
+    const listed = await service.withTenant(tenant, (trx) =>
+      listIterations(trx, { artifactId: made.id, principalId: people.ada, limit: 10 }),
+    );
+    expect(listed.items).toHaveLength(1);
+    // An earlier time set aside later moves nothing back.
+    await service.withTenant(tenant, (trx) =>
+      discardUnsaved(
+        trx,
+        { artifactId: made.id, principalId: people.ada },
+        new Date(savedAt.getTime() - 60_000),
+      ),
+    );
+    expect(await uncut('ada')).toBeNull();
+
+    // Saved since: offered again.
+    await ada.save('Unbox the printer and keep the box.');
+    expect(await uncut('ada')).not.toBeNull();
   });
 
   it('still says so once somebody else has cut a version without that work, for as long as it is kept', async () => {

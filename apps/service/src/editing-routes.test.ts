@@ -686,6 +686,27 @@ describe('writing in an editing session through the service', () => {
     const listed = (who: string | undefined, id: string, session: string, more = '') =>
       call(who, 'GET', `/v1/components/${id}/iterations?session=${session}${more}`);
 
+    it("discards the caller's unversioned work by its time: no longer offered, still listed (the R2 plan)", async () => {
+      const made = await component();
+      const session = await saving('ada', made, 'Unbox the printer and keep the box.');
+      const opened = async () =>
+        (await call('ada', 'GET', `/v1/components/${made.id}`)).json<{
+          unsaved: { savedAt: string } | null;
+        }>().unsaved;
+      const unsaved = await opened();
+      expect(unsaved).not.toBeNull();
+
+      const discarded = await call('ada', 'PUT', `/v1/components/${made.id}/unsaved/discarded`, {
+        upTo: unsaved!.savedAt,
+      });
+      expect(discarded.statusCode, discarded.body).toBe(200);
+      expect(discarded.json()).toEqual({ unsaved: null });
+      expect(await opened()).toBeNull();
+      // Set aside, not deleted: Saved text still lists it.
+      const page = await listed('ada', made.id, session);
+      expect(page.json<Listed>().items).toHaveLength(1);
+    });
+
     it('CNT-174 answers the writer their own iterations while they hold the lock, from any session of theirs, newest first and content only one at a time', async () => {
       const made = await component();
       const first = await saving('ada', made, 'Unbox', 'Unbox the printer and keep the box.');

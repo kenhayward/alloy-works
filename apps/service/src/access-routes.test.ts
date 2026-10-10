@@ -918,6 +918,11 @@ describe('routes that check a permission', () => {
       url: `/v1/components/${dosing}/iterations/${MISSING}?session=${MISSING}`,
       status: 404,
     }),
+    discardUnsaved: () => ({
+      url: `/v1/components/${dosing}/unsaved/discarded`,
+      status: 404,
+      payload: { upTo: '2026-10-10T17:18:43.000Z' },
+    }),
     saveIteration: () => ({
       url: `/v1/components/${dosing}/iterations/${MISSING}/1`,
       status: 404,
