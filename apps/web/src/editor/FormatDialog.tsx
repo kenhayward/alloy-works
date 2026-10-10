@@ -161,6 +161,18 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
   useEffect(() => {
     dialog.current?.querySelector<HTMLElement>('select, input')?.focus();
   }, []);
+  // Modal in full (ADR-0052): everything else at the top of the page is inert while it stands -
+  // the editor and the panel beside the text it sets, which stand apart - and taken back as it goes.
+  useEffect(() => {
+    const own = dialog.current?.closest('body > *');
+    const others = [...document.body.children].filter(
+      (each) => each !== own && !each.hasAttribute('inert'),
+    );
+    for (const each of others) each.setAttribute('inert', '');
+    return () => {
+      for (const each of others) each.removeAttribute('inert');
+    };
+  }, []);
 
   const set_ = (name: string, value: string | boolean) => setDraft({ ...draft, [name]: value });
   const unset = (member: keyof FieldFormat) => `${STYLE_SAYS}: ${memberSaid(member, style)}`;

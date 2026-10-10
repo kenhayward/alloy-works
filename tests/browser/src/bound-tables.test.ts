@@ -6,7 +6,7 @@ import { api, edit, makeDocument, readDocument, type Client } from './testing/ap
 import { checkAxe } from './testing/axe.js';
 import { generalSpace, makeComponent } from './testing/component.js';
 import { publishPdf } from './testing/fixtures.js';
-import { withPage } from './testing/page.js';
+import { scrollPaneTo, withPage } from './testing/page.js';
 
 /**
  * A bound table in the pinned Chromium (the TB2 plan, task 5), against the development source the
@@ -209,11 +209,11 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
       await formatDialog.waitFor({ state: 'hidden' });
       await expect.poll(async () => (await rowsOf(body))[1]).toEqual(['1', 'North weir', '12.5']);
 
-      // Sorted by depth, deepest first, the site with none last: the Sort tab, by the arrows from
-      // the tab chosen (ADR-0051).
-      await tabTo(page, panel.getByRole('tab', { selected: true }));
-      await page.keyboard.press('ArrowRight');
-      await panel.getByRole('tabpanel', { name: /^Sort/ }).waitFor();
+      // Sorted by depth, deepest first, the site with none last: the Sort fold opened by the
+      // keyboard (ADR-0052).
+      await tabTo(page, panel.getByRole('button', { name: /^Sort/ }));
+      await page.keyboard.press('Enter');
+      await panel.getByText(/^Rows are sorted by the first key/).waitFor();
       await tabTo(page, panel.getByRole('button', { name: 'Add sort' }));
       await page.keyboard.press('Enter');
       const key = panel.getByRole('group', { name: 'Sort 1' });
@@ -226,7 +226,10 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
         .poll(async () => (await rowsOf(body)).slice(1).map((row) => row[1]))
         .toEqual(['North weir', 'South bank', 'Old mill']);
       // The Table tab scrolled to its top: nothing in it left half in view (ADR-0052).
-      await panel.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+      // The window from its top, as the accessibility walk checks it: the keys left it where a link
+      // in the page's head stood half under the header band.
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await scrollPaneTo(panel);
       await checkAxe(page, 'the panels of a bound table', task.meta, {
         shows: [panel, valuePanel],
       });

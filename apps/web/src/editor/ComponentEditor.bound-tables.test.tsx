@@ -336,7 +336,7 @@ describe('the Bound table panel (TB2-F)', () => {
       { column: 'site', header: 'Site' },
       { column: 'visits', header: 'Visits' },
     ]);
-    await userEvent.click(within(panel).getByRole('tab', { name: /^Sort/ }));
+    await userEvent.click(within(panel).getByRole('button', { name: /^Sort/ }));
     await userEvent.click(within(panel).getByRole('button', { name: 'Add sort' }));
     const key = within(panel).getByRole('group', { name: 'Sort 1' });
     await userEvent.selectOptions(within(key).getByLabelText('Column'), 'visits');
@@ -370,6 +370,8 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(bodyOf(view)[2]).toEqual(['Birch', '(1.250)']);
     await userEvent.click(within(await column(panel, 2)).getByRole('button', { name: 'Format' }));
     const dialog = await screen.findByRole('dialog', { name: 'Format of Depth' });
+    // Modal in full: the page behind it inert, the panel beside the text among it (ADR-0052).
+    expect(panel.closest('body > *')).toHaveAttribute('inert');
     const places = within(dialog).getByLabelText('Decimal places');
     expect(places).toHaveAccessibleDescription(`Left unset. ${STYLE_SAYS}: 3`);
     expect(within(dialog).getByLabelText('Negative numbers')).toHaveDisplayValue(
@@ -382,6 +384,7 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(within(dialog).queryByLabelText(FORMAT_MEMBERS.fraction)).toBeNull();
     await userEvent.type(places, '1');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }));
+    expect(panel.closest('body > *')).not.toHaveAttribute('inert');
     // One place, rounded half away from zero, still in the style's parentheses.
     expect(bodyOf(view)[2]).toEqual(['Birch', '(1.3)']);
     await waitFor(() =>
@@ -489,11 +492,46 @@ describe('the Bound table panel (TB2-F)', () => {
     });
     await waitFor(() => expect(pills(panel)[0]).toHaveAttribute('aria-pressed', 'true'));
     // Sort shows: no column is in hand in the text.
-    await userEvent.click(within(panel).getByRole('tab', { name: /^Sort/ }));
-    expect(within(panel).getByRole('tabpanel', { name: /^Sort/ })).toHaveTextContent(
-      BOUND_TABLE_WORDS.sortHint,
-    );
+    await userEvent.click(within(panel).getByRole('button', { name: /^Sort/ }));
+    expect(within(panel).getByText(BOUND_TABLE_WORDS.sortHint)).toBeInTheDocument();
     expect(view.dom.querySelectorAll('.aw-bound-table-focused')).toHaveLength(0);
+  });
+
+  it('opens one of Column, Sort and Notes at a time, each folded to its count and a summary (ADR-0052)', async () => {
+    const { panel } = await inTable([
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+    ]);
+    const fold = (name: RegExp) => within(panel).getByRole('button', { name });
+    const summaryOf = (name: RegExp) => fold(name).closest('section')!;
+    // Column open first, Sort and Notes folded, saying they hold none.
+    expect(fold(/^Column/)).toHaveAttribute('aria-expanded', 'true');
+    expect(fold(/^Sort/)).toHaveAttribute('aria-expanded', 'false');
+    expect(summaryOf(/^Sort/)).toHaveTextContent(BOUND_TABLE_WORDS.none);
+    expect(summaryOf(/^Notes/)).toHaveTextContent(BOUND_TABLE_WORDS.none);
+
+    // Adding a sort from its folded heading opens Sort, and folds Column to where it is.
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add sort' }));
+    expect(fold(/^Sort/)).toHaveAttribute('aria-expanded', 'true');
+    expect(within(panel).queryByRole('group', { name: 'Column 1' })).toBeNull();
+    expect(summaryOf(/^Column/)).toHaveTextContent('1 of 2, Site');
+    const key = within(panel).getByRole('group', { name: 'Sort 1' });
+    await userEvent.selectOptions(within(key).getByLabelText('Column'), 'depth');
+    await userEvent.click(
+      within(within(key).getByRole('radiogroup', { name: 'Direction of Sort 1' })).getByRole(
+        'radio',
+        { name: 'Descending' },
+      ),
+    );
+
+    // Notes opened: Sort folds to what it sorts by.
+    await userEvent.click(fold(/^Notes/));
+    expect(fold(/^Sort/)).toHaveAttribute('aria-expanded', 'false');
+    expect(summaryOf(/^Sort/)).toHaveTextContent('Depth descending');
+    // A pill opens Column again, on its column.
+    await userEvent.click(pills(panel)[1]!);
+    expect(inHand(panel, 2)).toBeInTheDocument();
+    expect(fold(/^Notes/)).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('stands in the Table tab the page gives it, telling the page it holds a table and each time the cursor enters one (ADR-0052)', async () => {
@@ -603,7 +641,7 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
   it('adds a note on a cell by key, its value offered from the rows shown, and types its words in place, by keyboard', async () => {
     const user = userEvent.setup();
     const { view, panel } = await inTable(COLUMNS);
-    await user.click(within(panel).getByRole('tab', { name: /^Notes/ }));
+    await user.click(within(panel).getByRole('button', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
     await user.click(within(adding).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));
     await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteColumn), 'depth');
@@ -654,7 +692,7 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
         },
       ),
     );
-    await user.click(within(panel).getByRole('tab', { name: /^Notes/ }));
+    await user.click(within(panel).getByRole('button', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
     await user.click(within(adding).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));
     await user.type(within(adding).getByLabelText(BOUND_TABLE_WORDS.keyIs('visits')), 'two');
@@ -678,8 +716,8 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
         },
       ),
     );
+    await userEvent.click(within(panel).getByRole('button', { name: /^Notes/ }));
     expect(panel).toHaveTextContent(BOUND_TABLE_WORDS.noKey);
-    await userEvent.click(within(panel).getByRole('tab', { name: /^Notes/ }));
     const on = within(panel).getByRole('radiogroup', { name: BOUND_TABLE_WORDS.noteOn });
     expect(on).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(within(on).getByRole('radio', { name: BOUND_TABLE_WORDS.noteOns.cell }));

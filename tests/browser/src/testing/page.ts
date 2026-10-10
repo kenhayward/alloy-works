@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, inject } from 'vitest';
-import type { Browser, Page } from 'playwright-core';
+import type { Browser, Locator, Page } from 'playwright-core';
 import { launchPinned } from './launch.js';
 
 /** One browser per file, launched the first time a test asks for a page and closed after the file. */
@@ -83,4 +83,20 @@ export async function withPage<T>(
     );
   }
   return result;
+}
+
+/**
+ * Scrolls the pane an element stands in - its nearest scrolling ancestor - so the element begins at
+ * the pane's top, and nothing above it is left half in view, which axe counts as a target obscured.
+ * The window stays where it is, unlike `scrollIntoView`, which scrolls every scroller holding it.
+ */
+export async function scrollPaneTo(target: Locator): Promise<void> {
+  await target.evaluate((element) => {
+    let pane = element.parentElement;
+    while (pane !== null && !/(auto|scroll)/.test(getComputedStyle(pane).overflowY)) {
+      pane = pane.parentElement;
+    }
+    if (pane === null) return;
+    pane.scrollTop += element.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+  });
 }
