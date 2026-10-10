@@ -107,7 +107,7 @@ export function OutlineRail({
   tabs?: readonly { readonly key: string; readonly label: string }[];
   label?: string;
   edge?: 'start' | 'end';
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <div className={`${styles['rail']}${className === undefined ? '' : ` ${className}`}`} data-rail>

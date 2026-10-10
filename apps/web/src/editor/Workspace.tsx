@@ -24,10 +24,12 @@ import { DocumentList } from '../structure/DocumentList.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink, templateAccessAddress } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
+import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
+import { OutlineRail } from '../structure/OutlineTabs.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
-import { ComponentDock } from './ComponentDock.js';
+import { COMPONENT_PANELS, ComponentDock } from './ComponentDock.js';
 import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
 import styles from './Workspace.module.css';
@@ -54,6 +56,12 @@ const LISTS = new Set([
   '#/query-definitions',
 ]);
 const isWork = (hash: string) => !LISTS.has(hash) && !hash.startsWith('#/admin');
+
+/** The space pane beside an open component: dragged as the document's outline is, and hidden to a rail. */
+const SPACE_PANE = { storageKey: 'aw.component.space', min: 200, max: 480, initial: 260 };
+/** The panels beside an open component, and the same while they offer the Table tab (ADR-0052). */
+const COMPONENT_DOCK_PANE = { storageKey: 'aw.component.panels', min: 280, max: 640, initial: 320 };
+const COMPONENT_TABLE_PANE = { storageKey: 'aw.component.table', min: 360, max: 720, initial: 440 };
 
 /** Administration, given About's content from the shell. */
 function AdministrationPage({ client }: { client: ReturnType<typeof createApiClient> }) {
@@ -137,6 +145,11 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   // Where an open component's table is formatted, and whether it holds one (ADR-0052).
   const [tableHost, setTableHost] = useState<HTMLElement | null>(null);
   const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
+  // The panes beside an open component, sized and hidden as the document page's are.
+  const spacePane = usePaneWidth(SPACE_PANE);
+  const dockPane = usePaneWidth(COMPONENT_DOCK_PANE);
+  const tablePane = usePaneWidth(COMPONENT_TABLE_PANE);
+  const dockSized = heldTable.holds ? tablePane : dockPane;
   const [placed, setPlaced] = useState<{
     readonly component: string;
     readonly space: { readonly id: string; readonly name: string };
@@ -209,15 +222,33 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       return (
         <div
           className={styles['triptych']}
-          // While it offers a Table tab, the panel is wider, and stays so as the cursor moves (TF-A).
-          {...(heldTable.holds
-            ? { style: { '--dock-panel': 'var(--panel-table)' } as React.CSSProperties }
-            : {})}
+          data-space-collapsed={spacePane.collapsed}
+          data-dock-collapsed={dockPane.collapsed}
+          style={
+            {
+              '--space-width': `${spacePane.width}px`,
+              // While it offers a Table tab, the panel is wider, and stays so as the cursor moves (TF-A).
+              '--dock-panel': `${dockSized.width}px`,
+            } as React.CSSProperties
+          }
         >
-          {placed?.component === opened ? (
-            <SpacePane client={client} space={placed.space} current={opened} />
-          ) : (
-            <div />
+          <div className={styles['space']}>
+            {spacePane.collapsed ? (
+              <OutlineRail
+                pane={spacePane}
+                chosen="space"
+                tabs={[{ key: 'space', label: placed?.space.name ?? 'Space' }]}
+                label="space pane"
+                className={styles['rail']}
+              />
+            ) : placed?.component === opened ? (
+              <SpacePane client={client} space={placed.space} current={opened} pane={spacePane} />
+            ) : null}
+          </div>
+          {!spacePane.collapsed && (
+            <div className={styles['edge']}>
+              <PaneSeparator label="space pane" pane={spacePane} />
+            </div>
           )}
           <div className={styles['editor']}>
             <nav aria-label="Breadcrumb" className={styles['trail']}>
@@ -240,6 +271,23 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
               />
             </PresentationProvider>
           </div>
+          {!dockPane.collapsed && (
+            <div className={styles['dockEdge']}>
+              <PaneSeparator label="component panels" pane={dockSized} edge="end" />
+            </div>
+          )}
+          {dockPane.collapsed && (
+            <div className={styles['dockRail']}>
+              <OutlineRail
+                pane={dockPane}
+                chosen=""
+                tabs={COMPONENT_PANELS.filter((each) => each.key !== 'table' || heldTable.holds)}
+                label="component panels"
+                edge="end"
+                className={styles['rail']}
+              />
+            </div>
+          )}
           <ComponentDock
             key={opened}
             client={client}
@@ -247,6 +295,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             onFieldsHost={setFieldsHost}
             table={heldTable}
             onTableHost={setTableHost}
+            pane={dockPane}
           />
         </div>
       );
