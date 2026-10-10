@@ -1181,7 +1181,7 @@ function NodeLink({
   onNotice: (message: string | null) => void;
 }) {
   return (
-    <div className={styles['row']}>
+    <div className={styles['partRow']}>
       <span className={styles['rowLabel']} aria-hidden="true">
         Link
       </span>
@@ -1416,7 +1416,7 @@ function NodeDetails({
     <div className={styles['rows']}>
       {/* A component has no title of its own, so its name is a link to it (ADR-0054, decision 8). */}
       {node.type === 'reference' && node.component !== null && (
-        <div className={styles['row']}>
+        <div className={styles['partRow']}>
           <span className={styles['rowLabel']}>Component</span>
           <a className={styles['named']} href={`#/components/${node.component}`}>
             {nodeName(node, names)}
@@ -1455,7 +1455,7 @@ function NodeDetails({
           }}
         />
       )}
-      <div className={styles['row']}>
+      <div className={styles['partRow']}>
         <label className={styles['rowLabel']} htmlFor={startsId}>
           Starts on
         </label>
@@ -1480,7 +1480,7 @@ function NodeDetails({
       {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
           made then is not sent, and the box goes on showing what the node holds. Each sends the one
           switch it is; a section's values are sent by its fields, above. */}
-      <div className={styles['row']}>
+      <div className={styles['partRow']}>
         <label className={styles['rowLabel']} htmlFor={numberedId}>
           Numbered
         </label>
@@ -1512,7 +1512,7 @@ function NodeDetails({
           beside it, since the parse would refuse every other one. Left enabled while an act is in
           flight, as the select above is. */}
       {topLevel && (
-        <div className={styles['row']}>
+        <div className={styles['partRow']}>
           <span className={styles['rowLabel']} aria-hidden="true">
             Matter
           </span>
@@ -1687,7 +1687,7 @@ function TitleField({
   if (!editable) {
     return (
       <>
-        <div className={styles['row']}>
+        <div className={styles['partRow']}>
           <label className={styles['rowLabel']}>
             Title
             <input className={styles['hiddenInput']} value={titleText(node.title)} disabled />
@@ -1790,7 +1790,7 @@ function TitleField({
   // title's own dialog is not either: placing an equation commits, and cancelling comes back here.
   return (
     <div
-      className={styles['row']}
+      className={styles['partRow']}
       onFocus={() => {
         asking.current = false;
       }}
