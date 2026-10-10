@@ -116,9 +116,21 @@ export function PaneSeparator({ label, pane }: { label: string; pane: Pane }) {
   );
 }
 
-/** Hides a pane to a rail, or shows it again. */
-export function PaneToggle({ label, pane }: { label: string; pane: Pane }) {
+/**
+ * Hides a pane to a rail, or shows it again. A pane at the page's end (`edge="end"`) hides towards
+ * it, so its arrows point the other way.
+ */
+export function PaneToggle({
+  label,
+  pane,
+  edge = 'start',
+}: {
+  label: string;
+  pane: Pane;
+  edge?: 'start' | 'end';
+}) {
   const words = pane.collapsed ? `Show the ${label}` : `Hide the ${label}`;
+  const towardsPage = pane.collapsed === (edge === 'start');
   return (
     <button
       type="button"
@@ -127,7 +139,7 @@ export function PaneToggle({ label, pane }: { label: string; pane: Pane }) {
       title={words}
       onClick={() => pane.setCollapsed(!pane.collapsed)}
     >
-      <Icon name={pane.collapsed ? 'Show pane' : 'Hide pane'} />
+      <Icon name={towardsPage ? 'Show pane' : 'Hide pane'} />
     </button>
   );
 }

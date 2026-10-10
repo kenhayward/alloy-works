@@ -38,8 +38,11 @@
 }
 
 .layout {
+  --left: var(--outline-width);
+  --edge: 6px;
+  --right: var(--dock-panel);
   display: grid;
-  grid-template-columns: var(--outline-width) 6px minmax(0, 1fr) var(--dock-panel);
+  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--right);
   grid-template-rows: auto auto auto 1fr;
   column-gap: var(--space-8);
   row-gap: var(--space-12);
@@ -47,7 +50,12 @@
 }
 
 .layout[data-collapsed='true'] {
-  grid-template-columns: var(--pane-collapsed-rail) 0 minmax(0, 1fr) var(--dock-panel);
+  --left: var(--pane-collapsed-rail);
+  --edge: 0;
+}
+
+.layout[data-dock-collapsed='true'] {
+  --right: var(--pane-collapsed-rail);
 }
 
 /* The outline panel's root holds no box of its own here: its two parts are the grid's. */
@@ -134,47 +142,71 @@
   min-width: 0;
 }
 
-.layout > [data-panel] > [data-part='details'] {
+/*
+ * The panels beside the text: one pane, standing beside the text as the page scrolls - under the
+ * header band at the outline's height, above the status bar - and scrolling its own panels, as the
+ * outline pane does. Hidden, it leaves a rail; it is kept in the page, so a panel keeps what it holds.
+ */
+.dock,
+.dockRail {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
   grid-column: 4;
-  grid-row: 3;
+  grid-row: 1 / span 4;
   min-width: 0;
-  font-size: var(--size-13);
 }
 
-.layout > [data-panel] > [data-part='details']:not(:empty) {
-  padding: var(--space-12);
+.dock {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(
+    100vh - var(--header-height) - var(--space-12) - var(--status-height, 0px) - var(--space-12)
+  );
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
+  font-size: var(--size-13);
 }
 
-/* The column beside the text: a value's provenance, the panels' tabs, then the panel shown. */
-.provenance {
-  grid-column: 4;
-  grid-row: 1;
-  min-width: 0;
+.dock[hidden] {
+  display: none;
 }
 
+.dockStrip {
+  display: flex;
+  align-items: stretch;
+  padding-inline: var(--space-8) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.dockSpacer {
+  flex: 1;
+}
+
+.dockStrip > :last-child {
+  align-self: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+.dockStrip > :last-child:hover {
+  border-color: var(--strong-border);
+  background: var(--accent-weak);
+}
+
+.dockBody {
+  display: grid;
+  gap: var(--space-12);
+  min-height: 0;
+  padding: var(--space-12);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.dockBody [hidden],
 .provenance:empty {
   display: none;
-}
-
-.dockTabs {
-  grid-column: 4;
-  grid-row: 2;
-  min-width: 0;
-}
-
-.layout > [data-panel] > [data-part='details'][hidden],
-.side > [hidden] {
-  display: none;
-}
-
-.side {
-  grid-column: 4;
-  grid-row: 3 / span 2;
-  min-width: 0;
-  font-size: var(--size-13);
 }
 
 /*
@@ -182,13 +214,7 @@
  * between the text and the dock, so the text narrows and stays where it was, and the dock moves over.
  */
 .layout[data-previewing='true'] {
-  grid-template-columns: var(--outline-width) 6px minmax(0, 1fr) minmax(0, 1fr) var(--dock-panel);
-}
-
-.layout[data-previewing='true'][data-collapsed='true'] {
-  grid-template-columns: var(--pane-collapsed-rail) 0 minmax(0, 1fr) minmax(0, 1fr) var(
-      --dock-panel
-    );
+  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) minmax(0, 1fr) var(--right);
 }
 
 .preview {
@@ -198,42 +224,27 @@
   grid-row: 1 / span 4;
 }
 
-.layout[data-previewing='true'] > [data-panel] > [data-part='details'],
-.layout[data-previewing='true'] > .provenance,
-.layout[data-previewing='true'] > .dockTabs,
-.layout[data-previewing='true'] > .side {
+.layout[data-previewing='true'] > .dock,
+.layout[data-previewing='true'] > .dockRail {
   grid-column: 5;
 }
 
 @media (max-width: 1100px) {
   .layout,
-  .layout[data-collapsed='true'] {
-    grid-template-columns: var(--outline-width) 6px minmax(0, 1fr);
+  .layout[data-previewing='true'] {
+    grid-template-columns: var(--left) var(--edge) minmax(0, 1fr);
   }
 
-  .layout > [data-panel] > [data-part='details'],
-  .provenance,
-  .dockTabs,
-  .side {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-
-  /* Where the dock goes below the text, so does the preview, the whole width, after the dock's details
-   * and before the rest of it. */
-  .layout[data-previewing='true'],
-  .layout[data-previewing='true'][data-collapsed='true'] {
-    grid-template-columns: var(--outline-width) 6px minmax(0, 1fr);
-  }
-
-  .layout[data-previewing='true'] > [data-panel] > [data-part='details'],
-  .layout[data-previewing='true'] > .provenance,
-  .layout[data-previewing='true'] > .dockTabs,
-  .layout[data-previewing='true'] > .side,
+  /* Where the pane goes below the text, so does the preview, the whole width, after it. */
+  .dock,
+  .dockRail,
+  .layout[data-previewing='true'] > .dock,
+  .layout[data-previewing='true'] > .dockRail,
   .preview {
     position: static;
     grid-column: 1 / -1;
     grid-row: auto;
+    max-height: none;
   }
 }
 
@@ -243,7 +254,9 @@
  * current node is kept in view in it by nothing, since it has no scroll of its own (issue #336).
  */
 @media (max-height: 480px) {
-  .layout > [data-panel] > [data-part='outline'] {
+  .layout > [data-panel] > [data-part='outline'],
+  .dock,
+  .dockRail {
     position: static;
     max-height: none;
   }
@@ -255,4 +268,9 @@
   gap: var(--space-12);
   margin: 0;
   font-weight: 600;
+}
+
+/* The pane's tabs, after its panels in the page (the keyboard's order), drawn above them. */
+.dockStrip {
+  order: -1;
 }

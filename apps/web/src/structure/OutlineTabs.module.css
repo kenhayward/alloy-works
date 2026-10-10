@@ -67,7 +67,11 @@
   background: var(--accent-weak);
 }
 
+/* Hidden to a rail, a pane still stands beside the text as the page scrolls, as it does open. */
 .rail {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  align-self: start;
   grid-column: 1;
   grid-row: 1 / span 3;
   display: flex;
