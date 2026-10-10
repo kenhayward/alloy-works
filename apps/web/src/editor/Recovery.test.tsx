@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { ComponentEditor } from './ComponentEditor.js';
 import { heldSentence } from './held.js';
-import { iterationLabel, savedTime, unsavedSentence } from './recovery.js';
+import { iterationLabel, savedTime, sentenceCase, unsavedSentence } from './recovery.js';
 import { designTiming } from './session.js';
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
@@ -182,6 +182,12 @@ const recovering = (
     });
   },
   'GET /v1/components/{id}/iterations/{iteration}': whole,
+  // Handing the lock back, with nothing of this session's to cut.
+  'DELETE /v1/components/{id}/lock': () =>
+    json(200, {
+      outcome: 'unchanged',
+      version: { id: 'v1', number: '0.1', author: ADA, createdAt: 't', note: null },
+    }),
   ...overrides,
 });
 
@@ -214,12 +220,22 @@ const code = () =>
   within(screen.getByRole('region', { name: 'Fields of Protocol' })).getByRole('textbox', {
     name: /^Code/,
   });
-const panel = () => screen.findByRole('region', { name: 'Saved text' });
+const panel = () => screen.findByRole('dialog', { name: 'Saved text' });
 /** The editor's one live region, outside the article: the fields form has a status of its own. */
 const editorStatus = () =>
   screen.getAllByRole('status').find((each) => each.closest('article') === null)!;
-const restoreOf = (at: number) =>
-  screen.getByRole('button', { name: `Restore ${iterationLabel(SAVED[at]!.createdAt)}` });
+/** A saved iteration's row, which chooses it. */
+const rowOf = (at: number) =>
+  screen.getByRole('button', { name: sentenceCase(iterationLabel(SAVED[at]!.createdAt)) });
+/** Chooses a row, then Recover: what Restore on the row was before the dialog (the R1 plan). */
+const recoverAt = async (at: number) => {
+  await userEvent.click(rowOf(at));
+  await userEvent.click(
+    within(screen.getByRole('dialog', { name: 'Saved text' })).getByRole('button', {
+      name: 'Recover',
+    }),
+  );
+};
 const unsaved = { savedAt: SAVED[0]!.createdAt };
 
 // The focus moves onto the surface, which scrolls its selection into view.
@@ -250,10 +266,10 @@ describe('Recovery in the component editor', () => {
     const claim = asked.find((each) => each.route === 'POST /v1/components/{id}/lock')!;
     expect(claim.body).toMatchObject({ move: true });
 
-    await userEvent.click(restoreOf(0));
+    await recoverAt(0);
     await waitFor(() => expect(box()).toHaveTextContent('Unbox the printer and keep the box.'));
     expect(code()).toHaveValue('B2');
-    expect(screen.queryByRole('region', { name: 'Saved text' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Saved text' })).toBeNull();
     expect(editorStatus()).toHaveTextContent(`Restored ${iterationLabel(SAVED[0]!.createdAt)}.`);
     // And the author is editing again, from that text, which is sent as the next save.
     expect(box()).toHaveAttribute('contenteditable', 'true');
@@ -332,11 +348,16 @@ describe('Recovery in the component editor', () => {
     await waitFor(() =>
       expect(asked.slice(before).some((each) => each.route.startsWith('PUT'))).toBe(true),
     );
-    await userEvent.click(restoreOf(1));
+    // Chosen, its text is read to show what it changes; Recover reads it again, and only once what
+    // was on screen is acknowledged.
+    const reads = () =>
+      asked.filter((each) => each.route === 'GET /v1/components/{id}/iterations/{iteration}')
+        .length;
+    await userEvent.click(rowOf(1));
+    await waitFor(() => expect(reads()).toBe(1));
+    await userEvent.click(within(shown).getByRole('button', { name: 'Recover' }));
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(
-      asked.some((each) => each.route === 'GET /v1/components/{id}/iterations/{iteration}'),
-    ).toBe(false);
+    expect(reads()).toBe(1);
     expect(box()).toHaveTextContent('Unbox the printer. Keep the box.');
     answerHeld();
     await waitFor(() => expect(box()).toHaveTextContent('Unbox the printer and keep'));
@@ -344,7 +365,7 @@ describe('Recovery in the component editor', () => {
     expect(code()).toHaveValue('B');
     const after = asked.slice(before).map((each) => each.route);
     const flushed = after.indexOf('PUT /v1/components/{id}/iterations/{session}/{sequence}');
-    const read = after.indexOf('GET /v1/components/{id}/iterations/{iteration}');
+    const read = after.lastIndexOf('GET /v1/components/{id}/iterations/{iteration}');
     // What was on screen is saved first, under the session Recover claimed, and acknowledged, before
     // the saved text is read.
     expect(flushed).toBeGreaterThanOrEqual(0);
@@ -380,7 +401,7 @@ describe('Recovery in the component editor', () => {
     await waitFor(() => expect(within(shown).getAllByRole('listitem')).toHaveLength(3));
     expect(within(shown).getAllByRole('listitem')[2]).toHaveTextContent('Version 0.0');
     expect(within(shown).queryByRole('button', { name: 'Show older' })).toBeNull();
-    expect(document.activeElement).toBe(restoreOf(2));
+    expect(document.activeElement).toBe(rowOf(2));
   });
 
   it('refuses an iteration that does not read, by name, and keeps the list open with the text as it was', async () => {
@@ -402,34 +423,42 @@ describe('Recovery in the component editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
     const shown = await panel();
     await within(shown).findAllByRole('listitem');
-    await userEvent.click(restoreOf(0));
+    await recoverAt(0);
     const refusal = `The text saved at ${savedTime(SAVED[0]!.createdAt, new Date(), true)} could not be read, so it was not restored.`;
     expect(await within(shown).findByText(refusal)).toBeInTheDocument();
     expect(editorStatus()).toHaveTextContent(refusal);
-    expect(screen.getByRole('region', { name: 'Saved text' })).toBe(shown);
+    expect(screen.getByRole('dialog', { name: 'Saved text' })).toBe(shown);
     expect(box()).toHaveTextContent('Unbox the printer.');
     expect(code()).toHaveValue('A1');
   });
 
   it('moves the focus into the list as it opens, and back to the text when it is closed', async () => {
-    const { surface } = open(recovering(opened({ unsaved })));
+    const { asked, surface } = open(recovering(opened({ unsaved })));
     await surface();
     await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
     const shown = await panel();
     await waitFor(() => expect(shown).toHaveFocus());
     expect(editorStatus()).toHaveTextContent(
-      'Your saved text is listed. Restore some of it, or close the list to go on editing.',
+      'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.',
     );
     // Everything in it is a button, reached by Tab.
     await within(shown).findAllByRole('listitem');
     await userEvent.tab();
-    expect(document.activeElement).toBe(restoreOf(0));
+    expect(document.activeElement).toBe(rowOf(0));
 
     await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Saved text' })).toBeNull());
-    expect(box()).toHaveFocus();
-    expect(box()).toHaveAttribute('contenteditable', 'true');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Saved text' })).toBeNull());
     expect(box()).toHaveTextContent('Unbox the printer.');
+    // Opened from the notice and cancelled: the lock it claimed is given back, nothing saved, and
+    // the notice offers the changes again, its Recover holding the focus.
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain('DELETE /v1/components/{id}/lock'),
+    );
+    expect(asked.some((each) => each.route.startsWith('PUT'))).toBe(false);
+    const offer = await screen.findByText(unsavedSentence(unsaved.savedAt));
+    await waitFor(() =>
+      expect(within(offer.parentElement!).getByRole('button', { name: 'Recover' })).toHaveFocus(),
+    );
   });
 
   it('says who holds the component when somebody else does, as a refused claim does', async () => {
@@ -449,7 +478,7 @@ describe('Recovery in the component editor', () => {
     await surface();
     await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
     await waitFor(() => expect(editorStatus()).toHaveTextContent(heldSentence(grace)));
-    expect(screen.queryByRole('region', { name: 'Saved text' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Saved text' })).toBeNull();
     expect(asked.some((each) => each.route.startsWith('GET /v1/components/{id}/iterations'))).toBe(
       false,
     );
@@ -499,22 +528,66 @@ describe('Recovery in the component editor', () => {
 
     // Closed, the author goes on editing, and the focus goes back to what opened it.
     await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Saved text' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Saved text' })).toBeNull());
     expect(savedText()).toHaveFocus();
     expect(box()).toHaveAttribute('contenteditable', 'true');
   });
 
-  it('is one of the regions F6 moves between while it is shown', async () => {
+  it('is a modal, the text behind it out of reach and the focus kept inside', async () => {
+    const { surface } = open(recovering(opened({ unsaved })));
+    await surface();
+    await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
+    const shown = await panel();
+    expect(shown).toHaveAttribute('aria-modal', 'true');
+    await within(shown).findAllByRole('listitem');
+    expect(box().closest('[inert]')).not.toBeNull();
+    // Tab from the last control comes round to the first.
+    within(shown).getByRole('button', { name: 'Cancel' }).focus();
+    await userEvent.tab();
+    expect(shown.contains(document.activeElement)).toBe(true);
+  });
+
+  it('shows what restoring a row would change, word by word, and Recover waits for a row to be chosen (the R1 plan)', async () => {
     const { surface } = open(recovering(opened({ unsaved })));
     await surface();
     await userEvent.click(screen.getByRole('button', { name: 'Recover' }));
     const shown = await panel();
     await within(shown).findAllByRole('listitem');
-    await waitFor(() => expect(shown).toHaveFocus());
-    await userEvent.keyboard('{F6}');
-    expect(box()).toHaveFocus();
-    await userEvent.keyboard('{Shift>}{F6}{/Shift}');
-    expect(restoreOf(0)).toHaveFocus();
+    const recover = within(shown).getByRole('button', { name: 'Recover' });
+    expect(recover).toHaveAttribute('aria-disabled', 'true');
+
+    await userEvent.click(rowOf(0));
+    expect(rowOf(0)).toHaveAttribute('aria-pressed', 'true');
+    const changes = await within(shown).findByRole('region', { name: 'What restoring it changes' });
+    // On screen "Unbox the printer."; saved "Unbox the printer and keep the box."
+    expect(changes).toHaveTextContent('Unbox the');
+    expect(within(changes).getByText('printer.').tagName).toBe('DEL');
+    expect(within(changes).getByText('printer and keep the box.').tagName).toBe('INS');
+    expect(recover).toHaveAttribute('aria-disabled', 'false');
+    // Looking changes nothing.
+    expect(box()).toHaveTextContent('Unbox the printer.');
+  });
+
+  it('puts the notice away for this tab with Dismiss, until something newer is saved', async () => {
+    const first = open(recovering(opened({ unsaved })));
+    await first.surface();
+    const offer = screen.getByText(unsavedSentence(unsaved.savedAt));
+    await userEvent.click(within(offer.parentElement!).getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    expect(first.asked.some((each) => each.route === 'POST /v1/components/{id}/lock')).toBe(false);
+    cleanup();
+
+    // The same tab, opened again: still put away.
+    const again = open(recovering(opened({ unsaved })));
+    await again.surface();
+    expect(screen.queryByText(unsavedSentence(unsaved.savedAt))).toBeNull();
+    cleanup();
+
+    // Something saved since: offered again.
+    const newer = { savedAt: '2026-09-28T15:00:00.000Z' };
+    const later = open(recovering(opened({ unsaved: newer })));
+    await later.surface();
+    expect(screen.getByText(unsavedSentence(newer.savedAt))).toBeInTheDocument();
   });
 
   it('says the author is editing in another window where their own other window holds it, and moves the edit here to recover', async () => {

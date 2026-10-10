@@ -308,9 +308,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         button('Bulleted list', true),
       );
       await at(
-        'the cursor in a definition list',
+        // Nest and Lift alone on the toolbar's second line (ADR-0053).
+        'the cursor in a definition list, the List panel open',
         surface.getByText('A definition.'),
-        [],
+        ['List'],
         button('Definition list', true),
       );
       await at(
@@ -502,16 +503,23 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await componentPanels.getByRole('tab', { name: 'Attributes' }).click();
 
-      // Recovery: the author's saved text listed.
+      // Recovery: the author's saved text listed in its dialog, and what recovering one changes.
       await button('Saved text').click();
-      const recovery = page.getByRole('region', { name: 'Saved text' });
-      await check('the Recovery panel', {
-        shows: recovery
-          .getByRole('button', { name: /^Restore / })
-          .first()
-          .or(recovery.getByText('There is no saved text to restore.')),
+      const recovery = page.getByRole('dialog', { name: 'Saved text' });
+      const first = recovery.getByRole('button', { name: /^The text saved at / }).first();
+      await check('the Saved text dialog', {
+        shows: first.or(recovery.getByText('There is no saved text to recover.')),
         hides: [recovery.getByText('Listing...')],
       });
+      if ((await first.count()) > 0) {
+        await first.click();
+        const changes = recovery.getByRole('region', { name: 'What restoring it changes' });
+        await check('the Saved text dialog showing what recovering changes', {
+          shows: changes,
+          hides: [changes.getByText('Reading...')],
+        });
+      }
+      await recovery.getByRole('button', { name: 'Cancel' }).click();
     });
   });
 

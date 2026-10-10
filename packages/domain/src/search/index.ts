@@ -1,5 +1,12 @@
-export { configurationFor, entriesOf, SEARCH_CONFIGURATIONS, searchKinds } from './entries.js';
+export {
+  configurationFor,
+  entriesOf,
+  SEARCH_CONFIGURATIONS,
+  searchKinds,
+  wordsByBlock,
+} from './entries.js';
 export type {
+  BlockWords,
   SearchConfiguration,
   SearchContext,
   SearchEntryDraft,

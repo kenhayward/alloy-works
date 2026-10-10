@@ -915,7 +915,11 @@ a crash leaves only what the service accepted. The component's `GET` tells its c
 the time of their newest retained iteration, unless a version holds exactly what it holds - the one it
 was opened from or any cut after it: work saved and never made a version, including work somebody else's
 later cut left out. Where there is some and nobody holds the lock, the editor says so above the text and
-offers **Recover**, which claims the lock and opens the Recovery panel; where the author's own other
+offers **Recover**, which claims the lock and opens **Saved text**, a modal (the R1 plan, 10 October
+2026): the list, and what recovering the one chosen would change against the text on screen, block by
+block and word by word (`changesBetween`), with **Cancel**, which gives the lock back where the notice
+claimed it, and **Recover**; and **Dismiss**, which puts the notice away for the tab until a newer
+iteration is saved. Where the author's own other
 window holds it, it says so and offers **Recover here**, which does the same; where somebody else holds
 it, it says who, and offers nothing until they are done. No content leaves the store until the lock is
 held.
