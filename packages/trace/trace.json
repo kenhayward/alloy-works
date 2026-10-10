@@ -19601,13 +19601,13 @@
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1578,
+      "line": 1657,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1697,
+      "line": 1776,
       "kind": "title"
     },
     {
@@ -19619,7 +19619,7 @@
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1430,
+      "line": 1509,
       "kind": "title"
     },
     {

@@ -76,6 +76,13 @@ const PATHS: Record<string, readonly string[]> = {
   Figure: ['M2.5 3h11v10h-11z', 'M2.5 11.5 6 8l3 3 2-2 2.5 2.5', 'M10.5 5.8h.01'],
   // A picture laid over another, the one it takes the place of (ADR-0055).
   'Replace image': ['M5.5 4.5V2.5h8v7h-2', 'M2.5 5.5h8v8h-8zM2.5 12 5 9.5l2 2 1.5-1.5 2 2'],
+  // Three sliders, each at its own setting: a dialog of settings (ADR-0055).
+  Settings: ['M2.5 4.5h11M2.5 8h11M2.5 11.5h11', 'M5.5 3v3M10.5 6.5v3M7 10v3'],
+  // A store of records, drawn as the cylinder databases are: what a bound figure's text comes from.
+  Data: [
+    'M3.5 4c0-1 2-1.8 4.5-1.8s4.5.8 4.5 1.8-2 1.8-4.5 1.8S3.5 5 3.5 4z',
+    'M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4M3.5 8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8',
+  ],
   // A small picture standing on a line of text: an image in a run, where a figure stands alone.
   Image: ['M2 13h12', 'M5 4.5h6v6H5z', 'M5 9.5 7 7.5l1.5 1.5 1-1 1.5 1.5'],
   // A clipboard holding Markdown's own mark, an M and a downward arrow.

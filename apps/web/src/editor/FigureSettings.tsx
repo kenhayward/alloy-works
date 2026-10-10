@@ -218,6 +218,8 @@ export function FigureSettings({
             Numbered
             <input
               type="checkbox"
+              role="switch"
+              className={styles['switch']}
               checked={figure.numbered !== false}
               disabled={!enabled}
               onChange={(event) => settings.number(event.target.checked)}

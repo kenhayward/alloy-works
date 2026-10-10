@@ -2923,6 +2923,12 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     const panel = await screen.findByRole('region', { name: 'Value' });
     expect(panel).toHaveTextContent('No value - never resolved');
     const figurePanel = screen.getByRole('group', { name: 'Figure' });
+    // A bound figure is described by its data, which its chip says.
+    expect(
+      within(figurePanel).getByRole('button', {
+        name: 'Alternative text: From its data. Change it',
+      }),
+    ).toBeInTheDocument();
     await userEvent.click(within(figurePanel).getByRole('button', { name: 'Figure settings' }));
     const settings = await screen.findByRole('dialog', { name: 'Figure settings' });
     expect(settings).toHaveTextContent('Use the description its data gives');

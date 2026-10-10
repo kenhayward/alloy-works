@@ -1,10 +1,155 @@
-/* The figure panel: its image style, Numbered, what can be done to its image, and Figure settings,
- * in one wrapping row like the table panel beside it (ADR-0055). */
+/* A figure's second toolbar line (ADR-0055): one line, 42px high, that never wraps - its kind, image
+ * style, Numbered, the Alt text chip, Replace and Delete, and Figure settings. */
 
 .panel {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-8) var(--space-8);
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  height: var(--context-line);
+  white-space: nowrap;
   font-size: var(--size-13);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+  border-radius: 6px;
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.style {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.style select {
+  color: var(--text);
+}
+
+.numbered {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.switch {
+  composes: switch from './FigureSettings.module.css';
+}
+
+.rule {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.chipAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: var(--size-13);
+}
+
+.chipLabel {
+  color: var(--muted);
+}
+
+.chip[data-tone='warn'] {
+  border-color: transparent;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.chip[data-tone='warn'] .chipLabel {
+  color: inherit;
+}
+
+.chip[data-tone='warn'] .chipWords {
+  font-weight: 600;
+}
+
+.tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--z-dropdown);
+  width: 320px;
+  padding: var(--space-8) var(--space-12);
+  border-radius: 6px;
+  background: var(--text);
+  box-shadow: var(--shadow-modal);
+  color: var(--bg);
+  white-space: normal;
+}
+
+.tip[hidden] {
+  display: none;
+}
+
+/* Replace and Delete, at the line's far end before Figure settings. */
+.actions {
+  display: inline-flex;
+  gap: var(--space-4);
+  margin-inline-start: auto;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+}
+
+.icon[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.delete {
+  color: var(--danger);
+}
+
+.settings {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 30px;
+}
+
+/* Narrow: the words drop, the names and tooltips stay, and nothing moves to a second line. */
+@media (max-width: 900px) {
+  .style {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .style select {
+    font-size: var(--size-13);
+  }
+
+  .settingsWords {
+    display: none;
+  }
 }
