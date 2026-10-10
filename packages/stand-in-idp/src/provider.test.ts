@@ -54,7 +54,32 @@ describe('the stand-in provider', () => {
         jar.set(pair.slice(0, at), pair.slice(at + 1));
       }
       const location = response.headers.get('location');
-      if (!location) return { page: await response.text() };
+      if (!location) {
+        const page = await response.text();
+        // A page that submits itself on load, as oidc-provider's are: the browser's script posts it.
+        const form =
+          /forms\[0\]\.submit[\s\S]*<form[^>]*action="([^"]+)"[^>]*>([\s\S]*?)<\/form>/.exec(page);
+        if (!form) return { page };
+        const action = new URL(form[1]!.replaceAll('&amp;', '&'), next);
+        const fields = [...form[2]!.matchAll(/name="([^"]+)"[^>]*value="([^"]*)"/g)];
+        const posted = await fetch(action, {
+          method: 'POST',
+          redirect: 'manual',
+          body: new URLSearchParams(
+            fields.map((field): [string, string] => [field[1]!, field[2]!]),
+          ),
+          headers: { cookie: [...jar].map(([name, value]) => `${name}=${value}`).join('; ') },
+        });
+        for (const cookie of posted.headers.getSetCookie()) {
+          const pair = cookie.split(';')[0] ?? '';
+          const at = pair.indexOf('=');
+          jar.set(pair.slice(0, at), pair.slice(at + 1));
+        }
+        const after = posted.headers.get('location');
+        if (!after) return { page: await posted.text() };
+        next = new URL(after, action);
+        continue;
+      }
       next = new URL(location, next);
     }
     throw new Error('too many redirects');
@@ -96,6 +121,26 @@ describe('the stand-in provider', () => {
 
     const { page } = await follow((await authorise({ prompt: 'select_account' })).url, browser);
     expect(page).toContain('Grace (grace@example.com)');
+  });
+
+  it('signs in somebody else in a browser someone is already signed in to, as picking another person does', async () => {
+    const browser = new Map<string, string>();
+    await follow((await authorise({ login_hint: 'ada' })).url, browser);
+
+    const { url, codeVerifier, state, nonce } = await authorise({ prompt: 'select_account' });
+    const { page } = await follow(url, browser);
+    const pick = /href="(\/interaction\/[^"]+user=grace)"/.exec(page ?? '');
+    const { landed } = await follow(
+      new URL(pick![1]!.replaceAll('&amp;', '&'), idp.issuer),
+      browser,
+    );
+    expect(landed?.href.startsWith(REDIRECT)).toBe(true);
+    const tokens = await client.authorizationCodeGrant(config, landed!, {
+      pkceCodeVerifier: codeVerifier,
+      expectedState: state,
+      expectedNonce: nonce,
+    });
+    expect(tokens.claims()).toMatchObject({ sub: 'grace' });
   });
 
   it('says which Workspace domain manages an account, as Google does, and nothing for a personal one', async () => {

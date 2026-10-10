@@ -105,8 +105,13 @@ function memoryAdapter() {
     async destroy(id: string) {
       store.delete(this.key(id));
     }
+    // Only this model's: oidc-provider asks each token model in turn, and the interaction signing in
+    // somebody else carries the grant being revoked, so taking it too ends that sign-in.
     async revokeByGrantId(grantId: string) {
-      for (const [key, payload] of store) if (payload.grantId === grantId) store.delete(key);
+      const mine = `${this.name}:`;
+      for (const [key, payload] of store) {
+        if (key.startsWith(mine) && payload.grantId === grantId) store.delete(key);
+      }
     }
   };
 }
