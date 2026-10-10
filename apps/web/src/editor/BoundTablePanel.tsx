@@ -53,6 +53,8 @@ type Client = ReturnType<typeof createApiClient>;
 /** The words the panel uses, each without a fancy dash (the TB2 plan, TB2-F). */
 export const BOUND_TABLE_WORDS = {
   panel: 'Bound table',
+  /** The Table tab while the cursor is in no table (ADR-0052). */
+  cursorOutside: 'Put the cursor in a table to change its formatting.',
   numbered: 'Numbered',
   headerColumn: 'First column heads its row',
   parts: {

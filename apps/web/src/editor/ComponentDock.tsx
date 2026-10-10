@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
@@ -9,6 +9,7 @@ import { VersionList } from './VersionList.js';
 type Client = ReturnType<typeof createApiClient>;
 
 const PANELS = [
+  { key: 'table', label: 'Table' },
   { key: 'attributes', label: 'Attributes' },
   { key: 'versions', label: 'Versions' },
   { key: 'access', label: 'Access' },
@@ -22,33 +23,56 @@ const ids = (key: string) => ({ tab: `component-tab-${key}`, panel: `component-p
  * The panels beside an open component, named in words (ADR-0046, decision 6): Attributes, where the
  * editor sets the fields of the component's type (`onFieldsHost`), Versions and Access. Each panel
  * stays mounted while another is shown, so the fields keep what is being typed into them. Used in
- * waits for a route that can say (the LG plan, LG-H).
+ * waits for a route that can say (the LG plan, LG-H). Table comes first while the component holds a
+ * table (ADR-0052): the editor sets its formatting there (`onTableHost`), and it is chosen each time
+ * the cursor enters a table, the reader's own choice standing until the next.
  */
 export function ComponentDock({
   client,
   id,
   onFieldsHost,
+  table = { holds: false, entered: 0 },
+  onTableHost = () => {},
 }: {
   client: Client;
   id: string;
   onFieldsHost: (host: HTMLElement | null) => void;
+  /** Whether the component holds a table, and how many times the cursor has entered one. */
+  table?: { readonly holds: boolean; readonly entered: number };
+  onTableHost?: (host: HTMLElement | null) => void;
 }) {
   const [chosen, setChosen] = useState<PanelKey>('attributes');
+  useEffect(() => {
+    if (table.entered > 0) setChosen('table');
+  }, [table.entered]);
+  const panels = PANELS.filter((each) => each.key !== 'table' || table.holds);
+  const shown: PanelKey = chosen === 'table' && !table.holds ? 'attributes' : chosen;
   return (
     <div className={styles['dock']}>
       <PanelTabs
         label="Component panels"
-        tabs={PANELS}
-        chosen={chosen}
+        tabs={panels}
+        chosen={shown}
         onChoose={(key) => setChosen(key as PanelKey)}
         ids={ids}
       />
+      {table.holds && (
+        <div
+          id={ids('table').panel}
+          role="tabpanel"
+          aria-labelledby={ids('table').tab}
+          className={styles['panel']}
+          hidden={shown !== 'table'}
+        >
+          <div ref={onTableHost} />
+        </div>
+      )}
       <div
         id={ids('attributes').panel}
         role="tabpanel"
         aria-labelledby={ids('attributes').tab}
         className={styles['panel']}
-        hidden={chosen !== 'attributes'}
+        hidden={shown !== 'attributes'}
       >
         <div ref={onFieldsHost} />
         <dl className={styles['facts']}>
@@ -61,18 +85,18 @@ export function ComponentDock({
         role="tabpanel"
         aria-labelledby={ids('versions').tab}
         className={styles['panel']}
-        hidden={chosen !== 'versions'}
+        hidden={shown !== 'versions'}
       >
-        {chosen === 'versions' && <VersionList client={client} id={id} />}
+        {shown === 'versions' && <VersionList client={client} id={id} />}
       </div>
       <div
         id={ids('access').panel}
         role="tabpanel"
         aria-labelledby={ids('access').tab}
         className={styles['panel']}
-        hidden={chosen !== 'access'}
+        hidden={shown !== 'access'}
       >
-        {chosen === 'access' && (
+        {shown === 'access' && (
           <>
             <p className={styles['muted']}>
               Who may read, change and publish this component is set on its access page.

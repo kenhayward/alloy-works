@@ -1,6 +1,6 @@
 # 0051 - The Bound table panel is a band of tabs
 
-- **Status:** Accepted
+- **Status:** Superseded by 0052
 - **Date:** 2026-10-09
 
 ## Context

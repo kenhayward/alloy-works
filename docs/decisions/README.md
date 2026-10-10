@@ -44,7 +44,8 @@ exist.
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
 | [0049](0049-administration-is-a-page.md)                                          | Administration is a page                                                      | Accepted           |
 | [0050](0050-a-detail-page-is-a-header-a-strip-and-tabs.md)                        | A detail page is a header, a state strip and tabs                             | Accepted           |
-| [0051](0051-the-bound-table-panel-is-a-band-of-tabs.md)                           | The Bound table panel is a band of tabs                                       | Accepted           |
+| [0051](0051-the-bound-table-panel-is-a-band-of-tabs.md)                           | The Bound table panel is a band of tabs                                       | Superseded by 0052 |
+| [0052](0052-table-formatting-is-a-tab-beside-the-text.md)                         | Table formatting is a tab beside the text                                     | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

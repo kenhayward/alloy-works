@@ -294,6 +294,23 @@ describe("a document's bound table", () => {
     );
   });
 
+  it('offers the Table tab first while a component holding a table is open in place, chosen as the cursor enters it (ADR-0052)', async () => {
+    const user = userEvent.setup();
+    opened(3, true);
+    const text = await textRegion();
+    await within(text).findByRole('rowheader', { name: 'S0' });
+    const tabs = screen.getByRole('tablist', { name: 'Document panels' });
+    expect(within(tabs).queryByRole('tab', { name: 'Table' })).toBeNull();
+    await user.click(within(text).getByText('Readings by site'));
+    const panel = await screen.findByRole('group', { name: 'Bound table' });
+    const table = within(tabs).getByRole('tab', { name: 'Table' });
+    expect(within(tabs).getAllByRole('tab')[0]).toBe(table);
+    expect(table).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Table' })).toContainElement(panel);
+    // Not under the toolbar: the text keeps its width.
+    expect(within(text).queryByRole('group', { name: 'Bound table' })).toBeNull();
+  });
+
   it('reads the rows again with the note added in the editor open in place, its letter drawn once its session has saved it (TB3.3)', async () => {
     const user = userEvent.setup();
     const { asked } = opened(3, true);

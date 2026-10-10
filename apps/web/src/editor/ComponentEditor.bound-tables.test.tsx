@@ -463,6 +463,26 @@ describe('the Bound table panel (TB2-F)', () => {
     );
     expect(view.dom.querySelectorAll('.aw-bound-table-focused')).toHaveLength(0);
   });
+  it('stands in the Table tab the page gives it, telling the page it holds a table and each time the cursor enters one (ADR-0052)', async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const told = vi.fn();
+    try {
+      const { view, panel } = await inTable(undefined, { tableHost: host, onTable: told });
+      expect(host).toContainElement(panel);
+      expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 1 });
+      // Out of the table: the tab is the page's to keep or leave, and the panel says where to go.
+      act(() => selectText(view, 2, 2));
+      expect(host).not.toContainElement(screen.queryByRole('group', { name: 'Bound table' }));
+      expect(host).toHaveTextContent(BOUND_TABLE_WORDS.cursorOutside);
+      act(() => selectText(view, 10, 10));
+      expect(await within(host).findByRole('group', { name: 'Bound table' })).toBeInTheDocument();
+      expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 2 });
+    } finally {
+      host.remove();
+    }
+  });
+
   it('is a region F6 moves to, beside the Value panel', async () => {
     const { view, panel } = await inTable();
     act(() => view.focus());

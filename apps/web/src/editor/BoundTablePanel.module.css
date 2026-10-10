@@ -1,12 +1,10 @@
-/* The Bound table band (ADR-0051): a fixed height under the toolbar, the same on every tab, its first
-   line the value and the table's settings, then its tabs, each list scrolling inside it. */
+/* The Bound table panel, in the Table tab beside the text (ADR-0052): its first line the value and
+   the table's settings, then its tabs. The panel beside the text scrolls it. */
 
 .band {
   display: flex;
   flex-direction: column;
-  height: min(var(--bound-panel), 38vh);
   min-height: 0;
-  border-bottom: 1px solid var(--border);
   background: var(--surface);
   font-size: var(--size-13);
 }

@@ -449,6 +449,8 @@ type Mode = 'reading' | 'authoring';
 
 /** The panels beside the text, named in words (ADR-0046, decision 6; the LG plan, LG6c). */
 const DOCK_PANELS = [
+  // While a component open in place holds a table (ADR-0052).
+  { key: 'table', label: 'Table' },
   { key: 'part', label: 'Part' },
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
@@ -1191,6 +1193,13 @@ export function DocumentPage({
     setDockState(next);
     keep(DOCK_KEY, next);
   };
+  // Whether the component open in place holds a table, and where its formatting is set (ADR-0052):
+  // the Table tab is offered while it does, and chosen each time the cursor enters a table.
+  const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
+  const [tableHost, setTableHost] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (heldTable.entered > 0) setDockState('table');
+  }, [heldTable.entered]);
   // Reading or Authoring (document-view.md, "Modes"; CNT-154): the reader's choice, kept in the browser,
   // Authoring the first time; which of them is on offer is decided below, from what they may do.
   const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
@@ -1358,7 +1367,9 @@ export function DocumentPage({
   // The panels beside the text, named in words (the LG plan, LG6c): the document's own only where it
   // holds fields or parameters.
   const holdsOwn = document.fields.document.length > 0 || document.templated || holdsValues;
-  const dockTabs = DOCK_PANELS.filter((each) => each.key !== 'document' || holdsOwn);
+  const dockTabs = DOCK_PANELS.filter(
+    (each) => (each.key !== 'document' || holdsOwn) && (each.key !== 'table' || heldTable.holds),
+  );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
   return (
@@ -1424,7 +1435,13 @@ export function DocumentPage({
           data-dock-collapsed={dockPane.collapsed}
           // A preview takes a column of its own beside the text, which narrows to make room for it.
           data-previewing={preview.pane !== null}
-          style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
+          style={
+            {
+              '--outline-width': `${outlinePane.width}px`,
+              // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
+              ...(heldTable.holds ? { '--dock-panel': 'var(--panel-table)' } : {}),
+            } as React.CSSProperties
+          }
         >
           {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
           <OutlinePanel
@@ -1558,6 +1575,15 @@ export function DocumentPage({
                     onClose={closeProvenance}
                   />
                 )}
+              </div>
+              {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
+              <div
+                id={dockIds('table').panel}
+                role="tabpanel"
+                aria-labelledby={dockIds('table').tab}
+                hidden={shownDock !== 'table'}
+              >
+                <div ref={setTableHost} />
               </div>
               {/* The Part panel, which the outline draws, stands here (`details.host`). */}
               <div ref={setDetailsHost} />
@@ -1703,6 +1729,8 @@ export function DocumentPage({
                         principalId={principalId}
                         {...place}
                         documentParameters={documentParameters}
+                        tableHost={tableHost}
+                        onTable={setHeldTable}
                       />
                     ),
                   })}
