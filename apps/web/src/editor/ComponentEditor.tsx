@@ -2182,6 +2182,47 @@ export function ComponentEditor({
                   newIdentifier={newBlockIdentifier}
                 />
               )}
+              {/* And only while the cursor stands in a preformatted block: its one field is the
+                  language label, which nothing else in the view can set. */}
+              {surface !== null && preformatted !== null && (
+                <PreformattedPanel
+                  ref={preformattedRegion}
+                  view={surface}
+                  block={preformatted}
+                  enabled={mayFormat}
+                />
+              )}
+              {/* And only while the cursor stands in a figure: how its alternative text is given,
+                  and what can be done to its image. */}
+              {surface !== null && figure !== null && (
+                <FigurePanel
+                  // One panel per figure, so what was typed for one is never offered to the next.
+                  key={figure.id ?? figure.pos}
+                  ref={figureRegion}
+                  view={surface}
+                  figure={figure}
+                  enabled={mayFormat}
+                  client={client}
+                  onReplace={() => setFigureDialog('Replace image')}
+                />
+              )}
+              {/* Or while an inline image is selected whole: the same panel, about the image
+                  (figures 4, ruling R7). An image never stands in a figure, so the two never meet. */}
+              {surface !== null && image !== null && (
+                <FigurePanel
+                  key={`image-${image.pos}`}
+                  kind="image"
+                  ref={figureRegion}
+                  view={surface}
+                  figure={image}
+                  enabled={mayFormat}
+                  client={client}
+                  onReplace={() => setFigureDialog('Replace image')}
+                />
+              )}
+              {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
+                  what it shows, and its provenance (B1-M), in one line. */}
+              {valued !== null && valued.place !== 'table' && valuePanel(valued)}
             </div>
             {!shown.mayEdit && (
               <Notice tone="readOnly">
@@ -2256,48 +2297,7 @@ export function ComponentEditor({
                 onClose={() => controls.current?.closeRecovery()}
               />
             )}
-            {/* And only while the cursor stands in a preformatted block: its one field is the
-                language label, which nothing else in the view can set. */}
-            {surface !== null && preformatted !== null && (
-              <PreformattedPanel
-                ref={preformattedRegion}
-                view={surface}
-                block={preformatted}
-                enabled={mayFormat}
-              />
-            )}
             {placeTables(tablePanels())}
-            {/* And only while the cursor stands in a figure: how its alternative text is given,
-                and what can be done to its image. */}
-            {surface !== null && figure !== null && (
-              <FigurePanel
-                // One panel per figure, so what was typed for one is never offered to the next.
-                key={figure.id ?? figure.pos}
-                ref={figureRegion}
-                view={surface}
-                figure={figure}
-                enabled={mayFormat}
-                client={client}
-                onReplace={() => setFigureDialog('Replace image')}
-              />
-            )}
-            {/* Or while an inline image is selected whole: the same panel, about the image
-                (figures 4, ruling R7). An image never stands in a figure, so the two never meet. */}
-            {surface !== null && image !== null && (
-              <FigurePanel
-                key={`image-${image.pos}`}
-                kind="image"
-                ref={figureRegion}
-                view={surface}
-                figure={image}
-                enabled={mayFormat}
-                client={client}
-                onReplace={() => setFigureDialog('Replace image')}
-              />
-            )}
-            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
-                what it shows, and its provenance (B1-M), in one line. */}
-            {valued !== null && valued.place !== 'table' && valuePanel(valued)}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (

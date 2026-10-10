@@ -2666,6 +2666,8 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
       ),
     );
     const panel = await screen.findByRole('region', { name: 'Value' });
+    // On the toolbar's second line (ADR-0053), not a band of its own over the text.
+    expect(panel.closest('[data-toolbar-line]')).not.toBeNull();
     expect(panel).toHaveTextContent('1,234.5');
     // In one line (ADR-0051): its definition a link, its version, its mode, when it was fetched.
     expect(within(panel).getByRole('link', { name: 'Readings' })).toHaveAttribute(

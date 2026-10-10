@@ -2,6 +2,8 @@ import { isLanguageLabel } from '@alloy-works/domain';
 import { setPreformattedLanguage, type EditorView } from '@alloy-works/editor';
 import { useState, type Ref } from 'react';
 
+import line from './ListPanel.module.css';
+
 const HINT = 'preformatted-panel-label-hint';
 const REFUSAL = 'preformatted-panel-label-refused';
 
@@ -61,12 +63,19 @@ export function PreformattedPanel({ view, block, enabled, ref }: PreformattedPan
   };
 
   return (
-    <div ref={ref} role="group" aria-label="Preformatted text" tabIndex={-1}>
+    <div
+      ref={ref}
+      role="group"
+      aria-label="Preformatted text"
+      tabIndex={-1}
+      className={line['panel']}
+    >
       <label>
         Language label
         <input
           type="text"
           value={label.typed}
+          title={HINT_TEXT}
           disabled={!enabled}
           aria-invalid={refused}
           aria-describedby={refused ? `${HINT} ${REFUSAL}` : HINT}
@@ -80,7 +89,11 @@ export function PreformattedPanel({ view, block, enabled, ref }: PreformattedPan
           }}
         />
       </label>
-      <p id={HINT}>{HINT_TEXT}</p>
+      {/* Said to a screen reader as the field's description; on the toolbar's second line, its title
+          (ADR-0053), so the line keeps its height. */}
+      <p id={HINT} className={line['hint']}>
+        {HINT_TEXT}
+      </p>
       {refused && (
         <p id={REFUSAL} role="alert">
           {REFUSED_TEXT}
