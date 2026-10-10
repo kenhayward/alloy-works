@@ -809,7 +809,13 @@ function NotesFields({
     );
   };
   const edit = (note: BoundNoteAt) => {
-    if (note.id !== null && selectBoundTableNote(note.id)(view.state, view.dispatch)) view.focus();
+    if (note.id === null || !selectBoundTableNote(note.id)(view.state, view.dispatch)) return;
+    view.focus();
+    // To the middle of the window: ProseMirror's own scroll stops at its edge, under the status bar.
+    const at = view.domAtPos(view.state.selection.from).node;
+    (at instanceof Element ? at : at.parentElement)
+      ?.closest('[data-bound-table-note]')
+      ?.scrollIntoView?.({ block: 'center' });
   };
   const add = () => {
     if (!enabled) return;

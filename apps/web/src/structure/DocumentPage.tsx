@@ -409,8 +409,10 @@ function announce(
 
 /** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
 const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
-/** The panels beside the text: a fixed width, and whether they are hidden to a rail. */
-const DOCK_PANE = { storageKey: 'aw.document.panels', min: 320, max: 320, initial: 320 };
+/** The panels beside the text: dragged as the outline is, and whether they are hidden to a rail. */
+const DOCK_PANE = { storageKey: 'aw.document.panels', min: 280, max: 640, initial: 320 };
+/** The same pane while it offers the Table tab: wider, and its width remembered apart (ADR-0052). */
+const TABLE_PANE = { storageKey: 'aw.document.table', min: 360, max: 720, initial: 440 };
 
 export interface DocumentPageProps {
   readonly client: Client;
@@ -517,6 +519,7 @@ export function DocumentPage({
   const outlinePane = usePaneWidth(OUTLINE_PANE);
   // The panels beside the text, hidden to a rail as the outline is, remembered as it is.
   const dockPane = usePaneWidth(DOCK_PANE);
+  const tablePane = usePaneWidth(TABLE_PANE);
   // Where the Part panel stands: in that pane, once it is drawn.
   const [detailsHost, setDetailsHost] = useState<HTMLDivElement | null>(null);
   // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
@@ -1441,7 +1444,7 @@ export function DocumentPage({
             {
               '--outline-width': `${outlinePane.width}px`,
               // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
-              ...(heldTable.holds ? { '--dock-panel': 'var(--panel-table)' } : {}),
+              '--dock-panel': `${(heldTable.holds ? tablePane : dockPane).width}px`,
             } as React.CSSProperties
           }
         >
@@ -1581,6 +1584,7 @@ export function DocumentPage({
                 role="tabpanel"
                 aria-labelledby={dockIds('table').tab}
                 hidden={shownDock !== 'table'}
+                className={styles['tableTab']}
               >
                 <div ref={setTableHost} />
               </div>
@@ -1672,6 +1676,15 @@ export function DocumentPage({
           {!outlinePane.collapsed && (
             <div className={styles['separator']}>
               <PaneSeparator label="outline" pane={outlinePane} />
+            </div>
+          )}
+          {!dockPane.collapsed && (
+            <div className={styles['dockSeparator']}>
+              <PaneSeparator
+                label="document panels"
+                pane={heldTable.holds ? tablePane : dockPane}
+                edge="end"
+              />
             </div>
           )}
           <div ref={textColumn} className={styles['text']}>

@@ -43,6 +43,31 @@ describe('a pane whose width the reader sets', () => {
     expect(screen.getByText('220px')).toBeInTheDocument();
   });
 
+  it("sizes a pane at the page's end the other way: left widens it, by the keys and by a drag", async () => {
+    function EndPage() {
+      const pane = usePaneWidth(BOUNDS);
+      return (
+        <>
+          <p>{`${pane.width}px`}</p>
+          <PaneSeparator label="panels" pane={pane} edge="end" />
+        </>
+      );
+    }
+    render(<EndPage />);
+    const separator = screen.getByRole('separator', { name: 'Resize the panels' });
+    separator.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(screen.getByText('310px')).toBeInTheDocument();
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    expect(screen.getByText('290px')).toBeInTheDocument();
+    await userEvent.pointer([
+      { keys: '[MouseLeft>]', target: separator, coords: { clientX: 500 } },
+      { target: separator, coords: { clientX: 440 } },
+      { keys: '[/MouseLeft]' },
+    ]);
+    expect(screen.getByText('350px')).toBeInTheDocument();
+  });
+
   it('hides to a rail and shows again, remembering which', async () => {
     const { unmount } = render(<Page />);
     await userEvent.click(screen.getByRole('button', { name: 'Hide the outline' }));

@@ -309,6 +309,13 @@ describe("a document's bound table", () => {
     expect(screen.getByRole('tabpanel', { name: 'Table' })).toContainElement(panel);
     // Not under the toolbar: the text keeps its width.
     expect(within(text).queryByRole('group', { name: 'Bound table' })).toBeNull();
+    // Wider than the other panels, and sized by its own edge, as the outline is.
+    const edge = screen.getByRole('separator', { name: 'Resize the document panels' });
+    expect(edge).toHaveAttribute('aria-valuenow', '440');
+    edge.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(edge).toHaveAttribute('aria-valuenow', '450');
+    expect(edge.closest('[data-dock-collapsed]')).toHaveStyle({ '--dock-panel': '450px' });
   });
 
   it('reads the rows again with the note added in the editor open in place, its letter drawn once its session has saved it (TB3.3)', async () => {
