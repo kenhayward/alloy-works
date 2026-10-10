@@ -17,7 +17,10 @@ import styles from './EditorToolbar.module.css';
 import { pressCommand, type AskForValue, type MarkCommand, type OpenDialog } from './press.js';
 
 /** The commands a divider follows: the last mark, and the last list action. */
-const GROUP_ENDS = new Set(['Language', 'Lift item']);
+const GROUP_ENDS = new Set(['Language', 'Definition list']);
+
+/** A list's own, set on the toolbar's second line with its options (ADR-0053), not on this one. */
+export const SECOND_LINE: ReadonlySet<string> = new Set(['Nest item', 'Lift item']);
 
 /**
  * Which kind of list each of the three list buttons reports itself pressed inside, as `listAt`
@@ -205,7 +208,7 @@ export function EditorToolbar({
     // One tab stop, the arrows, Home and End along it: the shared toolbar's (LG5). The registry's
     // buttons, then Paste as Markdown, Figure and Image where they are offered: one ring either way.
     <Toolbar ref={ref} label="Formatting" className={styles['toolbar']}>
-      {EDITOR_COMMANDS.map((command) => (
+      {EDITOR_COMMANDS.filter((command) => !SECOND_LINE.has(command.label)).map((command) => (
         // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each of
         // them is a duplicate React key - a `console.error`, which the console gate turns into a
         // failure with no obvious cause. The registry's own test proves the labels are unique.
