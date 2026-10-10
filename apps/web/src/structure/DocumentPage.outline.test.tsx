@@ -631,6 +631,17 @@ describe('the outline panel', () => {
   });
 });
 
+/** The Part tab's Matter, a three-way switch (ADR-0054): its radio group, its choices, the one chosen. */
+const matter = () => screen.getByRole('radiogroup', { name: 'Matter' });
+const matterOptions = () =>
+  within(matter())
+    .getAllByRole('radio')
+    .map((each) => each.getAttribute('aria-label'));
+const chosenMatter = () =>
+  within(matter()).getByRole('radio', { checked: true }).getAttribute('aria-label');
+const chooseMatter = (name: string) =>
+  userEvent.click(within(matter()).getByRole('radio', { name }));
+
 describe('section numbers in the outline panel', () => {
   it('STR-065 shows each numbered node its section number, and renumbers a move without asking for one', async () => {
     const fake = service(
@@ -666,7 +677,7 @@ describe('section numbers in the outline panel', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Scope' });
     await userEvent.click(item('Method'));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Numbered' }));
     await waitFor(() => expect(item('Method')).not.toHaveAccessibleDescription());
     expect(fake.edits().at(-1)?.body).toEqual({
       openedFrom: 'dddddddd-0000-4000-8000-000000000001',
@@ -676,10 +687,10 @@ describe('section numbers in the outline panel', () => {
     // Results takes the number Method no longer consumes.
     expect(item('Results')).toHaveAccessibleDescription('2');
     expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toBeChecked();
 
     // And back again, from the same box.
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Numbered' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Numbered' }));
     await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
     expect(fake.edits().at(-1)?.body).toMatchObject({
       operation: { operation: 'set', node: METHOD, numbered: true },
@@ -687,7 +698,7 @@ describe('section numbers in the outline panel', () => {
     expect(item('Scope')).toHaveAccessibleDescription('2.1');
     expect(item('Results')).toHaveAccessibleDescription('3');
     expect(screen.getByRole('status')).toHaveTextContent('Method is now numbered.');
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).toBeChecked();
   });
 
   it('makes a top-level node an appendix, numbered in its own scheme, and offers it nowhere else', async () => {
@@ -700,10 +711,10 @@ describe('section numbers in the outline panel', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Scope' });
     await userEvent.click(item('Scope'));
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Matter' })).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'Matter' })).toBeNull();
     await userEvent.click(item('Method'));
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Appendix');
+    await chooseMatter('Appendix');
     await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('A'));
     expect(item('Scope')).toHaveAccessibleDescription('A.1');
     expect(fake.edits().at(-1)?.body).toMatchObject({
@@ -715,9 +726,9 @@ describe('section numbers in the outline panel', () => {
       operation: { operation: 'set', node: METHOD, matter: 'appendix' },
     });
     expect(screen.getByRole('status')).toHaveTextContent('Method is now an appendix.');
-    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('appendix');
+    expect(chosenMatter()).toBe('Appendix');
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Body');
+    await chooseMatter('Body');
     await waitFor(() => expect(item('Method')).toHaveAccessibleDescription('2'));
     expect(fake.edits().at(-1)?.body).toMatchObject({
       operation: { operation: 'set', node: METHOD, matter: 'body' },
@@ -737,18 +748,13 @@ describe('section numbers in the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Scope' });
     // Below the top level a node's matter is its top-level ancestor's, so there is nothing to set.
     await userEvent.click(item('Scope'));
-    expect(screen.queryByRole('combobox', { name: 'Matter' })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Matter' })).toBeNull();
 
     await userEvent.click(item('Introduction'));
-    const matter = screen.getByRole('combobox', { name: 'Matter' });
-    expect(
-      within(matter)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Front matter', 'Body', 'Appendix']);
-    expect(matter).toHaveValue('body');
+    expect(matterOptions()).toEqual(['Front matter', 'Body', 'Appendix']);
+    expect(chosenMatter()).toBe('Body');
 
-    await userEvent.selectOptions(matter, 'Front matter');
+    await chooseMatter('Front matter');
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('Introduction is now front matter.'),
     );
@@ -756,7 +762,7 @@ describe('section numbers in the outline panel', () => {
       openedFrom: 'dddddddd-0000-4000-8000-000000000001',
       operation: { operation: 'set', node: INTRODUCTION, matter: 'front' },
     });
-    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('front');
+    expect(chosenMatter()).toBe('Front matter');
     // Front matter numbers on counters of its own, so the body's first chapter is still 1.
     expect(item('Introduction')).toHaveAccessibleDescription('i');
     expect(item('Method')).toHaveAccessibleDescription('1');
@@ -764,19 +770,11 @@ describe('section numbers in the outline panel', () => {
     // Method is the first node that is not front matter, so nothing but front matter precedes it
     // and it may still become some.
     await userEvent.click(item('Method'));
-    expect(
-      within(screen.getByRole('combobox', { name: 'Matter' }))
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Front matter', 'Body', 'Appendix']);
+    expect(matterOptions()).toEqual(['Front matter', 'Body', 'Appendix']);
 
     // Results has the body before it, so it is not offered as front matter at all.
     await userEvent.click(item('Results'));
-    expect(
-      within(screen.getByRole('combobox', { name: 'Matter' }))
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Body', 'Appendix']);
+    expect(matterOptions()).toEqual(['Body', 'Appendix']);
   });
 
   it('will not let a front node leave front matter while another front node follows it, and says why', async () => {
@@ -794,28 +792,23 @@ describe('section numbers in the outline panel', () => {
     // which the outline's parse refuses. The select is disabled and says why beside itself, the
     // shape the Numbered box's hint follows, rather than offering a choice that would be refused.
     await userEvent.click(item('Preface'));
-    const stuck = screen.getByRole('combobox', { name: 'Matter' });
-    expect(stuck).toBeDisabled();
+    const stuck = matter();
+    expect(stuck).toHaveAttribute('aria-disabled', 'true');
     expect(stuck).toHaveAccessibleDescription(
       'Front matter comes first, so this cannot leave while Introduction is front matter.',
     );
 
     // The Introduction is the last front node, so it may still be given any of the three.
     await userEvent.click(item('Introduction'));
-    const matter = screen.getByRole('combobox', { name: 'Matter' });
-    expect(matter).toBeEnabled();
-    expect(matter).toHaveAccessibleDescription('');
-    expect(
-      within(matter)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Front matter', 'Body', 'Appendix']);
-    await userEvent.selectOptions(matter, 'Body');
+    expect(matter()).not.toHaveAttribute('aria-disabled');
+    expect(matter()).toHaveAccessibleDescription('');
+    expect(matterOptions()).toEqual(['Front matter', 'Body', 'Appendix']);
+    await chooseMatter('Body');
     await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('1'));
 
     // And now nothing follows the Preface in front matter, so it is free too.
     await userEvent.click(item('Preface'));
-    expect(screen.getByRole('combobox', { name: 'Matter' })).toBeEnabled();
+    expect(matter()).not.toHaveAttribute('aria-disabled');
     expect(screen.queryByText(/Front matter comes first/)).toBeNull();
   });
 
@@ -851,20 +844,20 @@ describe('section numbers in the outline panel', () => {
     expect(item('Introduction')).toHaveAccessibleDescription('ii');
   });
 
-  it('takes a Matter change back with Ctrl+Z, from the select it was made in', async () => {
+  it('takes a Matter change back with Ctrl+Z, from the switch it was made in', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction'), section(METHOD, 'Method')]),
     );
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Method' });
     await userEvent.click(item('Introduction'));
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Matter' }), 'Front matter');
+    await chooseMatter('Front matter');
     await waitFor(() => expect(item('Introduction')).toHaveAccessibleDescription('i'));
     await settled();
 
     // A select has no undo of its own, so Ctrl+Z from it is the panel's, and one operation takes
     // the act back - the same shape the Numbered box and the Starts on select follow.
-    screen.getByRole('combobox', { name: 'Matter' }).focus();
+    within(matter()).getByRole('radio', { checked: true }).focus();
     await userEvent.keyboard('{Control>}z{/Control}');
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
@@ -875,7 +868,7 @@ describe('section numbers in the outline panel', () => {
     expect(fake.edits().at(-1)?.body).toMatchObject({
       operation: { operation: 'set', node: INTRODUCTION, matter: 'body' },
     });
-    expect(screen.getByRole('combobox', { name: 'Matter' })).toHaveValue('body');
+    expect(chosenMatter()).toBe('Body');
     expect(item('Introduction')).toHaveAccessibleDescription('1');
   });
 
@@ -955,16 +948,16 @@ describe('an appendix in the outline panel', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Scope' });
     await userEvent.click(item('Scope'));
-    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    const box = screen.getByRole('switch', { name: 'Numbered' });
     expect(box).toBeChecked();
     expect(box).toHaveAccessibleDescription('Not numbered while Method is not.');
     expect(screen.getByText('Not numbered while Method is not.')).toBeInTheDocument();
 
     // Nothing to say beside a node that is itself unticked, or one with a number.
     await userEvent.click(item('Method'));
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription();
     await userEvent.click(item('Results'));
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).not.toHaveAccessibleDescription();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).not.toHaveAccessibleDescription();
     expect(screen.queryByText(/Not numbered while/)).toBeNull();
   });
 });
@@ -1019,7 +1012,7 @@ describe('undo from the node details', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Method' });
     await userEvent.click(item('Method'));
-    const box = screen.getByRole('checkbox', { name: 'Numbered' });
+    const box = screen.getByRole('switch', { name: 'Numbered' });
     await userEvent.click(box);
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.'),
@@ -1034,7 +1027,7 @@ describe('undo from the node details', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Method is no longer numbered.');
 
     // The box has no undo of its own, so the panel's takes the act back, with the focus still on it.
-    screen.getByRole('checkbox', { name: 'Numbered' }).focus();
+    screen.getByRole('switch', { name: 'Numbered' }).focus();
     await userEvent.keyboard('{Control>}z{/Control}');
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('Undone. Method is now numbered.'),
@@ -1043,7 +1036,7 @@ describe('undo from the node details', () => {
     expect(fake.edits().at(-1)?.body).toMatchObject({
       operation: { operation: 'set', node: METHOD, numbered: true },
     });
-    expect(screen.getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Numbered' })).toBeChecked();
     expect(item('Method')).toHaveAccessibleDescription('2');
     await settled();
 
@@ -1058,5 +1051,35 @@ describe('undo from the node details', () => {
       operation: { operation: 'set', node: METHOD, pageBreak: 'none' },
     });
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Undone\./));
+  });
+});
+
+describe("the Part tab's rows (ADR-0054)", () => {
+  it('sets a part out in labelled rows: the Equation inside the title, Copy inside the link, Remove last, and a component linked by its name', async () => {
+    const fake = service(
+      outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    await userEvent.click(item('Introduction'));
+    const part = () => document.querySelector<HTMLElement>('[data-part="details"]')!;
+
+    const title = within(part()).getByRole('textbox', { name: 'Title' });
+    const equation = within(part()).getByRole('button', { name: 'Equation' });
+    expect(equation).toHaveAttribute('title', 'Equation (Ctrl or Cmd, Shift and E)');
+    expect(equation.closest('[data-field]')).toBe(title.closest('[data-field]'));
+    const link = within(part()).getByRole('textbox', { name: 'Link to Introduction' });
+    const copy = within(part()).getByRole('button', { name: 'Copy link' });
+    expect(copy.closest('[data-field]')).toBe(link.closest('[data-field]'));
+    const remove = within(part()).getByRole('button', { name: 'Remove section' });
+    expect(link.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // A component has no title of its own: its name links to it.
+    await userEvent.click(item('Install the printer, latest'));
+    expect(within(part()).getByRole('link', { name: 'Install the printer' })).toHaveAttribute(
+      'href',
+      `#/components/${PRINTER}`,
+    );
+    expect(within(part()).getByRole('button', { name: 'Remove component' })).toBeInTheDocument();
   });
 });

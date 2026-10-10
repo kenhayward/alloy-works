@@ -24,8 +24,11 @@ export function Segmented({
   options,
   onChange,
   disabled = false,
+  describedBy,
 }: {
   label: string;
+  /** What says more of it, such as why it is disabled: the id of that text. */
+  describedBy?: string | undefined;
   value: string;
   options: readonly Segment[];
   onChange: (value: string) => void;
@@ -63,6 +66,7 @@ export function Segmented({
       className={styles['segmented']}
       onKeyDown={onKeyDown}
       {...(disabled ? { 'aria-disabled': true } : {})}
+      {...(describedBy === undefined ? {} : { 'aria-describedby': describedBy })}
     >
       {options.map((option, index) => (
         <button
