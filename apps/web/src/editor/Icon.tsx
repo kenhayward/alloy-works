@@ -115,6 +115,11 @@ const ADMIN: Record<string, readonly string[]> = {
     'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.5 3.5 5.2',
   ],
   Delete: [BIN],
+  // The Part tab's link field (ADR-0054): one sheet over another.
+  'Copy link': [
+    'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',
+    'M5 15H4V4h11v1',
+  ],
   Revoke: [BIN],
   Withdraw: [BIN],
   'Invite people': [PERSON, 'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M19 8v6M16 11h6'],

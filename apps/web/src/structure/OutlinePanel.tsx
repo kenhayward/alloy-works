@@ -64,6 +64,7 @@ import {
   type Names,
 } from './tree.js';
 import { HeldFields } from '../metadata/HeldFields.js';
+import { Segmented } from '../parts/Segmented.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -265,9 +266,9 @@ const PAGE_BREAKS = [
 
 /** The three matters a top-level node may be in, in the order a publication prints them (STR-064). */
 const MATTERS = [
-  { value: 'front', label: 'Front matter' },
-  { value: 'body', label: 'Body' },
-  { value: 'appendix', label: 'Appendix' },
+  { value: 'front', label: 'Front matter', short: 'Front' },
+  { value: 'body', label: 'Body', short: 'Body' },
+  { value: 'appendix', label: 'Appendix', short: 'Appendix' },
 ] as const;
 
 /** Said where a key move is refused, in the words of the rule that refused it. */
@@ -1105,6 +1106,15 @@ export function OutlinePanel({
                 sectionFields={sectionFields ?? []}
                 schemas={schemas ?? []}
                 people={people ?? []}
+                link={
+                  linkOf && (
+                    <NodeLink
+                      address={linkOf(selected.id)}
+                      name={nodeName(selected, names)}
+                      onNotice={onNotice}
+                    />
+                  )
+                }
               />
             )}
             {editable && confirming !== null && (
@@ -1118,12 +1128,14 @@ export function OutlinePanel({
                 }}
               />
             )}
-            {selected && linkOf && confirming === null && (
-              <NodeLink
-                address={linkOf(selected.id)}
-                name={nodeName(selected, names)}
-                onNotice={onNotice}
-              />
+            {selected && linkOf && confirming === null && !editable && (
+              <div className={styles['rows']}>
+                <NodeLink
+                  address={linkOf(selected.id)}
+                  name={nodeName(selected, names)}
+                  onNotice={onNotice}
+                />
+              </div>
             )}
           </div>,
         )}
@@ -1169,28 +1181,39 @@ function NodeLink({
   onNotice: (message: string | null) => void;
 }) {
   return (
-    <p>
-      <label>
-        Link to {name}
-        <input readOnly value={address} onFocus={(event) => event.target.select()} />
-      </label>{' '}
-      <button
-        type="button"
-        onClick={() => {
-          const copying = navigator.clipboard?.writeText(address);
-          if (!copying) {
-            onNotice('The link could not be copied. Select it and copy it instead.');
-            return;
-          }
-          copying.then(
-            () => onNotice(`Copied the link to ${name}.`),
-            () => onNotice('The link could not be copied. Select it and copy it instead.'),
-          );
-        }}
-      >
-        Copy link
-      </button>
-    </p>
+    <div className={styles['row']}>
+      <span className={styles['rowLabel']} aria-hidden="true">
+        Link
+      </span>
+      <span className={styles['field']} data-field="">
+        <input
+          readOnly
+          aria-label={`Link to ${name}`}
+          className={styles['mono']}
+          value={address}
+          onFocus={(event) => event.target.select()}
+        />
+        <button
+          type="button"
+          className={styles['inField']}
+          aria-label="Copy link"
+          title="Copy link"
+          onClick={() => {
+            const copying = navigator.clipboard?.writeText(address);
+            if (!copying) {
+              onNotice('The link could not be copied. Select it and copy it instead.');
+              return;
+            }
+            copying.then(
+              () => onNotice(`Copied the link to ${name}.`),
+              () => onNotice('The link could not be copied. Select it and copy it instead.'),
+            );
+          }}
+        >
+          <Icon name="Copy link" size={14} />
+        </button>
+      </span>
+    </div>
   );
 }
 
@@ -1338,8 +1361,11 @@ function NodeDetails({
   sectionFields,
   schemas,
   people,
+  link,
 }: {
   node: OutlineViewNode;
+  /** The node's link (`NodeLink`), a row of its own before Remove. */
+  link?: ReactNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
   topLevel: boolean;
   /** Whether **Front matter** is one of the node's choices: what `mayBeFront` says (STR-064). */
@@ -1371,6 +1397,8 @@ function NodeDetails({
 }) {
   const hintId = useId();
   const matterHintId = useId();
+  const startsId = useId();
+  const numberedId = useId();
   // Ticked, and still without a number: said beside the box, so the tick does not look ignored.
   const hint =
     node.numbered && unnumberedAbove !== undefined
@@ -1385,7 +1413,16 @@ function NodeDetails({
       ? null
       : `Front matter comes first, so this cannot leave while ${nodeName(frontAfter, names)} is front matter.`;
   return (
-    <div>
+    <div className={styles['rows']}>
+      {/* A component has no title of its own, so its name is a link to it (ADR-0054, decision 8). */}
+      {node.type === 'reference' && node.component !== null && (
+        <div className={styles['row']}>
+          <span className={styles['rowLabel']}>Component</span>
+          <a className={styles['named']} href={`#/components/${node.component}`}>
+            {nodeName(node, names)}
+          </a>
+        </div>
+      )}
       {node.type === 'section' && (
         <TitleField
           node={node}
@@ -1418,9 +1455,12 @@ function NodeDetails({
           }}
         />
       )}
-      <label>
-        Starts on
+      <div className={styles['row']}>
+        <label className={styles['rowLabel']} htmlFor={startsId}>
+          Starts on
+        </label>
         <select
+          id={startsId}
           value={node.pageBreak}
           onChange={(event) => {
             // Left enabled while an act is in flight, so it keeps the focus; a choice made then is
@@ -1436,23 +1476,34 @@ function NodeDetails({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {/* Controlled, and left enabled while an act is in flight, as the select above is: a change
           made then is not sent, and the box goes on showing what the node holds. Each sends the one
           switch it is; a section's values are sent by its fields, above. */}
-      <label>
-        <input
-          type="checkbox"
-          checked={node.numbered}
-          aria-describedby={hint === null ? undefined : hintId}
-          onChange={(event) => {
-            if (busy) return;
-            void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
-          }}
-        />
-        Numbered
-      </label>
-      {hint !== null && <span id={hintId}>{hint}</span>}
+      <div className={styles['row']}>
+        <label className={styles['rowLabel']} htmlFor={numberedId}>
+          Numbered
+        </label>
+        <span className={styles['stack']}>
+          <input
+            id={numberedId}
+            type="checkbox"
+            role="switch"
+            className={styles['switch']}
+            checked={node.numbered}
+            aria-describedby={hint === null ? undefined : hintId}
+            onChange={(event) => {
+              if (busy) return;
+              void onOperation({ operation: 'set', node: node.id, numbered: event.target.checked });
+            }}
+          />
+          {hint !== null && (
+            <span id={hintId} className={styles['hint']}>
+              {hint}
+            </span>
+          )}
+        </span>
+      </div>
       {/* Offered at the top level alone: below it a node's matter is its top-level ancestor's, and
           the outline's parse refuses one set anywhere else. **Front matter** is left out where the
           parse would refuse it, so only what can be chosen is offered - a node already in front
@@ -1461,34 +1512,39 @@ function NodeDetails({
           beside it, since the parse would refuse every other one. Left enabled while an act is in
           flight, as the select above is. */}
       {topLevel && (
-        <>
-          <label>
+        <div className={styles['row']}>
+          <span className={styles['rowLabel']} aria-hidden="true">
             Matter
-            <select
+          </span>
+          <span className={styles['stack']}>
+            <Segmented
+              label="Matter"
               value={node.matter}
               disabled={matterHint !== null}
-              aria-describedby={matterHint === null ? undefined : matterHintId}
-              onChange={(event) => {
-                const matter = event.target.value;
+              describedBy={matterHint === null ? undefined : matterHintId}
+              options={MATTERS.filter(
+                (each) => each.value !== 'front' || frontOffered || node.matter === 'front',
+              ).map((each) => ({ value: each.value, name: each.label, label: each.short }))}
+              onChange={(matter) => {
                 if (busy || !isMatter(matter) || matter === node.matter) return;
                 void onOperation({ operation: 'set', node: node.id, matter });
               }}
-            >
-              {MATTERS.filter(
-                (each) => each.value !== 'front' || frontOffered || node.matter === 'front',
-              ).map((each) => (
-                <option key={each.value} value={each.value}>
-                  {each.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {matterHint !== null && <span id={matterHintId}>{matterHint}</span>}
-        </>
+            />
+            {matterHint !== null && (
+              <span id={matterHintId} className={styles['hint']}>
+                {matterHint}
+              </span>
+            )}
+          </span>
+        </div>
       )}
-      <button type="button" onClick={() => !busy && onRemove()}>
-        {node.type === 'section' ? 'Remove section' : 'Remove component'}
-      </button>
+      {link}
+      <div className={styles['foot']}>
+        <button type="button" className={styles['remove']} onClick={() => !busy && onRemove()}>
+          <Icon name="Delete" size={14} />
+          {node.type === 'section' ? 'Remove section' : 'Remove component'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1631,11 +1687,18 @@ function TitleField({
   if (!editable) {
     return (
       <>
-        <label>
-          Title
-          <input value={titleText(node.title)} disabled />
-        </label>
-        <p>{heldBack(node.title)}</p>
+        <div className={styles['row']}>
+          <label className={styles['rowLabel']}>
+            Title
+            <input className={styles['hiddenInput']} value={titleText(node.title)} disabled />
+          </label>
+          <span className={styles['stack']}>
+            <span className={styles['field']} data-field="">
+              <input value={titleText(node.title)} disabled aria-hidden="true" tabIndex={-1} />
+            </span>
+            <span className={styles['hint']}>{heldBack(node.title)}</span>
+          </span>
+        </div>
       </>
     );
   }
@@ -1727,7 +1790,7 @@ function TitleField({
   // title's own dialog is not either: placing an equation commits, and cancelling comes back here.
   return (
     <div
-      className={styles['title']}
+      className={styles['row']}
       onFocus={() => {
         asking.current = false;
       }}
@@ -1736,19 +1799,24 @@ function TitleField({
         commit();
       }}
     >
-      <span className={styles['titleLabel']} aria-hidden="true">
+      <span className={styles['rowLabel']} aria-hidden="true">
         Title
       </span>
-      <div ref={place} className={styles['titleField']} />
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        // The caret stays in the title, where the equation goes, as a toolbar's button leaves it.
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={openEquation}
-      >
-        Equation
-      </button>
+      <span className={styles['field']} data-field="">
+        <div ref={place} className={styles['titleField']} />
+        <button
+          type="button"
+          className={styles['inField']}
+          aria-haspopup="dialog"
+          aria-label="Equation"
+          title="Equation (Ctrl or Cmd, Shift and E)"
+          // The caret stays in the title, where the equation goes, as a toolbar's button leaves it.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={openEquation}
+        >
+          <Icon name="Equation" size={14} />
+        </button>
+      </span>
     </div>
   );
 }
