@@ -32,3 +32,24 @@ export function iterationLabel(savedAt: string, now: Date = new Date()): string 
 
 /** A label begun as a sentence. */
 export const sentenceCase = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** Where this tab keeps the time of the unsaved changes it was told to put away (the R1 plan). */
+const dismissedKey = (componentId: string) => `alloy-works:unsaved-dismissed:${componentId}`;
+
+/** The time of the unsaved changes this tab put away for this component, or null. */
+export function dismissedFor(componentId: string): string | null {
+  try {
+    return globalThis.sessionStorage.getItem(dismissedKey(componentId));
+  } catch {
+    return null;
+  }
+}
+
+/** Puts away, for this tab, the unsaved changes saved at `savedAt`; newer ones are offered again. */
+export function keepDismissed(componentId: string, savedAt: string): void {
+  try {
+    globalThis.sessionStorage.setItem(dismissedKey(componentId), savedAt);
+  } catch {
+    // Not kept: the notice comes back on the next opening, which costs a second Dismiss.
+  }
+}

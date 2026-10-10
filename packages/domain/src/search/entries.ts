@@ -167,12 +167,22 @@ function footnoteBlocks(inlines: readonly InlineNode[] | undefined): BlockNode[]
   );
 }
 
-/** One row per block, each holding only its own words; what a block holds is its own blocks' rows. */
-function blockTexts(blocks: readonly BlockNode[]): SearchText[] {
-  const out: SearchText[] = [];
+/** A block's own words, as search reads them, with what kind of block it is. */
+export interface BlockWords {
+  readonly id: string;
+  readonly kind: BlockNode['type'];
+  /** Empty where it has none: a figure with no caption, an empty paragraph. */
+  readonly text: string;
+}
+
+/**
+ * Every block in order, each with only its own words; what a block holds follows it as blocks of their
+ * own. Search's places, and what a comparison of two texts reads (the R1 plan's recovery dialog).
+ */
+export function wordsByBlock(blocks: readonly BlockNode[]): BlockWords[] {
+  const out: BlockWords[] = [];
   const add = (block: BlockNode, parts: readonly string[]) => {
-    const text = words(parts.join(' '));
-    if (text !== '') out.push({ place: `block:${block.id}`, text });
+    out.push({ id: block.id, kind: block.type, text: words(parts.join(' ')) });
   };
   const walk = (block: BlockNode): void => {
     switch (block.type) {
@@ -232,6 +242,13 @@ function blockTexts(blocks: readonly BlockNode[]): SearchText[] {
   };
   blocks.forEach(walk);
   return out;
+}
+
+/** One row per block that has words of its own (SCH-016), keyed by its place. */
+function blockTexts(blocks: readonly BlockNode[]): SearchText[] {
+  return wordsByBlock(blocks)
+    .filter((each) => each.text !== '')
+    .map((each) => ({ place: `block:${each.id}`, text: each.text }));
 }
 
 /**

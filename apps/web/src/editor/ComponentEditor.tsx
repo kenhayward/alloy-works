@@ -100,7 +100,13 @@ import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
-import { iterationLabel, sentenceCase, unsavedSentence } from './recovery.js';
+import {
+  dismissedFor,
+  iterationLabel,
+  keepDismissed,
+  sentenceCase,
+  unsavedSentence,
+} from './recovery.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
 import { ValuePanel } from './ValuePanel.js';
@@ -558,9 +564,19 @@ export function ComponentEditor({
   // What was focused when Recovery was asked for, which the focus goes back to as it closes where it
   // is still there; the surface otherwise, since the Recover that asked is gone by then.
   const recoveryOpener = useRef<HTMLElement | null>(null);
+  // Whether Saved text was opened from reading, so Cancel gives back the lock it claimed (the R1 plan).
+  const recoveryFromReading = useRef(false);
+  // The unsaved changes this tab put away with Dismiss, by when they were saved (the R1 plan).
+  const [dismissedAt, setDismissedAt] = useState<string | null>(() => dismissedFor(componentId));
   // Whether this page has a session of its own running: once it has edited or recovered, what the
   // component's GET said was saved and never made a version is no longer this page's to offer.
   const [ownSession, setOwnSession] = useState(false);
+  // The notice's Recover, which takes the focus back once a Saved text opened from it is cancelled.
+  const noticeRecover = useRef<HTMLButtonElement | null>(null);
+  const [backToNotice, setBackToNotice] = useState(0);
+  useEffect(() => {
+    if (backToNotice > 0) noticeRecover.current?.focus();
+  }, [backToNotice]);
   // The Figure dialog, open to make a figure or to give one another image, or closed.
   const [figureDialog, setFigureDialog] = useState<'Figure' | 'Image' | 'Replace image' | null>(
     null,
@@ -2008,7 +2024,27 @@ export function ComponentEditor({
   const recover = () => {
     recoveryOpener.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Opened from reading, Saved text claims the lock to list under; cancelled, it gives it back.
+    recoveryFromReading.current = phase === 'reading' || phase === 'lost';
     controls.current?.recover();
+  };
+  // Cancel: nothing restored. From reading the lock it claimed goes back, cutting nothing, since this
+  // session saved nothing; from editing the author goes on editing.
+  const cancelRecovery = () => {
+    const fromReading = recoveryFromReading.current;
+    recoveryFromReading.current = false;
+    controls.current?.closeRecovery();
+    if (!fromReading) return;
+    // Given back, the changes are as unrecovered as before: the notice offers them again.
+    void controls.current?.doneEditing().then(() => {
+      setOwnSession(false);
+      setBackToNotice((count) => count + 1);
+    });
+  };
+  // Dismiss (the R1 plan): the notice put away for this tab until something newer is saved.
+  const dismiss = (savedAt: string) => {
+    keepDismissed(componentId, savedAt);
+    setDismissedAt(savedAt);
   };
   const done = async () => {
     if (phase === 'editing') {
@@ -2249,14 +2285,20 @@ export function ComponentEditor({
             {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. Only
                 while nobody holds it: a refused claim leaves the lock unread, but the holder it
                 named is still there, whoever it is (W11.2's re-review). */}
-            {unsaved !== null && lock === null && !(held && (held.yours || held.name !== null)) && (
-              <Notice tone="unsaved">
-                <p>{unsavedSentence(unsaved.savedAt)}</p>
-                <button type="button" onClick={recover}>
-                  Recover
-                </button>
-              </Notice>
-            )}
+            {unsaved !== null &&
+              unsaved.savedAt !== dismissedAt &&
+              lock === null &&
+              !(held && (held.yours || held.name !== null)) && (
+                <Notice tone="unsaved">
+                  <p>{unsavedSentence(unsaved.savedAt)}</p>
+                  <button type="button" ref={noticeRecover} onClick={recover}>
+                    Recover
+                  </button>
+                  <button type="button" onClick={() => dismiss(unsaved.savedAt)}>
+                    Dismiss
+                  </button>
+                </Notice>
+              )}
             {/* The author's other window is editing: what it saved is its work in progress, and
                 recovering it here moves the edit to this window, as Continue here does. */}
             {unsaved !== null && lock?.yours === true && (
@@ -2290,11 +2332,24 @@ export function ComponentEditor({
                   controls.current?.iterations(cursor) ??
                   Promise.resolve({ ok: false, code: 'failed' })
                 }
+                peek={async (iteration) => {
+                  const label = iterationLabel(iteration.savedAt);
+                  const read = await controls.current?.peek(iteration.id);
+                  if (read === undefined || !read.ok) {
+                    return `${sentenceCase(label)} could not be read.`;
+                  }
+                  const stored = readContent(read.content, {
+                    artifact: componentId,
+                    version: label,
+                  });
+                  return stored.ok ? stored.document : `${sentenceCase(label)} could not be read.`;
+                }}
+                current={() => (surface === null ? null : fromEditor(surface.state.doc))}
                 restore={(iteration) =>
                   controls.current?.restore(iteration.id, iterationLabel(iteration.savedAt)) ??
                   Promise.resolve(null)
                 }
-                onClose={() => controls.current?.closeRecovery()}
+                onCancel={cancelRecovery}
               />
             )}
             {placeTables(tablePanels())}

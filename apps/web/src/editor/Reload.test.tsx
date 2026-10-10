@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ComponentEditor } from './ComponentEditor.js';
 import { heldSentence } from './held.js';
-import { iterationLabel } from './recovery.js';
+import { iterationLabel, sentenceCase } from './recovery.js';
 import { designTiming, type Timing } from './session.js';
 
 const COMPONENT = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
@@ -572,11 +572,16 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     act(() => {
       fireEvent.click(recover);
     });
+    // Chosen in Saved text, then recovered (the R1 plan).
     const first = await screen.findByRole('button', {
-      name: `Restore ${iterationLabel('2026-09-28T14:00:00.000Z')}`,
+      name: sentenceCase(iterationLabel('2026-09-28T14:00:00.000Z')),
     });
     act(() => {
       fireEvent.click(first);
+    });
+    const dialog = screen.getByRole('dialog', { name: 'Saved text' });
+    act(() => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Recover' }));
     });
     await waitFor(() => expect(textOf(view)).toBe('Unbox the printer. Mind'));
     await waitFor(() => expect(sessionStorage.getItem(STEPS)).toBeNull());

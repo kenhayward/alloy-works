@@ -302,6 +302,11 @@ export interface Session {
    */
   iterations(cursor?: string): Promise<IterationPage>;
   /**
+   * One iteration read, to show what restoring it would change (the R1 plan): nothing is saved or
+   * opened. A lock found lapsed is claimed again once, as a listing's is.
+   */
+  peek(id: string): Promise<IterationRead>;
+  /**
    * Restores one: anything on screen not yet saved is saved first, and acknowledged; then the
    * iteration is read (a lock found lapsed claimed again once, as a save's is),
    * opened by `open`, and sent as the next save. Answers null once restored, or why nothing was, which
@@ -321,7 +326,7 @@ const NEWER_TEXT =
 
 /** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
 const RECOVERY_OPENED =
-  'Your saved text is listed. Restore some of it, or close the list to go on editing.';
+  'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.';
 
 /**
  * The editing session, as a state machine over a service and a clock (component-editor.md, "The
@@ -1009,6 +1014,12 @@ export function createSession(options: SessionOptions): Session {
       if (page.ok || page.code !== 'lock_required' || phase !== 'recovery') return page;
       if (!(await reclaimInRecovery())) return page;
       return service.iterations(cursor);
+    },
+    async peek(id) {
+      const read = await service.iteration(id);
+      if (read.ok || read.code !== 'lock_required' || phase !== 'recovery') return read;
+      if (!(await reclaimInRecovery())) return read;
+      return service.iteration(id);
     },
     async restore(id, label) {
       if (phase !== 'recovery' || options.open === undefined) return null;

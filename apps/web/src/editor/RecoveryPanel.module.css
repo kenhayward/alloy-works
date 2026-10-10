@@ -1,66 +1,127 @@
-/* The Recovery panel: a quiet box above the text, like the paste report, listing saved text. */
+/* Saved text, a modal (the R1 plan): the saved iterations beside what recovering the chosen one
+   changes, Cancel and Recover at the foot. */
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
-  padding: var(--space-12) var(--space-12);
-  border: 1px solid var(--border);
-  border-inline-start: 3px solid var(--warn);
-  border-radius: var(--radius-8);
-  background: var(--sunken);
+  gap: var(--space-12);
+  padding: var(--space-16) var(--space-24) var(--space-24);
   font-size: var(--size-13);
-}
-
-.panel:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .heading {
   margin: 0;
-  font-size: var(--size-12);
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
 }
 
 .about {
   margin: 0;
+  color: var(--muted);
+}
+
+/* The list, then what the chosen one changes; one above the other where the dialog is narrow. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: var(--space-16);
+  min-height: 12rem;
+}
+
+@media (max-width: 640px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* A row chooses its saved text: time, then where and from which version, the chosen one pressed. */
 .row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4) var(--space-12);
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  gap: 2px var(--space-12);
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-8) var(--space-12);
+  border-color: transparent;
+  background: transparent;
+  text-align: start;
+}
+
+.row > .time {
+  grid-column: 1 / -1;
+}
+
+.row[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .time {
-  min-width: 8ch;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
 .detail {
   color: var(--muted);
+  font-size: var(--size-12);
   font-variant-numeric: tabular-nums;
 }
 
-.row > button {
-  margin-inline-start: auto;
+.changes {
+  max-height: 50vh;
+  padding: var(--space-12);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.changeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.change {
+  display: grid;
+  gap: 2px;
+}
+
+.kind {
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+/* Put in and taken out, told apart by underline and strike as well as colour. */
+.changes ins {
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  text-decoration: underline;
+}
+
+.changes del {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  text-decoration: line-through;
 }
 
 .refused {
@@ -70,6 +131,6 @@
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-8);
 }

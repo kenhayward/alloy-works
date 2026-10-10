@@ -933,19 +933,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Getting saved changes back.** A closed tab, a crash or a lost connection loses nothing the page said
   was saved. Open the component again and, where changes you saved there were never made into a
   version, it says so above the text - `Changes you saved at 14:02 were never made a version.` - and
-  offers **Recover**, even where somebody else has made a version since without your changes. Where
+  offers **Recover**, even where somebody else has made a version since without your changes, and
+  **Dismiss**, which puts the notice away in that tab until something newer is saved. Where
   another window of yours is editing the component, it says `You are editing this component in another
 window.` and offers **Recover here** instead. Either starts editing, taking the component over from
-  your other window if one has it, and lists what you saved, newest first: when each was saved, to the
-  second, whether this window or another saved it, and the version it was written against, with **Show
-  older** for more. While editing, **Saved text** beside **Save version** opens the same list, saving
-  what you have just typed first. **Restore** puts one back in place of what is on screen, its text and
+  your other window if one has it, and opens **Saved text**, a dialog listing what you saved, newest
+  first: when each was saved, to the second, whether this window or another saved it, and the version it
+  was written against, with **Show older** for more. Choosing one shows what recovering it would change
+  in the text on screen, paragraph by paragraph, the words put in underlined and those taken out struck
+  through. While editing, **Saved text** beside **Save version** opens the same list, saving
+  what you have just typed first. **Recover** puts the one chosen back in place of what is on screen, its text and
   its fields' values together. Anything on screen not yet saved is saved first, so it can be restored in
   turn, and undo starts again from the restored text. Saved text the editor cannot read is refused,
   naming it by its time, and nothing of it is opened. The same list is offered beside **Continue** when
   newer text was saved from another window or from before a reload. You only ever see your own saved
   changes, and only while you are editing the component: if somebody else is, the page says who.
-  **Close**, or `Escape`, goes back to editing what is on screen. Not yet: the window that loses the
+  **Cancel**, **Close** or `Escape` recovers nothing: opened from the notice, the component is given
+  back and the notice offers the changes again; opened while editing, editing goes on. Not yet: the window that loses the
   component to another of your windows is not offered the list until the component is opened again.
 
 - **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the

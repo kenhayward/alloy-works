@@ -1735,7 +1735,8 @@ describe('Recovery (component-editor.md, "Recovery, as W11 builds it")', () => {
     expect(service.sessionId).not.toBe(before);
     expect(session.view()).toMatchObject({
       phase: 'recovery',
-      notice: 'Your saved text is listed. Restore some of it, or close the list to go on editing.',
+      notice:
+        'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.',
     });
     expect(await session.iterations()).toEqual({ ok: true, items: [], next: null });
     expect(service.calls).toEqual(['claim, moving', 'list']);
@@ -1861,7 +1862,8 @@ describe('Recovery (component-editor.md, "Recovery, as W11 builds it")', () => {
       phase: 'recovery',
       save: 'saved',
       dirty: false,
-      notice: 'Your saved text is listed. Restore some of it, or close the list to go on editing.',
+      notice:
+        'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.',
     });
     // The lock was already this session's: nothing claimed it again, fresh or otherwise.
     expect(service.calls).toEqual(['claim', 'save 1']);
