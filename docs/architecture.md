@@ -3808,12 +3808,17 @@ source as children, and an atom body drawn by `boundTableView`'s `fillBoundTable
 decoration - which `render.ts` shares, so the read text draws the same table. `tables.ts` holds
 `insertBoundTable`, `setBoundTable`, `setBoundTablePart`, `changeTableBinding` and `deleteBoundTable`;
 the Value dialog places `As a table`, and `BoundTablePanel` and `FormatDialog` in `apps/web` shape it,
-each change one transaction. The panel is a band of fixed height under the toolbar
-([ADR-0051](decisions/0051-the-bound-table-panel-is-a-band-of-tabs.md)): the value in one line, the
-table's toggles, Columns, Sort and Notes tabs, a column a row, refusals marked on their row and said
-in a live region. `boundTableFocus.ts` outlines the table the cursor is in and marks the column
-focused in the panel, by decorations outside the history; `Status.place` says where in the status
-bar. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
+each change one transaction. The panel is the Table tab beside the text
+([ADR-0052](decisions/0052-table-formatting-is-a-tab-beside-the-text.md)): `ComponentEditor` portals
+a table's panels, plain or bound, into the `tableHost` the page gives it and tells it `onTable`
+whether it holds a table and when the cursor enters one; `ComponentDock` and the document's panels
+offer the tab and choose it, 400px wide while offered. Inside: the value on two lines, the table's
+settings, a pill per column and the column in hand, then one of Column, Sort and Notes open, the
+others folded to a summary; refusals mark the column's pill and are said in a live region. Viewing,
+or with the cursor in no table, `TableReadOnly.tsx` shows the last table entered, or the first
+(`tablesIn`), as text. `boundTableFocus.ts` outlines the table the cursor is in and holds the column
+in hand, which a pill or a press on its cell sets (`holdBoundTableColumn`), by decorations outside
+the history; `Status.place` says where in the status bar. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
 
 | Where                                                     | What                                                  |
 | --------------------------------------------------------- | ----------------------------------------------------- |

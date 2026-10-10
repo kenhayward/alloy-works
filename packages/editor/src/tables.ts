@@ -55,27 +55,50 @@ export interface TableAt {
 /** How a table too wide for its measure is set (TB3-G). */
 export type Wide = 'scale' | 'rotate';
 
+/** A table as `tableAt` reads it, from its node and where it starts. */
+function tableAtNode(node: Node, pos: number): TableAt {
+  const map = TableMap.get(node.child(1));
+  return {
+    pos,
+    id: (node.attrs.id as string | null) ?? null,
+    style: node.attrs.style as string,
+    headerRows: node.attrs.headerRows as number,
+    headerColumns: node.attrs.headerColumns as number,
+    rows: map.height,
+    columns: map.width,
+    note: node.childCount > 2,
+    numbered: node.attrs.numbered !== false,
+    wide: (node.attrs.wide as Wide | null) ?? null,
+  };
+}
+
 /** The innermost table the selection stands in - its caption or any cell - or null. */
 export function tableAt(state: EditorState): TableAt | null {
   const { $from } = state.selection;
   for (let depth = $from.depth; depth > 0; depth -= 1) {
     const node = $from.node(depth);
-    if (node.type !== tableFigureNode) continue;
-    const map = TableMap.get(node.child(1));
-    return {
-      pos: $from.before(depth),
-      id: (node.attrs.id as string | null) ?? null,
-      style: node.attrs.style as string,
-      headerRows: node.attrs.headerRows as number,
-      headerColumns: node.attrs.headerColumns as number,
-      rows: map.height,
-      columns: map.width,
-      note: node.childCount > 2,
-      numbered: node.attrs.numbered !== false,
-      wide: (node.attrs.wide as Wide | null) ?? null,
-    };
+    if (node.type === tableFigureNode) return tableAtNode(node, $from.before(depth));
   }
   return null;
+}
+
+/**
+ * Every table the text holds, plain and bound, in reading order (ADR-0052): what the Table tab shows,
+ * read only, while the cursor is in none.
+ */
+export function tablesIn(state: EditorState): {
+  readonly plain: readonly TableAt[];
+  readonly bound: readonly BoundTablePlace[];
+} {
+  const plain: TableAt[] = [];
+  const bound: BoundTablePlace[] = [];
+  state.doc.descendants((node, pos) => {
+    if (node.type === tableFigureNode) plain.push(tableAtNode(node, pos));
+    else if (node.type === boundTableNode) bound.push(placeOf(node, pos));
+    else return true;
+    return false;
+  });
+  return { plain, bound };
 }
 
 /** What a cell at this place in the grid is: a header, and which way it reads, or a data cell. */

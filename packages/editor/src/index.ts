@@ -36,6 +36,7 @@ export {
   setTableNumbered,
   setTableWide,
   tableAt,
+  tablesIn,
   tableCommand,
   type BoundNoteAnchor,
   type BoundNoteAt,

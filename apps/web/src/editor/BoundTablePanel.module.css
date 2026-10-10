@@ -364,3 +364,30 @@
   flex: 0 0 118px;
   width: 118px;
 }
+
+/* Read only (ADR-0052, decision 5): each setting as text, in the tab's two columns. */
+.facts {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: var(--panel-label) minmax(0, 1fr);
+  gap: var(--space-12);
+}
+
+.fact > dt {
+  color: var(--muted);
+}
+
+.fact > dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fact code {
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}
