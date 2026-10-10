@@ -645,6 +645,8 @@ describe('quotations and preformatted text on the surface (editor 5)', () => {
 
     caretIn(view, 'p1');
     const panel = await screen.findByRole('group', { name: 'Preformatted text' });
+    // On the toolbar's second line (ADR-0053), not a band of its own over the text.
+    expect(panel.closest('[data-toolbar-line]')).not.toBeNull();
     const label = within(panel).getByLabelText('Language label');
     expect(label).toHaveValue('sql');
 
@@ -957,6 +959,8 @@ describe('a figure in the editor (figures 2)', () => {
     // Changed: the panel offers the same, and sets the one chosen.
     caretInCaption(view);
     const panel = await screen.findByRole('group', { name: 'Figure' });
+    // On the toolbar's second line (ADR-0053), not a band of its own over the text.
+    expect(panel.closest('[data-toolbar-line]')).not.toBeNull();
     const list = within(panel).getByLabelText('Image style') as HTMLSelectElement;
     expect(list).toHaveValue('half-width');
     expect([...list.options].map((option) => option.text)).toEqual(['Figure', 'Half width']);
@@ -997,6 +1001,8 @@ describe('a figure in the editor (figures 2)', () => {
       view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
     });
     const panel = await screen.findByRole('group', { name: 'Image' });
+    // On the toolbar's second line (ADR-0053), not a band of its own over the text.
+    expect(panel.closest('[data-toolbar-line]')).not.toBeNull();
     const list = within(panel).getByLabelText('Image style');
     expect(list).toHaveValue('icon');
     await userEvent.selectOptions(list, 'Inline image');
