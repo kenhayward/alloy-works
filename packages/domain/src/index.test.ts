@@ -92,6 +92,8 @@ describe('the domain package', () => {
         'configurationFor',
         'entriesOf',
         'parseQuery',
+        // Each block's own words, which the recovery dialog compares two texts by (the R1 plan).
+        'wordsByBlock',
         'searchKinds',
         'canonicaliseVersion',
         'canonicaliseVersionContent',
