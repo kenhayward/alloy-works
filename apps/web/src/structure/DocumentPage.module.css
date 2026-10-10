@@ -12,29 +12,16 @@
 /* A link on its own line: its words wide, not the column's, and 24px tall, a target of WCAG 2.5.8's
    size however close the controls round it stand (axe's target-size, LG4). */
 .page > a,
-.controls > a {
+.access > a {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
   min-height: 24px;
 }
 
-/* The page's head: where it is, then the mode beside Preview and the page's own controls (LG6c). */
-.head {
-  display: grid;
-  gap: var(--space-8);
-}
-
 .trail {
   color: var(--muted);
   font-size: var(--size-13);
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-12) var(--space-16);
 }
 
 .layout {
@@ -276,12 +263,124 @@
   }
 }
 
-/* The mode the page is in, and the switch between Reading and Authoring (document-view.md, "Modes"). */
+/*
+ * The page on a desk (ADR-0056): the page's own gutter stands down, the desk fills what is under the
+ * document bar, and the panels and the sheet stand on it.
+ */
+.page[data-desk-page] {
+  gap: 0;
+  min-height: calc(100vh - var(--header-height) - var(--status-height, 0px));
+  background: var(--desk);
+}
+
+.page[data-desk-page] > :not(.bar, .layout) {
+  margin: var(--space-12) var(--space-24) 0;
+}
+
+.page[data-desk-page] > .layout {
+  padding: var(--space-12) var(--space-16) var(--space-24);
+}
+
+/* The document bar: one line under the header, on the chrome. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+  min-height: var(--document-bar);
+  padding: 0 var(--space-24);
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  font-size: var(--size-13);
+}
+
+.bar > button,
+.bar :global(.aw-zoom) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rule {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+/* Reading and Authoring as two segments on a sunken ground, the chosen one raised (document-view.md,
+ * "Modes"): still a radio group, its radios kept for the keyboard and a screen reader. */
 .mode {
   display: inline-flex;
-  gap: var(--space-12);
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.mode > label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-4) var(--space-12);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mode > label:has(input:checked) {
+  background: var(--surface);
+  box-shadow: var(--shadow-rest);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mode > label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mode input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.modeShown {
   margin: 0;
   font-weight: 600;
+}
+
+/* Show boundaries: a toggle, filled while pressed. */
+.toggle {
+  border-color: transparent;
+  background: none;
+}
+
+.toggle[aria-pressed='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.access {
+  display: inline-flex;
+  margin-inline-start: auto;
+}
+
+.access > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.access > a:hover {
+  text-decoration: underline;
 }
 
 /* The pane's tabs, after its panels in the page (the keyboard's order), drawn above them. */

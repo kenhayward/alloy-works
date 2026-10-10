@@ -85,6 +85,7 @@
   --sheet-margin: 70px;
   --sheet-top: 56px;
   --desk-gap: 28px;
+  --document-bar: 50px;
   /* A figure's second toolbar line and Figure settings (ADR-0055): the line's height, the dialog's
    * width, and its label column. */
   --context-line: 42px;

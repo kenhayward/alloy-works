@@ -545,11 +545,15 @@ describe('the address of every node', () => {
         expect(ruleOf(edged), edged).toMatch(/outline: 1px solid/);
       }
       // Show boundaries shows them all, and is kept for this reader.
+      // A toggle button on the document bar (ADR-0056), pressed while they show.
+      const boundaries = screen.getByRole('button', { name: 'Show boundaries' });
       expect(text).not.toHaveAttribute('data-boundaries');
-      await userEvent.click(screen.getByLabelText('Show boundaries'));
+      expect(boundaries).toHaveAttribute('aria-pressed', 'false');
+      await userEvent.click(boundaries);
       expect(text).toHaveAttribute('data-boundaries', 'shown');
+      expect(boundaries).toHaveAttribute('aria-pressed', 'true');
       expect(window.localStorage.getItem('alloy-works.boundaries')).toBe('shown');
-      await userEvent.click(screen.getByLabelText('Show boundaries'));
+      await userEvent.click(boundaries);
       expect(text).not.toHaveAttribute('data-boundaries');
       window.localStorage.removeItem('alloy-works.boundaries');
     });
