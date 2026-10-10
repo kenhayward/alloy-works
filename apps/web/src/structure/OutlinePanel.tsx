@@ -175,7 +175,16 @@ export interface OutlinePanelProps {
    * The chosen part's settings as the Part panel beside the text (the LG plan, LG6c): its id, the tab
    * that names it, and whether another panel is shown in its place.
    */
-  readonly details?: { readonly id: string; readonly labelledBy: string; readonly hidden: boolean };
+  readonly details?: {
+    readonly id: string;
+    readonly labelledBy: string;
+    readonly hidden: boolean;
+    /**
+     * Where the panel stands: the pane beside the text, which the page draws (the document panels
+     * pane), or nowhere while that pane is hidden to its rail. Left out, it stands where it is drawn.
+     */
+    readonly host?: Element | null;
+  };
   /** The tree's root row, above the tree: the document itself. */
   readonly root?: ReactNode;
   /**
@@ -899,6 +908,14 @@ export function OutlinePanel({
 
   const endTarget: DropTarget = { kind: 'end', parent: null };
 
+  /** The Part panel, in the pane beside the text where the page gives it one (its `host`). */
+  const placed = (part: ReactNode) =>
+    details?.host === undefined
+      ? part
+      : details.host === null
+        ? null
+        : createPortal(part, details.host);
+
   return (
     // Two parts, in the order they always had: the outline itself, and what is said of the node
     // chosen in it. The document page lays them out in columns of their own (interface slice 8).
@@ -1054,60 +1071,62 @@ export function OutlinePanel({
             )}
           </div>
         </div>
-        <div
-          data-part="details"
-          {...(details === undefined
-            ? {}
-            : {
-                id: details.id,
-                role: 'tabpanel',
-                'aria-labelledby': details.labelledBy,
-                hidden: details.hidden,
-              })}
-        >
-          {editable && selected && confirming === null && (
-            <NodeDetails
-              key={selected.id}
-              node={selected}
-              topLevel={placeOf(nodes, selected.id)?.parent === null}
-              frontOffered={mayBeFront(nodes, selected.id)}
-              frontAfter={frontAfter(nodes, selected.id)}
-              unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
-              names={names}
-              busy={busy}
-              onOperation={(operation) => send(operation, null)}
-              onRetitle={retitle}
-              openField={openField}
-              onNotice={onNotice}
-              onRemove={() => setConfirming(selected.id)}
-              language={outline.language}
-              direction={outline.direction}
-              onEquation={askEquation}
-              onWithdrawEquation={withdrawEquation}
-              sectionFields={sectionFields ?? []}
-              schemas={schemas ?? []}
-              people={people ?? []}
-            />
-          )}
-          {editable && confirming !== null && (
-            <ConfirmRemoval
-              node={placeOf(nodes, confirming)?.node}
-              names={names}
-              onRemove={() => void remove(confirming)}
-              onKeep={() => {
-                setConfirming(null);
-                setFocusTarget(confirming);
-              }}
-            />
-          )}
-          {selected && linkOf && confirming === null && (
-            <NodeLink
-              address={linkOf(selected.id)}
-              name={nodeName(selected, names)}
-              onNotice={onNotice}
-            />
-          )}
-        </div>
+        {placed(
+          <div
+            data-part="details"
+            {...(details === undefined
+              ? {}
+              : {
+                  id: details.id,
+                  role: 'tabpanel',
+                  'aria-labelledby': details.labelledBy,
+                  hidden: details.hidden,
+                })}
+          >
+            {editable && selected && confirming === null && (
+              <NodeDetails
+                key={selected.id}
+                node={selected}
+                topLevel={placeOf(nodes, selected.id)?.parent === null}
+                frontOffered={mayBeFront(nodes, selected.id)}
+                frontAfter={frontAfter(nodes, selected.id)}
+                unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
+                names={names}
+                busy={busy}
+                onOperation={(operation) => send(operation, null)}
+                onRetitle={retitle}
+                openField={openField}
+                onNotice={onNotice}
+                onRemove={() => setConfirming(selected.id)}
+                language={outline.language}
+                direction={outline.direction}
+                onEquation={askEquation}
+                onWithdrawEquation={withdrawEquation}
+                sectionFields={sectionFields ?? []}
+                schemas={schemas ?? []}
+                people={people ?? []}
+              />
+            )}
+            {editable && confirming !== null && (
+              <ConfirmRemoval
+                node={placeOf(nodes, confirming)?.node}
+                names={names}
+                onRemove={() => void remove(confirming)}
+                onKeep={() => {
+                  setConfirming(null);
+                  setFocusTarget(confirming);
+                }}
+              />
+            )}
+            {selected && linkOf && confirming === null && (
+              <NodeLink
+                address={linkOf(selected.id)}
+                name={nodeName(selected, names)}
+                onNotice={onNotice}
+              />
+            )}
+          </div>,
+        )}
       </div>
       {equating !== null &&
         // Beside the panel rather than inside it, because the panel is what it makes inert, and so that

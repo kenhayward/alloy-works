@@ -25,7 +25,7 @@ import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
-import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
+import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
@@ -408,6 +408,8 @@ function announce(
 
 /** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
 const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
+/** The panels beside the text: a fixed width, and whether they are hidden to a rail. */
+const DOCK_PANE = { storageKey: 'aw.document.panels', min: 320, max: 320, initial: 320 };
 
 export interface DocumentPageProps {
   readonly client: Client;
@@ -510,6 +512,10 @@ export function DocumentPage({
 }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const outlinePane = usePaneWidth(OUTLINE_PANE);
+  // The panels beside the text, hidden to a rail as the outline is, remembered as it is.
+  const dockPane = usePaneWidth(DOCK_PANE);
+  // Where the Part panel stands: in that pane, once it is drawn.
+  const [detailsHost, setDetailsHost] = useState<HTMLDivElement | null>(null);
   // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
   // read again for every version the page shows and whenever a component edited in place closes.
   const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
@@ -1415,6 +1421,7 @@ export function DocumentPage({
         <div
           className={styles['layout']}
           data-collapsed={outlinePane.collapsed}
+          data-dock-collapsed={dockPane.collapsed}
           // A preview takes a column of its own beside the text, which narrows to make room for it.
           data-previewing={preview.pane !== null}
           style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
@@ -1433,6 +1440,7 @@ export function DocumentPage({
               id: dockIds('part').panel,
               labelledBy: dockIds('part').tab,
               hidden: shownDock !== 'part',
+              host: detailsHost,
             }}
             {...(shown === 'data'
               ? {
@@ -1517,6 +1525,125 @@ export function DocumentPage({
               if (node !== marked) setMarked(null);
             }}
           />
+          {/* The panels beside the text: one pane, standing beside the text as the page scrolls and
+            hidden to a rail as the outline is; kept while hidden, so a panel keeps what it holds. Next after
+            the outline in the page, its panels before its tabs, so the keyboard goes from the tree to the
+            chosen part's settings. */}
+          {dockPane.collapsed && (
+            <div className={styles['dockRail']}>
+              <OutlineRail
+                pane={dockPane}
+                chosen={shownDock}
+                tabs={dockTabs}
+                label="document panels"
+                edge="end"
+              />
+            </div>
+          )}
+          <aside
+            className={styles['dock']}
+            aria-label="Panels beside the text"
+            hidden={dockPane.collapsed}
+          >
+            <div className={styles['dockBody']}>
+              {/* A value's provenance stands above the panels, whichever is shown (the B1 plan, B1-M). */}
+              <div className={styles['provenance']}>
+                {/* A value's provenance, beside the text it stands in (the B1 plan, B1-M; DAT-041). */}
+                {provenanceState?.held && (
+                  <ProvenancePanel
+                    client={client}
+                    document={document.id}
+                    language={document.outline.language}
+                    state={provenanceState}
+                    onClose={closeProvenance}
+                  />
+                )}
+              </div>
+              {/* The Part panel, which the outline draws, stands here (`details.host`). */}
+              <div ref={setDetailsHost} />
+              <div className={styles['side']}>
+                <div
+                  id={dockIds('document').panel}
+                  role="tabpanel"
+                  aria-labelledby={dockIds('document').tab}
+                  hidden={shownDock !== 'document'}
+                >
+                  {/* What the document's template asks of the document itself, filled in and checked as it
+                    is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
+                  {document.fields.document.length > 0 && (
+                    <HeldFields
+                      label="Fields of this document"
+                      fields={document.fields.document}
+                      schemas={document.schemas}
+                      people={people}
+                      stored={document.values}
+                      readOnly={!document.mayEdit || !authoring}
+                      onSave={saveValues}
+                    />
+                  )}
+                  {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
+                  {(document.templated || holdsValues) && (
+                    <ParametersPanel
+                      client={client}
+                      document={document.id}
+                      version={document.version.id}
+                      values={document.parameters}
+                      readOnly={!document.mayEdit || !authoring}
+                      onSave={saveParameters}
+                      onDeclarations={(read) =>
+                        setDeclared({ document: document.id, declarations: read })
+                      }
+                    />
+                  )}
+                </div>
+                <div
+                  id={dockIds('lists').panel}
+                  role="tabpanel"
+                  aria-labelledby={dockIds('lists').tab}
+                  hidden={shownDock !== 'lists'}
+                >
+                  <GeneratedLists
+                    document={document.id}
+                    outline={document.outline}
+                    scheme={document.scheme}
+                    known={known}
+                    names={names}
+                    onRetry={() => setKnownAttempt((count) => count + 1)}
+                    onArriveAgain={onArriveAgain}
+                  />
+                </div>
+                <div
+                  id={dockIds('publishing').panel}
+                  role="tabpanel"
+                  aria-labelledby={dockIds('publishing').tab}
+                  hidden={shownDock !== 'publishing'}
+                >
+                  <Publishing
+                    client={client}
+                    document={document.id}
+                    version={document.version.id}
+                    mayPublish={document.mayPublish}
+                    placeOf={(node) =>
+                      placeInOutline(document.outline, node, names, document.scheme)
+                    }
+                    followMs={followMs}
+                    formats={document.formats}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={styles['dockStrip']}>
+              <PanelTabs
+                label="Document panels"
+                tabs={dockTabs}
+                chosen={shownDock}
+                onChoose={(key) => setDock(key as DockPanel)}
+                ids={dockIds}
+              />
+              <span className={styles['dockSpacer']} />
+              <PaneToggle label="document panels" pane={dockPane} edge="end" />
+            </div>
+          </aside>
           {!outlinePane.collapsed && (
             <div className={styles['separator']}>
               <PaneSeparator label="outline" pane={outlinePane} />
@@ -1586,96 +1713,6 @@ export function DocumentPage({
             className={styles['preview']}
             placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
           />
-          {/* A value's provenance stands above the panels, whichever is shown (the B1 plan, B1-M). */}
-          <div className={styles['provenance']}>
-            {/* A value's provenance, beside the text it stands in (the B1 plan, B1-M; DAT-041). */}
-            {provenanceState?.held && (
-              <ProvenancePanel
-                client={client}
-                document={document.id}
-                language={document.outline.language}
-                state={provenanceState}
-                onClose={closeProvenance}
-              />
-            )}
-          </div>
-          <div className={styles['dockTabs']}>
-            <PanelTabs
-              label="Document panels"
-              tabs={dockTabs}
-              chosen={shownDock}
-              onChoose={(key) => setDock(key as DockPanel)}
-              ids={dockIds}
-            />
-          </div>
-          <div className={styles['side']}>
-            <div
-              id={dockIds('document').panel}
-              role="tabpanel"
-              aria-labelledby={dockIds('document').tab}
-              hidden={shownDock !== 'document'}
-            >
-              {/* What the document's template asks of the document itself, filled in and checked as it
-                is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
-              {document.fields.document.length > 0 && (
-                <HeldFields
-                  label="Fields of this document"
-                  fields={document.fields.document}
-                  schemas={document.schemas}
-                  people={people}
-                  stored={document.values}
-                  readOnly={!document.mayEdit || !authoring}
-                  onSave={saveValues}
-                />
-              )}
-              {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-              {(document.templated || holdsValues) && (
-                <ParametersPanel
-                  client={client}
-                  document={document.id}
-                  version={document.version.id}
-                  values={document.parameters}
-                  readOnly={!document.mayEdit || !authoring}
-                  onSave={saveParameters}
-                  onDeclarations={(read) =>
-                    setDeclared({ document: document.id, declarations: read })
-                  }
-                />
-              )}
-            </div>
-            <div
-              id={dockIds('lists').panel}
-              role="tabpanel"
-              aria-labelledby={dockIds('lists').tab}
-              hidden={shownDock !== 'lists'}
-            >
-              <GeneratedLists
-                document={document.id}
-                outline={document.outline}
-                scheme={document.scheme}
-                known={known}
-                names={names}
-                onRetry={() => setKnownAttempt((count) => count + 1)}
-                onArriveAgain={onArriveAgain}
-              />
-            </div>
-            <div
-              id={dockIds('publishing').panel}
-              role="tabpanel"
-              aria-labelledby={dockIds('publishing').tab}
-              hidden={shownDock !== 'publishing'}
-            >
-              <Publishing
-                client={client}
-                document={document.id}
-                version={document.version.id}
-                mayPublish={document.mayPublish}
-                placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
-                followMs={followMs}
-                formats={document.formats}
-              />
-            </div>
-          </div>
         </div>
         {ownViewPrompt}
         {status === null && <StatusBar notice={notice} context={context} />}

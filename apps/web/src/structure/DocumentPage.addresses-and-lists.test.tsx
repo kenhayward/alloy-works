@@ -992,10 +992,16 @@ describe('the address of every node', () => {
 
     it("STR-035 keeps the node in view in the tree by scrolling the outline's own pane, never the window that scrolls the text", async () => {
       const fake = twoSections();
+      // The reader starts at the first section, the second far below the reading line.
+      tops.set(FIRST, 0);
+      tops.set(SECOND, 600);
       render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
       await screen.findByRole('region', { name: "The document's text" });
       const pane = screen.getByRole('tree', { name: 'Outline' }).closest('[role="tabpanel"]');
       if (!(pane instanceof HTMLElement)) throw new Error('The tree is in no pane');
+      await waitFor(() =>
+        expect(treeItem(/Unpacking/)).toHaveAttribute('aria-current', 'location'),
+      );
       // Every element is laid out at 0 to 40 here but a node's, so the pane shows its first 40
       // pixels, and the second section's item is drawn at 60 to 100: below what the pane shows.
       tops.set(FIRST, -400);
@@ -1004,8 +1010,8 @@ describe('the address of every node', () => {
       await waitFor(() =>
         expect(treeItem(/Setting up/)).toHaveAttribute('aria-current', 'location'),
       );
-      // Brought into view in the pane alone, its foot to the pane's foot.
-      expect(pane.scrollTop).toBe(60);
+      // Brought into view in the pane alone, its foot to the pane's foot, once the page has drawn.
+      await waitFor(() => expect(pane.scrollTop).toBe(60));
       expect(treeScrolled).toEqual([]);
     });
 
@@ -1770,6 +1776,27 @@ describe('the address of every node', () => {
     expect(screen.getByRole('tab', { name: 'Contents' })).toBeInTheDocument();
   });
 
+  it('holds the panels beside the text in a pane of their own, hidden to a rail and remembered, as the outline is', async () => {
+    const user = userEvent.setup();
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    await screen.findByRole('tree');
+    const pane = screen.getByRole('complementary', { name: 'Panels beside the text' });
+    // The Part panel, which the outline draws, stands in the pane under its tab.
+    expect(within(pane).getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
+    expect(within(pane).getByRole('tabpanel', { name: 'Part' })).toBeInTheDocument();
+    await user.click(within(pane).getByRole('button', { name: 'Hide the document panels' }));
+    expect(screen.queryByRole('tablist', { name: 'Document panels' })).toBeNull();
+    const show = screen.getByRole('button', { name: 'Show the document panels' });
+    // On the right, the rail's arrow points back into the page.
+    expect(show.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Hide pane');
+    expect(show.closest('[data-rail]')).toHaveTextContent('Part');
+    expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('true');
+    await user.click(show);
+    expect(screen.getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
+    expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('false');
+  });
+
   it("copies the chosen node's address, and says it did", async () => {
     const user = userEvent.setup();
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
@@ -2358,7 +2385,7 @@ describe('a preview beside the text (W10.3)', () => {
     // fall is read from the stylesheet's own rules.
     expect(pane.parentElement).toBe(layout);
     expect(ruleOf(".layout[data-previewing='true']")).toMatch(
-      /grid-template-columns:[^;]*minmax\(0, 1fr\) minmax\(0, 1fr\) var\(--dock-panel\)/,
+      /grid-template-columns:[^;]*minmax\(0, 1fr\) minmax\(0, 1fr\) var\(--right\)/,
     );
     expect(ruleOf('.text')).toMatch(/grid-column: 3;/);
     expect(ruleOf('.preview')).toMatch(/grid-column: 4;/);

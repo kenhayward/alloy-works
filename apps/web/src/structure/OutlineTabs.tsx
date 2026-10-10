@@ -90,19 +90,28 @@ export function OutlineTabs({
   );
 }
 
-/** The pane hidden to a rail: the toggle, and each tab's name on its side, the chosen one marked. */
+/**
+ * A pane hidden to a rail: the toggle, and each tab's name on its side, the chosen one marked. The
+ * outline's by default; the panels beside the text name themselves and stand at the page's end.
+ */
 export function OutlineRail({
   pane,
   chosen,
   tabs: offered = OUTLINE_TABS,
+  label = 'outline pane',
+  edge = 'start',
+  className,
 }: {
   pane: Pane;
   chosen: string;
-  tabs?: readonly OutlineTab[];
+  tabs?: readonly { readonly key: string; readonly label: string }[];
+  label?: string;
+  edge?: 'start' | 'end';
+  className?: string;
 }) {
   return (
-    <div className={styles['rail']} data-rail>
-      <PaneToggle label="outline pane" pane={pane} />
+    <div className={`${styles['rail']}${className === undefined ? '' : ` ${className}`}`} data-rail>
+      <PaneToggle label={label} pane={pane} edge={edge} />
       {offered.map((tab) => (
         <span
           key={tab.key}
