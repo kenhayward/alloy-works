@@ -29,14 +29,27 @@ echo Docker Engine %ENGINE%
 
 rem This machine's address on the network: ALLOY_LAN_ADDRESS from the environment or deploy\.env, else
 rem the address of the adapter with the default route.
+set "ADDRESS_FROM=the environment"
 if not defined ALLOY_LAN_ADDRESS if exist deploy\.env (
+  set "ADDRESS_FROM=deploy\.env"
   for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"ALLOY_LAN_ADDRESS=" deploy\.env') do set "ALLOY_LAN_ADDRESS=%%b"
 )
 if not defined ALLOY_LAN_ADDRESS (
+  set "ADDRESS_FROM=found"
   for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1).IPv4Address.IPAddress"') do set "ALLOY_LAN_ADDRESS=%%a"
 )
 if not defined ALLOY_LAN_ADDRESS (call :fail "Could not find this machine's network address. Set ALLOY_LAN_ADDRESS in deploy\.env." & goto :end)
-echo Network address %ALLOY_LAN_ADDRESS%
+
+rem A set address must be one of this machine's own, not loopback or link-local, which the containers
+rem cannot reach the host by: another machine's, copied in a .env, fails much later as a refused
+rem connection from the setup. Read from the environment by PowerShell, so the value is never code.
+set "MINE="
+for /f "delims=" %%a in ('powershell -NoProfile -Command "$mine = (Get-NetIPAddress -AddressFamily IPv4).IPAddress | Where-Object { $_ -notlike '127.*' -and $_ -notlike '169.254.*' }; if ($mine -contains $env:ALLOY_LAN_ADDRESS) { 'yes' } else { $mine -join ', ' }"') do set "MINE=%%a"
+if not "%MINE%"=="yes" (
+  call :fail "ALLOY_LAN_ADDRESS is %ALLOY_LAN_ADDRESS% (from %ADDRESS_FROM%), which is not one of this machine's network addresses. They are %MINE%. Set it to one of them, or remove it to let this script find it."
+  goto :end
+)
+echo Network address %ALLOY_LAN_ADDRESS% (%ADDRESS_FROM%)
 
 echo == Checking the repo
 git rev-parse --is-inside-work-tree >nul 2>&1 || (call :fail "%CD% is not a Git checkout." & goto :end)
