@@ -758,6 +758,27 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
     expect(notesOf(view)).toEqual([]);
   });
 
+  it("brings a note's words into view from its pencil, the cursor in them, clear of the page's bands", async () => {
+    const { view, panel } = await inTable(COLUMNS, {}, holding(), DECLARED, [
+      note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),
+    ]);
+    const scrolled: { element: Element; options: unknown }[] = [];
+    const before = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element, options?: unknown) {
+      scrolled.push({ element: this, options });
+    };
+    try {
+      await userEvent.click(within(panel).getByRole('button', { name: /^Notes/ }));
+      const listed = within(panel).getByRole('group', { name: /^Note / });
+      await userEvent.click(within(listed).getByRole('button', { name: 'Edit' }));
+      expect(view.state.selection.$from.parent.type.name).toBe('footnoteParagraph');
+      const words = view.dom.querySelector('[data-bound-table-note]');
+      expect(scrolled.at(-1)).toEqual({ element: words, options: { block: 'center' } });
+    } finally {
+      Element.prototype.scrollIntoView = before;
+    }
+  });
+
   it('refuses to take out a column a note stands on, saying why (the TB3 final review, H1)', async () => {
     const { view, panel } = await inTable(COLUMNS, {}, holding(), DECLARED, [
       note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),

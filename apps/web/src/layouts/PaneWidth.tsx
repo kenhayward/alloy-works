@@ -73,9 +73,19 @@ const STEP = 10;
 
 /**
  * The edge between a pane and what is beside it: dragged with the pointer, or moved with the arrow
- * keys, Home and End, as a window splitter is (WAI-ARIA's separator).
+ * keys, Home and End, as a window splitter is (WAI-ARIA's separator). A pane at the page's end
+ * (`edge="end"`) widens as its edge moves left.
  */
-export function PaneSeparator({ label, pane }: { label: string; pane: Pane }) {
+export function PaneSeparator({
+  label,
+  pane,
+  edge = 'start',
+}: {
+  label: string;
+  pane: Pane;
+  edge?: 'start' | 'end';
+}) {
+  const towards = edge === 'start' ? 1 : -1;
   const from = useRef<{ x: number; width: number } | null>(null);
   return (
     <div
@@ -90,9 +100,9 @@ export function PaneSeparator({ label, pane }: { label: string; pane: Pane }) {
       onKeyDown={(event) => {
         const next =
           event.key === 'ArrowLeft'
-            ? pane.width - STEP
+            ? pane.width - towards * STEP
             : event.key === 'ArrowRight'
-              ? pane.width + STEP
+              ? pane.width + towards * STEP
               : event.key === 'Home'
                 ? pane.bounds.min
                 : event.key === 'End'
@@ -107,7 +117,8 @@ export function PaneSeparator({ label, pane }: { label: string; pane: Pane }) {
         event.currentTarget.setPointerCapture?.(event.pointerId);
       }}
       onPointerMove={(event) => {
-        if (from.current) pane.setWidth(from.current.width + event.clientX - from.current.x);
+        if (from.current)
+          pane.setWidth(from.current.width + towards * (event.clientX - from.current.x));
       }}
       onPointerUp={() => {
         from.current = null;

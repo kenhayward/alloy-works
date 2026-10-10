@@ -41,8 +41,9 @@
   --left: var(--outline-width);
   --edge: 6px;
   --right: var(--dock-panel);
+  --dock-edge: 6px;
   display: grid;
-  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--right);
+  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--dock-edge) var(--right);
   grid-template-rows: auto auto auto 1fr;
   column-gap: var(--space-8);
   row-gap: var(--space-12);
@@ -56,6 +57,7 @@
 
 .layout[data-dock-collapsed='true'] {
   --right: var(--pane-collapsed-rail);
+  --dock-edge: 0;
 }
 
 /* The outline panel's root holds no box of its own here: its two parts are the grid's. */
@@ -132,8 +134,17 @@
   display: flex;
 }
 
-.separator > * {
+.separator > *,
+.dockSeparator > * {
   flex: 1;
+}
+
+/* The edge that sizes the panels beside the text, just before them, whatever stands between. */
+.dockSeparator {
+  grid-column: -3;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  display: flex;
 }
 
 .text {
@@ -151,7 +162,7 @@
 .dockRail {
   position: sticky;
   top: calc(var(--header-height) + var(--space-12));
-  grid-column: 4;
+  grid-column: -2;
   grid-row: 1 / span 4;
   min-width: 0;
 }
@@ -204,6 +215,11 @@
   overscroll-behavior: contain;
 }
 
+/* The Table tab nearer the pane's sides, whose band keeps its own inset (ADR-0052). */
+.tableTab {
+  margin-inline: calc(var(--space-8) * -1);
+}
+
 .dockBody [hidden],
 .provenance:empty {
   display: none;
@@ -214,7 +230,9 @@
  * between the text and the dock, so the text narrows and stays where it was, and the dock moves over.
  */
 .layout[data-previewing='true'] {
-  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) minmax(0, 1fr) var(--right);
+  grid-template-columns:
+    var(--left) var(--edge) minmax(0, 1fr) minmax(0, 1fr) var(--dock-edge)
+    var(--right);
 }
 
 .preview {
@@ -224,22 +242,19 @@
   grid-row: 1 / span 4;
 }
 
-.layout[data-previewing='true'] > .dock,
-.layout[data-previewing='true'] > .dockRail {
-  grid-column: 5;
-}
-
 @media (max-width: 1100px) {
   .layout,
   .layout[data-previewing='true'] {
     grid-template-columns: var(--left) var(--edge) minmax(0, 1fr);
   }
 
+  .dockSeparator {
+    display: none;
+  }
+
   /* Where the pane goes below the text, so does the preview, the whole width, after it. */
   .dock,
   .dockRail,
-  .layout[data-previewing='true'] > .dock,
-  .layout[data-previewing='true'] > .dockRail,
   .preview {
     position: static;
     grid-column: 1 / -1;
