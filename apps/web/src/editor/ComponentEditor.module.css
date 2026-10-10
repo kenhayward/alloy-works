@@ -137,3 +137,16 @@
   color: var(--muted);
   font-size: var(--size-13);
 }
+
+/* The toolbar's second line (ADR-0053): one line reserved under the buttons, what the selection
+   offers set along it - the paragraph's style, a list's options - with room between each. */
+.toolbarLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-32);
+  min-height: 44px;
+  padding: var(--space-4) var(--space-12);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--size-13);
+}

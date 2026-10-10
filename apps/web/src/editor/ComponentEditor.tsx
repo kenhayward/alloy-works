@@ -2164,10 +2164,25 @@ export function ComponentEditor({
                   (action === 'value' && openValue(view)))
               }
             />
-            {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
-                only way a paragraph's alignment, indents and spacing change (CNT-094). */}
-            {/* Of the footnote's own text while one is open, as the toolbar's buttons are. */}
-            {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
+            {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
+                under it moves as options come and go, holding what the selection offers. */}
+            <div className={styles['toolbarLine']} data-toolbar-line="">
+              {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
+                  only way a paragraph's alignment, indents and spacing change (CNT-094). Of the
+                  footnote's own text while one is open, as the toolbar's buttons are. */}
+              {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
+              {/* While the cursor stands in a list: Nest and Lift, and a numbered list's start and
+                  numbering. A bulleted list's are its own; its kind is the toolbar's buttons. */}
+              {surface !== null && list !== null && (
+                <ListPanel
+                  ref={listRegion}
+                  view={surface}
+                  list={list}
+                  enabled={mayFormat}
+                  newIdentifier={newBlockIdentifier}
+                />
+              )}
+            </div>
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>You may read this component but not edit it.</p>
@@ -2240,13 +2255,6 @@ export function ComponentEditor({
                 }
                 onClose={() => controls.current?.closeRecovery()}
               />
-            )}
-            {/* Beside the toolbar, and only while the cursor stands in a counted list. A
-                definition list carries no start and no numbering and its kind is the button that
-                made it, so nothing is shown for one - a deliberate absence rather than an empty
-                box. */}
-            {surface !== null && list !== null && list.kind !== 'definition' && (
-              <ListPanel ref={listRegion} view={surface} list={list} enabled={mayFormat} />
             )}
             {/* And only while the cursor stands in a preformatted block: its one field is the
                 language label, which nothing else in the view can set. */}
