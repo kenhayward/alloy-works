@@ -44,7 +44,7 @@ the same names whatever directory you run it from.
 
 **On Windows, `deploy\BringUpDev.cmd`** does the whole round from the repo root: it checks Git,
 Docker (Engine 28 or later, running) and curl, that the checkout is on `main` with nothing
-uncommitted, pulls with `--ff-only`, builds, starts the stack with [the LAN override](#opening-the-stack-to-your-network-composelanyaml), finding this machine's network address when `ALLOY_LAN_ADDRESS` is not set,
+uncommitted, pulls with `--ff-only`, builds, starts the stack with [the LAN override](#opening-the-stack-to-your-network-composelanyaml), finding this machine's network address when `ALLOY_LAN_ADDRESS` is not set and refusing one that is not this machine's,
 and waits for every container and then the service to answer. It stops at the first problem,
 naming it. `COMPOSE_PROJECT_NAME` and the ports in [the table below](#when-a-port-is-already-taken)
 are honoured, so it can bring up a second stack beside yours.
