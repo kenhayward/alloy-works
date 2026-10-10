@@ -45,6 +45,7 @@ import {
   listAt,
   preformattedAt,
   tableAt,
+  tablesIn,
   mountEditor,
   openFootnote,
   pasteInto,
@@ -91,7 +92,8 @@ import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
-import { BOUND_TABLE_WORDS, BoundTablePanel } from './BoundTablePanel.js';
+import { BoundTablePanel } from './BoundTablePanel.js';
+import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import { Icon } from './Icon.js';
@@ -1690,14 +1692,17 @@ export function ComponentEditor({
       ? null
       : (() => {
           const bound = boundTableAt(surface.state);
-          if (bound !== null) return `bound-${bound.pos}`;
+          if (bound !== null) return `bound-${bound.id ?? bound.pos}`;
           const plain = tableAt(surface.state);
-          return plain === null ? null : `table-${plain.pos}`;
+          return plain === null ? null : `table-${plain.id ?? plain.pos}`;
         })();
   const lastTable = useRef<string | null>(null);
+  // The table the cursor was last in, which the Table tab shows read only once it leaves (TF-E).
+  const [lastSeenTable, setLastSeenTable] = useState<string | null>(null);
   const [entered, setEntered] = useState(0);
   useEffect(() => {
     if (tableKey !== null && tableKey !== lastTable.current) setEntered((count) => count + 1);
+    if (tableKey !== null) setLastSeenTable(tableKey);
     lastTable.current = tableKey;
   }, [tableKey]);
   // Closed, it holds no table, and the next editor's first entry is a new one.
@@ -1850,14 +1855,60 @@ export function ComponentEditor({
     if (tableHost === null) return null;
     return createPortal(
       <div inert={behindDialog}>
-        {table === null && boundTable === null ? (
-          <p className={styles['tableOutside']}>{BOUND_TABLE_WORDS.cursorOutside}</p>
-        ) : (
-          panels
-        )}
+        {mayFormat && (table !== null || boundTable !== null) ? panels : readOnlyTable()}
       </div>,
       tableHost,
     );
+  };
+  /**
+   * The Table tab read only (ADR-0052, decision 5): the table the cursor is in, else the one it was
+   * last in, else the first the text holds (TF-E).
+   */
+  const readOnlyTable = () => {
+    if (surface === null) return null;
+    const found = tablesIn(surface.state);
+    const keyOf = (kind: string, each: { id: string | null; pos: number }) =>
+      `${kind}-${each.id ?? each.pos}`;
+    const bound =
+      boundTable ??
+      (table === null
+        ? (found.bound.find((each) => keyOf('bound', each) === lastSeenTable) ??
+          (found.plain.some((each) => keyOf('table', each) === lastSeenTable)
+            ? undefined
+            : found.bound[0]))
+        : undefined);
+    if (bound !== undefined && bound !== null) {
+      const shown = boundTablesShown(surface.state.doc, bindingContextOf(surface.state)).find(
+        (each) => each.tablePos === bound.pos,
+      )?.shown;
+      return (
+        <BoundTableReadOnly
+          key={keyOf('bound', bound)}
+          table={bound}
+          shownNotes={shown?.notes ?? []}
+          value={
+            shown === undefined ? undefined : (
+              <ValuePanel
+                stacked
+                binding={bound.binding}
+                shown={shown.spanning?.text ?? `A table of ${shown.rows.length + shown.more} rows`}
+                resolved={tableResolved(surface.state, bound.binding)}
+                state={bindingStates?.get(bound.binding.id)}
+                {...(alone ? { title: titles.get(bound.binding.query) } : {})}
+                {...(onProvenance
+                  ? {
+                      onProvenance: (opener: HTMLElement) => onProvenance(bound.binding.id, opener),
+                    }
+                  : {})}
+              />
+            )
+          }
+        />
+      );
+    }
+    const plain =
+      table ?? found.plain.find((each) => keyOf('table', each) === lastSeenTable) ?? found.plain[0];
+    return plain === undefined ? null : <TableReadOnly key={keyOf('table', plain)} table={plain} />;
   };
 
   /** The Value panel, one line, on what `valued` names. */

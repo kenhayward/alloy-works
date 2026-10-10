@@ -130,10 +130,3 @@
   margin-top: var(--space-4, 16px);
   padding-top: var(--space-3, 12px);
 }
-
-/* The Table tab while the cursor is in no table (ADR-0052). */
-.tableOutside {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--size-13);
-}

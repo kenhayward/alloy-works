@@ -542,13 +542,100 @@ describe('the Bound table panel (TB2-F)', () => {
       const { view, panel } = await inTable(undefined, { tableHost: host, onTable: told });
       expect(host).toContainElement(panel);
       expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 1 });
-      // Out of the table: the tab is the page's to keep or leave, and the panel says where to go.
+      // Out of the table: the tab is the page's to keep or leave, and shows the table read only - its
+      // settings as text, Provenance its one act, nothing to remove or add (ADR-0052, decision 5).
       act(() => selectText(view, 2, 2));
-      expect(host).not.toContainElement(screen.queryByRole('group', { name: 'Bound table' }));
-      expect(host).toHaveTextContent(BOUND_TABLE_WORDS.cursorOutside);
+      const read = within(host).getByRole('group', { name: 'Bound table' });
+      expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
+      expect(within(read).getByRole('region', { name: 'Table' })).toHaveTextContent(
+        'Wide' + BOUND_TABLE_WORDS.wides.style,
+      );
+      expect(within(read).queryByRole('combobox')).toBeNull();
+      expect(within(read).queryByRole('textbox')).toBeNull();
+      for (const name of ['Change', 'Add column', 'Add sort', BOUND_TABLE_WORDS.deleteTable]) {
+        expect(within(read).queryByRole('button', { name })).toBeNull();
+      }
       act(() => selectText(view, 10, 10));
-      expect(await within(host).findByRole('group', { name: 'Bound table' })).toBeInTheDocument();
+      expect(await within(host).findByRole('combobox', { name: 'Wide' })).toBeInTheDocument();
       expect(told).toHaveBeenLastCalledWith({ holds: true, entered: 2 });
+    } finally {
+      host.remove();
+    }
+  });
+
+  it("shows a table's formatting read only to a reader who may not change the component, Provenance its one act (ADR-0052)", async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    try {
+      const opening = open(
+        {
+          'GET /v1/components/{id}': () =>
+            json(
+              200,
+              opened({
+                content: withTable([
+                  { column: 'site', header: 'Site' },
+                  { column: 'depth', header: 'Depth' },
+                ]),
+                mayEdit: false,
+              }),
+            ),
+          ...routes(DECLARED),
+        },
+        quick,
+        false,
+        { bindingContext: holding(), tableHost: host },
+      );
+      await opening.surface();
+      const read = await within(host).findByRole('group', { name: 'Bound table' });
+      expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
+      expect(within(read).getByRole('group', { name: 'Column 1' })).toHaveTextContent('HeaderSite');
+      // Another column by its pill; the folds open and close, and nothing can be changed.
+      await userEvent.click(
+        within(within(read).getByRole('group', { name: 'Columns' })).getAllByRole('button')[1]!,
+      );
+      expect(within(read).getByRole('group', { name: 'Column 2' })).toHaveTextContent(
+        'HeaderDepth',
+      );
+      await userEvent.click(within(read).getByRole('button', { name: /^Sort/ }));
+      expect(within(read).queryByRole('combobox')).toBeNull();
+      expect(within(read).queryByRole('textbox')).toBeNull();
+      expect(within(read).queryByRole('button', { name: 'Change' })).toBeNull();
+    } finally {
+      host.remove();
+    }
+  });
+
+  it("shows a plain table's settings read only in the Table tab while the cursor is in no table (ADR-0052, TF-C)", async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const cell = (id: string, value: string) => ({
+      content: [
+        { type: 'paragraph', id, style: 'body', content: [{ type: 'text', value, marks: [] }] },
+      ],
+    });
+    try {
+      const document_ = content('Before');
+      document_.content.push({
+        type: 'table',
+        id: 'pt1',
+        style: 'table',
+        caption: [{ type: 'text', value: 'Sites', marks: [] }],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [{ cells: [cell('c1', 'Site'), cell('c2', 'Depth')] }],
+      } as never);
+      const opening = open(
+        { 'GET /v1/components/{id}': () => json(200, opened({ content: document_ })) },
+        quick,
+        false,
+        { tableHost: host },
+      );
+      await opening.surface();
+      const read = await within(host).findByRole('group', { name: 'Table' });
+      expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
+      expect(read).toHaveTextContent('Header rows1');
+      expect(read).toHaveTextContent('Size1 rows, 2 columns');
     } finally {
       host.remove();
     }

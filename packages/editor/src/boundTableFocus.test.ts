@@ -11,6 +11,7 @@ import {
   holdBoundTableColumn,
 } from './boundTableFocus.js';
 import { toEditor } from './mapping.js';
+import { tablesIn } from './tables.js';
 import { createEditorState } from './state.js';
 
 /**
@@ -120,5 +121,13 @@ describe('the bound table the Bound table panel is about, shown in the text', ()
     expect(held.selection.$from.parent.type.name).toBe('tableCaption');
     expect(held.doc.eq(outside.doc)).toBe(true);
     expect(undoDepth(held)).toBe(undoDepth(outside));
+  });
+
+  it('finds every table the text holds, in reading order, whether or not the cursor is in one (ADR-0052)', () => {
+    const found = tablesIn(into(opened(), 'paragraph'));
+    expect(found.plain).toEqual([]);
+    expect(
+      found.bound.map((each) => [each.id, each.columns.map((column) => column.header)]),
+    ).toEqual([['t1', ['Site', 'Depth']]]);
   });
 });

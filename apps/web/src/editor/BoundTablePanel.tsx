@@ -55,7 +55,9 @@ type Client = ReturnType<typeof createApiClient>;
 export const BOUND_TABLE_WORDS = {
   panel: 'Bound table',
   /** The Table tab while the cursor is in no table (ADR-0052). */
-  cursorOutside: 'Put the cursor in a table to change its formatting.',
+  readOnly:
+    'Read only. Edit the component and put the cursor in the table to change its formatting.',
+  formatSet: 'Set for this column',
   numbered: 'Numbered',
   headerColumn: 'First column heads its row',
   parts: {
@@ -1098,7 +1100,7 @@ function ColumnFields({ column, offered, enabled, onColumns, onFormat }: ColumnF
  * a summary of what it holds; its acts at the line's end. Open, it holds its fields, named by the
  * fold, or by `group` where one names the thing they set.
  */
-function Fold({
+export function Fold({
   id,
   label,
   count,
