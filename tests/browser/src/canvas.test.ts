@@ -74,7 +74,7 @@ async function openComponent(page: Page, component: string, zoom: '1' | '0.5' = 
   await page.goto(`${SERVICE}/#/components/${component}`);
   const surface = page.getByRole('textbox', { name: /^Content of / });
   await surface.getByText(/^Zc1 /).waitFor();
-  await page.getByLabel('Zoom').selectOption(zoom);
+  await page.getByLabel('Zoom', { exact: true }).selectOption(zoom);
   await expect
     .poll(() =>
       surface.evaluate(
@@ -114,7 +114,7 @@ async function openDocument(
 ): Promise<void> {
   await page.goto(`${SERVICE}/#/documents/${opened.id}`);
   await page.getByRole('radio', { name: mode }).check();
-  await page.getByLabel('Zoom').selectOption(zoom);
+  await page.getByLabel('Zoom', { exact: true }).selectOption(zoom);
   const canvas = page.locator('section.aw-canvas');
   await expect
     .poll(() => canvas.evaluate((element) => element.style.getPropertyValue('--aw-zoom')))

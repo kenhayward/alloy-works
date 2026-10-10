@@ -294,8 +294,7 @@
   font-size: var(--size-13);
 }
 
-.bar > button,
-.bar :global(.aw-zoom) {
+.bar > button {
   display: inline-flex;
   align-items: center;
   gap: 6px;

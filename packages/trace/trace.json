@@ -19685,7 +19685,7 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2436,
+      "line": 2456,
       "kind": "title"
     },
     {
@@ -19703,7 +19703,7 @@
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2020,
+      "line": 2040,
       "kind": "title"
     },
     {
@@ -19721,7 +19721,7 @@
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2865,
+      "line": 2885,
       "kind": "title"
     },
     {
@@ -19733,13 +19733,13 @@
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2230,
+      "line": 2250,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2120,
+      "line": 2140,
       "kind": "title"
     },
     {

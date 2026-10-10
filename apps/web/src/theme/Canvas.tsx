@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { useStyledImages } from './images.js';
 import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
+import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import { Notice } from '../states/Notice.js';
 
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
@@ -150,15 +152,46 @@ export function Canvas({ children, sheet = false }: { children: ReactNode; sheet
 
 const LABELS: Record<string, string> = { fit: 'Fit' };
 
-/** How large a reader sees a page's text: at a share of its printed size, or across the column. */
+const percent = (zoom: number) => `${Math.round(zoom * 100)}%`;
+
+/**
+ * How large a reader sees a page's text, at the status bar's right (ADR-0056): Zoom out, a slider and
+ * Zoom in stepping through the levels, and the level itself as a menu, which holds Fit too. At Fit the
+ * slider and the steps start from the printed size.
+ */
 export function ZoomControl() {
   const presentation = usePresentation();
   const zooming = useZoom();
   if (presentation?.state !== 'ready' || !zooming) return null;
+  const at = Math.max(0, ZOOMS.indexOf(zooming.zoom === 'fit' ? 1 : zooming.zoom));
+  const step = (to: number) => {
+    const level = ZOOMS[to];
+    if (level !== undefined) zooming.setZoom(level);
+  };
   return (
-    <label className="aw-zoom">
-      Zoom{' '}
+    <div className="aw-zoom" role="group" aria-label="Zoom controls">
+      <IconButton label="Zoom out" aria-disabled={at === 0} onClick={() => step(at - 1)}>
+        <Icon name="Zoom out" size={14} />
+      </IconButton>
+      <input
+        type="range"
+        aria-label="Zoom level"
+        min={0}
+        max={ZOOMS.length - 1}
+        step={1}
+        value={at}
+        aria-valuetext={percent(ZOOMS[at] ?? 1)}
+        onChange={(event) => step(Number(event.target.value))}
+      />
+      <IconButton
+        label="Zoom in"
+        aria-disabled={at === ZOOMS.length - 1}
+        onClick={() => step(at + 1)}
+      >
+        <Icon name="Zoom in" size={14} />
+      </IconButton>
       <select
+        aria-label="Zoom"
         value={String(zooming.zoom)}
         onChange={(event) => {
           const chosen = event.target.value;
@@ -169,11 +202,11 @@ export function ZoomControl() {
       >
         {[...ZOOMS, 'fit' as const].map((each: Zoom) => (
           <option key={each} value={String(each)}>
-            {LABELS[String(each)] ?? `${Math.round((each as number) * 100)}%`}
+            {LABELS[String(each)] ?? percent(each as number)}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 

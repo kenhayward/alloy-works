@@ -29,6 +29,53 @@
   color: var(--accent);
 }
 
+/* A page's tools, such as the zoom (ADR-0056): at the right, before the context. */
+.tools {
+  display: flex;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.tools:empty {
+  display: none;
+}
+
+/* The zoom (ADR-0056): out, the slider, in, and the level as a quiet menu. */
+.tools :global(.aw-zoom) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.tools :global(.aw-zoom) > button {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+  color: var(--muted);
+}
+
+.tools :global(.aw-zoom) > button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+}
+
+.tools :global(.aw-zoom) > input[type='range'] {
+  width: 110px;
+  accent-color: var(--accent);
+}
+
+.tools :global(.aw-zoom) > select {
+  min-height: 24px;
+  padding: 0 var(--space-4);
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--size-12);
+}
+
 /* Where the person is within the page (ADR-0051), beside the notice and quieter than it. */
 .place {
   margin: 0;

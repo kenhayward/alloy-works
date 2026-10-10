@@ -27,7 +27,7 @@ import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishi
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
-import { StatusBar, useStatus } from '../shell/Status.js';
+import { StatusBar, StatusTools, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
@@ -1421,7 +1421,6 @@ export function DocumentPage({
             <p className={styles['modeShown']}>Reading</p>
           )}
           <PreviewButton preview={preview} />
-          <ZoomControl />
           <button
             type="button"
             className={styles['toggle']}
@@ -1765,7 +1764,14 @@ export function DocumentPage({
           />
         </div>
         {ownViewPrompt}
-        {status === null && <StatusBar notice={notice} context={context} />}
+        {/* The zoom in the status bar (ADR-0056): the shell's, or the page's own where it has none. */}
+        {status === null ? (
+          <StatusBar notice={notice} context={context} tools={<ZoomControl />} />
+        ) : (
+          <StatusTools>
+            <ZoomControl />
+          </StatusTools>
+        )}
       </article>
     </PresentationProvider>
   );

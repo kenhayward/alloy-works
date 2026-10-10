@@ -83,6 +83,9 @@ const PATHS: Record<string, readonly string[]> = {
     'M3.5 4c0-1 2-1.8 4.5-1.8s4.5.8 4.5 1.8-2 1.8-4.5 1.8S3.5 5 3.5 4z',
     'M3.5 4v8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8V4M3.5 8c0 1 2 1.8 4.5 1.8s4.5-.8 4.5-1.8',
   ],
+  // The zoom's steps in the status bar (ADR-0056).
+  'Zoom out': ['M3.5 8h9'],
+  'Zoom in': ['M3.5 8h9M8 3.5v9'],
   // The document bar's (ADR-0056): an open book, a pencil, an eye, a frame's corners, a lock.
   Reading: [
     'M2 3.5h4.5A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5H2z',
