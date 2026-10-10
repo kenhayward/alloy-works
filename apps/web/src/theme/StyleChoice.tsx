@@ -162,11 +162,13 @@ export function ImageStyle({
   value,
   target,
   enabled,
+  className,
 }: {
   view: EditorView;
   value: string;
   target: 'figure' | 'inlineImage';
   enabled: boolean;
+  className?: string | undefined;
 }) {
   const presentation = usePresentation();
   if (presentation?.state !== 'ready') return null;
@@ -177,6 +179,7 @@ export function ImageStyle({
       choices={imageChoices(presentation.theme, target)}
       enabled={enabled}
       onChoose={(style) => setImageStyle(style)(view.state, view.dispatch)}
+      className={className}
     />
   );
 }

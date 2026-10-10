@@ -80,7 +80,9 @@
   --pane-admin-menu: 232px;
   --drawer: 440px;
   --dialog: 480px;
-  /* Figure settings (ADR-0055): its width, and its label column. */
+  /* A figure's second toolbar line and Figure settings (ADR-0055): the line's height, the dialog's
+   * width, and its label column. */
+  --context-line: 42px;
   --dialog-figure: 440px;
   --dialog-label: 96px;
   --row: 54px;

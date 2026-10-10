@@ -432,6 +432,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('the Image dialog', dialog('Image'));
       await closeDialog(page);
 
+      // A figure's settings (ADR-0055), opened from its line with the cursor in its caption.
+      await page.getByText('The figure', { exact: true }).click();
+      await button('Figure settings').click();
+      await check('Figure settings', dialog('Figure settings'));
+      await closeDialog(page);
+
       // A paste from a web page, and the report of what admission changed.
       await last.click();
       await page.keyboard.press('End');

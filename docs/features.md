@@ -367,8 +367,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   cursor in its caption, which says **Caption** until something is typed. The image is shown no wider
   than the column and no taller than 60 per cent of the window; one that cannot be shown - you may not
   read its space, or it is gone - says _An image you may not see_ in its place. While the cursor is in
-  a figure, a **Figure** panel in the `F6` ring sets its image style and numbering, and its **Figure
-  settings** dialog every setting, its alternative text among them: **Use the image's
+  a figure, a **Figure** line in the `F6` ring sets its image style and numbering, an **Alt text**
+  chip says how it is described, amber where it is **Needed**, and its **Figure settings** dialog
+  holds every setting, its alternative text among them: **Use the image's
   description**, showing it and its language, or saying the figure cannot be published until it is
   given one where the image has none; **Describe it here**, in the component's language, which stores
   nothing until something is typed; or **Decorative**. Its **Numbered** box, unticked, leaves the
