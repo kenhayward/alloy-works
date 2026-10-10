@@ -430,7 +430,8 @@ confirms it; confirming is now a click rather than a query. A changed question i
 ### Provenance, from the value
 
 **One step from the value** (DAT-041): the Value panel's **Provenance**, or activating the value in
-the read text, opens the provenance panel:
+the read text, opens the provenance panel, a modal with two tabs, **Provenance** and **Results**, and
+**Close** (Escape too); the page behind it is inert, and the focus goes back to what opened it:
 
 - **The value**: as shown, and what the query returned in its canonical form, with its column's name
   and type; a revised value both halves (DAT-062).
@@ -441,7 +442,8 @@ the read text, opens the provenance panel:
 - **When and what**: fetched at, the rows, the checksum (its first twelve characters, the whole on
   request), the dataset by name and version; who resolved or accepted it and when; the mode.
 - **What ran**: the SQL that ran, only where the reader may read the definition, as the bindings view
-  redacts it today (D3), and **Show the result**, the rows through `GET .../datasets/{version}`.
+  redacts it today (D3).
+- **Results**: the rows through `GET .../datasets/{version}`, asked for only once the tab is chosen.
 
 ## A value revised by hand
 

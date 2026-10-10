@@ -805,10 +805,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   waiting_ beside it where a check found a different result. A binding with no value says why in its
   place, apart by its words and its border and never by colour alone: never resolved, changed since it
   was resolved, no rows, how many rows, no row for its key, empty, or its result cannot be read. A
-  value is a button: a click or Enter opens its **provenance** beside the text - the value as the
+  value is a button: a click or Enter opens its **provenance** in a modal - the value as the
   query returned it, the query definition and its version, the connection and the SQL that ran where
   you may read them, the parameters, whose view, when, the rows and their checksum, the dataset and who
-  resolved it - with **Show the result**, its first 200 rows. Selecting a binding in the editor shows
+  resolved it - with a **Results** tab, read when chosen, of its first 200 rows, and Close. Selecting a binding in the editor shows
   the **Value panel**, whose **Provenance** opens the same. On its own a component shows what each
   binding asks for - its column and its query definition's title - and never a value. **A document
   holding values publishes and previews**: the PDF and Word print each value as the page shows it, read

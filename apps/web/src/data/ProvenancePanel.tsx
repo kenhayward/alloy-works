@@ -1,8 +1,12 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { formatsFor, type AnyBinding, type ValueFormats } from '@alloy-works/domain';
 import { bindingFailureWords, CHANGED_SINCE_RESOLVED } from '@alloy-works/editor';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 
+import { Icon } from '../editor/Icon.js';
+import shell from '../layouts/Modal.module.css';
+import { PanelTabs } from '../parts/PanelTabs.js';
 import {
   failureHeld,
   shownValue,
@@ -17,7 +21,7 @@ import styles from './ProvenancePanel.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** The most rows **Show the result** shows; the count of the rest is said beneath them. */
+/** The most rows **Results** shows; the count of the rest is said beneath them. */
 export const ROWS_SHOWN = 200;
 
 /** How many characters of a checksum are shown until the whole is asked for. */
@@ -78,6 +82,14 @@ function returned(taken: Taken | null): string | null {
   return `${String(taken.value)}, from the column ${taken.column.name} (${taken.column.type.base})`;
 }
 
+/** The dialog's two tabs: the facts, then the rows, read only once their tab is chosen. */
+const TABS = [
+  { key: 'provenance', label: 'Provenance' },
+  { key: 'results', label: 'Results' },
+] as const;
+
+type Tab = (typeof TABS)[number]['key'];
+
 type Result =
   | { readonly state: 'hidden' }
   | { readonly state: 'reading' }
@@ -99,33 +111,36 @@ export interface ProvenancePanelProps {
 }
 
 /**
- * **A value's provenance** (the B1 plan, B1-M; bindings.md, "Provenance, from the value"; DAT-041), in
- * the document page's side column beside the text it stands in, never a modal: the value, as shown and
- * as the query returned it; where it came from - the query definition and version, the connection
- * where the reader may read it, and the parameters the document supplied; whose view; when and what -
- * fetched, the rows, the checksum, the dataset and its version, who resolved or accepted it, and the
- * mode; and what ran, the SQL only where the view gives it, with **Show the result**. A newer result
- * waiting is shown beside the held one. The focus goes to its heading as it opens; **Close** and
- * Escape close it.
+ * **A value's provenance** (the B1 plan, B1-M; bindings.md, "Provenance, from the value"; DAT-041), a
+ * modal over the page with two tabs. **Provenance**: the value, as shown and as the query returned
+ * it; where it came from - the query definition and version, the connection where the reader may read
+ * it, and the parameters the document supplied; whose view; when and what - fetched, the rows, the
+ * checksum, the dataset and its version, who resolved or accepted it, and the mode; and what ran, the
+ * SQL only where the view gives it. **Results**: the rows, read only once its tab is chosen. A newer
+ * result waiting is shown beside the held one. The focus goes to its heading as it opens; **Close**
+ * and Escape close it.
  */
 export function ProvenancePanel({
   client,
-  document,
+  document: documentId,
   language,
   state,
   onClose,
 }: ProvenancePanelProps) {
   const heading = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const presentation = usePresentation();
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
   const [whole, setWhole] = useState(false);
+  const [tab, setTab] = useState<Tab>('provenance');
   const [result, setResult] = useState<Result>({ state: 'hidden' });
   // Each result asked for, counted: one answered after another value, or another version of it, has
   // opened here is dropped, rather than shown for what is open now.
   const asking = useRef(0);
   const { held, binding } = state;
+  const ids = (key: string) => ({ tab: `${heading}-tab-${key}`, panel: `${heading}-${key}` });
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -134,7 +149,22 @@ export function ProvenancePanel({
     asking.current += 1;
     setResult({ state: 'hidden' });
     setWhole(false);
+    setTab('provenance');
   }, [state.node, binding.id, held?.version]);
+  // Modal in full, as the Format dialog is: the rest of the page inert while it stands, and taken
+  // back as it is laid out of the page, so the page can give the focus back at once.
+  const shown = held !== null;
+  useLayoutEffect(() => {
+    if (!shown) return;
+    const own = dialog.current?.closest('body > *');
+    const others = [...document.body.children].filter(
+      (each) => each !== own && !each.hasAttribute('inert'),
+    );
+    for (const each of others) each.setAttribute('inert', '');
+    return () => {
+      for (const each of others) each.removeAttribute('inert');
+    };
+  }, [shown]);
 
   if (held === null) return null;
   const { provenance } = held;
@@ -145,7 +175,7 @@ export function ProvenancePanel({
     setResult({ state: 'reading' });
     try {
       const { data } = await client.GET('/v1/documents/{id}/datasets/{version}', {
-        params: { path: { id: document, version: held.version } },
+        params: { path: { id: documentId, version: held.version } },
       });
       if (asking.current !== mine) return;
       const body: unknown = data;
@@ -169,124 +199,174 @@ export function ProvenancePanel({
     }
   };
 
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    // The focus kept inside, as the Format dialog keeps it.
+    const stops = [
+      ...(dialog.current?.querySelectorAll<HTMLElement>('button, [tabindex="0"]') ?? []),
+    ].filter((each) => each.tabIndex >= 0);
+    if (stops.length === 0) return;
+    const active = document.activeElement as HTMLElement | null;
+    const inside = active !== null && dialog.current?.contains(active) === true;
+    const end = event.shiftKey ? stops[0] : stops.at(-1);
+    if (inside && active !== end) return;
+    event.preventDefault();
+    stops[event.shiftKey ? stops.length - 1 : 0]?.focus();
+  };
+
   const by = held.by.displayName ?? 'somebody';
-  return (
-    <section
-      className={styles['panel']}
-      aria-labelledby={heading}
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        onClose();
-      }}
-    >
-      <h3 id={heading} ref={headingRef} tabIndex={-1} className={styles['heading']}>
-        Provenance
-      </h3>
-      <dl className={styles['facts']}>
-        <dt>Value</dt>
-        <dd>{said(held.taken, formats, binding, held.stale)}</dd>
-        {returned(held.taken) !== null && (
-          <>
-            <dt>As the query returned it</dt>
-            <dd>{returned(held.taken)}</dd>
-          </>
-        )}
-        {state.waiting !== null && (
-          <>
-            <dt>Waiting</dt>
-            <dd>A newer result is waiting: {said(state.waiting.taken, formats, binding)}</dd>
-          </>
-        )}
-        <dt>Query definition</dt>
-        <dd>
-          {state.definition === null
-            ? 'a query definition you cannot read'
-            : `${state.definition.title}, version ${state.definition.version}`}
-        </dd>
-        {state.connection !== null && (
-          <>
-            <dt>Connection</dt>
-            <dd>{state.connection.name}</dd>
-          </>
-        )}
-        <dt>Parameters</dt>
-        <dd>
-          {parameters.length === 0
-            ? 'None'
-            : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
-        </dd>
-        <dt>Whose view</dt>
-        <dd>{whoseViewSaid(provenance, held.by)}</dd>
-        <dt>Fetched</dt>
-        <dd>{longDate(provenance.at)}</dd>
-        <dt>Rows</dt>
-        <dd>{provenance.rowCount === 1 ? '1 row' : `${provenance.rowCount} rows`}</dd>
-        <dt>Checksum</dt>
-        <dd>
-          <code>{whole ? provenance.checksum : provenance.checksum.slice(0, CHECKSUM_SHOWN)}</code>{' '}
-          {!whole && (
-            <button type="button" onClick={() => setWhole(true)}>
-              Show the whole checksum
-            </button>
-          )}
-        </dd>
-        <dt>Dataset</dt>
-        <dd>{`${held.name ?? 'An unnamed dataset'}, version ${held.number}`}</dd>
-        <dt>{held.act === 'accept' ? 'Accepted' : 'Resolved'}</dt>
-        <dd>{`${held.act === 'accept' ? 'Accepted' : 'Resolved'} by ${by} on ${longDate(held.at)}`}</dd>
-        <dt>Mode</dt>
-        <dd>{MODES[binding.mode]}</dd>
-        {provenance.sql !== null && (
-          <>
-            <dt>What ran</dt>
-            <dd>
-              <pre className={styles['sql']}>{provenance.sql}</pre>
-            </dd>
-          </>
-        )}
-      </dl>
-      {result.state === 'hidden' && (
-        <button type="button" onClick={() => void showResult()}>
-          Show the result
-        </button>
-      )}
-      {result.state === 'reading' && <p>Reading the result...</p>}
-      {result.state === 'failed' && <p>The result could not be read.</p>}
-      {result.state === 'shown' && (
-        // Scrolled within the column, so reachable by the keyboard as well as the pointer.
-        <div className={styles['result']} tabIndex={0} role="group" aria-label="The result">
-          <table>
-            <thead>
-              <tr>
-                {result.columns.map((column, at) => (
-                  <th key={at} scope="col">
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.rows.slice(0, ROWS_SHOWN).map((row, at) => (
-                <tr key={at}>
-                  {row.map((cell, column) => (
-                    <td key={column}>{cell === null ? 'null' : String(cell)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {result.rows.length > ROWS_SHOWN && (
-            <p>
-              and {result.rows.length - ROWS_SHOWN} more{' '}
-              {result.rows.length - ROWS_SHOWN === 1 ? 'row' : 'rows'}
-            </p>
+  return createPortal(
+    <div className={shell['scrim']}>
+      <div
+        ref={dialog}
+        className={`${shell['dialog']} ${shell['wide']}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={heading}
+        onKeyDown={onKeyDown}
+      >
+        <div className={styles['panel']}>
+          <h2 id={heading} ref={headingRef} tabIndex={-1} className={styles['heading']}>
+            Provenance
+          </h2>
+          <PanelTabs
+            label="Provenance and results"
+            tabs={TABS}
+            chosen={tab}
+            onChoose={(key) => {
+              setTab(key as Tab);
+              if (key === 'results' && result.state === 'hidden') void showResult();
+            }}
+            ids={ids}
+          />
+          <div
+            id={ids('provenance').panel}
+            role="tabpanel"
+            aria-labelledby={ids('provenance').tab}
+            hidden={tab !== 'provenance'}
+          >
+            <dl className={styles['facts']}>
+              <dt>Value</dt>
+              <dd>{said(held.taken, formats, binding, held.stale)}</dd>
+              {returned(held.taken) !== null && (
+                <>
+                  <dt>As the query returned it</dt>
+                  <dd>{returned(held.taken)}</dd>
+                </>
+              )}
+              {state.waiting !== null && (
+                <>
+                  <dt>Waiting</dt>
+                  <dd>A newer result is waiting: {said(state.waiting.taken, formats, binding)}</dd>
+                </>
+              )}
+              <dt>Query definition</dt>
+              <dd>
+                {state.definition === null
+                  ? 'a query definition you cannot read'
+                  : `${state.definition.title}, version ${state.definition.version}`}
+              </dd>
+              {state.connection !== null && (
+                <>
+                  <dt>Connection</dt>
+                  <dd>{state.connection.name}</dd>
+                </>
+              )}
+              <dt>Parameters</dt>
+              <dd>
+                {parameters.length === 0
+                  ? 'None'
+                  : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
+              </dd>
+              <dt>Whose view</dt>
+              <dd>{whoseViewSaid(provenance, held.by)}</dd>
+              <dt>Fetched</dt>
+              <dd>{longDate(provenance.at)}</dd>
+              <dt>Rows</dt>
+              <dd>{provenance.rowCount === 1 ? '1 row' : `${provenance.rowCount} rows`}</dd>
+              <dt>Checksum</dt>
+              <dd>
+                <code>
+                  {whole ? provenance.checksum : provenance.checksum.slice(0, CHECKSUM_SHOWN)}
+                </code>{' '}
+                {!whole && (
+                  <button type="button" onClick={() => setWhole(true)}>
+                    Show the whole checksum
+                  </button>
+                )}
+              </dd>
+              <dt>Dataset</dt>
+              <dd>{`${held.name ?? 'An unnamed dataset'}, version ${held.number}`}</dd>
+              <dt>{held.act === 'accept' ? 'Accepted' : 'Resolved'}</dt>
+              <dd>{`${held.act === 'accept' ? 'Accepted' : 'Resolved'} by ${by} on ${longDate(held.at)}`}</dd>
+              <dt>Mode</dt>
+              <dd>{MODES[binding.mode]}</dd>
+              {provenance.sql !== null && (
+                <>
+                  <dt>What ran</dt>
+                  <dd>
+                    <pre className={styles['sql']}>{provenance.sql}</pre>
+                  </dd>
+                </>
+              )}
+            </dl>
+          </div>
+          {tab === 'results' && (
+            <div id={ids('results').panel} role="tabpanel" aria-labelledby={ids('results').tab}>
+              {result.state === 'failed' ? (
+                <p>The result could not be read.</p>
+              ) : result.state !== 'shown' ? (
+                <p>Reading the result...</p>
+              ) : (
+                // Scrolled within the dialog, so reachable by the keyboard as well as the pointer.
+                <div className={styles['result']} tabIndex={0} role="group" aria-label="The result">
+                  <table>
+                    <thead>
+                      <tr>
+                        {result.columns.map((column, at) => (
+                          <th key={at} scope="col">
+                            {column}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.rows.slice(0, ROWS_SHOWN).map((row, at) => (
+                        <tr key={at}>
+                          {row.map((cell, column) => (
+                            <td key={column}>{cell === null ? 'null' : String(cell)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {result.rows.length > ROWS_SHOWN && (
+                    <p>
+                      and {result.rows.length - ROWS_SHOWN} more{' '}
+                      {result.rows.length - ROWS_SHOWN === 1 ? 'row' : 'rows'}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
-      <button type="button" onClick={onClose}>
-        Close
-      </button>
-    </section>
+        <button
+          type="button"
+          className={shell['close']}
+          aria-label="Close"
+          title="Close"
+          onClick={onClose}
+        >
+          <Icon name="Close" size={13} />
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }

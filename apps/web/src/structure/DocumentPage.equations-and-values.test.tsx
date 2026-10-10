@@ -1037,7 +1037,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("DAT-041 opens a value's provenance in one step from the value in the document's text, by a click or by Enter", async () => {
     const user = userEvent.setup();
-    const { checked } = openWithValues({
+    const { asked, checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value)],
     });
@@ -1045,13 +1045,21 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     await checked();
     const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
 
-    // A click opens its provenance, and never the editor.
+    // A click opens its provenance, and never the editor: a modal, the page behind it inert.
     await user.click(button);
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+    expect(text.closest('[inert]')).not.toBeNull();
     expect(
       within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
     ).toBeNull();
     expect(within(panel).getByRole('heading', { name: 'Provenance' })).toHaveFocus();
+    // Two tabs, the provenance chosen; the result not asked for until its tab is.
+    const tabs = within(panel).getAllByRole('tab');
+    expect(tabs.map((each) => each.textContent)).toEqual(['Provenance', 'Results']);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    expect(within(panel).queryByRole('table')).toBeNull();
+    expect(asked.filter((path) => path.includes('/datasets/'))).toHaveLength(0);
     const said = panel.textContent!;
     for (const part of [
       '1,234.5',
@@ -1071,12 +1079,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     }
     expect(said).not.toContain(CHECKSUM);
     await user.click(within(panel).getByRole('button', { name: 'Close' }));
-    expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Provenance' })).toBeNull();
+    expect(text.closest('[inert]')).toBeNull();
     expect(button).toHaveFocus();
 
     // Enter on the value, from the keyboard alone, opens it too.
     await user.keyboard('{Enter}');
-    expect(await screen.findByRole('region', { name: 'Provenance' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Provenance' })).toBeInTheDocument();
     expect(
       within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
     ).toBeNull();
@@ -1114,7 +1123,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       const text = await textRegion();
       await checked();
       await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-      const panel = await screen.findByRole('region', { name: 'Provenance' });
+      const panel = await screen.findByRole('dialog', { name: 'Provenance' });
       const whose = within(panel).getByText('Whose view').nextElementSibling!;
       expect(whose).toHaveTextContent(`Ada's own view, ${said}, seen by the source as ${seen}`);
       cleanup();
@@ -1131,9 +1140,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     await checked();
     const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
     await user.click(button);
-    await screen.findByRole('region', { name: 'Provenance' });
+    await screen.findByRole('dialog', { name: 'Provenance' });
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Provenance' })).toBeNull();
     expect(button).toHaveFocus();
   });
 
@@ -1158,7 +1167,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     });
     expect(seen(button)).toContain('revision waiting');
     await user.click(button);
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
     expect(panel).toHaveTextContent('A newer result is waiting: 1,240.5');
   });
 
@@ -1171,7 +1180,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
     expect(panel).toHaveTextContent('a query definition you cannot read');
     expect(panel.textContent).not.toContain('select');
     expect(panel.textContent).not.toContain('Harbour source');
@@ -1188,9 +1197,11 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
-    await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
+    await user.click(within(panel).getByRole('tab', { name: 'Results' }));
     const table = await within(panel).findByRole('table');
+    // The facts set aside while the result is shown.
+    expect(within(panel).getByText('Whose view')).not.toBeVisible();
     // A header row and 200 rows of the 250.
     expect(within(table).getAllByRole('row')).toHaveLength(201);
     expect(within(table).getByRole('columnheader', { name: 'depth' })).toBeInTheDocument();
@@ -1207,7 +1218,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
     const heading = within(panel).getByRole('heading', { name: 'Provenance' });
     expect(heading).toHaveFocus();
     const paragraph = () =>
@@ -1226,7 +1237,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         window.dispatchEvent(new Event('focus'));
       });
       await waitFor(() => expect(seen(paragraph())).toBe(shown));
-      expect(screen.getByRole('region', { name: 'Provenance' })).toHaveTextContent('1,234.5');
+      expect(screen.getByRole('dialog', { name: 'Provenance' })).toHaveTextContent('1,234.5');
       expect(heading).toHaveFocus();
     }
   });
@@ -1240,7 +1251,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: /bound value, failed/ }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
     expect(panel).toHaveTextContent('No value - the query returned 3 rows');
   });
 
@@ -1254,7 +1265,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
     const held = state(bound('b1'), value);
     options.bindings = [{ ...held, held: { ...held.held, stale: true, taken: null } }];
     act(() => {
@@ -1264,7 +1275,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     expect(panel.textContent).not.toContain('cannot be read');
   });
 
-  it("shows no result asked for one value once another value's provenance is open", async () => {
+  it("shows no result asked for one value once it is closed and another value's provenance is open", async () => {
     const user = userEvent.setup();
     let release: () => void = () => undefined;
     const { checked } = openWithValues({
@@ -1280,16 +1291,21 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const text = await textRegion();
     await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
-    const panel = await screen.findByRole('region', { name: 'Provenance' });
-    await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
+    const panel = await screen.findByRole('dialog', { name: 'Provenance' });
+    await user.click(within(panel).getByRole('tab', { name: 'Results' }));
+    await user.keyboard('{Escape}');
     await user.click(within(text).getByRole('button', { name: '1,240.5, bound value' }));
-    await waitFor(() => expect(panel).toHaveTextContent('1,240.5'));
+    const other = await screen.findByRole('dialog', { name: 'Provenance' });
+    await waitFor(() => expect(other).toHaveTextContent('1,240.5'));
     await act(async () => {
       release();
       await new Promise((settle) => setTimeout(settle, 20));
     });
-    expect(within(panel).queryByRole('table')).toBeNull();
-    expect(within(panel).getByRole('button', { name: 'Show the result' })).toBeInTheDocument();
+    expect(within(other).queryByRole('table')).toBeNull();
+    expect(within(other).getByRole('tab', { name: 'Provenance' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('shows a value whose answer cannot be read as unavailable, never as never resolved', async () => {
