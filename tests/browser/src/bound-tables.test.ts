@@ -234,6 +234,16 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
         shows: [panel, valuePanel],
       });
 
+      // The cursor out of the table, into the text before it: the Table tab shows it read only
+      // (ADR-0052, decision 5), its settings as text.
+      await surface.getByText('The sites, deepest first').click();
+      const readOnly = page.getByText(/^Read only\. Edit the component/);
+      await readOnly.waitFor();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await checkAxe(page, 'a bound table read only', task.meta, {
+        shows: [readOnly, panel.getByRole('region', { name: 'Table' })],
+      });
+
       // Its version cut, and the document published from it.
       const before = (
         await client.GET('/v1/components/{id}', {
