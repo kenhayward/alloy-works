@@ -342,6 +342,7 @@ export {
   type ReleaseAnswer,
 } from './promotion.js';
 export {
+  carryStandInPeople,
   seedDevelopmentConnectionUse,
   seedDevelopmentContent,
   type SeededContent,

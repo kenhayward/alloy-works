@@ -133,8 +133,8 @@ https addresses for this machine too; the containers trust the proxy's local aut
 root, never its key, leaves the proxy. On a laptop, trust
 `https://<address>:9443/lan-proxy/root.crt`, or accept each port's warning once, then sign in
 through the organisation's provider (Google's still returns to `signin.localhost`). People are kept
-by issuer, so on an existing installation Ada and Grace come back as new principals: what the setup
-seeds reaches them, anything granted to the old ones by hand does not. Let the three ports through
+by issuer, so on an existing installation Ada and Grace come back as new principals; the setup gives
+them every grant and group they held under the old one. Let the three ports through
 the firewall; anybody on the network can then reach the stack and its development-only keys.
 
 **Out: sources on your machine and network.** The two isolated networks mean the connector reaches nothing but the seeded sources: a SeaweedFS or

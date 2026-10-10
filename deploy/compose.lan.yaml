@@ -14,8 +14,8 @@
 # proxy's local authority; a laptop trusts it by installing
 # https://<ALLOY_LAN_ADDRESS>:9443/lan-proxy/root.crt, or accepts each address's warning once. Sign in
 # through the organisation's provider: Google's still returns to signin.localhost. People are kept by
-# issuer, so on an existing installation Ada and Grace come back as new principals: what the setup
-# seeds reaches them, anything granted to the old ones by hand does not. The ports must be let through the host's firewall, and anybody
+# issuer, so on an existing installation Ada and Grace come back as new principals; the setup gives
+# them what they held under the old one (carryStandInPeople). The ports must be let through the host's firewall, and anybody
 # on the network can reach the stack and its development-only keys: never on a network you do not
 # trust.
 #
