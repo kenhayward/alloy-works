@@ -868,7 +868,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   value says how it differs from the document's latest publication, and **Resolve**, **Keep** and
   **Go to** act on it there.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
-  by its words, and nothing you may not: components, documents and each of their sections,
+  by its words, or by part of a word in any case, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
   wherever they are in a component - its title, its text, a caption, an image's description, a
   footnote, a field's value. Put a phrase in quotes, leave a word out with `-`, and look in one place

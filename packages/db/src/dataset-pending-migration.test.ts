@@ -151,6 +151,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0059_space_archive',
       '0060_audit',
       '0061_audit_hardening',
+      '0062_search_contains',
     ]);
     const kept = await queryAs(
       db.adminUrl,

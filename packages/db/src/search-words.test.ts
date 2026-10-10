@@ -365,6 +365,20 @@ describe('searching words', () => {
     expect(await search(ada, 'Reviewer:grace')).toMatchObject({ outcome: 'results' });
   });
 
+  it('finds an entry by part of a word, in any case, every term wanted and none excluded (UI6)', async () => {
+    const dosing = await component('Dexamethasone dosing', ['b1', 'High-dose steroid regimen']);
+    const found = async (query: string) =>
+      itemsOf(await search(ada, query)).map((each) => each.artifactId);
+    // Part of a word, in another case: whole words alone find nothing for it.
+    expect(await found('XAMETH')).toEqual([dosing]);
+    expect(await found('dexa regim')).toEqual([dosing]);
+    // Every term wanted, and none excluded, whether a part or a whole word.
+    expect(await found('dexa absent')).toEqual([]);
+    expect(await found('dexa -regim')).toEqual([]);
+    // A wildcard typed is a character, never a pattern.
+    expect(await found('dexa%')).toEqual([]);
+  });
+
   it('answers a query with nothing to look for by name, never with everything', async () => {
     expect(await search(ada, '  ')).toEqual({ outcome: 'empty' });
     expect(await search(ada, '-lever')).toEqual({

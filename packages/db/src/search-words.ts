@@ -225,10 +225,27 @@ export async function searchWords(
   }>`select numnode(websearch_to_tsquery('simple', ${parsed.anyOf})) > 0 as any`.execute(trx);
   if (!lexemes[0]?.any) return { outcome: 'nothing_to_match', excluded: [] };
 
+  // The words, as the entry's language reads them; or every term as a part of the entry's text, in
+  // any case, none excluded (UI6), which the trigram index answers. A typed `%` or `_` is a
+  // character, never a pattern.
+  const whole = sql<SqlBool>`e.vector @@ websearch_to_tsquery(e.configuration, ${parsed.words})`;
+  const like = (term: string) => `%${term.replace(/[\\%_]/gu, (each) => `\\${each}`)}%`;
+  const contains =
+    parsed.contains === null
+      ? null
+      : sql.join(
+          [
+            ...parsed.contains.all.map((term) => sql<SqlBool>`e.body ilike ${like(term)}`),
+            ...parsed.contains.none.map((term) => sql<SqlBool>`e.body not ilike ${like(term)}`),
+          ],
+          sql` and `,
+        );
   const words =
     parsed.words === ''
       ? sql<SqlBool>`true`
-      : sql<SqlBool>`e.vector @@ websearch_to_tsquery(e.configuration, ${parsed.words})`;
+      : contains === null
+        ? whole
+        : sql<SqlBool>`(${whole} or (${contains}))`;
   const limit = Math.min(Math.max(options.limit ?? SEARCH_PAGE, 1), SEARCH_PAGE_MAX);
   const offset = Math.min(Math.max(options.offset ?? 0, 0), SEARCH_COUNT_CAP);
 

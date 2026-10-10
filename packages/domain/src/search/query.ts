@@ -30,6 +30,15 @@ export type ParsedQuery =
       /** Every term looked for, scoped or not, joined by `or`: what ranks a place and marks a passage. */
       readonly anyOf: string;
       readonly scoped: readonly ScopedTerm[];
+      /**
+       * The terms a part of a word may match, besides the words (UI6): every unscoped term wanted
+       * found in the entry's text, in any case, and none excluded. Null beside an `or`, whose
+       * meaning for a part of a word is not obvious, and where every term is scoped.
+       */
+      readonly contains: {
+        readonly all: readonly string[];
+        readonly none: readonly string[];
+      } | null;
     };
 
 interface Unit {
@@ -113,6 +122,18 @@ function terms(query: string): Term[] {
 const isOr = (term: Term) =>
   !term.excluded && !term.unit.phrase && term.scope === undefined && /^or$/iu.test(term.unit.text);
 
+/** What a part of a word is matched by, from a query's terms: none beside an `or`. */
+function containsOf(all: readonly Term[]): { all: string[]; none: string[] } | null {
+  if (all.some(isOr)) return null;
+  const unscoped = all.filter((term) => term.scope === undefined);
+  const wanted = unscoped.filter((term) => !term.excluded).map((term) => term.unit.text);
+  if (wanted.length === 0) return null;
+  return {
+    all: wanted,
+    none: unscoped.filter((term) => term.excluded).map((term) => term.unit.text),
+  };
+}
+
 /** Reads a query: composed first, then its scoped terms lifted out and its outcome named. */
 export function parseQuery(query: string): ParsedQuery {
   const composed = query.normalize('NFC');
@@ -137,5 +158,6 @@ export function parseQuery(query: string): ParsedQuery {
         ? []
         : [{ name: term.scope, words: written(term.unit), excluded: term.excluded }],
     ),
+    contains: containsOf(all),
   };
 }

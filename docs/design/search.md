@@ -257,7 +257,14 @@ which every definition's words are in, so the query is run and answers with what
 nothing. Only a query no configuration keeps anything of is `nothing_to_match`.
 
 The free words are matched against the entry's own `tsvector`, every place's words together, so two
-words in two places find it; a scoped term against its place's row alone. The best place is the row
+words in two places find it; a scoped term against its place's row alone.
+
+**A part of a word finds it too** (UI6, at Ken's asking): an entry matches its words as above, or
+holds every free term as a part of its `body`, in any case, and none excluded - `ilike '%term%'`,
+a typed `%` or `_` a character, answered by a trigram index (`pg_trgm`, created in `extensions`
+by `prepareDatabase`; tenant migration 0062). Not beside an `or`, and never for a scoped term. A
+match by a part alone ranks below every match by words, and its passage and place are the best the
+words find, which may be none. The best place is the row
 ranked highest against every term looked for, joined by `or`, and the passage is marked with the same.
 
 ### One query
