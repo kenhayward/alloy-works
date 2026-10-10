@@ -28,6 +28,7 @@ const app = buildApp({
   ...(objects ? { objects } : {}),
   ...(config.rendererRoot ? { rendererRoot: config.rendererRoot } : {}),
   ...(connector ? { connector } : {}),
+  ...(config.trustProxy ? { trustProxy: config.trustProxy } : {}),
 });
 
 const stop = async (signal: string) => {

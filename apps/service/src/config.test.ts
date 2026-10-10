@@ -103,6 +103,19 @@ describe('configuration', () => {
     );
   });
 
+  it('believes a proxy only at the addresses it is given, and refuses anything else', () => {
+    expect(loadConfig({ DATABASE_URL: url }).trustProxy).toBeUndefined();
+    const config = loadConfig({ DATABASE_URL: url, TRUST_PROXY: '172.16.0.0/12,127.0.0.1' });
+    expect(config.trustProxy).toBe('172.16.0.0/12,127.0.0.1');
+    expect(describeConfig(config)).toMatchObject({ trustProxy: '172.16.0.0/12,127.0.0.1' });
+    expect(describeConfig(loadConfig({ DATABASE_URL: url }))).toMatchObject({ trustProxy: 'none' });
+    for (const wrong of ['true', 'proxy.local', '10.0.0.0/8,']) {
+      expect(() => loadConfig({ DATABASE_URL: url, TRUST_PROXY: wrong }), wrong).toThrow(
+        /TRUST_PROXY must be addresses or ranges, separated by commas/,
+      );
+    }
+  });
+
   it('finds the connector at an http or https address, and describes it by its host alone', () => {
     expect(loadConfig({ DATABASE_URL: url }).connectorUrl).toBeUndefined();
     const config = loadConfig({ DATABASE_URL: url, CONNECTOR_URL: 'http://connector:8090' });

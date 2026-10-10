@@ -274,3 +274,25 @@ describe('the shape of every failure', () => {
     }
   });
 });
+
+describe('the HTTP layer behind a proxy', () => {
+  async function seen(trustProxy?: string) {
+    const app = createHttp({ logLevel: 'silent', ...(trustProxy ? { trustProxy } : {}) });
+    app.get('/seen', async (request) => ({ at: `${request.protocol}://${request.host}` }));
+    const response = await app.inject({
+      url: '/seen',
+      headers: {
+        host: 'internal:8088',
+        'x-forwarded-proto': 'https',
+        'x-forwarded-host': 'lan:8443',
+      },
+    });
+    return response.json<{ at: string }>().at;
+  }
+
+  it("takes the address a browser used from a proxy it is told to trust, and from nobody else's", async () => {
+    expect(await seen('127.0.0.1')).toBe('https://lan:8443');
+    expect(await seen('10.0.0.0/8')).toBe('http://internal:8088');
+    expect(await seen()).toBe('http://internal:8088');
+  });
+});

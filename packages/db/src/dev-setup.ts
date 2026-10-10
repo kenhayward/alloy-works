@@ -45,14 +45,14 @@ await bootstrapCluster(adminUrl, TEST_PASSWORDS);
 await migrate(migratorUrl);
 
 const organisation = { id: 'acme', name: 'Acme' };
-// A hostname anything can reach, whatever it makes of `*.localhost`: the end-to-end suite
-// uses it.
-const extra = process.env.DEV_EXTRA_HOSTNAME;
+// Hostnames anything can reach, whatever it makes of `*.localhost`, separated by commas: the
+// end-to-end suite uses one, and deploy/compose.lan.yaml adds this machine's address on the network.
+const extra = process.env.DEV_EXTRA_HOSTNAME?.split(',').filter(Boolean) ?? [];
 const environments = [
   { tenant: { id: 'acme', name: 'Production' }, hostnames: ['acme.localhost'] },
   {
     tenant: { id: 'acmedev', name: 'Development' },
-    hostnames: extra ? ['dev.acme.localhost', extra] : ['dev.acme.localhost'],
+    hostnames: ['dev.acme.localhost', ...extra],
   },
 ];
 const check = new pg.Client({ connectionString: adminUrl });

@@ -42,9 +42,9 @@ $env:COMPOSE_FILE = 'deploy/compose.yaml'          # PowerShell
 The project is named `alloy-works` in the file itself, so its containers, network and volumes keep
 the same names whatever directory you run it from.
 
-**On Windows, `deployBringUpDev.cmd`** does the whole round from the repo root: it checks Git,
+**On Windows, `deploy\BringUpDev.cmd`** does the whole round from the repo root: it checks Git,
 Docker (Engine 28 or later, running) and curl, that the checkout is on `main` with nothing
-uncommitted, pulls with `--ff-only`, builds, starts the stack with [the LAN override](#reaching-sources-on-your-machine-and-network-composelanyaml)
+uncommitted, pulls with `--ff-only`, builds, starts the stack with [the LAN override](#opening-the-stack-to-your-network-composelanyaml), finding this machine's network address when `ALLOY_LAN_ADDRESS` is not set,
 and waits for every container and then the service to answer. It stops at the first problem,
 naming it. `COMPOSE_PROJECT_NAME` and the ports in [the table below](#when-a-port-is-already-taken)
 are honoured, so it can bring up a second stack beside yours.
@@ -115,22 +115,36 @@ the connector uses them. Docker sets these only for a container with an IPC name
 with `ipc: host`. A deployment must give it the limits: without every one of them at zero it refuses to
 start, naming each that is not, as it does without its capabilities.
 
-### Reaching sources on your machine and network: `compose.lan.yaml`
+### Opening the stack to your network: `compose.lan.yaml`
 
-The two isolated networks mean the connector reaches nothing but the seeded sources: a SeaweedFS or
-MinIO on your own machine or LAN fails its test as unreachable. **`deploy/compose.lan.yaml`**, for
-development only, adds a third, ordinary network with a route out:
+**`deploy/compose.lan.yaml`**, for development only, opens the stack both ways. It needs
+`ALLOY_LAN_ADDRESS`, this machine's address on the network, in the environment or `deploy/.env`:
 
 ```bash
-docker compose -f deploy/compose.yaml -f deploy/compose.lan.yaml up -d --build --wait
+ALLOY_LAN_ADDRESS=192.168.1.20 docker compose -f deploy/compose.yaml -f deploy/compose.lan.yaml up -d --build --wait
 ```
 
-With it, the address guard holds the connector away from the platform instead of the network: its own
+**In: other machines over https.** The service's sign-in cookies are `Secure`, which a browser keeps
+only over https or from `localhost`, so `lan-proxy` (Caddy, `deploy/lan-proxy/Caddyfile`) ends TLS
+on every address: the app at `https://<address>:8443`, the stand-in provider at `:9443` and the store
+at `:8343` (`LAN_SERVICE_PORT`, `LAN_IDP_PORT`, `LAN_STORE_PORT`). A sign-in redirect and a signed
+download link carry the address that made them, so the issuer and the store's endpoint become those
+https addresses for this machine too; the containers trust the proxy's local authority, and only its
+root, never its key, leaves the proxy. On a laptop, trust
+`https://<address>:9443/lan-proxy/root.crt`, or accept each port's warning once, then sign in
+through the organisation's provider (Google's still returns to `signin.localhost`). People are kept
+by issuer, so on an existing installation Ada and Grace come back as new principals: what the setup
+seeds reaches them, anything granted to the old ones by hand does not. Let the three ports through
+the firewall; anybody on the network can then reach the stack and its development-only keys.
+
+**Out: sources on your machine and network.** The two isolated networks mean the connector reaches nothing but the seeded sources: a SeaweedFS or
+MinIO on your own machine or LAN fails its test as unreachable. The override adds a third, ordinary
+network with a route out. With it, the address guard holds the connector away from the platform instead of the network: its own
 networks' gateways and addresses, loopback and link-local, and `CONNECTOR_DENY`'s
 `172.16.0.0/12` (Docker's bridge ranges) and `192.168.65.0/24` (Docker Desktop's, where
 `host.docker.internal` reaches the host's loopback - measured to answer the service's port without
-it). The platform's ports are published on `127.0.0.1` alone, so your LAN address does not reach
-them. A source inside `172.16.0.0/12` needs `ALLOY_LAN_DENY` in `deploy/.env`, with ranges of your
+it). The proxy's ports are on your LAN address, which the connector may dial, but the store behind
+it refuses anybody without a credential and the connector holds none. A source inside `172.16.0.0/12` needs `ALLOY_LAN_DENY` in `deploy/.env`, with ranges of your
 own. Use `http://<your machine's LAN address>:<port>` for a store on this machine, not `localhost`,
 which the guard always refuses. Never with the suites: `connector-isolation.test.ts` asserts the
 isolation this gives up.
