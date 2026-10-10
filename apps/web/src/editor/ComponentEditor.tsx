@@ -76,6 +76,7 @@ import {
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
+import { InPlaceBand } from './InPlaceBand.js';
 import {
   lazy,
   Suspense,
@@ -85,6 +86,7 @@ import {
   useState,
   type KeyboardEvent,
   type ReactNode,
+  useContext,
 } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -518,6 +520,7 @@ export function ComponentEditor({
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
   const status = useStatus();
+  const bandHost = useContext(InPlaceBand);
   useEffect(() => {
     if (notice !== null) status?.say(notice);
   }, [status, notice]);
@@ -2057,6 +2060,193 @@ export function ComponentEditor({
     onDone?.();
   };
 
+  // The band a document keeps for a component open in place (ADR-0056), and whether this is one.
+  const inBand = onDone !== undefined && bandHost !== null;
+  const stripPart = (
+    <div className={styles['strip']}>
+      {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
+          inside it are disabled, and an element with no role and no name announces nothing at
+          all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
+          a new stop in the tab order. */}
+      <header
+        ref={headerRegion}
+        className={styles['header']}
+        role="group"
+        aria-label="Component header"
+        tabIndex={-1}
+        // Where the application's F6 enters this editor's own ring (`RegionKeys`).
+        data-region-entry
+      >
+        {inBand && <Icon name="Authoring" size={14} />}
+        {number !== undefined && (
+          <span className={styles['number']} title={size}>
+            {number}
+          </span>
+        )}
+        {header ? (
+          <ComponentHeader
+            header={header}
+            editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
+            onChange={changeHeader}
+            onRefused={setNotice}
+          >
+            <span
+              className={styles['version']}
+              {...(number === undefined && size !== undefined ? { title: size } : {})}
+            >
+              {session?.version.number ?? shown.version.number} · {shown.space.name}
+            </span>
+          </ComponentHeader>
+        ) : (
+          <>
+            <h2 id="component-title" className={styles['fallbackTitle']}>
+              {typeof title === 'string' ? title : 'Untitled'}
+            </h2>
+            <span className={styles['version']}>
+              {shown.version.number} · {shown.space.name}
+            </span>
+          </>
+        )}
+      </header>
+      {session && loaded.state === 'open' && (
+        <SaveIndicator save={session.save} savedAt={session.savedAt} />
+      )}
+      {(mayCut || onDone) && (
+        <>
+          <span className={styles['divider']} aria-hidden="true" />
+          <Toolbar label="Component" className={styles['actions']}>
+            {/* The author's own saved text, listed while editing: the lock is already this
+                session's, so nothing is claimed (final review of W11.2, D1). */}
+            {mayCut && (
+              <button
+                className={styles['act']}
+                type="button"
+                title="Saved text"
+                disabled={phase !== 'editing'}
+                onClick={recover}
+              >
+                <Icon name="Saved text" />
+                Saved text
+              </button>
+            )}
+            {mayCut && (
+              <button
+                className={`primary ${styles['act']}`}
+                type="button"
+                title="Save version"
+                disabled={phase !== 'editing'}
+                onClick={() => void controls.current?.saveVersion()}
+              >
+                <Icon name="Save version" />
+                Save version
+              </button>
+            )}
+            <button
+              className={styles['act']}
+              type="button"
+              aria-label="Done editing"
+              title="Done editing"
+              disabled={doneDisabled}
+              onClick={() => void done()}
+            >
+              <Icon name="Done editing" />
+              Done
+            </button>
+          </Toolbar>
+        </>
+      )}
+    </div>
+  );
+  const toolsPart =
+    loaded.state === 'open' ? (
+      <>
+        {/* Above the surface, which is the order the regions are named in
+      (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
+      than absent, so what the editor can do with the text is visible before the lock is. */}
+        <EditorToolbar
+          onPasteMarkdown={() => void pasteMarkdown()}
+          onInsertFigure={() => setFigureDialog('Figure')}
+          figurePlaceable={mayPlaceFigure}
+          onInsertImage={() => setFigureDialog('Image')}
+          imagePlaceable={mayPlaceImage}
+          ref={toolbarRegion}
+          view={editing}
+          enabled={mayFormat}
+          newIdentifier={newBlockIdentifier}
+          prompt={askFor}
+          onRefused={(command) =>
+            editing && askAgain(editing, command, whyRefused(editing, command))
+          }
+          openDialog={(action, view) =>
+            surface !== null &&
+            ((action === 'reference' && openReference(surface, view)) ||
+              (action === 'equation' && openEquation(view)) ||
+              (action === 'symbol' && openSymbols(view)) ||
+              (action === 'value' && openValue(view)))
+          }
+        />
+        {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
+        under it moves as options come and go, holding what the selection offers. */}
+        <div className={styles['toolbarLine']} data-toolbar-line="">
+          {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
+          only way a paragraph's alignment, indents and spacing change (CNT-094). Of the
+          footnote's own text while one is open, as the toolbar's buttons are. */}
+          {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
+          {/* While the cursor stands in a list: Nest and Lift, and a numbered list's start and
+          numbering. A bulleted list's are its own; its kind is the toolbar's buttons. */}
+          {surface !== null && list !== null && (
+            <ListPanel
+              ref={listRegion}
+              view={surface}
+              list={list}
+              enabled={mayFormat}
+              newIdentifier={newBlockIdentifier}
+            />
+          )}
+          {/* And only while the cursor stands in a preformatted block: its one field is the
+          language label, which nothing else in the view can set. */}
+          {surface !== null && preformatted !== null && (
+            <PreformattedPanel
+              ref={preformattedRegion}
+              view={surface}
+              block={preformatted}
+              enabled={mayFormat}
+            />
+          )}
+          {/* And only while the cursor stands in a figure: how its alternative text is given,
+          and what can be done to its image. */}
+          {surface !== null && figure !== null && (
+            <FigurePanel
+              // One panel per figure, so what was typed for one is never offered to the next.
+              key={figure.id ?? figure.pos}
+              ref={figureRegion}
+              view={surface}
+              figure={figure}
+              enabled={mayFormat}
+              client={client}
+              onReplace={() => setFigureDialog('Replace image')}
+            />
+          )}
+          {/* Or while an inline image is selected whole: the same panel, about the image
+          (figures 4, ruling R7). An image never stands in a figure, so the two never meet. */}
+          {surface !== null && image !== null && (
+            <FigurePanel
+              key={`image-${image.pos}`}
+              kind="image"
+              ref={figureRegion}
+              view={surface}
+              figure={image}
+              enabled={mayFormat}
+              client={client}
+              onReplace={() => setFigureDialog('Replace image')}
+            />
+          )}
+          {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
+          what it shows, and its provenance (B1-M), in one line. */}
+          {valued !== null && valued.place !== 'table' && valuePanel(valued)}
+        </div>
+      </>
+    ) : null;
   return (
     <>
       {/* Inert while a dialog stands over it, which is the other half of what that dialog's
@@ -2070,98 +2260,17 @@ export function ComponentEditor({
         inert={behindDialog}
         onKeyDown={moveRegion}
       >
-        <div className={styles['strip']}>
-          {/* A named group, not a bare `<header>`: F6 lands on this element itself when the fields
-              inside it are disabled, and an element with no role and no name announces nothing at
-              all to whoever the ring just moved. `tabIndex` makes it a target for that key and not
-              a new stop in the tab order. */}
-          <header
-            ref={headerRegion}
-            className={styles['header']}
-            role="group"
-            aria-label="Component header"
-            tabIndex={-1}
-            // Where the application's F6 enters this editor's own ring (`RegionKeys`).
-            data-region-entry
-          >
-            {number !== undefined && (
-              <span className={styles['number']} title={size}>
-                {number}
-              </span>
-            )}
-            {header ? (
-              <ComponentHeader
-                header={header}
-                editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
-                onChange={changeHeader}
-                onRefused={setNotice}
-              >
-                <span
-                  className={styles['version']}
-                  {...(number === undefined && size !== undefined ? { title: size } : {})}
-                >
-                  {session?.version.number ?? shown.version.number} · {shown.space.name}
-                </span>
-              </ComponentHeader>
-            ) : (
-              <>
-                <h2 id="component-title" className={styles['fallbackTitle']}>
-                  {typeof title === 'string' ? title : 'Untitled'}
-                </h2>
-                <span className={styles['version']}>
-                  {shown.version.number} · {shown.space.name}
-                </span>
-              </>
-            )}
-          </header>
-          {session && loaded.state === 'open' && (
-            <SaveIndicator save={session.save} savedAt={session.savedAt} />
-          )}
-          {(mayCut || onDone) && (
-            <>
-              <span className={styles['divider']} aria-hidden="true" />
-              <Toolbar label="Component" className={styles['actions']}>
-                {/* The author's own saved text, listed while editing: the lock is already this
-                    session's, so nothing is claimed (final review of W11.2, D1). */}
-                {mayCut && (
-                  <button
-                    className={styles['act']}
-                    type="button"
-                    title="Saved text"
-                    disabled={phase !== 'editing'}
-                    onClick={recover}
-                  >
-                    <Icon name="Saved text" />
-                    Saved text
-                  </button>
-                )}
-                {mayCut && (
-                  <button
-                    className={`primary ${styles['act']}`}
-                    type="button"
-                    title="Save version"
-                    disabled={phase !== 'editing'}
-                    onClick={() => void controls.current?.saveVersion()}
-                  >
-                    <Icon name="Save version" />
-                    Save version
-                  </button>
-                )}
-                <button
-                  className={styles['act']}
-                  type="button"
-                  aria-label="Done editing"
-                  title="Done editing"
-                  disabled={doneDisabled}
-                  onClick={() => void done()}
-                >
-                  <Icon name="Done editing" />
-                  Done
-                </button>
-              </Toolbar>
-            </>
-          )}
-        </div>
+        {/* Open in place on a document's sheet, the strip, the toolbar and its second line stand in
+            the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
+        {inBand
+          ? createPortal(
+              <div className={styles['band']} inert={behindDialog}>
+                {stripPart}
+                {toolsPart}
+              </div>,
+              bandHost,
+            )
+          : stripPart}
         {loaded.state === 'unreadable' && (
           <Notice tone="failed">
             <p>This component could not be read.</p>
@@ -2178,91 +2287,7 @@ export function ComponentEditor({
         )}
         {loaded.state === 'open' && (
           <>
-            {/* Above the surface, which is the order the regions are named in
-              (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
-              than absent, so what the editor can do with the text is visible before the lock is. */}
-            <EditorToolbar
-              onPasteMarkdown={() => void pasteMarkdown()}
-              onInsertFigure={() => setFigureDialog('Figure')}
-              figurePlaceable={mayPlaceFigure}
-              onInsertImage={() => setFigureDialog('Image')}
-              imagePlaceable={mayPlaceImage}
-              ref={toolbarRegion}
-              view={editing}
-              enabled={mayFormat}
-              newIdentifier={newBlockIdentifier}
-              prompt={askFor}
-              onRefused={(command) =>
-                editing && askAgain(editing, command, whyRefused(editing, command))
-              }
-              openDialog={(action, view) =>
-                surface !== null &&
-                ((action === 'reference' && openReference(surface, view)) ||
-                  (action === 'equation' && openEquation(view)) ||
-                  (action === 'symbol' && openSymbols(view)) ||
-                  (action === 'value' && openValue(view)))
-              }
-            />
-            {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
-                under it moves as options come and go, holding what the selection offers. */}
-            <div className={styles['toolbarLine']} data-toolbar-line="">
-              {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
-                  only way a paragraph's alignment, indents and spacing change (CNT-094). Of the
-                  footnote's own text while one is open, as the toolbar's buttons are. */}
-              {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
-              {/* While the cursor stands in a list: Nest and Lift, and a numbered list's start and
-                  numbering. A bulleted list's are its own; its kind is the toolbar's buttons. */}
-              {surface !== null && list !== null && (
-                <ListPanel
-                  ref={listRegion}
-                  view={surface}
-                  list={list}
-                  enabled={mayFormat}
-                  newIdentifier={newBlockIdentifier}
-                />
-              )}
-              {/* And only while the cursor stands in a preformatted block: its one field is the
-                  language label, which nothing else in the view can set. */}
-              {surface !== null && preformatted !== null && (
-                <PreformattedPanel
-                  ref={preformattedRegion}
-                  view={surface}
-                  block={preformatted}
-                  enabled={mayFormat}
-                />
-              )}
-              {/* And only while the cursor stands in a figure: how its alternative text is given,
-                  and what can be done to its image. */}
-              {surface !== null && figure !== null && (
-                <FigurePanel
-                  // One panel per figure, so what was typed for one is never offered to the next.
-                  key={figure.id ?? figure.pos}
-                  ref={figureRegion}
-                  view={surface}
-                  figure={figure}
-                  enabled={mayFormat}
-                  client={client}
-                  onReplace={() => setFigureDialog('Replace image')}
-                />
-              )}
-              {/* Or while an inline image is selected whole: the same panel, about the image
-                  (figures 4, ruling R7). An image never stands in a figure, so the two never meet. */}
-              {surface !== null && image !== null && (
-                <FigurePanel
-                  key={`image-${image.pos}`}
-                  kind="image"
-                  ref={figureRegion}
-                  view={surface}
-                  figure={image}
-                  enabled={mayFormat}
-                  client={client}
-                  onReplace={() => setFigureDialog('Replace image')}
-                />
-              )}
-              {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
-                  what it shows, and its provenance (B1-M), in one line. */}
-              {valued !== null && valued.place !== 'table' && valuePanel(valued)}
-            </div>
+            {!inBand && toolsPart}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>You may read this component but not edit it.</p>

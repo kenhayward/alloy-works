@@ -12,6 +12,77 @@
   background: var(--surface);
 }
 
+/*
+ * The band (ADR-0056): the strip's name, the toolbar and the save chip and Done in one row, then the
+ * toolbar's second line. The strip gives its parts to the row; the number and version are the
+ * heading's on the sheet.
+ */
+.band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-12);
+  padding: 0 var(--space-16);
+}
+
+.band > .strip {
+  display: contents;
+}
+
+.band .header {
+  flex: none;
+  order: 0;
+  gap: 6px;
+  min-height: var(--inplace-toolbar);
+  padding: 0 var(--space-8);
+  color: var(--accent);
+}
+
+.band .header .number,
+.band .header .version,
+.band .divider {
+  display: none;
+}
+
+/* One row, scrolled sideways where the window is narrow, so the band keeps its height. */
+.band > :global([role='toolbar'][aria-label='Formatting']) {
+  flex: 1;
+  flex-wrap: nowrap;
+  order: 1;
+  min-width: 0;
+  overflow-x: auto;
+  border: 0;
+  scrollbar-width: thin;
+}
+
+.band .header :global(h2),
+.band .header :global(button) {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Saved text and Save version as their icons in the band, named by their titles; Done keeps its word. */
+.band .act[title='Saved text'],
+.band .act[title='Save version'] {
+  gap: 0;
+  font-size: 0;
+}
+
+.band > .strip > :not(.header) {
+  order: 2;
+}
+
+.band > .toolbarLine {
+  flex-basis: 100%;
+  order: 3;
+  min-height: var(--context-line);
+  margin-inline: calc(-1 * var(--space-16));
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+}
+
 /* In place in a document, the box is the card being edited, with the ring that says so. */
 .card[data-in-place='true'] {
   border-color: var(--accent);
@@ -125,10 +196,20 @@
  */
 :global(.aw-sheet) .card[data-in-place='true'] {
   margin-inline: calc(-1 * var(--sheet-margin) * var(--aw-zoom));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
+/* Its text exactly where the sheet set it, read: no padding above or below, and no least height. */
 :global(.aw-sheet) .card[data-in-place='true'] .surface {
-  padding-inline: calc(var(--sheet-margin) * var(--aw-zoom) - 6pt * var(--aw-zoom) - 1px);
+  min-height: 0;
+  padding-block: 0;
+  padding-inline: calc(var(--sheet-margin) * var(--aw-zoom) - 6pt * var(--aw-zoom));
+}
+
+:global(.aw-sheet) .card[data-in-place='true'] .surface :global(.ProseMirror) {
+  min-height: 0;
 }
 
 .surface:focus-within {
@@ -168,4 +249,10 @@
   padding: var(--space-4) var(--space-12);
   border-bottom: 1px solid var(--border);
   font-size: var(--size-13);
+}
+
+/* The name in the band in accent, as the drawing has it. */
+.band .header :global(h2),
+.band .header :global(button) {
+  color: inherit;
 }

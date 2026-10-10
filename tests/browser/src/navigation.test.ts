@@ -165,7 +165,9 @@ async function standing(
     if (!element) throw new Error(`No node ${id} in the text`);
     const heading = element.querySelector('h1, h2, h3, h4, h5, h6') ?? element;
     const box = heading.getBoundingClientRect();
-    const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+    // Under the header, or under the in-place band where Authoring keeps one (ADR-0056).
+    const header = (document.querySelector('[data-inplace-band]') ??
+      document.querySelector('header'))!.getBoundingClientRect().bottom;
     return { top: box.top, bottom: box.bottom, header, height: window.innerHeight };
   }, node);
 }
@@ -196,7 +198,9 @@ async function shownInPane(tree: Locator, node: string): Promise<boolean> {
     const clip = pane && pane !== document.documentElement ? pane.getBoundingClientRect() : null;
     const top = Math.max(
       clip?.top ?? 0,
-      document.querySelector('header')!.getBoundingClientRect().bottom,
+      // Under the header, or under the in-place band where Authoring keeps one (ADR-0056).
+      (document.querySelector('[data-inplace-band]') ??
+        document.querySelector('header'))!.getBoundingClientRect().bottom,
     );
     const bottom = Math.min(clip?.bottom ?? window.innerHeight, window.innerHeight);
     return box.top >= top - 1 && box.bottom <= bottom + 1;
@@ -267,7 +271,9 @@ async function arrivedAt(page: Page, node: string): Promise<void> {
       const element = document.querySelector(
         `[aria-label="The document's text"] [data-node="${id}"]`,
       );
-      const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+      // Under the header, or under the in-place band where Authoring keeps one (ADR-0056).
+      const header = (document.querySelector('[data-inplace-band]') ??
+        document.querySelector('header'))!.getBoundingClientRect().bottom;
       return element !== null && Math.abs(element.getBoundingClientRect().top - header) < 2;
     },
     node,

@@ -589,7 +589,9 @@ export function DocumentText({
                 )}
               </div>
             )}
-            {!(editing === node.id && editor && node.component !== null) && titled(node, depth)}
+            {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
+                (ADR-0056). */}
+            {titled(node, depth)}
             {node.component !== null &&
               (editing === node.id && editor
                 ? editor(node.component, {

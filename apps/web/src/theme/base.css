@@ -34,7 +34,12 @@ body {
  * chips under the band, where axe's target-size found them crowded.
  */
 html {
-  scroll-padding-top: var(--header-height);
+  scroll-padding-top: calc(var(--header-height) + var(--band-height, 0px));
+}
+
+/* And under a document's in-place band where it has one (ADR-0056), which stands under the header. */
+html:has([data-inplace-band]) {
+  --band-height: calc(var(--inplace-toolbar) + var(--context-line) + 1px);
 }
 
 /*
