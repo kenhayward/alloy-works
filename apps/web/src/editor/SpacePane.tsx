@@ -1,6 +1,7 @@
 import type { ComponentList as Page, createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
+import { PaneToggle, type Pane } from '../layouts/PaneWidth.js';
 import styles from './SpacePane.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -15,10 +16,13 @@ export function SpacePane({
   client,
   space,
   current,
+  pane,
 }: {
   client: Client;
   space: { readonly id: string; readonly name: string };
   current: string;
+  /** The pane it stands in, whose toggle it carries beside its name: hidden, the page draws a rail. */
+  pane?: Pane;
 }) {
   const [items, setItems] = useState<readonly Item[]>([]);
 
@@ -37,9 +41,12 @@ export function SpacePane({
 
   return (
     <nav className={styles['pane']} aria-label={space.name}>
-      <p className={styles['overline']} aria-hidden="true">
-        {space.name}
-      </p>
+      <div className={styles['head']}>
+        <p className={styles['overline']} aria-hidden="true">
+          {space.name}
+        </p>
+        {pane && <PaneToggle label="space pane" pane={pane} />}
+      </div>
       <ul className={styles['items']}>
         {items.map((item) => (
           <li key={item.id}>

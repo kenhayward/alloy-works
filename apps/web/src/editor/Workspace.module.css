@@ -1,18 +1,85 @@
-/* Layout B around an open component: the space pane, then the editor. */
+/*
+ * Layout B around an open component: the space pane, the edge that sizes it, the editor, the edge
+ * that sizes the panels, then the panels - each pane hidden to a rail, standing beside the text as
+ * the window scrolls it and scrolling on its own, as the document page's are.
+ */
 .triptych {
+  --left: var(--space-width, var(--pane-space));
+  --edge: 6px;
+  --right: var(--dock-panel);
+  --dock-edge: 6px;
   display: grid;
-  grid-template-columns: var(--pane-space) minmax(0, 1fr) var(--dock-panel);
-  gap: var(--space-16);
+  grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--dock-edge) var(--right);
+  column-gap: var(--space-8);
   align-items: start;
+}
+
+.triptych[data-space-collapsed='true'] {
+  --left: var(--pane-collapsed-rail);
+  --edge: 0;
+}
+
+.triptych[data-dock-collapsed='true'] {
+  --right: var(--pane-collapsed-rail);
+  --dock-edge: 0;
+}
+
+.space {
+  grid-column: 1;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-16));
+  min-width: 0;
+  max-height: calc(100vh - var(--header-height) - var(--status-height, 0px) - var(--space-32));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.edge,
+.dockEdge {
+  align-self: stretch;
+  display: flex;
+}
+
+.edge {
+  grid-column: 2;
+}
+
+.dockEdge {
+  grid-column: 4;
+}
+
+.edge > *,
+.dockEdge > * {
+  flex: 1;
+}
+
+.editor {
+  grid-column: 3;
+}
+
+.dockRail {
+  grid-column: 5;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-16));
+}
+
+/* The rail placed by the column holding it, not by the outline's grid. */
+.rail {
+  grid-column: auto;
+  grid-row: auto;
+  position: static;
 }
 
 /* Below 1366px the space pane gives way first, so the text keeps its room (the LG plan, LG-J). */
 @media (max-width: 1365px) {
-  .triptych {
-    grid-template-columns: minmax(0, 1fr) var(--dock-panel);
+  .triptych,
+  .triptych[data-space-collapsed='true'] {
+    --left: 0px;
+    --edge: 0;
   }
 
-  .triptych > :first-child {
+  .space,
+  .edge {
     display: none;
   }
 }
@@ -30,6 +97,15 @@
 @media (max-width: 900px) {
   .triptych {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .triptych > * {
+    grid-column: 1;
+  }
+
+  .dockEdge,
+  .dockRail {
+    display: none;
   }
 }
 

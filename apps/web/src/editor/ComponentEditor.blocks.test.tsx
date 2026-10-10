@@ -55,32 +55,37 @@ describe('the list panel', () => {
   /** The first stored block, as a save would send it. */
   const firstBlock = (view: EditorView) => fromEditor(view.state.doc).content[0];
 
-  it('shows the list panel only while the cursor is in a counted list, and sets its numbering', async () => {
+  it("sets a list's options on the toolbar's second line: Nest and Lift for any list, Start at and Numbering for a numbered one alone, and no Kind, which the toolbar's buttons are (ADR-0053)", async () => {
     const { surface } = openTwoParagraphs();
     const view = await surface();
     await screen.findByRole('button', { name: 'Bulleted list' });
+    const formatting = screen.getByRole('toolbar', { name: 'Formatting' });
+    // The line is there before anything is chosen, so nothing below it moves as options come and go.
+    const line = formatting.nextElementSibling as HTMLElement;
+    expect(line).toHaveAttribute('data-toolbar-line');
     expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+    // Nest and Lift are a list's own, and stand with its options rather than on the first line.
+    expect(within(formatting).queryByRole('button', { name: 'Nest item' })).toBeNull();
+    expect(within(formatting).queryByRole('button', { name: 'Lift item' })).toBeNull();
 
     await userEvent.click(screen.getByRole('button', { name: 'Bulleted list' }));
-
-    const panel = await screen.findByRole('group', { name: 'List' });
-    const kind = within(panel).getByLabelText('Kind');
-    expect(kind).toHaveValue('unordered');
-    // Neither has anything to say about a bulleted list, so both are gone from the accessibility
-    // tree rather than sitting there disabled - and `setListAttributes` refuses a start or a
-    // numbering on a list that is not ordered, so a box left standing would be one that announced
-    // itself as available and did nothing when it was used.
+    const panel = await within(line).findByRole('group', { name: 'List' });
+    expect(within(panel).queryByLabelText('Kind')).toBeNull();
+    // A bulleted list's options are its own: none of a numbered list's.
     expect(within(panel).queryByLabelText('Start at')).toBeNull();
     expect(within(panel).queryByLabelText('Numbering')).toBeNull();
+    expect(within(panel).getByRole('button', { name: 'Nest item' })).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Lift item' })).toBeInTheDocument();
 
-    await userEvent.selectOptions(kind, within(kind).getByRole('option', { name: 'Numbered' }));
-    const numbering = await screen.findByLabelText('Numbering');
+    // The toolbar's Numbered list makes it a numbered one, and its options follow.
+    await userEvent.click(screen.getByRole('button', { name: 'Numbered list' }));
+    const numbering = await within(line).findByLabelText('Numbering');
     await userEvent.selectOptions(
       numbering,
       within(numbering).getByRole('option', { name: 'a, b, c' }),
     );
     expect(screen.getByText('The number the first item takes')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Start at'), '5');
+    await userEvent.type(within(line).getByLabelText('Start at'), '5');
 
     await waitFor(() =>
       expect(firstBlock(view)).toMatchObject({
@@ -91,17 +96,40 @@ describe('the list panel', () => {
       }),
     );
 
-    // And it goes again when the cursor leaves the list: the panel is a region that comes and goes
-    // with the selection, which nothing else in this view does.
+    // The options go as the cursor leaves the list; the line they stood on stays.
     act(() =>
       view.dispatch(
         view.state.tr.setSelection(Selection.near(view.state.doc.resolve(inside(view, 'b2')))),
       ),
     );
     expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+    expect(line.isConnected).toBe(true);
   });
 
-  it('shows no list panel for a definition list, which has nothing to set', async () => {
+  it("nests an item from the toolbar's second line, and lifts it back", async () => {
+    const { surface } = openWith(
+      blocksOf(listOf('L1', 'unordered', {}, para('b1', 'Unbox it.'), para('b2', 'Plug it in.'))),
+    );
+    const view = await surface();
+    caretIn(view, 'b2');
+    const panel = await screen.findByRole('group', { name: 'List' });
+    await userEvent.click(within(panel).getByRole('button', { name: 'Nest item' }));
+    await waitFor(() =>
+      expect(firstBlock(view)).toMatchObject({
+        items: [
+          { content: [{ id: 'b1' }, { type: 'list', items: [{ content: [{ id: 'b2' }] }] }] },
+        ],
+      }),
+    );
+    await userEvent.click(within(panel).getByRole('button', { name: 'Lift item' }));
+    await waitFor(() =>
+      expect(firstBlock(view)).toMatchObject({
+        items: [{ content: [{ id: 'b1' }] }, { content: [{ id: 'b2' }] }],
+      }),
+    );
+  });
+
+  it('offers a definition list Nest and Lift alone, having no start and no numbering to set', async () => {
     const { surface } = openTwoParagraphs();
     await surface();
 
@@ -116,7 +144,13 @@ describe('the list panel', () => {
         'true',
       ),
     );
-    expect(screen.queryByRole('group', { name: 'List' })).toBeNull();
+    const panel = screen.getByRole('group', { name: 'List' });
+    expect(
+      within(panel)
+        .getAllByRole('button')
+        .map((each) => each.getAttribute('aria-label')),
+    ).toEqual(['Nest item', 'Lift item']);
+    expect(within(panel).queryByLabelText('Start at')).toBeNull();
   });
 
   it('says why a start of 0 is refused on a lettered list, and changes nothing', async () => {
@@ -343,7 +377,7 @@ describe('the regions of the view', () => {
     await userEvent.keyboard('{F6}');
     expect(formatting).toHaveFocus();
     await userEvent.keyboard('{F6}');
-    expect(within(panel).getByLabelText('Kind')).toHaveFocus();
+    expect(within(panel).getByRole('button', { name: 'Nest item' })).toHaveFocus();
     await userEvent.keyboard('{F6}');
     expect(text).toHaveFocus();
     await userEvent.keyboard('{F6}');
@@ -352,7 +386,7 @@ describe('the regions of the view', () => {
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(text).toHaveFocus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
-    expect(within(panel).getByLabelText('Kind')).toHaveFocus();
+    expect(within(panel).getByRole('button', { name: 'Nest item' })).toHaveFocus();
 
     // Save version and Done editing are not a region: they keep their own ordinary tab stops, and
     // F6 pressed from them enters the ring at its first region rather than cycling out of them.
@@ -484,7 +518,7 @@ describe('the regions of the view', () => {
     );
     await surface();
     const panel = await screen.findByRole('group', { name: 'List' });
-    expect(within(panel).getByLabelText('Kind')).toBeDisabled();
+    expect(within(panel).getByRole('button', { name: 'Nest item' })).toBeDisabled();
 
     const formatting = within(screen.getByRole('toolbar', { name: 'Formatting' })).getAllByRole(
       'button',

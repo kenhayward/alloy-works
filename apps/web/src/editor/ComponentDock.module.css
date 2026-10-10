@@ -1,14 +1,52 @@
 /* The panels beside an open component (docs/interface/handoffs/ledger/component-editor-*). */
 .dock {
+  grid-column: 5;
   position: sticky;
   top: calc(var(--header-height) + var(--space-16));
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   max-height: calc(100vh - var(--header-height) - var(--status-height, 0px) - var(--space-32));
-  overflow-y: auto;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-12);
   background: var(--surface);
+}
+
+.dock[hidden] {
+  display: none;
+}
+
+/* The tabs, and the toggle that hides the panels, pinned above the body that scrolls. */
+.strip {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  padding-inline-end: var(--space-4);
+}
+
+.strip > :first-child {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.spacer {
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.strip > :last-child:not(:first-child) {
+  align-self: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+.body {
+  display: grid;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .panel {

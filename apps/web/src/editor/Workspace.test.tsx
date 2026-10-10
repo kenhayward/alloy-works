@@ -368,6 +368,49 @@ describe('the workspace', () => {
     );
   });
 
+  it("sizes and hides the space pane and the panels beside an open component, as the document page does, the panels' tabs outside what scrolls", async () => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === `/v1/components/${COMPONENT}`) {
+        return json(200, componentBody(COMPONENT, 'Install the printer'));
+      }
+      if (url.pathname === '/v1/components' && url.searchParams.get('spaces') === 's1') {
+        return json(200, { items: [], next: null });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+    const user = userEvent.setup();
+    render(<Workspace fetch={fetching} />);
+    await screen.findByRole('navigation', { name: 'General' });
+
+    const space = screen.getByRole('separator', { name: 'Resize the space pane' });
+    space.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(space).toHaveAttribute('aria-valuenow', '270');
+    const panels = screen.getByRole('separator', { name: 'Resize the component panels' });
+    panels.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(panels).toHaveAttribute('aria-valuenow', '330');
+
+    // The tabs stand apart from the panels' body, which alone scrolls.
+    const tabs = screen.getByRole('tablist', { name: 'Component panels' });
+    const panel = screen.getByRole('tabpanel', { name: 'Attributes' });
+    expect(panel.parentElement?.contains(tabs)).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Hide the space pane' }));
+    expect(screen.queryByRole('navigation', { name: 'General' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Hide the component panels' }));
+    // Hidden, kept in the page, so the fields keep what is being typed into them.
+    expect(screen.getByRole('tabpanel', { name: 'Attributes', hidden: true })).not.toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Show the component panels' }));
+    expect(screen.getByRole('tabpanel', { name: 'Attributes' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Show the space pane' }));
+    expect(await screen.findByRole('navigation', { name: 'General' })).toBeInTheDocument();
+  });
+
   it('sets an open component beside its panels, named in words: Attributes, with the fields of its type, Versions and Access', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {

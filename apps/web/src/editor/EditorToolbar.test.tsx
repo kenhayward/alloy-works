@@ -80,8 +80,6 @@ const LABELS = [
   'Bulleted list',
   'Numbered list',
   'Definition list',
-  'Nest item',
-  'Lift item',
   'Quotation',
   'Preformatted text',
   'Table',
@@ -97,9 +95,6 @@ const TOGGLES = LABELS.slice(0, 7);
 
 /** The three block buttons that say which kind of list the cursor stands in. */
 const KINDS = ['Bulleted list', 'Numbered list', 'Definition list'];
-
-/** The two that move an item a level, which are not toggles and have no state to be in. */
-const MOVES = ['Nest item', 'Lift item'];
 
 interface ToolbarOptions {
   /** Offered as the toolbar's last button, as the editor offers it; absent everywhere else. */
@@ -300,7 +295,7 @@ describe('the formatting toolbar', () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it('says which kind of list the cursor stands in, and says nothing about the two that move an item', () => {
+  it('says which kind of list the cursor stands in', () => {
     renderToolbar({
       document: storedBlocks(listOf('unordered', 'Unbox the printer.', 'Keep the box.')),
       caretIn: 'i1',
@@ -312,14 +307,6 @@ describe('the formatting toolbar', () => {
     );
     for (const label of ['Numbered list', 'Definition list']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'false');
-    }
-    // Nest item and Lift item move an item a level in one direction: neither is a toggle, so
-    // neither has a state to be in, and announcing one as pressed would promise a second press
-    // that undid it. Neither opens anything either.
-    for (const label of MOVES) {
-      const button = screen.getByRole('button', { name: label });
-      expect(button).not.toHaveAttribute('aria-pressed');
-      expect(button).not.toHaveAttribute('aria-haspopup');
     }
   });
 
@@ -337,11 +324,6 @@ describe('the formatting toolbar', () => {
     const definition = screen.getByRole('button', { name: 'Definition list' });
     expect(definition).toHaveAttribute('aria-pressed', 'true');
     expect(definition).toHaveAttribute('aria-disabled', 'true');
-    // Nest item declines on the first item of a list, and Lift item declines at the top level of a
-    // definition list, which is the limit `blockCommand` names in full rather than an oversight.
-    for (const label of MOVES) {
-      expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
-    }
     // A counted list nested in the definition being written is a real thing to want, so those two
     // stay available: this is a negative control, not a toolbar that has simply gone quiet.
     for (const label of ['Bulleted list', 'Numbered list']) {
@@ -632,7 +614,7 @@ describe('the formatting toolbar', () => {
     ).toEqual([...TOGGLES, ...KINDS].map(() => 'false'));
     // No state to read, so every block command is unavailable too: a press before the surface
     // exists has no document to act on, exactly as the two dialogs have nowhere to put a mark.
-    for (const label of [...KINDS, ...MOVES]) {
+    for (const label of KINDS) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-disabled', 'true');
     }
     // There is no state to ask where a mark could go, so the two dialogs are unavailable rather than
