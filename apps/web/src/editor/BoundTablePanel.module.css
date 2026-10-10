@@ -1,10 +1,12 @@
 /*
  * The Bound table panel in the Table tab beside the text (ADR-0052): the value, the table's
  * settings, the columns as pills and the column in hand, sort and notes, and Delete table at its
- * foot. The panel beside the text scrolls it; nothing in it is wider than the panel.
+ * foot. The panel beside the text scrolls it; nothing in it is wider than the panel. Every part
+ * stands `--inset` from the panel's sides, and nothing in a section is indented further.
  */
 
 .band {
+  --inset: var(--space-8);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -16,10 +18,12 @@
   outline: none;
 }
 
+/* Its sections meet at their borders: none of the page's 24px below a section. */
 .section {
   display: grid;
   gap: var(--space-8);
-  padding: var(--space-12) var(--space-16);
+  margin: 0;
+  padding: var(--space-12) var(--inset);
   border-bottom: 1px solid var(--border);
 }
 
@@ -70,6 +74,13 @@
   width: 96px;
 }
 
+/* The icon buttons here: each given a class, so the part's own is not theirs; their icon centred. */
+:is(.toggle, .add, .move, .bin) {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+
 /* A pressed toggle: the weak accent, its text, and a 35% accent border. */
 .toggle {
   width: 30px;
@@ -99,7 +110,7 @@
 
 .unreadable {
   margin: 0;
-  padding: var(--space-8) var(--space-16);
+  padding: var(--space-8) var(--inset);
   border-bottom: 1px solid var(--border);
   background: var(--sunken);
   color: var(--muted);
@@ -132,7 +143,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: var(--space-12) var(--space-16);
 }
 
 .pill {
@@ -164,7 +174,7 @@
 .inHand {
   display: grid;
   gap: var(--space-8);
-  padding: 0 var(--space-16) var(--space-12);
+  padding: 0 var(--inset) var(--space-12);
 }
 
 .move {
@@ -184,7 +194,7 @@
 }
 
 .foot {
-  padding: var(--space-12) var(--space-16);
+  padding: var(--space-12) var(--inset);
 }
 
 .delete {
@@ -206,7 +216,7 @@
   align-items: center;
   gap: 6px;
   min-height: 38px;
-  padding: 2px var(--space-12) 2px var(--space-16);
+  padding: 2px var(--inset);
   border-bottom: 1px solid var(--border);
 }
 
@@ -261,7 +271,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8) var(--space-12);
-  padding: 10px var(--space-16);
+  padding: 10px var(--inset);
 }
 
 .adding-label {
@@ -278,13 +288,13 @@
 
 .hint {
   margin: 0;
-  padding: 10px var(--space-16);
+  padding: 10px var(--inset);
   color: var(--muted);
 }
 
 .complaint {
   margin: 0;
-  padding: 4px var(--space-16);
+  padding: 4px var(--inset);
   color: var(--danger);
 }
 
@@ -309,6 +319,7 @@
 
 /* A fold (ADR-0052): its heading the toggle, its count, folded a summary, its acts at the end. */
 .fold {
+  margin: 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -321,7 +332,7 @@
   align-items: center;
   gap: var(--space-8);
   min-height: 38px;
-  padding: 0 var(--space-12) 0 var(--space-8);
+  padding: 0 var(--inset) 0 0;
 }
 
 .foldHeading {
@@ -331,7 +342,7 @@
 .foldHeading > button {
   gap: 6px;
   min-height: 30px;
-  padding: 0 var(--space-8);
+  padding: 0 var(--inset);
   border: 0;
   background: transparent;
   color: var(--muted);

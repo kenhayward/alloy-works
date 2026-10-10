@@ -2385,7 +2385,7 @@ describe('a preview beside the text (W10.3)', () => {
     // fall is read from the stylesheet's own rules.
     expect(pane.parentElement).toBe(layout);
     expect(ruleOf(".layout[data-previewing='true']")).toMatch(
-      /grid-template-columns:[^;]*minmax\(0, 1fr\) minmax\(0, 1fr\) var\(--right\)/,
+      /grid-template-columns:[^;]*minmax\(0, 1fr\)\s+minmax\(0, 1fr\)\s+var\(--dock-edge\)\s+var\(--right\)/,
     );
     expect(ruleOf('.text')).toMatch(/grid-column: 3;/);
     expect(ruleOf('.preview')).toMatch(/grid-column: 4;/);

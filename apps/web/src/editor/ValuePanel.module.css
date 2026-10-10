@@ -81,7 +81,12 @@
 .stacked > .named {
   display: flex;
   flex: 1 1 0;
+  gap: var(--space-8);
   min-width: 0;
+}
+
+.stacked > .named > .mono {
+  flex: none;
 }
 
 .stacked > .named > a {
@@ -103,5 +108,4 @@
 
 .stacked > .shown {
   max-width: none;
-  margin-inline-start: 28px;
 }
