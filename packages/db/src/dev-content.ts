@@ -6,7 +6,8 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
-import { grant } from './grants.js';
+import { grant, levelOf } from './grants.js';
+import { addToGroup } from './groups.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { createRole, findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
@@ -571,5 +572,67 @@ export async function seedDevelopmentConnectionUse(
   });
   if ('refused' in everywhere && everywhere.refused !== 'grant.duplicate') {
     throw new Error(`Full access across the environment was refused: ${everywhere.refused}`);
+  }
+}
+
+/**
+ * Development only: people are kept by issuer and subject, so when the stand-in's issuer changes -
+ * deploy/compose.lan.yaml moves it to this machine's network address - Ada and Grace come back as new
+ * principals holding nothing, and the service rightly never lets somebody it already knows claim a
+ * waiting invitation. This gives each principal under `issuer` every unexpired grant, and every
+ * tenant-managed group, held by the same person under another issuer: the same subject and the same
+ * address, so another provider's subject that happens to match is left alone. The earlier principals
+ * keep what they hold, and what they authored. Safe to run again.
+ */
+export async function carryStandInPeople(
+  trx: TenantTransaction,
+  input: { readonly issuer: string },
+): Promise<void> {
+  const pairs = await trx
+    .selectFrom('principal as now')
+    .innerJoin('principal as before', (join) =>
+      join
+        .onRef('before.subject', '=', 'now.subject')
+        .onRef('before.email', '=', 'now.email')
+        .on('before.issuer', '<>', input.issuer),
+    )
+    .select(['now.id as to', 'before.id as from'])
+    .where('now.issuer', '=', input.issuer)
+    .execute();
+  for (const pair of pairs) {
+    const grants = await trx
+      .selectFrom('access_grant')
+      .selectAll()
+      .where('principal_id', '=', pair.from)
+      .where((where) =>
+        where.or([where('expires_at', 'is', null), where('expires_at', '>', sql<Date>`now()`)]),
+      )
+      .execute();
+    for (const held of grants) {
+      const answer = await grant(trx, {
+        roleId: held.role_id,
+        subject: { principal: pair.to },
+        level: levelOf(held),
+        effect: held.effect as 'allow' | 'deny',
+        grantedBy: held.granted_by,
+        ...(held.expires_at ? { expiresAt: held.expires_at } : {}),
+      });
+      if ('refused' in answer && answer.refused !== 'grant.duplicate') {
+        throw new Error(`Carrying a grant to ${pair.to} was refused: ${answer.refused}`);
+      }
+    }
+    const groups = await trx
+      .selectFrom('group_member as m')
+      .innerJoin('access_group as g', 'g.id', 'm.group_id')
+      .select('m.group_id')
+      .where('m.principal_id', '=', pair.from)
+      .where('g.source', '=', 'tenant')
+      .execute();
+    for (const { group_id } of groups) {
+      const answer = await addToGroup(trx, group_id, pair.to);
+      if ('refused' in answer) {
+        throw new Error(`Carrying ${pair.to} into a group was refused: ${answer.refused}`);
+      }
+    }
   }
 }

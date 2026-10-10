@@ -2,7 +2,11 @@
 // reachable at acme.localhost and dev.acme.localhost. Safe to run again.
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
-import { seedDevelopmentConnectionUse, seedDevelopmentContent } from './dev-content.js';
+import {
+  carryStandInPeople,
+  seedDevelopmentConnectionUse,
+  seedDevelopmentContent,
+} from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
@@ -115,6 +119,13 @@ for (const environment of environments) {
   await serviceDb.withTenant(
     { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
     (trx) => seedDevelopmentConnectionUse(trx, { issuer: standInIssuer }),
+    { actorKind: 'vendor' },
+  );
+  // And Ada and Grace keep what they held when the stand-in's issuer moves, as it does under
+  // deploy/compose.lan.yaml: under the new one they are new principals.
+  await serviceDb.withTenant(
+    { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
+    (trx) => carryStandInPeople(trx, { issuer: standInIssuer }),
     { actorKind: 'vendor' },
   );
 }

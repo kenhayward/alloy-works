@@ -302,7 +302,7 @@ type GrantRow = {
   granted_at: Date;
 };
 
-function levelOf(row: Pick<GrantRow, 'level' | 'space_id' | 'artifact_id'>): Level {
+export function levelOf(row: Pick<GrantRow, 'level' | 'space_id' | 'artifact_id'>): Level {
   if (row.level === 'tenant') return { kind: 'tenant' };
   if (row.level === 'space') return { kind: 'space', id: row.space_id! };
   return { kind: 'artifact', id: row.artifact_id! };

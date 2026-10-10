@@ -7,12 +7,14 @@ import { bootstrapCluster } from './bootstrap.js';
 import { componentFieldsNow } from './component-values.js';
 import { STARTER_COMPONENT_TYPE_ID } from './creation.js';
 import {
+  carryStandInPeople,
   PERIOD_FIELD,
   REVIEWER_FIELD,
   seedDevelopmentConnectionUse,
   seedDevelopmentContent,
 } from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
+import { addToGroup, createGroup } from './groups.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createRole, findRole } from './roles.js';
@@ -543,5 +545,94 @@ describe('the development content', () => {
         .execute(),
     );
     expect(inNewGeneral).toEqual([]);
+  });
+});
+
+describe("the stand-in's people when its issuer changes", () => {
+  let db: TestDatabase;
+  let tenant: Tenant;
+  let service: TenantDatabase;
+  const NEW_ISSUER = 'https://192.168.1.20:9443';
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await migrate(db.migratorUrl);
+    tenant = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
+    });
+    service = testTenantDatabase(db.serviceUrl);
+  });
+
+  afterAll(async () => {
+    await service.close();
+    await db.drop();
+  });
+
+  it('gives each of them what the same person holds under an earlier issuer, and nobody else anything, once however often it runs', async () => {
+    await service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    const people = await service.withTenant(tenant, async (trx) => {
+      const id = async (issuer: string, subject: string) =>
+        (
+          await trx
+            .selectFrom('principal')
+            .select('id')
+            .where('issuer', '=', issuer)
+            .where('subject', '=', subject)
+            .executeTakeFirstOrThrow()
+        ).id;
+      const make = async (issuer: string, subject: string, email: string) =>
+        (
+          await trx
+            .insertInto('principal')
+            .values({ issuer, subject, email, display_name: subject })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id;
+      const oldAda = await id(ISSUER, 'ada');
+      const group = await createGroup(trx, 'Reviewers');
+      if (!('group' in group)) throw new Error(group.refused);
+      await addToGroup(trx, group.group.id, oldAda);
+      return {
+        oldAda,
+        group: group.group.id,
+        // As a sign-in through the moved stand-in makes her: a principal holding nothing.
+        newAda: await make(NEW_ISSUER, 'ada', 'ada@example.com'),
+        // Somebody else's provider's `ada`: the same subject, not the same person.
+        strangerAda: await make('https://login.example.org', 'ada', 'someone@example.org'),
+      };
+    });
+
+    const held = (principal: string) =>
+      service.withTenant(tenant, async (trx) => ({
+        grants: (
+          await trx
+            .selectFrom('access_grant')
+            .select(['role_id', 'level', 'space_id', 'artifact_id', 'effect'])
+            .where('principal_id', '=', principal)
+            .orderBy(['role_id', 'level', 'space_id', 'artifact_id'])
+            .execute()
+        ).map((row) => JSON.stringify(row)),
+        groups: (
+          await trx
+            .selectFrom('group_member')
+            .select('group_id')
+            .where('principal_id', '=', principal)
+            .execute()
+        ).map((row) => row.group_id),
+      }));
+
+    const before = await held(people.oldAda);
+    expect(before.grants.length).toBeGreaterThan(0);
+    expect(await held(people.newAda)).toEqual({ grants: [], groups: [] });
+
+    for (let run = 0; run < 2; run++) {
+      await service.withTenant(tenant, (trx) => carryStandInPeople(trx, { issuer: NEW_ISSUER }));
+    }
+    expect(await held(people.newAda)).toEqual({ grants: before.grants, groups: [people.group] });
+    expect(await held(people.oldAda)).toEqual(before);
+    expect(await held(people.strangerAda)).toEqual({ grants: [], groups: [] });
   });
 });
