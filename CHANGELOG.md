@@ -3,6 +3,38 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.149.0 - 2026-10-10 (PR #527)
+
+### Added
+
+- **Try a development stack from another machine.** `deploy/compose.lan.yaml`, and so `deploy\BringUpDev.cmd`, now serves the app, sign-in and the store over https on this machine's network address, so other laptops can sign in.
+
+### Changed
+
+- **`deploy\BringUpDev.cmd` refuses another machine's address.** An `ALLOY_LAN_ADDRESS` that is not one of this machine's network addresses stops it at once, naming the addresses it could use.
+- **The panels beside a document's text stay in view.** Part, Document, Lists and Publishing are one
+  pane that starts level with the outline, stays under the header as the text scrolls, and hides to
+  a rail of its own, remembered by this browser as the outline's is.
+- **A table's formatting is a Table tab beside the text.** It comes first in the component's panels
+  and in a document's while a component holding a table is open, is chosen as the cursor enters a
+  table, and leaves the text its full width and height.
+- **The Table tab as drawn.** The value on two lines, then the table's style, Wide and what it shows
+  as toggles, then a pill per column: the one in hand pressed, its fields beneath as "Column 2 of 4",
+  moved left or right or removed. A press on a column's cell in the text takes it in hand. A column a
+  change to which was refused is a warn pill, saying why.
+- **One of Column, Sort and Notes open at a time.** In the Table tab the others fold to a line with
+  their count and a summary, such as "Title, then Study ID descending" or "a on Depth". A sort key
+  is one row: its column, Ascending or Descending, where a row with no value goes, and a bin. The
+  Format dialog now holds the whole page behind it still.
+- **The Table tab reads a table out while it cannot change it.** Viewing, or with the cursor out of
+  any table, it shows the table the cursor was last in, or the first, read only: every setting as
+  text, its columns by their pills, its sort and notes, and Provenance its only act.
+
+### Fixed
+
+- **Ada keeps her administrator rights when development sign-in moves.** Bringing a development stack up open to the network no longer leaves Ada and Grace without the access they had.
+- **Signing in as somebody else in the same browser.** The development sign-in provider no longer fails with "interaction session not found" when Grace signs in after Ada.
+
 ## 0.148.0 - 2026-10-09 (PR #518)
 
 ### Added
