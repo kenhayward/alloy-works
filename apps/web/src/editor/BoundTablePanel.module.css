@@ -18,9 +18,11 @@
   outline: none;
 }
 
+/* Its sections meet at their borders: none of the page's 24px below a section. */
 .section {
   display: grid;
   gap: var(--space-8);
+  margin: 0;
   padding: var(--space-12) var(--inset);
   border-bottom: 1px solid var(--border);
 }
@@ -317,6 +319,7 @@
 
 /* A fold (ADR-0052): its heading the toggle, its count, folded a summary, its acts at the end. */
 .fold {
+  margin: 0;
   border-bottom: 1px solid var(--border);
 }
 
