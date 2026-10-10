@@ -1383,18 +1383,29 @@ describe('the address of every node', () => {
     const text = await screen.findByRole('region', { name: "The document's text" });
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
     const reads = textsAsked;
+    // The band a component open in place keeps its toolbar in, on the chrome under the document bar
+    // (ADR-0056): there in Authoring before one opens, so the sheet does not move when it does.
+    const band = document.querySelector<HTMLElement>('[data-inplace-band]')!;
+    expect(band).not.toBeNull();
+    expect(band.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(band).toHaveTextContent("Click a component's text to edit it.");
 
     await user.click(within(text).getByText('Unbox the printer.'));
-    // The component's own editor, in its card: the surface it edits on, and what it says to a reader.
+    // The component's own editor: its surface on the sheet, and what it says to a reader...
     expect(
       await within(text).findByRole('textbox', { name: 'Content of Install the printer' }),
     ).toBeInTheDocument();
     expect(
       within(text).getByText('You may read this component but not edit it.'),
     ).toBeInTheDocument();
+    // ...and its toolbar, its second line and Done in the band, none of them on the sheet.
+    expect(within(band).getByRole('toolbar', { name: 'Formatting' })).toBeInTheDocument();
+    expect(band.querySelector('[data-toolbar-line]')).not.toBeNull();
+    expect(within(text).queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
+    expect(band).not.toHaveTextContent("Click a component's text to edit it.");
     expect(textsAsked).toBe(reads);
 
-    await user.click(within(text).getByRole('button', { name: 'Done editing' }));
+    await user.click(within(band).getByRole('button', { name: 'Done editing' }));
     expect(
       within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
     ).not.toBeInTheDocument();

@@ -26,6 +26,7 @@ import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
+import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
@@ -535,6 +536,8 @@ export function DocumentPage({
   const [textsRead, setTextsRead] = useState<string | null>(null);
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
+  // The band a component open in place keeps its toolbar in (ADR-0056).
+  const [band, setBand] = useState<HTMLElement | null>(null);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
   useEffect(() => {
     if (shownVersion === null) return undefined;
@@ -1385,394 +1388,406 @@ export function DocumentPage({
     <PresentationProvider client={client} document={document.id}>
       <Presented onSettled={presented.told} />
       {/* Named by its title and the mode it is in, so a screen reader arriving hears which (CNT-154). */}
-      <article
-        aria-labelledby="document-title document-mode"
-        className={styles['page']}
-        data-desk-page=""
-      >
-        <span id="document-mode" hidden>
-          {authoring ? 'in Authoring' : 'in Reading'}
-        </span>
-        {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
-        {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
-            Show boundaries and, at its end, access - one line on the chrome over the desk. */}
-        <div className={styles['bar']}>
-          <nav aria-label="Breadcrumb" className={styles['trail']}>
-            <a href="#/documents">Documents</a>
-            <span>{` / ${document.space.name}`}</span>
-          </nav>
-          <span className={styles['rule']} aria-hidden="true" />
-          {mayAuthor ? (
-            <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
-              {MODES.map(({ mode, name }) => (
-                <label key={mode}>
-                  <input
-                    type="radio"
-                    name={`mode-${document.id}`}
-                    checked={(authoring ? 'authoring' : 'reading') === mode}
-                    onChange={() => chooseMode(mode)}
-                  />
-                  <Icon name={name} size={14} />
-                  {name}
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className={styles['modeShown']}>Reading</p>
-          )}
-          <PreviewButton preview={preview} />
-          <button
-            type="button"
-            className={styles['toggle']}
-            aria-pressed={boundaries}
-            onClick={() => showBoundaries(!boundaries)}
-          >
-            <Icon name="Show boundaries" size={14} />
-            Show boundaries
-          </button>
-          {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
-          <span className={styles['access']}>
-            <ManageAccessLink
-              client={client}
-              target={`artifact:${document.id}`}
-              href={documentAccessLink(document.id)}
-              icon={<Icon name="Manage access" size={14} />}
-            />
-          </span>
-        </div>
-        <PreviewSaid preview={preview} />
-        <UnheldFaces />
-        {document.scheme === null && <p>This document's numbering could not be read.</p>}
-        <div
-          className={styles['layout']}
-          data-collapsed={outlinePane.collapsed}
-          data-dock-collapsed={dockPane.collapsed}
-          // A preview takes a column of its own beside the text, which narrows to make room for it.
-          data-previewing={preview.pane !== null}
-          style={
-            {
-              '--outline-width': `${outlinePane.width}px`,
-              // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
-              '--dock-panel': `${(heldTable.holds ? tablePane : dockPane).width}px`,
-            } as React.CSSProperties
-          }
+      <InPlaceBand.Provider value={band}>
+        <article
+          aria-labelledby="document-title document-mode"
+          className={styles['page']}
+          data-desk-page=""
         >
-          {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
-          <OutlinePanel
-            outline={document.outline}
-            head={
-              // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
-              outlinePane.collapsed ? null : (
-                <OutlineTabs pane={outlinePane} chosen={shown} onChoose={chooseTab} tabs={tabs} />
-              )
-            }
-            tab={ids}
-            details={{
-              id: dockIds('part').panel,
-              labelledBy: dockIds('part').tab,
-              hidden: shownDock !== 'part',
-              host: detailsHost,
-            }}
-            {...(shown === 'data'
-              ? {
-                  instead: (
-                    <DataTab
-                      client={client}
-                      document={document.id}
-                      states={bindingStates ?? []}
-                      checkFailures={checkFailures}
-                      headingOf={(node) =>
-                        placeInOutline(document.outline, node, names, document.scheme)
-                      }
-                      language={document.outline.language}
-                      tables={boundTables}
-                      rows={tableRows}
-                      checking={checking}
-                      onChanged={() => setBindingsRead((count) => count + 1)}
-                      onCheckNow={checkNow}
-                      onGoTo={(node, binding) => {
-                        // The value in the text, scrolled to and given the focus where it is a button.
-                        const found = textColumn.current?.querySelector<HTMLElement>(
-                          `[data-node="${node}"] [data-binding="${binding}"]`,
-                        );
-                        found?.scrollIntoView?.({ block: 'center' });
-                        found?.focus();
-                      }}
-                      onNotice={setNotice}
+          <span id="document-mode" hidden>
+            {authoring ? 'in Authoring' : 'in Reading'}
+          </span>
+          {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
+          {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
+            Show boundaries and, at its end, access - one line on the chrome over the desk. */}
+          <div className={styles['bar']}>
+            <nav aria-label="Breadcrumb" className={styles['trail']}>
+              <a href="#/documents">Documents</a>
+              <span>{` / ${document.space.name}`}</span>
+            </nav>
+            <span className={styles['rule']} aria-hidden="true" />
+            {mayAuthor ? (
+              <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
+                {MODES.map(({ mode, name }) => (
+                  <label key={mode}>
+                    <input
+                      type="radio"
+                      name={`mode-${document.id}`}
+                      checked={(authoring ? 'authoring' : 'reading') === mode}
+                      onChange={() => chooseMode(mode)}
                     />
-                  ),
-                }
-              : {})}
-            root={
-              // The document itself, as the tree's root: its title - the page's heading - and its
-              // version number. The space is said in the status bar.
-              <div className={styles['root']}>
-                <span className={styles['folder']}>
-                  <Icon name="Folder" size={14} />
-                </span>
-                <h2 id="document-title" className={styles['title']}>
-                  {document.outline.title}
-                </h2>
-                <span className={styles['number']}>{document.version.number}</span>
+                    <Icon name={name} size={14} />
+                    {name}
+                  </label>
+                ))}
               </div>
+            ) : (
+              <p className={styles['modeShown']}>Reading</p>
+            )}
+            <PreviewButton preview={preview} />
+            <button
+              type="button"
+              className={styles['toggle']}
+              aria-pressed={boundaries}
+              onClick={() => showBoundaries(!boundaries)}
+            >
+              <Icon name="Show boundaries" size={14} />
+              Show boundaries
+            </button>
+            {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+            <span className={styles['access']}>
+              <ManageAccessLink
+                client={client}
+                target={`artifact:${document.id}`}
+                href={documentAccessLink(document.id)}
+                icon={<Icon name="Manage access" size={14} />}
+              />
+            </span>
+          </div>
+          {/* In Authoring, the band a component open in place keeps its strip, toolbar and second line
+            in, on the chrome: there before one opens, so the sheet does not move when it does
+            (ADR-0056, CNT-075), and kept in view as the text scrolls. */}
+          {authoring && principalId !== undefined && (
+            <div ref={setBand} className={styles['band']} data-inplace-band="">
+              {editing === null && (
+                <p className={styles['bandHint']}>Click a component&apos;s text to edit it.</p>
+              )}
+            </div>
+          )}
+          <PreviewSaid preview={preview} />
+          <UnheldFaces />
+          {document.scheme === null && <p>This document's numbering could not be read.</p>}
+          <div
+            className={styles['layout']}
+            data-collapsed={outlinePane.collapsed}
+            data-dock-collapsed={dockPane.collapsed}
+            // A preview takes a column of its own beside the text, which narrows to make room for it.
+            data-previewing={preview.pane !== null}
+            style={
+              {
+                '--outline-width': `${outlinePane.width}px`,
+                // While it offers a Table tab, the pane is wider, and stays so as the cursor moves.
+                '--dock-panel': `${(heldTable.holds ? tablePane : dockPane).width}px`,
+              } as React.CSSProperties
             }
-            scheme={document.scheme}
-            editable={document.mayEdit && authoring}
-            sectionFields={document.fields.section}
-            schemas={document.schemas}
-            people={people}
-            busy={busy}
-            onOperation={(operation) => apply(operation, false)}
-            notice={notice}
-            onNotice={setNotice}
-            canUndo={undo.length > 0}
-            refusals={refusals}
-            signedOuts={signedOuts}
-            onUndo={async () => {
-              const top = undo[undo.length - 1];
-              return top === undefined ? 'unsent' : apply(top, true);
-            }}
-            names={names}
-            components={components}
-            onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
-            linked={linked}
-            linkOf={(node) =>
-              `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
-            }
-            inView={inView}
-            onSelected={(node) => {
-              // The address follows what is chosen, without a history entry per arrow key and without a
-              // `hashchange`, so a reload or a copy of the address comes back to it.
-              window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
-              // A link still waiting for the texts, or holding its node, is the reader's no longer: they
-              // chose elsewhere.
-              arriving.current = null;
-              stopWaiting();
-              letGo();
-              // And the text goes to it (STR-035); a link's mark stays only on what it marked.
-              textColumn.current
-                ?.querySelector(`[data-node="${node}"]`)
-                ?.scrollIntoView?.({ block: 'start' });
-              if (node !== marked) setMarked(null);
-            }}
-          />
-          {/* The panels beside the text: one pane, standing beside the text as the page scrolls and
+          >
+            {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
+            <OutlinePanel
+              outline={document.outline}
+              head={
+                // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
+                outlinePane.collapsed ? null : (
+                  <OutlineTabs pane={outlinePane} chosen={shown} onChoose={chooseTab} tabs={tabs} />
+                )
+              }
+              tab={ids}
+              details={{
+                id: dockIds('part').panel,
+                labelledBy: dockIds('part').tab,
+                hidden: shownDock !== 'part',
+                host: detailsHost,
+              }}
+              {...(shown === 'data'
+                ? {
+                    instead: (
+                      <DataTab
+                        client={client}
+                        document={document.id}
+                        states={bindingStates ?? []}
+                        checkFailures={checkFailures}
+                        headingOf={(node) =>
+                          placeInOutline(document.outline, node, names, document.scheme)
+                        }
+                        language={document.outline.language}
+                        tables={boundTables}
+                        rows={tableRows}
+                        checking={checking}
+                        onChanged={() => setBindingsRead((count) => count + 1)}
+                        onCheckNow={checkNow}
+                        onGoTo={(node, binding) => {
+                          // The value in the text, scrolled to and given the focus where it is a button.
+                          const found = textColumn.current?.querySelector<HTMLElement>(
+                            `[data-node="${node}"] [data-binding="${binding}"]`,
+                          );
+                          found?.scrollIntoView?.({ block: 'center' });
+                          found?.focus();
+                        }}
+                        onNotice={setNotice}
+                      />
+                    ),
+                  }
+                : {})}
+              root={
+                // The document itself, as the tree's root: its title - the page's heading - and its
+                // version number. The space is said in the status bar.
+                <div className={styles['root']}>
+                  <span className={styles['folder']}>
+                    <Icon name="Folder" size={14} />
+                  </span>
+                  <h2 id="document-title" className={styles['title']}>
+                    {document.outline.title}
+                  </h2>
+                  <span className={styles['number']}>{document.version.number}</span>
+                </div>
+              }
+              scheme={document.scheme}
+              editable={document.mayEdit && authoring}
+              sectionFields={document.fields.section}
+              schemas={document.schemas}
+              people={people}
+              busy={busy}
+              onOperation={(operation) => apply(operation, false)}
+              notice={notice}
+              onNotice={setNotice}
+              canUndo={undo.length > 0}
+              refusals={refusals}
+              signedOuts={signedOuts}
+              onUndo={async () => {
+                const top = undo[undo.length - 1];
+                return top === undefined ? 'unsent' : apply(top, true);
+              }}
+              names={names}
+              components={components}
+              onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
+              linked={linked}
+              linkOf={(node) =>
+                `${window.location.origin}${window.location.pathname}${nodeLink(document.id, node)}`
+              }
+              inView={inView}
+              onSelected={(node) => {
+                // The address follows what is chosen, without a history entry per arrow key and without a
+                // `hashchange`, so a reload or a copy of the address comes back to it.
+                window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+                // A link still waiting for the texts, or holding its node, is the reader's no longer: they
+                // chose elsewhere.
+                arriving.current = null;
+                stopWaiting();
+                letGo();
+                // And the text goes to it (STR-035); a link's mark stays only on what it marked.
+                textColumn.current
+                  ?.querySelector(`[data-node="${node}"]`)
+                  ?.scrollIntoView?.({ block: 'start' });
+                if (node !== marked) setMarked(null);
+              }}
+            />
+            {/* The panels beside the text: one pane, standing beside the text as the page scrolls and
             hidden to a rail as the outline is; kept while hidden, so a panel keeps what it holds. Next after
             the outline in the page, its panels before its tabs, so the keyboard goes from the tree to the
             chosen part's settings. */}
-          {dockPane.collapsed && (
-            <div className={styles['dockRail']}>
-              <OutlineRail
-                pane={dockPane}
-                chosen={shownDock}
-                tabs={dockTabs}
-                label="document panels"
-                edge="end"
-              />
-            </div>
-          )}
-          <aside
-            className={styles['dock']}
-            aria-label="Panels beside the text"
-            hidden={dockPane.collapsed}
-          >
-            <div className={styles['dockBody']}>
-              {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
-              {provenanceState?.held && (
-                <ProvenancePanel
-                  client={client}
-                  document={document.id}
-                  language={document.outline.language}
-                  state={provenanceState}
-                  onClose={closeProvenance}
+            {dockPane.collapsed && (
+              <div className={styles['dockRail']}>
+                <OutlineRail
+                  pane={dockPane}
+                  chosen={shownDock}
+                  tabs={dockTabs}
+                  label="document panels"
+                  edge="end"
                 />
-              )}
-              {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
-              <div
-                id={dockIds('table').panel}
-                role="tabpanel"
-                aria-labelledby={dockIds('table').tab}
-                hidden={shownDock !== 'table'}
-                className={styles['tableTab']}
-              >
-                <div ref={setTableHost} />
               </div>
-              {/* The Part panel, which the outline draws, stands here (`details.host`). */}
-              <div ref={setDetailsHost} />
-              <div className={styles['side']}>
+            )}
+            <aside
+              className={styles['dock']}
+              aria-label="Panels beside the text"
+              hidden={dockPane.collapsed}
+            >
+              <div className={styles['dockBody']}>
+                {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
+                {provenanceState?.held && (
+                  <ProvenancePanel
+                    client={client}
+                    document={document.id}
+                    language={document.outline.language}
+                    state={provenanceState}
+                    onClose={closeProvenance}
+                  />
+                )}
+                {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
                 <div
-                  id={dockIds('document').panel}
+                  id={dockIds('table').panel}
                   role="tabpanel"
-                  aria-labelledby={dockIds('document').tab}
-                  hidden={shownDock !== 'document'}
+                  aria-labelledby={dockIds('table').tab}
+                  hidden={shownDock !== 'table'}
+                  className={styles['tableTab']}
                 >
-                  {/* What the document's template asks of the document itself, filled in and checked as it
+                  <div ref={setTableHost} />
+                </div>
+                {/* The Part panel, which the outline draws, stands here (`details.host`). */}
+                <div ref={setDetailsHost} />
+                <div className={styles['side']}>
+                  <div
+                    id={dockIds('document').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('document').tab}
+                    hidden={shownDock !== 'document'}
+                  >
+                    {/* What the document's template asks of the document itself, filled in and checked as it
                     is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
-                  {document.fields.document.length > 0 && (
-                    <HeldFields
-                      label="Fields of this document"
-                      fields={document.fields.document}
-                      schemas={document.schemas}
-                      people={people}
-                      stored={document.values}
-                      readOnly={!document.mayEdit || !authoring}
-                      onSave={saveValues}
+                    {document.fields.document.length > 0 && (
+                      <HeldFields
+                        label="Fields of this document"
+                        fields={document.fields.document}
+                        schemas={document.schemas}
+                        people={people}
+                        stored={document.values}
+                        readOnly={!document.mayEdit || !authoring}
+                        onSave={saveValues}
+                      />
+                    )}
+                    {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
+                    {(document.templated || holdsValues) && (
+                      <ParametersPanel
+                        client={client}
+                        document={document.id}
+                        version={document.version.id}
+                        values={document.parameters}
+                        readOnly={!document.mayEdit || !authoring}
+                        onSave={saveParameters}
+                        onDeclarations={(read) =>
+                          setDeclared({ document: document.id, declarations: read })
+                        }
+                      />
+                    )}
+                  </div>
+                  <div
+                    id={dockIds('lists').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('lists').tab}
+                    hidden={shownDock !== 'lists'}
+                  >
+                    <GeneratedLists
+                      document={document.id}
+                      outline={document.outline}
+                      scheme={document.scheme}
+                      known={known}
+                      names={names}
+                      onRetry={() => setKnownAttempt((count) => count + 1)}
+                      onArriveAgain={onArriveAgain}
                     />
-                  )}
-                  {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-                  {(document.templated || holdsValues) && (
-                    <ParametersPanel
+                  </div>
+                  <div
+                    id={dockIds('publishing').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('publishing').tab}
+                    hidden={shownDock !== 'publishing'}
+                  >
+                    <Publishing
                       client={client}
                       document={document.id}
                       version={document.version.id}
-                      values={document.parameters}
-                      readOnly={!document.mayEdit || !authoring}
-                      onSave={saveParameters}
-                      onDeclarations={(read) =>
-                        setDeclared({ document: document.id, declarations: read })
+                      mayPublish={document.mayPublish}
+                      placeOf={(node) =>
+                        placeInOutline(document.outline, node, names, document.scheme)
                       }
+                      followMs={followMs}
+                      formats={document.formats}
                     />
-                  )}
-                </div>
-                <div
-                  id={dockIds('lists').panel}
-                  role="tabpanel"
-                  aria-labelledby={dockIds('lists').tab}
-                  hidden={shownDock !== 'lists'}
-                >
-                  <GeneratedLists
-                    document={document.id}
-                    outline={document.outline}
-                    scheme={document.scheme}
-                    known={known}
-                    names={names}
-                    onRetry={() => setKnownAttempt((count) => count + 1)}
-                    onArriveAgain={onArriveAgain}
-                  />
-                </div>
-                <div
-                  id={dockIds('publishing').panel}
-                  role="tabpanel"
-                  aria-labelledby={dockIds('publishing').tab}
-                  hidden={shownDock !== 'publishing'}
-                >
-                  <Publishing
-                    client={client}
-                    document={document.id}
-                    version={document.version.id}
-                    mayPublish={document.mayPublish}
-                    placeOf={(node) =>
-                      placeInOutline(document.outline, node, names, document.scheme)
-                    }
-                    followMs={followMs}
-                    formats={document.formats}
-                  />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className={styles['dockStrip']}>
-              <PanelTabs
-                label="Document panels"
-                tabs={dockTabs}
-                chosen={shownDock}
-                onChoose={(key) => setDock(key as DockPanel)}
-                ids={dockIds}
+              <div className={styles['dockStrip']}>
+                <PanelTabs
+                  label="Document panels"
+                  tabs={dockTabs}
+                  chosen={shownDock}
+                  onChoose={(key) => setDock(key as DockPanel)}
+                  ids={dockIds}
+                />
+                <span className={styles['dockSpacer']} />
+                <PaneToggle label="document panels" pane={dockPane} edge="end" />
+              </div>
+            </aside>
+            {!outlinePane.collapsed && (
+              <div className={styles['separator']}>
+                <PaneSeparator label="outline" pane={outlinePane} />
+              </div>
+            )}
+            {!dockPane.collapsed && (
+              <div className={styles['dockSeparator']}>
+                <PaneSeparator
+                  label="document panels"
+                  pane={heldTable.holds ? tablePane : dockPane}
+                  edge="end"
+                />
+              </div>
+            )}
+            <div ref={textColumn} className={`${styles['text']} aw-desk`}>
+              <DocumentText
+                outline={document.outline}
+                scheme={document.scheme}
+                words={document.words}
+                names={names}
+                texts={texts}
+                editable={editable}
+                // What each occurrence holds, as the lists beside it number it: what a reference in the
+                // text, and in the editor opened in place, is numbered from (cross-references 1). The
+                // editor takes its context through its place, and is told again as this is read again.
+                {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
+                editing={editing}
+                boundaries={boundaries}
+                marked={marked}
+                resolved={resolved}
+                // The version is chosen from the label in Authoring, by whoever may restructure the
+                // document (DV-F); anywhere else the label says it and offers nothing.
+                {...(document.mayEdit && authoring ? { choosing } : {})}
+                bindingStates={bindingStates}
+                boundTables={boundTables}
+                rowsFrom={{
+                  client,
+                  document: document.id,
+                  session: bindingSession ?? editorSaved?.session ?? null,
+                  saved: editorSaved?.sequence ?? 0,
+                }}
+                onBoundTables={(node, tables) => setEditingTables({ node, tables })}
+                onSaved={(session, sequence) => setEditorSaved({ session, sequence })}
+                onTableRows={setTableRows}
+                onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
+                onBindingSettle={onBindingSettle}
+                {...(principalId === undefined || !authoring
+                  ? {}
+                  : {
+                      onEdit: (node: string | null) => {
+                        setEditing(node);
+                        // Closing reads the text again, so the card shows what was saved, and its
+                        // bindings from the version it cut.
+                        if (node === null) {
+                          setTextsAttempt((count) => count + 1);
+                          setBindingSession(null);
+                          setEditingTables(null);
+                          setEditorSaved(null);
+                        }
+                      },
+                      editor: (component: string, place: Place) => (
+                        <ComponentEditor
+                          key={component}
+                          componentId={component}
+                          client={client}
+                          principalId={principalId}
+                          {...place}
+                          documentParameters={documentParameters}
+                          tableHost={tableHost}
+                          onTable={setHeldTable}
+                        />
+                      ),
+                    })}
               />
-              <span className={styles['dockSpacer']} />
-              <PaneToggle label="document panels" pane={dockPane} edge="end" />
             </div>
-          </aside>
-          {!outlinePane.collapsed && (
-            <div className={styles['separator']}>
-              <PaneSeparator label="outline" pane={outlinePane} />
-            </div>
-          )}
-          {!dockPane.collapsed && (
-            <div className={styles['dockSeparator']}>
-              <PaneSeparator
-                label="document panels"
-                pane={heldTable.holds ? tablePane : dockPane}
-                edge="end"
-              />
-            </div>
-          )}
-          <div ref={textColumn} className={`${styles['text']} aw-desk`}>
-            <DocumentText
-              outline={document.outline}
-              scheme={document.scheme}
-              words={document.words}
-              names={names}
-              texts={texts}
-              editable={editable}
-              // What each occurrence holds, as the lists beside it number it: what a reference in the
-              // text, and in the editor opened in place, is numbered from (cross-references 1). The
-              // editor takes its context through its place, and is told again as this is read again.
-              {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
-              editing={editing}
-              boundaries={boundaries}
-              marked={marked}
-              resolved={resolved}
-              // The version is chosen from the label in Authoring, by whoever may restructure the
-              // document (DV-F); anywhere else the label says it and offers nothing.
-              {...(document.mayEdit && authoring ? { choosing } : {})}
-              bindingStates={bindingStates}
-              boundTables={boundTables}
-              rowsFrom={{
-                client,
-                document: document.id,
-                session: bindingSession ?? editorSaved?.session ?? null,
-                saved: editorSaved?.sequence ?? 0,
-              }}
-              onBoundTables={(node, tables) => setEditingTables({ node, tables })}
-              onSaved={(session, sequence) => setEditorSaved({ session, sequence })}
-              onTableRows={setTableRows}
-              onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
-              onBindingSettle={onBindingSettle}
-              {...(principalId === undefined || !authoring
-                ? {}
-                : {
-                    onEdit: (node: string | null) => {
-                      setEditing(node);
-                      // Closing reads the text again, so the card shows what was saved, and its
-                      // bindings from the version it cut.
-                      if (node === null) {
-                        setTextsAttempt((count) => count + 1);
-                        setBindingSession(null);
-                        setEditingTables(null);
-                        setEditorSaved(null);
-                      }
-                    },
-                    editor: (component: string, place: Place) => (
-                      <ComponentEditor
-                        key={component}
-                        componentId={component}
-                        client={client}
-                        principalId={principalId}
-                        {...place}
-                        documentParameters={documentParameters}
-                        tableHost={tableHost}
-                        onTable={setHeldTable}
-                      />
-                    ),
-                  })}
+            <PreviewPane
+              preview={preview}
+              className={styles['preview']}
+              placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
             />
           </div>
-          <PreviewPane
-            preview={preview}
-            className={styles['preview']}
-            placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
-          />
-        </div>
-        {ownViewPrompt}
-        {/* The zoom in the status bar (ADR-0056): the shell's, or the page's own where it has none. */}
-        {status === null ? (
-          <StatusBar notice={notice} context={context} tools={<ZoomControl />} />
-        ) : (
-          <StatusTools>
-            <ZoomControl />
-          </StatusTools>
-        )}
-      </article>
+          {ownViewPrompt}
+          {/* The zoom in the status bar (ADR-0056): the shell's, or the page's own where it has none. */}
+          {status === null ? (
+            <StatusBar notice={notice} context={context} tools={<ZoomControl />} />
+          ) : (
+            <StatusTools>
+              <ZoomControl />
+            </StatusTools>
+          )}
+        </article>
+      </InPlaceBand.Provider>
     </PresentationProvider>
   );
 }

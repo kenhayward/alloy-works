@@ -295,7 +295,7 @@ describe('the canvas as a person uses it', () => {
   });
 
   for (const zoom of ['1', '0.5'] as const) {
-    it(`opens a component in place across the sheet, its text where the sheet set it, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {
+    it(`opens a component in place across the sheet, the sheet unmoved and its text where the sheet set it, its toolbar in the band, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {
       const client = api();
       const component = await withAnImage(client, `In place at ${zoom}`);
       const placed = await placing(client, `In place at ${zoom}`, component);
@@ -313,11 +313,18 @@ describe('the canvas as a person uses it', () => {
         const read = await page
           .locator('section.aw-canvas')
           .getByText(/^Zc2 /)
-          .evaluate((element) => ({
-            text: element.closest('p')!.getBoundingClientRect().left,
-            // Inside its 1px edge, as the card is measured below.
-            sheet: element.closest('section.aw-canvas')!.getBoundingClientRect().left + 1,
-          }));
+          .evaluate((element) => {
+            const sheet = element.closest('section.aw-canvas')!.getBoundingClientRect();
+            const text = element.closest('p')!.getBoundingClientRect();
+            return {
+              text: text.left,
+              // Inside its 1px edge, as the card is measured below.
+              sheet: sheet.left + 1,
+              // Down the page, wherever the window is scrolled.
+              sheetTop: sheet.top + window.scrollY,
+              textTop: text.top - sheet.top,
+            };
+          });
         await page.locator('section.aw-canvas').getByText(/^Zc2 /).click();
         const card = page.locator('article[data-in-place="true"]');
         await page.getByRole('textbox', { name: /^Content of / }).waitFor();
@@ -326,7 +333,9 @@ describe('the canvas as a person uses it', () => {
           const edge = canvas.getBoundingClientRect();
           const style = getComputedStyle(canvas);
           const inside = edge.left + parseFloat(style.borderLeftWidth);
-          const toolbar = element.querySelector('[role="toolbar"][aria-label="Formatting"]')!;
+          const toolbar = document.querySelector(
+            '[data-inplace-band] [role="toolbar"][aria-label="Formatting"]',
+          )!;
           const tops = new Set(
             [...toolbar.querySelectorAll('button')]
               .filter((each) => each.getBoundingClientRect().width > 0)
@@ -339,6 +348,9 @@ describe('the canvas as a person uses it', () => {
           return {
             card: { left: box.left, right: box.right, width: box.width },
             sheet: { left: inside, right: inside + canvas.clientWidth },
+            sheetTop: edge.top + window.scrollY,
+            textTop: first.getBoundingClientRect().top - edge.top,
+            inCard: element.querySelector('[role="toolbar"][aria-label="Formatting"]') !== null,
             text: first.getBoundingClientRect().left,
             viewport: window.innerWidth,
             rows: tops.size,
@@ -356,8 +368,15 @@ describe('the canvas as a person uses it', () => {
           Math.abs(shown.text - shown.sheet.left - (read.text - read.sheet)),
           said,
         ).toBeLessThan(1);
-        // The Formatting toolbar in two rows at 1280 pixels, at the printed size.
-        if (zoom === '1') expect(shown.rows, said).toBeLessThanOrEqual(2);
+        // The sheet unmoved down the page, and the text not moved on it (CNT-075): the band the
+        // toolbar stands in is there before the component opens.
+        expect(Math.abs(shown.sheetTop - read.sheetTop), said).toBeLessThan(1);
+        expect(Math.abs(shown.textTop - read.textTop), said).toBeLessThan(1);
+        // The Formatting toolbar in the band, not on the sheet, in two rows at most at 1280
+        // pixels at any zoom: the band is the window's width, whatever the sheet's.
+        expect(shown.inCard, said).toBe(false);
+        expect(shown.rows, said).toBeGreaterThan(0);
+        expect(shown.rows, said).toBeLessThanOrEqual(2);
       });
     });
   }
