@@ -186,7 +186,7 @@
   font-size: var(--size-13);
 }
 
-.row {
+.partRow {
   display: grid;
   grid-template-columns: var(--part-label) minmax(0, 1fr);
   align-items: center;
@@ -197,13 +197,13 @@
   color: var(--muted);
 }
 
-.row > select,
-.row > .field {
+.partRow > select,
+.partRow > .field {
   width: 100%;
   min-width: 0;
 }
 
-.row > a.named {
+.partRow > a.named {
   overflow: hidden;
   font-weight: 600;
   text-overflow: ellipsis;
