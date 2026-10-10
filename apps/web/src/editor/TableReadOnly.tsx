@@ -67,7 +67,7 @@ export function BoundTableReadOnly({
     ),
   ].filter((each): each is string => typeof each === 'string');
   return (
-    <div role="group" aria-label={BOUND_TABLE_WORDS.panel} className={styles['band']}>
+    <div role="group" aria-label={BOUND_TABLE_WORDS.panelReadOnly} className={styles['band']}>
       <ReadOnlyNote />
       {value !== undefined && <div className={styles['section']}>{value}</div>}
       <section className={styles['section']} aria-label={BOUND_TABLE_WORDS.table}>
@@ -203,7 +203,7 @@ export function BoundTableReadOnly({
 export function TableReadOnly({ table }: { readonly table: TableAt }) {
   const styleName = useStyleName(table.style);
   return (
-    <div role="group" aria-label={BOUND_TABLE_WORDS.table} className={styles['band']}>
+    <div role="group" aria-label={BOUND_TABLE_WORDS.tableReadOnly} className={styles['band']}>
       <ReadOnlyNote />
       <section className={styles['section']} aria-label={BOUND_TABLE_WORDS.table}>
         <h3 className={styles['heading']}>{BOUND_TABLE_WORDS.table}</h3>

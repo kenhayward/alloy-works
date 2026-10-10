@@ -241,7 +241,12 @@ describe('a bound table, in Chromium (the TB2 plan, task 5)', () => {
       await readOnly.waitFor();
       await page.evaluate(() => window.scrollTo(0, 0));
       await checkAxe(page, 'a bound table read only', task.meta, {
-        shows: [readOnly, panel.getByRole('region', { name: 'Table' })],
+        shows: [
+          readOnly,
+          page
+            .getByRole('group', { name: 'Bound table, read only' })
+            .getByRole('region', { name: 'Table' }),
+        ],
       });
 
       // Its version cut, and the document published from it.

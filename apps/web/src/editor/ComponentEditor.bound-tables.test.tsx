@@ -545,7 +545,7 @@ describe('the Bound table panel (TB2-F)', () => {
       // Out of the table: the tab is the page's to keep or leave, and shows the table read only - its
       // settings as text, Provenance its one act, nothing to remove or add (ADR-0052, decision 5).
       act(() => selectText(view, 2, 2));
-      const read = within(host).getByRole('group', { name: 'Bound table' });
+      const read = within(host).getByRole('group', { name: BOUND_TABLE_WORDS.panelReadOnly });
       expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
       expect(within(read).getByRole('region', { name: 'Table' })).toHaveTextContent(
         'Wide' + BOUND_TABLE_WORDS.wides.style,
@@ -587,7 +587,9 @@ describe('the Bound table panel (TB2-F)', () => {
         { bindingContext: holding(), tableHost: host },
       );
       await opening.surface();
-      const read = await within(host).findByRole('group', { name: 'Bound table' });
+      const read = await within(host).findByRole('group', {
+        name: BOUND_TABLE_WORDS.panelReadOnly,
+      });
       expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
       expect(within(read).getByRole('group', { name: 'Column 1' })).toHaveTextContent('HeaderSite');
       // Another column by its pill; the folds open and close, and nothing can be changed.
@@ -632,7 +634,9 @@ describe('the Bound table panel (TB2-F)', () => {
         { tableHost: host },
       );
       await opening.surface();
-      const read = await within(host).findByRole('group', { name: 'Table' });
+      const read = await within(host).findByRole('group', {
+        name: BOUND_TABLE_WORDS.tableReadOnly,
+      });
       expect(read).toHaveTextContent(BOUND_TABLE_WORDS.readOnly);
       expect(read).toHaveTextContent('Header rows1');
       expect(read).toHaveTextContent('Size1 rows, 2 columns');

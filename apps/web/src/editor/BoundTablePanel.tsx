@@ -55,6 +55,8 @@ type Client = ReturnType<typeof createApiClient>;
 export const BOUND_TABLE_WORDS = {
   panel: 'Bound table',
   /** The Table tab while the cursor is in no table (ADR-0052). */
+  panelReadOnly: 'Bound table, read only',
+  tableReadOnly: 'Table, read only',
   readOnly:
     'Read only. Edit the component and put the cursor in the table to change its formatting.',
   formatSet: 'Set for this column',
