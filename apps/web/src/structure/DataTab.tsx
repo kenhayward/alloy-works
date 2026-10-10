@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
   formatsFor,
+  takes,
   type BoundTableNode,
   type TableFailure,
   type TablePresentation,
@@ -8,6 +9,8 @@ import {
 import { useId, useState } from 'react';
 
 import { said } from '../data/ProvenancePanel.js';
+import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import { failureWords } from '../publishing/failures.js';
 import { usePresentation } from '../theme/presentation.js';
 import type { BindingState, SinceDiffers } from './bindingContexts.js';
@@ -216,41 +219,53 @@ export function DataTab({
     });
 
   const mayCheck = states.some((state) => state.mayCheck);
+  const counts = new Map<DataState, number>();
+  for (const row of rows) counts.set(row.shown, (counts.get(row.shown) ?? 0) + 1);
   return (
     <div className={styles['tab']}>
       <div className={styles['controls']}>
-        <label htmlFor={filterId}>Show</label>
+        <label htmlFor={filterId} className={styles['muted']}>
+          Show
+        </label>
         <select
           id={filterId}
           value={filter}
           onChange={(event) => setFilter(event.target.value as DataState | 'all')}
         >
-          <option value="all">All</option>
+          <option value="all">{`All, ${rows.length}`}</option>
           {(Object.keys(DATA_STATE_WORDS) as DataState[])
             .filter((state) => present.has(state))
             .map((state) => (
               <option key={state} value={state}>
-                {DATA_STATE_WORDS[state]}
+                {`${DATA_STATE_WORDS[state]}, ${counts.get(state) ?? 0}`}
               </option>
             ))}
         </select>
         {mayCheck && (
-          <button type="button" onClick={() => !checking && onCheckNow()} aria-busy={checking}>
-            Check now
-          </button>
+          <IconButton
+            label="Check now"
+            className={styles['check']}
+            onClick={() => !checking && onCheckNow()}
+            aria-busy={checking}
+          >
+            <Icon name="Resolve" />
+          </IconButton>
         )}
       </div>
       {!mayCheck && <p className={styles['note']}>Values were not checked for you.</p>}
       {prompt}
       {groups.map((group) => (
         <section key={group.node} className={styles['group']}>
-          <h3 className={styles['heading']}>{headingOf(group.node)}</h3>
+          <div className={styles['groupHead']}>
+            <h3 className={styles['heading']}>{headingOf(group.node)}</h3>
+            <span className={styles['count']}>{group.rows.length}</span>
+          </div>
           <ul className={styles['rows']}>
             {group.rows.map(({ state, failure, failing, shown }) => {
               const held = state.held;
               const value =
                 held === null
-                  ? 'No value'
+                  ? null
                   : !held.stale && held.taken !== null && 'table' in held.taken
                     ? tableOf(held.provenance.rowCount)
                     : said(held.taken, formats, state.binding, held.stale);
@@ -258,66 +273,102 @@ export function DataTab({
               const whose = held === null ? null : whoseView(held.provenance, held.by);
               const resolvable =
                 state.mayResolve && (shown === 'never' || shown === 'stale' || shown === 'failed');
+              const kind = takes(state.binding) ? 'A bound value' : 'A bound table';
+              // What is said under the row: why it is as it is, each where it applies.
+              const reasons = [
+                ...(state.waiting !== null
+                  ? [`Waiting: ${said(state.waiting.taken, formats, state.binding)}`]
+                  : []),
+                ...(whose !== null ? [whose] : []),
+                // Which of the document's parameters changed it (TP2-E), beside any other reason.
+                ...(held?.stale === true
+                  ? (held.parameters ?? []).map((name) => `The document's ${name} changed`)
+                  : []),
+                ...(failure !== undefined ? [failure] : []),
+                ...(state.definitionChanged && shown !== 'definition'
+                  ? [DATA_STATE_WORDS.definition]
+                  : []),
+                ...(since !== null ? [since] : []),
+              ];
+              const acts = [
+                ...(state.waiting !== null && state.mayResolve
+                  ? [{ label: 'Accept', run: () => accept(state) }]
+                  : []),
+                ...(shown === 'stale' && held?.keepable === true && state.mayResolve
+                  ? [{ label: 'Keep', run: () => settle(state, 'keep') }]
+                  : []),
+                ...(resolvable ? [{ label: 'Resolve', run: () => settle(state, 'resolve') }] : []),
+              ];
               return (
                 <li
                   key={state.binding.id}
                   data-binding={state.binding.id}
                   className={styles['row']}
+                  // The whole row goes to its value; an act on it does only what it says.
+                  onClick={(event) => {
+                    if ((event.target as Element).closest('button, a, select, input')) return;
+                    onGoTo(state.node, state.binding.id);
+                  }}
                 >
-                  <span className={styles['value']}>{value}</span>
-                  {state.waiting !== null && (
-                    <span className={styles['waiting']}>
-                      Waiting: {said(state.waiting.taken, formats, state.binding)}
+                  <span className={styles['line']} data-line="">
+                    <span className={styles['dot']} data-state={shown} aria-hidden="true" />
+                    <span className={styles['kind']} role="img" aria-label={kind}>
+                      <Icon name={kind} size={14} />
                     </span>
-                  )}
-                  <span className={styles['facts']}>
+                    {value === null ? (
+                      <span className={`${styles['value']} ${styles['none']}`} data-none="">
+                        No value
+                      </span>
+                    ) : (
+                      <span className={styles['value']}>{value}</span>
+                    )}
+                    <IconButton
+                      label="Go to"
+                      className={styles['goTo']}
+                      onClick={() => onGoTo(state.node, state.binding.id)}
+                    >
+                      <Icon name="Go to" size={14} />
+                    </IconButton>
+                  </span>
+                  <span className={styles['facts']} data-line="">
+                    <span className={styles['state']} data-state={shown}>
+                      {DATA_STATE_WORDS[shown]}
+                    </span>
+                    {' · '}
                     {state.definition === null
                       ? 'A definition you may not read'
                       : `${state.definition.title} ${state.definition.version}`}
-                    {' - '}
+                    {' · '}
                     {MODES[state.binding.mode]}
                   </span>
-                  <span className={styles['state']} data-state={shown}>
-                    {DATA_STATE_WORDS[shown]}
-                  </span>
-                  {whose !== null && <span className={styles['facts']}>{whose}</span>}
-                  {/* Which of the document's parameters changed it (TP2-E), beside any other reason. */}
-                  {held?.stale === true &&
-                    held.parameters?.map((name) => (
-                      <span key={name} className={styles['facts']}>
-                        The document&apos;s {name} changed
+                  {(reasons.length > 0 || failing.length > 0 || acts.length > 0) && (
+                    <span className={styles['more']}>
+                      <span className={styles['reasons']}>
+                        {reasons.map((words, at) => (
+                          <span key={at}>{words}</span>
+                        ))}
+                        {failing.map((each, at) => (
+                          <span key={`t${at}`} data-table-failure={each.code}>
+                            {tableFailureSaid(each, state.node)}
+                          </span>
+                        ))}
                       </span>
-                    ))}
-                  {failure !== undefined && <span className={styles['facts']}>{failure}</span>}
-                  {failing.map((each, at) => (
-                    <span key={at} className={styles['facts']} data-table-failure={each.code}>
-                      {tableFailureSaid(each, state.node)}
+                      {acts.length > 0 && (
+                        <span className={styles['acts']}>
+                          {acts.map((each, at) => (
+                            <button
+                              key={each.label}
+                              type="button"
+                              className={at === acts.length - 1 ? 'primary' : undefined}
+                              onClick={each.run}
+                            >
+                              {each.label}
+                            </button>
+                          ))}
+                        </span>
+                      )}
                     </span>
-                  ))}
-                  {state.definitionChanged && shown !== 'definition' && (
-                    <span className={styles['facts']}>{DATA_STATE_WORDS.definition}</span>
                   )}
-                  {since !== null && <span className={styles['facts']}>{since}</span>}
-                  <span className={styles['acts']}>
-                    {state.waiting !== null && state.mayResolve && (
-                      <button type="button" onClick={() => accept(state)}>
-                        Accept
-                      </button>
-                    )}
-                    {shown === 'stale' && held?.keepable === true && state.mayResolve && (
-                      <button type="button" onClick={() => settle(state, 'keep')}>
-                        Keep
-                      </button>
-                    )}
-                    {resolvable && (
-                      <button type="button" onClick={() => settle(state, 'resolve')}>
-                        Resolve
-                      </button>
-                    )}
-                    <button type="button" onClick={() => onGoTo(state.node, state.binding.id)}>
-                      Go to
-                    </button>
-                  </span>
                 </li>
               );
             })}
