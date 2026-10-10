@@ -26,6 +26,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent,
   type RefObject,
 } from 'react';
 
@@ -53,6 +54,60 @@ import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 const ownRoom = (element: HTMLElement) => innerWidth(element);
+
+/** The room a component's label keeps from the text it stands beside. */
+const LABEL_GAP = 48;
+
+/**
+ * Whether a component's label stands beside its text (CNT-073): only where the column leaves it the
+ * room - the text, from the component's start, then the gap, then the label. Zoomed in, the text
+ * fills the column and the label stands above it instead, never on it.
+ */
+export function labelFits({
+  column,
+  text,
+  label,
+}: {
+  readonly column: number;
+  readonly text: number;
+  readonly label: number;
+}): boolean {
+  return column - text >= label + LABEL_GAP;
+}
+
+/**
+ * Each component's label placed beside its text or above it (`labelFits`), again as the column or
+ * the text's measure changes size. Decided from widths that placing the label does not change, so it
+ * never flips back and forth, and never on hover, so showing a label moves no text.
+ */
+function useLabelsPlaced(column: RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    const root = column.current;
+    if (root === null) return;
+    const place = () => {
+      for (const component of root.querySelectorAll<HTMLElement>('[data-component]')) {
+        const label = component.querySelector<HTMLElement>(':scope > [data-label]');
+        const text = component.querySelector<HTMLElement>('.aw-text');
+        const start = component.getBoundingClientRect().left;
+        const above =
+          label !== null &&
+          text !== null &&
+          !labelFits({
+            column: component.clientWidth,
+            text: text.getBoundingClientRect().right - start,
+            label: label.offsetWidth,
+          });
+        component.toggleAttribute('data-label-above', above);
+      }
+    };
+    place();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(place);
+    observer.observe(root);
+    for (const each of root.querySelectorAll('.aw-text')) observer.observe(each);
+    return () => observer.disconnect();
+  });
+}
 
 /** No bound tables, one object, so the rows the page wants are not asked again for nothing. */
 const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
@@ -168,8 +223,8 @@ function RenderedText({
   bindings: BindingContext | null;
   onOpen?: (openAt: number) => void;
   /**
-   * Opens a value's provenance (B1-M; DAT-041): a click on a value, or Enter on it - a button, whose
-   * Enter the browser makes a click - never opens the editor.
+   * Opens a value's provenance (B1-M; DAT-041): a click on a value, or Enter or Space on it - a
+   * button by its role - never opens the editor.
    */
   onProvenance?: (binding: string, opener: HTMLElement) => void;
 }) {
@@ -182,9 +237,16 @@ function RenderedText({
   );
   /** Whether a click was on a value, which then opens its provenance and nothing else. */
   const onValue = (target: EventTarget): boolean => {
-    const value = (target as Element).closest?.('button[data-binding]');
+    const value = (target as Element).closest?.('[role="button"][data-binding]');
     if (!(value instanceof HTMLElement)) return false;
     onProvenance?.(value.dataset.binding ?? '', value);
+    return true;
+  };
+  /** Enter or Space on a value, as a button takes them: its provenance, and nothing else. */
+  const onValueKey = (event: KeyboardEvent<HTMLDivElement>): boolean => {
+    if (event.key !== 'Enter' && event.key !== ' ') return false;
+    if (!onValue(event.target)) return false;
+    event.preventDefault();
     return true;
   };
   // The old text swapped for the new in one step, and never emptied first (issue #384): every
@@ -204,6 +266,7 @@ function RenderedText({
         ref={place}
         className={classes}
         onClick={onProvenance ? (event) => void onValue(event.target) : undefined}
+        onKeyDown={onProvenance ? (event) => void onValueKey(event) : undefined}
       />
     );
   }
@@ -224,6 +287,7 @@ function RenderedText({
         onOpen(offsetOfClick(host, event.clientX, event.clientY) ?? 0);
       }}
       onKeyDown={(event) => {
+        if (onValueKey(event)) return;
         if (event.key !== 'Enter' || event.target !== event.currentTarget) return;
         event.preventDefault();
         onOpen(0);
@@ -376,6 +440,7 @@ export function DocumentText({
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
   const canvas = useCanvas(ownRoom, column as RefObject<HTMLDivElement | null>);
+  useLabelsPlaced(column);
   // Where the text was clicked to open the one card being edited; read once, as that editor opens.
   const [openAt, setOpenAt] = useState<number | undefined>(undefined);
   const open = (node: string) => (at: number) => {

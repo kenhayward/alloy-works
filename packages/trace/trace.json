@@ -20081,7 +20081,7 @@
     {
       "id": "DAT-024",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1094,
+      "line": 1115,
       "kind": "title"
     },
     {
@@ -20105,13 +20105,13 @@
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1397,
+      "line": 1418,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1328,
+      "line": 1349,
       "kind": "title"
     },
     {

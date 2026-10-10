@@ -2,6 +2,8 @@
 
 .panel {
   display: grid;
+  /* One column the dialog wide, however wide a result: the result scrolls across inside it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-12);
   padding: var(--space-16) var(--space-24) var(--space-24);
   font-size: var(--size-13);
@@ -34,8 +36,25 @@
   white-space: pre-wrap;
 }
 
-/* The result's rows scroll within the dialog rather than widening it. */
+/* The result's rows scroll within the dialog, down and across, rather than widening it: each row on
+   one line, the column headings pinned above the rows as they scroll. */
 .result {
   max-height: 60vh;
   overflow: auto;
+}
+
+.result table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.result :is(th, td) {
+  white-space: nowrap;
+}
+
+.result thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
 }

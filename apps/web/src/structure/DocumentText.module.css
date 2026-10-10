@@ -104,6 +104,14 @@
   font-size: var(--size-13);
 }
 
+/* Where the column leaves it no room beside the text - zoomed in - a line of its own above the text,
+   at the end, there whether shown or not, so showing it moves nothing (`labelFits`). */
+.component[data-label-above] > .label {
+  position: static;
+  width: fit-content;
+  margin-inline-start: auto;
+}
+
 .component:hover > .label,
 .component:focus-within > .label,
 .text[data-boundaries='shown'] .label {

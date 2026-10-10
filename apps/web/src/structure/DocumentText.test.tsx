@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { DocumentText } from './DocumentText.js';
+import { DocumentText, labelFits } from './DocumentText.js';
 
 const PRINTER = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 
@@ -463,5 +463,16 @@ describe("the document's text", () => {
       'A component',
       'A component',
     ]);
+  });
+});
+
+describe("a component's label", () => {
+  it('stands beside the text only where the column leaves it room, and above it otherwise (zoomed in)', () => {
+    // A 900px column, the text 600px of it: a 250px label fits beside, with its gap.
+    expect(labelFits({ column: 900, text: 600, label: 250 })).toBe(true);
+    // Zoomed in, the text 800px: the label would stand on it.
+    expect(labelFits({ column: 900, text: 800, label: 250 })).toBe(false);
+    // Room for the label but not its gap.
+    expect(labelFits({ column: 900, text: 645, label: 250 })).toBe(false);
   });
 });

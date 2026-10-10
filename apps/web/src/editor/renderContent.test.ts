@@ -438,29 +438,32 @@ describe('a component rendered as text', () => {
     host.append(rendered);
     const ICON = String.fromCodePoint(0x21bb);
     expect(
-      [...host.querySelectorAll('button')].map((each) => ({
-        type: each.getAttribute('type'),
+      [...host.querySelectorAll<HTMLElement>('[role="button"]')].map((each) => ({
+        type: each.getAttribute('role'),
+        tabIndex: each.tabIndex,
         binding: each.dataset.binding,
         node: each.dataset.node,
         name: each.textContent,
       })),
     ).toEqual([
-      { type: 'button', binding: 'k1', node: 'n7', name: '1,234.5, bound value' },
+      { type: 'button', tabIndex: 0, binding: 'k1', node: 'n7', name: '1,234.5, bound value' },
       {
         type: 'button',
+        tabIndex: 0,
         binding: 'k2',
         node: 'n7',
         name: 'No value - the query returned 3 rows, bound value, failed',
       },
       {
         type: 'button',
+        tabIndex: 0,
         binding: 'k3',
         node: 'n7',
         name: `Yes, bound value,${ICON} revision waiting`,
       },
     ]);
     // One the document holds nothing for has no provenance to open: it says so, and is no button.
-    const never = host.querySelector('span.aw-binding');
+    const never = host.querySelector('span.aw-binding:not([role])');
     expect(never).toHaveTextContent('No value - never resolved, bound value, failed');
     expect(never).toHaveClass('aw-binding-failed');
     expect(never).toHaveAttribute('data-binding', 'k4');

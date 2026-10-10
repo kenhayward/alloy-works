@@ -743,7 +743,7 @@ export function DocumentPage({
       opened.opener?.isConnected === true
         ? opened.opener
         : textColumn.current?.querySelector<HTMLElement>(
-            `[data-node="${opened.node}"] button[data-binding="${opened.binding}"]`,
+            `[data-node="${opened.node}"] [role="button"][data-binding="${opened.binding}"]`,
           );
     back?.focus();
   };
