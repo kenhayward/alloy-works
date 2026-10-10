@@ -1,5 +1,5 @@
-/* The figure panel: how its alternative text is given, then what can be done to its image, in one
- * wrapping row like the table panel beside it. */
+/* The figure panel: its image style, Numbered, what can be done to its image, and Figure settings,
+ * in one wrapping row like the table panel beside it (ADR-0055). */
 
 .panel {
   display: flex;
@@ -7,18 +7,4 @@
   align-items: flex-start;
   gap: var(--space-8) var(--space-8);
   font-size: var(--size-13);
-}
-
-.panel fieldset {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  margin: 0;
-  border: 0;
-  padding: 0;
-}
-
-.note {
-  margin: 0 0 0 var(--space-24);
-  color: var(--muted);
 }

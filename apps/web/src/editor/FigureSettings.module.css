@@ -1,0 +1,140 @@
+/* Figure settings (ADR-0055): a title with the figure's icon in a tile, a two-column grid of image
+ * style and Numbered, the alternatives as option cards, then Replace and Delete apart from Done. */
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  margin: 0 calc(-1 * var(--space-24)) var(--space-16);
+  padding: 0 var(--space-24) var(--space-12);
+  padding-inline-end: var(--space-40);
+  border-bottom: 1px solid var(--border);
+}
+
+.title h2 {
+  margin: 0;
+  font-size: var(--size-16);
+}
+
+.tile {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-8);
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+/* Image style and Numbered: the label in its own column, the control beside it. */
+.fields {
+  display: grid;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+  font-size: var(--size-13);
+}
+
+.fields > label {
+  display: grid;
+  grid-template-columns: var(--dialog-label) minmax(0, 1fr);
+  align-items: center;
+  color: var(--muted);
+}
+
+.fields > label > select {
+  width: 100%;
+  color: var(--text);
+}
+
+.fields > label > input[type='checkbox'] {
+  justify-self: start;
+  margin: 0;
+}
+
+.alternatives {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.alternatives legend {
+  margin-bottom: var(--space-8);
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  padding: 9px 11px;
+}
+
+.card[data-chosen='true'] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+
+.card > label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.card > label > input {
+  margin: 0;
+}
+
+.own {
+  display: grid;
+  gap: var(--space-4);
+  margin-inline-start: var(--space-24);
+  font-size: var(--size-13);
+}
+
+.own textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.note {
+  margin: 0 0 0 var(--space-24);
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.note[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: var(--space-16) calc(-1 * var(--space-24)) calc(-1 * var(--space-24));
+  padding: var(--space-12) var(--space-24);
+  border-top: 1px solid var(--border);
+}
+
+.footer > button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.delete {
+  border-color: transparent;
+  background: none;
+  color: var(--danger);
+}
+
+.end {
+  margin-inline-start: auto;
+}
