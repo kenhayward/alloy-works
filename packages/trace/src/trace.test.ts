@@ -918,6 +918,7 @@ describe('scanning the repository for test files', () => {
     // 47, from 45 (2026-10-07): structure/NewDocument.parameters.test.tsx and ParametersPanel.test.tsx.
     // 49, from 47 (2026-10-08): shell/Rail.test.tsx and shell/CommandPalette.test.tsx, citing nothing.
     // 50, from 49 (2026-10-08): parts/parts.test.tsx, the shared parts, citing nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(50);
+    // 51, from 50 (2026-10-10): editor/ComponentDock.test.tsx, the Table tab offered, citing nothing.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(51);
   });
 });
