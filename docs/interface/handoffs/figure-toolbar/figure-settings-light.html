@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Figure settings, light</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}
+body{margin:0}
+.lw{--bg:#f4f6f8;--chrome:#ffffff;--surface:#ffffff;--sunken:#eef1f4;--text:#15202b;--muted:#56606c;--border:#e1e5ea;--strong-border:#c9d0d8;--accent:#1d6a85;--on-accent:#ffffff;--accent-weak:#e4f1f5;--accent-text:#165a72;--warn:#9a4610;--warn-bg:#fdf0e1;--ok:#1d7148;--ok-bg:#e2f3e9;--danger:#b42318;--danger-bg:#fdecea;--info:#5b3fb8;--info-bg:#efeafc;--mark-a:#11325f;--mark-b:#49888e}
+.lw.dark{--bg:#0d1217;--chrome:#11181f;--surface:#141c24;--sunken:#0f161d;--text:#e5eaef;--muted:#9aa6b2;--border:#232f3a;--strong-border:#34424f;--accent:#5fb6cc;--on-accent:#04222b;--accent-weak:#132f39;--accent-text:#8fd0e0;--warn:#f2a764;--warn-bg:#3a2513;--ok:#5ccf93;--ok-bg:#12301f;--danger:#ff8a80;--danger-bg:#3b1715;--info:#c0adff;--info-bg:#2a2148;--mark-a:#8fd0e0;--mark-b:#63aea2}
+.lw a{color:var(--accent-text)}
+.rl{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:8px;color:var(--muted)!important;text-decoration:none;font-size:12px}
+.rl.on{background:var(--accent-weak);color:var(--accent-text)!important;font-weight:600}
+.sep{height:1px;background:var(--border);margin:6px}
+.btn{height:34px;padding:0 14px;background:var(--surface);border:1px solid var(--strong-border);border-radius:8px;color:var(--text);font:inherit;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.ib{width:30px;height:30px;display:grid;place-items:center;background:transparent;border:0;border-radius:6px;color:var(--text);font:inherit;cursor:pointer}
+.ib[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent-text)}
+.vs{width:1px;height:20px;background:var(--border);margin:0 6px}
+.sp{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:6px;font-size:14px;color:var(--text);text-decoration:none}
+.sp .mono{margin-left:auto;font-size:12px;color:var(--muted)}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl label{font-size:13px;font-weight:500}
+.fi{height:34px;padding:0 10px;border:1px solid var(--strong-border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit}
+
+.cb{display:flex;align-items:center;gap:8px;height:42px;box-sizing:border-box;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap;color:var(--text);font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif}
+.kind{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:6px;background:var(--accent-weak);color:var(--accent-text);font-weight:600}
+.lbx{color:var(--muted)}
+.sel{height:28px;padding:0 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
+.vs2{width:1px;height:20px;background:var(--border);margin:0 2px}
+.sw{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.sw .t{width:28px;height:16px;border-radius:8px;background:var(--accent);position:relative;flex:none}
+.sw .t::after{content:"";position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--on-accent)}
+.sw.off .t{background:var(--strong-border)}.sw.off .t::after{right:auto;left:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);font:inherit;font-size:13px;cursor:pointer;position:relative}
+.chip .k{color:var(--muted)}
+.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.warn .k{color:var(--warn);font-weight:400}
+.chip.data{background:var(--sunken);border-color:transparent}
+.ib3{width:30px;height:30px;display:inline-grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--text);cursor:pointer;padding:0;flex:none}
+.ib3.dng{color:var(--danger)}
+.sb{height:30px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;border:1px solid var(--strong-border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.tip{position:absolute;top:34px;left:0;z-index:2;width:300px;white-space:normal;text-align:left;padding:8px 10px;border-radius:7px;background:var(--text);color:var(--surface);font-size:12.5px;font-weight:400;line-height:1.45;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.dis{opacity:.5}
+.cap{font-size:13px;color:var(--text);margin:0 0 6px;font-weight:600}
+.cap span{font-weight:400;color:var(--muted);font-size:12.5px;margin-left:8px}
+.strip{border:1px solid var(--border);border-radius:8px;overflow:visible;background:var(--surface)}
+.strip .cb{border-bottom:0;border-radius:8px}
+.hd{margin:0;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* dialog */
+.dlg{width:440px;flex:none;background:var(--surface);color:var(--text);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;font-size:13.5px;line-height:1.45;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;border:1px solid var(--border)}
+.dh{display:flex;align-items:center;gap:10px;padding:14px 12px 12px 18px;border-bottom:1px solid var(--border)}
+.dh h2{margin:0;font-size:16px;font-weight:600;flex:1}
+.tile{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accent-weak);color:var(--accent-text)}
+.db{padding:14px 18px 6px;display:flex;flex-direction:column;gap:12px}
+.g2{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:10px 12px}
+.g2 .lb{font-size:13px;color:var(--muted)}
+.g2 .sel{height:32px;width:100%}
+fieldset.alt{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:6px}
+fieldset.alt legend{padding:0;margin:0 0 6px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.opt{display:flex;flex-direction:column;gap:4px;padding:9px 11px;border:1px solid var(--border);border-radius:8px}
+.opt.on{border-color:var(--accent);background:var(--accent-weak)}
+.opt label{display:flex;align-items:center;gap:8px;font-weight:500}
+.opt input[type=radio]{margin:0;width:15px;height:15px;accent-color:var(--accent)}
+.opt .nt{margin:0 0 0 23px;font-size:12.5px;color:var(--muted)}
+.opt .nt.warn{color:var(--warn)}
+.opt .own{margin:6px 0 0 23px;display:flex;flex-direction:column;gap:5px}
+.opt .own label{font-size:12.5px;font-weight:500;color:var(--text)}
+.opt textarea{box-sizing:border-box;width:100%;height:68px;resize:vertical;padding:7px 9px;border:1px solid var(--strong-border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
+.df{display:flex;align-items:center;gap:8px;padding:12px 18px 14px;margin-top:6px;border-top:1px solid var(--border)}
+.lnkd{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:0 6px;color:var(--danger);font:inherit;font-size:13px;cursor:pointer;height:30px}
+.btn.sm{height:30px;padding:0 12px;font-size:13px}
+</style></head>
+<body><div style="width: 1440px; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; font-size: 14px"><div class="lw" style="background: var(--bg); color: var(--text); padding: 28px 24px 36px; display: flex; flex-direction: column; gap: 14px; width: 1440px; box-sizing: border-box"><p class="hd">Light</p><div style="display: flex; justify-content: space-between; align-items: start"><div style="display: flex; flex-direction: column; gap: 8px; width: 440px"><p class="cap" style="margin: 0">From the image</p><p style="margin: 0 0 6px; min-height: 36px; font-size: 12.5px; color: var(--muted)">Opened from Figure settings. Changes apply as they are made, as in the panel today.</p><div class="dlg" role="dialog" aria-modal="true" aria-label="Figure settings">
+      <div class="dh"><span class="tile" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></span><h2>Figure settings</h2><button type="button" class="ib3" aria-label="Close" title="Close" style="color: var(--muted)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="db">
+        <div class="g2"><label class="lb">Image style</label><select class="sel"><option>Figure</option></select><span class="lb">Numbered</span><span class="sw" role="switch" aria-checked="true" tabindex="0"><span class="t" aria-hidden="true"></span></span></div>
+        <fieldset class="alt"><legend>Alternative text</legend><div class="opt on"><label><input type="radio" name="alt7" checked>Use the image's description</label><p class="nt ">Bolts numbered 1 to 8 around the housing flange, in a star pattern: 1 at the top, 2 at the bottom, 3 on the right, 4 on the left. (en-GB)</p></div><div class="opt"><label><input type="radio" name="alt7">Describe it here</label></div><div class="opt"><label><input type="radio" name="alt7">Decorative</label></div></fieldset>
+      </div>
+      <div class="df"><button type="button" class="btn sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="12" height="11" rx="1.5"/><path d="m4 14 3.5-3.5 3 3"/><path d="M19 9v6a4 4 0 0 1-4 4H9"/><path d="m11 17-2 2 2 2"/></svg>Replace image</button><button type="button" class="lnkd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>Delete figure</button><span style="flex: 1"></span><button type="button" class="btn pri sm">Done</button></div>
+    </div></div><div style="display: flex; flex-direction: column; gap: 8px; width: 440px"><p class="cap" style="margin: 0">Describing it here</p><p style="margin: 0 0 6px; min-height: 36px; font-size: 12.5px; color: var(--muted)">Opened from the amber chip: focus lands on the alternative chosen.</p><div class="dlg" role="dialog" aria-modal="true" aria-label="Figure settings">
+      <div class="dh"><span class="tile" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></span><h2>Figure settings</h2><button type="button" class="ib3" aria-label="Close" title="Close" style="color: var(--muted)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="db">
+        <div class="g2"><label class="lb">Image style</label><select class="sel"><option>Figure</option></select><span class="lb">Numbered</span><span class="sw" role="switch" aria-checked="true" tabindex="0"><span class="t" aria-hidden="true"></span></span></div>
+        <fieldset class="alt"><legend>Alternative text</legend><div class="opt"><label><input type="radio" name="alt8">Use the image's description</label><p class="nt warn">The image has no description of its own, so this figure cannot be published until it is given one here.</p></div><div class="opt on"><label><input type="radio" name="alt8" checked>Describe it here</label><div class="own"><label>Its own description</label><textarea></textarea><p class="nt" style="margin: 0">Until something is typed here, the figure keeps what it had.</p></div></div><div class="opt"><label><input type="radio" name="alt8">Decorative</label></div></fieldset>
+      </div>
+      <div class="df"><button type="button" class="btn sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="12" height="11" rx="1.5"/><path d="m4 14 3.5-3.5 3 3"/><path d="M19 9v6a4 4 0 0 1-4 4H9"/><path d="m11 17-2 2 2 2"/></svg>Replace image</button><button type="button" class="lnkd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>Delete figure</button><span style="flex: 1"></span><button type="button" class="btn pri sm">Done</button></div>
+    </div></div><div style="display: flex; flex-direction: column; gap: 8px; width: 440px"><p class="cap" style="margin: 0">A bound figure</p><p style="margin: 0 0 6px; min-height: 36px; font-size: 12.5px; color: var(--muted)">No "Describe it here": a bound figure is described by its data or is decorative.</p><div class="dlg" role="dialog" aria-modal="true" aria-label="Figure settings">
+      <div class="dh"><span class="tile" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></span><h2>Figure settings</h2><button type="button" class="ib3" aria-label="Close" title="Close" style="color: var(--muted)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="db">
+        <div class="g2"><label class="lb">Image style</label><select class="sel"><option>Figure</option></select><span class="lb">Numbered</span><span class="sw" role="switch" aria-checked="true" tabindex="0"><span class="t" aria-hidden="true"></span></span></div>
+        <fieldset class="alt"><legend>Alternative text</legend><div class="opt on"><label><input type="radio" name="alt9" checked>Use the description its data gives</label><p class="nt ">Each document shows the description its row holds in the column its query definition names.</p></div><div class="opt"><label><input type="radio" name="alt9">Decorative</label></div></fieldset>
+      </div>
+      <div class="df"><button type="button" class="btn sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="12" height="11" rx="1.5"/><path d="m4 14 3.5-3.5 3 3"/><path d="M19 9v6a4 4 0 0 1-4 4H9"/><path d="m11 17-2 2 2 2"/></svg>Replace image</button><button type="button" class="lnkd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>Delete figure</button><span style="flex: 1"></span><button type="button" class="btn pri sm">Done</button></div>
+    </div></div></div></div><div class="lw" style="background: var(--bg); color: var(--text); padding: 28px 24px 36px; display: flex; flex-direction: column; gap: 14px; width: 1440px; box-sizing: border-box"><div style="display: flex; justify-content: flex-start; gap: 36px; align-items: start"><div style="display: flex; flex-direction: column; gap: 8px; width: 440px"><p class="cap" style="margin: 0">An image in a line</p><p style="margin: 0 0 6px; min-height: 36px; font-size: 12.5px; color: var(--muted)">No Numbered; Delete image.</p><div class="dlg" role="dialog" aria-modal="true" aria-label="Image settings">
+      <div class="dh"><span class="tile" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h5M3 12h3M3 17h18"/><rect x="9" y="4" width="12" height="10" rx="1.5"/><path d="m10 13 3-3 2 2 2-2 3 3"/></svg></span><h2>Image settings</h2><button type="button" class="ib3" aria-label="Close" title="Close" style="color: var(--muted)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="db">
+        <div class="g2"><label class="lb">Image style</label><select class="sel"><option>Inline</option></select></div>
+        <fieldset class="alt"><legend>Alternative text</legend><div class="opt"><label><input type="radio" name="alt10">Use the image's description</label><p class="nt ">Bolts numbered 1 to 8 around the housing flange, in a star pattern: 1 at the top, 2 at the bottom, 3 on the right, 4 on the left. (en-GB)</p></div><div class="opt"><label><input type="radio" name="alt10">Describe it here</label></div><div class="opt on"><label><input type="radio" name="alt10" checked>Decorative</label></div></fieldset>
+      </div>
+      <div class="df"><button type="button" class="btn sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="12" height="11" rx="1.5"/><path d="m4 14 3.5-3.5 3 3"/><path d="M19 9v6a4 4 0 0 1-4 4H9"/><path d="m11 17-2 2 2 2"/></svg>Replace image</button><button type="button" class="lnkd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>Delete image</button><span style="flex: 1"></span><button type="button" class="btn pri sm">Done</button></div>
+    </div></div><div style="display: flex; flex-direction: column; gap: 8px; width: 440px"><p class="cap" style="margin: 0">Read only</p><p style="margin: 0 0 6px; min-height: 36px; font-size: 12.5px; color: var(--muted)">Every control disabled; Close in place of Done.</p><div class="dlg" role="dialog" aria-modal="true" aria-label="Figure settings">
+      <div class="dh"><span class="tile" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></span><h2>Figure settings</h2><button type="button" class="ib3" aria-label="Close" title="Close" style="color: var(--muted)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <div class="db">
+        <div class="g2"><label class="lb">Image style</label><select class="sel" disabled><option>Figure</option></select><span class="lb">Numbered</span><span class="sw" role="switch" aria-checked="true" tabindex="0" aria-disabled="true"><span class="t" aria-hidden="true"></span></span></div>
+        <fieldset class="alt" disabled><legend>Alternative text</legend><div class="opt on"><label><input type="radio" name="alt11" checked disabled>Use the image's description</label><p class="nt ">Bolts numbered 1 to 8 around the housing flange, in a star pattern: 1 at the top, 2 at the bottom, 3 on the right, 4 on the left. (en-GB)</p></div><div class="opt"><label><input type="radio" name="alt11" disabled>Describe it here</label></div><div class="opt"><label><input type="radio" name="alt11" disabled>Decorative</label></div></fieldset>
+      </div>
+      <div class="df"><span style="flex: 1"></span><button type="button" class="btn sm">Close</button></div>
+    </div></div></div></div></div></body></html>

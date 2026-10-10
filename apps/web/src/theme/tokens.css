@@ -80,6 +80,9 @@
   --pane-admin-menu: 232px;
   --drawer: 440px;
   --dialog: 480px;
+  /* Figure settings (ADR-0055): its width, and its label column. */
+  --dialog-figure: 440px;
+  --dialog-label: 96px;
   --row: 54px;
   --row-head: 38px;
   --icon-button: 32px;

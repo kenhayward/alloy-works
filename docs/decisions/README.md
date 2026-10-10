@@ -48,6 +48,7 @@ exist.
 | [0052](0052-table-formatting-is-a-tab-beside-the-text.md)                         | Table formatting is a tab beside the text                                     | Accepted           |
 | [0053](0053-the-toolbar-has-a-second-line.md)                                     | The toolbar has a second line                                                 | Accepted           |
 | [0054](0054-the-part-and-data-tabs-are-labelled-rows.md)                          | The Part and Data tabs are labelled rows                                      | Accepted           |
+| [0055](0055-a-figure-is-one-line-and-its-settings-a-dialog.md)                    | A figure is one line, and its settings a dialog                               | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

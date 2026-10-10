@@ -13,6 +13,9 @@ looks like and what a person does to it.
 > screens beside this are still the target, drawn before the work so that thirteen screens agree
 > with each other rather than converging by accident.
 
+> **A figure is one line, and its settings a dialog.** [`handoffs/figure-toolbar/`](handoffs/figure-toolbar/README.md)
+> redraws a figure's second toolbar line and adds Figure settings ([ADR-0055](../decisions/0055-a-figure-is-one-line-and-its-settings-a-dialog.md)).
+
 > **The Bound table panel is a band of tabs.** [`handoffs/bound-table/`](handoffs/bound-table/README.md)
 > redraws it under the editor toolbar ([ADR-0051](../decisions/0051-the-bound-table-panel-is-a-band-of-tabs.md)),
 > built by [the BT plan](../plans/2026-10-09-bt-bound-table-band.md).

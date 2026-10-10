@@ -23,6 +23,11 @@
   width: min(760px, 100%);
 }
 
+/* A small settings dialog, such as Figure settings (ADR-0055). */
+.narrow {
+  width: min(var(--dialog-figure), 100%);
+}
+
 /* A confirmation: narrower, and lower, so it sits over what it asks about. */
 .confirm {
   width: min(var(--dialog), 100%);

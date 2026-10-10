@@ -22,8 +22,11 @@ export function Modal({
   children,
 }: {
   labelledBy: string;
-  /** 600px; 760px for a form whose fields hold long values or choices; 480px for a confirmation. */
-  size?: 'standard' | 'wide' | 'dialog';
+  /**
+   * 600px; 760px for a form whose fields hold long values or choices; 440px for a few settings, such
+   * as a figure's; 480px for a confirmation.
+   */
+  size?: 'standard' | 'wide' | 'narrow' | 'dialog';
   onClose: () => void;
   children: React.ReactNode;
 }) {

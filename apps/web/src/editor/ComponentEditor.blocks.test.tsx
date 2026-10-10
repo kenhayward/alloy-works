@@ -931,6 +931,11 @@ describe('a figure in the editor (figures 2)', () => {
       within(dialog).getByLabelText('Image'),
       new File([pngBytes], 'shapes.png', { type: 'image/png' }),
     );
+  /** Figure settings opened from a panel (ADR-0055): the dialog every alternative is chosen in. */
+  const settingsOf = async (panel: HTMLElement, named = 'Figure settings') => {
+    await userEvent.click(within(panel).getByRole('button', { name: named }));
+    return screen.findByRole('dialog', { name: named });
+  };
 
   it("CNT-121 gives a figure the image style chosen from the image catalogue, placing it and in its panel, offering only a figure's", async () => {
     // Placed: the dialog offers the figure styles of the environment's theme, and places it in the one chosen.
@@ -966,6 +971,13 @@ describe('a figure in the editor (figures 2)', () => {
     expect([...list.options].map((option) => option.text)).toEqual(['Figure', 'Half width']);
     await userEvent.selectOptions(list, 'Figure');
     await waitFor(() => expect(figureOf(view)).toMatchObject({ imageStyle: 'figure' }));
+
+    // And Figure settings offers it too, set as the line set it (ADR-0055).
+    const settings = await settingsOf(panel);
+    const there = within(settings).getByLabelText('Image style') as HTMLSelectElement;
+    expect(there).toHaveValue('figure');
+    await userEvent.selectOptions(there, 'Half width');
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ imageStyle: 'half-width' }));
   });
 
   it('CNT-121 gives an image in a line the image style chosen from the image catalogue, placing it and in its panel', async () => {
@@ -1038,10 +1050,10 @@ describe('a figure in the editor (figures 2)', () => {
 
     // The panel reads the image's own description, and its own text takes the component's language,
     // which the model holds without a tag of its own.
-    const panel = await screen.findByRole('group', { name: 'Figure' });
-    expect(await within(panel).findByText(/Zwei Formen/)).toBeInTheDocument();
-    await userEvent.click(within(panel).getByLabelText('Describe it here'));
-    await userEvent.type(within(panel).getByLabelText('Its own description'), 'Two shapes');
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    expect(await within(settings).findByText(/Zwei Formen/)).toBeInTheDocument();
+    await userEvent.click(within(settings).getByLabelText('Describe it here'));
+    await userEvent.type(within(settings).getByLabelText('Its own description'), 'Two shapes');
     await waitFor(() =>
       expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Two shapes' }),
     );
@@ -1096,10 +1108,12 @@ describe('a figure in the editor (figures 2)', () => {
     const view = await surface();
     caretInCaption(view);
     const panel = await screen.findByRole('group', { name: 'Figure' });
-    // The image has no description of its own, which the panel says rather than leaving it to publish.
-    expect(await within(panel).findByText(/has no description/)).toBeInTheDocument();
-    await userEvent.click(within(panel).getByLabelText('Decorative'));
+    const settings = await settingsOf(panel);
+    // The image has no description of its own, which the dialog says rather than leaving it to publish.
+    expect(await within(settings).findByText(/has no description/)).toBeInTheDocument();
+    await userEvent.click(within(settings).getByLabelText('Decorative'));
     await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'decorative' }));
+    await userEvent.click(within(settings).getByRole('button', { name: 'Done' }));
     await userEvent.click(within(panel).getByRole('button', { name: 'Delete figure' }));
     expect(figureOf(view)).toBeUndefined();
   });
@@ -1178,12 +1192,13 @@ describe('a figure in the editor (figures 2)', () => {
     );
     const view = await surface();
     caretInCaption(view, 0);
-    let panel = await screen.findByRole('group', { name: 'Figure' });
-    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Alpha text');
+    let settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    expect(within(settings).getByLabelText('Its own description')).toHaveValue('Alpha text');
+    await userEvent.click(within(settings).getByRole('button', { name: 'Done' }));
     caretInCaption(view, 1);
-    panel = await screen.findByRole('group', { name: 'Figure' });
-    await userEvent.click(within(panel).getByLabelText('Describe it here'));
-    expect(within(panel).getByLabelText('Its own description')).toHaveValue('');
+    settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    await userEvent.click(within(settings).getByLabelText('Describe it here'));
+    expect(within(settings).getByLabelText('Its own description')).toHaveValue('');
     expect(alternativeOf(view, 'f2')).toEqual({ kind: 'inherited' });
   });
 
@@ -1191,17 +1206,17 @@ describe('a figure in the editor (figures 2)', () => {
     const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
     const view = await surface();
     caretInCaption(view);
-    const panel = await screen.findByRole('group', { name: 'Figure' });
-    await userEvent.click(within(panel).getByLabelText('Describe it here'));
-    const field = within(panel).getByLabelText('Its own description');
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    await userEvent.click(within(settings).getByLabelText('Describe it here'));
+    const field = within(settings).getByLabelText('Its own description');
     await userEvent.type(field, 'Red');
     await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
     await userEvent.type(field, '{Backspace}{Backspace}{Backspace}');
     await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'inherited' }));
     expect(field).toHaveValue('');
-    expect(within(panel).getByLabelText('Describe it here')).toBeChecked();
+    expect(within(settings).getByLabelText('Describe it here')).toBeChecked();
     expect(
-      within(panel).getByText('Until something is typed here, the figure keeps what it had.'),
+      within(settings).getByText('Until something is typed here, the figure keeps what it had.'),
     ).toBeInTheDocument();
   });
 
@@ -1209,22 +1224,87 @@ describe('a figure in the editor (figures 2)', () => {
     const { surface } = openWith(aFigure({ kind: 'inherited' }), assetVersion(RED, null));
     const view = await surface();
     caretInCaption(view);
-    const panel = await screen.findByRole('group', { name: 'Figure' });
-    await userEvent.click(within(panel).getByLabelText('Describe it here'));
-    await userEvent.type(within(panel).getByLabelText('Its own description'), 'Red');
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    await userEvent.click(within(settings).getByLabelText('Describe it here'));
+    await userEvent.type(within(settings).getByLabelText('Its own description'), 'Red');
     await waitFor(() => expect(figureOf(view)!.alternative).toEqual({ kind: 'own', text: 'Red' }));
     act(() => {
       fireEvent.keyDown(view.dom, { key: 'z', ctrlKey: true });
     });
     await waitFor(() =>
-      expect(within(panel).getByLabelText("Use the image's description")).toBeChecked(),
+      expect(within(settings).getByLabelText("Use the image's description")).toBeChecked(),
     );
-    // Redo gives the figure back the very value the panel set, which the panel must still follow.
+    // Redo gives the figure back the very value the dialog set, which the dialog must still follow.
     act(() => {
       fireEvent.keyDown(view.dom, { key: 'y', ctrlKey: true });
     });
-    await waitFor(() => expect(within(panel).getByLabelText('Describe it here')).toBeChecked());
-    expect(within(panel).getByLabelText('Its own description')).toHaveValue('Red');
+    await waitFor(() => expect(within(settings).getByLabelText('Describe it here')).toBeChecked());
+    expect(within(settings).getByLabelText('Its own description')).toHaveValue('Red');
+  });
+
+  it('opens Figure settings from its panel, the focus on the chosen alternative, and gives the focus back on Done', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    const opener = within(panel).getByRole('button', { name: 'Figure settings' });
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+    // The alternatives are the dialog's alone: nothing on the panel chooses one (ADR-0055).
+    expect(within(panel).queryByRole('radio')).toBeNull();
+
+    const settings = await settingsOf(panel);
+    expect(within(settings).getByLabelText('Decorative')).toHaveFocus();
+    expect(within(settings).getByRole('checkbox', { name: 'Numbered' })).toBeChecked();
+    expect(within(settings).getByRole('button', { name: 'Replace image' })).toBeInTheDocument();
+    expect(within(settings).getByRole('button', { name: 'Delete figure' })).toBeInTheDocument();
+    await userEvent.click(within(settings).getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog', { name: 'Figure settings' })).toBeNull();
+    expect(opener).toHaveFocus();
+  });
+
+  it('marks the figure unnumbered from Figure settings, as from its panel', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    await userEvent.click(within(settings).getByRole('checkbox', { name: 'Numbered' }));
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ numbered: false }));
+    expect(within(settings).getByRole('checkbox', { name: 'Numbered' })).not.toBeChecked();
+  });
+
+  it('replaces the image from Figure settings, closing it for the Replace image dialog', async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    await userEvent.click(within(settings).getByRole('button', { name: 'Replace image' }));
+    expect(await screen.findByRole('dialog', { name: 'Replace image' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Figure settings' })).toBeNull();
+  });
+
+  it('opens Figure settings to read where the figure cannot be changed, every control disabled and Close in place of Done', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(200, opened({ mayEdit: false, content: aFigure({ kind: 'decorative' }) })),
+        ...assetVersion(RED, null),
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    caretInCaption(view);
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    expect(within(settings).getByLabelText('Decorative')).toBeChecked();
+    expect(within(settings).getByLabelText('Decorative')).toBeDisabled();
+    expect(within(settings).getByRole('checkbox', { name: 'Numbered' })).toBeDisabled();
+    expect(within(settings).queryByRole('button', { name: 'Replace image' })).toBeNull();
+    expect(within(settings).queryByRole('button', { name: 'Delete figure' })).toBeNull();
+    expect(within(settings).queryByRole('button', { name: 'Done' })).toBeNull();
+    // Two Closes: the dialog's own, in its corner, and the footer's in place of Done.
+    const closes = within(settings).getAllByRole('button', { name: 'Close' });
+    await userEvent.click(closes[closes.length - 1]!);
+    expect(screen.queryByRole('dialog', { name: 'Figure settings' })).toBeNull();
   });
 
   it('STR-071 marks the figure unnumbered from its Numbered box, and numbered again, its caption kept', async () => {
@@ -1394,14 +1474,18 @@ describe('a figure in the editor (figures 2)', () => {
       const panel = await screen.findByRole('group', { name: 'Image' });
       // An image in a line takes no number, so its panel has no Numbered box (STR-071's is a figure's).
       expect(within(panel).queryByRole('checkbox', { name: 'Numbered' })).toBeNull();
+      const settings = await settingsOf(panel, 'Image settings');
+      // An image in a line is never numbered, in its settings either.
+      expect(within(settings).queryByRole('checkbox', { name: 'Numbered' })).toBeNull();
       // Said of the image, not a figure (final review).
       expect(
-        await within(panel).findByText(
+        await within(settings).findByText(
           /so this image cannot be published until it is given one here/,
         ),
       ).toBeInTheDocument();
-      await userEvent.click(within(panel).getByLabelText('Decorative'));
+      await userEvent.click(within(settings).getByLabelText('Decorative'));
       await waitFor(() => expect(runsOf(view)[1]).toEqual(inline({ kind: 'decorative' })));
+      await userEvent.click(within(settings).getByRole('button', { name: 'Done' }));
 
       await userEvent.click(within(panel).getByRole('button', { name: 'Replace image' }));
       const dialog = await screen.findByRole('dialog', { name: 'Replace image' });
