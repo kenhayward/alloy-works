@@ -171,6 +171,7 @@ const OTHER_TENANT_IDS: Readonly<
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  discardUnsaved: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   saveIteration: async (tenant, db) => ({
     id: await componentIdIn(tenant, db),
     session: SESSION,
@@ -312,6 +313,7 @@ const VALID_INPUT: Readonly<
   getIteration: { query: `session=${SESSION}` },
   getBoundTableRows: { query: `version=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
   createSpace: { payload: { name: 'Elsewhere' } },

@@ -95,6 +95,7 @@ import { FigureDialog } from './FigureDialog.js';
 import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
+import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
@@ -568,6 +569,8 @@ export function ComponentEditor({
   const recoveryFromReading = useRef(false);
   // The unsaved changes this tab put away with Dismiss, by when they were saved (the R1 plan).
   const [dismissedAt, setDismissedAt] = useState<string | null>(() => dismissedFor(componentId));
+  // Discard asked about (the R2 plan): the time of the changes it would set aside, while it asks.
+  const [discarding, setDiscarding] = useState<string | null>(null);
   // Whether this page has a session of its own running: once it has edited or recovered, what the
   // component's GET said was saved and never made a version is no longer this page's to offer.
   const [ownSession, setOwnSession] = useState(false);
@@ -2297,6 +2300,9 @@ export function ComponentEditor({
                   <button type="button" onClick={() => dismiss(unsaved.savedAt)}>
                     Dismiss
                   </button>
+                  <button type="button" onClick={() => setDiscarding(unsaved.savedAt)}>
+                    Discard
+                  </button>
                 </Notice>
               )}
             {/* The author's other window is editing: what it saved is its work in progress, and
@@ -2441,6 +2447,26 @@ export function ComponentEditor({
           In the application the status bar is that region, outside the article for the same
           reason; this one is for an editor rendered with no shell around it. */}
       {status === null && <p role="status">{notice}</p>}
+      {discarding !== null && (
+        // Discard (the R2 plan): set aside, not deleted, so it says where the changes still are.
+        <ConfirmDialog
+          question="Discard these changes?"
+          sentence="These changes will no longer be offered for recovery. They stay in Saved text until they expire."
+          keep="Keep"
+          act="Discard"
+          onKeep={() => setDiscarding(null)}
+          onAct={async () => {
+            const { response } = await client.PUT('/v1/components/{id}/unsaved/discarded', {
+              params: { path: { id: componentId } },
+              body: { upTo: discarding },
+            });
+            if (!response.ok) throw new Error(`Discarding answered ${response.status}`);
+            // Offered no more here; the service offers it nowhere else either.
+            setDismissedAt(discarding);
+            setDiscarding(null);
+          }}
+        />
+      )}
       {figureDialog !== null &&
         surface !== null &&
         // Beside the article, as the prompt is, and for the same reason.

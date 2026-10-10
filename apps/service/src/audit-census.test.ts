@@ -96,6 +96,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   cutVersion: writes('content.version_cut'),
   listIterations: read,
   getIteration: read,
+  // What is offered to the caller to recover, about their own iterations: no act of record (the R2 plan).
+  discardUnsaved: { none: 'iteration' },
   listGrants: read,
   listRoles: read,
   listPrincipals: read,

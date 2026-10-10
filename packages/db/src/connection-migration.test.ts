@@ -165,6 +165,7 @@ describe('migration 0044, over an environment made before it', () => {
       '0060_audit',
       '0061_audit_hardening',
       '0062_search_contains',
+      '0063_unsaved_discarded',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

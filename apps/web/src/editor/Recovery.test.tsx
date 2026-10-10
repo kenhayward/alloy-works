@@ -568,6 +568,34 @@ describe('Recovery in the component editor', () => {
     expect(box()).toHaveTextContent('Unbox the printer.');
   });
 
+  it('discards the changes after asking, so they are offered no more though kept for Saved text (the R2 plan)', async () => {
+    const { asked, surface } = open(
+      recovering(opened({ unsaved }), {
+        'PUT /v1/components/{id}/unsaved/discarded': () => json(200, { unsaved: null }),
+      }),
+    );
+    await surface();
+    const offer = () => screen.queryByText(unsavedSentence(unsaved.savedAt));
+    await userEvent.click(within(offer()!.parentElement!).getByRole('button', { name: 'Discard' }));
+    const asking = await screen.findByRole('dialog', { name: 'Discard these changes?' });
+    expect(asking).toHaveTextContent(
+      'These changes will no longer be offered for recovery. They stay in Saved text until they expire.',
+    );
+    // Kept: nothing sent, the notice still there.
+    await userEvent.click(within(asking).getByRole('button', { name: 'Keep' }));
+    expect(asked.some((each) => each.route.endsWith('/unsaved/discarded'))).toBe(false);
+    expect(offer()).not.toBeNull();
+
+    await userEvent.click(within(offer()!.parentElement!).getByRole('button', { name: 'Discard' }));
+    const again = await screen.findByRole('dialog', { name: 'Discard these changes?' });
+    await userEvent.click(within(again).getByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(offer()).toBeNull());
+    const sent = asked.find((each) => each.route === 'PUT /v1/components/{id}/unsaved/discarded');
+    expect(sent?.body).toEqual({ upTo: unsaved.savedAt });
+    // Nothing claimed: discarding is not editing.
+    expect(asked.some((each) => each.route === 'POST /v1/components/{id}/lock')).toBe(false);
+  });
+
   it('puts the notice away for this tab with Dismiss, until something newer is saved', async () => {
     const first = open(recovering(opened({ unsaved })));
     await first.surface();

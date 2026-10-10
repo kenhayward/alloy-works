@@ -9,6 +9,8 @@ import type {
   ReleaseQuery,
   SavedIterationParams,
   SavedIterationQuery,
+  DiscardAnswer,
+  DiscardBody,
 } from '@alloy-works/api-contract';
 import {
   claimLock,
@@ -16,7 +18,9 @@ import {
   holding,
   isHolderRefusal,
   latestVersion,
+  discardUnsaved,
   listIterations,
+  newestUncutIteration,
   readIteration,
   readVersion,
   releaseLock,
@@ -283,6 +287,22 @@ export function editingHandlers() {
         items: page.items.map(iterationView),
         next: cursorFor('iterations', asked.sort, asked.order, page.snapshot, page.next),
       };
+    },
+
+    /**
+     * Discard (the R2 plan): the caller's unversioned work, saved up to `upTo`, no longer offered. No
+     * lock is needed: it changes what is offered to the caller alone, and deletes nothing.
+     */
+    discardUnsaved: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<DiscardAnswer> => {
+      const { id } = request.params as ComponentParams;
+      const { upTo } = request.body as DiscardBody;
+      const owner = { artifactId: id, principalId };
+      await discardUnsaved(trx, owner, new Date(upTo));
+      const unsaved = await newestUncutIteration(trx, owner);
+      return { unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() } };
     },
 
     /** One of them, content and values (RC-E); any other id is a 404, whoever's it is. */

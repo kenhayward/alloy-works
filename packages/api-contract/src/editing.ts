@@ -99,6 +99,23 @@ export const SavedIteration = IterationSummary.extend({
 });
 export type SavedIteration = z.infer<typeof SavedIteration>;
 
+/** Discard (the R2 plan): the time of the newest work set aside, as the component's `unsaved` said it. */
+export const DiscardBody = z.object({
+  upTo: z
+    .string()
+    .datetime({ offset: true })
+    .describe("When the newest work to discard was saved: the component's unsaved.savedAt"),
+});
+export type DiscardBody = z.infer<typeof DiscardBody>;
+
+export const DiscardAnswer = z.object({
+  unsaved: z
+    .object({ savedAt: z.string().describe('When the service accepted it') })
+    .nullable()
+    .describe("What is offered to recover now, as a component's unsaved is: null where nothing is"),
+});
+export type DiscardAnswer = z.infer<typeof DiscardAnswer>;
+
 export const CutAnswer = z.object({
   outcome: z
     .enum(['cut', 'unchanged'])
@@ -268,6 +285,28 @@ export const editingRoutes = {
         description: 'lock_held or lock_required: the session named does not hold the lock',
         schema: EditingRefusal,
       },
+    },
+  },
+  discardUnsaved: {
+    operationId: 'discardUnsaved',
+    method: 'PUT',
+    path: '/v1/components/{id}/unsaved/discarded',
+    summary:
+      "Discard the caller's work saved and never made a version, up to a time: no longer offered to recover",
+    tenantScoped: true,
+    access: edit,
+    params: ComponentParams,
+    body: DiscardBody,
+    responses: {
+      200: {
+        description:
+          'Discarded, and kept for Saved text until it expires: what is offered now, null unless something was saved since',
+        schema: DiscardAnswer,
+      },
+      400: { description: 'upTo is not a date and time', schema: ErrorBody },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
     },
   },
   getIteration: {

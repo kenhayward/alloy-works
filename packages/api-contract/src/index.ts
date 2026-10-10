@@ -41,6 +41,8 @@ export {
   ClaimBody,
   CutAnswer,
   CutBody,
+  DiscardAnswer,
+  DiscardBody,
   EditingRefusal,
   IterationAccepted,
   IterationBody,
