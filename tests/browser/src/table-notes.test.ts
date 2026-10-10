@@ -6,7 +6,7 @@ import { api, edit, makeDocument, nodesOf, readDocument, type Client } from './t
 import { checkAxe } from './testing/axe.js';
 import { generalSpace, makeComponent } from './testing/component.js';
 import { publishPdf } from './testing/fixtures.js';
-import { withPage } from './testing/page.js';
+import { scrollPaneTo, withPage } from './testing/page.js';
 
 /**
  * A bound table's notes and Wide in the pinned Chromium (the TB3 plan, task 5), against the
@@ -167,7 +167,7 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
 
       // A note on the column N1, typed in place beneath the table, from the Notes tab.
       await regionTo(page, panel);
-      await panel.getByRole('tab', { name: /^Notes/ }).click();
+      await panel.getByRole('button', { name: /^Notes/ }).click();
       await adding.getByLabel(/^Column/).selectOption('n1');
       await tabTo(page, adding.getByRole('button', { name: 'Add note' }));
       await page.keyboard.press('Enter');
@@ -200,9 +200,10 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
       await regionTo(page, panel);
       await panel.getByLabel('Wide').selectOption('rotate');
       // The Table tab scrolled to its Table section: nothing above it left half in view (ADR-0052).
-      await panel
-        .getByRole('region', { name: 'Table' })
-        .evaluate((element) => element.scrollIntoView({ block: 'start' }));
+      // The window from its top, as the accessibility walk checks it: the keys left it where a link
+      // in the page's head stood half under the header band.
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await scrollPaneTo(panel.getByRole('region', { name: 'Table' }));
       await checkAxe(page, "the Bound table panel's notes and Wide", task.meta, {
         shows: [panel, adding],
       });

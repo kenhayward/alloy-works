@@ -105,18 +105,6 @@
   color: var(--muted);
 }
 
-.tabsRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding-inline-end: var(--space-12);
-  border-bottom: 1px solid var(--border);
-}
-
-.tabs {
-  flex: 1;
-}
-
 .add {
   width: var(--icon-button-sm);
   min-height: var(--icon-button-sm);
@@ -137,14 +125,6 @@
 
 :is(.add, .addWords)[aria-disabled='true'] {
   opacity: var(--opacity-disabled);
-}
-
-.panel {
-  display: grid;
-}
-
-.panel[hidden] {
-  display: none;
 }
 
 /* The columns as pills, wrapping: 26px high, a 13px radius; the one in hand pressed. */
@@ -180,26 +160,11 @@
   font-weight: 600;
 }
 
-/* The column in hand, on the weak accent. */
+/* The column in hand, its fields under its fold, which carries the weak accent. */
 .inHand {
   display: grid;
   gap: var(--space-8);
-  padding: var(--space-12) var(--space-16);
-  border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--accent-weak) 70%, transparent);
-}
-
-.inHandHead {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.inHandHead h4 {
-  flex: 1;
-  margin: 0;
-  font-size: var(--size-14);
-  font-weight: 600;
+  padding: 0 var(--space-16) var(--space-12);
 }
 
 .move {
@@ -235,13 +200,13 @@
   opacity: var(--opacity-disabled);
 }
 
+/* A sort key or a note a row, 38px, on one line in the 400px tab (the handoff's measures). */
 .row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-8);
-  min-height: var(--grid-row);
-  padding: 2px var(--space-8) 2px var(--space-16);
+  gap: 6px;
+  min-height: 38px;
+  padding: 2px var(--space-12) 2px var(--space-16);
   border-bottom: 1px solid var(--border);
 }
 
@@ -252,8 +217,13 @@
 }
 
 .columnChoice {
-  width: 300px;
-  max-width: 100%;
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.row > select {
+  height: var(--row-control);
+  min-height: 0;
 }
 
 .letter {
@@ -274,8 +244,11 @@
 }
 
 .bin {
+  flex: none;
   width: var(--icon-button-sm);
   min-height: var(--icon-button-sm);
+  border-color: transparent;
+  background: transparent;
   color: var(--muted);
 }
 
@@ -322,4 +295,72 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* A fold (ADR-0052): its heading the toggle, its count, folded a summary, its acts at the end. */
+.fold {
+  border-bottom: 1px solid var(--border);
+}
+
+.fold[data-open='true'] {
+  background: color-mix(in srgb, var(--accent-weak) 70%, transparent);
+}
+
+.foldHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 38px;
+  padding: 0 var(--space-12) 0 var(--space-8);
+}
+
+.foldHeading {
+  margin: 0;
+}
+
+.foldHeading > button {
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 var(--space-8);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fold[data-open='true'] .foldHeading > button {
+  color: var(--text);
+  font-size: var(--size-14);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.summary {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foldBody {
+  display: grid;
+}
+
+.nulls {
+  flex: 0 0 118px;
+  width: 118px;
 }

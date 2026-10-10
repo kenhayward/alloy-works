@@ -38,8 +38,8 @@ import {
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
+import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
-import { PanelTabs } from '../parts/PanelTabs.js';
 import { Segmented } from '../parts/Segmented.js';
 import { Tooltip } from '../parts/Tooltip.js';
 import { useStatus } from '../shell/Status.js';
@@ -84,6 +84,8 @@ export const BOUND_TABLE_WORDS = {
   left: 'Move left',
   right: 'Move right',
   table: 'Table',
+  of: 'of',
+  none: 'None',
   shows: 'Shows',
   follows: 'Follows the column the cursor is in.',
   remove: 'Remove',
@@ -163,8 +165,8 @@ export interface BoundTablePanelProps {
   readonly value?: ReactNode;
 }
 
-/** The band's tabs (ADR-0051, decision 3). */
-type BandTab = 'columns' | 'sort' | 'notes';
+/** The fold open: one of Column, Sort and Notes, or none (ADR-0052). */
+type Open = 'column' | 'sort' | 'notes' | null;
 
 /**
  * **The Bound table panel** (the TB2 plan, TB2-F), beside the Value panel while the cursor stands in a
@@ -184,7 +186,7 @@ export function BoundTablePanel({
   value,
 }: BoundTablePanelProps) {
   const bandId = useId();
-  const [tab, setTab] = useState<BandTab>('columns');
+  const [open, setOpen] = useState<Open>('column');
   // The column in hand (ADR-0052): a pill sets it, and so does a press on its cells in the text,
   // which the surface holds. Marked in the text, and said in the status bar, while Columns shows.
   const [chosenColumn, setChosenColumn] = useState(0);
@@ -195,10 +197,13 @@ export function BoundTablePanel({
     if (pressed === null || pressed === sent.current) return;
     sent.current = pressed;
     setChosenColumn(pressed);
-    setTab('columns');
+    setOpen('column');
   }, [pressed]);
-  const setInHand = (at: number) => setChosenColumn(at);
-  const focused = tab === 'columns' ? inHand : null;
+  const setInHand = (at: number) => {
+    setChosenColumn(at);
+    setOpen('column');
+  };
+  const focused = open === 'column' ? inHand : null;
   useEffect(() => {
     sent.current = focused;
     focusBoundTableColumn(focused)(view.state, view.dispatch);
@@ -352,28 +357,11 @@ export function BoundTablePanel({
   const formattingColumn = formatting === null ? null : table.columns[formatting];
   const formattingType = formattingColumn ? typeOf(formattingColumn.column) : null;
 
-  const ids = (key: string) => ({ tab: `${bandId}-tab-${key}`, panel: `${bandId}-panel-${key}` });
   const maySort = enabled && table.sort.length < 4 && unsorted !== undefined;
-  const tabs = [
-    {
-      key: 'columns',
-      label: BOUND_TABLE_WORDS.columns,
-      icon: <Icon name="Columns" />,
-      count: table.columns.length,
-    },
-    {
-      key: 'sort',
-      label: BOUND_TABLE_WORDS.sort,
-      icon: <Icon name="Sort" />,
-      count: table.sort.length,
-    },
-    {
-      key: 'notes',
-      label: BOUND_TABLE_WORDS.notes,
-      icon: <Icon name="Notes" />,
-      count: table.notes.length,
-    },
-  ];
+  const addSort = () => {
+    if (!maySort || unsorted === undefined) return;
+    setSort([...table.sort, { column: unsorted.name, direction: 'ascending', nulls: 'last' }]);
+  };
 
   return (
     <div
@@ -450,16 +438,13 @@ export function BoundTablePanel({
           </span>
         </div>
       </section>
-      <div className={styles['tabsRow']}>
-        <PanelTabs
-          label={BOUND_TABLE_WORDS.panel}
-          tabs={tabs}
-          chosen={tab}
-          onChoose={(key) => setTab(key as BandTab)}
-          ids={ids}
-          className={styles['tabs']}
-        />
-        {tab === 'columns' && (
+      <section className={styles['section']} aria-labelledby={`${bandId}-columns`}>
+        <div className={styles['sectionHead']}>
+          <h3 id={`${bandId}-columns`} className={styles['heading']}>
+            {BOUND_TABLE_WORDS.columns}
+          </h3>
+          <Chip>{table.columns.length}</Chip>
+          <span className={styles['spacer']} />
           <IconButton
             label={BOUND_TABLE_WORDS.addColumn}
             tooltip={unshown === undefined ? BOUND_TABLE_WORDS.allShown : undefined}
@@ -474,36 +459,7 @@ export function BoundTablePanel({
           >
             <Icon name="Add" />
           </IconButton>
-        )}
-        {tab === 'sort' && (
-          <button
-            type="button"
-            className={styles['addWords']}
-            aria-disabled={!maySort}
-            onClick={() => {
-              if (!maySort || unsorted === undefined) return;
-              setSort([
-                ...table.sort,
-                { column: unsorted.name, direction: 'ascending', nulls: 'last' },
-              ]);
-            }}
-          >
-            <Icon name="Add" />
-            {BOUND_TABLE_WORDS.addSort}
-          </button>
-        )}
-      </div>
-      <p role="status" className={styles['hidden']}>
-        {said?.text ?? ''}
-      </p>
-      {said !== null && said.at === null && <p className={styles['complaint']}>{said.text}</p>}
-      <div
-        role="tabpanel"
-        id={ids('columns').panel}
-        aria-labelledby={ids('columns').tab}
-        hidden={tab !== 'columns'}
-        className={styles['panel']}
-      >
+        </div>
         {/* A pill per column, in order: the column in hand pressed, a refused one in warn with
             why on hover or focus (ADR-0052; ADR-0051, decision 5). */}
         <div role="group" aria-label={BOUND_TABLE_WORDS.columns} className={styles['pills']}>
@@ -533,36 +489,117 @@ export function BoundTablePanel({
             );
           })}
         </div>
-        {table.columns[inHand] !== undefined && (
+      </section>
+      <p role="status" className={styles['hidden']}>
+        {said?.text ?? ''}
+      </p>
+      {said !== null && said.at === null && <p className={styles['complaint']}>{said.text}</p>}
+      {/* One of Column, Sort and Notes open at a time, the others folded to a count and a summary
+          (ADR-0052). */}
+      {table.columns[inHand] !== undefined && (
+        <Fold
+          id={`${bandId}-column`}
+          label={
+            open === 'column'
+              ? `${BOUND_TABLE_WORDS.column} ${inHand + 1} ${BOUND_TABLE_WORDS.of} ${table.columns.length}`
+              : BOUND_TABLE_WORDS.column
+          }
+          summary={`${inHand + 1} ${BOUND_TABLE_WORDS.of} ${table.columns.length}, ${header(
+            table.columns[inHand].column,
+          )}`}
+          open={open === 'column'}
+          onToggle={() => setOpen(open === 'column' ? null : 'column')}
+          group={`${BOUND_TABLE_WORDS.column} ${inHand + 1}`}
+          acts={
+            <>
+              <IconButton
+                label={BOUND_TABLE_WORDS.left}
+                className={styles['move']}
+                aria-disabled={!enabled || inHand === 0}
+                onClick={() => inHand > 0 && enabled && move(inHand, -1)}
+              >
+                <Icon name="Previous page" />
+              </IconButton>
+              <IconButton
+                label={BOUND_TABLE_WORDS.right}
+                className={styles['move']}
+                aria-disabled={!enabled || inHand === table.columns.length - 1}
+                onClick={() => inHand < table.columns.length - 1 && enabled && move(inHand, 1)}
+              >
+                <Icon name="Next page" />
+              </IconButton>
+              <IconButton
+                label={BOUND_TABLE_WORDS.remove}
+                className={styles['move']}
+                aria-disabled={!enabled}
+                onClick={() =>
+                  enabled &&
+                  setColumns(
+                    table.columns.filter((_, index) => index !== inHand),
+                    false,
+                    inHand,
+                  )
+                }
+              >
+                <Icon name="Delete" />
+              </IconButton>
+            </>
+          }
+        >
           <ColumnFields
             key={inHand}
-            at={inHand}
             column={table.columns[inHand]}
-            count={table.columns.length}
             offered={offered}
             enabled={enabled}
             onColumns={(next, typed) => setColumns(withColumn(inHand, next), typed, inHand)}
-            onMove={(by) => move(inHand, by)}
-            onRemove={() =>
-              setColumns(
-                table.columns.filter((_, index) => index !== inHand),
-                false,
-                inHand,
-              )
-            }
             onFormat={(opener) => {
               formatOpener.current = opener;
               setFormatting(inHand);
             }}
           />
-        )}
-      </div>
-      <div
-        role="tabpanel"
-        id={ids('sort').panel}
-        aria-labelledby={ids('sort').tab}
-        hidden={tab !== 'sort'}
-        className={styles['panel']}
+        </Fold>
+      )}
+      <Fold
+        id={`${bandId}-sort`}
+        label={BOUND_TABLE_WORDS.sort}
+        count={table.sort.length}
+        summary={
+          table.sort.length === 0
+            ? BOUND_TABLE_WORDS.none
+            : table.sort
+                .map(
+                  (key) =>
+                    `${header(key.column)}${key.direction === 'descending' ? ' descending' : ''}`,
+                )
+                .join(', then ')
+        }
+        open={open === 'sort'}
+        onToggle={() => setOpen(open === 'sort' ? null : 'sort')}
+        acts={
+          open === 'sort' ? (
+            <button
+              type="button"
+              className={styles['addWords']}
+              aria-disabled={!maySort}
+              onClick={addSort}
+            >
+              <Icon name="Add" />
+              {BOUND_TABLE_WORDS.addSort}
+            </button>
+          ) : (
+            <IconButton
+              label={BOUND_TABLE_WORDS.addSort}
+              className={styles['add']}
+              aria-disabled={!maySort}
+              onClick={() => {
+                setOpen('sort');
+                addSort();
+              }}
+            >
+              <Icon name="Add" />
+            </IconButton>
+          )
+        }
       >
         {table.sort.map((key, at) => {
           const set = (next: Partial<SortKey>) =>
@@ -571,41 +608,50 @@ export function BoundTablePanel({
           return (
             <div key={at} role="group" aria-label={label} className={styles['row']}>
               <span className={styles['index']}>{at + 1}</span>
-              <label className={styles['inline']}>
-                <span className={styles['hidden']}>{BOUND_TABLE_WORDS.column}</span>
-                <select
-                  className={styles['columnChoice']}
-                  value={key.column}
-                  disabled={!enabled}
-                  onChange={(event) => set({ column: event.target.value })}
-                >
-                  {namesOffered(offered, key.column).map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <select
+                aria-label={BOUND_TABLE_WORDS.column}
+                className={styles['columnChoice']}
+                value={key.column}
+                disabled={!enabled}
+                onChange={(event) => set({ column: event.target.value })}
+              >
+                {namesOffered(offered, key.column).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
               <Segmented
                 label={`Direction of ${label}`}
                 value={key.direction}
                 disabled={!enabled}
                 onChange={(direction) => set({ direction: direction as SortKey['direction'] })}
-                options={Object.entries(BOUND_TABLE_WORDS.directions).map(([each, words]) => ({
-                  value: each,
-                  name: words,
-                }))}
+                options={[
+                  {
+                    value: 'ascending',
+                    name: BOUND_TABLE_WORDS.directions.ascending,
+                    icon: 'Move up',
+                  },
+                  {
+                    value: 'descending',
+                    name: BOUND_TABLE_WORDS.directions.descending,
+                    icon: 'Move down',
+                  },
+                ]}
               />
-              <Segmented
-                label={`No value in ${label}`}
+              <select
+                aria-label={`No value in ${label}`}
+                className={styles['nulls']}
                 value={key.nulls}
                 disabled={!enabled}
-                onChange={(nulls) => set({ nulls: nulls as SortKey['nulls'] })}
-                options={Object.entries(BOUND_TABLE_WORDS.nulls).map(([each, words]) => ({
-                  value: each,
-                  name: words,
-                }))}
-              />
+                onChange={(event) => set({ nulls: event.target.value as SortKey['nulls'] })}
+              >
+                {Object.entries(BOUND_TABLE_WORDS.nulls).map(([each, words]) => (
+                  <option key={each} value={each}>
+                    {words}
+                  </option>
+                ))}
+              </select>
               <IconButton
                 label={`${BOUND_TABLE_WORDS.remove} ${label.toLowerCase()}`}
                 tooltip={BOUND_TABLE_WORDS.remove}
@@ -619,13 +665,36 @@ export function BoundTablePanel({
           );
         })}
         <p className={styles['hint']}>{BOUND_TABLE_WORDS.sortHint}</p>
-      </div>
-      <div
-        role="tabpanel"
-        id={ids('notes').panel}
-        aria-labelledby={ids('notes').tab}
-        hidden={tab !== 'notes'}
-        className={styles['panel']}
+      </Fold>
+      <Fold
+        id={`${bandId}-notes`}
+        label={BOUND_TABLE_WORDS.notes}
+        count={table.notes.length}
+        summary={
+          table.notes.length === 0
+            ? BOUND_TABLE_WORDS.none
+            : table.notes
+                .map((note, at) => {
+                  const letter = tableShown?.notes?.[at]?.letter;
+                  const on = header(note.anchor.column);
+                  return letter ? `${letter} on ${on}` : `On ${on}`;
+                })
+                .join(', ')
+        }
+        open={open === 'notes'}
+        onToggle={() => setOpen(open === 'notes' ? null : 'notes')}
+        acts={
+          open !== 'notes' && (
+            <IconButton
+              label={BOUND_TABLE_WORDS.addNote}
+              className={styles['add']}
+              aria-disabled={!enabled}
+              onClick={() => enabled && setOpen('notes')}
+            >
+              <Icon name="Add" />
+            </IconButton>
+          )
+        }
       >
         <NotesFields
           view={view}
@@ -637,7 +706,7 @@ export function BoundTablePanel({
           shown={tableShown?.notes ?? []}
           rows={heldTable?.rows ?? null}
         />
-      </div>
+      </Fold>
       {formattingColumn !== null &&
         formattingColumn !== undefined &&
         createPortal(
@@ -883,72 +952,31 @@ function namesOffered(offered: readonly TableColumn[], chosen: string): string[]
 }
 
 interface ColumnFieldsProps {
-  readonly at: number;
   readonly column: BoundColumn;
-  readonly count: number;
   readonly offered: readonly TableColumn[];
   readonly enabled: boolean;
   /** Asks for the column changed, answering whether it was; `typed` joins a keystroke's step. */
   readonly onColumns: (column: BoundColumn, typed: boolean) => boolean;
-  readonly onMove: (by: number) => void;
-  readonly onRemove: () => void;
   readonly onFormat: (opener: HTMLElement) => void;
 }
 
 /**
- * **The column in hand** (ADR-0052): "Column 3 of 4", moved left or right or removed, then its
- * fields - its column, header, unit and where the unit stands, alignment, and its text's wrap and
- * Format. Its header and unit are typed as drafts, a refused one kept until put right.
+ * **The column in hand** (ADR-0052): its column, header, unit and where the unit stands, alignment,
+ * and its text's wrap and Format, under the fold that names it. Its header and unit are typed as
+ * drafts, a refused one kept until put right.
  */
-function ColumnFields({
-  at,
-  column,
-  count,
-  offered,
-  enabled,
-  onColumns,
-  onMove,
-  onRemove,
-  onFormat,
-}: ColumnFieldsProps) {
+function ColumnFields({ column, offered, enabled, onColumns, onFormat }: ColumnFieldsProps) {
   const [header, setHeader] = useState(column.header);
   const [unit, setUnit] = useState(column.unit?.text ?? '');
   // An undo, or another change, puts back what the table holds.
   useEffect(() => setHeader(column.header), [column.header]);
   useEffect(() => setUnit(column.unit?.text ?? ''), [column.unit?.text]);
-  const label = `${BOUND_TABLE_WORDS.column} ${at + 1}`;
+  const unitId = useId();
   const unitPlace = column.unit?.place ?? 'header';
   const bare = without(column, 'unit');
   const wraps = column.wrap !== false;
   return (
-    <section role="group" aria-label={label} className={styles['inHand']}>
-      <div className={styles['inHandHead']}>
-        <h4>{`${label} of ${count}`}</h4>
-        <IconButton
-          label={BOUND_TABLE_WORDS.left}
-          className={styles['move']}
-          aria-disabled={!enabled || at === 0}
-          onClick={() => at > 0 && enabled && onMove(-1)}
-        >
-          <Icon name="Previous page" />
-        </IconButton>
-        <IconButton
-          label={BOUND_TABLE_WORDS.right}
-          className={styles['move']}
-          aria-disabled={!enabled || at === count - 1}
-          onClick={() => at < count - 1 && enabled && onMove(1)}
-        >
-          <Icon name="Next page" />
-        </IconButton>
-        <IconButton
-          label={BOUND_TABLE_WORDS.remove}
-          className={styles['move']}
-          aria-disabled={!enabled}
-          onClick={() => enabled && onRemove()}
-        >
-          <Icon name="Delete" />
-        </IconButton>
-      </div>
+    <div className={styles['inHand']}>
       <p className={styles['hint']}>{BOUND_TABLE_WORDS.follows}</p>
       <div className={styles['fields']}>
         <label>
@@ -978,10 +1006,10 @@ function ColumnFields({
             }}
           />
         </label>
-        <label htmlFor={`${label}-unit`}>{BOUND_TABLE_WORDS.unit}</label>
+        <label htmlFor={unitId}>{BOUND_TABLE_WORDS.unit}</label>
         <span className={styles['inline']}>
           <input
-            id={`${label}-unit`}
+            id={unitId}
             className={styles['unit']}
             value={unit}
             disabled={!enabled}
@@ -1061,6 +1089,59 @@ function ColumnFields({
           </button>
         </span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * **A fold** (ADR-0052): its heading a button that opens and closes it, with its count, and folded,
+ * a summary of what it holds; its acts at the line's end. Open, it holds its fields, named by the
+ * fold, or by `group` where one names the thing they set.
+ */
+function Fold({
+  id,
+  label,
+  count,
+  summary,
+  open,
+  onToggle,
+  acts,
+  group,
+  children,
+}: {
+  id: string;
+  label: string;
+  count?: number;
+  summary: string;
+  open: boolean;
+  onToggle: () => void;
+  acts?: ReactNode;
+  group?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={styles['fold']}
+      data-open={open}
+      {...(open && group !== undefined ? { role: 'group', 'aria-label': group } : {})}
+    >
+      <div className={styles['foldHead']}>
+        <h3 className={styles['foldHeading']}>
+          <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle}>
+            <Icon name={open ? 'Move down' : 'Next page'} />
+            {label}
+            {count !== undefined && <Chip>{count}</Chip>}
+          </button>
+        </h3>
+        {!open && <span className={styles['summary']}>{summary}</span>}
+        <span className={styles['spacer']} />
+        {acts}
+      </div>
+      {open && (
+        <div id={id} className={styles['foldBody']}>
+          {children}
+        </div>
+      )}
     </section>
   );
 }
