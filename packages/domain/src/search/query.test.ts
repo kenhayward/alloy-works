@@ -15,7 +15,17 @@ describe('reading a query', () => {
         { name: 'Due date', words: '2026', excluded: false },
         { name: 'title', words: '"draft copy"', excluded: true },
       ],
+      // With an `or`, words alone: what a part of a word means beside an `or` is not obvious.
+      contains: null,
     });
+  });
+
+  it('reads the terms a part of a word may match, each wanted or excluded, the scoped ones aside', () => {
+    expect(parseQuery('Dexa "high dose" -brake title:draft')).toMatchObject({
+      contains: { all: ['Dexa', 'high dose'], none: ['brake'] },
+    });
+    // Every term scoped: nothing for a part of a word to match.
+    expect(parseQuery('title:draft')).toMatchObject({ contains: null });
   });
 
   it('closes a phrase left open at the end, as a reader means it', () => {

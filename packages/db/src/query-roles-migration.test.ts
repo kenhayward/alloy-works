@@ -129,12 +129,14 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0059_space_archive',
       '0060_audit',
       '0061_audit_hardening',
+      '0062_search_contains',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
       '0059_space_archive',
       '0060_audit',
       '0061_audit_hardening',
+      '0062_search_contains',
     ]);
 
     expect(await queryRoles(development)).toEqual([

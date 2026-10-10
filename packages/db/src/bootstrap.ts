@@ -57,8 +57,8 @@ export async function bootstrapLoginRoles(
 
 /**
  * The half of `bootstrapCluster` that is this database's, once the login roles exist: its schemas,
- * pgvector, and its tenants' membership of `aw_tenant`. It creates and alters no role, so databases
- * can be prepared side by side; the one cluster-wide row it may write is an existing tenant's
+ * pgvector and pg_trgm, and its tenants' membership of `aw_tenant`. It creates and alters no role,
+ * so databases can be prepared side by side; the one cluster-wide row it may write is an existing tenant's
  * membership of `aw_tenant`, and a fresh database has no tenant.
  */
 export async function prepareDatabase(adminUrl: string): Promise<void> {
@@ -67,6 +67,8 @@ export async function prepareDatabase(adminUrl: string): Promise<void> {
       await client.query('create schema if not exists platform authorization aw_migrator');
       await client.query('create schema if not exists extensions');
       await client.query('create extension if not exists vector schema extensions');
+      // Trigrams, which answer a search for a part of a word (UI6; tenant migration 0062).
+      await client.query('create extension if not exists pg_trgm schema extensions');
       await client.query('grant usage on schema extensions to public');
       // Tenants provisioned before this role existed join it too, so bootstrapping stays a way of
       // bringing a cluster to the state the code expects rather than only a first-run step.
