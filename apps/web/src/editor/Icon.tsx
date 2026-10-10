@@ -115,6 +115,14 @@ const ADMIN: Record<string, readonly string[]> = {
     'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.5 3.5 5.2',
   ],
   Delete: [BIN],
+  // The Data tab's (ADR-0054): what an item is, and the way to it.
+  'A bound value': [
+    'M8 4C6 4 6 5.5 6 7s0 3.5-2 5c2 1.5 2 3.5 2 5s0 3 2 3',
+    'M16 4c2 0 2 1.5 2 3s0 3.5 2 5c-2 1.5-2 3.5-2 5s0 3-2 3',
+    'M12 12h.01',
+  ],
+  'A bound table': [GRID, 'M3.5 9.5h17M9 4.5v15'],
+  'Go to': ['M5 12h14', 'm13 6 6 6-6 6'],
   // The Part tab's link field (ADR-0054): one sheet over another.
   'Copy link': [
     'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',

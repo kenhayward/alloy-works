@@ -1,68 +1,205 @@
+/*
+ * The Data tab (ADR-0054): Show and Check at its head; each part's values under its heading with a
+ * count, in the outline's order; a value two lines - what it is and its value, then its state,
+ * definition and mode - with its reasons and acts beneath only where there are any.
+ */
 .tab {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.5rem;
+  gap: var(--space-8);
+  font-size: var(--size-13);
 }
 
 .controls {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-8);
+  padding: var(--space-4) 0;
+}
+
+.controls > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.check {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
 }
 
 .note {
   margin: 0;
-  font-size: 0.875rem;
+  color: var(--muted);
 }
 
 .group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  margin: 0;
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
 }
 
 .heading {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .rows {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
 .row {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
-  padding: 0.375rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  gap: 2px;
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--accent-weak) 50%, transparent);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.dot[data-state='holding'] {
+  background: var(--ok);
+}
+
+.dot:is(
+  [data-state='stale'],
+  [data-state='waiting'],
+  [data-state='definition'],
+  [data-state='published']
+) {
+  background: var(--warn);
+}
+
+.dot[data-state='failed'] {
+  background: var(--danger);
+}
+
+.kind {
+  display: inline-grid;
+  flex: none;
+  color: var(--accent-text);
 }
 
 .value {
-  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.waiting,
+.none {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.goTo {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
 .facts {
-  font-size: 0.8125rem;
+  overflow: hidden;
+  padding-inline-start: 38px;
+  color: var(--muted);
+  font-size: var(--size-12);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .state {
-  font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.state[data-state='holding'] {
+  color: var(--ok);
+}
+
+.state:is(
+  [data-state='stale'],
+  [data-state='waiting'],
+  [data-state='definition'],
+  [data-state='published']
+) {
+  color: var(--warn);
+}
+
+.state[data-state='failed'] {
+  color: var(--danger);
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-8);
+  padding-inline-start: 38px;
+  padding-top: var(--space-4);
+  cursor: default;
+}
+
+.reasons {
+  display: grid;
+  flex: 1 1 10rem;
+  gap: 2px;
+  color: var(--muted);
+  font-size: var(--size-12);
 }
 
 .acts {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  margin-top: 0.25rem;
+  gap: var(--space-8);
+  margin-inline-start: auto;
 }

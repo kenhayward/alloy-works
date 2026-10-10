@@ -150,16 +150,16 @@ describe('the Data tab (the B4 plan, task 3)', () => {
 
     const filter = screen.getByRole('combobox', { name: 'Show' });
     for (const [state, only] of [
-      ['Revision waiting', 'waits'],
-      ['Failed', 'fails'],
-      ['Never resolved', 'never'],
+      ['waiting', 'waits'],
+      ['failed', 'fails'],
+      ['never', 'never'],
     ] as const) {
       await user.selectOptions(filter, state);
       expect(
         screen.getAllByRole('listitem').map((each) => each.getAttribute('data-binding')),
       ).toEqual([only]);
     }
-    await user.selectOptions(filter, 'All');
+    await user.selectOptions(filter, 'all');
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
   });
 
@@ -285,7 +285,7 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     ]);
   });
 
-  it('offers Check now and Go to', async () => {
+  it('offers Check now and Go to, and goes to a value from anywhere on its row', async () => {
     const user = userEvent.setup();
     const { onCheckNow, onGoTo } = drawn(states(view(FIRST, 'holds', 'North')));
     expect(screen.queryByText('Values were not checked for you.')).toBeNull();
@@ -293,6 +293,46 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     expect(onCheckNow).toHaveBeenCalledTimes(1);
     await user.click(within(rowOf('holds')).getByRole('button', { name: 'Go to' }));
     expect(onGoTo).toHaveBeenCalledWith(FIRST, 'holds');
+    await user.click(within(rowOf('holds')).getByText('North'));
+    expect(onGoTo).toHaveBeenCalledTimes(2);
+  });
+
+  it('sets each value on two lines under its part, counted (ADR-0054): its kind, the value and Go to; then its state, definition and mode; Show counting each state', () => {
+    const table = view(SECOND, 'table', 'unused');
+    const binding = { ...table.binding } as Record<string, unknown>;
+    delete binding.take;
+    drawn(
+      states(
+        view(FIRST, 'waits', 'North', {
+          waiting: { version: 'next', provenance, taken: value('North Quay') },
+        }),
+        view(FIRST, 'never', null),
+        { ...table, binding, held: { ...table.held, taken: { table: true } } },
+      ),
+    );
+    const filter = screen.getByRole('combobox', { name: 'Show' });
+    expect([...filter.querySelectorAll('option')].map((each) => each.textContent)).toEqual([
+      'All, 3',
+      'Never resolved, 1',
+      'Revision waiting, 1',
+      'Holding, 1',
+    ]);
+    // Each part's heading keeps its name; its count stands beside it.
+    const readings = screen.getByRole('heading', { name: '1 Readings' });
+    expect(readings.parentElement).toHaveTextContent(/^1 Readings2$/);
+
+    const waits = rowOf('waits');
+    expect(within(waits).getByRole('img', { name: 'A bound value' })).toBeInTheDocument();
+    const [first, second] = [...waits.querySelectorAll('[data-line]')];
+    expect(first).toHaveTextContent('North');
+    expect(second).toHaveTextContent('Revision waiting · Sites 0.2 · Checked');
+    expect(within(rowOf('never')).getByText('No value')).toHaveAttribute('data-none');
+    expect(within(rowOf('table')).getByRole('img', { name: 'A bound table' })).toBeInTheDocument();
+    // The last act is the primary one.
+    const acts = within(waits)
+      .getAllByRole('button')
+      .filter((each) => each.textContent !== '');
+    expect(acts.at(-1)).toHaveClass('primary');
   });
 });
 
