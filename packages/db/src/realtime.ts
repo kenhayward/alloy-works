@@ -27,6 +27,9 @@ export type TenantEvent =
   | { readonly kind: 'lock'; readonly component: string }
   | { readonly kind: 'outline'; readonly document: string }
   | { readonly kind: 'permissions' }
+  // A window's presence beaten or gone (0068): the stream reads the row and redacts it (COL-003).
+  | { readonly kind: 'presence'; readonly viewer: string; readonly document: string }
+  | { readonly kind: 'presence_left'; readonly viewer: string; readonly document: string }
   | { readonly kind: 'credential_ended'; readonly session: string }
   | { readonly kind: 'credential_ended'; readonly token: string };
 

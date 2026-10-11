@@ -6,6 +6,7 @@ import {
   recordEvent,
   recordCheckGivenUp,
   sweepIterations,
+  sweepPresence,
   sweepPreviews,
   type JobQueue,
   type TenantDatabase,
@@ -203,6 +204,22 @@ export async function sweepExpiredPreviews(
       }
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the preview sweep failed in a tenant');
+    }
+  }
+  return removed;
+}
+
+/**
+ * Presence past a minute, in every tenant (the PL plan, PL-C): tidying, since no stream shows a row
+ * that old already; each row removed says so to the document's streams. Answers how many.
+ */
+export async function sweepStalePresence(db: TenantDatabase, log: WorkerLog): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepPresence(trx));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the stale presence was not swept');
     }
   }
   return removed;

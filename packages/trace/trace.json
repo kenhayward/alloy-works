@@ -18835,7 +18835,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 257,
+      "line": 261,
       "kind": "title"
     },
     {
@@ -19009,7 +19009,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 914,
+      "line": 918,
       "kind": "title"
     },
     {
@@ -19255,13 +19255,43 @@
     {
       "id": "API-016",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 275,
+      "line": 281,
+      "kind": "title"
+    },
+    {
+      "id": "COL-001",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 342,
+      "kind": "title"
+    },
+    {
+      "id": "COL-002",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 342,
+      "kind": "title"
+    },
+    {
+      "id": "COL-003",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 369,
+      "kind": "title"
+    },
+    {
+      "id": "COL-004",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 385,
       "kind": "title"
     },
     {
       "id": "COL-007",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 195,
+      "line": 200,
+      "kind": "title"
+    },
+    {
+      "id": "COL-055",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 401,
       "kind": "title"
     },
     {
@@ -20324,6 +20354,36 @@
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "COL-001",
+      "file": "apps/web/src/structure/live.test.tsx",
+      "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "COL-002",
+      "file": "apps/web/src/structure/live.test.tsx",
+      "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "COL-004",
+      "file": "apps/web/src/structure/live.test.tsx",
+      "line": 109,
+      "kind": "title"
+    },
+    {
+      "id": "COL-007",
+      "file": "apps/web/src/structure/live.test.tsx",
+      "line": 120,
+      "kind": "title"
+    },
+    {
+      "id": "COL-055",
+      "file": "apps/web/src/structure/live.test.tsx",
+      "line": 89,
       "kind": "title"
     },
     {

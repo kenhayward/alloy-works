@@ -15,6 +15,7 @@ import {
   sweepExpiredIterations,
   sweepExpiredPreviews,
   sweepExpiredSignIns,
+  sweepStalePresence,
   sweepUncheckedPublications,
 } from './sweep.js';
 import { createTypst } from './typst.js';
@@ -71,6 +72,10 @@ const sweep = setInterval(() => {
   void sweepExpiredPreviews(db, stores, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired previews'))
     .catch((error: unknown) => log.error({ err: error }, 'preview sweep failed'));
+  // Presence past a minute, which no stream shows already (the PL plan, PL-C).
+  void sweepStalePresence(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept stale presence'))
+    .catch((error: unknown) => log.error({ err: error }, 'presence sweep failed'));
   // Iterations past the tenant's window after the next cut, in every tenant (W11.1, VER-003).
   void sweepExpiredIterations(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired iterations'))

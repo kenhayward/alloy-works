@@ -230,6 +230,7 @@ const OTHER_TENANT_IDS: Readonly<
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
+  leavePresence: async () => ({ viewer: '55555555-5555-4555-8555-555555555555' }),
   listPrincipalTokens: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
   revokePrincipalToken: async (tenant, db) => {
     const { principal, token } = await tokenIn(tenant, db);
@@ -321,6 +322,9 @@ const VALID_INPUT: Readonly<
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
   requestAuditExport: { payload: {} },
+  beatPresence: {
+    payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },
+  },
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
   setGroupMembers: { payload: { principals: [] } },

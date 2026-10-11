@@ -271,3 +271,9 @@
 .reference[data-marked='true'] > .component > .measured > .heading {
   background: var(--accent-weak);
 }
+
+/* Who else is in this component now (the PL plan, PL2), beside who holds it. */
+.here {
+  color: var(--muted);
+  font-size: var(--size-12);
+}

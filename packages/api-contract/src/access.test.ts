@@ -77,16 +77,18 @@ describe('what each route checks', () => {
     }
   });
 
-  it('takes a session alone for signing out, the event stream, managing tokens as their owner or as an administrator (TK-D, TK-E), seeing and ending sessions, and the development sample, each declaring the 403 a token is refused with', () => {
+  it('takes a session alone for signing out, the event stream, managing tokens as their owner or as an administrator (TK-D, TK-E), seeing and ending sessions, presence, and the development sample, each declaring the 403 a token is refused with', () => {
     const sessionAlone = allRoutes
       .filter((route) => route.access.check !== 'none' && route.access.credential === 'session')
       .map((route) => route.operationId)
       .sort();
     expect(sessionAlone).toEqual(
       [
+        'beatPresence',
         'createToken',
         'endOtherSessions',
         'endSession',
+        'leavePresence',
         'listPrincipalTokens',
         'listSessions',
         'listTokens',

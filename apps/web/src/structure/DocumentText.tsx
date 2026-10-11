@@ -32,6 +32,8 @@ import {
 } from 'react';
 
 import { heldSentence } from '../editor/held.js';
+import type { Freshness, LivePresence } from './live.js';
+import { presenceWords } from './PeopleHere.js';
 import type { BindingActs } from '../editor/ComponentEditor.js';
 import {
   bindingContexts,
@@ -386,6 +388,7 @@ export function DocumentText({
   onEdit,
   editor,
   editable,
+  present,
   contributions = NOTHING_KNOWN,
   boundaries = false,
   marked = null,
@@ -411,6 +414,8 @@ export function DocumentText({
   editing?: string | null;
   /** Whether the reader may edit each occurrence's component now, and who holds it, by node. */
   editable?: ReadonlyMap<string, Editable>;
+  /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
+  present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
   onEdit?: (node: string | null) => void;
   /** The editor for a component, put in its card in place of its text, where it stands. */
@@ -586,6 +591,14 @@ export function DocumentText({
                       state={editable?.get(node.id)}
                       openHere={openComponent !== null && openComponent === node.component}
                     />
+                    {(present?.get(node.component) ?? []).length > 0 && (
+                      <span className={styles['here']}>
+                        {present!
+                          .get(node.component)!
+                          .map((person) => presenceWords(person))
+                          .join('; ')}
+                      </span>
+                    )}
                     <a
                       className={styles['open']}
                       href={`#/components/${node.component}`}

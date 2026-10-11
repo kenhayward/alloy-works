@@ -58,7 +58,12 @@ describe("a document's stream: its locks and outline, to whoever may read them (
   let clinical = '';
   let restricted = '';
 
-  const call = (method: 'GET' | 'POST' | 'DELETE', url: string, who: string, payload?: object) =>
+  const call = (
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    url: string,
+    who: string,
+    payload?: object,
+  ) =>
     app.inject({
       method,
       url,
@@ -196,8 +201,8 @@ describe("a document's stream: its locks and outline, to whoever may read them (
     const graces = stream('grace', `?document=${report}`);
     const adas = stream('ada', `?document=${report}`);
     try {
-      expect((await nextOf(graces, 'snapshot')).data).toEqual({ locks: [] });
-      expect((await nextOf(adas, 'snapshot')).data).toEqual({ locks: [] });
+      expect((await nextOf(graces, 'snapshot')).data).toEqual({ locks: [], presence: [] });
+      expect((await nextOf(adas, 'snapshot')).data).toEqual({ locks: [], presence: [] });
 
       // A lock Grace may not read reaches Ada alone.
       expect((await claim('ada', closed)).statusCode).toBe(200);
@@ -228,9 +233,10 @@ describe("a document's stream: its locks and outline, to whoever may read them (
       const later = stream('grace', `?document=${report}`);
       const adaLater = stream('ada', `?document=${report}`);
       try {
-        expect((await nextOf(later, 'snapshot')).data).toEqual({ locks: [] });
+        expect((await nextOf(later, 'snapshot')).data).toEqual({ locks: [], presence: [] });
         expect((await nextOf(adaLater, 'snapshot')).data).toEqual({
           locks: [expect.objectContaining({ component: closed })],
+          presence: [],
         });
       } finally {
         later.close();
@@ -326,5 +332,107 @@ describe("a document's stream: its locks and outline, to whoever may read them (
     } finally {
       graces.close();
     }
+  });
+
+  describe('presence: who else is in a document, where and doing what', () => {
+    const ADA_WINDOW = '44444444-4444-4444-8444-444444444444';
+    const beat = (who: string, viewer: string, component: string | null, mode = 'author') =>
+      call('PUT', '/v1/presence', who, { viewer, document: report, component, mode });
+
+    it("COL-001 COL-002 shows everyone in a document each person, the component they are in and what they are doing, from their window's beat", async () => {
+      const graces = stream('grace', `?document=${report}`);
+      try {
+        await nextOf(graces, 'snapshot');
+        expect((await beat('ada', ADA_WINDOW, open)).statusCode).toBe(204);
+        expect((await nextOf(graces, 'presence')).data).toEqual({
+          viewer: ADA_WINDOW,
+          person: { id: ids.ada, name: 'Ada' },
+          component: open,
+          mode: 'author',
+          beatAt: expect.any(String),
+        });
+        // A stream opened now begins with Ada there.
+        const later = stream('grace', `?document=${report}`);
+        try {
+          expect((await nextOf(later, 'snapshot')).data).toMatchObject({
+            presence: [expect.objectContaining({ viewer: ADA_WINDOW, component: open })],
+          });
+        } finally {
+          later.close();
+        }
+      } finally {
+        graces.close();
+        await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+      }
+    });
+
+    it('COL-003 shows somebody in a component the viewer may not read as in the document alone', async () => {
+      const graces = stream('grace', `?document=${report}`);
+      try {
+        await nextOf(graces, 'snapshot');
+        expect((await beat('ada', ADA_WINDOW, closed, 'review')).statusCode).toBe(204);
+        expect((await nextOf(graces, 'presence')).data).toMatchObject({
+          viewer: ADA_WINDOW,
+          component: null,
+          mode: null,
+        });
+      } finally {
+        graces.close();
+        await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+      }
+    });
+
+    it('COL-004 shows a window absent the moment its stream drops, never as still there', async () => {
+      const graces = stream('grace', `?document=${report}`);
+      const adas = stream('ada', `?document=${report}&viewer=${ADA_WINDOW}`);
+      try {
+        await nextOf(graces, 'snapshot');
+        await nextOf(adas, 'snapshot');
+        expect((await beat('ada', ADA_WINDOW, null, 'read')).statusCode).toBe(204);
+        await nextOf(graces, 'presence');
+        adas.close();
+        expect((await nextOf(graces, 'presence_left')).data).toEqual({ viewer: ADA_WINDOW });
+      } finally {
+        graces.close();
+        adas.close();
+      }
+    });
+
+    it('COL-055 carries when each window last beat, and shows none silent past a minute', async () => {
+      expect((await beat('ada', ADA_WINDOW, open)).statusCode).toBe(204);
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .updateTable('presence')
+          .set({ beat_at: new Date(Date.now() - 61_000) })
+          .where('viewer', '=', ADA_WINDOW)
+          .execute(),
+      );
+      const graces = stream('grace', `?document=${report}`);
+      try {
+        expect(
+          ((await nextOf(graces, 'snapshot')).data as { presence: unknown[] }).presence,
+        ).toEqual([]);
+      } finally {
+        graces.close();
+        await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+      }
+    });
+
+    it("refuses a beat for a document or component the person may not read, and for another person's window", async () => {
+      expect((await beat('grace', ADA_WINDOW, closed)).statusCode).toBe(404);
+      expect(
+        (
+          await call('PUT', '/v1/presence', 'grace', {
+            viewer: ADA_WINDOW,
+            document: '00000000-0000-4000-8000-000000000000',
+            component: null,
+            mode: 'read',
+          })
+        ).statusCode,
+      ).toBe(404);
+      expect((await beat('ada', ADA_WINDOW, open)).statusCode).toBe(204);
+      expect((await beat('grace', ADA_WINDOW, open, 'read')).statusCode).toBe(404);
+      await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+    });
   });
 });

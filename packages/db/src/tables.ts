@@ -169,6 +169,16 @@ export interface ObjectStoreCredentialTable {
   created_at: Generated<Date>;
 }
 
+/** A window's presence (0068): unlogged, beaten every 20 seconds, absent after a minute. */
+export interface PresenceTable {
+  viewer: string;
+  principal_id: string;
+  document_id: string;
+  component_id: string | null;
+  mode: string;
+  beat_at: Generated<Date>;
+}
+
 /** An export of the audit log (0066): its filters, the snapshot it reads as of, and where it is kept. */
 export interface AuditExportTable {
   id: Generated<string>;
@@ -599,6 +609,7 @@ export interface TenantTables {
   object_store_credential: ObjectStoreCredentialTable;
   sample: SampleTable;
   audit_export: AuditExportTable;
+  presence: PresenceTable;
   space: SpaceTable;
   artifact: ArtifactTable;
   artifact_version: ArtifactVersionTable;

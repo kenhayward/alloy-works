@@ -16,8 +16,12 @@ export interface StreamSample {
 
 export interface FollowOptions {
   readonly url: string;
-  readonly onSnapshot: (snapshot: StreamSnapshot) => void;
-  readonly onSample: (sample: StreamSample) => void;
+  readonly onSnapshot?: (snapshot: StreamSnapshot) => void;
+  readonly onSample?: (sample: StreamSample) => void;
+  /** Every frame, by its event's name: a scoped stream's locks, presence and outline (the PL plan). */
+  readonly onEvent?: (event: string, data: unknown) => void;
+  /** The connection ended or failed, before it comes back: what it said is no longer current. */
+  readonly onDropped?: () => void;
   readonly onError?: (error: unknown) => void;
   /** How long to wait before coming back; the stream's own `retry` overrides it. */
   readonly retryMs?: number;
@@ -38,8 +42,9 @@ export function followStream(options: FollowOptions): () => void {
     const data = /^data: (.+)$/m.exec(frame)?.[1];
     if (!event || !data) return;
     const parsed: unknown = JSON.parse(data);
-    if (event === 'snapshot') options.onSnapshot(parsed as StreamSnapshot);
-    if (event === 'sample') options.onSample(parsed as StreamSample);
+    if (event === 'snapshot') options.onSnapshot?.(parsed as StreamSnapshot);
+    if (event === 'sample') options.onSample?.(parsed as StreamSample);
+    options.onEvent?.(event, parsed);
   };
 
   async function follow(): Promise<void> {
@@ -71,6 +76,7 @@ export function followStream(options: FollowOptions): () => void {
         options.onError?.(error);
       }
       if (stopped) return;
+      options.onDropped?.();
       await new Promise((resolve) => setTimeout(resolve, retryMs + Math.random() * retryMs));
     }
   }
