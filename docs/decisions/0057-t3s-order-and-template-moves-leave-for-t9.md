@@ -1,6 +1,6 @@
 # 0057 - T3's order, and template moves leave for T9
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-11
 
 ## Context
@@ -18,7 +18,11 @@ template (TPL-028, TPL-029) and moving a document to a newer template version (T
 TPL-058) - depend on none of it and nothing in T3 depends on them. They are template governance:
 reasons recorded, a move refusable, reported before it runs.
 
-Ken decided on 2026-10-11 to finish the table rows first, then build T3 in the order below.
+Designing those rows found one with no author: an emphasis rule lives in the table style (TAB-029),
+and no tenant can make or change a theme until T7 (STY-026, STY-067).
+
+Ken decided on 2026-10-11 to finish the table rows first, then build T3 in the order below, and
+accepted tables.md's TG-A to TG-I.
 
 ## Decision
 
@@ -44,7 +48,8 @@ Phase 6 is spiked during phase 3 or 4: tracked changes that keep block identity 
 risk, and the redline it draws decides how phase 4 renders one.
 
 **To T9, five TPL rows**: TPL-028, TPL-029, TPL-033, TPL-034 and TPL-058, beside workflow's other
-governed acts. Each keeps its identifier.
+governed acts. **To T7, TAB-028**, emphasis rules, beside theme authoring (tables.md's TG-A). Each
+keeps its identifier.
 
 ## What would change the answer
 
@@ -52,8 +57,9 @@ governed acts. Each keeps its identifier.
   TPL-058 come forward together; they rest on nothing in T3.
 - **The phase 6 spike finds suggestions need a different editor model.** Phases 4 to 7 are
   re-ordered around it before phase 4 is designed.
+- **Themes become authorable before T7.** TAB-028 comes with them.
 
 ## Consequences
 
-- T3 holds 139 rows, T9 38.
+- T3 holds 138 rows, T9 38, T7 154.
 - T3's first close is TG's; its baseline carries 0.149.0's rows.

@@ -3,8 +3,7 @@
 > [tables.md](../design/tables.md)'s fourth build step, T3's first slice
 > ([ADR-0057](../decisions/0057-t3s-order-and-template-moves-leave-for-t9.md)). **Full tier**: a
 > stored shape, table style members, two published shapes and templates, a contract change, so a
-> pre-flight review and a final review; no per-task reviews. Waits on Ken's answers to TG-A to TG-I;
-> rides in TG1 once answered (ADR-0039).
+> pre-flight review and a final review; no per-task reviews. Ken accepted TG-A to TG-I on 2026-10-11.
 
 **Goal:** a bound table groups its rows under heading rows, up to three levels, with the query's
 subtotal rows last in each group, a heading never ending a page and a subtotal never starting one; a
@@ -116,8 +115,3 @@ the API.
 - **Widths drift**: kerning, which advances ignore, wraps a word the other renderer did not. Measured
   by the theme suite; the fix is a hair of slack in the minimum, not a second algorithm.
 - **Old publications**: unaffected; templates 18 and 19 are frozen (TG-L).
-
-## Questions for Ken
-
-TG-A to TG-I in [tables.md](../design/tables.md#decisions-for-t3). TG-A decides whether TAB-028 is in
-this slice at all.

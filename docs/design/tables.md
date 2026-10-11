@@ -95,9 +95,9 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **TAB-053** | The table style's `widths`, `equal` or `content`, computed once and set alike by the editor, the PDF and Word; a no-wrap column as wide as its widest cell ([Widths](#widths)) |
 
 STY-083 and STY-077 stay themes.md's; the members that answer them are [here](#the-table-style).
-TAB-030 is met by TAB-016's rule and claimed with T3's emphasis rules, which are what it is about.
+TAB-030 is met by TAB-016's rule and claimed with emphasis rules, which are what it is about, in T7.
 
-**TAB-028 is not claimed** while [TG-A](#decisions-for-t3) is open. TAB-052 (with TAB-053, superseding
+**TAB-028 is not claimed**: it moved to T7 with theme authoring ([TG-A](#decisions-for-t3)). TAB-052 (with TAB-053, superseding
 TAB-035) is built: a column declares `wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
 override"**: the style aligns by type, and a bound table's column may override it, as `align` does.
 
@@ -486,17 +486,19 @@ minima overflow the measure the table is wide and `wide` applies.
 
 ### Decisions for T3
 
-| ID   | Decision                                                                                                                                                                                         | Instead of                                                                                                                  |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| TG-A | **Recommended: TAB-028 and TAB-030's claim move to T7**, beside theme authoring (STY-026, STY-067). A rule lives in the table style (TAB-029), and no tenant can make or change a theme until T7 | Building rules now that only the default theme could hold, which cannot know any tenant's column names                      |
-| TG-B | **Groups in order of first appearance**, so the query orders them                                                                                                                                | Ordering by value, which for text is code point (TB-D) where the source has a collation                                     |
-| TG-C | **A subtotal is a query row flagged by a boolean column per level**; TAB-042 kept whole                                                                                                          | Superseding TAB-042 without its subtotal, which drops what a regulated report prints under each group                       |
-| TG-D | **Keeping is always on**; the style decides how a heading and subtotal look                                                                                                                      | A style flag to turn TAB-042 off                                                                                            |
-| TG-E | **Transpose at most 12 rows, never with groups**; `decimal` becomes `end`                                                                                                                        | A wider limit, which `wide` would then shrink unreadably; grouping a transposed table, which has no meaning                 |
-| TG-F | **One `columnWidths` from the faces' advances, set by all three renderers**                                                                                                                      | Each renderer's own auto layout: CSS, Typst and Word disagree, and the editor would leave the PDF by more than half a point |
-| TG-G | **An equation's column takes an equal share**                                                                                                                                                    | Rendering the equation first to measure it, a second engine pass for one case                                               |
-| TG-H | **The default theme's next version sets `content`**                                                                                                                                              | Keeping `equal`, which TAB-053 exists to improve on                                                                         |
-| TG-I | **A heading prints the value alone**                                                                                                                                                             | "Region: North", words the layout would have to supply in every language                                                    |
+Ken accepted TG-A to TG-I on 2026-10-11.
+
+| ID   | Decision                                                                                                                                                                            | Instead of                                                                                                                  |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| TG-A | **TAB-028 and TAB-030's claim move to T7**, beside theme authoring (STY-026, STY-067). A rule lives in the table style (TAB-029), and no tenant can make or change a theme until T7 | Building rules now that only the default theme could hold, which cannot know any tenant's column names                      |
+| TG-B | **Groups in order of first appearance**, so the query orders them                                                                                                                   | Ordering by value, which for text is code point (TB-D) where the source has a collation                                     |
+| TG-C | **A subtotal is a query row flagged by a boolean column per level**; TAB-042 kept whole                                                                                             | Superseding TAB-042 without its subtotal, which drops what a regulated report prints under each group                       |
+| TG-D | **Keeping is always on**; the style decides how a heading and subtotal look                                                                                                         | A style flag to turn TAB-042 off                                                                                            |
+| TG-E | **Transpose at most 12 rows, never with groups**; `decimal` becomes `end`                                                                                                           | A wider limit, which `wide` would then shrink unreadably; grouping a transposed table, which has no meaning                 |
+| TG-F | **One `columnWidths` from the faces' advances, set by all three renderers**                                                                                                         | Each renderer's own auto layout: CSS, Typst and Word disagree, and the editor would leave the PDF by more than half a point |
+| TG-G | **An equation's column takes an equal share**                                                                                                                                       | Rendering the equation first to measure it, a second engine pass for one case                                               |
+| TG-H | **The default theme's next version sets `content`**                                                                                                                                 | Keeping `equal`, which TAB-053 exists to improve on                                                                         |
+| TG-I | **A heading prints the value alone**                                                                                                                                                | "Region: North", words the layout would have to supply in every language                                                    |
 
 ## Build order
 

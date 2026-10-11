@@ -12712,7 +12712,7 @@
       "id": "TAB-028",
       "area": "TAB",
       "statement": "Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 151

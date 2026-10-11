@@ -148,7 +148,7 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 
 | ID          | Requirement                                                                                                                       | Tranche    | Status    |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **TAB-028** | Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**) | T3         | Specified |
+| **TAB-028** | Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**) | T7         | Specified |
 | **TAB-029** | Such a rule must not be authorable per document, so that two tables of the same kind highlight the same things                    | Constraint | Specified |
 | **TAB-030** | Emphasis must not be carried by colour alone, since it must survive monochrome printing and meet accessibility requirements       | Constraint | Specified |
 
@@ -362,3 +362,17 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                                     |
 | ------------ | ------------------------- | ----------------------------------------- |
 | Requirements | 53, of which 5 superseded | 53, of which 5 superseded and 4 withdrawn |
+
+### Emphasis rules wait for theme authoring (ADR-0057), 2026-10-11
+
+Not a review. Designing T3's table rows (tables.md, TG-A), Ken moved emphasis rules to T7, recorded
+by [ADR-0057](../../decisions/0057-t3s-order-and-template-moves-leave-for-t9.md). A rule lives in the
+table style (TAB-029), and no tenant can make or change a theme until T7 (STY-026, STY-067).
+
+| What was found                                                    | Change                  |
+| ----------------------------------------------------------------- | ----------------------- |
+| A rule in a style nobody can author is reachable only by fixtures | **TAB-028** moves to T7 |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 53, of which 5 superseded and 4 withdrawn | 53, of which 5 superseded and 4 withdrawn |
