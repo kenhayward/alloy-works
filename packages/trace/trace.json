@@ -9094,7 +9094,7 @@
       "id": "PUB-082",
       "area": "PUB",
       "statement": "A publication's record must be no weaker than the baseline's pins (VER-018, **VER-055**) and must additionally identify any accepted generated content it contains, with the prompt, model and context digest retained for it (**GEN-023**, **GEN-046**)",
-      "tranche": "T3",
+      "tranche": "T5",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
       "line": 222
