@@ -358,6 +358,41 @@ describe('the Bound table panel (TB2-F)', () => {
     ).toEqual(['Ash', 'Cedar', 'Birch', 'Dogwood']);
   });
 
+  it('TAB-008 TAB-022 groups the body under a heading for each value from a group added in the panel, and says so folded (TG2)', async () => {
+    const { view, panel } = await inTable([{ column: 'site', header: 'Site' }]);
+    await userEvent.click(within(panel).getByRole('button', { name: /^Group/ }));
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add group' }));
+    const level = within(panel).getByRole('group', { name: 'Group 1' });
+    await userEvent.selectOptions(within(level).getByLabelText('Column'), 'visits');
+    // Groups in the order their values first come, each heading a header of the rows beneath it.
+    expect(bodyOf(view)).toEqual([
+      ['Site'],
+      ['2'],
+      ['Ash'],
+      ['Cedar'],
+      ['1'],
+      ['Birch'],
+      ['Dogwood'],
+    ]);
+    const headings = view.dom.querySelectorAll('[data-bound-table-body] th[scope="rowgroup"]');
+    expect([...headings].map((each) => each.textContent)).toEqual(['2', '1']);
+    // Folded, it says what it groups by.
+    await userEvent.click(within(panel).getByRole('button', { name: /^Sort/ }));
+    expect(
+      within(panel)
+        .getByRole('button', { name: /^Group/ })
+        .closest('section')!,
+    ).toHaveTextContent('Grouped by visits');
+    // Removed, the body is as it was.
+    await userEvent.click(within(panel).getByRole('button', { name: /^Group/ }));
+    await userEvent.click(
+      within(within(panel).getByRole('group', { name: 'Group 1' })).getByRole('button', {
+        name: 'Remove group 1',
+      }),
+    );
+    expect(bodyOf(view)).toEqual([['Site'], ['Ash'], ['Birch'], ['Cedar'], ['Dogwood']]);
+  });
+
   it("TAB-037 shows in the Format dialog the table style's value for each member left unset, and a member set overriding it alone", async () => {
     const { view, panel } = await inTable(
       [
