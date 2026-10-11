@@ -96,6 +96,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getPublication: read,
   getPublicationBindings: read,
   claimLock: { none: 'lock' },
+  takeLock: writes('lock.taken'),
   releaseLock: { none: 'lock' },
   saveIteration: { none: 'iteration' },
   cutVersion: writes('content.version_cut'),

@@ -97,3 +97,12 @@ instant or silent, and an outline change shown to a viewer who may not read the 
   buffered stream shows as out of date, not as wrong.
 - **Ending every stream on any access change** is coarse: a busy environment's streams reconnect often.
   Each reconnect is a snapshot read; narrowing it to the viewers affected is a change behind PL-B.
+
+## Changed while building
+
+| #    | PL1 to PL4                                                                                                                                                                                                                                                  |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PL-K | **The database says what changed**: triggers on `component_lock`, `artifact_version` and `presence`, and `access_changed()`, notify the tenant's channel, named after the trigger's own schema; no write path can forget, and a write by any role announces |
+| PL-L | **Leaving presence answers 404 when nothing of the caller's was there**, so another environment's window is never told apart from none (the cross-tenant sweep)                                                                                             |
+| PL-M | **A take answers 200 with `taken`**, not 202: an ask and a take are the same request, told apart by its answer                                                                                                                                              |
+| PL-N | **The holder hears an ask on the component's own stream**, which the editor follows while it is open, beside the document's                                                                                                                                 |

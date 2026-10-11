@@ -35,7 +35,26 @@ export interface LockState {
   readonly holderName: string | null;
   readonly session: string;
   readonly expiresAt: Date;
+  /** When the holder last claimed or saved (collaboration.md, CL-A). */
+  readonly activeAt: Date;
+  /** When somebody else may first ask for it: the take period after `activeAt` (COL-046). */
+  readonly takeableAt: Date;
+  /** Somebody's ask to take it, and when the holder's grace to keep it ends (COL-047). */
+  readonly taking: {
+    readonly by: string;
+    readonly byName: string | null;
+    readonly session: string;
+    readonly until: Date;
+  } | null;
+  /** The session it was taken from, whose next save is told so (COL-045). */
+  readonly takenFrom: string | null;
 }
+
+/** How long a holder has to keep a lock once somebody asks for it (COL-047; collaboration.md, CL-B). */
+export const TAKE_GRACE_MS = 60_000;
+
+/** How long after its grace an ask still stands, for the asker's window to come back and take it. */
+export const TAKE_ASK_LASTS_MS = 60_000;
 
 /** One principal's one editing session on one component: what every write in a session carries. */
 export interface EditingSession {
@@ -49,7 +68,9 @@ export type HolderRefusal =
   /** Somebody else holds it, or this principal from another session (API-039). */
   | { readonly answer: 'lock.held'; readonly lock: LockState }
   /** Nobody holds it: never claimed, released, or expired. */
-  | { readonly answer: 'lock.required' };
+  | { readonly answer: 'lock.required' }
+  /** Somebody took it from this very session (COL-045): who has it now. */
+  | { readonly answer: 'lock.taken'; readonly lock: LockState };
 
 export type LockClaimAnswer =
   | { readonly answer: 'claimed'; readonly lock: LockState }
@@ -104,27 +125,63 @@ export async function isComponent(trx: TenantTransaction, artifactId: string): P
   return row !== undefined;
 }
 
+/** The live locks on these components, each with its holder, its activity and any ask for it. */
+async function lockRows(trx: TenantTransaction, ids: readonly string[]) {
+  if (ids.length === 0) return [];
+  return trx
+    .selectFrom('component_lock as l')
+    .innerJoin('principal as p', 'p.id', 'l.principal_id')
+    .leftJoin('principal as t', 't.id', 'l.taking_by')
+    .select([
+      'l.artifact_id',
+      'l.principal_id',
+      'p.display_name',
+      'l.session_id',
+      'l.expires_at',
+      'l.active_at',
+      'l.taking_by',
+      't.display_name as taking_name',
+      'l.taking_session',
+      'l.taking_until',
+      'l.taken_from',
+      sql<Date>`l.active_at + make_interval(mins => (select lock_take_minutes from editing_policy))`.as(
+        'takeable_at',
+      ),
+    ])
+    .where('l.artifact_id', 'in', [...ids])
+    .where('l.expires_at', '>', sql<Date>`clock_timestamp()`)
+    .execute();
+}
+
+function lockOf(row: Awaited<ReturnType<typeof lockRows>>[number]): LockState {
+  return {
+    holder: row.principal_id,
+    holderName: row.display_name,
+    session: row.session_id,
+    expiresAt: row.expires_at,
+    activeAt: row.active_at,
+    takeableAt: row.takeable_at,
+    taking:
+      row.taking_by === null || row.taking_session === null || row.taking_until === null
+        ? null
+        : {
+            by: row.taking_by,
+            byName: row.taking_name,
+            session: row.taking_session,
+            until: row.taking_until,
+          },
+    takenFrom: row.taken_from,
+  };
+}
+
 /** The unexpired lock on a component, or undefined when nobody holds it. */
 export async function readLock(
   trx: TenantTransaction,
   artifactId: string,
 ): Promise<LockState | undefined> {
   if (!UUID.test(artifactId)) return undefined;
-  const row = await trx
-    .selectFrom('component_lock as l')
-    .innerJoin('principal as p', 'p.id', 'l.principal_id')
-    .select(['l.principal_id', 'p.display_name', 'l.session_id', 'l.expires_at'])
-    .where('l.artifact_id', '=', artifactId)
-    .where('l.expires_at', '>', sql<Date>`clock_timestamp()`)
-    .executeTakeFirst();
-  return (
-    row && {
-      holder: row.principal_id,
-      holderName: row.display_name,
-      session: row.session_id,
-      expiresAt: row.expires_at,
-    }
-  );
+  const [row] = await lockRows(trx, [artifactId]);
+  return row && lockOf(row);
 }
 
 /** The live lock on each of many artifacts, in one query; an artifact nobody holds is absent. */
@@ -133,25 +190,8 @@ export async function readLocks(
   artifactIds: readonly string[],
 ): Promise<Map<string, LockState>> {
   const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
-  if (ids.length === 0) return new Map();
-  const rows = await trx
-    .selectFrom('component_lock as l')
-    .innerJoin('principal as p', 'p.id', 'l.principal_id')
-    .select(['l.artifact_id', 'l.principal_id', 'p.display_name', 'l.session_id', 'l.expires_at'])
-    .where('l.artifact_id', 'in', ids)
-    .where('l.expires_at', '>', sql<Date>`clock_timestamp()`)
-    .execute();
-  return new Map(
-    rows.map((row) => [
-      row.artifact_id,
-      {
-        holder: row.principal_id,
-        holderName: row.display_name,
-        session: row.session_id,
-        expiresAt: row.expires_at,
-      },
-    ]),
-  );
+  const rows = await lockRows(trx, ids);
+  return new Map(rows.map((row) => [row.artifact_id, lockOf(row)]));
 }
 
 /** The lock, when this session holds it; the refusal otherwise. */
@@ -162,6 +202,8 @@ export async function holding(
   const lock = await readLock(trx, session.artifactId);
   if (!lock) return { answer: 'lock.required' };
   if (lock.holder !== session.principal || lock.session !== session.session) {
+    // Taken from this very session (COL-045): it is told who has it, not merely that somebody does.
+    if (lock.takenFrom === session.session) return { answer: 'lock.taken', lock };
     return { answer: 'lock.held', lock };
   }
   return lock;
@@ -197,9 +239,15 @@ export async function claimLock(
     principal_id: input.principal,
     session_id: input.session,
     claimed_at: sql<Date>`clock_timestamp()`,
-    // A claim, a reload's or Recovery's from the holding session included, is activity (CL-A).
+    // A claim, a reload's or Recovery's from the holding session included, is activity (CL-A), and
+    // ends any ask for it (COL-047).
     active_at: sql<Date>`clock_timestamp()`,
     expires_at: lockExpiry(),
+    taking_by: null,
+    taking_session: null,
+    taking_until: null,
+    // Whom it was taken from matters only while the taker holds it: a claim anew forgets it.
+    taken_from: held !== undefined && held.session === input.session ? held.takenFrom : null,
   };
   await trx
     .insertInto('component_lock')
@@ -347,10 +395,85 @@ export async function saveIteration(
   await trx
     .updateTable('component_lock')
     // An iteration not seen before is activity (CL-A): the lock is free a release period from now.
-    .set({ active_at: sql<Date>`clock_timestamp()`, expires_at: lockExpiry() })
+    // ... and ends any ask for it (COL-047): the holder kept it.
+    .set({
+      active_at: sql<Date>`clock_timestamp()`,
+      expires_at: lockExpiry(),
+      taking_by: null,
+      taking_session: null,
+      taking_until: null,
+    })
     .where('artifact_id', '=', input.artifactId)
     .execute();
   const extended = await readLock(trx, input.artifactId);
   if (!extended) throw new Error(`The lock on ${input.artifactId} was extended and is not there`);
   return { answer: 'accepted', sequence: input.sequence, repeated: false, lock: extended };
+}
+
+export type TakeAnswer =
+  /** Taken: the lock is the asker's session's now. */
+  | { readonly answer: 'taken'; readonly lock: LockState; readonly from: LockState }
+  /** Asked, or asked already: the holder has until then to keep it. */
+  | { readonly answer: 'asked'; readonly lock: LockState }
+  /** Nobody holds it: claim it instead. */
+  | { readonly answer: 'lock.free' }
+  /** The asker holds it already, from this or another of their windows: Continue here. */
+  | { readonly answer: 'lock.own'; readonly lock: LockState }
+  /** The holder is active within the take period: askable from `takeableAt`. */
+  | { readonly answer: 'lock.active'; readonly lock: LockState }
+  /** Somebody else has asked, and their ask stands. */
+  | { readonly answer: 'lock.taking'; readonly lock: LockState }
+  | { readonly answer: 'artifact.missing' };
+
+/**
+ * **Taking a lock from an idle holder** (COL-009, COL-046, COL-047; collaboration.md, Taking): asked
+ * first, the holder told at once and given a grace of `TAKE_GRACE_MS` in which any activity keeps it;
+ * asked again by the same session once the grace has passed with the holder still idle, the lock is
+ * that session's. Decided under `serialise`, so a save in the last moment either keeps the lock or is
+ * refused `lock.taken`. The caller records `lock.taken` on `taken`.
+ */
+export async function takeLock(trx: TenantTransaction, input: EditingSession): Promise<TakeAnswer> {
+  if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
+  await serialise(trx, input.artifactId);
+  const lock = await readLock(trx, input.artifactId);
+  if (!lock) return { answer: 'lock.free' };
+  if (lock.holder === input.principal) return { answer: 'lock.own', lock };
+  const { rows } = await sql<{ now: Date }>`select clock_timestamp() as now`.execute(trx);
+  const now = rows[0]!.now.getTime();
+  const ask = lock.taking;
+  const askStands = ask !== null && now < ask.until.getTime() + TAKE_ASK_LASTS_MS;
+  if (askStands && (ask.by !== input.principal || ask.session !== input.session)) {
+    return { answer: 'lock.taking', lock };
+  }
+  if (askStands && now < ask.until.getTime()) return { answer: 'asked', lock };
+  if (askStands) {
+    // The grace has passed with the holder idle: any activity would have ended the ask (CL-A).
+    await trx
+      .updateTable('component_lock')
+      .set({
+        principal_id: input.principal,
+        session_id: input.session,
+        claimed_at: sql<Date>`clock_timestamp()`,
+        active_at: sql<Date>`clock_timestamp()`,
+        expires_at: lockExpiry(),
+        taking_by: null,
+        taking_session: null,
+        taking_until: null,
+        taken_from: lock.session,
+      })
+      .where('artifact_id', '=', input.artifactId)
+      .execute();
+    return { answer: 'taken', lock: (await readLock(trx, input.artifactId))!, from: lock };
+  }
+  if (now < lock.takeableAt.getTime()) return { answer: 'lock.active', lock };
+  await trx
+    .updateTable('component_lock')
+    .set({
+      taking_by: input.principal,
+      taking_session: input.session,
+      taking_until: sql<Date>`clock_timestamp() + make_interval(secs => ${TAKE_GRACE_MS / 1000})`,
+    })
+    .where('artifact_id', '=', input.artifactId)
+    .execute();
+  return { answer: 'asked', lock: (await readLock(trx, input.artifactId))! };
 }

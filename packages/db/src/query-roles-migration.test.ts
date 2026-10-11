@@ -137,6 +137,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0067_live',
       '0068_presence',
       '0069_lock_periods',
+      '0070_lock_taking',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -151,6 +152,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0067_live',
       '0068_presence',
       '0069_lock_periods',
+      '0070_lock_taking',
     ]);
 
     expect(await queryRoles(development)).toEqual([

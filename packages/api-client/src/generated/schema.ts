@@ -363,6 +363,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/lock/take": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask an idle holder for the lock, and take it once their grace has passed
+         * @description Asks for a component an idle holder has: refused until they have been idle the environment’s take period. Asked, the holder is told at once on their stream and keeps it if they save anything within a minute; asked again by the same session once that minute has passed, the lock is the asker’s, and the taking is on the audit log.
+         */
+        post: operations["takeLock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/unsaved/discarded": {
         parameters: {
             query?: never;
@@ -6112,7 +6132,15 @@ export interface operations {
                      *         },
                      *         "expectedRelease": "example",
                      *         "yours": false,
-                     *         "session": "example"
+                     *         "session": "example",
+                     *         "takeableAt": "example",
+                     *         "taking": {
+                     *           "by": {
+                     *             "id": "example",
+                     *             "name": "example"
+                     *           },
+                     *           "until": "example"
+                     *         }
                      *       },
                      *       "unsaved": {
                      *         "savedAt": "example"
@@ -6159,6 +6187,17 @@ export interface operations {
                             yours: boolean;
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
+                            /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                            takeableAt: string;
+                            /** @description Somebody asking to take it over, or null */
+                            taking: {
+                                by: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When the holder's grace to keep it ends (COL-047) */
+                                until: string;
+                            } | null;
                         } | null;
                         /** @description The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none */
                         unsaved: {
@@ -6587,6 +6626,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -6775,6 +6821,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -6877,7 +6930,15 @@ export interface operations {
                      *         },
                      *         "expectedRelease": "example",
                      *         "yours": false,
-                     *         "session": "example"
+                     *         "session": "example",
+                     *         "takeableAt": "example",
+                     *         "taking": {
+                     *           "by": {
+                     *             "id": "example",
+                     *             "name": "example"
+                     *           },
+                     *           "until": "example"
+                     *         }
                      *       }
                      *     }
                      */
@@ -6894,6 +6955,17 @@ export interface operations {
                             yours: boolean;
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
+                            /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                            takeableAt: string;
+                            /** @description Somebody asking to take it over, or null */
+                            taking: {
+                                by: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When the holder's grace to keep it ends (COL-047) */
+                                until: string;
+                            } | null;
                         };
                     };
                 };
@@ -6920,6 +6992,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7001,7 +7080,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7023,6 +7102,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7114,7 +7200,15 @@ export interface operations {
                      *         },
                      *         "expectedRelease": "example",
                      *         "yours": false,
-                     *         "session": "example"
+                     *         "session": "example",
+                     *         "takeableAt": "example",
+                     *         "taking": {
+                     *           "by": {
+                     *             "id": "example",
+                     *             "name": "example"
+                     *           },
+                     *           "until": "example"
+                     *         }
                      *       }
                      *     }
                      */
@@ -7130,6 +7224,17 @@ export interface operations {
                             yours: boolean;
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
+                            /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                            takeableAt: string;
+                            /** @description Somebody asking to take it over, or null */
+                            taking: {
+                                by: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When the holder's grace to keep it ends (COL-047) */
+                                until: string;
+                            } | null;
                         };
                     };
                 };
@@ -7194,7 +7299,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7216,6 +7321,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7341,6 +7453,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7422,7 +7541,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7444,6 +7563,233 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    takeLock: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "session": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    session: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Taken, or asked and waiting */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "taken": false,
+                     *       "lock": {
+                     *         "holder": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "expectedRelease": "example",
+                     *         "yours": false,
+                     *         "session": "example",
+                     *         "takeableAt": "example",
+                     *         "taking": {
+                     *           "by": {
+                     *             "id": "example",
+                     *             "name": "example"
+                     *           },
+                     *           "until": "example"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description True: the lock is this session's. False: asked, the holder warned, and theirs until `lock.taking.until`; ask again then */
+                        taken: boolean;
+                        lock: {
+                            holder: {
+                                id: string;
+                                name: string | null;
+                            };
+                            /** @description When it lapses unless the holder saves again */
+                            expectedRelease: string;
+                            /** @description Whether the caller holds it, from this session or another */
+                            yours: boolean;
+                            /** @description The holding session, told only to its own principal */
+                            session: string | null;
+                            /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                            takeableAt: string;
+                            /** @description Somebody asking to take it over, or null */
+                            taking: {
+                                by: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When the holder's grace to keep it ends (COL-047) */
+                                until: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description lock_free: nobody holds it, so claim it. lock_own: the caller holds it, so continue here. lock_active: its holder is not idle long enough yet. lock_taking: somebody else has asked */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7890,6 +8236,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -7971,7 +8324,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
+            /** @description lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7993,6 +8346,13 @@ export interface operations {
                             name: string | null;
                         };
                         expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
                         current?: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -26491,6 +26851,17 @@ export interface operations {
                                 yours: boolean;
                                 /** @description The holding session, told only to its own principal */
                                 session: string | null;
+                                /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                                takeableAt: string;
+                                /** @description Somebody asking to take it over, or null */
+                                taking: {
+                                    by: {
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description When the holder's grace to keep it ends (COL-047) */
+                                    until: string;
+                                } | null;
                             } | null;
                         }[];
                         /** @description Each version an occurrence resolved to, once, however many occurrences name it, with its number */
@@ -35037,7 +35408,15 @@ export interface operations {
                      *         },
                      *         "expectedRelease": "example",
                      *         "yours": false,
-                     *         "session": "example"
+                     *         "session": "example",
+                     *         "takeableAt": "example",
+                     *         "taking": {
+                     *           "by": {
+                     *             "id": "example",
+                     *             "name": "example"
+                     *           },
+                     *           "until": "example"
+                     *         }
                      *       },
                      *       "unsaved": {
                      *         "savedAt": "example"
@@ -35084,6 +35463,17 @@ export interface operations {
                             yours: boolean;
                             /** @description The holding session, told only to its own principal */
                             session: string | null;
+                            /** @description When somebody else may first ask for it, its holder idle that long (COL-046) */
+                            takeableAt: string;
+                            /** @description Somebody asking to take it over, or null */
+                            taking: {
+                                by: {
+                                    id: string;
+                                    name: string | null;
+                                };
+                                /** @description When the holder's grace to keep it ends (COL-047) */
+                                until: string;
+                            } | null;
                         } | null;
                         /** @description The caller's own newest iteration opened from the latest version, work saved and never made a version, by its time alone; null where there is none */
                         unsaved: {

@@ -173,6 +173,16 @@ export const Lock = z.object({
   expectedRelease: z.string().describe('When it lapses unless the holder saves again'),
   yours: z.boolean().describe('Whether the caller holds it, from this session or another'),
   session: z.string().nullable().describe('The holding session, told only to its own principal'),
+  takeableAt: z
+    .string()
+    .describe('When somebody else may first ask for it, its holder idle that long (COL-046)'),
+  taking: z
+    .object({
+      by: z.object({ id: z.string(), name: z.string().nullable() }),
+      until: z.string().describe("When the holder's grace to keep it ends (COL-047)"),
+    })
+    .nullable()
+    .describe('Somebody asking to take it over, or null'),
 });
 
 export const ComponentList = z.object({

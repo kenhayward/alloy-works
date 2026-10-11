@@ -16,6 +16,11 @@ export interface LockShown {
   readonly component: string;
   readonly holder: { readonly id: string; readonly name: string | null } | null;
   readonly expectedRelease: string | null;
+  /** Somebody asking to take it over, and when its holder's grace ends (COL-047). */
+  readonly taking: {
+    readonly by: { readonly id: string; readonly name: string | null };
+    readonly until: string;
+  } | null;
 }
 
 /**
@@ -73,8 +78,15 @@ export async function locksShown(
           component,
           holder: { id: lock.holder, name: lock.holderName },
           expectedRelease: lock.expiresAt.toISOString(),
+          taking:
+            lock.taking === null
+              ? null
+              : {
+                  by: { id: lock.taking.by, name: lock.taking.byName },
+                  until: lock.taking.until.toISOString(),
+                },
         }
-      : { component, holder: null, expectedRelease: null };
+      : { component, holder: null, expectedRelease: null, taking: null };
   });
 }
 

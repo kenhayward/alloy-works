@@ -163,6 +163,9 @@ import { ParagraphStyle } from '../theme/StyleChoice.js';
 import { styleCheckFor, typefaceAt } from '../theme/check.js';
 import { UnheldFaces } from '../theme/Canvas.js';
 import { usePresentation } from '../theme/presentation.js';
+import { useHeardLock } from './lockLive.js';
+import { TakeOver } from './TakeOver.js';
+import type { FollowOptions } from '@alloy-works/api-client';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -186,6 +189,8 @@ export interface ComponentEditorProps {
   readonly timing?: Timing;
   readonly clock?: Clock;
   readonly sessionId?: string;
+  /** Follows the component's own stream, for who holds it now: given in tests. */
+  readonly follow?: (options: FollowOptions) => () => void;
   /** Given in tests, which drive the view by transaction because jsdom cannot type into it. */
   readonly onView?: (view: EditorView) => void;
   /** Told the space of the component once it has opened, for the space pane beside the editor. */
@@ -436,6 +441,7 @@ export function ComponentEditor({
   timing = designTiming,
   clock = browserClock,
   sessionId,
+  follow,
   onView,
   onSpace,
   fieldsHost,
@@ -946,6 +952,9 @@ export function ComponentEditor({
   onViewRef.current = onView;
   const sessionIdRef = useRef(sessionId);
   sessionIdRef.current = sessionId;
+  // Who holds it as its stream says, so its holder hears at once that somebody asks to take it over,
+  // and that they have (COL-045, COL-047).
+  const heard = useHeardLock(componentId, follow);
   const runPromptingRef = useRef(runPrompting);
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
@@ -2274,6 +2283,29 @@ export function ComponentEditor({
               <Notice tone="editing">
                 <p>
                   {heldSentence({ name: lock.holder.name, expectedRelease: lock.expectedRelease })}
+                </p>
+                {shown.mayEdit && (
+                  <TakeOver
+                    holder={lock.holder.name}
+                    takeableAt={lock.takeableAt}
+                    onTake={async () =>
+                      (await controls.current?.takeOver()) ?? { ok: false, code: 'failed' }
+                    }
+                  />
+                )}
+              </Notice>
+            )}
+            {phase === 'editing' && heard?.holder?.id === principalId && heard.taking && (
+              <Notice tone="editing">
+                <p role="alert">
+                  {`${heard.taking.by.name ?? 'Somebody'} has asked to take over this component. Keep working to keep it; otherwise it is theirs at ${new Date(heard.taking.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`}
+                </p>
+              </Notice>
+            )}
+            {phase === 'editing' && heard?.holder && heard.holder.id !== principalId && (
+              <Notice tone="editing">
+                <p role="alert">
+                  {`${heard.holder.name ?? 'Somebody'} has taken over this component. What you saved is kept, and offered again when you next hold it.`}
                 </p>
               </Notice>
             )}

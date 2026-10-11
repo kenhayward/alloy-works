@@ -9,12 +9,18 @@ import type {
   ReleaseQuery,
   SavedIterationParams,
   SavedIterationQuery,
+  TakeAnswer,
+  TakeBody,
   DiscardAnswer,
   DiscardBody,
 } from '@alloy-works/api-contract';
 import {
   claimLock,
   cutVersion,
+  labels,
+  principalLabel,
+  recordEvent,
+  takeLock,
   holding,
   isHolderRefusal,
   latestVersion,
@@ -167,6 +173,11 @@ function refuse(refusal: Refusal): AppError {
         'lock.required',
         'This session does not hold the lock on this component.',
       );
+    case 'lock.taken':
+      return refused(409, 'lock.taken', 'Somebody has taken over this component.', {
+        holder: { id: refusal.lock.holder, name: refusal.lock.holderName },
+        expectedRelease: refusal.lock.expiresAt.toISOString(),
+      });
     case 'version.precondition':
       return refused(
         409,
@@ -243,6 +254,58 @@ export function editingHandlers() {
       });
       if (answer.answer !== 'claimed') throw refuse(answer);
       return { lock: lockView(answer.lock, principalId) };
+    },
+
+    /**
+     * Taking a lock from an idle holder (COL-009, COL-046, COL-047; collaboration.md, Taking): asked,
+     * then taken once the holder's grace has passed with them idle, and the taking recorded.
+     */
+    takeLock: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TakeAnswer> => {
+      const { id } = request.params as ComponentParams;
+      const { session } = request.body as TakeBody;
+      const answer = await takeLock(trx, { artifactId: id, principal: principalId, session });
+      switch (answer.answer) {
+        case 'taken':
+          await recordEvent(
+            trx,
+            {
+              kind: 'lock.taken',
+              subject: { kind: 'component', id },
+              detail: { from: answer.from.holder, session: answer.from.session },
+            },
+            labels(await principalLabel(trx, 'holder', answer.from.holder)),
+          );
+          return { taken: true, lock: lockView(answer.lock, principalId) };
+        case 'asked':
+          return { taken: false, lock: lockView(answer.lock, principalId) };
+        case 'lock.free':
+          throw refused(
+            409,
+            'lock.free',
+            'Nobody holds this component: begin editing to claim it.',
+          );
+        case 'lock.own':
+          throw refused(409, 'lock.own', 'You hold this component already: continue here instead.');
+        case 'lock.active':
+          throw refused(
+            409,
+            'lock.active',
+            'Its holder has been working on it too recently to ask for it.',
+            {
+              holder: { id: answer.lock.holder, name: answer.lock.holderName },
+              takeableAt: answer.lock.takeableAt.toISOString(),
+            },
+          );
+        case 'lock.taking':
+          throw refused(409, 'lock.taking', 'Somebody else has asked for this component.', {
+            taking: { id: answer.lock.taking!.by, name: answer.lock.taking!.byName },
+          });
+        case 'artifact.missing':
+          throw notFound();
+      }
     },
 
     saveIteration: async (request: FastifyRequest, { trx, principalId }: Authorised) => {

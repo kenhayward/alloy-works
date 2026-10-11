@@ -14,6 +14,7 @@ import {
   type SaveResult,
   type SessionService,
   type SessionView,
+  type TakeResult,
   type VersionRef,
 } from './session.js';
 
@@ -174,6 +175,11 @@ class FakeService implements SessionService {
   async iteration(id: string) {
     this.calls.push(`read ${id}`);
     return this.iterationAnswer(id);
+  }
+  takeAnswer: () => Promise<TakeResult> = async () => ({ ok: false, code: 'lock_free' });
+  async take() {
+    this.calls.push('take');
+    return this.takeAnswer();
   }
   /** Test setup only: pretend an earlier session under this same id already saved past this sequence -
    * as if this window's session id had been used before a reload (fix round 3). */
@@ -527,6 +533,41 @@ describe('the editing session', () => {
     type('More');
     await clock.advance(60_000);
     expect(service.calls.filter((call) => call.startsWith('save'))).toEqual(['save 1']);
+  });
+
+  it('COL-045 says who took the component, that what was saved is kept, and keeps the unsaved text, when a save finds it taken', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    await clock.advance(0);
+    service.saveAnswer = async () => ({ ok: false, code: 'lock_taken', takenBy: 'Grace' });
+    type('Unbox the printer');
+    await clock.advance(2_000);
+    expect(session.view()).toMatchObject({
+      phase: 'lost',
+      save: 'stopped',
+      notice:
+        'Grace has taken over this component. What you saved is kept, and offered again when you next hold it; your unsaved text is kept below to copy.',
+    });
+  });
+
+  it('COL-009 takes over from reading: asked and waiting, then taken and editing under this session', async () => {
+    const { clock, service, session } = harness();
+    service.takeAnswer = async () => ({
+      ok: true,
+      taken: false,
+      until: '2026-10-11T12:01:00.000Z',
+    });
+    expect(await session.takeOver()).toEqual({
+      ok: true,
+      taken: false,
+      until: '2026-10-11T12:01:00.000Z',
+    });
+    expect(session.view().phase).toBe('reading');
+    service.takeAnswer = async () => ({ ok: true, taken: true });
+    expect(await session.takeOver()).toEqual({ ok: true, taken: true });
+    await clock.advance(0);
+    expect(service.calls).toEqual(['take', 'take', 'claim']);
+    expect(session.view().phase).toBe('editing');
   });
 
   it('a session lost to a lock gone claims nothing again from this window, neither to continue nor to recover', async () => {

@@ -20,6 +20,12 @@ export const LockEvent = z
       .string()
       .nullable()
       .describe('When it is free unless its holder goes on working, in UTC; null once it is free'),
+    taking: z
+      .object({ by: z.object({ id: Id, name: z.string().nullable() }), until: z.string() })
+      .nullable()
+      .describe(
+        "Somebody asking to take it over, and when its holder's grace to keep it ends (COL-047); null where nobody is",
+      ),
   })
   .describe("A component's lock, as it now stands (COL-007)");
 

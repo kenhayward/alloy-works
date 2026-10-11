@@ -10,6 +10,9 @@ describe('the rule behind a refusal', () => {
     const ruled: readonly (readonly [DottedCode, string, string])[] = [
       ['lock.held', 'lock_held', 'API-039'],
       ['lock.required', 'lock_required', 'COL-005'],
+      ['lock.taken', 'lock_taken', 'COL-045'],
+      ['lock.active', 'lock_active', 'COL-046'],
+      ['lock.taking', 'lock_taking', 'COL-047'],
       ['version.precondition', 'version_precondition', 'API-037'],
       ['format.unsupported', 'format_unsupported', 'PUB-014'],
       ['page_reference.without_pdf', 'page_reference_without_pdf', 'PUB-074'],
@@ -38,6 +41,9 @@ describe('the rule behind a refusal', () => {
     // And no rule where none refuses: a reference to nothing, a stale save, a design's own guard.
     // Every code is one or the other, so a code added later is decided rather than defaulted.
     const unruled: readonly DottedCode[] = [
+      // Nobody holds it, or the asker does: a state to act on, not a rule refusing (collaboration.md).
+      'lock.free',
+      'lock.own',
       'iteration.stale',
       'iteration.conflict',
       'version.unchanged',

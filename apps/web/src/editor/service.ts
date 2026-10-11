@@ -10,6 +10,7 @@ import type {
   Refusal,
   SaveResult,
   SessionService,
+  TakeResult,
 } from './session.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -149,6 +150,7 @@ function refusalOf(response: Response | undefined): Refusal | undefined {
 const savedCodes = [
   'lock_held',
   'lock_required',
+  'lock_taken',
   'version_precondition',
   'iteration_stale',
   'iteration_conflict',
@@ -257,10 +259,12 @@ export function sessionService(
         const code = codeOf(error);
         const known = savedCodes.find((each) => each === code);
         const latest = error && 'latest' in error ? error.latest : undefined;
+        const holder = error && 'holder' in error ? error.holder : undefined;
         return {
           ok: false,
           code: known ?? 'failed',
           ...(typeof latest === 'number' ? { latest } : {}),
+          ...(known === 'lock_taken' && holder ? { takenBy: holder.name } : {}),
         };
       } catch {
         return { ok: false, code: 'failed' };
@@ -313,6 +317,45 @@ export function sessionService(
           })),
           next: data.next,
         };
+      } catch {
+        return { ok: false, code: 'failed' };
+      }
+    },
+
+    async take(): Promise<TakeResult> {
+      try {
+        const { data, error, response } = await client.POST('/v1/components/{id}/lock/take', {
+          params: { path },
+          body: { session: current },
+        });
+        if (data) {
+          return data.taken
+            ? { ok: true, taken: true }
+            : {
+                ok: true,
+                taken: false,
+                until: data.lock.taking?.until ?? new Date().toISOString(),
+              };
+        }
+        const refusal = refusalOf(response);
+        if (refusal) return { ok: false, code: refusal };
+        const code = codeOf(error);
+        if (
+          code === 'lock_active' ||
+          code === 'lock_taking' ||
+          code === 'lock_free' ||
+          code === 'lock_own'
+        ) {
+          return {
+            ok: false,
+            code,
+            ...(error && 'takeableAt' in error && error.takeableAt
+              ? { takeableAt: error.takeableAt }
+              : {}),
+            ...(error && 'taking' in error && error.taking ? { by: error.taking.name } : {}),
+          };
+        }
+        return { ok: false, code: 'failed' };
       } catch {
         return { ok: false, code: 'failed' };
       }

@@ -13,6 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   claimLock,
+  takeLock,
   iterationDigest,
   LOCK_PERIOD_MINUTES,
   readLock,
@@ -580,6 +581,112 @@ describe('editing a component: its lock and its iterations', () => {
       await expect(component.save(2147483648, 'Too big')).rejects.toThrow(
         /whole number from 1 to 2147483647/,
       );
+    });
+  });
+
+  describe('taking a lock from an idle holder (collaboration.md, Taking)', () => {
+    /** A component Ada holds, idle since `minutesAgo`, and a way to save into it as her. */
+    const heldIdle = async (minutesAgo: number) => {
+      const component = await newComponent();
+      const session = randomUUID();
+      await service.withTenant(production, (trx) =>
+        claimLock(trx, { artifactId: component.id, principal: ada, session }),
+      );
+      await service.withTenant(production, (trx) =>
+        sql`update component_lock set claimed_at = now() - make_interval(mins => ${minutesAgo + 1}),
+          active_at = now() - make_interval(mins => ${minutesAgo})
+          where artifact_id = ${component.id}`.execute(trx),
+      );
+      const save = (sequence: number) =>
+        service.withTenant(production, (trx) =>
+          saveIteration(trx, {
+            artifactId: component.id,
+            principal: ada,
+            session,
+            sequence,
+            openedFrom: component.openedFrom,
+            content: content(`Draft ${sequence}`),
+          }),
+        );
+      return { ...component, session, save };
+    };
+    const take = (artifactId: string, principal: string, session: string) =>
+      service.withTenant(production, (trx) => takeLock(trx, { artifactId, principal, session }));
+    /** The grace of an ask, passed, as though a minute had gone by. */
+    const graceOver = (artifactId: string) =>
+      service.withTenant(production, (trx) =>
+        sql`update component_lock set taking_until = now() - interval '1 second'
+          where artifact_id = ${artifactId}`.execute(trx),
+      );
+
+    it('COL-046 refuses to ask for a lock whose holder has been active within the take period, saying when it may be asked', async () => {
+      const component = await heldIdle(2);
+      const answer = await take(component.id, grace, randomUUID());
+      expect(answer).toMatchObject({ answer: 'lock.active', lock: { holder: ada } });
+      if (answer.answer !== 'lock.active') throw new Error(answer.answer);
+      expect(answer.lock.takeableAt.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('COL-047 warns the holder at once and keeps the lock theirs through the grace, any work they save keeping it; never taken at the first ask', async () => {
+      const component = await heldIdle(6);
+      const graces = randomUUID();
+      const asked = await take(component.id, grace, graces);
+      expect(asked).toMatchObject({
+        answer: 'asked',
+        lock: { holder: ada, taking: { by: grace, byName: 'Grace' } },
+      });
+      // Asked again within the grace: still asked, never taken.
+      expect(await take(component.id, grace, graces)).toMatchObject({ answer: 'asked' });
+      // Ada saves: she keeps it, and the ask is gone.
+      expect(await component.save(1)).toMatchObject({ answer: 'accepted' });
+      const lock = await service.withTenant(production, (trx) => readLock(trx, component.id));
+      expect(lock).toMatchObject({ holder: ada, taking: null });
+      expect(await take(component.id, grace, graces)).toMatchObject({ answer: 'lock.active' });
+    });
+
+    it("COL-009 takes it once the grace passes with the holder idle, and tells the holder's next save who has it", async () => {
+      const component = await heldIdle(6);
+      const graces = randomUUID();
+      expect(await take(component.id, grace, graces)).toMatchObject({ answer: 'asked' });
+      await graceOver(component.id);
+      const taken = await take(component.id, grace, graces);
+      expect(taken).toMatchObject({
+        answer: 'taken',
+        lock: { holder: grace, session: graces, taking: null },
+        from: { holder: ada, session: component.session },
+      });
+      expect(await component.save(1)).toMatchObject({
+        answer: 'lock.taken',
+        lock: { holder: grace, holderName: 'Grace' },
+      });
+    });
+
+    it("answers somebody else's standing ask as theirs, and a lock nobody or the asker holds as not to take", async () => {
+      const component = await heldIdle(6);
+      expect(await take(component.id, grace, randomUUID())).toMatchObject({ answer: 'asked' });
+      const alan = await service.withTenant(
+        production,
+        async (trx) =>
+          (
+            await trx
+              .insertInto('principal')
+              .values({
+                issuer: 'https://idp.example',
+                subject: 'alan',
+                email: null,
+                display_name: 'Alan',
+              })
+              .returning('id')
+              .executeTakeFirstOrThrow()
+          ).id,
+      );
+      expect(await take(component.id, alan, randomUUID())).toMatchObject({
+        answer: 'lock.taking',
+        lock: { taking: { by: grace } },
+      });
+      expect(await take(component.id, ada, randomUUID())).toMatchObject({ answer: 'lock.own' });
+      const free = await newComponent();
+      expect(await take(free.id, grace, randomUUID())).toEqual({ answer: 'lock.free' });
     });
   });
 

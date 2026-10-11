@@ -5,8 +5,8 @@ needs it - the lock rules [realtime.md](realtime.md) leaves to "collaboration's 
 [component-editor.md](component-editor.md) claims and saves under. Threads, suggestions and review
 rounds (COL's later phases, ADR-0057) will join this document as their turns come.
 
-> **Built so far** ([the PL plan](../plans/2026-10-11-pl-presence-and-locks.md)): the settings and
-> `active_at` (PL3). **Taking is not yet** (PL4).
+> **Built** by [the PL plan](../plans/2026-10-11-pl-presence-and-locks.md): the settings and `active_at`
+> (PL3), and taking (PL4).
 
 ## The shape in one paragraph
 
@@ -58,14 +58,14 @@ that already treats an expired row as nothing goes on doing so.
 
 ## Taking
 
-| Asked when                                         | Answer                                           |
-| -------------------------------------------------- | ------------------------------------------------ |
-| Nobody holds it                                    | `409 lock_free`: claim it instead                |
-| The holder is active within the take period        | `409 lock_active`, with when it becomes takeable |
-| Idle, no ask yet, or another's ask lapsed          | `202`: the ask recorded, with `taking_until`     |
-| Your ask, its grace not yet over                   | `202` again, unchanged                           |
-| Your ask, its grace over, the holder still idle    | `200`: the lock is yours, as a claim's answer    |
-| Somebody else's ask in its grace, or a minute past | `409 lock_taking`, naming them                   |
+| Asked when                                         | Answer                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| Nobody holds it                                    | `409 lock_free`: claim it instead                            |
+| The holder is active within the take period        | `409 lock_active`, with when it becomes takeable             |
+| Idle, no ask yet, or another's ask lapsed          | `200`, `taken: false`: the ask recorded, with `taking.until` |
+| Your ask, its grace not yet over                   | `200`, `taken: false` again, unchanged                       |
+| Your ask, its grace over, the holder still idle    | `200`, `taken: true`: the lock is yours                      |
+| Somebody else's ask in its grace, or a minute past | `409 lock_taking`, naming them                               |
 
 **The asker's window drives the second request**: it shows the warning it gave, counts the grace down,
 and asks again when it ends; a window closed in the grace leaves an ask that lapses a minute after its

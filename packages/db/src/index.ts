@@ -361,12 +361,16 @@ export {
   readLocks,
   saveIteration,
   sessionContent,
+  TAKE_ASK_LASTS_MS,
+  TAKE_GRACE_MS,
+  takeLock,
   type EditingSession,
   type HolderRefusal,
   type IterationAnswer,
   type LockClaimAnswer,
   type LockState,
   type NewIteration,
+  type TakeAnswer,
 } from './editing.js';
 export {
   cutVersion,

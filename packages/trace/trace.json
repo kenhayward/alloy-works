@@ -18835,7 +18835,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 261,
+      "line": 262,
       "kind": "title"
     },
     {
@@ -19009,7 +19009,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 918,
+      "line": 920,
       "kind": "title"
     },
     {
@@ -19105,49 +19105,49 @@
     {
       "id": "API-037",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 446,
+      "line": 448,
       "kind": "rule"
     },
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 342,
+      "line": 344,
       "kind": "rule"
     },
     {
       "id": "API-039",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 313,
+      "line": 315,
       "kind": "title"
     },
     {
       "id": "CNT-071",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 370,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 284,
+      "line": 286,
       "kind": "title"
     },
     {
       "id": "CNT-174",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 710,
+      "line": 712,
       "kind": "title"
     },
     {
       "id": "COL-005",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 411,
+      "line": 413,
       "kind": "rule"
     },
     {
       "id": "VER-009",
       "file": "apps/service/src/editing-routes.test.ts",
-      "line": 236,
+      "line": 238,
       "kind": "title"
     },
     {
@@ -19255,31 +19255,31 @@
     {
       "id": "API-016",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 281,
+      "line": 283,
       "kind": "title"
     },
     {
       "id": "COL-001",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 342,
+      "line": 344,
       "kind": "title"
     },
     {
       "id": "COL-002",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 342,
+      "line": 344,
       "kind": "title"
     },
     {
       "id": "COL-003",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 369,
+      "line": 371,
       "kind": "title"
     },
     {
       "id": "COL-004",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 385,
+      "line": 387,
       "kind": "title"
     },
     {
@@ -19291,7 +19291,7 @@
     {
       "id": "COL-055",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 401,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -19520,6 +19520,30 @@
       "id": "IAM-040",
       "file": "apps/service/src/stream.test.ts",
       "line": 487,
+      "kind": "title"
+    },
+    {
+      "id": "COL-009",
+      "file": "apps/service/src/take-routes.test.ts",
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "COL-045",
+      "file": "apps/service/src/take-routes.test.ts",
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "COL-046",
+      "file": "apps/service/src/take-routes.test.ts",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "COL-047",
+      "file": "apps/service/src/take-routes.test.ts",
+      "line": 185,
       "kind": "title"
     },
     {
@@ -20075,6 +20099,30 @@
       "kind": "title"
     },
     {
+      "id": "COL-009",
+      "file": "apps/web/src/editor/TakeOver.test.tsx",
+      "line": 36,
+      "kind": "title"
+    },
+    {
+      "id": "COL-045",
+      "file": "apps/web/src/editor/TakeOver.test.tsx",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "COL-046",
+      "file": "apps/web/src/editor/TakeOver.test.tsx",
+      "line": 13,
+      "kind": "title"
+    },
+    {
+      "id": "COL-047",
+      "file": "apps/web/src/editor/TakeOver.test.tsx",
+      "line": 36,
+      "kind": "title"
+    },
+    {
       "id": "DAT-022",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
       "line": 129,
@@ -20125,13 +20173,25 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 308,
+      "line": 314,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 364,
+      "line": 370,
+      "kind": "title"
+    },
+    {
+      "id": "COL-009",
+      "file": "apps/web/src/editor/session.test.ts",
+      "line": 553,
+      "kind": "title"
+    },
+    {
+      "id": "COL-045",
+      "file": "apps/web/src/editor/session.test.ts",
+      "line": 538,
       "kind": "title"
     },
     {
@@ -21325,19 +21385,31 @@
     {
       "id": "COL-008",
       "file": "packages/db/src/editing.test.ts",
-      "line": 215,
+      "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "COL-009",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 647,
       "kind": "title"
     },
     {
       "id": "COL-046",
       "file": "packages/db/src/editing.test.ts",
-      "line": 251,
+      "line": 252,
+      "kind": "title"
+    },
+    {
+      "id": "COL-047",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 630,
       "kind": "title"
     },
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 389,
+      "line": 390,
       "kind": "title"
     },
     {
