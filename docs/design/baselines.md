@@ -53,9 +53,8 @@ is the lifecycle service's call, built with it.
 
 - **VER-055**: bibliography entries, terms and vocabulary values do not exist until T7 (LIB). What
   does exist is pinned: the template version, and the definition versions the document version records.
-- **PUB-082**: its second half, accepted generated content with its prompt, model and context digest,
-  has nothing to identify until T5 (GEN). The first half holds: a publication's inputs are the baseline's
-  pins.
+- **PUB-082**: moved to T5 (Ken, 2026-10-11), where generated content arrives. Its first half holds here:
+  a baseline's publication reads its pins alone.
 - **PUB-004**: nothing is approved until LIF designates it at a gate. A publication of a baseline
   records `approval = 'baseline'` and keeps the draft notice; designation will change the notice, not
   the pins.
