@@ -50,6 +50,10 @@ export const documentationGroups = [
     name: 'Publishing',
     tags: [
       {
+        name: 'Comparison',
+        description: 'Compare two versions of a component, or two baselines of a document.',
+      },
+      {
         name: 'Baselines',
         description: 'Pin a document and everything it uses under a name, and supersede one.',
       },
@@ -175,6 +179,7 @@ const operationTags = {
     'getAssetVersionContent',
   ],
   Previews: ['requestPreview'],
+  Comparison: ['compareComponentVersions', 'compareBaseline'],
   Baselines: [
     'makeBaseline',
     'listBaselines',
@@ -251,6 +256,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.',
   getBaseline:
     'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
+  compareComponentVersions:
+    'Compares two versions of a component: each block, list item, table cell and footnote matched by identity or by similar wording, saying which, then placed, its text compared word by word. Both versions’ content comes with the changes, for a redline.',
+  compareBaseline:
+    'Compares a baseline with a later one of the same document, or with the document as it resolves now: its outline’s changes, and each component whose version differs, compared. A component the caller may not read appears in the outline where it stands and is never compared.',
   getBaselineView:
     'Reads the document as a baseline holds it: its outline at the pinned version, numbered by the pinned layout, each component’s text at its pinned version, and each value from the dataset version it pinned. A component the caller may not read is withheld, as in the document itself.',
   publishBaseline:

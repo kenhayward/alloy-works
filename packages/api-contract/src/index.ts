@@ -283,3 +283,10 @@ export {
   PublishBaselineBody,
   SupersedeBaselineBody,
 } from './baselines.js';
+export {
+  BaselineComparisonQuery,
+  BaselineComparisonView,
+  ComponentComparisonQuery,
+  ComponentComparisonView,
+  UnitChangeView,
+} from './comparison.js';

@@ -6,6 +6,7 @@ import { connectionRoutes } from './connections.js';
 import { definitionRoutes } from './definitions.js';
 import { peopleRoutes } from './people.js';
 import { baselineRoutes } from './baselines.js';
+import { comparisonRoutes } from './comparison.js';
 import { presenceRoutes } from './presence.js';
 import { presentationRoutes } from './presentation.js';
 import { queryDefinitionRoutes } from './query-definitions.js';
@@ -309,7 +310,8 @@ type Routes = typeof ownRoutes &
   typeof auditRoutes &
   typeof sessionRoutes &
   typeof presenceRoutes &
-  typeof baselineRoutes;
+  typeof baselineRoutes &
+  typeof comparisonRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -337,6 +339,7 @@ export const routes: Routes = {
   ...sessionRoutes,
   ...presenceRoutes,
   ...baselineRoutes,
+  ...comparisonRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

@@ -1,5 +1,10 @@
 import type { BlockNode, ContentDocument, InlineNode } from '../content/model/index.js';
-import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
+import type {
+  OutlineDocument,
+  OutlineNode,
+  OutlineView,
+  OutlineViewNode,
+} from '../structure/outline.js';
 import { canonicalJson } from '../stored/canonical.js';
 
 /**
@@ -331,17 +336,21 @@ export function compareContent(
  * Two documents' outlines compared (VER-024's structural level): each node by its identifier, a
  * section's title as its text, a reference's component and mode and every node's place as attributes.
  */
+/**
+ * An outline withheld for its reader (`withholdComponents`) compares as one stored: a withheld
+ * reference is its node, equal to itself on both sides.
+ */
 export function compareOutlines(
-  older: OutlineDocument,
-  newer: OutlineDocument,
+  older: OutlineDocument | OutlineView,
+  newer: OutlineDocument | OutlineView,
   meter: Meter = createMeter(),
 ): ContentComparison {
   return compareUnits(outlineUnits(older), outlineUnits(newer), meter);
 }
 
-function outlineUnits(outline: OutlineDocument): Unit[] {
+function outlineUnits(outline: OutlineDocument | OutlineView): Unit[] {
   const units: Unit[] = [];
-  const walk = (nodes: readonly OutlineNode[], parent: string) => {
+  const walk = (nodes: readonly (OutlineNode | OutlineViewNode)[], parent: string) => {
     nodes.forEach((node, index) => {
       const { id, children, ...rest } = node;
       const { title, ...attributes } = rest as typeof rest & { title?: InlineNode[] };

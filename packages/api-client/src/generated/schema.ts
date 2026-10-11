@@ -239,6 +239,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/baselines/{id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A baseline compared with another of its document, or with the document now
+         * @description Compares a baseline with a later one of the same document, or with the document as it resolves now: its outline’s changes, and each component whose version differs, compared. A component the caller may not read appears in the outline where it stands and is never compared.
+         */
+        get: operations["compareBaseline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/baselines/{id}/publications": {
         parameters: {
             query?: never;
@@ -351,6 +371,26 @@ export interface paths {
          * @description Lists the documents whose latest outline places the component at a node holding a value for the named binding, whatever the binding was when it was resolved: those the caller may read by title, and a count of the rest. Ask before changing a binding, to see which documents will hold no value until they resolve it again. It needs read on the component.
          */
         get: operations["getBindingHolders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Two versions of a component compared, as anchored changes
+         * @description Compares two versions of a component: each block, list item, table cell and footnote matched by identity or by similar wording, saying which, then placed, its text compared word by word. Both versions’ content comes with the changes, for a redline.
+         */
+        get: operations["compareComponentVersions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6272,6 +6312,292 @@ export interface operations {
             };
         };
     };
+    compareBaseline: {
+        parameters: {
+            query: {
+                with: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The structure and content compared, as the caller may read them */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "older": {
+                     *         "baseline": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "outline": {}
+                     *       },
+                     *       "newer": {
+                     *         "baseline": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "number": "example"
+                     *         },
+                     *         "outline": {}
+                     *       },
+                     *       "structure": [],
+                     *       "components": []
+                     *     }
+                     */
+                    "application/json": {
+                        older: {
+                            /** @description The baseline, or null for the document now */
+                            baseline: {
+                                id: string & (unknown & unknown);
+                                name: string;
+                            } | null;
+                            /** @description The document version */
+                            version: {
+                                id: string & (unknown & unknown);
+                                /** @description `revision.version` */
+                                number: string;
+                            };
+                            /** @description Its outline, a component the caller may not read withheld as the document’s own is */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        newer: {
+                            /** @description The baseline, or null for the document now */
+                            baseline: {
+                                id: string & (unknown & unknown);
+                                name: string;
+                            } | null;
+                            /** @description The document version */
+                            version: {
+                                id: string & (unknown & unknown);
+                                /** @description `revision.version` */
+                                number: string;
+                            };
+                            /** @description Its outline, a component the caller may not read withheld as the document’s own is */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description The outline's changes */
+                        structure: ({
+                            /** @constant */
+                            change: "inserted";
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /** @description The unit it stands after under its parent, or null first */
+                            after: string | null;
+                        } | {
+                            /** @constant */
+                            change: "deleted";
+                            older: string;
+                            type: string;
+                            parent: string;
+                        } | {
+                            /** @constant */
+                            change: "matched";
+                            older: string;
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /**
+                             * @description How the two were found to be one
+                             * @enum {string}
+                             */
+                            matched: "identity" | "similarity";
+                            moved: {
+                                after: string | null;
+                            } | null;
+                            /** @description Its text compared word by word, `whole` past the bound a block is compared within */
+                            edited: ({
+                                ops: {
+                                    /** @enum {string} */
+                                    op: "keep" | "insert" | "delete";
+                                    /** @description The text, an inline node that is not text standing as U+FFFC */
+                                    text: string;
+                                }[];
+                            } | {
+                                /** @constant */
+                                whole: true;
+                            }) | null;
+                            /** @description Each attribute that differs */
+                            changed: string[];
+                            split: string | null;
+                            joined: string | null;
+                        })[];
+                        /** @description Each node whose component the caller may read and whose version differs between the two sides */
+                        components: {
+                            node: string;
+                            component: string & (unknown & unknown);
+                            from: {
+                                id: string & (unknown & unknown);
+                                /** @description `revision.version` */
+                                number: string;
+                            };
+                            to: {
+                                id: string & (unknown & unknown);
+                                /** @description `revision.version` */
+                                number: string;
+                            };
+                            older: {
+                                [key: string]: unknown;
+                            };
+                            newer: {
+                                [key: string]: unknown;
+                            };
+                            changes: ({
+                                /** @constant */
+                                change: "inserted";
+                                newer: string;
+                                type: string;
+                                parent: string;
+                                /** @description The unit it stands after under its parent, or null first */
+                                after: string | null;
+                            } | {
+                                /** @constant */
+                                change: "deleted";
+                                older: string;
+                                type: string;
+                                parent: string;
+                            } | {
+                                /** @constant */
+                                change: "matched";
+                                older: string;
+                                newer: string;
+                                type: string;
+                                parent: string;
+                                /**
+                                 * @description How the two were found to be one
+                                 * @enum {string}
+                                 */
+                                matched: "identity" | "similarity";
+                                moved: {
+                                    after: string | null;
+                                } | null;
+                                /** @description Its text compared word by word, `whole` past the bound a block is compared within */
+                                edited: ({
+                                    ops: {
+                                        /** @enum {string} */
+                                        op: "keep" | "insert" | "delete";
+                                        /** @description The text, an inline node that is not text standing as U+FFFC */
+                                        text: string;
+                                    }[];
+                                } | {
+                                    /** @constant */
+                                    whole: true;
+                                }) | null;
+                                /** @description Each attribute that differs */
+                                changed: string[];
+                                split: string | null;
+                                joined: string | null;
+                            })[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the document compares its baselines */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline the caller may read, or `with` naming none of the same document */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     publishBaseline: {
         parameters: {
             query?: never;
@@ -7945,6 +8271,198 @@ export interface operations {
                 };
             };
             /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    compareComponentVersions: {
+        parameters: {
+            query: {
+                from: string & (unknown & unknown);
+                to: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two versions and their changes */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "to": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "older": {},
+                     *       "newer": {},
+                     *       "changes": []
+                     *     }
+                     */
+                    "application/json": {
+                        component: string & (unknown & unknown);
+                        from: {
+                            id: string & (unknown & unknown);
+                            /** @description `revision.version` */
+                            number: string;
+                        };
+                        to: {
+                            id: string & (unknown & unknown);
+                            /** @description `revision.version` */
+                            number: string;
+                        };
+                        /** @description The older version's content document */
+                        older: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The newer version's content document */
+                        newer: {
+                            [key: string]: unknown;
+                        };
+                        changes: ({
+                            /** @constant */
+                            change: "inserted";
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /** @description The unit it stands after under its parent, or null first */
+                            after: string | null;
+                        } | {
+                            /** @constant */
+                            change: "deleted";
+                            older: string;
+                            type: string;
+                            parent: string;
+                        } | {
+                            /** @constant */
+                            change: "matched";
+                            older: string;
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /**
+                             * @description How the two were found to be one
+                             * @enum {string}
+                             */
+                            matched: "identity" | "similarity";
+                            moved: {
+                                after: string | null;
+                            } | null;
+                            /** @description Its text compared word by word, `whole` past the bound a block is compared within */
+                            edited: ({
+                                ops: {
+                                    /** @enum {string} */
+                                    op: "keep" | "insert" | "delete";
+                                    /** @description The text, an inline node that is not text standing as U+FFFC */
+                                    text: string;
+                                }[];
+                            } | {
+                                /** @constant */
+                                whole: true;
+                            }) | null;
+                            /** @description Each attribute that differs */
+                            changed: string[];
+                            split: string | null;
+                            joined: string | null;
+                        })[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the component compares its versions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component the caller may read, or a version that is not one of its versions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
