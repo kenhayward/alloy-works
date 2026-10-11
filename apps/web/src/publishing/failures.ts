@@ -441,6 +441,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return `This table marks its subtotals with the column ${failure.detail ?? ''}, which does not hold true or false. Choose a column that does.`;
     case 'subtotal_ambiguous':
       return `Row ${Number(failure.detail ?? '0') + 1} of this table's result is marked a subtotal at two levels. Change the query so each subtotal row is marked once.`;
+    // TG2: a transposed table's result longer than a table turns on its side, `detail` its rows.
+    case 'transpose_too_long':
+      return `This table is transposed, and its result has ${failure.detail ?? ''} rows, more than a transposed table can hold. Narrow the rows in its query, or stop transposing it.`;
     case 'table_words_missing':
       return "The layout has no words for a table's empty result, a missing value or its source. The layout has to change before this document can be published.";
     // TB3 (TB3-B, TB3-C): a note by key on a definition declaring none; a note whose row is gone,

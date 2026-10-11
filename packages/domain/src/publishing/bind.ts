@@ -293,7 +293,8 @@ export function bind(
         fail(
           each.code,
           table.id,
-          each.code === 'table_too_long' || each.code === 'subtotal_ambiguous'
+          // A column, a column and its member, or a count or a row's index.
+          !('column' in each)
             ? each.detail
             : each.code === 'format_mismatch'
               ? `${each.column}: ${each.detail}`

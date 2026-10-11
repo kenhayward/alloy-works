@@ -2423,10 +2423,13 @@ export function bindingHandlers(
         ...(found.table.groups ?? []).flatMap((each) =>
           each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
         ),
+        ...(found.table.transpose === undefined ? [] : [found.table.transpose.header]),
       ]);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
       // Its sort and its groups, which order the rows sent alike (TG1).
-      const order = own ? null : [found.table.sort ?? [], found.table.groups ?? []];
+      const order = own
+        ? null
+        : [found.table.sort ?? [], found.table.groups ?? [], found.table.transpose ?? null];
       // The keyed notes' anchors, so a note added or removed is answered anew, never a 304 (TB3.3).
       const anchors = (found.table.notes ?? []).flatMap((each) =>
         each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key]] : [],

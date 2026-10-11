@@ -481,9 +481,10 @@ describe("a bound table's rows, for the page", () => {
         move: true,
       });
       expect(claimed.statusCode, claimed.body).toBe(200);
-      for (const [sequence, groups] of [
-        [1, [{ column: 'id' }]],
-        [2, [{ column: 'name', subtotal: 'id' }]],
+      for (const [sequence, over] of [
+        [1, { groups: [{ column: 'id' }] }],
+        [2, { groups: [{ column: 'name', subtotal: 'id' }] }],
+        [3, { transpose: { header: 'id' } }],
       ] as const) {
         const saved = await h.call(
           'grace',
@@ -491,7 +492,7 @@ describe("a bound table's rows, for the page", () => {
           `/v1/components/${component.id}/iterations/${session}/${sequence}`,
           {
             openedFrom: component.version,
-            content: content([table(whole('b1', definition.id), { groups })]),
+            content: content([table(whole('b1', definition.id), over)]),
           },
         );
         expect(saved.statusCode, saved.body).toBe(403);

@@ -471,6 +471,8 @@ export interface BoundTablePlace {
   readonly sort: readonly SortKey[];
   /** Its groups, outermost first (TG2; TAB-043), none where it is not grouped. */
   readonly groups: readonly GroupLevel[];
+  /** The column whose values head it turned on its side (TG2; TAB-021), or null. */
+  readonly transpose: string | null;
   /** Whether it has an empty statement, a note and a source. */
   readonly parts: Readonly<Record<BoundTablePart, boolean>>;
   /** Its keyed and column notes, in the order they stand beneath it (TB3.3). */
@@ -497,6 +499,7 @@ function placeOf(node: Node, pos: number): BoundTablePlace {
     headerColumn: node.attrs.headerColumn as boolean,
     sort: (node.attrs.sort as SortKey[] | null) ?? [],
     groups: (node.attrs.groups as GroupLevel[] | null) ?? [],
+    transpose: (node.attrs.transpose as { header: string } | null)?.header ?? null,
     parts: {
       empty: has(PART_NODES.empty),
       note: has(PART_NODES.note),
@@ -647,6 +650,8 @@ export interface BoundTableChange {
   readonly headerColumn?: boolean;
   readonly sort?: readonly SortKey[];
   readonly groups?: readonly GroupLevel[];
+  /** Transposed by this header column, or null for not transposed (TG2). */
+  readonly transpose?: string | null;
   readonly numbered?: boolean;
   /** Wide (TB3-G): scale, rotate, or null for the table style's. */
   readonly wide?: Wide | null;
@@ -700,13 +705,21 @@ export function setBoundTable(change: BoundTableChange, { typed = false } = {}):
       if (groups.length > BOUND_TABLE_GROUPS_MAX) return false;
       if (new Set(groups.map((each) => each.column)).size !== groups.length) return false;
     }
+    // Grouped and transposed at once is refused, as the walk refuses it (TG-E).
     const node = state.doc.nodeAt(table.pos)!;
+    const willGroup = groups !== undefined ? groups.length > 0 : table.groups.length > 0;
+    const willTurn =
+      change.transpose !== undefined ? change.transpose !== null : table.transpose !== null;
+    if (willGroup && willTurn) return false;
     const attrs = {
       ...node.attrs,
       ...(columns === undefined ? {} : { columns }),
       ...(change.headerColumn === undefined ? {} : { headerColumn: change.headerColumn }),
       ...(sort === undefined ? {} : { sort: sort.length === 0 ? null : [...sort] }),
       ...(groups === undefined ? {} : { groups: groups.length === 0 ? null : [...groups] }),
+      ...(change.transpose === undefined
+        ? {}
+        : { transpose: change.transpose === null ? null : { header: change.transpose } }),
       ...(change.numbered === undefined ? {} : { numbered: change.numbered }),
       ...(change.wide === undefined ? {} : { wide: change.wide }),
     };

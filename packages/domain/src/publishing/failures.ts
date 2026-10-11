@@ -196,6 +196,8 @@ export const publishFailureCodes = [
   // row a subtotal at two levels, its `detail` the row's index in the result.
   'subtotal_not_boolean',
   'subtotal_ambiguous',
+  // bind, from TG2: more rows than a table transposes (`TRANSPOSE_ROWS_MAX`), `detail` the row count.
+  'transpose_too_long',
   // compose, from TB3 (TB3-H, TB3-I): a table too wide for its measure that the template cannot set
   // whole, which the worker's query of the template answers before the compile: `detail` `narrow`, scaled
   // below one half; `tall`, taller than a page once scaled; or `turned`, too wide for a landscape page.

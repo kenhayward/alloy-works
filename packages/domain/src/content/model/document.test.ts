@@ -2194,6 +2194,13 @@ describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
     expect(() => parsedTable({ groups: [] })).toThrow();
   });
 
+  it('TAB-021 keeps a table transposed by a header column, and refuses one both grouped and transposed', () => {
+    expect(parsedTable({ transpose: { header: 'site' } }).transpose).toEqual({ header: 'site' });
+    expect(() =>
+      parsedTable({ transpose: { header: 'site' }, groups: [{ column: 'depth' }] }),
+    ).toThrow(/T1.*both grouped and transposed/);
+  });
+
   it('refuses a sort naming a column twice, more than four sort columns, or more than 64 columns', () => {
     const by = (column: string) => ({ column, direction: 'ascending', nulls: 'last' });
     expect(() => parsedTable({ sort: [by('depth'), by('depth')] })).toThrow(/T1.*sorts by depth/);

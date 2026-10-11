@@ -75,6 +75,8 @@ const namedBy = (table: BoundTableNode) =>
     ...(table.groups ?? []).flatMap((each) =>
       each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
     ),
+    // A transposed table's header column heads its columns (TG2).
+    ...(table.transpose === undefined ? [] : [table.transpose.header]),
     ...(table.notes ?? []).flatMap(({ anchor }) =>
       anchor.kind === 'keyed'
         ? [anchor.column, ...Object.keys(anchor.key)]

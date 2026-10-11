@@ -203,6 +203,17 @@ describe('the Bound table panel (TB2-F)', () => {
     ).toBe(false);
   });
 
+  it('TAB-021 transposes by a header column and back, and declines grouping a transposed table or transposing a grouped one', () => {
+    const turned = run(inTable(), setBoundTable({ transpose: 'site' }));
+    expect(stored(turned.state).transpose).toEqual({ header: 'site' });
+    expect(boundTableAt(turned.state)?.transpose).toBe('site');
+    expect(setBoundTable({ groups: [{ column: 'depth' }] })(turned.state)).toBe(false);
+    const back = run(turned.state, setBoundTable({ transpose: null }));
+    expect(stored(back.state)).not.toHaveProperty('transpose');
+    const grouped = run(inTable(), setBoundTable({ groups: [{ column: 'depth' }] })).state;
+    expect(setBoundTable({ transpose: 'site' })(grouped)).toBe(false);
+  });
+
   it('stores a header and a unit in NFC, and an emptied unit as none', () => {
     const { state } = run(
       inTable(),
