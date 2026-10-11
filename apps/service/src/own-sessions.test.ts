@@ -135,6 +135,40 @@ describe("a person's own sessions, seen and ended (IAM-040)", () => {
     expect((await call(keeping, 'GET', '/v1/me')).statusCode).toBe(401);
   });
 
+  it('ends only sessions that have not ended of themselves, leaving an expired one to the sweep', async () => {
+    const keeping = await signIn(app, HOST, 'ada', idp.issuer);
+    await call(keeping, 'DELETE', '/v1/sessions');
+    const own = await thisOne(keeping);
+    // An expired session of Ada's, not yet swept: the list never shows it, so nor is it ended here.
+    const principal = await tenantDb.withTenant(
+      production,
+      async (trx) =>
+        (
+          await trx
+            .selectFrom('session')
+            .select('principal_id')
+            .where('id', '=', own.id)
+            .executeTakeFirstOrThrow()
+        ).principal_id,
+    );
+    const past = new Date(Date.now() - 60_000);
+    await tenantDb.withTenant(production, (trx) =>
+      trx
+        .insertInto('session')
+        .values({
+          token_hash: 'e'.repeat(64),
+          principal_id: principal,
+          route: 'organisation',
+          last_seen_at: past,
+          idle_expires_at: past,
+          expires_at: past,
+        })
+        .execute(),
+    );
+    const ended = await call(keeping, 'DELETE', '/v1/sessions');
+    expect(ended.json<{ ended: number }>().ended).toBe(0);
+  });
+
   it("answers another person's session as one that does not exist, and ends nothing of theirs", async () => {
     const ada = await signIn(app, HOST, 'ada', idp.issuer);
     const grace = await signIn(app, HOST, 'grace', idp.issuer);

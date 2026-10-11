@@ -179,19 +179,23 @@ export async function listOwnSessions(
 }
 
 /**
- * **Ends sessions of a principal's own by their rows** (IAM-040; the AU2 plan, SE-C): each locked,
- * recorded as ended by its holder before it goes - or as signed out, where it is the one asking -
- * then deleted. Only the principal's own: another's is never found. Answers the rows ended.
+ * **Ends sessions of a principal's own by their rows** (IAM-040; the AU2 plan, SE-C): each that has not
+ * ended of itself - an expired one is the sweep's, which records it as expired - locked, recorded as
+ * ended by its holder before it goes, the asker's own included, then deleted. Only the principal's
+ * own: another's is never found. Answers the rows ended.
  */
 export async function endOwnSessions(
   trx: TenantTransaction,
   principalId: string,
   which: { readonly id: string } | { readonly allBut: string },
+  now: Date = new Date(),
 ): Promise<string[]> {
   let query = trx
     .selectFrom('session')
     .select('id')
     .where('principal_id', '=', principalId)
+    .where('expires_at', '>', now)
+    .where('idle_expires_at', '>', now)
     .orderBy('id')
     .forUpdate();
   query = 'id' in which ? query.where('id', '=', which.id) : query.where('id', '!=', which.allBut);
