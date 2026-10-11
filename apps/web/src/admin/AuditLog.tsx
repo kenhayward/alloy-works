@@ -1,8 +1,10 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import { auditKinds } from '@alloy-works/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { refusal } from '../account/TokenTable.js';
 import { Chip } from '../parts/Chip.js';
+import { followInFrame } from '../publishing/Preview.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
@@ -63,6 +65,24 @@ const when = (iso: string) =>
 const dayStart = (day: string) => new Date(`${day}T00:00:00`).toISOString();
 const dayEnd = (day: string) => new Date(`${day}T23:59:59.999`).toISOString();
 
+/** The filters as the service takes them, the read's and an export's alike. */
+const filtersOf = (filter: Filter) => ({
+  ...(filter.kind === '' ? {} : { kind: filter.kind }),
+  ...(filter.from === '' ? {} : { from: dayStart(filter.from) }),
+  ...(filter.to === '' ? {} : { to: dayEnd(filter.to) }),
+  ...(filter.actor === null ? {} : { actor: filter.actor.id }),
+  ...(filter.subject === null ? {} : { subject: filter.subject.id }),
+});
+
+/** An export as far as it has gone: asked for, written by its job, or not. */
+type Exporting =
+  | { readonly state: 'idle' }
+  | { readonly state: 'writing'; readonly id: string }
+  | { readonly state: 'done'; readonly id: string; readonly events: number }
+  | { readonly state: 'failed'; readonly said: string };
+
+const eventsCounted = (count: number) => (count === 1 ? '1 event' : `${count} events`);
+
 /** Who acted, in words, where nobody is named. */
 const UNNAMED: Readonly<Record<string, string>> = {
   system: 'The system',
@@ -75,9 +95,27 @@ const UNNAMED: Readonly<Record<string, string>> = {
  * each saying when, who, what and about what, a page at a time, filtered by what happened - one kind or
  * a family - by the days it fell between, and by who acted or what it was about, chosen from a row.
  */
-export function AuditLog({ client }: { client: Client }) {
+export function AuditLog({
+  client,
+  followMs = 1000,
+  follow = followInFrame,
+}: {
+  client: Client;
+  /** How often an export is asked whether it is written: given in tests, which need not wait. */
+  followMs?: number;
+  /** Goes to a download link: given in tests, where there is nowhere to go. */
+  follow?: (url: string) => void;
+}) {
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const [read, setRead] = useState<Read>(null);
+  const [exporting, setExporting] = useState<Exporting>({ state: 'idle' });
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
 
   const load = useCallback(
     async (cursor: string | null) => {
@@ -87,11 +125,7 @@ export function AuditLog({ client }: { client: Client }) {
             query: {
               limit: String(PAGE),
               ...(cursor === null ? {} : { cursor }),
-              ...(filter.kind === '' ? {} : { kind: filter.kind }),
-              ...(filter.from === '' ? {} : { from: dayStart(filter.from) }),
-              ...(filter.to === '' ? {} : { to: dayEnd(filter.to) }),
-              ...(filter.actor === null ? {} : { actor: filter.actor.id }),
-              ...(filter.subject === null ? {} : { subject: filter.subject.id }),
+              ...filtersOf(filter),
             },
           },
         });
@@ -126,6 +160,62 @@ export function AuditLog({ client }: { client: Client }) {
   }, [load]);
 
   const choose = (change: Partial<Filter>) => setFilter((was) => ({ ...was, ...change }));
+
+  // An export being written is asked after until its job has written it, or given up.
+  useEffect(() => {
+    if (exporting.state !== 'writing') return undefined;
+    const timer = setTimeout(() => {
+      void client
+        .GET('/v1/audit/exports/{id}', { params: { path: { id: exporting.id } } })
+        .then(({ data }) => {
+          if (!live.current || !data) return;
+          if (data.export.state === 'done') {
+            setExporting({ state: 'done', id: exporting.id, events: data.export.events ?? 0 });
+          } else if (data.export.state === 'failed') {
+            setExporting({ state: 'failed', said: 'The export could not be written.' });
+          } else {
+            setExporting({ state: 'writing', id: exporting.id });
+          }
+        })
+        .catch(() => {
+          if (live.current) setExporting({ state: 'writing', id: exporting.id });
+        });
+    }, followMs);
+    return () => clearTimeout(timer);
+  }, [client, exporting, followMs]);
+
+  const exportShown = async () => {
+    try {
+      const { data, error } = await client.POST('/v1/audit/exports', { body: filtersOf(filter) });
+      if (!live.current) return;
+      if (data) setExporting({ state: 'writing', id: data.export.id });
+      else
+        setExporting({
+          state: 'failed',
+          said: refusal(error, 'The export could not be asked for.'),
+        });
+    } catch {
+      if (live.current)
+        setExporting({ state: 'failed', said: 'The export could not be asked for.' });
+    }
+  };
+
+  const download = async (id: string) => {
+    try {
+      const { data, error } = await client.GET('/v1/audit/exports/{id}/download', {
+        params: { path: { id } },
+      });
+      // Only a link the service signed, to the store, over the web.
+      if (data && /^https?:\/\//.test(data.download)) follow(data.download);
+      else
+        setExporting({
+          state: 'failed',
+          said: refusal(error, 'The export could not be downloaded.'),
+        });
+    } catch {
+      setExporting({ state: 'failed', said: 'The export could not be downloaded.' });
+    }
+  };
 
   const who = (event: AuditEventView) => {
     const name = event.labels['actor']?.text;
@@ -202,6 +292,14 @@ export function AuditLog({ client }: { client: Client }) {
             onChange={(change) => choose({ to: change.target.value })}
           />
         </label>
+        <button
+          type="button"
+          className={styles['exportButton']}
+          disabled={exporting.state === 'writing'}
+          onClick={() => void exportShown()}
+        >
+          Export
+        </button>
         {filter.actor !== null && (
           <Chip tone="accent">
             {`Who: ${filter.actor.name} `}
@@ -229,6 +327,18 @@ export function AuditLog({ client }: { client: Client }) {
           </Chip>
         )}
       </div>
+      <p role="status" className={styles['exported']}>
+        {exporting.state === 'writing' && 'Writing the export...'}
+        {exporting.state === 'failed' && exporting.said}
+        {exporting.state === 'done' && `The export holds ${eventsCounted(exporting.events)}.`}
+      </p>
+      {exporting.state === 'done' && (
+        <p>
+          <button type="button" className="primary" onClick={() => void download(exporting.id)}>
+            Download export
+          </button>
+        </p>
+      )}
       {read === null ? (
         <Waiting>Loading...</Waiting>
       ) : read === 'refused' ? (

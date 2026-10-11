@@ -645,3 +645,13 @@
 .plainButton:hover {
   text-decoration-color: currentColor;
 }
+
+/* Export sits at the toolbar's end; what it says, below the toolbar. */
+.exportButton {
+  margin-inline-start: auto;
+  align-self: end;
+}
+
+.exported {
+  margin: 0;
+}

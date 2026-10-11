@@ -15,8 +15,8 @@ document-view.md - each emit the event types named [below](#event-types) as thei
 
 > **AU1 is built** (0.145.0): every act that exists writes its event, refusals and failed sign-ins
 > in their own transactions; [the AU1 plan](../plans/2026-10-08-au1-the-log-written.md) has what
-> changed while building. **The log read is built** (AU2b): `GET /v1/audit` and Administration's
-> Audit log. **Export is not yet.** `apps/service/src/audit-census.test.ts` lists every route, GETs included, and every
+> changed while building. **The log read and its export are built** (AU2b, AU2c): `GET /v1/audit`,
+> exports as a job, and Administration's Audit log. `apps/service/src/audit-census.test.ts` lists every route, GETs included, and every
 > writer that is not a route, with the kinds each writes or why it writes none.
 
 ## The shape in one paragraph
@@ -202,11 +202,12 @@ longest of them, and a legal hold (LIF-021) holds its events too.
 
 ## Reading and export
 
-| Route                        | Permission                 | Does                                                                                                                                                                                  |
-| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/audit`              | `administer` at the tenant | Events newest first by sequence, filtered by `actor`, `kind` (or a prefix), `from`, `to`, `subject` and `space`, a page at a time by a cursor over the sequence, each with its labels |
-| `POST /v1/audit/exports`     | `administer` at the tenant | Queues an export of every event matching the filters up to the newest sequence now: a job writes JSON Lines to the tenant's store; `export.produced`                                  |
-| `GET /v1/audit/exports/{id}` | `administer` at the tenant | The export's state, and its download once made; `export.downloaded` on each download                                                                                                  |
+| Route                                 | Permission                 | Does                                                                                                                                                                                  |
+| ------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/audit`                       | `administer` at the tenant | Events newest first by sequence, filtered by `actor`, `kind` (or a prefix), `from`, `to`, `subject` and `space`, a page at a time by a cursor over the sequence, each with its labels |
+| `POST /v1/audit/exports`              | `administer` at the tenant | Queues an export of every event matching the filters up to the newest sequence now: a job writes JSON Lines to the tenant's store; `export.produced`                                  |
+| `GET /v1/audit/exports/{id}`          | `administer` at the tenant | The export's state, and how many events it holds once made                                                                                                                            |
+| `GET /v1/audit/exports/{id}/download` | `administer` at the tenant | A link to the export, signed for five minutes; `export.downloaded` each time; `export_not_ready` while it is written (the AU2 plan, AU2-D)                                            |
 
 - **Reading is not itself an event** (volume); exporting and downloading are.
 - **Administration's Audit log** shows the events with their labels, the filters, and Export.

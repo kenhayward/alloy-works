@@ -183,12 +183,22 @@ export {
   type AuditSubject,
 } from './audit.js';
 export {
+  auditEntryJson,
   readAuditEvents,
   type AuditEntry,
   type AuditEntryLabel,
   type AuditPage,
   type AuditPageRequest,
 } from './audit-read.js';
+export {
+  auditExportBody,
+  failAuditExport,
+  finishAuditExport,
+  readAuditExport,
+  requestAuditExport,
+  type AuditExport,
+  type KeptExport,
+} from './audit-export.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

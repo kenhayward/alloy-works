@@ -237,4 +237,14 @@ export {
   SignInCallback,
   TenantProfile,
 } from './schemas.js';
-export { AuditEventView, AuditLabelView, AuditList, AuditListQuery } from './audit.js';
+export {
+  AuditEventView,
+  AuditExportBody,
+  AuditExportDownload,
+  AuditExportMade,
+  AuditExportParams,
+  AuditExportView,
+  AuditLabelView,
+  AuditList,
+  AuditListQuery,
+} from './audit.js';

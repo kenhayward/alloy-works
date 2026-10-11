@@ -131,3 +131,23 @@ export async function readAuditEvents(
     snapshot,
   };
 }
+
+/** An event as the API shows it and an export writes each line: its instant in ISO 8601, UTC. */
+export function auditEntryJson(entry: AuditEntry) {
+  return {
+    sequence: entry.sequence,
+    at: entry.at.toISOString(),
+    kind: entry.kind,
+    actorKind: entry.actorKind,
+    actor: entry.actor,
+    token: entry.token,
+    subject: entry.subject && { ...entry.subject },
+    space: entry.space,
+    outcome: entry.outcome,
+    detail: { ...entry.detail },
+    traceId: entry.traceId,
+    labels: Object.fromEntries(
+      Object.entries(entry.labels).map(([role, label]) => [role, { ...label }]),
+    ),
+  };
+}

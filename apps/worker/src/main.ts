@@ -6,6 +6,7 @@ import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
+import { auditExportJob } from './jobs/audit-export.js';
 import { checkJob } from './jobs/check.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
@@ -51,6 +52,7 @@ const handlers: Record<string, JobHandler> = {
   preview: publish,
   ingest: ingestJob({ db, stores }),
   check_pdf: checkJob({ db, stores, checker }),
+  audit_export: auditExportJob({ db, stores }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.

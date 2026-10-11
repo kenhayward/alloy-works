@@ -176,6 +176,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0063_unsaved_discarded',
       '0064_column_widths',
       '0065_audit_read',
+      '0066_audit_export',
     ]);
     const kept = await queryAs(
       db.adminUrl,

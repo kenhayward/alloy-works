@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Administration } from './Administration.js';
+import { AuditLog } from './AuditLog.js';
 import { FAMILY_WORDS, KIND_WORDS } from './auditWords.js';
 
 const json = (status: number, body: unknown) =>
@@ -27,6 +28,17 @@ const event = (sequence: string, overrides: Record<string, unknown> = {}) => ({
   traceId: 'req-1',
   labels: { actor: { text: 'Ada', erased: false }, subject: { text: 'Reviewers', erased: false } },
   ...overrides,
+});
+
+const exportOf = (state: string) => ({
+  id: 'e1',
+  state,
+  requestedAt: '2026-10-11T09:30:00.000Z',
+  requestedBy: ADA,
+  newest: '3',
+  events: state === 'done' ? 12 : null,
+  bytes: state === 'done' ? 4096 : null,
+  sha256: null,
 });
 
 function service(audit: (url: URL) => Response) {
@@ -131,6 +143,42 @@ describe('the Audit log in Administration', () => {
     const none = service(() => json(200, { items: [], next: null }));
     render(<Administration client={none.client} about={null} />);
     expect(await screen.findByText('No events match.')).toBeInTheDocument();
+  });
+
+  it('ADM-039 exports the log as filtered, says when it is written and how many events it holds, and downloads it', async () => {
+    let polled = 0;
+    const posted: unknown[] = [];
+    const followed: string[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/audit') return json(200, { items: [event('3')], next: null });
+      if (url.pathname === '/v1/audit/exports' && request.method === 'POST') {
+        posted.push(await request.json());
+        return json(200, { export: exportOf('queued') });
+      }
+      if (url.pathname === '/v1/audit/exports/e1') {
+        polled += 1;
+        return json(200, { export: exportOf(polled < 2 ? 'queued' : 'done') });
+      }
+      if (url.pathname === '/v1/audit/exports/e1/download') {
+        return json(200, { download: 'https://store.test/audit-e1.jsonl?signed' });
+      }
+      return json(404, {});
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://admin.test', fetch: fetching });
+    render(<AuditLog client={client} followMs={1} follow={(url) => followed.push(url)} />);
+    await screen.findByRole('table', { name: 'Audit log' });
+
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'What happened' }),
+      'group.',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Export' }));
+    expect(posted).toEqual([{ kind: 'group.' }]);
+    expect(await screen.findByText('The export holds 12 events.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Download export' }));
+    await waitFor(() => expect(followed).toEqual(['https://store.test/audit-e1.jsonl?signed']));
   });
 
   it('has words for every kind the log holds, and a name for each of their families', () => {

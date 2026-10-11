@@ -1,5 +1,7 @@
 import {
+  auditExportBody,
   bootstrapCluster,
+  finishAuditExport,
   createTenant,
   findRole,
   grant,
@@ -13,6 +15,8 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
+import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
+import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -37,6 +41,8 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
   let idp: StandInProvider;
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
+  let objects: TestObjectStore;
+  let stores: ObjectStores;
   let production: Tenant;
   let development: Tenant;
   let grace = '';
@@ -96,6 +102,9 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
     for (const tenant of [production, development]) {
       await configureStandIn(db.adminUrl, tenant, { issuer: idp.issuer, clientId: 'alloy' });
     }
+    objects = await testObjectStore();
+    await objects.setUp(db.adminUrl, production);
+    stores = createObjectStores(objects.settings, objects.sealingKey);
     tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
@@ -103,6 +112,7 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
+      objects: stores,
     });
     graceCookie = await signIn(app, HOST, 'grace', idp.issuer);
     adaCookie = await signIn(app, HOST, 'ada', idp.issuer);
@@ -129,6 +139,7 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
     await app.close();
     await tenantDb.close();
     await idp.close();
+    await objects.drop();
     await db.drop();
   });
 
@@ -189,6 +200,59 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
     const answer = await call(graceCookie, `/v1/audit?cursor=${forged}`);
     expect(answer.statusCode).toBe(400);
     expect(answer.json()).toMatchObject({ code: 'invalid_request' });
+  });
+
+  it('ADM-039 exports the log as it stands when asked, ready once its job has written it, recording the asking and each download handed out', async () => {
+    await makeGroup('Exported');
+    const asked = await call(graceCookie, '/v1/audit/exports', HOST, 'POST', {
+      kind: 'group.made',
+    });
+    expect(asked.statusCode, asked.body).toBe(200);
+    const made = asked.json<{ export: { id: string; state: string; newest: string | null } }>()
+      .export;
+    expect(made).toMatchObject({ state: 'queued' });
+    expect(made.newest).not.toBeNull();
+
+    const early = await call(graceCookie, `/v1/audit/exports/${made.id}/download`);
+    expect(early.statusCode).toBe(409);
+    expect(early.json()).toMatchObject({ code: 'export_not_ready' });
+
+    // Its job, as the worker runs it.
+    const body = (await auditExportBody(tenantDb, production, made.id))!;
+    const store = await tenantDb.withTenant(production, (trx) => stores.forTenant(trx, production));
+    const kept = await store.put(body.bytes, 'application/x-ndjson');
+    await tenantDb.withTenant(production, (trx) =>
+      finishAuditExport(trx, made.id, kept, body.events),
+    );
+    const groupsMade = (await events('?kind=group.made&limit=100')).items.length;
+    const done = await call(graceCookie, `/v1/audit/exports/${made.id}`);
+    expect(done.json()).toMatchObject({
+      export: { id: made.id, state: 'done', events: groupsMade },
+    });
+
+    const link = await call(graceCookie, `/v1/audit/exports/${made.id}/download`);
+    expect(link.statusCode, link.body).toBe(200);
+    expect(link.json<{ download: string }>().download).toMatch(/^https?:\/\//);
+
+    const produced = await events(`?kind=export.produced&subject=${made.id}`);
+    expect(produced.items).toEqual([
+      expect.objectContaining({ actor: grace, detail: { export: made.id, of: 'audit' } }),
+    ]);
+    const downloaded = await events(`?kind=export.downloaded&subject=${made.id}`);
+    expect(downloaded.items).toHaveLength(1);
+  });
+
+  it('ADM-039 answers an export of another environment as one that does not exist, and refuses a filter the log cannot take', async () => {
+    const asked = await call(graceCookie, '/v1/audit/exports', HOST, 'POST', {});
+    const id = asked.json<{ export: { id: string } }>().export.id;
+    for (const url of [`/v1/audit/exports/${id}`, `/v1/audit/exports/${id}/download`]) {
+      expect((await call(otherCookie, url, OTHER_HOST)).statusCode, url).toBe(404);
+    }
+    const refused = await call(graceCookie, '/v1/audit/exports', HOST, 'POST', {
+      kind: 'group.painted',
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({ code: 'audit_filter_invalid' });
   });
 
   it('refuses anybody who may not administer the environment', async () => {

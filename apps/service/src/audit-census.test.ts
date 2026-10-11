@@ -41,6 +41,9 @@ const ON_ANY_ROUTE: readonly AuditKind[] = ['access.refused', 'token.used'];
 const ROUTES: Readonly<Record<string, Entry>> = {
   getHealth: read,
   listAuditEvents: read,
+  requestAuditExport: writes('export.produced'),
+  getAuditExport: read,
+  downloadAuditExport: writes('export.downloaded'),
   getTenant: read,
   startOrganisationSignIn: { none: 'attempt' },
   finishOrganisationSignIn: writes(
@@ -178,6 +181,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     preview: { none: 'preview' },
     ingest: writes('content.version_cut', 'asset.ingested', 'asset.refused'),
     check_pdf: { none: 'derived' },
+    // Asking for it was the event, and each download is (the AU2 plan, AU-N).
+    audit_export: { none: 'derived' },
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {

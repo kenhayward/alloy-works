@@ -58,6 +58,49 @@ export const AuditList = z.object({
 });
 export type AuditList = z.infer<typeof AuditList>;
 
+/** The filters an export is asked with: the read's, without its paging. */
+export const AuditExportBody = z.strictObject({
+  actor: AuditListQuery.shape.actor,
+  kind: AuditListQuery.shape.kind,
+  from: AuditListQuery.shape.from,
+  to: AuditListQuery.shape.to,
+  subject: AuditListQuery.shape.subject,
+  space: AuditListQuery.shape.space,
+});
+export type AuditExportBody = z.infer<typeof AuditExportBody>;
+
+export const AuditExportParams = z.object({ id: LowercaseUuid });
+export type AuditExportParams = z.infer<typeof AuditExportParams>;
+
+export const AuditExportView = z.object({
+  id: z.string(),
+  state: z
+    .enum(['queued', 'done', 'failed'])
+    .describe('queued while its job writes it; done once it can be downloaded'),
+  requestedAt: z.string(),
+  requestedBy: z.string().nullable(),
+  newest: z
+    .string()
+    .nullable()
+    .describe(
+      'The newest event in the log when it was asked for: it holds every event matching its filters up to here, and none after',
+    ),
+  events: z.number().int().nullable().describe('How many events it holds, once done'),
+  bytes: z.number().int().nullable(),
+  sha256: z.string().nullable(),
+});
+export type AuditExportView = z.infer<typeof AuditExportView>;
+
+export const AuditExportMade = z.object({ export: AuditExportView });
+export type AuditExportMade = z.infer<typeof AuditExportMade>;
+
+export const AuditExportDownload = z.object({
+  download: z
+    .string()
+    .describe('A link to its JSON Lines, one event a line, signed for five minutes'),
+});
+export type AuditExportDownload = z.infer<typeof AuditExportDownload>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -89,6 +132,58 @@ export const auditRoutes = {
       },
       401: unauthenticated,
       403: forbidden,
+    },
+  },
+  requestAuditExport: {
+    operationId: 'requestAuditExport',
+    method: 'POST',
+    path: '/v1/audit/exports',
+    summary: 'Export every event matching these filters, as the log stands now',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    body: AuditExportBody,
+    responses: {
+      200: { description: 'Asked for: queued, and written by a job', schema: AuditExportMade },
+      400: {
+        description: 'audit_filter_invalid: a kind the log does not hold, or from after to',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: forbidden,
+    },
+  },
+  getAuditExport: {
+    operationId: 'getAuditExport',
+    method: 'GET',
+    path: '/v1/audit/exports/{id}',
+    summary: 'An export of the audit log: whether it is ready, and what it holds',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    params: AuditExportParams,
+    responses: {
+      200: { description: 'The export', schema: AuditExportMade },
+      401: unauthenticated,
+      403: forbidden,
+      404: { description: 'No such export in this environment', schema: ErrorBody },
+    },
+  },
+  downloadAuditExport: {
+    operationId: 'downloadAuditExport',
+    method: 'GET',
+    path: '/v1/audit/exports/{id}/download',
+    summary: 'A link to download an export of the audit log; each one handed out is recorded',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    params: AuditExportParams,
+    responses: {
+      200: { description: 'A link to the export', schema: AuditExportDownload },
+      401: unauthenticated,
+      403: forbidden,
+      404: { description: 'No such export in this environment', schema: ErrorBody },
+      409: {
+        description: 'export_not_ready: the export is still being written, or failed',
+        schema: ErrorBody,
+      },
     },
   },
 } as const;

@@ -1,10 +1,30 @@
-import type { AuditEventView, AuditList, AuditListQuery } from '@alloy-works/api-contract';
-import { readAuditEvents, type AuditEntry } from '@alloy-works/db';
+import type {
+  AuditEventView,
+  AuditExportBody,
+  AuditExportDownload,
+  AuditExportMade,
+  AuditExportParams,
+  AuditExportView,
+  AuditList,
+  AuditListQuery,
+} from '@alloy-works/api-contract';
+import {
+  auditEntryJson,
+  readAuditEvents,
+  readAuditExport,
+  recordEvent,
+  requestAuditExport,
+  type AuditEntry,
+  type AuditExport,
+  type Tenant,
+} from '@alloy-works/db';
+import type { ObjectStores } from '@alloy-works/objects';
 import { auditFilterProblem, type AuditFilter } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import type { Authorised } from './access.js';
+import { notFound, type Authorised } from './access.js';
 import { pageLimit } from './components.js';
-import { AppError } from './errors.js';
+import { AppError, storageUnavailable } from './errors.js';
+import { DOWNLOAD_SECONDS } from './publishing.js';
 
 /**
  * An audit read's cursor (the AU2 plan, AU-M): the sequence the page ended at and the snapshot the
@@ -76,26 +96,32 @@ export function auditFilterOf(query: Omit<AuditListQuery, 'cursor' | 'limit'>): 
   return filter;
 }
 
-/** An event as the API shows it, and as an export writes each line. */
-export function auditEventView(entry: AuditEntry): AuditEventView {
+/** An event as the API shows it, and as an export writes each line (`auditEntryJson`). */
+export const auditEventView = (entry: AuditEntry): AuditEventView =>
+  auditEntryJson(entry) as AuditEventView;
+
+/** An export as the API shows it. */
+function exportView(asked: AuditExport): AuditExportView {
   return {
-    sequence: entry.sequence,
-    at: entry.at.toISOString(),
-    kind: entry.kind,
-    actorKind: entry.actorKind as AuditEventView['actorKind'],
-    actor: entry.actor,
-    token: entry.token,
-    subject: entry.subject,
-    space: entry.space,
-    outcome: entry.outcome,
-    detail: { ...entry.detail },
-    traceId: entry.traceId,
-    labels: { ...entry.labels },
+    id: asked.id,
+    state: asked.state,
+    requestedAt: asked.requestedAt.toISOString(),
+    requestedBy: asked.requestedBy,
+    newest: asked.newest,
+    events: asked.events,
+    bytes: asked.bytes,
+    sha256: asked.sha256,
   };
 }
 
-/** The audit log's handlers (audit.md, "Reading and export"), run where `administer` was decided. */
-export function auditHandlers() {
+/**
+ * The audit log's handlers (audit.md, "Reading and export"), run where `administer` was decided:
+ * reading, which is no event, and exporting, whose asking and each download handed out are.
+ */
+export function auditHandlers(
+  tenantOf: (request: FastifyRequest) => Tenant,
+  objects: ObjectStores | undefined,
+) {
   return {
     listAuditEvents: async (request: FastifyRequest, { trx }: Authorised): Promise<AuditList> => {
       const query = request.query as AuditListQuery;
@@ -109,6 +135,53 @@ export function auditHandlers() {
         items: page.items.map(auditEventView),
         next: auditCursor(page.next, page.snapshot),
       };
+    },
+
+    requestAuditExport: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<AuditExportMade> => {
+      const filter = auditFilterOf(request.body as AuditExportBody);
+      const asked = await requestAuditExport(trx, principalId, filter);
+      await recordEvent(trx, {
+        kind: 'export.produced',
+        subject: { kind: 'audit_export', id: asked.id },
+        detail: { export: asked.id, of: 'audit' },
+      });
+      const made = await readAuditExport(trx, asked.id);
+      return { export: exportView(made!) };
+    },
+
+    getAuditExport: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<AuditExportMade> => {
+      const { id } = request.params as AuditExportParams;
+      const asked = await readAuditExport(trx, id);
+      if (!asked) throw notFound();
+      return { export: exportView(asked) };
+    },
+
+    downloadAuditExport: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<AuditExportDownload> => {
+      const { id } = request.params as AuditExportParams;
+      const asked = await readAuditExport(trx, id);
+      if (!asked) throw notFound();
+      if (asked.state !== 'done' || asked.key === null) {
+        throw new AppError(409, 'export_not_ready', 'The export is not written yet, or failed.');
+      }
+      if (!objects) throw storageUnavailable();
+      const store = await objects.forTenant(trx, tenantOf(request));
+      // Saved as its id: never its filters, which would reach the store's logs.
+      const download = await store.signedLink(asked.key, DOWNLOAD_SECONDS, `audit-${id}.jsonl`);
+      await recordEvent(trx, {
+        kind: 'export.downloaded',
+        subject: { kind: 'audit_export', id },
+        detail: { export: id, of: 'audit' },
+      });
+      return { download };
     },
   };
 }
