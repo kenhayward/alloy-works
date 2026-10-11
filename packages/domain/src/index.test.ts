@@ -132,6 +132,11 @@ describe('the domain package', () => {
         // A baseline's digest input and its name (the BL plan).
         'baselineDigestInput',
         'baselineNameProblem',
+        // The comparison (the CP plan): anchored changes, and what they cost.
+        'compareContent',
+        'compareOutlines',
+        'createMeter',
+        'SIMILARITY_THRESHOLD',
         // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',
         'componentTypes',

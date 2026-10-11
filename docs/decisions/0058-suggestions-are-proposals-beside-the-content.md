@@ -1,6 +1,6 @@
 # 0058 - Suggestions are proposals beside the content
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-11
 
 ## Context
