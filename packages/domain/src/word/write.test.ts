@@ -5286,3 +5286,29 @@ describe('writeDocx: a transposed bound table (the TG plan, TG2)', () => {
     expect(stated(cells[1]![0]!, 'w:tcPr')).not.toHaveProperty('w:noWrap');
   });
 });
+
+describe('writeDocx: columns as wide as the table says (the TG plan, TG3)', () => {
+  const content = (widths?: readonly number[]) =>
+    writtenOf([readings({ style: 'table' })], { layout: UNLISTED }, undefined, (document) => ({
+      ...document,
+      nodes: document.nodes.map((node) => ({
+        ...node,
+        blocks: node.blocks.map((block) =>
+          block.type === 'table' && widths !== undefined ? { ...block, widths } : block,
+        ),
+      })),
+    }));
+  const grid = (written: ReturnType<typeof content>) => {
+    const table = blocksOf(written.docx).find((each) => each.name === 'w:tbl')!;
+    return all(first(table, 'w:tblGrid')!, 'w:gridCol').map((each) => Number(each.attrs['w:w']));
+  };
+
+  it('TAB-053 sets each grid column at its fraction of the room, and each cell as wide as the columns it spans', () => {
+    const equal = grid(content());
+    const room = equal.reduce((a, b) => a + b, 0);
+    const shared = grid(content([0.2, 0.3, 0.5]));
+    expect(shared).toHaveLength(3);
+    expect(Math.abs(shared[0]! - room * 0.2)).toBeLessThanOrEqual(1);
+    expect(Math.abs(shared[2]! - room * 0.5)).toBeLessThanOrEqual(1);
+  });
+});

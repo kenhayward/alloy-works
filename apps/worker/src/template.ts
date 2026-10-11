@@ -13,6 +13,7 @@ import {
   PUBLISHING_SCHEMA_17,
   PUBLISHING_SCHEMA_18,
   PUBLISHING_SCHEMA_19,
+  PUBLISHING_SCHEMA_20,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -23,15 +24,15 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
 /**
  * `PUBLISHING_SCHEMA` frozen at the schema this worker's newest template was written for, and the one
  * key the maps below take for it. The annotation is the whole point: the day `PUBLISHING_SCHEMA` is
- * repointed at `publishing/21`, THIS LINE stops typechecking, where a key computed from the moving
- * constant would have moved with it and left `publishing/21` read by template 20 with the typecheck
+ * repointed at `publishing/22`, THIS LINE stops typechecking, where a key computed from the moving
+ * constant would have moved with it and left `publishing/22` read by template 21 with the typecheck
  * clean (the schema-keyed map trap, which cost three slices before it was pinned by literals in
- * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_20` beside the new schema, key template
- * 20's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
+ * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_21` beside the new schema, key template
+ * 21's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
  * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14`, TB1.2 for
- * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18` and TG2 for `publishing/19`.
+ * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19` and TG3 for `publishing/20`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/20' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/21' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -109,6 +110,9 @@ export const PUBLICATION_TEMPLATE = {
   // TG2 repointed `PUBLISHING_SCHEMA` at `publishing/20`, and the guard above asked for this row:
   // template 20, which sets a transposed table's values at their own alignment and wrap.
   20: { name: 'publication', version: 20, file: at(20) },
+  // TG3 repointed `PUBLISHING_SCHEMA` at `publishing/21`, and the guard above asked for this row:
+  // template 21, which sets a table's columns at the widths `assemble` gave them.
+  21: { name: 'publication', version: 21, file: at(21) },
 } as const;
 
 /**
@@ -141,7 +145,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_17]: 17,
   [PUBLISHING_SCHEMA_18]: 18,
   [PUBLISHING_SCHEMA_19]: 19,
-  [PUBLISHING_SCHEMA_CURRENT]: 20,
+  [PUBLISHING_SCHEMA_20]: 20,
+  [PUBLISHING_SCHEMA_CURRENT]: 21,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -154,6 +159,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_16
   | typeof PUBLISHING_SCHEMA_17
   | typeof PUBLISHING_SCHEMA_18
-  | typeof PUBLISHING_SCHEMA_19,
+  | typeof PUBLISHING_SCHEMA_19
+  | typeof PUBLISHING_SCHEMA_20,
   keyof typeof PUBLICATION_TEMPLATE
 >;

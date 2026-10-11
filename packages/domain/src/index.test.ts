@@ -227,6 +227,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_17',
         'PUBLISHING_SCHEMA_18',
         'PUBLISHING_SCHEMA_19',
+        'PUBLISHING_SCHEMA_20',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
