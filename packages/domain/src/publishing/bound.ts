@@ -3,6 +3,7 @@ import type { InlineNode } from '../content/model/inline.js';
 import type { ColumnAlignment } from '../data/field-format.js';
 import type { LaidOut } from '../data/table.js';
 import type { PlacedNote } from '../data/table-notes.js';
+import type { PublishedGroupRow } from './published.js';
 
 /**
  * **A bound table as the binding stage leaves it** (the TB1 plan, TB1-H): an ordinary table's members -
@@ -20,6 +21,8 @@ export interface LaidOutMembers {
   readonly empty: boolean;
   /** Per body row, per column: the parenthesis inset (TB1-I) and the negative colour (TAB-016). */
   readonly cells: readonly (readonly LaidOutCellMarks[])[];
+  /** A grouped table's, per body row: a heading or a subtotal at its level, else null (TG1). */
+  readonly groups?: readonly PublishedGroupRow[];
 }
 
 export interface LaidOutCellMarks {
@@ -72,17 +75,36 @@ export function laidOutTable(
   const header = {
     cells: laid.header.map((each, x) => cell([...runOf(each.text), ...marked(null, x)], `h${x}`)),
   };
+  // A grouped table's headings stand before the rows they open, each a row of one cell spanning the
+  // table (TG1); `groups` says which body row is which, and `rowOf` where each laid-out row went.
+  const grouped = table.groups !== undefined && laid.empty === null;
+  const groups: PublishedGroupRow[] = [];
+  const headed = laid.empty === null ? laid.rows : [];
   const body =
     laid.empty === null
-      ? laid.rows.map((row, y) => ({
-          cells: row.cells.map((each, x) =>
-            cell([...runOf(each.text), ...marked(y, x)], `r${y}c${x}`),
-          ),
-        }))
+      ? headed.flatMap((row, y) => [
+          ...(row.opens ?? []).map((heading) => {
+            groups.push({ kind: 'heading', level: heading.level });
+            return {
+              cells: [cell(runOf(heading.text), `g${y}l${heading.level}`, laid.columns.length)],
+            };
+          }),
+          (() => {
+            groups.push(
+              row.subtotal === undefined ? null : { kind: 'subtotal', level: row.subtotal },
+            );
+            return {
+              cells: row.cells.map((each, x) =>
+                cell([...runOf(each.text), ...marked(y, x)], `r${y}c${x}`),
+              ),
+            };
+          })(),
+        ])
       : [{ cells: [cell([...laid.empty.content], 'empty', laid.empty.colspan)] }];
   const marks =
     laid.empty === null
-      ? laid.rows.map((row) =>
+      ? headed.flatMap((row) => [
+          ...(row.opens ?? []).map((): LaidOutCellMarks[] => []),
           row.cells.map((each, x): LaidOutCellMarks => {
             const column = laid.columns[x]!;
             return {
@@ -96,7 +118,7 @@ export function laidOutTable(
               colour: each.negative ? negativeColour : null,
             };
           }),
-        )
+        ])
       : [];
   return {
     type: 'table',
@@ -115,6 +137,7 @@ export function laidOutTable(
       source: table.source ?? null,
       empty: laid.empty !== null,
       cells: marks,
+      ...(grouped ? { groups } : {}),
     },
   };
 }

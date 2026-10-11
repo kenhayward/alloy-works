@@ -12506,9 +12506,18 @@
       "area": "TAB",
       "statement": "A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Superseded by TAB-054",
       "document": "TAB-tabular-presentation.md",
       "line": 69
+    },
+    {
+      "id": "TAB-054",
+      "area": "TAB",
+      "statement": "A group heading must stay with the first row of its group across a page break, and a subtotal must never begin a page without its group's heading above it: kept with its group's last row, or beneath the heading repeated. How that is achieved is the table style's (**STY-013**); that it must hold is this document's",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "TAB-tabular-presentation.md",
+      "line": 70
     },
     {
       "id": "TAB-044",
@@ -12517,7 +12526,7 @@
       "tranche": "T3",
       "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
-      "line": 70
+      "line": 71
     },
     {
       "id": "TAB-047",
@@ -12526,7 +12535,7 @@
       "tranche": "T3",
       "status": "Withdrawn",
       "document": "TAB-tabular-presentation.md",
-      "line": 71
+      "line": 72
     },
     {
       "id": "TAB-012",
@@ -12535,7 +12544,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 98
+      "line": 99
     },
     {
       "id": "TAB-013",
@@ -12544,7 +12553,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 99
+      "line": 100
     },
     {
       "id": "TAB-014",
@@ -12553,7 +12562,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 100
+      "line": 101
     },
     {
       "id": "TAB-015",
@@ -12562,7 +12571,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "TAB-016",
@@ -12571,7 +12580,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "TAB-017",
@@ -12580,7 +12589,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 103
+      "line": 104
     },
     {
       "id": "TAB-018",
@@ -12589,7 +12598,7 @@
       "tranche": "T2",
       "status": "Superseded by TAB-045",
       "document": "TAB-tabular-presentation.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "TAB-019",
@@ -12598,7 +12607,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "TAB-037",
@@ -12607,7 +12616,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "TAB-038",
@@ -12616,7 +12625,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "TAB-045",
@@ -12625,7 +12634,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "TAB-046",
@@ -12634,7 +12643,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "TAB-020",
@@ -12643,7 +12652,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "TAB-021",
@@ -12652,7 +12661,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "TAB-022",
@@ -12661,7 +12670,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "TAB-023",
@@ -12670,7 +12679,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "TAB-024",
@@ -12679,7 +12688,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "TAB-025",
@@ -12688,7 +12697,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "TAB-026",
@@ -12697,7 +12706,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "TAB-027",
@@ -12706,7 +12715,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "TAB-028",
@@ -12715,7 +12724,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "TAB-029",
@@ -12724,7 +12733,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "TAB-030",
@@ -12733,7 +12742,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "TAB-031",
@@ -12742,7 +12751,7 @@
       "tranche": "T1",
       "status": "Superseded by TAB-049",
       "document": "TAB-tabular-presentation.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "TAB-032",
@@ -12751,7 +12760,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "TAB-033",
@@ -12760,7 +12769,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "TAB-034",
@@ -12769,7 +12778,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "TAB-039",
@@ -12778,7 +12787,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "TAB-040",
@@ -12787,7 +12796,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "TAB-041",
@@ -12796,7 +12805,7 @@
       "tranche": "T1",
       "status": "Superseded by TAB-050",
       "document": "TAB-tabular-presentation.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "TAB-050",
@@ -12805,7 +12814,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "TAB-051",
@@ -12814,7 +12823,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "TAB-049",
@@ -12823,7 +12832,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "TPL-001",
@@ -14601,25 +14610,25 @@
       "id": "TAB-N01",
       "statement": "**No pivot engine.** Pivoting belongs to the query (TAB-020)",
       "document": "TAB-tabular-presentation.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "TAB-N02",
       "statement": "**No cell formulas.** Computation belongs in the query layer; this is not a spreadsheet",
       "document": "TAB-tabular-presentation.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "TAB-N03",
       "statement": "**No per-document conditional formatting.** Emphasis rules live in a style (TAB-029)",
       "document": "TAB-tabular-presentation.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "TAB-N04",
       "statement": "**No interactive tables in published output.** Sorting and filtering a PDF is not a thing; a report is read, not queried",
       "document": "TAB-tabular-presentation.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "TPL-N01",
@@ -15530,28 +15539,28 @@
       "question": "**How narrow can the reshaping set stay (TAB-021)?** Every customer will ask for one more transformation, and each is reasonable alone",
       "settledBy": "The first request that cannot be met in the query. The answer is usually a better query",
       "document": "TAB-tabular-presentation.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "TAB-Q02",
       "question": "**Does an interactive table belong in an HTML output?** A read-only PDF cannot sort; a web reading view could",
       "settledBy": "Whether HTML output (PUB-056) becomes a real reading format or a convenience",
       "document": "TAB-tabular-presentation.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "TAB-Q03",
       "question": "**What is the strategy for a table too wide to fit (TAB-033)?** Rotation, scaling and splitting all have bad cases",
       "settledBy": "Real report shapes; wide tables of measurements are common in this market",
       "document": "TAB-tabular-presentation.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "TAB-Q04",
       "question": "**Should totals ever be computed here at all (TAB-009)?** Forbidding it removes the disagreement TAB-010 exists to disclose",
       "settledBy": "**Settled: never**, by Ken on 2026-10-08 ([ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)). A total is the query's (TAB-020); TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn",
       "document": "TAB-tabular-presentation.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "TPL-Q01",
@@ -17972,8 +17981,8 @@
           "howItIsMet": "Up to three groups, outermost first; groups order first, the sort within each"
         },
         {
-          "id": "TAB-042",
-          "howItIsMet": "A heading keeps with its group's first row and a subtotal, the query's row, with its last, in the PDF and Word; the style says how they look"
+          "id": "TAB-054",
+          "howItIsMet": "A heading keeps with its group's first row; in the PDF it repeats on each page its group continues on, so a subtotal never begins a page without it, and in Word a subtotal keeps with its group's last row ([Groups](#groups))"
         },
         {
           "id": "TAB-021",
@@ -17982,6 +17991,10 @@
         {
           "id": "TAB-022",
           "howItIsMet": "Each is a member of the block, shown on the Table tab and recorded in provenance"
+        },
+        {
+          "id": "TAB-023",
+          "howItIsMet": "Grouping and transposing move values and add none: a heading prints a value its rows hold, a subtotal is the query's row"
         },
         {
           "id": "TAB-053",
@@ -20361,6 +20374,18 @@
       "kind": "title"
     },
     {
+      "id": "TAB-008",
+      "file": "apps/worker/src/grouped-tables.test.ts",
+      "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-054",
+      "file": "apps/worker/src/grouped-tables.test.ts",
+      "line": 173,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
       "line": 142,
@@ -21669,6 +21694,12 @@
       "kind": "title"
     },
     {
+      "id": "TAB-043",
+      "file": "packages/domain/src/content/model/document.test.ts",
+      "line": 2183,
+      "kind": "title"
+    },
+    {
       "id": "TAB-048",
       "file": "packages/domain/src/content/model/document.test.ts",
       "line": 2156,
@@ -21993,6 +22024,30 @@
       "kind": "title"
     },
     {
+      "id": "TAB-008",
+      "file": "packages/domain/src/data/table-groups.test.ts",
+      "line": 100,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-023",
+      "file": "packages/domain/src/data/table-groups.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-043",
+      "file": "packages/domain/src/data/table-groups.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-054",
+      "file": "packages/domain/src/data/table-groups.test.ts",
+      "line": 152,
+      "kind": "title"
+    },
+    {
       "id": "CNT-039",
       "file": "packages/domain/src/data/table-notes.test.ts",
       "line": 103,
@@ -22091,7 +22146,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 619,
+      "line": 620,
       "kind": "title"
     },
     {
@@ -22319,163 +22374,163 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2210,
+      "line": 2212,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2837,
+      "line": 2839,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2795,
+      "line": 2797,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4025,
+      "line": 4027,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3841,
+      "line": 3843,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1273,
+      "line": 1274,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 646,
+      "line": 647,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6626,
+      "line": 6628,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2210,
+      "line": 2212,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 704,
+      "line": 705,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 979,
+      "line": 980,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 783,
+      "line": 784,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5909,
+      "line": 5911,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 872,
+      "line": 873,
       "kind": "title"
     },
     {
       "id": "STR-024",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 899,
+      "line": 900,
       "kind": "title"
     },
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3817,
+      "line": 3819,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3541,
+      "line": 3543,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3924,
+      "line": 3926,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3435,
+      "line": 3437,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3464,
+      "line": 3466,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3487,
+      "line": 3489,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1956,
+      "line": 1958,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5116,
+      "line": 5118,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5116,
+      "line": 5118,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5140,
+      "line": 5142,
       "kind": "title"
     },
     {
       "id": "TAB-026",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2682,
+      "line": 2684,
       "kind": "title"
     },
     {
       "id": "TAB-034",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1979,
+      "line": 1981,
       "kind": "title"
     },
     {
@@ -22527,6 +22582,18 @@
       "kind": "title"
     },
     {
+      "id": "TAB-008",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1074,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-022",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1103,
+      "kind": "title"
+    },
+    {
       "id": "TAB-024",
       "file": "packages/domain/src/publishing/bind.test.ts",
       "line": 963,
@@ -22548,6 +22615,12 @@
       "id": "TAB-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
       "line": 571,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-054",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1096,
       "kind": "title"
     },
     {
@@ -23049,6 +23122,12 @@
       "kind": "title"
     },
     {
+      "id": "TAB-008",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 5014,
+      "kind": "title"
+    },
+    {
       "id": "TAB-016",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 4935,
@@ -23064,6 +23143,12 @@
       "id": "TAB-046",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 4909,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-054",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 5027,
       "kind": "title"
     },
     {

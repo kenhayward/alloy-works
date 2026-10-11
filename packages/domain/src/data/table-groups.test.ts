@@ -149,7 +149,7 @@ describe("a bound table's groups", () => {
     ]);
   });
 
-  it("TAB-042 prints a subtotal, the query's row, last in its group and unsorted, at its level", () => {
+  it("TAB-054 prints a subtotal, the query's row, last in its group and unsorted, at its level", () => {
     const out = laid(
       table({
         ...withTotals,
@@ -168,7 +168,7 @@ describe("a bound table's groups", () => {
     ]);
   });
 
-  it('TAB-042 places a subtotal by the values of its level and those above, whatever it holds below', () => {
+  it('TAB-054 places a subtotal by the values of its level and those above, whatever it holds below', () => {
     const out = laid(
       table({
         groups: [

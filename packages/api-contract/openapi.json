@@ -86569,6 +86569,8 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "subtotal_not_boolean",
+                              "subtotal_ambiguous",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
@@ -87937,6 +87939,8 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "subtotal_not_boolean",
+                              "subtotal_ambiguous",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
@@ -96319,6 +96323,8 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "subtotal_not_boolean",
+                              "subtotal_ambiguous",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
