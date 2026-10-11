@@ -779,10 +779,13 @@ export function BoundTablePanel({
                 className={styles['nulls']}
                 value={group.subtotal ?? ''}
                 disabled={!enabled}
-                onChange={(event) => {
-                  const { subtotal: _, ...rest } = group;
-                  set(event.target.value === '' ? rest : { ...rest, subtotal: event.target.value });
-                }}
+                onChange={(event) =>
+                  set(
+                    event.target.value === ''
+                      ? { column: group.column, ...(group.format ? { format: group.format } : {}) }
+                      : { ...group, subtotal: event.target.value },
+                  )
+                }
               >
                 <option value="">{BOUND_TABLE_WORDS.noSubtotal}</option>
                 {(group.subtotal === undefined || flags.includes(group.subtotal)

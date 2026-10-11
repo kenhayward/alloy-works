@@ -86571,6 +86571,7 @@
                               "note_row_missing",
                               "subtotal_not_boolean",
                               "subtotal_ambiguous",
+                              "transpose_too_long",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
@@ -87941,6 +87942,7 @@
                               "note_row_missing",
                               "subtotal_not_boolean",
                               "subtotal_ambiguous",
+                              "transpose_too_long",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
@@ -96325,6 +96327,7 @@
                               "note_row_missing",
                               "subtotal_not_boolean",
                               "subtotal_ambiguous",
+                              "transpose_too_long",
                               "table_too_wide",
                               "engine_failed",
                               "store_failed"
