@@ -46,6 +46,7 @@ import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
+import { BaselinesTab } from './BaselinesTab.js';
 import { DataTab } from './DataTab.js';
 import {
   OutlineRail,
@@ -1605,6 +1606,18 @@ export function DocumentPage({
                 hidden: shownDock !== 'part',
                 host: detailsHost,
               }}
+              {...(shown === 'baselines'
+                ? {
+                    instead: (
+                      <BaselinesTab
+                        client={client}
+                        document={document.id}
+                        version={document.version.id}
+                        mayPublish={document.mayPublish}
+                      />
+                    ),
+                  }
+                : {})}
               {...(shown === 'data'
                 ? {
                     instead: (

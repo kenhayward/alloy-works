@@ -1728,6 +1728,15 @@ describe('the address of every node', () => {
     expect(screen.getByRole('separator', { name: 'Resize the outline' })).toBeInTheDocument();
   });
 
+  it('VER-017 offers the document’s baselines in a tab of the outline pane', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
+    open(fake.fetch);
+    await screen.findByRole('tree', { name: 'Outline' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Baselines' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Baselines' });
+    expect(await within(panel).findByRole('listitem', { name: 'As approved' })).toBeInTheDocument();
+  });
+
   it('puts the outline in a tabbed panel: back, Contents and the toggle, then the document as its root', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]),

@@ -327,6 +327,22 @@ export function service(
         ],
       });
     }
+    // The document's baselines (the BL plan): one, made by Ada.
+    if (url === `/v1/documents/${DOCUMENT}/baselines` && request.method === 'GET') {
+      return json(200, {
+        baselines: [
+          {
+            id: 'bbbbbbbb-0000-4000-8000-000000000001',
+            document: DOCUMENT,
+            name: 'As approved',
+            madeBy: { id: 'aaaaaaaa-0000-4000-8000-000000000001', name: 'Ada' },
+            madeAt: '2026-10-11T12:00:00.000Z',
+            digest: 'a'.repeat(64),
+            superseded: null,
+          },
+        ],
+      });
+    }
     if (url === `/v1/documents/${DOCUMENT}/publications`) {
       if (request.method === 'GET') return json(200, { items: [], next: null });
       return json(200, { ...publishRequest, state: 'queued' });
