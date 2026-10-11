@@ -571,6 +571,7 @@ describe('the domain package', () => {
         // its refusal (the TB1 plan, task 1).
         'BOUND_TABLE_COLUMNS_MAX',
         'BOUND_TABLE_SORT_MAX',
+        'BOUND_TABLE_GROUPS_MAX',
         'BoundTableRefused',
         'COLUMN_ALIGNMENTS',
         'boundTableNodeSchema',

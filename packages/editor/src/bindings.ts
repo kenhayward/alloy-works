@@ -483,6 +483,12 @@ export interface BoundTableShown {
   readonly more: number;
   /** Each of its keyed and column notes, in the order they stand beneath it (TB3.3). */
   readonly notes?: readonly BoundTableNoteShown[];
+  /**
+   * A grouped table's (TG2; TAB-008), beside `rows`: the headings each row opens, outermost first,
+   * and the level each row totals, null for a row that is not the query's subtotal.
+   */
+  readonly opens?: readonly (readonly { readonly level: number; readonly text: string }[])[];
+  readonly subtotals?: readonly (number | null)[];
 }
 
 /** One bound table's body in `doc`: where its table and its body stand, and what it shows. */
@@ -696,9 +702,13 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   }
   // Read for another set of columns than the table now names: read again by the host (TB2-A).
   const sent = new Set(rows?.columns.map(([name]) => name) ?? []);
+  // A grouped or subtotal column orders and heads the rows however they were sent (TG2).
   const named = [
     ...table.columns.map((each) => each.column),
     ...(presorted ? [] : (table.sort ?? []).map((each) => each.column)),
+    ...(table.groups ?? []).flatMap((each) =>
+      each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
+    ),
   ];
   if (rows === null || named.some((name) => !sent.has(name))) {
     return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
@@ -758,6 +768,14 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
             : { text: empty === '' ? setting.words.noRows : empty, failed: false },
         more: rowCount - laid.rows.length,
         ...(notes.length === 0 ? {} : { notes: notesShown }),
+        ...(table.groups === undefined
+          ? {}
+          : {
+              opens: laid.rows.map((row) =>
+                (row.opens ?? []).map(({ level, text }) => ({ level, text })),
+              ),
+              subtotals: laid.rows.map((row) => row.subtotal ?? null),
+            }),
       };
     },
   );

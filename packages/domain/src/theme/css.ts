@@ -422,6 +422,18 @@ function tableRules(style: TableStyle, cell: ResolvedParagraphStyle | undefined)
         `{ ${side('top', style.headerRow.rule)}; }`,
     );
   }
+  // A grouped bound table's heading in the header row's fill and weight, and the query's subtotal in
+  // its weight under its rule, as template 19 sets them (TG2; TAB-054). A bound cell holds its text
+  // directly, so the weight is the cell's own.
+  rules.push(`${at} [scope="rowgroup"] { background-color: ${fill(style.headerRow.fill)}; }`);
+  if (style.headerRow.bold) {
+    rules.push(
+      `${at} [scope="rowgroup"], ${at} .aw-bound-table-subtotal > * { font-weight: 700; }`,
+    );
+  }
+  if (style.headerRow.rule !== 'none') {
+    rules.push(`${at} .aw-bound-table-subtotal > * { ${side('top', style.headerRow.rule)}; }`);
+  }
   // The header column's rule runs the table's whole height, the header rows' too, as the template draws
   // it: after the last header cell of every row, the corner's included (found by the browser suite).
   if (style.headerColumn.rule !== 'none') {

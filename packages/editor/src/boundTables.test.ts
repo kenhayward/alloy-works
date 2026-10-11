@@ -374,6 +374,66 @@ describe("what a bound table's body shows (TB2-D)", () => {
   });
 });
 
+describe("a bound table's groups on the page (TG2)", () => {
+  const GROUPED: TableColumn[] = [
+    ...DECLARED,
+    { name: 'region', type: { base: 'text' } },
+    { name: 'total', type: { base: 'boolean' } },
+  ];
+  const sales: CanonicalResult = {
+    columns: [
+      ['site', 'text'],
+      ['depth', 'decimal'],
+      ['region', 'text'],
+      ['total', 'boolean'],
+    ],
+    rows: [
+      ['S1', '1', 'Upland', false],
+      ['S2', '2', 'Lowland', false],
+      ['S3', '3', 'Upland', false],
+      [null, '4', 'Upland', true],
+    ],
+  };
+  const grouped = boundTable({ groups: [{ column: 'region', subtotal: 'total' }] });
+
+  it("TAB-008 shows each group's heading before the row it opens, and marks the query's subtotal row", () => {
+    const shown = shownIn(
+      documentOf(grouped),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: sales })),
+    );
+    expect(shown.rows.map((row) => row[0]!.text)).toEqual(['S1', 'S3', 'Not available', 'S2']);
+    expect(shown.opens).toEqual([
+      [{ level: 1, text: 'Upland' }],
+      [],
+      [],
+      [{ level: 1, text: 'Lowland' }],
+    ]);
+    expect(shown.subtotals).toEqual([null, null, 1, null]);
+  });
+
+  it('waits for the rows to be read again where they lack a column it groups or totals by', () => {
+    const { rows } = sales;
+    const without: CanonicalResult = {
+      columns: sales.columns.slice(0, 2),
+      rows: rows.map((row) => row.slice(0, 2)),
+    };
+    const shown = shownIn(
+      documentOf(grouped),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: without })),
+    );
+    expect(shown.spanning).toEqual({ text: TABLE_READING, failed: false });
+  });
+
+  it('shows a table not grouped with no headings and no subtotals, as before', () => {
+    const shown = shownIn(
+      documentOf(boundTable()),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: sales })),
+    );
+    expect(shown).not.toHaveProperty('opens');
+    expect(shown).not.toHaveProperty('subtotals');
+  });
+});
+
 describe("a bound table's notes on the page (TB3.3)", () => {
   const footnote = (id: string, anchor: object, words: string) => ({
     type: 'footnote' as const,

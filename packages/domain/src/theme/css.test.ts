@@ -695,6 +695,18 @@ describe('projectCss for tables and images (W8.3)', () => {
     );
   });
 
+  it("TAB-054 sets a group's heading in the header row's fill and weight, and a subtotal in its weight under its rule, as the template does (TG2)", () => {
+    const text = ruledAndStriped();
+    expect(rulesFor(text, `${at} [scope="rowgroup"]`)).toEqual([
+      'background-color: #dddddd',
+      'font-weight: 700',
+    ]);
+    expect(rulesFor(text, `${at} .aw-bound-table-subtotal > *`)).toEqual([
+      'font-weight: 700',
+      `--aw-rule-top: ${z('0.75')}; --aw-rule-top-colour: #333333`,
+    ]);
+  });
+
   it("carries the header column's rule through the header rows, and gives the corner the header column's fill and weight where the header row has none, as the template does", () => {
     const text = ruledAndStriped({ fill: 'none', bold: false });
     // The corner under one header column: the header row's first cell, in a table whose body rows

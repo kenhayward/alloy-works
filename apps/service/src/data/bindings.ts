@@ -2415,9 +2415,14 @@ export function bindingHandlers(
         );
       }
       const own = found.fromSession === true;
+      // A grouped column's values head its rows and a subtotal column decides which are totals, so
+      // each is sent whoever asks, as a shown column is (TG2).
       const named = new Set([
         ...found.table.columns.map((each) => each.column),
         ...(own ? (found.table.sort ?? []).map((each) => each.column) : []),
+        ...(found.table.groups ?? []).flatMap((each) =>
+          each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
+        ),
       ]);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
       // Its sort and its groups, which order the rows sent alike (TG1).

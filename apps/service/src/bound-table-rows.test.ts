@@ -132,6 +132,31 @@ describe("a bound table's rows, for the page", () => {
       },
     });
 
+  it('TAB-008 sends a reader the column a table groups by beside those it shows, since its headings print it, the rows in its grouped order (TG2)', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed([
+      table(whole('b1', definition.id), { groups: [{ column: 'id' }] }),
+    ]);
+    const version = await resolve(document.id, node, [
+      ['1', 'North'],
+      ['2', 'South'],
+      ['1', 'East'],
+    ]);
+    const answer = await rowsOf('alice', document.id, node, version);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const sent = answer.json<{
+      presorted: boolean;
+      result: { columns: string[][]; rows: unknown };
+    }>();
+    expect(sent.presorted).toBe(true);
+    expect(sent.result.columns.map(([name]) => name)).toEqual(['id', 'name']);
+    expect(sent.result.rows).toEqual([
+      ['1', 'North'],
+      ['1', 'East'],
+      ['2', 'South'],
+    ]);
+  });
+
   it("answers a reader of the document the held rows in the table's order, only the columns it shows: a column it sorts by is never sent", async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed([

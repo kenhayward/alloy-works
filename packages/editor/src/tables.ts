@@ -1,6 +1,7 @@
 import {
   BOUND_TABLE_COLUMNS_MAX,
   BOUND_TABLE_SORT_MAX,
+  BOUND_TABLE_GROUPS_MAX,
   type BoundColumn,
   type BoundTableNode,
   type CanonicalValue,
@@ -416,6 +417,8 @@ export type TableChoice = Omit<BindingChoice, 'take'>;
 
 /** A bound table's sort key, as stored. */
 export type SortKey = NonNullable<BoundTableNode['sort']>[number];
+/** A level of a bound table's grouping (TG2): its column, its subtotal column and its format. */
+export type GroupLevel = NonNullable<BoundTableNode['groups']>[number];
 
 /** A bound table's own parts beneath its body, each present only where stored (TB2-C). */
 export type BoundTablePart = 'empty' | 'note' | 'source';
@@ -466,6 +469,8 @@ export interface BoundTablePlace {
   readonly columns: readonly BoundColumn[];
   readonly headerColumn: boolean;
   readonly sort: readonly SortKey[];
+  /** Its groups, outermost first (TG2; TAB-043), none where it is not grouped. */
+  readonly groups: readonly GroupLevel[];
   /** Whether it has an empty statement, a note and a source. */
   readonly parts: Readonly<Record<BoundTablePart, boolean>>;
   /** Its keyed and column notes, in the order they stand beneath it (TB3.3). */
@@ -491,6 +496,7 @@ function placeOf(node: Node, pos: number): BoundTablePlace {
     columns: node.attrs.columns as BoundColumn[],
     headerColumn: node.attrs.headerColumn as boolean,
     sort: (node.attrs.sort as SortKey[] | null) ?? [],
+    groups: (node.attrs.groups as GroupLevel[] | null) ?? [],
     parts: {
       empty: has(PART_NODES.empty),
       note: has(PART_NODES.note),
@@ -640,6 +646,7 @@ export interface BoundTableChange {
   readonly columns?: readonly BoundColumn[];
   readonly headerColumn?: boolean;
   readonly sort?: readonly SortKey[];
+  readonly groups?: readonly GroupLevel[];
   readonly numbered?: boolean;
   /** Wide (TB3-G): scale, rotate, or null for the table style's. */
   readonly wide?: Wide | null;
@@ -688,12 +695,18 @@ export function setBoundTable(change: BoundTableChange, { typed = false } = {}):
       if (sort.length > BOUND_TABLE_SORT_MAX) return false;
       if (new Set(sort.map((each) => each.column)).size !== sort.length) return false;
     }
+    const groups = change.groups;
+    if (groups !== undefined) {
+      if (groups.length > BOUND_TABLE_GROUPS_MAX) return false;
+      if (new Set(groups.map((each) => each.column)).size !== groups.length) return false;
+    }
     const node = state.doc.nodeAt(table.pos)!;
     const attrs = {
       ...node.attrs,
       ...(columns === undefined ? {} : { columns }),
       ...(change.headerColumn === undefined ? {} : { headerColumn: change.headerColumn }),
       ...(sort === undefined ? {} : { sort: sort.length === 0 ? null : [...sort] }),
+      ...(groups === undefined ? {} : { groups: groups.length === 0 ? null : [...groups] }),
       ...(change.numbered === undefined ? {} : { numbered: change.numbered }),
       ...(change.wide === undefined ? {} : { wide: change.wide }),
     };
