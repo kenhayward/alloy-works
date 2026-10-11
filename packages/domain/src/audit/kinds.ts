@@ -100,6 +100,9 @@ const Binding = z.strictObject({
   outcome: z.enum(['unchanged', 'revision']).optional(),
 });
 
+/** An export, and what of. */
+const Exported = z.strictObject({ export: Id, of: z.enum(['audit']) });
+
 interface KindSpec {
   /** The requirements it answers (LIF-063). */
   readonly requirements: readonly string[];
@@ -115,6 +118,7 @@ const kind = (
 ): KindSpec => ({ requirements, detail, emittedBy });
 
 const SESSIONS = 'apps/service/src/sessions.ts';
+const AUDIT_LOG = 'apps/service/src/audit-log.ts';
 const LATER = null;
 
 export const auditKindSpecs = {
@@ -255,9 +259,10 @@ export const auditKindSpecs = {
     z.strictObject({ request: Id, codes: z.array(AuditName) }),
     'apps/worker/src/jobs/publish.ts',
   ),
-  // AU2's: an audit export made and downloaded.
-  'export.produced': kind(['LIF-026', 'IMP-023'], empty, LATER),
-  'export.downloaded': kind(['LIF-026', 'IMP-044'], empty, LATER),
+  // An export asked for and each download of it handed out (the AU2 plan, AU-N): the audit log's
+  // today, a document's when IMP builds one, told apart by `of`.
+  'export.produced': kind(['LIF-026', 'LIF-028', 'ADM-039', 'IMP-023'], Exported, AUDIT_LOG),
+  'export.downloaded': kind(['LIF-026', 'LIF-028', 'ADM-039', 'IMP-044'], Exported, AUDIT_LOG),
   'audit.label_erased': kind(
     ['VER-038'],
     z.strictObject({ labels: z.int().nonnegative() }),

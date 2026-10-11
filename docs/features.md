@@ -151,7 +151,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   in the names it was recorded with. Filter by what happened (one kind, or a family such as signing
   in), by the days it fell between, and by who acted or what it was about, chosen from a row. The API
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
-  could see. Exporting it is next (AU2).
+  could see. **Export** writes every event the filters match, as the log stood when it was asked,
+  as JSON Lines to download; asking for it and each download are themselves on the log.
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
@@ -1381,7 +1382,6 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- Nothing exports the audit log yet; it is read a page at a time.
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.

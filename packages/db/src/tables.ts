@@ -169,6 +169,22 @@ export interface ObjectStoreCredentialTable {
   created_at: Generated<Date>;
 }
 
+/** An export of the audit log (0066): its filters, the snapshot it reads as of, and where it is kept. */
+export interface AuditExportTable {
+  id: Generated<string>;
+  requested_by: string | null;
+  requested_at: Generated<Date>;
+  filters: ColumnType<Record<string, string>, string, never>;
+  snapshot: ColumnType<string, string, never>;
+  newest: ColumnType<string | null, string | null, never>;
+  state: Generated<'queued' | 'done' | 'failed'>;
+  object_key: string | null;
+  sha256: string | null;
+  bytes: ColumnType<string | null, number | null, number | null>;
+  events: number | null;
+  finished_at: Date | null;
+}
+
 export interface SampleTable {
   id: Generated<string>;
   requested_by: string;
@@ -582,6 +598,7 @@ export interface TenantTables {
   sign_in_handoff: SignInHandoffTable;
   object_store_credential: ObjectStoreCredentialTable;
   sample: SampleTable;
+  audit_export: AuditExportTable;
   space: SpaceTable;
   artifact: ArtifactTable;
   artifact_version: ArtifactVersionTable;

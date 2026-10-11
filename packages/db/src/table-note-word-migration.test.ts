@@ -100,6 +100,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0063_unsaved_discarded',
       '0064_column_widths',
       '0065_audit_read',
+      '0066_audit_export',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

@@ -36,6 +36,8 @@ export interface AuditPageRequest {
   readonly after?: string;
   /** The snapshot the walk's first page was read as of. */
   readonly snapshot?: string;
+  /** No event past this sequence: an export's newest, so it never holds its own asking. */
+  readonly upTo?: string;
   /** Newest first, as a person reads it; oldest first, as an export writes it. */
   readonly order?: 'desc' | 'asc';
 }
@@ -89,6 +91,9 @@ export async function readAuditEvents(
         sql<boolean>`e.sequence ${sql.raw(order === 'desc' ? '<' : '>')} ${request.after}::bigint`,
       ),
     )
+    .$if(request.upTo !== undefined, (query) =>
+      query.where(sql<boolean>`e.sequence <= ${request.upTo}::bigint`),
+    )
     .$if(filter.actor !== undefined, (query) => query.where('e.actor', '=', filter.actor!))
     // A family is its kinds, each exact: the kind's index serves a list, and a range of text would
     // compare by the database's collation, which passes over the dot.
@@ -129,5 +134,25 @@ export async function readAuditEvents(
     items,
     next: rows.length > limit ? items.at(-1)!.sequence : null,
     snapshot,
+  };
+}
+
+/** An event as the API shows it and an export writes each line: its instant in ISO 8601, UTC. */
+export function auditEntryJson(entry: AuditEntry) {
+  return {
+    sequence: entry.sequence,
+    at: entry.at.toISOString(),
+    kind: entry.kind,
+    actorKind: entry.actorKind,
+    actor: entry.actor,
+    token: entry.token,
+    subject: entry.subject && { ...entry.subject },
+    space: entry.space,
+    outcome: entry.outcome,
+    detail: { ...entry.detail },
+    traceId: entry.traceId,
+    labels: Object.fromEntries(
+      Object.entries(entry.labels).map(([role, label]) => [role, { ...label }]),
+    ),
   };
 }

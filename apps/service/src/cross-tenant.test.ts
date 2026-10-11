@@ -30,6 +30,7 @@ import {
   uploadForDatasetImage,
   type Tenant,
   type TenantDatabase,
+  requestAuditExport,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -188,6 +189,8 @@ const OTHER_TENANT_IDS: Readonly<
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
   setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
+  getAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
+  downloadAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
@@ -316,6 +319,7 @@ const VALID_INPUT: Readonly<
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
+  requestAuditExport: { payload: {} },
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
   setGroupMembers: { payload: { principals: [] } },
@@ -760,6 +764,22 @@ const invitationIdIn = (tenant: Tenant, db: TenantDatabase) =>
   });
 
 /** One of environment B's own groups, holding one of its own principals. */
+/** An export of the audit log the tenant holds, asked for by a principal of its own. */
+const auditExportIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const asker = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (await requestAuditExport(trx, asker.id, {})).id;
+  });
+
 const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const member = await trx

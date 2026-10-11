@@ -476,7 +476,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...settingsHandlers(db, tenantOf),
     ...tokenHandlers(db, tenantOf, principalOf),
     ...administeredTokenHandlers(),
-    ...auditHandlers(),
+    ...auditHandlers(tenantOf, options.objects),
 
     getHealth: async () => ({ status: 'ok' }),
 

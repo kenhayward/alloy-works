@@ -197,7 +197,7 @@ const operationTags = {
   ],
   Search: ['search'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
-  'Audit log': ['listAuditEvents'],
+  'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
   'Event stream': ['openStream'],
 } as const;
 
@@ -359,6 +359,12 @@ const descriptions: Readonly<Record<string, string>> = {
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   listGroups: 'Lists the environment’s groups and their members in cursor pages.',
+  requestAuditExport:
+    'Asks for an export of every event matching the filters, as the log stands at the request: a job writes it as JSON Lines, one event a line in the read’s shape. Asking is itself an event.',
+  getAuditExport:
+    'Reads an export of the audit log: whether its job has written it, and how many events it holds.',
+  downloadAuditExport:
+    'Hands out a link to a written export, signed for five minutes. Each link handed out is recorded on the log.',
   listAuditEvents:
     'Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.',
   createGroup:

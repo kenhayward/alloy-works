@@ -86,7 +86,7 @@ const FRAME_KEPT_MS = 60_000;
  * error page the store answers without a file (W10.3's review). A frame's navigation asks nothing, a
  * file it is answered with is saved, and anything else stays hidden.
  */
-function followInFrame(url: string): void {
+export function followInFrame(url: string): void {
   const frame = window.document.createElement('iframe');
   frame.hidden = true;
   frame.src = url;
