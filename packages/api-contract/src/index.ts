@@ -279,5 +279,6 @@ export {
   BaselineSummaryView,
   BaselineView,
   MakeBaselineBody,
+  PublishBaselineBody,
   SupersedeBaselineBody,
 } from './baselines.js';

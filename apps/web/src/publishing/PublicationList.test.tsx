@@ -25,6 +25,7 @@ const publication = (
   publisher: { id: 'p1', displayName: 'Grace' },
   publishedAt: new Date(2025, 8, 18, 10, 4).toISOString(),
   approval: 'none',
+  baseline: null,
   formats,
 });
 

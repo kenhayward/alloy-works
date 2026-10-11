@@ -90,6 +90,7 @@ const publication = {
   publisher: { id: 'p', displayName: 'Ada' },
   publishedAt: '2026-09-19T09:00:00.000Z',
   approval: 'none',
+  baseline: null,
   formats: ['pdf'],
 };
 const queued = (failures: unknown[] = []) => ({

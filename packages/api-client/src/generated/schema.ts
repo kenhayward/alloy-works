@@ -239,6 +239,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/baselines/{id}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a baseline, from what it pins, as it was when it was made
+         * @description Publishes a baseline from what it pins, never from the document as it is now: the same version of every component, image and value, under the same layout and theme, compiled at the baseline’s own time, so it is the same publication whenever it is asked for on the same engine. The caller must read everything it pins.
+         */
+        post: operations["publishBaseline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/baselines/{id}/supersession": {
         parameters: {
             query?: never;
@@ -6157,6 +6177,261 @@ export interface operations {
                 };
             };
             /** @description Never answered: a reader of the document reads its baselines */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline in this environment, or one of a document the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    publishBaseline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "formats": [
+                 *         "example"
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page */
+                    formats: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Asked for, and queued; follow the request for its outcome */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "kind": "publish",
+                     *       "state": "queued",
+                     *       "failures": [],
+                     *       "publication": "example",
+                     *       "preview": {
+                     *         "view": "example",
+                     *         "download": "example",
+                     *         "expiresAt": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        document: string;
+                        /**
+                         * @description A publish, which makes a publication, or a preview, which makes a PDF for an hour
+                         * @enum {string}
+                         */
+                        kind: "publish" | "preview";
+                        /** @enum {string} */
+                        state: "queued" | "done" | "failed";
+                        failures: {
+                            /** @enum {string} */
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                        /** @description The publication it made, once done */
+                        publication: string | null;
+                        /** @description A done preview's links and expiry, until it expires; none for a publish, or a preview not done or expired */
+                        preview: {
+                            /** @description A link to the PDF, valid for five minutes, that a browser shows rather than saves */
+                            view: string;
+                            /** @description A link to the same bytes, valid for five minutes, that saves them, named by the request's id */
+                            download: string;
+                            /** @description When the preview goes, an hour after it was made; after it, there are no links */
+                            expiresAt: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `format_unsupported`: a format the baseline's layout does not make; `page_reference_without_pdf`: it cites a page and the PDF was not asked for; `baseline_unreadable`: the caller may not read something it pins, each occurrence in `nodes` and the images counted in `assets` */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                        /**
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
+                         * @enum {string}
+                         */
+                        attribution?: "product";
+                        /** @description binding_unresolved: the document holding the bindings */
+                        document?: string;
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
+                        bindings?: {
+                            node: string;
+                            binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
+                        }[];
+                        /** @description baseline_unresolved: each place resolving failed, by its node */
+                        places?: {
+                            /** @enum {string} */
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                        /** @description baseline_unreadable: each occurrence the caller may not read, by its node */
+                        nodes?: string[];
+                        /** @description baseline_unreadable: how many images the caller may not read */
+                        assets?: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not publish it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13970,6 +14245,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
+                        /** @description baseline_unreadable: each occurrence the caller may not read, by its node */
+                        nodes?: string[];
+                        /** @description baseline_unreadable: how many images the caller may not read */
+                        assets?: number;
                     };
                 };
             };
@@ -14108,6 +14387,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
+                        /** @description baseline_unreadable: each occurrence the caller may not read, by its node */
+                        nodes?: string[];
+                        /** @description baseline_unreadable: how many images the caller may not read */
+                        assets?: number;
                     };
                 };
             };
@@ -27304,10 +27587,12 @@ export interface operations {
                             };
                             publishedAt: string;
                             /**
-                             * @description `none`: a draft. Nothing in T1 can approve a publication
-                             * @constant
+                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                             * @enum {string}
                              */
-                            approval: "none";
+                            approval: "none" | "baseline";
+                            /** @description The baseline it was made from, or null */
+                            baseline: string | null;
                             formats: string[];
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
@@ -31207,10 +31492,12 @@ export interface operations {
                             };
                             publishedAt: string;
                             /**
-                             * @description `none`: a draft. Nothing in T1 can approve a publication
-                             * @constant
+                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                             * @enum {string}
                              */
-                            approval: "none";
+                            approval: "none" | "baseline";
+                            /** @description The baseline it was made from, or null */
+                            baseline: string | null;
                             formats: string[];
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
@@ -31334,6 +31621,7 @@ export interface operations {
                      *       },
                      *       "publishedAt": "example",
                      *       "approval": "none",
+                     *       "baseline": "example",
                      *       "formats": [],
                      *       "engine": {
                      *         "name": "typst",
@@ -31362,10 +31650,12 @@ export interface operations {
                         };
                         publishedAt: string;
                         /**
-                         * @description `none`: a draft. Nothing in T1 can approve a publication
-                         * @constant
+                         * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                         * @enum {string}
                          */
-                        approval: "none";
+                        approval: "none" | "baseline";
+                        /** @description The baseline it was made from, or null */
+                        baseline: string | null;
                         formats: string[];
                         /** @description The PDF's engine; none where the publication has no PDF */
                         engine: {

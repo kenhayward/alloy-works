@@ -57,6 +57,8 @@ interface Shown {
   readonly version: string;
   readonly publisher: string | null;
   readonly publishedAt: string;
+  /** The baseline it was made from, or none (the BL plan). */
+  readonly baseline: string | null;
   /** The PDF's engine and template; none for a publication in Word alone (Word 1, ruling R11). */
   readonly engine: string | null;
   readonly template: number | null;
@@ -144,6 +146,7 @@ function shownIn(data: unknown): Shown | undefined {
     version: data.version.number,
     publisher: typeof data.publisher.displayName === 'string' ? data.publisher.displayName : null,
     publishedAt: data.publishedAt,
+    baseline: typeof data.baseline === 'string' ? data.baseline : null,
     engine,
     template,
     outputs,
@@ -165,6 +168,22 @@ const size = (bytes: number | null) =>
 export function PublicationPage({ client, id }: { readonly client: Client; readonly id: string }) {
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // The name of the baseline it was made from, read once the publication names one.
+  const [baselineName, setBaselineName] = useState<string | null>(null);
+  const baseline = typeof shown === 'object' && shown !== null ? shown.baseline : null;
+  useEffect(() => {
+    if (baseline === null) return undefined;
+    let current = true;
+    client
+      .GET('/v1/baselines/{id}', { params: { path: { id: baseline } } })
+      .then(({ data }) => {
+        if (current && data) setBaselineName(data.name);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, baseline]);
 
   useEffect(() => {
     let current = true;
@@ -277,6 +296,12 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           })}
           .
         </p>
+        {shown.baseline !== null && (
+          <p>
+            Made from the baseline {baselineName ?? 'it was asked for from'}, as that baseline
+            pinned the document and everything it uses.
+          </p>
+        )}
         {shown.engine !== null && shown.template !== null && (
           <p>
             Made with Typst {shown.engine} and publication template {shown.template}.

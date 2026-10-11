@@ -386,9 +386,10 @@ export function publishJob(deps: {
       const wide =
         schema === PUBLISHING_SCHEMA_1
           ? []
-          : await wideTables(deps.typst, template.file, data, request.requestedAt, images);
+          : await wideTables(deps.typst, template.file, data, request.compiledAt, images);
       if (formats.includes('pdf')) {
-        const pdf = await deps.typst.compile(template.file, data, request.requestedAt, images);
+        // At the request's time, or a baseline's own, so every publish of one is the same bytes (BL-F).
+        const pdf = await deps.typst.compile(template.file, data, request.compiledAt, images);
         const engineVersion = await deps.typst.version();
         const stored = await keep(read.store, pdf, 'pdf');
         outputs.push({

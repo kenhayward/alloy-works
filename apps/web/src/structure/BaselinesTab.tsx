@@ -17,6 +17,14 @@ type Show = 'all' | 'current' | 'superseded';
 
 const SHOWN: Record<Show, string> = { all: 'All', current: 'Current', superseded: 'Superseded' };
 
+/** The formats a baseline may be published to, as the page offers them. */
+const FORMATS = {
+  pdf: { label: 'PDF', formats: ['pdf'] },
+  both: { label: 'PDF and Word', formats: ['pdf', 'docx'] },
+  docx: { label: 'Word', formats: ['docx'] },
+} as const;
+type Formats = keyof typeof FORMATS;
+
 const when = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -57,6 +65,8 @@ export function BaselinesTab({
   const [busy, setBusy] = useState(false);
   const [marking, setMarking] = useState<string | null>(null);
   const [by, setBy] = useState('');
+  const [publishing, setPublishing] = useState<string | null>(null);
+  const [formats, setFormats] = useState<Formats>('pdf');
   const ids = useId();
 
   const read = useCallback(async () => {
@@ -108,6 +118,23 @@ export function BaselinesTab({
     }
     setMarking(null);
     await read();
+  };
+
+  // A publish of the baseline from its pins (the BL plan, Task 3): followed, as any publish is, in
+  // Publications once it is made.
+  const publish = async (baseline: Baseline) => {
+    setSaid('');
+    setRefused('');
+    const answer = await client.POST('/v1/baselines/{id}/publications', {
+      params: { path: { id: baseline.id } },
+      body: { formats: [...FORMATS[formats].formats] },
+    });
+    if (!answer.data) {
+      setRefused(refusalOf(answer.error, 'It could not be published.'));
+      return;
+    }
+    setPublishing(null);
+    setSaid(`Publishing ${baseline.name}. It is listed in Publications once it is made.`);
   };
 
   const nameOf = (id: string) => every.find((each) => each.id === id)?.name ?? 'a later baseline';
@@ -172,6 +199,37 @@ export function BaselinesTab({
                     ? 'Current'
                     : `Superseded by ${nameOf(baseline.superseded.by)}`}
                 </span>
+                {mayPublish &&
+                  (publishing === baseline.id ? (
+                    <div className={styles['controls']}>
+                      <label htmlFor={`${heading}-formats`}>Formats</label>
+                      <select
+                        id={`${heading}-formats`}
+                        value={formats}
+                        onChange={(event) => setFormats(event.target.value as Formats)}
+                      >
+                        {(Object.keys(FORMATS) as Formats[]).map((each) => (
+                          <option key={each} value={each}>
+                            {FORMATS[each].label}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => void publish(baseline)}>
+                        Publish now
+                      </button>
+                      <button type="button" onClick={() => setPublishing(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles['act']}
+                      onClick={() => setPublishing(baseline.id)}
+                    >
+                      Publish
+                    </button>
+                  ))}
                 {mayPublish &&
                   baseline.superseded === null &&
                   later.length > 0 &&

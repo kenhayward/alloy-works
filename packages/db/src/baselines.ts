@@ -3,12 +3,25 @@ import {
   baselineNameProblem,
   labelFor,
   nameKey,
+  PUBLISHING_FORMATS,
+  readContent,
+  readLayout,
+  readOutline,
+  unsupportedFormats,
   type BaselinePins,
   type PublishFailure,
 } from '@alloy-works/domain';
+import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { readableComponents } from './documents.js';
-import { resolvePublishable, type PublishRefusal } from './publishing.js';
+import {
+  documentCitesAPage,
+  recordPublicationEvent,
+  resolvePublishable,
+  type PublishRefusal,
+} from './publishing.js';
+import { enqueueJob } from './queue.js';
+import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
 
@@ -432,4 +445,194 @@ async function recordBaselineEvent(
       labelled('space', placed.space_name, placed.space_id),
     ),
   );
+}
+
+/** What asking to publish a baseline answers (BL-F). */
+export type BaselinePublicationAnswer =
+  | { readonly answer: 'requested'; readonly request: { readonly id: string } }
+  /**
+   * The requester may not read something the baseline pins: each occurrence by its node, and how many
+   * images. A publication reads everything it prints as its publisher, as a publish does (PUB-094).
+   */
+  | {
+      readonly answer: 'baseline.unreadable';
+      readonly nodes: readonly string[];
+      readonly assets: number;
+    }
+  /** A format the baseline's layout does not make, each named once (PUB-014). */
+  | { readonly answer: 'format.unsupported'; readonly formats: readonly string[] }
+  /** It cites a page, and the PDF was not asked for (PUB-074). */
+  | { readonly answer: 'page_reference.without_pdf' };
+
+/**
+ * A publish of a baseline (PUB-046; BL-F): a request read from its pins and never resolved again -
+ * its document version, layout and theme, each occurrence's version, each image and each binding's
+ * dataset version - which 0073 holds at commit to be exactly the baseline's. Only the checks that
+ * need the formats run, against the pinned layout and content; everything else was decided when the
+ * baseline was made. `publish` on the baseline's document has been decided in this transaction.
+ */
+export async function requestBaselinePublication(
+  trx: TenantTransaction,
+  input: {
+    readonly baseline: string;
+    readonly formats: readonly string[];
+    readonly requester: string;
+  },
+): Promise<BaselinePublicationAnswer> {
+  const baseline = await trx
+    .selectFrom('baseline as b')
+    .innerJoin('artifact_version as d', 'd.id', 'b.document_version_id')
+    .innerJoin('artifact_version as l', 'l.id', 'b.layout_version_id')
+    .select([
+      'b.document_id',
+      'b.document_version_id',
+      'b.layout_id',
+      'b.layout_version_id',
+      'b.theme_id',
+      'b.theme_version_id',
+      'd.content as outline',
+      'l.content as layout',
+    ])
+    .where('b.id', '=', input.baseline)
+    .executeTakeFirstOrThrow();
+  const layout = readLayout(baseline.layout, {
+    artifact: baseline.layout_id,
+    version: baseline.layout_version_id,
+  });
+  if (!layout.ok)
+    throw new Error(`The layout ${layout.artifact} at ${layout.version} does not read`);
+  const unsupported = unsupportedFormats(layout.layout, input.formats);
+  if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
+  if (input.formats.length === 0 || new Set(input.formats).size !== input.formats.length) {
+    return { answer: 'format.unsupported', formats: [] };
+  }
+
+  const pins = await trx
+    .selectFrom('baseline_pin as p')
+    .innerJoin('artifact_version as v', 'v.id', 'p.version_id')
+    .select(['p.node', 'p.version_id', 'p.artifact_id', 'p.kind', 'v.content'])
+    .where('p.baseline_id', '=', input.baseline)
+    .execute();
+  const occurrences = pins.filter((each) => each.kind === 'component');
+  const assets = pins.filter((each) => each.kind === 'asset');
+  const readable = await readableComponents(
+    trx,
+    input.requester,
+    occurrences.map((each) => each.artifact_id),
+  );
+  const readableSet = assets.length === 0 ? undefined : await loadReadableSet(trx, input.requester);
+  const readableImages = new Set(
+    readableSet
+      ? (
+          await trx
+            .selectFrom('artifact as a')
+            .select('a.id')
+            .where(
+              'a.id',
+              'in',
+              assets.map((each) => each.artifact_id),
+            )
+            .where((eb) => readableArtifacts(eb, readableSet))
+            .execute()
+        ).map((row) => row.id)
+      : [],
+  );
+  const nodes = occurrences
+    .filter((each) => !readable.has(each.artifact_id))
+    .map((each) => each.node!);
+  const images = assets.filter((each) => !readableImages.has(each.artifact_id)).length;
+  if (nodes.length > 0 || images > 0) {
+    return { answer: 'baseline.unreadable', nodes, assets: images };
+  }
+
+  if (!input.formats.includes('pdf')) {
+    const outline = readOutline(baseline.outline, {
+      artifact: baseline.document_id,
+      version: baseline.document_version_id,
+    });
+    if (!outline.ok) throw new Error(`The document ${baseline.document_id} does not read`);
+    const contents = occurrences.map((each) => {
+      const read = readContent(each.content, {
+        artifact: each.artifact_id,
+        version: each.version_id,
+      });
+      if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
+      return read.document;
+    });
+    if (documentCitesAPage(outline.outline, contents)) {
+      return { answer: 'page_reference.without_pdf' };
+    }
+  }
+
+  const formats = PUBLISHING_FORMATS.filter((format) => input.formats.includes(format));
+  const request = await trx
+    .insertInto('publication_request')
+    .values({
+      document_id: baseline.document_id,
+      document_version_id: baseline.document_version_id,
+      formats,
+      requested_by: input.requester,
+      failures: '[]',
+      layout_id: baseline.layout_id,
+      layout_version_id: baseline.layout_version_id,
+      theme_id: baseline.theme_id,
+      theme_version_id: baseline.theme_version_id,
+      baseline_id: input.baseline,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  if (occurrences.length > 0) {
+    await trx
+      .insertInto('publication_request_occurrence')
+      .values(
+        occurrences.map((each) => ({
+          request_id: request.id,
+          node: each.node!,
+          component_id: each.artifact_id,
+          version_id: each.version_id,
+        })),
+      )
+      .execute();
+  }
+  if (assets.length > 0) {
+    await trx
+      .insertInto('publication_request_asset')
+      .values(
+        assets.map((each) => ({
+          request_id: request.id,
+          version_id: each.version_id,
+          asset_id: each.artifact_id,
+        })),
+      )
+      .execute();
+  }
+  const bindings = await trx
+    .selectFrom('baseline_binding')
+    .selectAll()
+    .where('baseline_id', '=', input.baseline)
+    .execute();
+  if (bindings.length > 0) {
+    await trx
+      .insertInto('publication_request_binding')
+      .values(
+        bindings.map((each) => ({
+          request_id: request.id,
+          node: each.node,
+          binding: each.binding,
+          digest: each.digest,
+          resolution: each.resolution,
+          dataset_version: each.dataset_version,
+          dataset_id: each.dataset_id,
+        })),
+      )
+      .execute();
+  }
+  await enqueueJob(trx, 'publish', request.id);
+  await recordPublicationEvent(
+    trx,
+    'publication.requested',
+    { document: baseline.document_id, version: baseline.document_version_id },
+    { request: request.id, formats },
+  );
+  return { answer: 'requested', request: { id: request.id } };
 }

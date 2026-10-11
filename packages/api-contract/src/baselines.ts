@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { DocumentParams } from './documents.js';
-import { PublicationRefusal, PublishFailureView } from './publishing.js';
+import {
+  PublicationRefusal,
+  PublicationRequestView,
+  PublishFailureView,
+  RequestPublicationBody,
+} from './publishing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** What making a baseline takes: the version the caller is looking at, and its name (VER-046). */
@@ -33,6 +38,10 @@ export const SupersedeBaselineBody = z.strictObject({
   by: LowercaseUuid.describe('A later baseline of the same document'),
 });
 export type SupersedeBaselineBody = z.infer<typeof SupersedeBaselineBody>;
+
+/** What publishing a baseline takes: the formats alone, since a baseline is one version for ever. */
+export const PublishBaselineBody = RequestPublicationBody.pick({ formats: true });
+export type PublishBaselineBody = z.infer<typeof PublishBaselineBody>;
 
 const Digest = z.string().regex(/^[0-9a-f]{64}$/);
 const Pinned = z.object({
@@ -102,6 +111,15 @@ export const BaselineRefusal = PublicationRefusal.extend({
     .array(PublishFailureView)
     .optional()
     .describe('baseline_unresolved: each place resolving failed, by its node'),
+  nodes: z
+    .array(z.string())
+    .optional()
+    .describe('baseline_unreadable: each occurrence the caller may not read, by its node'),
+  assets: z
+    .int()
+    .nonnegative()
+    .optional()
+    .describe('baseline_unreadable: how many images the caller may not read'),
 });
 export type BaselineRefusal = z.infer<typeof BaselineRefusal>;
 
@@ -179,6 +197,38 @@ export const baselineRoutes = {
       401: unauthenticated,
       403: {
         description: 'Never answered: a reader of the document reads its baselines',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such baseline in this environment, or one of a document the caller may not read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  publishBaseline: {
+    operationId: 'publishBaseline',
+    method: 'POST',
+    path: '/v1/baselines/{id}/publications',
+    summary: 'Publish a baseline, from what it pins, as it was when it was made',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'publish', target: { baseline: 'id' } },
+    params: BaselineParams,
+    body: PublishBaselineBody,
+    responses: {
+      // 200, not 202, as a publish's: a permission-checked handler cannot set a status.
+      200: {
+        description: 'Asked for, and queued; follow the request for its outcome',
+        schema: PublicationRequestView,
+      },
+      400: {
+        description:
+          "`format_unsupported`: a format the baseline's layout does not make; `page_reference_without_pdf`: it cites a page and the PDF was not asked for; `baseline_unreadable`: the caller may not read something it pins, each occurrence in `nodes` and the images counted in `assets`",
+        schema: BaselineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not publish it',
         schema: ErrorBody,
       },
       404: {

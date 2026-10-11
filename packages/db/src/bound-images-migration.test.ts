@@ -183,6 +183,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
     const kept = await queryAs(
       db.adminUrl,

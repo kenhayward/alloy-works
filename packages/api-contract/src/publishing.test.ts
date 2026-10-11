@@ -18,6 +18,7 @@ const viewWith = (outputs: unknown[], record: Record<string, unknown> = {}) => (
   publisher: { id: 'ada', displayName: 'Ada' },
   publishedAt: '2026-09-25T12:00:00.000Z',
   approval: 'none',
+  baseline: null,
   formats: ['pdf', 'docx'],
   engine: { name: 'typst', version: '0.15.1' },
   template: { name: 'publication', version: 13 },

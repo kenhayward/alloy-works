@@ -71,6 +71,7 @@ const answers: Record<string, unknown> = {
         publisher: { id: 'p1', displayName: 'Grace' },
         publishedAt: WHEN,
         approval: 'none',
+        baseline: null,
         formats: ['pdf'],
       },
     ],

@@ -436,7 +436,8 @@ directory, each named by the case that compiled it (`testing/keep.ts`); the
 PDF and DOCX the corpus makes, by case and place, is pinned in `testing/recorded-outputs.json`, so a
 change to `assemble`, a template, Typst, a face or a library that moves a byte fails the corpus, naming
 the case and keeping what it made (in `ALLOY_CORPUS_DIFFERENCES`, else the system's temporary
-directory). A new case is recorded by `pnpm --filter @alloy-works/worker record`, which rewrites no
+directory). The guard's baselines (`baseline-publish.test.ts`, the BL plan) are held to the same pins:
+fixed documents made baselines at a fixed instant and published through the job. A new case is recorded by `pnpm --filter @alloy-works/worker record`, which rewrites no
 pin; a change meant to move one by `record --accept`, in a pull request that names each case moved and
 why. The pins are CI's, on Linux.
 

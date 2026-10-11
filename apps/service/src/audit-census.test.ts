@@ -98,6 +98,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   makeBaseline: writes('baseline.made'),
   listBaselines: read,
   getBaseline: read,
+  publishBaseline: writes('publication.requested'),
   supersedeBaseline: writes('baseline.superseded'),
   claimLock: { none: 'lock' },
   takeLock: writes('lock.taken'),
