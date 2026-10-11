@@ -11,3 +11,4 @@ export {
 } from './kinds.js';
 export { AuditContext, auditActorKinds } from './context.js';
 export { isLabelledKind, labelFor, type LabelledKind } from './labels.js';
+export { auditFilterProblem, kindsMatching, type AuditFilter } from './query.js';

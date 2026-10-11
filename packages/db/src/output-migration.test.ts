@@ -215,6 +215,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0062_search_contains',
       '0063_unsaved_discarded',
       '0064_column_widths',
+      '0065_audit_read',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

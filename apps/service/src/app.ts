@@ -65,6 +65,7 @@ import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
 import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { groupHandlers } from './groups.js';
+import { auditHandlers } from './audit-log.js';
 import { spaceHandlers } from './spaces.js';
 import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
@@ -475,6 +476,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...settingsHandlers(db, tenantOf),
     ...tokenHandlers(db, tenantOf, principalOf),
     ...administeredTokenHandlers(),
+    ...auditHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

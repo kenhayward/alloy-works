@@ -5,6 +5,7 @@ import { administersAt } from '../access/ManageAccessLink.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
+import { AuditLog } from './AuditLog.js';
 import { Groups } from './Groups.js';
 import { Overview } from './Overview.js';
 import { People } from './People.js';
@@ -26,6 +27,7 @@ const SECTIONS = [
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
+  { slug: 'audit', title: 'Audit log', group: 'System' },
   { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
 type Section = (typeof SECTIONS)[number]['slug'];
@@ -240,6 +242,7 @@ export function Administration({
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'audit' && <AuditLog client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>

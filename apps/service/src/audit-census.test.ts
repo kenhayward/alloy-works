@@ -40,6 +40,7 @@ const ON_ANY_ROUTE: readonly AuditKind[] = ['access.refused', 'token.used'];
 
 const ROUTES: Readonly<Record<string, Entry>> = {
   getHealth: read,
+  listAuditEvents: read,
   getTenant: read,
   startOrganisationSignIn: { none: 'attempt' },
   finishOrganisationSignIn: writes(
