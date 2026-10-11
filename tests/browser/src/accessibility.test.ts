@@ -520,6 +520,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       if ((await first.count()) > 0) {
         await first.click();
         const changes = recovery.getByRole('region', { name: 'What restoring it changes' });
+        // Read before it is checked: `check` asks that it has gone, and does not wait for it to go.
+        await changes
+          .getByRole('list')
+          .or(changes.getByText(/It is the same as the text on screen|could not be read/))
+          .first()
+          .waitFor({ timeout: 15_000 });
         await check('the Saved text dialog showing what recovering changes', {
           shows: changes,
           hides: [changes.getByText('Reading...')],
@@ -638,7 +644,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const title = page.getByRole('textbox', { name: 'Title' });
       await title.click();
       await check('a section title being edited', { shows: focused(title) });
-      await page.getByRole('button', { name: 'Equation', exact: true }).click();
+      // The title's own Equation, not the idle in-place band's, which is disabled (ADR-0056).
+      await page
+        .getByRole('button', { name: 'Equation', exact: true })
+        .and(page.locator('[title]'))
+        .click();
       const equation = page.getByRole('dialog', { name: 'Equation' });
       await check('the Equation dialog over a section title', {
         shows: equation.getByRole('textbox').first(),

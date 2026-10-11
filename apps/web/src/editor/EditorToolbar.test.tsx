@@ -240,7 +240,7 @@ describe('the formatting toolbar', () => {
     expect(document.activeElement).toBe(buttons.at(-2));
     await userEvent.keyboard('{Home}');
     expect(document.activeElement).toBe(buttons[0]);
-    expect(buttons[0]).toHaveAttribute('title', 'Strong (Ctrl or Cmd and B)');
+    expect(buttons[0]).toHaveAttribute('data-tip', 'Strong (Ctrl or Cmd and B)');
     // Marks, then lists, then blocks, in the registry's order, a divider between each group.
     expect(toolbar.querySelectorAll('[data-divider]')).toHaveLength(2);
 
@@ -554,7 +554,7 @@ describe('the formatting toolbar', () => {
     const onPasteMarkdown = vi.fn();
     renderToolbar({ onPasteMarkdown });
     const button = screen.getByRole('button', { name: 'Paste as Markdown' });
-    expect(button).toHaveAttribute('title', 'Paste as Markdown');
+    expect(button).toHaveAttribute('data-tip', 'Paste as Markdown');
     expect(button).toHaveAttribute('aria-disabled', 'false');
 
     screen.getByRole('button', { name: 'Strong' }).focus();

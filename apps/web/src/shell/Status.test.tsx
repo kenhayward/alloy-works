@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { StatusBar, StatusProvider, StatusTools, useStatus } from './Status.js';
+import { StatusBar, StatusLead, StatusProvider, StatusTools, useStatus } from './Status.js';
 
 /** A page that says something through the bar, as the document page does. */
 function Saying({ notice, context }: { notice: string | null; context?: readonly string[] }) {
@@ -98,6 +98,23 @@ describe('the status bar', () => {
     expect(
       tool.compareDocumentPosition(screen.getByText('1 section')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("holds a page's own state at its left, before the notice, such as whether the text is saved", () => {
+    render(
+      <StatusProvider>
+        <Saying notice="Link copied." />
+        <StatusLead>
+          <span>Saved</span>
+        </StatusLead>
+      </StatusProvider>,
+    );
+    const bar = document.querySelector('footer')!;
+    const saved = screen.getByText('Saved');
+    expect(bar).toContainElement(saved);
+    expect(
+      saved.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 

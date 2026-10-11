@@ -26,6 +26,7 @@ import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { Icon } from '../editor/Icon.js';
+import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, useStatus } from '../shell/Status.js';
@@ -1449,9 +1450,7 @@ export function DocumentPage({
             (ADR-0056, CNT-075), and kept in view as the text scrolls. */}
           {authoring && principalId !== undefined && (
             <div ref={setBand} className={styles['band']} data-inplace-band="">
-              {editing === null && (
-                <p className={styles['bandHint']}>Click a component&apos;s text to edit it.</p>
-              )}
+              {editing === null && <IdleBand />}
             </div>
           )}
           <PreviewSaid preview={preview} />

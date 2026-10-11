@@ -630,8 +630,10 @@ describe('quotations and preformatted text on the surface (editor 5)', () => {
     caretIn(view, 'b1');
     const quotation = await screen.findByRole('button', { name: 'Quotation' });
     const code = screen.getByRole('button', { name: 'Preformatted text' });
-    expect(quotation).toHaveAttribute('title', 'Quotation (Ctrl or Cmd, Shift and full stop)');
-    expect(code).toHaveAttribute('title', 'Preformatted text (Ctrl or Cmd, Shift and comma)');
+    // Its tooltip the toolbar's own, quick to show, not the browser's slow title.
+    expect(quotation).toHaveAttribute('data-tip', 'Quotation (Ctrl or Cmd, Shift and full stop)');
+    expect(code).toHaveAttribute('data-tip', 'Preformatted text (Ctrl or Cmd, Shift and comma)');
+    expect(code).not.toHaveAttribute('title');
     // Offered, and the marks dropped when pressed (Ken, at plan review; decision K).
     expect(code).toHaveAttribute('aria-disabled', 'false');
   });
