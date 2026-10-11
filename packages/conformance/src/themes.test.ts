@@ -44,8 +44,9 @@ describe('the kit the editor and Word are measured by (the W15 plan, W15-C and W
         IMAGES,
       }),
     ).toBe('5a2dc743d924f2929331590cb21d789b7ad761a1648dd8c77c66146c0472e25a');
+    // Moved once since, by TG3, which gave its table styles content widths for the suites to measure.
     expect(hash(contraryTheme().content)).toBe(
-      '6178a004581e3be10a3f936bfa497f2e50d244bafcfd307b7eb82378ad52078c',
+      '8ffcb46e056d7b9240dd828a46ed019caaa3ae0d8c3825d93b384cf8835cd431',
     );
     // W13.4's own seeds, whatever ALLOY_BROWSER_STYLE_SEEDS asks the suites to measure.
     expect(
