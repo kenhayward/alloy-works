@@ -1,4 +1,9 @@
-import type { DataSettings, DataSettingsBody, EditingSettings } from '@alloy-works/api-contract';
+import type {
+  DataSettings,
+  DataSettingsBody,
+  EditingSettings,
+  EditingSettingsBody,
+} from '@alloy-works/api-contract';
 import {
   dataPolicy,
   editingPolicy,
@@ -56,14 +61,30 @@ export function settingsHandlers(
       { trx }: Authorised,
     ): Promise<EditingSettings> => {
       const before = await editingPolicy(trx);
-      const answer = await setEditingPolicy(trx, request.body as EditingSettings);
-      // The contract's schema refuses the same range before a handler runs; this is its second word.
+      const body = request.body as EditingSettingsBody;
+      const answer = await setEditingPolicy(trx, {
+        ...(body.iterationRetentionDays === undefined
+          ? {}
+          : { iterationRetentionDays: body.iterationRetentionDays }),
+        ...(body.lockReleaseMinutes === undefined
+          ? {}
+          : { lockReleaseMinutes: body.lockReleaseMinutes }),
+        ...(body.lockTakeMinutes === undefined ? {} : { lockTakeMinutes: body.lockTakeMinutes }),
+      });
+      // The contract's schema refuses each value's range before a handler runs; this is its second
+      // word, and the one word on the two lock periods together (COL-046).
       if ('refused' in answer) {
-        throw new AppError(
-          400,
-          'invalid_request',
-          'The window is a whole number of days from 1 to 365.',
-        );
+        throw answer.refused === 'lock_periods.invalid'
+          ? new AppError(
+              400,
+              'lock_periods_invalid',
+              'A lock may be taken only before it would be released: the take period must be shorter.',
+            )
+          : new AppError(
+              400,
+              'invalid_request',
+              'The window is a whole number of days from 1 to 365.',
+            );
       }
       await recordSettingsChanged(trx, 'editing', before, answer.policy);
       return answer.policy;

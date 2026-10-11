@@ -336,7 +336,7 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
 
   describe('the window, a tenant setting', () => {
     it('VER-004 states the window as a tenant setting, 30 days unless changed, the default the table itself declares', async () => {
-      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toEqual({
+      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toMatchObject({
         iterationRetentionDays: 30,
       });
       expect(ITERATION_RETENTION_DAYS).toBe(30);
@@ -366,8 +366,8 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
 
       expect(await sweep(tenant)).toBe(0);
 
-      expect(await set(15)).toEqual({ policy: { iterationRetentionDays: 15 } });
-      expect(await service.withTenant(tenant, (trx) => editingPolicy(trx))).toEqual({
+      expect(await set(15)).toMatchObject({ policy: { iterationRetentionDays: 15 } });
+      expect(await service.withTenant(tenant, (trx) => editingPolicy(trx))).toMatchObject({
         iterationRetentionDays: 15,
       });
       expect(await sweep(tenant)).toBe(1);
@@ -384,7 +384,7 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
       expect(await sweep(tenant)).toBe(1);
       expect(await kept(newer, tenant)).toBe(false);
       // The production tenant's window is its own.
-      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toEqual({
+      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toMatchObject({
         iterationRetentionDays: ITERATION_RETENTION_DAYS,
       });
     });
@@ -414,7 +414,7 @@ describe("keeping an iteration until the next cut, and for the tenant's window a
           service.withTenant(production, (trx) => statement.execute(trx)),
         ).rejects.toThrow(/permission denied/);
       }
-      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toEqual({
+      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toMatchObject({
         iterationRetentionDays: ITERATION_RETENTION_DAYS,
       });
     });

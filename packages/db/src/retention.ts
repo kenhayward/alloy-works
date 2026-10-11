@@ -7,7 +7,15 @@ import type { TenantTransaction } from './tables.js';
  */
 export interface EditingPolicy {
   readonly iterationRetentionDays: number;
+  /** A lock is free once its holder has done nothing for this many minutes (COL-008). */
+  readonly lockReleaseMinutes: number;
+  /** An idle holder's lock may be asked of them after this many, always fewer (COL-046). */
+  readonly lockTakeMinutes: number;
 }
+
+/** The periods' bounds, as `editing_policy`'s checks have them (0069). */
+export const LOCK_RELEASE_BOUNDS = { min: 5, max: 240 } as const;
+export const LOCK_TAKE_BOUNDS = { min: 1, max: 239 } as const;
 
 /** The window's bounds, as `editing_policy`'s check has them (0037). */
 export const ITERATION_RETENTION_BOUNDS = { min: 1, max: 365 } as const;
@@ -15,25 +23,33 @@ export const ITERATION_RETENTION_BOUNDS = { min: 1, max: 365 } as const;
 export type EditingPolicyAnswer =
   | { readonly policy: EditingPolicy }
   /** Not a whole number of days from 1 to 365. */
-  | { readonly refused: 'retention.out_of_range' };
+  | { readonly refused: 'retention.out_of_range' }
+  /** A period out of its bounds, or taking not shorter than releasing (COL-046). */
+  | { readonly refused: 'lock_periods.invalid' };
 
 /** The tenant's editing policy, as the sweep reads it now. */
 export async function editingPolicy(trx: TenantTransaction): Promise<EditingPolicy> {
   const row = await trx
     .selectFrom('editing_policy')
-    .select('iteration_retention_days')
+    .select(['iteration_retention_days', 'lock_release_minutes', 'lock_take_minutes'])
     .executeTakeFirstOrThrow();
-  return { iterationRetentionDays: row.iteration_retention_days };
+  return {
+    iterationRetentionDays: row.iteration_retention_days,
+    lockReleaseMinutes: row.lock_release_minutes,
+    lockTakeMinutes: row.lock_take_minutes,
+  };
 }
 
 /**
- * Sets the window. It is read when the sweep runs, so a longer one keeps longer what has not been
+ * Sets the window, and the lock's periods (COL-008, COL-046). The window is read when the sweep runs, so a longer one keeps longer what has not been
  * swept, and a shorter one lets the next sweep take what the old one kept; nothing swept comes back.
  */
 export async function setEditingPolicy(
   trx: TenantTransaction,
-  policy: EditingPolicy,
+  change: Partial<EditingPolicy>,
 ): Promise<EditingPolicyAnswer> {
+  // What is not given is kept: each setting is changed alone, or with the others.
+  const policy = { ...(await editingPolicy(trx)), ...change };
   const days = policy.iterationRetentionDays;
   if (
     !Number.isInteger(days) ||
@@ -42,12 +58,22 @@ export async function setEditingPolicy(
   ) {
     return { refused: 'retention.out_of_range' };
   }
-  const row = await trx
+  const release = policy.lockReleaseMinutes;
+  const take = policy.lockTakeMinutes;
+  const within = (value: number, bounds: { min: number; max: number }) =>
+    Number.isInteger(value) && value >= bounds.min && value <= bounds.max;
+  if (!within(release, LOCK_RELEASE_BOUNDS) || !within(take, LOCK_TAKE_BOUNDS) || take >= release) {
+    return { refused: 'lock_periods.invalid' };
+  }
+  await trx
     .updateTable('editing_policy')
-    .set({ iteration_retention_days: days })
-    .returning('iteration_retention_days')
-    .executeTakeFirstOrThrow();
-  return { policy: { iterationRetentionDays: row.iteration_retention_days } };
+    .set({
+      iteration_retention_days: days,
+      lock_release_minutes: release,
+      lock_take_minutes: take,
+    })
+    .execute();
+  return { policy: await editingPolicy(trx) };
 }
 
 /**

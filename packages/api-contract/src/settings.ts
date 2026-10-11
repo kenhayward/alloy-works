@@ -7,16 +7,42 @@ import { ErrorBody } from './schemas.js';
  * The environment's editing settings (component-editor.md, RC-C): how long a saved change is kept
  * after the next version is cut from its component (VER-003, VER-004).
  */
+const retention = z
+  .int()
+  .min(1)
+  .max(365)
+  .describe(
+    'How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed',
+  );
+const release = z
+  .int()
+  .min(5)
+  .max(240)
+  .describe(
+    'How many minutes a lock lasts once its holder does nothing: 5 to 240, 15 unless changed (COL-008)',
+  );
+const take = z
+  .int()
+  .min(1)
+  .max(239)
+  .describe(
+    'How many minutes before an idle holder may be asked for the lock: 1 to 239, always fewer than the release period, 5 unless changed (COL-046)',
+  );
+
 export const EditingSettings = z.strictObject({
-  iterationRetentionDays: z
-    .int()
-    .min(1)
-    .max(365)
-    .describe(
-      'How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed',
-    ),
+  iterationRetentionDays: retention,
+  lockReleaseMinutes: release,
+  lockTakeMinutes: take,
 });
 export type EditingSettings = z.infer<typeof EditingSettings>;
+
+/** A change to the editing settings: each given is changed, each absent kept. */
+export const EditingSettingsBody = z.strictObject({
+  iterationRetentionDays: retention.optional(),
+  lockReleaseMinutes: release.optional(),
+  lockTakeMinutes: take.optional(),
+});
+export type EditingSettingsBody = z.infer<typeof EditingSettingsBody>;
 
 /**
  * The tenant's lowered limits on a query (the D2 plan, D2-N; DAT-050), each null or absent where the
@@ -78,7 +104,8 @@ export const settingsRoutes = {
     operationId: 'getEditingSettings',
     method: 'GET',
     path: '/v1/settings/editing',
-    summary: "The environment's editing settings: how long saved changes are kept",
+    summary:
+      "The environment's editing settings: how long saved changes are kept, and a lock lasts",
     tenantScoped: true,
     access: { check: 'session' },
     responses: {
@@ -93,11 +120,12 @@ export const settingsRoutes = {
     summary: "Change the environment's editing settings",
     tenantScoped: true,
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
-    body: EditingSettings,
+    body: EditingSettingsBody,
     responses: {
       200: { description: 'The editing settings, as changed', schema: EditingSettings },
       400: {
-        description: 'A window that is not a whole number of days from 1 to 365',
+        description:
+          'invalid_request: a value out of its bounds. lock_periods_invalid: a take period not shorter than the release period',
         schema: ErrorBody,
       },
       401: unauthenticated,

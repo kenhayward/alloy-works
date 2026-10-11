@@ -13,9 +13,8 @@ import { sha256Hex } from './version-digest.js';
 import { latestVersion, type StoredVersion } from './versions.js';
 
 /**
- * How long a lock lasts without an accepted iteration (COL-008): provisionally fifteen minutes, as
- * component-editor.md's open question has it. A product constant until a tenant setting exists (the
- * editor plan's decision 7).
+ * How long a lock lasts without activity unless an administrator changes it (COL-008): fifteen
+ * minutes, the default of `editing_policy.lock_release_minutes` (0069; collaboration.md).
  */
 export const LOCK_PERIOD_MINUTES = 15;
 
@@ -171,8 +170,9 @@ export async function holding(
 export const isRefusal = (held: LockState | HolderRefusal): held is HolderRefusal =>
   'answer' in held;
 
+/** When a lock active now is free: the tenant's release period on (COL-008). */
 const lockExpiry = () =>
-  sql<Date>`clock_timestamp() + make_interval(mins => ${LOCK_PERIOD_MINUTES})`;
+  sql<Date>`clock_timestamp() + make_interval(mins => (select lock_release_minutes from editing_policy))`;
 
 /**
  * Claims a component's lock for an editing session (COL-005), or answers who holds it. A lock held by
@@ -197,6 +197,8 @@ export async function claimLock(
     principal_id: input.principal,
     session_id: input.session,
     claimed_at: sql<Date>`clock_timestamp()`,
+    // A claim, a reload's or Recovery's from the holding session included, is activity (CL-A).
+    active_at: sql<Date>`clock_timestamp()`,
     expires_at: lockExpiry(),
   };
   await trx
@@ -344,7 +346,8 @@ export async function saveIteration(
     .execute();
   await trx
     .updateTable('component_lock')
-    .set({ expires_at: lockExpiry() })
+    // An iteration not seen before is activity (CL-A): the lock is free a release period from now.
+    .set({ active_at: sql<Date>`clock_timestamp()`, expires_at: lockExpiry() })
     .where('artifact_id', '=', input.artifactId)
     .execute();
   const extended = await readLock(trx, input.artifactId);
