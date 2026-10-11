@@ -1,4 +1,5 @@
 import { assetRoutes } from './assets.js';
+import { auditRoutes } from './audit.js';
 import { bindingRoutes } from './bindings.js';
 import { componentRoutes } from './components.js';
 import { connectionRoutes } from './connections.js';
@@ -290,7 +291,8 @@ type Routes = typeof ownRoutes &
   typeof presentationRoutes &
   typeof settingsRoutes &
   typeof tokenRoutes &
-  typeof administeredTokenRoutes;
+  typeof administeredTokenRoutes &
+  typeof auditRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -314,6 +316,7 @@ export const routes: Routes = {
   ...settingsRoutes,
   ...tokenRoutes,
   ...administeredTokenRoutes,
+  ...auditRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

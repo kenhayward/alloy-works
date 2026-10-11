@@ -31,7 +31,8 @@ import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 const HOST = 'acme.alloy.test';
 
 interface Page {
-  items: { id: string; title?: string; name?: string }[];
+  // An audit event is known by its sequence, as everything else by its id.
+  items: { id: string; sequence?: string; title?: string; name?: string }[];
   next: string | null;
 }
 
@@ -192,7 +193,7 @@ describe('the listings through the service', () => {
       const response = await get(url);
       expect(response.statusCode, url).toBe(200);
       const page = response.json<Page>();
-      seen.push(...page.items.map((each) => each.id));
+      seen.push(...page.items.map((each) => each.id ?? each.sequence));
       if (page.next === null) return seen;
       url = `${path}${path.includes('?') ? '&' : '?'}limit=1&cursor=${page.next}`;
     }
@@ -382,6 +383,7 @@ describe('the listings through the service', () => {
       listPrincipals: '/v1/principals?level=tenant',
       listInvitations: '/v1/invitations',
       listGroups: '/v1/groups',
+      listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',
       listQueryDefinitions: '/v1/query-definitions',
@@ -409,7 +411,9 @@ describe('the listings through the service', () => {
       const whole = (await get(`${path}${path.includes('?') ? '&' : '?'}limit=100`)).json<Page>();
       expect(whole.next, route.operationId).toBeNull();
       expect(whole.items.length, route.operationId).toBeGreaterThan(0);
-      expect(await walk(path), route.operationId).toEqual(whole.items.map((each) => each.id));
+      expect(await walk(path), route.operationId).toEqual(
+        whole.items.map((each) => each.id ?? each.sequence),
+      );
     }
   });
 });

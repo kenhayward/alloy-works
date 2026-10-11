@@ -18798,7 +18798,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 248,
+      "line": 249,
       "kind": "title"
     },
     {
@@ -18817,6 +18817,24 @@
       "id": "IAM-013",
       "file": "apps/service/src/audit-refusals.test.ts",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-038",
+      "file": "apps/service/src/audit-routes.test.ts",
+      "line": 135,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-028",
+      "file": "apps/service/src/audit-routes.test.ts",
+      "line": 155,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-031",
+      "file": "apps/service/src/audit-routes.test.ts",
+      "line": 171,
       "kind": "title"
     },
     {
@@ -19188,7 +19206,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 299,
+      "line": 300,
       "kind": "title"
     },
     {
@@ -19567,6 +19585,12 @@
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
       "line": 1223,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-038",
+      "file": "apps/web/src/admin/AuditLog.test.tsx",
+      "line": 52,
       "kind": "title"
     },
     {
@@ -20914,6 +20938,24 @@
       "kind": "title"
     },
     {
+      "id": "ADM-038",
+      "file": "packages/db/src/audit-read.test.ts",
+      "line": 61,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-028",
+      "file": "packages/db/src/audit-read.test.ts",
+      "line": 115,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-031",
+      "file": "packages/db/src/audit-read.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
       "id": "LIF-025",
       "file": "packages/db/src/audit.test.ts",
       "line": 218,
@@ -22212,7 +22254,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 630,
+      "line": 633,
       "kind": "title"
     },
     {

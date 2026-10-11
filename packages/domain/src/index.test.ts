@@ -126,6 +126,9 @@ describe('the domain package', () => {
         'labelFor',
         'parseAuditDetail',
         'refusalReasons',
+        // The audit log read (AU2b): its filters, and the kinds a family names.
+        'auditFilterProblem',
+        'kindsMatching',
         // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',
         'componentTypes',

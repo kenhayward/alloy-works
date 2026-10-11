@@ -182,6 +182,13 @@ export {
   type ArtifactPlace,
   type AuditSubject,
 } from './audit.js';
+export {
+  readAuditEvents,
+  type AuditEntry,
+  type AuditEntryLabel,
+  type AuditPage,
+  type AuditPageRequest,
+} from './audit-read.js';
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,

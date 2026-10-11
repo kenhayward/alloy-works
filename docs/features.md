@@ -144,7 +144,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   invitations, tokens, spaces, settings, every version of everything, connections (which settings
   changed, never a credential), bindings, datasets, images and publications. Each event keeps the
   names it is read by, so it reads after what it describes is renamed or gone. Nothing in the product
-  changes or deletes an event. Nobody can read it yet: reading and exporting it are next (AU2).
+  changes or deletes an event.
+
+- **The audit log, read.** An administrator of the environment reads its log in Administration's
+  **Audit log**, newest first, a page at a time: when, who, what happened and what it was about, each
+  in the names it was recorded with. Filter by what happened (one kind, or a family such as signing
+  in), by the days it fell between, and by who acted or what it was about, chosen from a row. The API
+  reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
+  could see. Exporting it is next (AU2).
 
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
@@ -1374,8 +1381,7 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- No page or route reads the audit log, and nothing exports it: it is written, and read only from the
-  database.
+- Nothing exports the audit log yet; it is read a page at a time.
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.

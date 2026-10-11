@@ -968,6 +968,8 @@ describe('routes that check a permission', () => {
       payload: { principals: [] },
     }),
     deleteGroup: () => ({ url: `/v1/groups/${MISSING}`, status: 403 }),
+    // The audit log is read by an administrator of the whole environment (AU-G).
+    listAuditEvents: () => ({ url: '/v1/audit', status: 403 }),
     // A space is made, renamed and archived by an administrator of the whole environment (SP-A), so
     // each is refused before the space is looked for: 403, never 404.
     createSpace: () => ({ url: '/v1/spaces', status: 403, payload: { name: 'Mine' } }),

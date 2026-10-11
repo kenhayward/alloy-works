@@ -15,8 +15,8 @@ document-view.md - each emit the event types named [below](#event-types) as thei
 
 > **AU1 is built** (0.145.0): every act that exists writes its event, refusals and failed sign-ins
 > in their own transactions; [the AU1 plan](../plans/2026-10-08-au1-the-log-written.md) has what
-> changed while building. **Reading and export (AU2) are not**: nothing reads the log but the
-> database. `apps/service/src/audit-census.test.ts` lists every route, GETs included, and every
+> changed while building. **The log read is built** (AU2b): `GET /v1/audit` and Administration's
+> Audit log. **Export is not yet.** `apps/service/src/audit-census.test.ts` lists every route, GETs included, and every
 > writer that is not a route, with the kinds each writes or why it writes none.
 
 ## The shape in one paragraph

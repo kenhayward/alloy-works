@@ -76,6 +76,7 @@ export const documentationGroups = [
     tags: [
       { name: 'Search', description: 'Search content the caller may read.' },
       { name: 'Settings', description: 'Read and change environment settings.' },
+      { name: 'Audit log', description: 'Read and export the environment’s audit log.' },
     ],
   },
   {
@@ -196,6 +197,7 @@ const operationTags = {
   ],
   Search: ['search'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
+  'Audit log': ['listAuditEvents'],
   'Event stream': ['openStream'],
 } as const;
 
@@ -357,6 +359,8 @@ const descriptions: Readonly<Record<string, string>> = {
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   listGroups: 'Lists the environment’s groups and their members in cursor pages.',
+  listAuditEvents:
+    'Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.',
   createGroup:
     'Creates a local group or a group representing a value asserted by the identity provider.',
   deleteGroup:

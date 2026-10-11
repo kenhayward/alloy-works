@@ -139,6 +139,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's audit log, newest first, filtered, a page at a time
+         * @description Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.
+         */
+        get: operations["listAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components": {
         parameters: {
             query?: never;
@@ -5114,6 +5134,165 @@ export interface operations {
             };
             /** @description No such thing in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listAuditEvents: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                actor?: string & (unknown & unknown);
+                kind?: string;
+                from?: string;
+                to?: string;
+                subject?: string & (unknown & unknown);
+                space?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of events, each with its labels */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The event's place in the log: order is the sequence's, never the time's */
+                            sequence: string;
+                            /** @description When, in UTC */
+                            at: string;
+                            kind: string;
+                            /** @enum {string} */
+                            actorKind: "person" | "token" | "system" | "vendor" | "anonymous";
+                            /** @description The principal who acted, by session or by token */
+                            actor: string | null;
+                            /** @description The token they acted by, where they did */
+                            token: string | null;
+                            /** @description What it was about, and the version acted on */
+                            subject: {
+                                kind: string;
+                                id: string | null;
+                                version: string | null;
+                            } | null;
+                            space: string | null;
+                            /** @enum {string} */
+                            outcome: "done" | "refused";
+                            /** @description Identifiers, names, codes and rules, by the kind's own shape; never a value */
+                            detail: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The request's trace id */
+                            traceId: string | null;
+                            /** @description By role - `actor`, `subject`, `space` and others - kept for when the originals are gone */
+                            labels: {
+                                [key: string]: {
+                                    /** @description The name or title as it was, or `erased` once a person's are */
+                                    text: string;
+                                    erased: boolean;
+                                };
+                            };
+                        }[];
+                        /** @description The cursor for the next page, or null at the end */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description audit_filter_invalid: a kind the log does not hold, or from after to. invalid_request: a cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
