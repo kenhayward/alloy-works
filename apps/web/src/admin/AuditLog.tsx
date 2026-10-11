@@ -109,6 +109,10 @@ export function AuditLog({
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const [read, setRead] = useState<Read>(null);
   const [exporting, setExporting] = useState<Exporting>({ state: 'idle' });
+  /** Why a download did not go, said beside Download, which stays to try again. */
+  const [downloadSaid, setDownloadSaid] = useState('');
+  /** The filters the latest read was asked under: a page answered for others is dropped. */
+  const asked = useRef<Filter>(filter);
   const live = useRef(true);
   useEffect(() => {
     live.current = true;
@@ -119,6 +123,7 @@ export function AuditLog({
 
   const load = useCallback(
     async (cursor: string | null) => {
+      asked.current = filter;
       try {
         const { data, response } = await client.GET('/v1/audit', {
           params: {
@@ -129,6 +134,8 @@ export function AuditLog({
             },
           },
         });
+        // Answered for filters since changed: the read under the new ones is the page's.
+        if (asked.current !== filter) return;
         if (!data) {
           if (cursor === null) {
             setRead(
@@ -168,7 +175,11 @@ export function AuditLog({
       void client
         .GET('/v1/audit/exports/{id}', { params: { path: { id: exporting.id } } })
         .then(({ data }) => {
-          if (!live.current || !data) return;
+          if (!live.current) return;
+          if (!data) {
+            setExporting({ state: 'failed', said: 'The export could not be checked.' });
+            return;
+          }
           if (data.export.state === 'done') {
             setExporting({ state: 'done', id: exporting.id, events: data.export.events ?? 0 });
           } else if (data.export.state === 'failed') {
@@ -178,7 +189,9 @@ export function AuditLog({
           }
         })
         .catch(() => {
-          if (live.current) setExporting({ state: 'writing', id: exporting.id });
+          if (live.current) {
+            setExporting({ state: 'failed', said: 'The export could not be checked.' });
+          }
         });
     }, followMs);
     return () => clearTimeout(timer);
@@ -201,19 +214,16 @@ export function AuditLog({
   };
 
   const download = async (id: string) => {
+    setDownloadSaid('');
     try {
       const { data, error } = await client.GET('/v1/audit/exports/{id}/download', {
         params: { path: { id } },
       });
       // Only a link the service signed, to the store, over the web.
       if (data && /^https?:\/\//.test(data.download)) follow(data.download);
-      else
-        setExporting({
-          state: 'failed',
-          said: refusal(error, 'The export could not be downloaded.'),
-        });
+      else setDownloadSaid(refusal(error, 'The export could not be downloaded.'));
     } catch {
-      setExporting({ state: 'failed', said: 'The export could not be downloaded.' });
+      setDownloadSaid('The export could not be downloaded.');
     }
   };
 
@@ -239,10 +249,10 @@ export function AuditLog({
   };
 
   const about = (event: AuditEventView) => {
-    const name = event.labels['subject']?.text ?? event.labels['space']?.text;
+    const name = event.labels['subject']?.text;
     const id = event.subject?.id ?? null;
-    if (name === undefined) return null;
-    if (id === null) return name;
+    // Only its subject's own name filters to it; a space's name is said, never offered as the subject.
+    if (name === undefined || id === null) return name ?? event.labels['space']?.text ?? null;
     return (
       <button
         type="button"
@@ -330,7 +340,8 @@ export function AuditLog({
       <p role="status" className={styles['exported']}>
         {exporting.state === 'writing' && 'Writing the export...'}
         {exporting.state === 'failed' && exporting.said}
-        {exporting.state === 'done' && `The export holds ${eventsCounted(exporting.events)}.`}
+        {exporting.state === 'done' &&
+          `The export holds ${eventsCounted(exporting.events)}.${downloadSaid === '' ? '' : ` ${downloadSaid}`}`}
       </p>
       {exporting.state === 'done' && (
         <p>

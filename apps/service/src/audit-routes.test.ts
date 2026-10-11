@@ -194,12 +194,21 @@ describe('the audit log read (audit.md, "Reading and export")', () => {
       expect(answer.statusCode, query).toBe(400);
       expect(answer.json()).toMatchObject({ code: 'audit_filter_invalid' });
     }
-    const forged = Buffer.from(JSON.stringify({ v: 1, q: '5', n: "1:1:'; drop" })).toString(
-      'base64url',
-    );
-    const answer = await call(graceCookie, `/v1/audit?cursor=${forged}`);
-    expect(answer.statusCode).toBe(400);
-    expect(answer.json()).toMatchObject({ code: 'invalid_request' });
+    // Each shaped like a cursor, and each one Postgres would refuse to cast: answered 400, never 500.
+    for (const [q, n] of [
+      ['5', "1:1:'; drop"],
+      ['5', '0:5:'],
+      ['5', '9:3:'],
+      ['5', '1:5:7'],
+      ['5', '1:9:5,3'],
+      ['5', '1:99999999999999999999:'],
+      ['9999999999999999999', '1:5:'],
+    ]) {
+      const forged = Buffer.from(JSON.stringify({ v: 1, q, n })).toString('base64url');
+      const answer = await call(graceCookie, `/v1/audit?cursor=${forged}`);
+      expect(answer.statusCode, `${q} ${n}`).toBe(400);
+      expect(answer.json()).toMatchObject({ code: 'invalid_request' });
+    }
   });
 
   it('ADM-039 exports the log as it stands when asked, ready once its job has written it, recording the asking and each download handed out', async () => {

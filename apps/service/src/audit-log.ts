@@ -10,6 +10,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   auditEntryJson,
+  isSnapshot,
   readAuditEvents,
   readAuditExport,
   recordEvent,
@@ -29,7 +30,8 @@ import { DOWNLOAD_SECONDS } from './publishing.js';
 /**
  * An audit read's cursor (the AU2 plan, AU-M): the sequence the page ended at and the snapshot the
  * walk's first page took, as base64url JSON. Opaque to a caller; not signed, since a forged one reaches
- * only the log its holder may already read, but its snapshot is checked to be one before it is cast.
+ * only the log its holder may already read, but its sequence and snapshot are checked to be ones
+ * Postgres can cast before either is.
  */
 interface Written {
   readonly v: 1;
@@ -38,8 +40,7 @@ interface Written {
 }
 
 const SEQUENCE = /^[1-9][0-9]{0,18}$/;
-// `xmin:xmax:xip,...`, as `pg_current_snapshot()::text` spells one.
-const SNAPSHOT = /^[0-9]{1,20}:[0-9]{1,20}:(?:[0-9]{1,20}(?:,[0-9]{1,20})*)?$/;
+const BIGINT_MAX = 9223372036854775807n;
 
 const refusedCursor = () =>
   new AppError(400, 'invalid_request', 'The cursor is not one this listing gave out.');
@@ -68,8 +69,10 @@ export function auditAfter(
     written.v !== 1 ||
     typeof written.q !== 'string' ||
     !SEQUENCE.test(written.q) ||
+    BigInt(written.q) > BIGINT_MAX ||
     typeof written.n !== 'string' ||
-    !SNAPSHOT.test(written.n)
+    // Every snapshot Postgres would refuse to cast is refused here, as the listings' are (LI-H).
+    !isSnapshot(written.n)
   ) {
     throw refusedCursor();
   }

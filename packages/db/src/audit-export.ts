@@ -52,9 +52,9 @@ function filterOf(stored: Readonly<Record<string, string>>): AuditFilter {
 
 /**
  * **An export asked for** (ADM-039, LIF-028; the AU2 plan, AU-N): its filters and the snapshot of this
- * transaction, taken before anything else it writes, and its job, queued in the same transaction. The
- * caller records `export.produced` after, which the snapshot - its own transaction still running -
- * never sees.
+ * transaction, taken before anything else it writes, the newest event that snapshot sees, and its job,
+ * queued in the same transaction. The caller records `export.produced` after, past the newest, so the
+ * export never holds it.
  */
 export async function requestAuditExport(
   trx: TenantTransaction,
@@ -102,8 +102,8 @@ export async function readAuditExport(
 
 /**
  * **What an export holds**: every event its filters match that its snapshot sees, oldest first, as
- * JSON Lines in the read route's shape, read a hundred at a time, each page in a transaction of its
- * own - the snapshot, not the transaction, is what keeps it complete. Undefined where the export is no
+ * JSON Lines in the read route's shape, up to the newest it saw, read a hundred at a time, each page in a
+ * transaction of its own - the snapshot, not the transaction, is what keeps it complete. Undefined where the export is no
  * longer waiting: another attempt finished it.
  */
 export async function auditExportBody(
@@ -114,6 +114,11 @@ export async function auditExportBody(
   const asked = await db.withTenant(tenant, (trx) => readAuditExport(trx, id));
   if (!asked || asked.state !== 'queued') return undefined;
   const lines: string[] = [];
+  // Bounded by the newest event the snapshot saw as well as by the snapshot: the asking
+  // transaction's own id may fall below its snapshot's xmax, and Postgres leaves its own id out of
+  // the running ones, so the snapshot alone would see the export's own asking (the final review).
+  const newest = asked.newest;
+  if (newest === null) return { bytes: new Uint8Array(), events: 0 };
   let after: string | undefined;
   for (;;) {
     const page = await db.withTenant(tenant, (trx) =>
@@ -121,6 +126,7 @@ export async function auditExportBody(
         limit: 100,
         order: 'asc',
         snapshot: asked.snapshot,
+        upTo: newest,
         ...(after === undefined ? {} : { after }),
       }),
     );

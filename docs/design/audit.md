@@ -180,7 +180,9 @@ transaction that wrote it, `xact xid8` (`pg_current_xact_id()`). A read's cursor
 page's snapshot, and every page holds only events `pg_visible_in_snapshot(xact, snapshot)`, as
 [listing's paging](service-foundations.md) does (LI-H): a walk is exactly the set its first page saw,
 none repeated or skipped, and one committed late is in the next walk. An export keeps its request's
-snapshot the same way, so it is complete as of then (the AU2 plan, AU-M and AU-N). A bound by the
+snapshot the same way, so it is complete as of then, and stops at the newest event that snapshot saw,
+since the asking transaction's own id can be visible to its own snapshot (the AU2 plan, AU-M, AU-N
+and AU2-F). A bound by the
 snapshot's `xmin` was the first idea; newest first, it skips an event committed late, and any long
 transaction in the cluster hides committed ones. An `xid8` does not survive a restore into another
 cluster, so a snapshot taken before one reads nothing after it. LIF-055's hash chain (T7) runs over sequence

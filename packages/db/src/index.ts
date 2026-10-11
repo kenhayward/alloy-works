@@ -190,6 +190,7 @@ export {
   type AuditPage,
   type AuditPageRequest,
 } from './audit-read.js';
+export { isSnapshot } from './listing.js';
 export {
   auditExportBody,
   failAuditExport,

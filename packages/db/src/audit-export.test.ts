@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { recordEvent } from './audit.js';
 import {
@@ -134,6 +135,44 @@ describe('the audit log exported', () => {
     const sequences = exported.map((each) => Number(each.sequence));
     expect(sequences).toEqual([...sequences].sort((a, b) => a - b));
     expect(String(sequences.at(-1))).toBe(asked.newest);
+  });
+
+  it('ADM-039 holds nothing past the newest event it saw: never the asking of itself, though its own transaction began before a later one committed', async () => {
+    // The asking transaction takes its id first, as deciding the route does by locking the epoch;
+    // one that began after it then commits, so the snapshot's xmax passes the asker's own id.
+    let proceed!: () => void;
+    const later = new Promise<void>((resolve) => (proceed = resolve));
+    let began!: () => void;
+    const hasId = new Promise<void>((resolve) => (began = resolve));
+    const asking = service.withTenant(
+      production,
+      async (trx) => {
+        await sql`select pg_current_xact_id()`.execute(trx);
+        began();
+        await later;
+        const asked = await requestAuditExport(trx, ADA, { kind: 'export.' });
+        await recordEvent(trx, {
+          kind: 'export.produced',
+          subject: { kind: 'audit_export', id: asked.id },
+          detail: { export: asked.id, of: 'audit' },
+        });
+        return asked;
+      },
+      ADA_ACTS,
+    );
+    await hasId;
+    await service.withTenant(production, renamed(SAFETY, 'Between'), ADA_ACTS);
+    proceed();
+    const asked = await asking;
+
+    const exported = await lines(production, asked.id);
+    expect(
+      exported.filter(
+        (each) => (each as { detail?: { export?: string } }).detail?.export === asked.id,
+      ),
+    ).toEqual([]);
+    for (const each of exported)
+      expect(Number(each.sequence)).toBeLessThanOrEqual(Number(asked.newest));
   });
 
   it('records an export finished, or failed, once', async () => {

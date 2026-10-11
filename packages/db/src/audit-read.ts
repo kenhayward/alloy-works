@@ -36,6 +36,8 @@ export interface AuditPageRequest {
   readonly after?: string;
   /** The snapshot the walk's first page was read as of. */
   readonly snapshot?: string;
+  /** No event past this sequence: an export's newest, so it never holds its own asking. */
+  readonly upTo?: string;
   /** Newest first, as a person reads it; oldest first, as an export writes it. */
   readonly order?: 'desc' | 'asc';
 }
@@ -88,6 +90,9 @@ export async function readAuditEvents(
       query.where(
         sql<boolean>`e.sequence ${sql.raw(order === 'desc' ? '<' : '>')} ${request.after}::bigint`,
       ),
+    )
+    .$if(request.upTo !== undefined, (query) =>
+      query.where(sql<boolean>`e.sequence <= ${request.upTo}::bigint`),
     )
     .$if(filter.actor !== undefined, (query) => query.where('e.actor', '=', filter.actor!))
     // A family is its kinds, each exact: the kind's index serves a list, and a range of text would

@@ -115,7 +115,7 @@ const XID8_MAX = 18446744073709551615n;
  * A snapshot as `pg_current_snapshot()` writes one: `xmin:xmax:xip,...`, each a transaction id within
  * `xid8`'s range, xmin no more than xmax, and the transactions in progress between them, ascending.
  */
-function isSnapshot(text: string): boolean {
+export function isSnapshot(text: string): boolean {
   if (!SNAPSHOT.test(text)) return false;
   const [low, high, running] = text.split(':') as [string, string, string];
   const xmin = BigInt(low);
