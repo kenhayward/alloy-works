@@ -505,11 +505,13 @@ describe('Recovery in the component editor', () => {
     const view = await surface();
     const savedText = () => screen.getByRole('button', { name: 'Saved text' });
     // Offered while editing, as Save version is: reading, the lock is not this page's to list under.
-    expect(savedText()).toBeDisabled();
+    expect(savedText()).toHaveAttribute('aria-disabled', 'true');
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
-    await waitFor(() => expect(savedText()).toBeEnabled());
+    await waitFor(() => expect(savedText()).toHaveAttribute('aria-disabled', 'false'));
 
-    await userEvent.click(savedText());
+    // By the keyboard: a toolbar button takes no focus from a click, which keeps the selection.
+    savedText().focus();
+    await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(pending.length).toBeGreaterThan(0));
     await new Promise((resolve) => setTimeout(resolve, 30));
     // Nothing is listed while what was typed is still being saved.

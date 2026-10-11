@@ -346,7 +346,12 @@ const press = (view: EditorView, key: 'z' | 'y') =>
 
 const textOf = (view: EditorView) => view.state.doc.textContent;
 const editing = () =>
-  waitFor(() => expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled());
+  waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    ),
+  );
 const code = () =>
   within(screen.getByRole('region', { name: 'Fields of Protocol' })).getByRole('textbox', {
     name: /^Code/,
@@ -532,7 +537,10 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(editorStatus()).toHaveTextContent(
       heldSentence({ name: 'Grace', expectedRelease: GRACE_RELEASE }),
     );
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(sessionStorage.getItem(STEPS)).toBeNull();
   });
 
@@ -637,7 +645,10 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
 
     await reload(stack, quick);
     expect(stack.claims).toHaveLength(claimed);
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(sessionStorage.getItem(STEPS)).toBeNull();
   });
 
@@ -974,7 +985,10 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     );
     expect(textOf(again)).toBe('Unbox the printer.');
     expect(sessionStorage.getItem(STEPS)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('keeps offering the text it offered on opening until the author dismisses it: through typing, a claim, a save and a reload', async () => {
@@ -1082,7 +1096,10 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
       ),
     );
     expect(textOf(again)).toBe('Unbox the printer.');
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('says so where what was kept cannot be read at all, rather than dropping it unsaid', async () => {
@@ -1129,7 +1146,10 @@ describe('undo across a reload (component-editor.md, "Undo across a reload")', (
     expect(textOf(view)).toBe('Unbox the printer.');
     expect(sessionStorage.getItem(STEPS)).toBeNull();
     expect(stack.claims).toHaveLength(0);
-    expect(screen.getByRole('button', { name: 'Save version' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('takes back a change to the title after a reload, as it would have before', async () => {

@@ -30,6 +30,21 @@ export interface Status {
 const StatusContext = createContext<Status | null>(null);
 
 /**
+ * Whether the page around is the one shown: the workspace keeps a page it has left mounted and hidden,
+ * and a hidden page puts nothing in the bar. Shown wherever nothing says otherwise.
+ */
+const ShownContext = createContext(true);
+
+export function PageShown({ value, children }: { value: boolean; children: ReactNode }) {
+  return <ShownContext.Provider value={value}>{children}</ShownContext.Provider>;
+}
+
+/** Whether the page around is the one shown (`PageShown`). */
+export function usePageShown(): boolean {
+  return useContext(ShownContext);
+}
+
+/**
  * The status bar's owner, in the application shell (interface slice 15): one live region for the
  * whole application, so a notice is announced once however many parts of a page have something to
  * say. The bar is placed by whoever renders the provider, with `StatusBar` reading its state.
@@ -65,13 +80,17 @@ export function StatusProvider({ children }: { children: ReactNode }) {
  */
 export function StatusTools({ children }: { children: ReactNode }) {
   const host = useStatus()?.tools ?? null;
-  return host === null ? <>{children}</> : createPortal(children, host);
+  const shown = usePageShown();
+  if (host === null) return <>{children}</>;
+  return shown ? createPortal(children, host) : null;
 }
 
 /** A page's own state, such as whether its text is saved, at the bar's left; where it is otherwise. */
 export function StatusLead({ children }: { children: ReactNode }) {
   const host = useStatus()?.lead ?? null;
-  return host === null ? <>{children}</> : createPortal(children, host);
+  const shown = usePageShown();
+  if (host === null) return <>{children}</>;
+  return shown ? createPortal(children, host) : null;
 }
 
 /**

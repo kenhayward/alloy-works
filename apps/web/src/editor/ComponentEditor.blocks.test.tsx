@@ -388,21 +388,14 @@ describe('the regions of the view', () => {
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(within(panel).getByRole('button', { name: 'Nest item' })).toHaveFocus();
 
-    // Save version and Done editing are not a region: they keep their own ordinary tab stops, and
-    // F6 pressed from them enters the ring at its first region rather than cycling out of them.
-    // They take the focus only once a change has claimed the lock, which the press above did.
+    // Done, Save version and Saved text lead the Formatting toolbar (ADR-0056): they share its one
+    // tab stop, so F6 pressed from them moves on to the next region, as from any of its buttons.
     const save = await screen.findByRole('button', { name: 'Save version' });
-    await waitFor(() => expect(save).toBeEnabled());
-    // One tab stop for them all, the arrows moving along it, as every toolbar is (LG6b).
-    expect(
-      within(screen.getByRole('toolbar', { name: 'Component' }))
-        .getAllByRole('button')
-        .filter((button) => button.tabIndex === 0),
-    ).toHaveLength(1);
-
+    await waitFor(() => expect(save).toHaveAttribute('aria-disabled', 'false'));
+    expect(screen.getByRole('toolbar', { name: 'Formatting' })).toContainElement(save);
     save.focus();
     await userEvent.keyboard('{F6}');
-    expect(title).toHaveFocus();
+    expect(within(panel).getByRole('button', { name: 'Nest item' })).toHaveFocus();
   });
 
   it("CNT-077 hands F6 on to the application's own regions past either end of its ring, where it stands in one", async () => {
@@ -453,16 +446,14 @@ describe('the regions of the view', () => {
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(title).toHaveFocus();
 
-    // From outside the ring it enters at the last region, as F6 enters at the first: the author
-    // who pressed it was going backwards, and dropping them at the second region of three would be
-    // the ring guessing which one they meant to have left.
+    // From Save version, at the toolbar's head (ADR-0056), back to the header before it.
     act(() => view.dispatch(view.state.tr.insertText(' Keep the box.', 19)));
     const save = await screen.findByRole('button', { name: 'Save version' });
-    await waitFor(() => expect(save).toBeEnabled());
+    await waitFor(() => expect(save).toHaveAttribute('aria-disabled', 'false'));
 
     save.focus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
-    expect(text).toHaveFocus();
+    expect(title).toHaveFocus();
   });
 
   it('lands on a region a reader cannot type in rather than skipping it', async () => {
