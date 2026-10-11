@@ -9,6 +9,11 @@ import { AppError } from './errors.js';
  */
 const WIRE_CODES = {
   'lock.held': 'lock_held',
+  'lock.taken': 'lock_taken',
+  'lock.free': 'lock_free',
+  'lock.own': 'lock_own',
+  'lock.active': 'lock_active',
+  'lock.taking': 'lock_taking',
   'lock.required': 'lock_required',
   'iteration.stale': 'iteration_stale',
   'iteration.conflict': 'iteration_conflict',
@@ -99,6 +104,9 @@ export const DOTTED_CODES = Object.keys(WIRE_CODES) as DottedCode[];
 const RULES: Partial<Record<DottedCode, string>> = {
   'lock.held': 'API-039',
   'lock.required': 'COL-005',
+  'lock.taken': 'COL-045',
+  'lock.active': 'COL-046',
+  'lock.taking': 'COL-047',
   'version.precondition': 'API-037',
   'format.unsupported': 'PUB-014',
   'page_reference.without_pdf': 'PUB-074',

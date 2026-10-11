@@ -199,11 +199,12 @@ describe("what a document's stream hears, said by the database (the PL plan)", (
       claimLock(trx, { artifactId: closed, principal: ada, session: SESSION }),
     );
     expect(await service.withTenant(tenant, (trx) => locksShown(trx, [open, closed]))).toEqual([
-      { component: open, holder: null, expectedRelease: null },
+      { component: open, holder: null, expectedRelease: null, taking: null },
       {
         component: closed,
         holder: { id: ada, name: 'Ada' },
         expectedRelease: expect.any(String),
+        taking: null,
       },
     ]);
   });

@@ -217,6 +217,7 @@ describe("a document's stream: its locks and outline, to whoever may read them (
         component: open,
         holder: { id: ids.ada, name: 'Ada' },
         expectedRelease: expect.any(String),
+        taking: null,
       });
       expect((await nextOf(adas, 'lock')).data).toMatchObject({ component: open });
 
@@ -227,6 +228,7 @@ describe("a document's stream: its locks and outline, to whoever may read them (
         component: open,
         holder: null,
         expectedRelease: null,
+        taking: null,
       });
 
       // A stream opened now begins where things stand: Restricted's lock is Ada's to see.

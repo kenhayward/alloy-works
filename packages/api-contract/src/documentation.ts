@@ -115,6 +115,7 @@ const operationTags = {
     'discardUnsaved',
     'saveIteration',
     'claimLock',
+    'takeLock',
     'releaseLock',
     'listComponentVersions',
     'cutVersion',
@@ -232,6 +233,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads one retained editing iteration, including its content and values. The caller must still hold the editing lock.',
   saveIteration:
     'Saves the complete component content for the named editing session and sequence. An editing lock and the version precondition still apply.',
+  takeLock:
+    'Asks for a component an idle holder has: refused until they have been idle the environment’s take period. Asked, the holder is told at once on their stream and keeps it if they save anything within a minute; asked again by the same session once that minute has passed, the lock is the asker’s, and the taking is on the audit log.',
   claimLock:
     'Claims or moves the editing lock to the caller’s session. Another holder’s live lock is not overridden.',
   releaseLock:

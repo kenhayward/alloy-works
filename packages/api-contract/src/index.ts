@@ -39,6 +39,8 @@ export {
 } from './documents.js';
 export {
   ClaimBody,
+  TakeAnswer,
+  TakeBody,
   CutAnswer,
   CutBody,
   DiscardAnswer,

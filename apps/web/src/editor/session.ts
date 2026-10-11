@@ -32,6 +32,22 @@ export type ClaimResult =
   | { readonly ok: false; readonly code: 'lock_held'; readonly holder: Holder }
   | { readonly ok: false; readonly code: 'failed' | Refusal };
 
+/**
+ * Asking an idle holder for the lock (COL-009; collaboration.md, Taking): taken, or asked and theirs
+ * until their grace ends; refused while they are active (`takeableAt`), while somebody else has asked,
+ * or where nobody or this author holds it.
+ */
+export type TakeResult =
+  | { readonly ok: true; readonly taken: true }
+  | { readonly ok: true; readonly taken: false; readonly until: string }
+  | {
+      readonly ok: false;
+      readonly code: 'lock_active' | 'lock_taking' | 'lock_free' | 'lock_own' | 'failed' | Refusal;
+      readonly takeableAt?: string;
+      /** For `lock_taking`: who has asked already. */
+      readonly by?: string | null;
+    };
+
 export type SaveResult =
   | { readonly ok: true }
   | {
@@ -39,6 +55,7 @@ export type SaveResult =
       readonly code:
         | 'lock_held'
         | 'lock_required'
+        | 'lock_taken'
         | 'version_precondition'
         | 'iteration_stale'
         | 'iteration_conflict'
@@ -46,6 +63,8 @@ export type SaveResult =
         | Refusal;
       /** For a stale or conflicting sequence: the latest the service has accepted from this session. */
       readonly latest?: number;
+      /** For `lock_taken`: who has it now (COL-045). */
+      readonly takenBy?: string | null;
     };
 
 export type CutResult =
@@ -123,6 +142,8 @@ export interface SessionService {
   iterations(cursor?: string): Promise<IterationPage>;
   /** One of them, content and values. */
   iteration(id: string): Promise<IterationRead>;
+  /** Asks an idle holder for the lock under this session, or takes it once their grace has passed. */
+  take(): Promise<TakeResult>;
 }
 
 /** Time, given so that tests can move it. */
@@ -266,6 +287,11 @@ export interface Session {
   doneEditing(): Promise<void>;
   /** Claim again after a refusal; `move` continues here when the holder is this author elsewhere. */
   claimAgain(move: boolean): void;
+  /**
+   * Take over from an idle holder (COL-009): from reading, asks for the lock, and once it is taken
+   * claims it as this session's, going on to editing. Answers how the asking went.
+   */
+  takeOver(): Promise<TakeResult>;
   /**
    * A reload going on with the changes its window kept, replayed onto the surface (W11.3): from
    * reading, claims again under the same session, neither fresh nor moving, as a lapsed lock is
@@ -615,6 +641,16 @@ export function createSession(options: SessionOptions): Session {
       refuse(result.code);
       return false;
     }
+    if (result.code === 'lock_taken') {
+      // Taken from this session while it was idle (COL-045): who has it, and that the work it saved is
+      // kept, offered when it next holds the lock.
+      dirty = true;
+      const who = result.takenBy ?? 'Somebody';
+      lose(
+        `${who} has taken over this component. What you saved is kept, and offered again when you next hold it; your unsaved text is kept below to copy.`,
+      );
+      return false;
+    }
     if (
       result.code === HELD ||
       result.code === 'lock_required' ||
@@ -961,6 +997,13 @@ export function createSession(options: SessionOptions): Session {
     claimAgain(move) {
       if (phase === 'reading') void claim(move, false);
       else if (phase === 'lost' && lostFromStale) void claim(move, true);
+    },
+    async takeOver() {
+      if (phase !== 'reading' || disposed) return { ok: false, code: 'failed' };
+      const taken = await service.take();
+      // Taken: the lock is this session's already, and claiming it again starts editing under it.
+      if (taken.ok && taken.taken && phase === 'reading' && !disposed) void claim(false, false);
+      return taken;
     },
     resume(unsent, repeat) {
       if (phase !== 'reading' || disposed) return;

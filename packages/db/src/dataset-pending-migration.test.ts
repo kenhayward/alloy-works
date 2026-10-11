@@ -159,6 +159,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0067_live',
       '0068_presence',
       '0069_lock_periods',
+      '0070_lock_taking',
     ]);
     const kept = await queryAs(
       db.adminUrl,

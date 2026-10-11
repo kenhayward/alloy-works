@@ -921,6 +921,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   soon an idle holder may be asked for it - 5 unless changed, always less - beside how long saved
   changes are kept. Anybody signed in reads them; an administrator changes them
   (`PUT /v1/settings/editing`).
+- **Take over from somebody who has stopped.** A component somebody else holds offers **Take over**
+  once they have done nothing for the environment's take period - 5 minutes unless changed - and says
+  when before then. Asking tells them at once, wherever they have it open, and gives them a minute:
+  anything they save keeps it. After that minute it is yours, the taking is on the audit log, and they
+  are told who has it and that what they saved is kept for when they next hold it. Through the API,
+  `POST /v1/components/{id}/lock/take`.
 - **Who else is in a document, as it happens.** A document's bar shows the initials of everybody else
   reading or editing it, each named with what they are doing, faded once not heard from for 30 seconds
   and gone after a minute; each component's label says who is in it. Who holds a component, and until

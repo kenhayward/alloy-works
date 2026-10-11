@@ -48,6 +48,14 @@ export function lockView(lock: LockState, caller: string) {
     expectedRelease: lock.expiresAt.toISOString(),
     yours,
     session: yours ? lock.session : null,
+    takeableAt: lock.takeableAt.toISOString(),
+    taking:
+      lock.taking === null
+        ? null
+        : {
+            by: { id: lock.taking.by, name: lock.taking.byName },
+            until: lock.taking.until.toISOString(),
+          },
   };
 }
 

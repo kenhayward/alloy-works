@@ -371,6 +371,10 @@ export interface ComponentLockTable {
   claimed_at: ColumnType<Date, Date | undefined, Date>;
   active_at: ColumnType<Date, Date | undefined, Date>;
   expires_at: Date;
+  taking_by: string | null;
+  taking_session: string | null;
+  taking_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  taken_from: string | null;
 }
 
 /**

@@ -300,6 +300,8 @@ describe('what each occurrence contributes, through the service', () => {
       expectedRelease,
       yours: false,
       session: null,
+      takeableAt: expect.any(String),
+      taking: null,
     };
 
     // Grace may edit it, but not now: Ada holds it until then. The one she holds is hers.
@@ -315,6 +317,8 @@ describe('what each occurrence contributes, through the service', () => {
           expectedRelease: expect.any(String),
           yours: true,
           session: '00000000-0000-4000-8000-00000000abce',
+          takeableAt: expect.any(String),
+          taking: null,
         },
       },
       { node: unapproved, version: null, mayEdit: true, lock: heldByAda },

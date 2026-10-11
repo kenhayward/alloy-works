@@ -283,7 +283,13 @@ export const auditKindSpecs = {
   'baseline.superseded': kind(['LIF-026'], empty, LATER),
   'content.restored': kind(['LIF-026', 'CNT-170'], empty, LATER),
   'reference.repointed': kind(['CNT-161'], empty, LATER),
-  'lock.taken': kind(['COL-009'], empty, LATER),
+  // A lock taken from an idle holder after their grace (COL-009; collaboration.md): whom from, and
+  // the session it was taken from; the taker is the actor.
+  'lock.taken': kind(
+    ['COL-009', 'COL-045'],
+    z.strictObject({ from: Id, session: Id }),
+    'apps/service/src/editing.ts',
+  ),
   'suggestion.accepted': kind(['COL-024'], empty, LATER),
   'suggestion.rejected': kind(['COL-024'], empty, LATER),
   'template.moved': kind(['TPL-033'], empty, LATER),

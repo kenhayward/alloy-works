@@ -185,6 +185,8 @@ describe('writing in an editing session through the service', () => {
           expectedRelease: expect.any(String),
           yours: true,
           session,
+          takeableAt: expect.any(String),
+          taking: null,
         },
       });
 

@@ -119,12 +119,54 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "taking": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "by": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "An id, as the API names the thing elsewhere"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "until": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "by",
+                              "until"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Somebody asking to take it over, and when its holder's grace to keep it ends (COL-047); null where nobody is"
                       }
                     },
                     "required": [
                       "component",
                       "holder",
-                      "expectedRelease"
+                      "expectedRelease",
+                      "taking"
                     ],
                     "additionalProperties": false,
                     "description": "A component's lock, as it now stands (COL-007)"
@@ -217,12 +259,54 @@
                 "string",
                 "null"
               ]
+            },
+            "taking": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "An id, as the API names the thing elsewhere"
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "until": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "by",
+                    "until"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Somebody asking to take it over, and when its holder's grace to keep it ends (COL-047); null where nobody is"
             }
           },
           "required": [
             "component",
             "holder",
-            "expectedRelease"
+            "expectedRelease",
+            "taking"
           ],
           "additionalProperties": false,
           "description": "A component's lock, as it now stands (COL-007)"

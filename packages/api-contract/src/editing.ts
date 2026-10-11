@@ -28,6 +28,19 @@ export const ClaimBody = z.strictObject({
 export type ClaimBody = z.infer<typeof ClaimBody>;
 
 export const LockAnswer = z.object({ lock: Lock });
+
+export const TakeBody = z.strictObject({ session: LowercaseUuid });
+export type TakeBody = z.infer<typeof TakeBody>;
+
+export const TakeAnswer = z.object({
+  taken: z
+    .boolean()
+    .describe(
+      "True: the lock is this session's. False: asked, the holder warned, and theirs until `lock.taking.until`; ask again then",
+    ),
+  lock: Lock,
+});
+export type TakeAnswer = z.infer<typeof TakeAnswer>;
 export type LockAnswer = z.infer<typeof LockAnswer>;
 
 export const IterationBody = z.strictObject({
@@ -135,6 +148,11 @@ export type CutAnswer = z.infer<typeof CutAnswer>;
 export const EditingRefusal = ErrorBody.extend({
   holder: z.object({ id: z.string(), name: z.string().nullable() }).optional(),
   expectedRelease: z.string().optional(),
+  takeableAt: z.string().optional().describe('lock_active: when it may be asked for'),
+  taking: z
+    .object({ id: z.string(), name: z.string().nullable() })
+    .optional()
+    .describe('lock_taking: who has asked already'),
   current: VersionSummary.optional(),
   latest: z.number().optional(),
   failures: z
@@ -168,7 +186,7 @@ const forbidden = {
 } as const;
 const refused = {
   description:
-    'lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict',
+    'lock_held, lock_required, lock_taken (taken from this session, naming who has it), version_precondition, iteration_stale or iteration_conflict',
   schema: EditingRefusal,
 } as const;
 const edit = { check: 'permission', permission: 'edit', target: { artifact: 'id' } } as const;
@@ -190,6 +208,27 @@ export const editingRoutes = {
       403: forbidden,
       404: notFound,
       409: refused,
+    },
+  },
+  takeLock: {
+    operationId: 'takeLock',
+    method: 'POST',
+    path: '/v1/components/{id}/lock/take',
+    summary: 'Ask an idle holder for the lock, and take it once their grace has passed',
+    tenantScoped: true,
+    access: edit,
+    params: ComponentParams,
+    body: TakeBody,
+    responses: {
+      200: { description: 'Taken, or asked and waiting', schema: TakeAnswer },
+      401: unauthenticated,
+      403: forbidden,
+      404: notFound,
+      409: {
+        description:
+          'lock_free: nobody holds it, so claim it. lock_own: the caller holds it, so continue here. lock_active: its holder is not idle long enough yet. lock_taking: somebody else has asked',
+        schema: EditingRefusal,
+      },
     },
   },
   releaseLock: {

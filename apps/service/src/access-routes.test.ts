@@ -901,6 +901,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { session: MISSING },
     }),
+    takeLock: () => ({
+      url: `/v1/components/${dosing}/lock/take`,
+      status: 404,
+      payload: { session: MISSING },
+    }),
     releaseLock: () => ({
       url: `/v1/components/${dosing}/lock?session=${MISSING}&openedFrom=${MISSING}`,
       status: 404,
