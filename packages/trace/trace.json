@@ -18798,7 +18798,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 249,
+      "line": 254,
       "kind": "title"
     },
     {
@@ -18822,19 +18822,25 @@
     {
       "id": "ADM-038",
       "file": "apps/service/src/audit-routes.test.ts",
-      "line": 135,
+      "line": 146,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-039",
+      "file": "apps/service/src/audit-routes.test.ts",
+      "line": 205,
       "kind": "title"
     },
     {
       "id": "LIF-028",
       "file": "apps/service/src/audit-routes.test.ts",
-      "line": 155,
+      "line": 166,
       "kind": "title"
     },
     {
       "id": "LIF-031",
       "file": "apps/service/src/audit-routes.test.ts",
-      "line": 171,
+      "line": 182,
       "kind": "title"
     },
     {
@@ -18966,7 +18972,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 863,
+      "line": 883,
       "kind": "title"
     },
     {
@@ -19590,7 +19596,13 @@
     {
       "id": "ADM-038",
       "file": "apps/web/src/admin/AuditLog.test.tsx",
-      "line": 52,
+      "line": 64,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-039",
+      "file": "apps/web/src/admin/AuditLog.test.tsx",
+      "line": 148,
       "kind": "title"
     },
     {
@@ -20260,6 +20272,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-039",
+      "file": "apps/worker/src/audit-export.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
       "line": 445,
@@ -20905,6 +20923,18 @@
       "id": "LIF-027",
       "file": "packages/db/src/audit-content.test.ts",
       "line": 143,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-039",
+      "file": "packages/db/src/audit-export.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-028",
+      "file": "packages/db/src/audit-export.test.ts",
+      "line": 123,
       "kind": "title"
     },
     {
