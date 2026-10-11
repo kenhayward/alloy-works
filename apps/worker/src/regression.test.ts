@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import {
   assemble,
@@ -18,10 +19,11 @@ import {
   writeDocx,
 } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { keepingEach } from './testing/keep.js';
+import { modeOf, pinningEach, recordedOutputs } from './testing/recorded.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type Bookmark } from './testing/pdf.js';
 import { defaultTheme } from './testing/theme.js';
@@ -68,11 +70,33 @@ import { temmlOutput } from '../../../packages/domain/src/content/admission/temm
 const fonts = await loadPinnedFonts();
 // Every PDF the corpus compiles is kept in ALLOY_CORPUS_PDFS where it is set, named by its case, for the
 // Matterhorn review a person makes on them (PUB-105, docs/guides/auditing-a-release.md).
-const typst = keepingEach(
-  createTypst({ binary: typstBinaryPath(), fonts }),
-  process.env['ALLOY_CORPUS_PDFS'],
-  () => expect.getState().currentTestName ?? 'outside a case',
+const caseName = () => expect.getState().currentTestName ?? 'outside a case';
+// Every PDF and DOCX the corpus makes is held to the SHA-256 recorded for it (PUB-075, AU-J):
+// `pnpm --filter @alloy-works/worker record` records a new case's, and `record --accept` a change.
+const outputs = await recordedOutputs({
+  pins: fileURLToPath(new URL('./testing/recorded-outputs.json', import.meta.url)),
+  mode: modeOf(process.env['ALLOY_RECORD']),
+  ...(process.env['ALLOY_CORPUS_DIFFERENCES']
+    ? { keep: process.env['ALLOY_CORPUS_DIFFERENCES'] }
+    : {}),
+});
+beforeEach(() => outputs.reset());
+afterAll(() => outputs.write());
+const typst = pinningEach(
+  keepingEach(
+    createTypst({ binary: typstBinaryPath(), fonts }),
+    process.env['ALLOY_CORPUS_PDFS'],
+    caseName,
+  ),
+  outputs,
+  caseName,
 );
+/** The product's Word writer, its every package held to its pin as the corpus's PDFs are. */
+const pinnedDocx = (input: Parameters<typeof writeDocx>[0]) => {
+  const written = writeDocx(input);
+  outputs.check(caseName(), 'docx', written.bytes);
+  return written;
+};
 /** The worker's own face files, by the hash the theme names each by: what the job hands the writer. */
 const faces = await pinnedFacesByHash(FONT_DIRECTORY);
 const at = new Date('2026-09-19T00:00:00Z');
@@ -238,7 +262,7 @@ describe('the publishing regression corpus', () => {
 
     const assembled = assemble(levels(9, ['docx']));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    const { bytes } = writeDocx({
+    const { bytes } = pinnedDocx({
       document: assembled.document,
       numbering: assembled.numbering,
       word: assembled.word!,
@@ -655,7 +679,9 @@ describe("PUB-087 the engine spike's nine cases, through the pipeline", () => {
     const chart = await chartOf(componentId(0xa552));
     const edited = async (edit: number) =>
       readPdf((await published(longDocument(edit, chart), [chart])).pdf);
-    const [before, after] = await Promise.all([edited(0), edited(1)]);
+    // One after the other, so each is held to its own recorded output (PUB-075).
+    const before = await edited(0);
+    const after = await edited(1);
     expect(before.pages).toBeGreaterThan(250);
     const page = before.taggedText.findIndex((each) => each.join(' ').includes('edittarget'));
     expect(page).toBeGreaterThan(30);
@@ -856,8 +882,7 @@ describe("PUB-087 the engine spike's nine cases, through the pipeline", () => {
   }, 120_000);
 
   it('case 9: makes the same bytes of the same inputs, assembled and compiled again', async () => {
-    // The spike ran it on two architectures as well; the suite runs on one, so the half across
-    // machines is not here (PUB-043 and PUB-075 to PUB-077 are unclaimed for want of it).
+    // Across machines and runs, every output is held to its recorded bytes (testing/recorded.ts).
     const chart = await chartOf(componentId(0xa554));
     for (const [name, input, charts] of [
       ['case 5', mathematics(), []],
@@ -1055,7 +1080,7 @@ describe('a Word publishing defect fixed, named by its issue', () => {
     });
     const assembled = assemble(input);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    const { bytes } = writeDocx({
+    const { bytes } = pinnedDocx({
       document: assembled.document,
       numbering: assembled.numbering,
       word: assembled.word!,
@@ -1230,7 +1255,7 @@ describe('the publishing defects still open, each pinned as it stands until the 
     const { assembled, pdf } = await published(input);
     expect((await readPdf(pdf)).taggedText.flat().join(' ')).toContain('Tabhere');
     if (!assembled.ok) throw new Error('Refused');
-    const { bytes } = writeDocx({
+    const { bytes } = pinnedDocx({
       document: assembled.document,
       numbering: assembled.numbering,
       word: assembled.word!,

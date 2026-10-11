@@ -176,9 +176,14 @@ writing act in the tenant on one row, and is ruled out.
 
 A sequence is taken when the event is inserted and seen when its transaction commits, so a later
 sequence can be readable before an earlier one (the AU1 plan, AU1-B). Each event keeps the
-transaction that wrote it, `xact xid8` (`pg_current_xact_id()`), and a read or an export pages only
-over events whose `xact` is below its snapshot's `xmin`: everything below has committed or never will,
-so a cursor never passes a sequence that commits late. LIF-055's hash chain (T7) runs over sequence
+transaction that wrote it, `xact xid8` (`pg_current_xact_id()`). A read's cursor carries its first
+page's snapshot, and every page holds only events `pg_visible_in_snapshot(xact, snapshot)`, as
+[listing's paging](service-foundations.md) does (LI-H): a walk is exactly the set its first page saw,
+none repeated or skipped, and one committed late is in the next walk. An export keeps its request's
+snapshot the same way, so it is complete as of then (the AU2 plan, AU-M and AU-N). A bound by the
+snapshot's `xmin` was the first idea; newest first, it skips an event committed late, and any long
+transaction in the cluster hides committed ones. An `xid8` does not survive a restore into another
+cluster, so a snapshot taken before one reads nothing after it. LIF-055's hash chain (T7) runs over sequence
 order and is computed at export, so it needs nothing stored now.
 
 ## Kept as written
