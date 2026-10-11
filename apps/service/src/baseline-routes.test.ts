@@ -8,6 +8,8 @@ import {
   grant,
   migrate,
   recordVersion,
+  substanceOf,
+  type StoredVersion,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -17,7 +19,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
-import type { OutlineDocument, OutlineNode } from '@alloy-works/domain';
+import type { ContentDocument, OutlineDocument, OutlineNode } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -327,6 +329,177 @@ describe('baselines over HTTP (baselines.md)', () => {
       }),
     ]);
     expect(view.body).not.toContain(secret!.artifactId);
+  });
+
+  /** A component in a space, at a second version saying `text`. */
+  const componentSaying = (space: string, author: string, title: string, text: string) =>
+    tenantDb
+      .withTenant(tenant, async (trx) => {
+        const made = await createComponent(trx, {
+          spaceId: space,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        return made.version;
+      })
+      .then((version) => reviseTo(version, author, text));
+  const reviseTo = (version: StoredVersion, author: string, text: string) =>
+    tenantDb.withTenant(tenant, async (trx) => {
+      const substance = substanceOf(version);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const content: ContentDocument = {
+        ...substance.content,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'p1',
+            style: 'body',
+            content: [{ type: 'text', value: text, marks: [] }],
+          },
+        ],
+      };
+      const next = await recordVersion(trx, {
+        artifactId: version.artifactId,
+        openedFrom: version.id,
+        author,
+        substance: { ...substance, content },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+      return next.version;
+    });
+  const referenceTo = (id: string, component: string): OutlineNode => ({
+    type: 'reference',
+    id,
+    component,
+    mode: { kind: 'latest' },
+    numbered: true,
+    matter: 'body',
+    pageBreak: 'none',
+    values: {},
+    children: [],
+  });
+  /** A next version of a document, its outline these nodes. */
+  const outlineTo = (document: StoredVersion, author: string, nodes: OutlineNode[]) =>
+    tenantDb.withTenant(tenant, async (trx) => {
+      const next = await recordVersion(trx, {
+        artifactId: document.artifactId,
+        openedFrom: document.id,
+        author,
+        substance: {
+          kind: 'document',
+          content: { ...(document.content as OutlineDocument), nodes },
+        },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+      return next.version;
+    });
+
+  it('VER-025 CNT-112 compares two versions of a component word by word, and refuses a version of another', async () => {
+    const first = await componentSaying(clinical, ids.ada!, 'Printer', 'Set the tray, then wait.');
+    const second = await reviseTo(first, ids.ada!, 'Set the new tray, then wait.');
+    const answer = await call(
+      'GET',
+      `/v1/components/${first.artifactId}/comparison?from=${first.id}&to=${second.id}`,
+      'grace',
+    );
+    expect(answer.statusCode, answer.body).toBe(200);
+    const body = answer.json<{
+      from: { number: string };
+      changes: { change: string; newer?: string; edited?: unknown }[];
+    }>();
+    expect(body.from.number).toBe(`${first.revision}.${first.version}`);
+    expect(body.changes).toEqual([
+      expect.objectContaining({
+        change: 'matched',
+        newer: 'p1',
+        edited: { ops: expect.arrayContaining([{ op: 'insert', text: 'new ' }]) },
+      }),
+    ]);
+    const other = await componentSaying(clinical, ids.ada!, 'Other', 'Elsewhere.');
+    expect(
+      (
+        await call(
+          'GET',
+          `/v1/components/${first.artifactId}/comparison?from=${first.id}&to=${other.id}`,
+          'grace',
+        )
+      ).statusCode,
+    ).toBe(404);
+  });
+
+  it('VER-024 VER-025 compares a baseline with a later one and with the document now: the outline, and each component whose version differs', async () => {
+    const printer = await componentSaying(clinical, ids.ada!, 'Printer', 'Set the tray.');
+    const tray = await componentSaying(clinical, ids.ada!, 'Tray', 'Load the tray.');
+    const one = await outlineTo(await documentWith(), ids.ada!, [
+      referenceTo('a'.repeat(26), printer.artifactId),
+    ]);
+    const first = (await make(one, 'Issue 1')).json<{ id: string }>().id;
+    await reviseTo(printer, ids.ada!, 'Set the tray firmly.');
+    const two = await outlineTo(one, ids.ada!, [
+      referenceTo('a'.repeat(26), printer.artifactId),
+      referenceTo('b'.repeat(26), tray.artifactId),
+    ]);
+    const second = (await make(two, 'Issue 2')).json<{ id: string }>().id;
+
+    const compared = await call('GET', `/v1/baselines/${first}/comparison?with=${second}`, 'grace');
+    expect(compared.statusCode, compared.body).toBe(200);
+    const body = compared.json<{
+      newer: { baseline: { name: string } };
+      structure: { change: string; newer?: string }[];
+      components: { node: string; changes: { change: string; edited: unknown }[] }[];
+    }>();
+    expect(body.newer.baseline.name).toBe('Issue 2');
+    expect(body.structure).toContainEqual(
+      expect.objectContaining({ change: 'inserted', newer: 'b'.repeat(26) }),
+    );
+    expect(body.components.map((each) => each.node)).toEqual(['a'.repeat(26)]);
+    expect(body.components[0]!.changes[0]).toMatchObject({
+      change: 'matched',
+      edited: { ops: expect.any(Array) },
+    });
+
+    // With the document now: the outline as it is, each reference resolved as the caller reads it.
+    const now = await call('GET', `/v1/baselines/${first}/comparison?with=now`, 'grace');
+    expect(now.statusCode, now.body).toBe(200);
+    expect(now.json<{ newer: { baseline: null; version: { id: string } } }>().newer).toMatchObject({
+      baseline: null,
+      version: { id: two.id },
+    });
+    // A baseline of another document is none of this one's.
+    const elsewhere = (await make(await documentWith(), 'Elsewhere')).json<{ id: string }>().id;
+    expect(
+      (await call('GET', `/v1/baselines/${first}/comparison?with=${elsewhere}`, 'grace'))
+        .statusCode,
+    ).toBe(404);
+  });
+
+  it('VER-050 shows a component the reader may not read where it stands in the outline, never whether it changed', async () => {
+    const open = await componentSaying(clinical, ids.ivy!, 'Open', 'Shared text.');
+    const secret = await componentSaying(quality, ids.grace!, 'Secret', 'Calibrate at five.');
+    const nodes = [
+      referenceTo('c'.repeat(26), open.artifactId),
+      referenceTo('d'.repeat(26), secret.artifactId),
+    ];
+    const one = await outlineTo(await documentWith(), ids.ada!, nodes);
+    const first = (await make(one, 'Before', 'ivy')).json<{ id: string }>().id;
+    await reviseTo(secret, ids.grace!, 'Calibrate at seven.');
+    const two = await outlineTo(one, ids.ada!, [...nodes].reverse());
+    const second = (await make(two, 'After', 'ivy')).json<{ id: string }>().id;
+
+    const compared = await call('GET', `/v1/baselines/${first}/comparison?with=${second}`, 'ada');
+    expect(compared.statusCode, compared.body).toBe(200);
+    expect(compared.body).not.toContain(secret.artifactId);
+    expect(compared.body).not.toContain('Calibrate');
+    const body = compared.json<{
+      structure: { change: string; newer?: string; edited?: unknown; changed?: string[] }[];
+      components: unknown[];
+    }>();
+    expect(body.components).toEqual([]);
+    const withheld = body.structure.find((each) => each.newer === 'd'.repeat(26))!;
+    expect(withheld).toMatchObject({ change: 'matched', edited: null, changed: [] });
   });
 
   it('VER-049 marks a baseline superseded by a later one, keeps it readable, and lists by state', async () => {
