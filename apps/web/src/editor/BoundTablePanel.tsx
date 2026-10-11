@@ -33,6 +33,7 @@ import {
   type BoundTablePlace,
   type EditorView,
   type SortKey,
+  type GroupLevel,
   type Wide,
 } from '@alloy-works/editor';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
@@ -101,6 +102,15 @@ export const BOUND_TABLE_WORDS = {
   addSort: 'Add sort',
   sortHint:
     'Rows are sorted by the first key, then by each next key where the earlier ones are equal. A table takes up to four.',
+  transposeBy: 'Transpose by',
+  notTransposed: 'Not transposed',
+  groups: 'Group',
+  groupedBy: 'Grouped by',
+  addGroup: 'Add group',
+  subtotal: 'Subtotal rows',
+  noSubtotal: 'No subtotal rows',
+  groupHint:
+    "Rows are grouped under a heading for each value, the first group outermost, and sorted within each group. Subtotal rows are the query's own, marked by a column holding true or false, and stand last in their group. A table takes up to three.",
   newNoteOn: 'New note on',
   deleteTable: 'Delete table',
   unreadable:
@@ -169,8 +179,8 @@ export interface BoundTablePanelProps {
   readonly value?: ReactNode;
 }
 
-/** The fold open: one of Column, Sort and Notes, or none (ADR-0052). */
-type Open = 'column' | 'sort' | 'notes' | null;
+/** The fold open: one of Column, Sort, Group and Notes, or none (ADR-0052). */
+type Open = 'column' | 'sort' | 'group' | 'notes' | null;
 
 /**
  * **The Bound table panel** (the TB2 plan, TB2-F), beside the Value panel while the cursor stands in a
@@ -361,6 +371,21 @@ export function BoundTablePanel({
   const formattingColumn = formatting === null ? null : table.columns[formatting];
   const formattingType = formattingColumn ? typeOf(formattingColumn.column) : null;
 
+  // Its groups (TG2; TAB-008, TAB-043): any column but an image's, each grouped once, up to three; a
+  // level's subtotal rows marked by a column holding true or false.
+  const ungrouped = offered.find(
+    (each) =>
+      each.type.base !== 'image' && !table.groups.some((group) => group.column === each.name),
+  );
+  const setGroups = (groups: readonly GroupLevel[]) => change({ groups });
+  const mayGroup =
+    enabled && table.transpose === null && table.groups.length < 3 && ungrouped !== undefined;
+  const addGroup = () => {
+    if (!mayGroup || ungrouped === undefined) return;
+    setGroups([...table.groups, { column: ungrouped.name }]);
+  };
+  const flags = offered.filter((each) => each.type.base === 'boolean').map((each) => each.name);
+
   const maySort = enabled && table.sort.length < 4 && unsorted !== undefined;
   const addSort = () => {
     if (!maySort || unsorted === undefined) return;
@@ -385,6 +410,28 @@ export function BoundTablePanel({
         </h3>
         <div className={styles['fields']}>
           <TableStyle view={view} value={table.style} enabled={enabled} />
+          <label>
+            {BOUND_TABLE_WORDS.transposeBy}
+            <select
+              value={table.transpose ?? ''}
+              disabled={!enabled || table.groups.length > 0}
+              onChange={(event) =>
+                change({ transpose: event.target.value === '' ? null : event.target.value })
+              }
+            >
+              <option value="">{BOUND_TABLE_WORDS.notTransposed}</option>
+              {namesOffered(
+                offered.filter((each) => each.type.base !== 'image'),
+                table.transpose ?? '',
+              )
+                .filter((name) => name !== '')
+                .map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+            </select>
+          </label>
           <label>
             {BOUND_TABLE_WORDS.wide}
             <select
@@ -669,6 +716,118 @@ export function BoundTablePanel({
           );
         })}
         <p className={styles['hint']}>{BOUND_TABLE_WORDS.sortHint}</p>
+      </Fold>
+      <Fold
+        id={`${bandId}-group`}
+        label={BOUND_TABLE_WORDS.groups}
+        count={table.groups.length}
+        summary={
+          table.groups.length === 0
+            ? BOUND_TABLE_WORDS.none
+            : `${BOUND_TABLE_WORDS.groupedBy} ${table.groups.map((group) => header(group.column)).join(', then ')}`
+        }
+        open={open === 'group'}
+        onToggle={() => setOpen(open === 'group' ? null : 'group')}
+        acts={
+          open === 'group' ? (
+            <button
+              type="button"
+              className={styles['addWords']}
+              aria-disabled={!mayGroup}
+              onClick={addGroup}
+            >
+              <Icon name="Add" />
+              {BOUND_TABLE_WORDS.addGroup}
+            </button>
+          ) : (
+            <IconButton
+              label={BOUND_TABLE_WORDS.addGroup}
+              className={styles['add']}
+              aria-disabled={!mayGroup}
+              onClick={() => {
+                setOpen('group');
+                addGroup();
+              }}
+            >
+              <Icon name="Add" />
+            </IconButton>
+          )
+        }
+      >
+        {table.groups.map((group, at) => {
+          const set = (next: GroupLevel) =>
+            setGroups(table.groups.map((each, index) => (index === at ? next : each)));
+          const label = `${BOUND_TABLE_WORDS.groups} ${at + 1}`;
+          return (
+            <div key={at} role="group" aria-label={label} className={styles['row']}>
+              <span className={styles['index']}>{at + 1}</span>
+              <select
+                aria-label={BOUND_TABLE_WORDS.column}
+                className={styles['columnChoice']}
+                value={group.column}
+                disabled={!enabled}
+                onChange={(event) =>
+                  // Its format was for the column it leaves; its subtotal column stays.
+                  set({
+                    column: event.target.value,
+                    ...(group.subtotal === undefined ? {} : { subtotal: group.subtotal }),
+                  })
+                }
+              >
+                {namesOffered(
+                  // Never an image's, nor one another level groups by (the TG2 final review).
+                  offered.filter(
+                    (each) =>
+                      each.type.base !== 'image' &&
+                      !table.groups.some(
+                        (other, index) => index !== at && other.column === each.name,
+                      ),
+                  ),
+                  group.column,
+                ).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={`${BOUND_TABLE_WORDS.subtotal} in ${label}`}
+                className={styles['nulls']}
+                value={group.subtotal ?? ''}
+                disabled={!enabled}
+                onChange={(event) =>
+                  set(
+                    event.target.value === ''
+                      ? { column: group.column, ...(group.format ? { format: group.format } : {}) }
+                      : { ...group, subtotal: event.target.value },
+                  )
+                }
+              >
+                <option value="">{BOUND_TABLE_WORDS.noSubtotal}</option>
+                {(group.subtotal === undefined || flags.includes(group.subtotal)
+                  ? flags
+                  : [group.subtotal, ...flags]
+                ).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <IconButton
+                label={`${BOUND_TABLE_WORDS.remove} ${label.toLowerCase()}`}
+                tooltip={BOUND_TABLE_WORDS.remove}
+                className={styles['bin']}
+                aria-disabled={!enabled}
+                onClick={() =>
+                  enabled && setGroups(table.groups.filter((_, index) => index !== at))
+                }
+              >
+                <Icon name="Delete" />
+              </IconButton>
+            </div>
+          );
+        })}
+        <p className={styles['hint']}>{BOUND_TABLE_WORDS.groupHint}</p>
       </Fold>
       <Fold
         id={`${bandId}-notes`}

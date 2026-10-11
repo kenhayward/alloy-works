@@ -20,6 +20,7 @@ export {
   boundTableNodeSchema,
   BOUND_TABLE_COLUMNS_MAX,
   BOUND_TABLE_SORT_MAX,
+  BOUND_TABLE_GROUPS_MAX,
 } from './blocks.js';
 export type { BlockNode, BoundColumn, BoundTableNode, WideStrategy } from './blocks.js';
 

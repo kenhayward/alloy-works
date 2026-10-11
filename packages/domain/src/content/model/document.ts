@@ -610,6 +610,9 @@ function checkBoundTable(
     }
     grouped.add(group.column);
   }
+  if (block.transpose !== undefined && block.groups !== undefined) {
+    throw new Error(`Bound table ${block.id} is both grouped and transposed`);
+  }
   claim(block.binding.id, claimed.ids);
   const inline = (member: 'empty' | 'source' | 'note') => {
     const content = block[member];

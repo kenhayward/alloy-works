@@ -44,6 +44,7 @@ export {
   type BoundTablePart,
   type BoundTablePlace,
   type SortKey,
+  type GroupLevel,
   type TableAction,
   type TableAt,
   type TableChoice,

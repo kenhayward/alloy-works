@@ -174,6 +174,8 @@ describe('a bound table mapped to the editor and back (TB2-C)', () => {
       boundTable({ note: [text('Only a note.')] }),
       // Set on landscape pages where too wide (TB3-G), kept as stored.
       boundTable({ wide: 'rotate' }),
+      // Transposed by a header column (TG2), kept as stored.
+      boundTable({ transpose: { header: 'site' } }),
       // Grouped, a level marking its subtotals, kept as stored (the TG1 final review).
       boundTable({
         groups: [
@@ -371,6 +373,109 @@ describe("what a bound table's body shows (TB2-D)", () => {
         inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: sent })),
       ).spanning,
     ).toEqual({ text: TABLE_READING, failed: false });
+  });
+});
+
+describe("a bound table's groups on the page (TG2)", () => {
+  const GROUPED: TableColumn[] = [
+    ...DECLARED,
+    { name: 'region', type: { base: 'text' } },
+    { name: 'total', type: { base: 'boolean' } },
+  ];
+  const sales: CanonicalResult = {
+    columns: [
+      ['site', 'text'],
+      ['depth', 'decimal'],
+      ['region', 'text'],
+      ['total', 'boolean'],
+    ],
+    rows: [
+      ['S1', '1', 'Upland', false],
+      ['S2', '2', 'Lowland', false],
+      ['S3', '3', 'Upland', false],
+      [null, '4', 'Upland', true],
+    ],
+  };
+  const grouped = boundTable({ groups: [{ column: 'region', subtotal: 'total' }] });
+
+  it("TAB-008 shows each group's heading before the row it opens, and marks the query's subtotal row", () => {
+    const shown = shownIn(
+      documentOf(grouped),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: sales })),
+    );
+    expect(shown.rows.map((row) => row[0]!.text)).toEqual(['S1', 'S3', 'Not available', 'S2']);
+    expect(shown.opens).toEqual([
+      [{ level: 1, text: 'Upland' }],
+      [],
+      [],
+      [{ level: 1, text: 'Lowland' }],
+    ]);
+    expect(shown.subtotals).toEqual([null, null, 1, null]);
+  });
+
+  it('waits for the rows to be read again where they lack a column it groups or totals by', () => {
+    const { rows } = sales;
+    const without: CanonicalResult = {
+      columns: sales.columns.slice(0, 2),
+      rows: rows.map((row) => row.slice(0, 2)),
+    };
+    const shown = shownIn(
+      documentOf(grouped),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: without })),
+    );
+    expect(shown.spanning).toEqual({ text: TABLE_READING, failed: false });
+  });
+
+  it('shows a table not grouped with no headings and no subtotals, as before', () => {
+    const shown = shownIn(
+      documentOf(boundTable()),
+      inDocument(heldTable({ columns: GROUPED, rowCount: 4, rows: sales })),
+    );
+    expect(shown).not.toHaveProperty('opens');
+    expect(shown).not.toHaveProperty('subtotals');
+  });
+});
+
+describe('a transposed bound table on the page (the TG2 final review)', () => {
+  const turned = (over: Partial<BoundTableNode> = {}) =>
+    boundTable({ transpose: { header: 'site' }, ...over });
+  const held = (rows: CanonicalResult, notes: Record<string, number | null> = {}) =>
+    inDocument(
+      heldTable({ columns: DECLARED, rowCount: rows.rows.length, rows, key: ['site'], notes }),
+    );
+
+  it('counts no more rows than the result has, and shows the empty statement where it has none', () => {
+    const shown = shownIn(documentOf(turned()), held(rowsOf(5)));
+    expect(shown.columns.map((each) => each.text)).toEqual(['Site', 'S0', 'S1', 'S2', 'S3', 'S4']);
+    expect(shown.more).toBe(0);
+    expect(shown.spanning).toBeNull();
+    const none = shownIn(documentOf(turned()), held(rowsOf(0)));
+    expect(none.rows).toEqual([]);
+    expect(none.spanning).toEqual({ text: 'No rows', failed: false });
+  });
+
+  it('letters and places its notes as the publish does: a keyed note on its value where it moved, a column note on its row header', () => {
+    const keyed = {
+      type: 'footnote' as const,
+      id: 'f1',
+      anchor: { kind: 'keyed' as const, key: { site: 'S1' }, column: 'depth' },
+      content: [paragraph('f1p', text('Estimated')) as never],
+    };
+    const column = {
+      type: 'footnote' as const,
+      id: 'f2',
+      anchor: { kind: 'column' as const, column: 'depth' },
+      content: [paragraph('f2p', text('Measured')) as never],
+    };
+    const shown = shownIn(
+      documentOf(turned({ notes: [keyed, column] })),
+      held(rowsOf(3), { f1: 1 }),
+    );
+    expect(shown.notes?.map((each) => [each.id, each.letter])).toEqual([
+      ['f1', 'b'],
+      ['f2', 'a'],
+    ]);
+    expect(shown.rows[0]!.map((cell) => cell.marks ?? [])).toEqual([['a'], [], ['b'], []]);
   });
 });
 

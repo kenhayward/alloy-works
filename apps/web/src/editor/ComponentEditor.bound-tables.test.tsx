@@ -358,6 +358,71 @@ describe('the Bound table panel (TB2-F)', () => {
     ).toEqual(['Ash', 'Cedar', 'Birch', 'Dogwood']);
   });
 
+  it('TAB-008 TAB-022 groups the body under a heading for each value from a group added in the panel, and says so folded (TG2)', async () => {
+    const { view, panel } = await inTable([{ column: 'site', header: 'Site' }]);
+    await userEvent.click(within(panel).getByRole('button', { name: /^Group/ }));
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add group' }));
+    const level = within(panel).getByRole('group', { name: 'Group 1' });
+    await userEvent.selectOptions(within(level).getByLabelText('Column'), 'visits');
+    // Groups in the order their values first come, each heading a header of the rows beneath it.
+    expect(bodyOf(view)).toEqual([
+      ['Site'],
+      ['2'],
+      ['Ash'],
+      ['Cedar'],
+      ['1'],
+      ['Birch'],
+      ['Dogwood'],
+    ]);
+    const headings = view.dom.querySelectorAll('[data-bound-table-body] th[scope="rowgroup"]');
+    expect([...headings].map((each) => each.textContent)).toEqual(['2', '1']);
+    // A second level is offered no column the first groups by (the TG2 final review).
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add group' }));
+    const second = within(panel).getByRole('group', { name: 'Group 2' });
+    const offered = [...within(second).getByLabelText('Column').querySelectorAll('option')].map(
+      (each) => each.value,
+    );
+    expect(offered).not.toContain('visits');
+    await userEvent.click(within(second).getByRole('button', { name: 'Remove group 2' }));
+    // Folded, it says what it groups by.
+    await userEvent.click(within(panel).getByRole('button', { name: /^Sort/ }));
+    expect(
+      within(panel)
+        .getByRole('button', { name: /^Group/ })
+        .closest('section')!,
+    ).toHaveTextContent('Grouped by visits');
+    // Removed, the body is as it was.
+    await userEvent.click(within(panel).getByRole('button', { name: /^Group/ }));
+    await userEvent.click(
+      within(within(panel).getByRole('group', { name: 'Group 1' })).getByRole('button', {
+        name: 'Remove group 1',
+      }),
+    );
+    expect(bodyOf(view)).toEqual([['Site'], ['Ash'], ['Birch'], ['Cedar'], ['Dogwood']]);
+  });
+
+  it("TAB-021 turns the body on its side by a header column chosen in the panel, each value at its own column's alignment (TG2)", async () => {
+    const { view, panel } = await inTable([
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+    ]);
+    await userEvent.selectOptions(within(panel).getByLabelText('Transpose by'), 'site');
+    expect(bodyOf(view)).toEqual([
+      ['Site', 'Ash', 'Birch', 'Cedar', 'Dogwood'],
+      ['Depth', '2.50', '-1.25', '3.00', '0.75'],
+    ]);
+    const depth = view.dom.querySelectorAll('[data-bound-table-body] tbody tr')[0]!;
+    expect(depth.querySelector('th')).toHaveAttribute('scope', 'row');
+    expect(depth.querySelectorAll('td')[0]).toHaveAttribute('data-align', 'end');
+    // Grouping is not offered beside it, and turning it back restores the body.
+    expect(within(panel).getByRole('button', { name: 'Add group' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.selectOptions(within(panel).getByLabelText('Transpose by'), '');
+    expect(bodyOf(view)[0]).toEqual(['Site', 'Depth']);
+  });
+
   it("TAB-037 shows in the Format dialog the table style's value for each member left unset, and a member set overriding it alone", async () => {
     const { view, panel } = await inTable(
       [

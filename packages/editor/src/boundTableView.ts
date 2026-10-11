@@ -62,12 +62,29 @@ export function fillBoundTable(
     table.append(head);
   }
   const body = document.createElement('tbody');
-  for (const cells of shown.rows) {
+  for (const [y, cells] of shown.rows.entries()) {
+    // A group's heading before the row it opens (TG2; TAB-008): a header of the rows beneath it,
+    // spanning the table; and the query's subtotal row marked, set as the style sets one.
+    for (const heading of shown.opens?.[y] ?? []) {
+      const row = document.createElement('tr');
+      row.className = 'aw-bound-table-group';
+      row.dataset.level = String(heading.level);
+      const cell = document.createElement('th');
+      cell.setAttribute('scope', 'rowgroup');
+      cell.colSpan = Math.max(1, shown.columns.length);
+      cell.textContent = heading.text;
+      row.append(cell);
+      body.append(row);
+    }
     const row = document.createElement('tr');
+    if ((shown.subtotals?.[y] ?? null) !== null) row.className = 'aw-bound-table-subtotal';
     cells.forEach((each, at) => {
       const cell = dressed(document.createElement(each.scope === 'row' ? 'th' : 'td'), at);
       if (each.scope === 'row') cell.setAttribute('scope', 'row');
       if (each.negative) cell.classList.add('aw-bound-table-negative');
+      // A transposed table's value at its own column's alignment and wrap (TG2).
+      if (each.align !== undefined) cell.dataset.align = each.align;
+      if (each.wrap !== undefined) cell.classList.toggle('aw-bound-table-nowrap', !each.wrap);
       cell.textContent = each.text;
       marked(cell, each.marks);
       row.append(cell);

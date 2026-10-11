@@ -16,6 +16,7 @@ import {
   type TableColumn,
   type TableFailure,
   type TablePresentation,
+  type LaidOut,
   type TableWords,
   type TakeFailure,
   type ValueFormats,
@@ -417,6 +418,8 @@ export const TABLE_FAILURE_WORDS = {
     `No rows - the result has ${failure.detail} rows, more than a table prints`,
   subtotal_not_boolean: (failure) =>
     `No rows - ${failure.column} marks subtotals, so it must hold true or false`,
+  transpose_too_long: (failure) =>
+    `No rows - the result has ${failure.detail} rows, more than a table turns on its side`,
   subtotal_ambiguous: (failure) =>
     `No rows - row ${Number(failure.detail) + 1} of the result is a subtotal at two levels`,
 } satisfies {
@@ -467,6 +470,9 @@ export interface BoundTableCellShown {
   readonly text: string;
   readonly scope: 'row' | null;
   readonly negative: boolean;
+  /** A transposed table's value (TG2): its own column's alignment and wrap, over its column's. */
+  readonly align?: ColumnAlignment;
+  readonly wrap?: boolean;
   /** The letters of the notes on the cell (TB3.3), where it has any. */
   readonly marks?: readonly string[];
 }
@@ -483,6 +489,12 @@ export interface BoundTableShown {
   readonly more: number;
   /** Each of its keyed and column notes, in the order they stand beneath it (TB3.3). */
   readonly notes?: readonly BoundTableNoteShown[];
+  /**
+   * A grouped table's (TG2; TAB-008), beside `rows`: the headings each row opens, outermost first,
+   * and the level each row totals, null for a row that is not the query's subtotal.
+   */
+  readonly opens?: readonly (readonly { readonly level: number; readonly text: string }[])[];
+  readonly subtotals?: readonly (number | null)[];
 }
 
 /** One bound table's body in `doc`: where its table and its body stand, and what it shows. */
@@ -519,7 +531,8 @@ export function boundTableNotes(node: Node): FootnoteNode[] {
  * notes' anchors (`boundTableNotes`), which the page reads their rows by (TB3.3).
  */
 export function storedBoundTable(node: Node): BoundTableNode {
-  const { id, style, numbered, binding, columns, headerColumn, sort, groups } = node.attrs;
+  const { id, style, numbered, binding, columns, headerColumn, sort, groups, transpose } =
+    node.attrs;
   const notes = boundTableNotes(node);
   return {
     type: 'boundTable',
@@ -533,6 +546,9 @@ export function storedBoundTable(node: Node): BoundTableNode {
     ...(sort === null ? {} : { sort: sort as NonNullable<BoundTableNode['sort']> }),
     // Its groups too (TG1), so the page orders rows and letters notes as the publish does.
     ...(groups === null ? {} : { groups: groups as NonNullable<BoundTableNode['groups']> }),
+    ...(transpose === null
+      ? {}
+      : { transpose: transpose as NonNullable<BoundTableNode['transpose']> }),
     ...(notes.length === 0 ? {} : { notes }),
   };
 }
@@ -606,6 +622,8 @@ function notesPlaced(
   notes: readonly FootnoteNode[],
   held: TableHeld,
   order: readonly number[] | null,
+  /** A transposed table's layout's account of where each row and column came from (TG2). */
+  transposed?: LaidOut['transposed'],
 ): {
   readonly notes: readonly BoundTableNoteShown[];
   readonly placed: ReturnType<typeof placeTableNotes>;
@@ -621,7 +639,10 @@ function notesPlaced(
       ? []
       : placeTableNotes(
           { ...table, notes: [...notes] },
-          { rows: order.map((index) => ({ index })) },
+          {
+            rows: order.map((index) => ({ index })),
+            ...(transposed === undefined ? {} : { transposed }),
+          },
           noteRows,
         );
   const letters = new Map(placed.map((each) => [each.note.id, each.letter]));
@@ -696,9 +717,14 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   }
   // Read for another set of columns than the table now names: read again by the host (TB2-A).
   const sent = new Set(rows?.columns.map(([name]) => name) ?? []);
+  // A grouped or subtotal column orders and heads the rows however they were sent (TG2).
   const named = [
     ...table.columns.map((each) => each.column),
     ...(presorted ? [] : (table.sort ?? []).map((each) => each.column)),
+    ...(table.groups ?? []).flatMap((each) =>
+      each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
+    ),
+    ...(table.transpose === undefined ? [] : [table.transpose.header]),
   ];
   if (rows === null || named.some((name) => !sent.has(name))) {
     return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
@@ -725,7 +751,13 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
       const order = presorted
         ? rows.rows.map((_, index) => index)
         : tableOrder(table, rows, columns);
-      const { notes: notesShown, placed } = notesPlaced(table, notes, shownHeld, order);
+      const { notes: notesShown, placed } = notesPlaced(
+        table,
+        notes,
+        shownHeld,
+        order,
+        laid.transposed,
+      );
       // Each mark where its note stands: a column's in its header, a cell's in a row laid out.
       const marks = new Map<string, string[]>();
       for (const each of placed) {
@@ -749,15 +781,26 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
             text: cell.text,
             scope: cell.scope,
             negative: cell.negative,
+            ...(cell.align === undefined ? {} : { align: cell.align }),
+            ...(cell.wrap === undefined ? {} : { wrap: cell.wrap }),
             ...marked(`${y} ${x}`),
           })),
         ),
+        // The result's rows, which a transposed table lays out as its columns (TG2).
         spanning:
-          laid.rows.length > 0
+          laid.empty === null
             ? null
             : { text: empty === '' ? setting.words.noRows : empty, failed: false },
-        more: rowCount - laid.rows.length,
+        more: rowCount - (laid.transposed?.rows.length ?? laid.rows.length),
         ...(notes.length === 0 ? {} : { notes: notesShown }),
+        ...(table.groups === undefined
+          ? {}
+          : {
+              opens: laid.rows.map((row) =>
+                (row.opens ?? []).map(({ level, text }) => ({ level, text })),
+              ),
+              subtotals: laid.rows.map((row) => row.subtotal ?? null),
+            }),
       };
     },
   );

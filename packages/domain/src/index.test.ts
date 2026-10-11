@@ -226,6 +226,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_16',
         'PUBLISHING_SCHEMA_17',
         'PUBLISHING_SCHEMA_18',
+        'PUBLISHING_SCHEMA_19',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -571,6 +572,7 @@ describe('the domain package', () => {
         // its refusal (the TB1 plan, task 1).
         'BOUND_TABLE_COLUMNS_MAX',
         'BOUND_TABLE_SORT_MAX',
+        'BOUND_TABLE_GROUPS_MAX',
         'BoundTableRefused',
         'COLUMN_ALIGNMENTS',
         'boundTableNodeSchema',

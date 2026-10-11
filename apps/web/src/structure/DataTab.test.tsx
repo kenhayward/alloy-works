@@ -1,4 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
+import type { BoundTableNode } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
@@ -80,6 +81,8 @@ function drawn(
     pending?: unknown;
     /** Answers in turn for each accept or resolve, where given, in place of `answer`. */
     answers?: (() => Response)[];
+    /** Each bound table, by its node and binding, as the page reads it from the content. */
+    tables?: ReadonlyMap<string, BoundTableNode>;
   } = {},
 ) {
   const asked: { path: string; body: unknown }[] = [];
@@ -109,6 +112,7 @@ function drawn(
         document={DOCUMENT}
         states={shown}
         checkFailures={options.failures ?? new Map()}
+        {...(options.tables === undefined ? {} : { tables: options.tables })}
         headingOf={(node) => (node === FIRST ? '1 Readings' : '2 Sites')}
         language="en-GB"
         checking={false}
@@ -176,6 +180,54 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     );
     expect(rowOf('table')).toHaveTextContent('Holding');
     expect(rowOf('table')).toHaveTextContent('A table of 1 row');
+  });
+
+  it('TAB-022 says what a grouped table groups by beside its rows (TG2)', () => {
+    const table = view(FIRST, 'table', 'unused');
+    const binding = { ...table.binding } as Record<string, unknown>;
+    delete binding.take;
+    drawn(states({ ...table, binding, held: { ...table.held, taken: { table: true } } }), {
+      tables: new Map([
+        [
+          `${FIRST} table`,
+          {
+            type: 'boundTable',
+            id: 't1',
+            style: 'table',
+            binding: binding as BoundTableNode['binding'],
+            caption: [],
+            columns: [{ column: 'site', header: 'Site' }],
+            headerColumn: false,
+            groups: [{ column: 'region' }, { column: 'area' }],
+          },
+        ],
+      ]),
+    });
+    expect(rowOf('table')).toHaveTextContent('A table of 1 row, grouped by region, then area');
+  });
+
+  it('TAB-022 says a transposed table is turned on its side, and by which column (TG2)', () => {
+    const table = view(FIRST, 'table', 'unused');
+    const binding = { ...table.binding } as Record<string, unknown>;
+    delete binding.take;
+    drawn(states({ ...table, binding, held: { ...table.held, taken: { table: true } } }), {
+      tables: new Map([
+        [
+          `${FIRST} table`,
+          {
+            type: 'boundTable',
+            id: 't1',
+            style: 'table',
+            binding: binding as BoundTableNode['binding'],
+            caption: [],
+            columns: [{ column: 'site', header: 'Site' }],
+            headerColumn: false,
+            transpose: { header: 'site' },
+          },
+        ],
+      ]),
+    });
+    expect(rowOf('table')).toHaveTextContent('A table of 1 row, transposed by site');
   });
 
   it('DAT-070 lists a binding whose definition changed, and each binding changed since the document was last published with what differs', () => {

@@ -1131,3 +1131,86 @@ describe("a bound table's groups published (the TG plan, TG1)", () => {
     );
   });
 });
+
+describe('a bound table transposed, published (the TG plan, TG2)', () => {
+  const whole = (name: string) => {
+    const each = { ...binding(name) } as Record<string, unknown>;
+    delete each.take;
+    return each;
+  };
+  const turned = (extra: Record<string, unknown> = {}) =>
+    component({
+      type: 'boundTable',
+      id: 't1',
+      binding: whole('rows'),
+      caption: [text('Readings')],
+      columns: [
+        { column: 'site', header: 'Site' },
+        { column: 'reading', header: 'Reading', wrap: false },
+      ],
+      headerColumn: false,
+      transpose: { header: 'site' },
+      ...extra,
+    });
+  const ROWS = held(result(['north', '4.5'], ['south', '-1.25']));
+  const published = (made: ReturnType<typeof assemble>) => {
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const table = blocksOf((made.document as PublishedDocument).nodes).find(
+      (block) => block.type === 'table',
+    );
+    if (table === undefined || table.type !== 'table') throw new Error('no table');
+    return table;
+  };
+  const words = (cell: { blocks: readonly PublishedBlock[] }) =>
+    cell.blocks
+      .flatMap((block) => (block.type === 'paragraph' ? block.runs : []))
+      .map((run) => ('text' in run ? run.text : ''))
+      .join('');
+
+  it("TAB-021 publishes a transposed table: the header column's values head its columns, each shown column a row headed by its header", () => {
+    const table = published(assembled(turned(), new Map([['rows', ROWS]])));
+    expect(table.rows.map((row) => row.cells.map(words))).toEqual([
+      ['Site', 'north', 'south'],
+      ['Reading', '4.50', '-1.25'],
+    ]);
+    expect(table.headerColumns).toBe(1);
+    expect(table.rows[1]!.cells.map((cell) => cell.scope)).toEqual(['row', null, null]);
+    // Each value at its own column's alignment, decimal at the end, and not wrapping where it may not.
+    expect(table.rows[1]!.cells.slice(1).map((cell) => [cell.align, cell.nowrap])).toEqual([
+      ['end', true],
+      ['end', true],
+    ]);
+  });
+
+  it('TAB-022 records that the table was transposed, and by which column, in what the publication printed', () => {
+    const made = assembled(turned(), new Map([['rows', ROWS]]));
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const [value] = made.values;
+    expect(value && 'table' in value ? value.table.transpose : undefined).toEqual({
+      header: 'site',
+    });
+    // Each number traced to its own column, as the result held it: the table before it was turned
+    // (the TG2 final review).
+    const printed = value && 'table' in value ? value.table : undefined;
+    expect(printed?.columns.map((each) => [each.name, each.type.base])).toEqual([
+      ['site', 'text'],
+      ['reading', 'decimal'],
+    ]);
+    expect(printed?.rows.map((row) => row.map((cell) => cell.value))).toEqual([
+      ['north', '4.5'],
+      ['south', '-1.25'],
+    ]);
+  });
+
+  it('fails a publish transposing more rows than a table turns, transpose_too_long', () => {
+    const many = held(
+      result(...Array.from({ length: 13 }, (_, at): CanonicalValue[] => [`s${at}`, '1'])),
+    );
+    const made = assembled(turned(), new Map([['rows', many]]));
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toContainEqual(
+      expect.objectContaining({ code: 'transpose_too_long', block: 't1', detail: '13' }),
+    );
+  });
+});

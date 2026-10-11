@@ -43,6 +43,9 @@ import {
  */
 export const TABLE_ROWS_MAX = 1_500;
 
+/** **The most rows a table transposes** (tables.md, "Transposition"; TG-E): a small result, a year by month. */
+export const TRANSPOSE_ROWS_MAX = 12;
+
 /**
  * What a table style says of a bound table's cells (STY-014, STY-077; TB1-F): a format by type, an
  * alignment by type, and how a unit in a header is bracketed. Optional members of the table style at
@@ -62,7 +65,7 @@ export type TableFailure =
     }
   | { readonly code: 'subtotal_ambiguous'; readonly detail: string }
   | { readonly code: 'format_mismatch'; readonly column: string; readonly detail: string }
-  | { readonly code: 'table_too_long'; readonly detail: string };
+  | { readonly code: 'table_too_long' | 'transpose_too_long'; readonly detail: string };
 
 /** A column as laid out: its result column, type, header, merged format, alignment and wrap. */
 export interface LaidOutColumn {
@@ -84,6 +87,12 @@ export interface LaidOutCell {
   readonly negative: boolean;
   /** Whether it prints its value in parentheses, as its format asks of a negative (TAB-016). */
   readonly parenthesised: boolean;
+  /**
+   * A transposed table's value (TG2): its own column's alignment, `decimal` set at the end since its
+   * column now holds unlike quantities, and whether it may wrap - each its column's no longer.
+   */
+  readonly align?: ColumnAlignment;
+  readonly wrap?: boolean;
 }
 
 /** A group's heading as laid out (TAB-008): its level, outermost 1, and its value formatted. */
@@ -113,6 +122,16 @@ export interface LaidOut {
   readonly header: readonly { readonly text: string }[];
   readonly columns: readonly LaidOutColumn[];
   readonly rows: readonly LaidOutRow[];
+  /**
+   * A transposed table's (TG2; TAB-021): the row of the result each value column came from, in order,
+   * and the column each body row came from - which notes are placed by.
+   */
+  readonly transposed?: {
+    readonly rows: readonly number[];
+    readonly columns: readonly string[];
+    /** The table as laid out before it was turned, which provenance records (TAB-019). */
+    readonly from: LaidOut;
+  };
   readonly empty: {
     readonly content: readonly InlineNode[];
     readonly colspan: number;
@@ -226,6 +245,15 @@ export function checkTable<C extends TableColumn>(
     }
     for (const member of formatMismatch(column.type, groupFormat(group, column.type, style))) {
       failures.push({ code: 'format_mismatch', column: group.column, detail: member });
+    }
+  }
+  if (table.transpose !== undefined) {
+    const column = found(table.transpose.header);
+    if (column?.type.base === 'image') {
+      failures.push({ code: 'column_image', column: table.transpose.header });
+    }
+    if (rowCount > TRANSPOSE_ROWS_MAX) {
+      failures.push({ code: 'transpose_too_long', detail: String(rowCount) });
     }
   }
   if (rowCount > TABLE_ROWS_MAX) {
@@ -481,7 +509,7 @@ export function layoutTable<C extends TableColumn>(
       }),
     };
   });
-  return {
+  const laidOut: LaidOut = {
     header: laidColumns.map((column) => ({ text: column.header })),
     columns: laidColumns,
     rows,
@@ -493,5 +521,76 @@ export function layoutTable<C extends TableColumn>(
             colspan: laidColumns.length,
             scope: null,
           },
+  };
+  if (table.transpose === undefined) return laidOut;
+  const { header } = table.transpose;
+  const { type } = declared.get(header)!;
+  const shownAt = laidColumns.findIndex((column) => column.name === header);
+  const corner: LaidOutColumn =
+    shownAt >= 0
+      ? { ...laidColumns[shownAt]!, align: 'start', wrap: true }
+      : {
+          name: header,
+          type,
+          header,
+          format: formatOf({ column: header, header }, type, style),
+          align: 'start',
+          wrap: true,
+        };
+  return transposed(laidOut, corner, (index) =>
+    formatCell(result.rows[index]![at.get(header)!] ?? null, type, corner.format, formats, words),
+  );
+}
+
+/**
+ * **A laid-out table transposed** (TG2; TAB-021, TAB-023): each row a column headed by its value in
+ * the header column, `corner` heading the column of row headers; each shown column but that one a
+ * row headed by its header, its values keeping its alignment - `decimal` set at the end - and wrap.
+ * Every value moves; none is added or dropped.
+ */
+function transposed(
+  laid: LaidOut,
+  corner: LaidOutColumn,
+  headed: (index: number) => string,
+): LaidOut {
+  const values = laid.columns.flatMap((column, at) => (column.name === corner.name ? [] : [at]));
+  const heads = laid.rows.map((row) => headed(row.index));
+  return {
+    header: [{ text: corner.header }, ...heads.map((text) => ({ text }))],
+    columns: [
+      corner,
+      ...heads.map((text): LaidOutColumn => ({ ...corner, header: text, align: 'end' })),
+    ],
+    // No rows, no row headers: the empty statement stands alone, as the publish sets it.
+    rows:
+      laid.empty !== null
+        ? []
+        : values.map((at) => {
+            const column = laid.columns[at]!;
+            return {
+              index: -1,
+              cells: [
+                {
+                  text: column.header,
+                  value: null,
+                  scope: 'row' as const,
+                  negative: false,
+                  parenthesised: false,
+                },
+                ...laid.rows.map((row) => ({
+                  ...row.cells[at]!,
+                  scope: null,
+                  align: column.align === 'decimal' ? ('end' as const) : column.align,
+                  wrap: column.wrap,
+                })),
+              ],
+            };
+          }),
+    empty: laid.empty === null ? null : { ...laid.empty, colspan: 1 },
+    transposed: {
+      rows: laid.rows.map((row) => row.index),
+      columns: values.map((at) => laid.columns[at]!.name),
+      from: laid,
+    },
   };
 }

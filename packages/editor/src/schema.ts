@@ -413,6 +413,8 @@ export const editorSchema = new Schema({
         sort: { default: null },
         // Its groups, outermost first (TG1), null where absent, as `sort` is.
         groups: { default: null },
+        // The column whose values head it turned on its side (TG2), null where it is not.
+        transpose: { default: null },
         // How it is set where too wide (TB3-G), as a table's is.
         wide: { default: null },
       },

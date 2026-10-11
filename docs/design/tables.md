@@ -424,6 +424,17 @@ What TG1 built that differs; the [TG plan](../plans/2026-10-11-tg-groups-transpo
 - **A column grouped twice is the walk's plain refusal**, as a sort naming one twice is, not a code of
   its own.
 
+What TG2 built that differs:
+
+- **A transposed table is a laid-out table like any other** (TG2-A): its first column the row headers,
+  each value cell carrying its own column's `align` and `wrap`, and `transposed` naming where each row
+  and column came from, which notes are placed by. The published cell carries `align` and `nowrap`
+  (`publishing/20`, template 20).
+- **Grouped and transposed together is the walk's plain refusal**, and the Table tab offers neither
+  beside the other.
+- **The rows route sends a grouped, subtotal or header column to every reader**, since the page prints
+  them, and its `ETag` covers groups and transposition.
+
 ## T3: groups, transposition and widths
 
 The reshaping TAB-021 allows and the widths TAB-053 gives the style, added to what TB1 to TB3 built.

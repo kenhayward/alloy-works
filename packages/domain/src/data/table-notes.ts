@@ -124,7 +124,10 @@ export interface PlacedNote {
  * The rows a bound table's notes are placed in: a layout's, or every row's index in the table's order
  * (`tableOrder`), where the page lays out its first rows alone (TB3.3).
  */
-export type LaidRows = { readonly rows: LaidOut['rows'] | readonly { readonly index: number }[] };
+export type LaidRows = {
+  readonly rows: LaidOut['rows'] | readonly { readonly index: number }[];
+  readonly transposed?: LaidOut['transposed'];
+};
 
 /** The footnotes in a cell's blocks, in reading order: its paragraphs' and its list items' bodies'. */
 function footnotesIn(blocks: readonly BlockNode[]): FootnoteNode[] {
@@ -169,6 +172,27 @@ export function placeTableNotes(
   }
   const shown = (column: string) => table.columns.findIndex((each) => each.column === column);
   const laidRow = new Map((laid?.rows ?? []).map((row, at) => [row.index, at]));
+  // Transposed (TG2): a keyed note on its value where it moved - the row its column became, the column
+  // its row became - and a column's note on its row's header, or the corner's for the header column.
+  const turned = laid?.transposed;
+  if (turned !== undefined) {
+    const rowOf = (column: string) => {
+      const at = turned.columns.indexOf(column);
+      return at < 0 ? null : at;
+    };
+    const turnedPlaces = (table.notes ?? []).flatMap((note, order) => {
+      const { anchor } = note;
+      if (anchor.kind === 'column') return [{ note, row: rowOf(anchor.column), column: 0, order }];
+      if (anchor.kind !== 'keyed') return [];
+      const index = noteRows?.get(note.id);
+      const at = index == null ? -1 : turned.rows.indexOf(index);
+      return at < 0 ? [] : [{ note, row: rowOf(anchor.column), column: at + 1, order }];
+    });
+    turnedPlaces.sort(
+      (a, b) => (a.row ?? -1) - (b.row ?? -1) || a.column - b.column || a.order - b.order,
+    );
+    return lettered(turnedPlaces.map(({ note, row, column }) => ({ note, row, column })));
+  }
   type Place = Omit<PlacedNote, 'letter'> & { readonly order: number };
   const places = (table.notes ?? []).flatMap((note, order): Place[] => {
     const { anchor } = note;

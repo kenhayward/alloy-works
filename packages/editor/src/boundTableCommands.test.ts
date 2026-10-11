@@ -185,6 +185,35 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(stored(undone).sort).toHaveLength(1);
   });
 
+  it('TAB-043 sets up to three groups, outermost first, one step for undo, and stores none as absent', () => {
+    const groups = [{ column: 'site', subtotal: 'depth' }, { column: 'depth' }];
+    const set = run(inTable(), setBoundTable({ groups }));
+    expect(set.done).toBe(true);
+    expect(stored(set.state).groups).toEqual(groups);
+    expect(boundTableAt(set.state)?.groups).toEqual(groups);
+    const cleared = run(set.state, setBoundTable({ groups: [] }));
+    expect(stored(cleared.state)).not.toHaveProperty('groups');
+    expect(stored(run(cleared.state, undo).state).groups).toEqual(groups);
+    // A column grouped twice, and a fourth level, as the walk refuses them.
+    expect(setBoundTable({ groups: [{ column: 'site' }, { column: 'site' }] })(inTable())).toBe(
+      false,
+    );
+    expect(
+      setBoundTable({ groups: ['a', 'b', 'c', 'd'].map((column) => ({ column })) })(inTable()),
+    ).toBe(false);
+  });
+
+  it('TAB-021 transposes by a header column and back, and declines grouping a transposed table or transposing a grouped one', () => {
+    const turned = run(inTable(), setBoundTable({ transpose: 'site' }));
+    expect(stored(turned.state).transpose).toEqual({ header: 'site' });
+    expect(boundTableAt(turned.state)?.transpose).toBe('site');
+    expect(setBoundTable({ groups: [{ column: 'depth' }] })(turned.state)).toBe(false);
+    const back = run(turned.state, setBoundTable({ transpose: null }));
+    expect(stored(back.state)).not.toHaveProperty('transpose');
+    const grouped = run(inTable(), setBoundTable({ groups: [{ column: 'depth' }] })).state;
+    expect(setBoundTable({ transpose: 'site' })(grouped)).toBe(false);
+  });
+
   it('stores a header and a unit in NFC, and an emptied unit as none', () => {
     const { state } = run(
       inTable(),

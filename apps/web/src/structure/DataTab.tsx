@@ -51,7 +51,13 @@ function sinceWords(since: BindingState['sincePublished']): string | null {
 const key = (node: string, binding: string) => `${node} ${binding}`;
 
 /** A bound table's result, by its rows (TB2-H). */
-const tableOf = (rows: number) => `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}`;
+/** A bound table's result in words, and what it groups by where it does (TG2; TAB-022). */
+const tableOf = (rows: number, table: BoundTableNode | undefined) =>
+  `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}` +
+  (table?.groups === undefined
+    ? ''
+    : `, grouped by ${table.groups.map((each) => each.column).join(', then ')}`) +
+  (table?.transpose === undefined ? '' : `, transposed by ${table.transpose.header}`);
 
 /** A table's failure, or its notes' (TB3.3), as the stage names it. */
 type TableFailing =
@@ -267,7 +273,10 @@ export function DataTab({
                 held === null
                   ? null
                   : !held.stale && held.taken !== null && 'table' in held.taken
-                    ? tableOf(held.provenance.rowCount)
+                    ? tableOf(
+                        held.provenance.rowCount,
+                        tables.get(key(state.node, state.binding.id)),
+                      )
                     : said(held.taken, formats, state.binding, held.stale);
               const since = sinceWords(state.sincePublished);
               const whose = held === null ? null : whoseView(held.provenance, held.by);
