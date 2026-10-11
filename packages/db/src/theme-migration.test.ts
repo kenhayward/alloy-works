@@ -24,6 +24,7 @@ import {
   SIXTH_DEFAULT_CATALOGUES_BY_VERSION,
   SIXTH_DEFAULT_THEME,
   SIXTH_DEFAULT_THEME_VERSION,
+  SEVENTH_DEFAULT_THEME_VERSION,
   THIRD_DEFAULT_THEME,
   THIRD_DEFAULT_THEME_VERSION,
   FIRST_DEFAULT_CATALOGUES,
@@ -353,6 +354,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1051,6 +1053,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1121,6 +1124,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1820,6 +1824,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -1841,9 +1846,17 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       },
       // And 0055's 0.7 on top (TB1), naming the table catalogue's fifth version.
       {
-        id: DEFAULT_THEME_VERSION,
+        id: SEVENTH_DEFAULT_THEME_VERSION,
         revision_no: 0,
         version_no: 7,
+        author_id: null,
+        schema_version: 1,
+      },
+      // And 0064's 0.8 on top of that (TG3), naming the table catalogue's sixth.
+      {
+        id: DEFAULT_THEME_VERSION,
+        revision_no: 0,
+        version_no: 8,
         author_id: null,
         schema_version: 1,
       },
@@ -1870,7 +1883,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
       versionId: DEFAULT_THEME_VERSION,
-      number: '0.7',
+      number: '0.8',
       content: DEFAULT_THEME,
       theme: now,
       catalogues: DEFAULT_CATALOGUES_BY_VERSION,
@@ -1925,6 +1938,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -1965,6 +1979,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

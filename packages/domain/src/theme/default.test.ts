@@ -31,6 +31,11 @@ import {
   SIXTH_DEFAULT_CATALOGUE_VERSIONS,
   SIXTH_DEFAULT_THEME,
   SIXTH_DEFAULT_THEME_VERSION,
+  SEVENTH_DEFAULT_CATALOGUES,
+  SEVENTH_DEFAULT_CATALOGUES_BY_VERSION,
+  SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
+  SEVENTH_DEFAULT_THEME,
+  SEVENTH_DEFAULT_THEME_VERSION,
   THIRD_DEFAULT_THEME,
   THIRD_DEFAULT_THEME_VERSION,
 } from './default.js';
@@ -177,6 +182,8 @@ describe('the default theme', () => {
         align: DEFAULT_TABLE_ALIGN,
         negativeColour: '#c00000',
         unitBrackets: 'parentheses',
+        // Its columns as wide as what they hold (TG3).
+        widths: 'content',
       },
     ]);
   });
@@ -269,36 +276,70 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.7 (the TB1 plan, TB1-F)", () => {
-  it("binds its table catalogue's fifth version by a fixed identifier, and the rest as 0.6 did", () => {
+describe("the default theme's version 0.8 (the TG plan, TG3)", () => {
+  it("binds its table catalogue's sixth version by a fixed identifier, and the rest as 0.7 did", () => {
     expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
-      ...SIXTH_DEFAULT_CATALOGUE_VERSIONS,
-      table: '2aaa7620-3132-4b3d-b2e5-5d56093d63c4',
+      ...SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
+      table: '90004ad2-e4bc-49d4-b0bd-95375853953d',
     });
-    expect(Object.values(SIXTH_DEFAULT_CATALOGUE_VERSIONS)).not.toContain(
-      DEFAULT_CATALOGUE_VERSIONS.table,
-    );
     for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
       if (kind !== 'table')
-        expect(DEFAULT_CATALOGUES[kind], kind).toBe(SIXTH_DEFAULT_CATALOGUES[kind]);
+        expect(DEFAULT_CATALOGUES[kind], kind).toBe(SEVENTH_DEFAULT_CATALOGUES[kind]);
     }
   });
 
-  it('is its 0.6 naming that catalogue version, with nothing else changed, under a fixed identifier of its own', () => {
+  it('is its 0.7 naming that catalogue version, under a fixed identifier of its own', () => {
     expect(DEFAULT_THEME).toEqual({
-      ...SIXTH_DEFAULT_THEME,
+      ...SEVENTH_DEFAULT_THEME,
       catalogues: DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('b1563a5d-d2ef-43d7-bc8d-add27e3a0de5');
+    expect(DEFAULT_THEME_VERSION).toBe('f8a6e5fc-4241-4c7c-a2b6-7709edbaacc4');
     expect([
-      SIXTH_DEFAULT_THEME_VERSION,
+      SEVENTH_DEFAULT_THEME_VERSION,
       ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
     ]).not.toContain(DEFAULT_THEME_VERSION);
   });
 
-  it("gives every table style the product's formats and alignment by type, a red for negatives that holds its contrast, and parentheses round a unit", () => {
+  it("TAB-053 widths every table style's columns by what they hold, and changes nothing else", () => {
     expect(catalogueSchema.parse(DEFAULT_CATALOGUES.table)).toEqual(DEFAULT_CATALOGUES.table);
     expect(DEFAULT_CATALOGUES.table.styles).toEqual(
+      SEVENTH_DEFAULT_CATALOGUES.table.styles.map((style) => ({ ...style, widths: 'content' })),
+    );
+  });
+});
+
+describe("the default theme's version 0.7, as migration 0055 stored it (the TB1 plan, TB1-F)", () => {
+  it("binds its table catalogue's fifth version by a fixed identifier, and the rest as 0.6 did", () => {
+    expect(SEVENTH_DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      ...SIXTH_DEFAULT_CATALOGUE_VERSIONS,
+      table: '2aaa7620-3132-4b3d-b2e5-5d56093d63c4',
+    });
+    expect(Object.values(SIXTH_DEFAULT_CATALOGUE_VERSIONS)).not.toContain(
+      SEVENTH_DEFAULT_CATALOGUE_VERSIONS.table,
+    );
+    for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
+      if (kind !== 'table')
+        expect(SEVENTH_DEFAULT_CATALOGUES[kind], kind).toBe(SIXTH_DEFAULT_CATALOGUES[kind]);
+    }
+  });
+
+  it('is its 0.6 naming that catalogue version, with nothing else changed, under a fixed identifier of its own', () => {
+    expect(SEVENTH_DEFAULT_THEME).toEqual({
+      ...SIXTH_DEFAULT_THEME,
+      catalogues: SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(SEVENTH_DEFAULT_THEME_VERSION).toBe('b1563a5d-d2ef-43d7-bc8d-add27e3a0de5');
+    expect([
+      SIXTH_DEFAULT_THEME_VERSION,
+      ...Object.values(SEVENTH_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(SEVENTH_DEFAULT_THEME_VERSION);
+  });
+
+  it("gives every table style the product's formats and alignment by type, a red for negatives that holds its contrast, and parentheses round a unit", () => {
+    expect(catalogueSchema.parse(SEVENTH_DEFAULT_CATALOGUES.table)).toEqual(
+      SEVENTH_DEFAULT_CATALOGUES.table,
+    );
+    expect(SEVENTH_DEFAULT_CATALOGUES.table.styles).toEqual(
       SIXTH_DEFAULT_CATALOGUES.table.styles.map((style) => ({
         ...style,
         fields: DEFAULT_TABLE_FIELDS,
@@ -307,18 +348,20 @@ describe("the default theme's version 0.7 (the TB1 plan, TB1-F)", () => {
         unitBrackets: 'parentheses',
       })),
     );
-    expect(contrastRatio('#c00000', DEFAULT_THEME.paper)).toBeGreaterThanOrEqual(TEXT_CONTRAST);
+    expect(contrastRatio('#c00000', SEVENTH_DEFAULT_THEME.paper)).toBeGreaterThanOrEqual(
+      TEXT_CONTRAST,
+    );
   });
 
   it('reads as its 0.6 does, each table style with its new members', () => {
-    const now = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const now = readTheme(SEVENTH_DEFAULT_THEME, SEVENTH_DEFAULT_CATALOGUES_BY_VERSION);
     const before = readTheme(SIXTH_DEFAULT_THEME, SIXTH_DEFAULT_CATALOGUES_BY_VERSION);
     if (!now.ok || !before.ok) throw new Error('The default theme does not read');
     const apart = { tableStyles: null, catalogues: null };
     expect({ ...now.theme, ...apart }).toEqual({ ...before.theme, ...apart });
     expect(now.theme.catalogues).toEqual({
       ...before.theme.catalogues,
-      table: DEFAULT_CATALOGUE_VERSIONS.table,
+      table: SEVENTH_DEFAULT_CATALOGUE_VERSIONS.table,
     });
     for (const [id, style] of before.theme.tableStyles) {
       expect(now.theme.tableStyles.get(id)).toMatchObject(style);

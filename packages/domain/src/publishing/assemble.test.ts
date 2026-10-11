@@ -6803,9 +6803,12 @@ describe("a table's columns as wide as its style says (the TG plan, TG3)", () =>
   /** A theme whose `table` style widths its columns as asked. */
   const widthed = (widths: 'equal' | 'content' | undefined) => {
     const inputs = defaultInputs();
-    inputs.catalogues.table.styles = inputs.catalogues.table.styles.map((each) =>
-      each.id === 'table' && widths !== undefined ? { ...each, widths } : each,
-    );
+    inputs.catalogues.table.styles = inputs.catalogues.table.styles.map((each) => {
+      if (each.id !== 'table') return each;
+      const rest = { ...each };
+      delete rest.widths;
+      return widths === undefined ? rest : { ...rest, widths };
+    });
     return resolved(inputs);
   };
   /** Every file the theme names as a face whose every character is half an em. */
