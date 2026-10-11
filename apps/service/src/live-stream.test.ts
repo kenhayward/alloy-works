@@ -352,6 +352,7 @@ describe("a document's stream: its locks and outline, to whoever may read them (
           component: open,
           mode: 'author',
           beatAt: expect.any(String),
+          ageMs: expect.any(Number),
         });
         // A stream opened now begins with Ada there.
         const later = stream('grace', `?document=${report}`);
@@ -400,6 +401,24 @@ describe("a document's stream: its locks and outline, to whoever may read them (
       }
     });
 
+    it('keeps a window present when the service, not the window, ends its stream: it is back at once', async () => {
+      const graces = stream('grace', `?document=${report}`);
+      const adas = stream('ada', `?document=${report}&viewer=${ADA_WINDOW}`, shortAddress);
+      try {
+        await nextOf(graces, 'snapshot');
+        await nextOf(adas, 'snapshot');
+        expect((await beat('ada', ADA_WINDOW, null, 'read')).statusCode).toBe(204);
+        await nextOf(graces, 'presence');
+        await adas.ended;
+        // Ada's stream ended at its lifetime; her window was not taken away with it.
+        await expect(graces.next(600)).rejects.toThrow(/no frame/);
+      } finally {
+        graces.close();
+        adas.close();
+        await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+      }
+    });
+
     it('COL-055 carries when each window last beat, and shows none silent past a minute', async () => {
       expect((await beat('ada', ADA_WINDOW, open)).statusCode).toBe(204);
       await tenantDb.withTenant(tenant, (trx) =>
@@ -420,7 +439,7 @@ describe("a document's stream: its locks and outline, to whoever may read them (
       }
     });
 
-    it("refuses a beat for a document or component the person may not read, and for another person's window", async () => {
+    it("refuses a beat for a document or component the person may not read, and makes another person's beat under a window's id a window of their own", async () => {
       expect((await beat('grace', ADA_WINDOW, closed)).statusCode).toBe(404);
       expect(
         (
@@ -433,8 +452,10 @@ describe("a document's stream: its locks and outline, to whoever may read them (
         ).statusCode,
       ).toBe(404);
       expect((await beat('ada', ADA_WINDOW, open)).statusCode).toBe(204);
-      expect((await beat('grace', ADA_WINDOW, open, 'read')).statusCode).toBe(404);
-      await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
+      expect((await beat('grace', ADA_WINDOW, open, 'read')).statusCode).toBe(204);
+      // Each leaves their own: Ada's window is still hers to take away.
+      expect((await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'grace')).statusCode).toBe(204);
+      expect((await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada')).statusCode).toBe(204);
     });
   });
 });

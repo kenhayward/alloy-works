@@ -154,14 +154,18 @@ export async function streamToViewer(options: {
     clearTimeout(lifetime);
     subscription.stop();
     // A dropped connection is absence at once, not 30 seconds of a live claim (COL-004).
-    if (scoped?.viewer !== undefined) {
+    if (scoped?.viewer !== undefined && !ended) {
       const viewer = scoped.viewer;
       void db
         .withTenant(tenant, (trx) => leavePresence(trx, scoped.principalId, viewer))
         .catch((error: unknown) => request.log.error({ err: error }, 'a presence was not removed'));
     }
   }
+  // Ended by the service - its lifetime, an access change - rather than by the viewer going: the
+  // window is still there and comes straight back, so its presence stays (the PL final review, 2).
+  let ended = false;
   function end() {
+    ended = true;
     stop();
     raw.end();
   }

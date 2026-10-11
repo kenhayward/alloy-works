@@ -48,7 +48,9 @@ export async function setEditingPolicy(
   trx: TenantTransaction,
   change: Partial<EditingPolicy>,
 ): Promise<EditingPolicyAnswer> {
-  // What is not given is kept: each setting is changed alone, or with the others.
+  // What is not given is kept: each setting is changed alone, or with the others. Read under the row's
+  // lock, so two administrators' changes at once are applied one after the other (finding 9).
+  await trx.selectFrom('editing_policy').select('singleton').forUpdate().execute();
   const policy = { ...(await editingPolicy(trx)), ...change };
   const days = policy.iterationRetentionDays;
   if (

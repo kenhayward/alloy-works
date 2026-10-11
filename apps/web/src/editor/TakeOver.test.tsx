@@ -37,7 +37,12 @@ describe('Take over, in the editor (collaboration.md, Taking)', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const answers: TakeResult[] = [
-        { ok: true, taken: false, until: new Date(NOW + 60_000).toISOString() },
+        {
+          ok: true,
+          taken: false,
+          until: new Date(NOW + 60_000).toISOString(),
+          retryAfterMs: 60_000,
+        },
         { ok: true, taken: true },
       ];
       const onTake = vi.fn(async () => answers.shift()!);
@@ -58,6 +63,55 @@ describe('Take over, in the editor (collaboration.md, Taking)', () => {
         await vi.advanceTimersByTimeAsync(61_000);
       });
       expect(onTake).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('asks again as the service says, even when an answer names the same moment, and never by its own clock', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const until = new Date(NOW + 60_000).toISOString();
+      const answers: TakeResult[] = [
+        { ok: true, taken: false, until, retryAfterMs: 1_000 },
+        { ok: true, taken: false, until, retryAfterMs: 1_000 },
+        { ok: true, taken: true },
+      ];
+      const onTake = vi.fn(async () => answers.shift()!);
+      // This window's clock is a day ahead: it is not what decides when to ask again.
+      render(
+        <TakeOver
+          holder="Ada"
+          takeableAt="2026-10-11T11:55:00.000Z"
+          onTake={onTake}
+          now={() => NOW + 86_400_000}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Take over' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_600);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_600);
+      });
+      expect(onTake).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers to take over of itself once the take period passes, with nothing else drawing it again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      vi.setSystemTime(NOW);
+      render(
+        <TakeOver holder="Ada" takeableAt={new Date(NOW + 2_000).toISOString()} onTake={vi.fn()} />,
+      );
+      expect(screen.queryByRole('button', { name: 'Take over' })).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3_000);
+      });
+      expect(screen.getByRole('button', { name: 'Take over' })).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

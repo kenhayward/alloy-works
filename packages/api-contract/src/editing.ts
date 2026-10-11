@@ -39,6 +39,12 @@ export const TakeAnswer = z.object({
       "True: the lock is this session's. False: asked, the holder warned, and theirs until `lock.taking.until`; ask again then",
     ),
   lock: Lock,
+  retryAfterMs: z
+    .int()
+    .optional()
+    .describe(
+      'Asked: how many milliseconds until asking again may take it, by the service’s clock',
+    ),
 });
 export type TakeAnswer = z.infer<typeof TakeAnswer>;
 export type LockAnswer = z.infer<typeof LockAnswer>;

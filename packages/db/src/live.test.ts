@@ -250,6 +250,7 @@ describe("what a document's stream hears, said by the database (the PL plan)", (
         component: null,
         mode: null,
         beatAt: expect.any(String),
+        ageMs: expect.any(Number),
       },
     ]);
     await beat(open);
@@ -257,8 +258,15 @@ describe("what a document's stream hears, said by the database (the PL plan)", (
       await service.withTenant(tenant, (trx) => presenceShown(trx, report, new Set([open]))),
     ).toEqual([expect.objectContaining({ component: open, mode: 'author' })]);
 
-    // A window is its principal's: another's beat on it is refused.
-    expect(await beat(open, grace)).toBe(false);
+    // A window is its principal's: another's beat under the same id is a window of their own, and
+    // Ada's stands (the PL final review, finding 6).
+    expect(await beat(open, grace)).toBe(true);
+    expect(
+      (await service.withTenant(tenant, (trx) => presenceShown(trx, report, new Set([open])))).map(
+        (each) => each.person.id,
+      ),
+    ).toEqual(expect.arrayContaining([ada, grace]));
+    await service.withTenant(tenant, (trx) => leavePresence(trx, grace, VIEWER));
 
     // Silent a minute: absent, and the sweep tidies it.
     await service.withTenant(tenant, (trx) =>

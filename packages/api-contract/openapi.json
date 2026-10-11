@@ -21104,6 +21104,12 @@
                         "takeableAt",
                         "taking"
                       ]
+                    },
+                    "retryAfterMs": {
+                      "description": "Asked: how many milliseconds until asking again may take it, by the service’s clock",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [

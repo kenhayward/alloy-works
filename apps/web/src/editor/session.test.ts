@@ -556,11 +556,13 @@ describe('the editing session', () => {
       ok: true,
       taken: false,
       until: '2026-10-11T12:01:00.000Z',
+      retryAfterMs: 60_000,
     });
     expect(await session.takeOver()).toEqual({
       ok: true,
       taken: false,
       until: '2026-10-11T12:01:00.000Z',
+      retryAfterMs: 60_000,
     });
     expect(session.view().phase).toBe('reading');
     service.takeAnswer = async () => ({ ok: true, taken: true });

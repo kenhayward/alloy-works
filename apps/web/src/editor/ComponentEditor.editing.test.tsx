@@ -921,6 +921,51 @@ describe('the component editor', () => {
     expect(sessionIdsSeen[1]).not.toBe(SESSION);
   });
 
+  it('COL-044 tells an author who loses the race for the lock at once, shows them no editable surface, and keeps what they typed', async () => {
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (request.method === 'GET') return json(200, opened());
+      if (request.method === 'POST' && url.pathname.endsWith('/lock')) {
+        return json(409, {
+          code: 'lock_held',
+          message: 'held',
+          traceId: 't',
+          holder: { id: 'grace', name: 'Grace' },
+          expectedRelease: '2026-09-16T09:15:00.000Z',
+        });
+      }
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    });
+    const client = createApiClient({
+      baseUrl: 'http://dev.acme.test',
+      fetch: fetching as unknown as typeof fetch,
+    });
+    let view: EditorView | undefined;
+    render(
+      <ComponentEditor
+        componentId={COMPONENT}
+        client={client}
+        principalId={ADA}
+        sessionId={SESSION}
+        timing={quick}
+        onView={(mounted) => (view = mounted)}
+      />,
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    view!.dispatch(view!.state.tr.insertText(' Keep the box.', 19));
+    // Told at once, by name, and offered the claim again.
+    expect(await screen.findByText(/Grace is editing this component/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    // The surface is the version again: nothing typed stands on it as though held.
+    expect(view!.state.doc.textContent).not.toContain('Keep the box.');
+    // And what was typed is kept to copy.
+    expect(
+      (screen.getByRole('textbox', { name: 'Text that was not saved' }) as HTMLTextAreaElement)
+        .value,
+    ).toContain('Keep the box.');
+  });
+
   it('does not append the on-screen text again when a refused Continue follows a lost already holding it (fix round 2 minor)', async () => {
     let lockCalls = 0;
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {

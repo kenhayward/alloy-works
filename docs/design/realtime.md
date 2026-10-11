@@ -29,19 +29,19 @@ the stream at all: it is the streamed response to the request that asked for it.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                           |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **API-016** | The stream is opened by an authenticated request; a permission change ends it, and the reconnect is authorised afresh                                   |
-| **API-017** | Stated plainly: individual events are not guaranteed and are not replayed; the picture is, because every connect begins with a snapshot                 |
-| **API-035** | The snapshot on connect, events held until it is sent, and events applied as state                                                                      |
-| **API-036** | Measured by the conformance suite with the spike's harness: every delivery, to every entitled viewer, at stepped rates                                  |
-| **COL-001** | Presence names each person in the document and the component they are in                                                                                |
-| **COL-002** | Presence carries the mode - read, review or author - from the document view (CNT-104)                                                                   |
-| **COL-003** | A person in a component the viewer may not read is reported only as present in the document, component and mode removed                                 |
-| **COL-004** | Presence lasts while its window beats; a closed stream removes its viewer at once, and a silent one is stale then absent (PL-C)                         |
-| **COL-055** | Each presence event carries when it was beaten; a viewer shows it live under 30 seconds, stale to 60, then absent                                       |
-| **API-015** | The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E) |
-| **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                                 |
+| ID          | How it is met                                                                                                                                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API-016** | The stream is opened by an authenticated request; a permission change ends it, and the reconnect is authorised afresh                                                                                                 |
+| **API-017** | Stated plainly: individual events are not guaranteed and are not replayed; the picture is, because every connect begins with a snapshot                                                                               |
+| **API-035** | The snapshot on connect, events held until it is sent, and events applied as state                                                                                                                                    |
+| **API-036** | Measured by the conformance suite with the spike's harness: every delivery, to every entitled viewer, at stepped rates                                                                                                |
+| **COL-001** | Presence names each person in the document and the component they are in                                                                                                                                              |
+| **COL-002** | Presence carries the mode - read, review or author - from the document view (CNT-104); the page beats `read` or `author`, as review mode (CNT-155) is not built, and the mode is said, not checked against permission |
+| **COL-003** | A person in a component the viewer may not read is reported only as present in the document, component and mode removed                                                                                               |
+| **COL-004** | Presence lasts while its window beats; a closed stream removes its viewer at once, and a silent one is stale then absent (PL-C)                                                                                       |
+| **COL-055** | Each presence event carries when it was beaten; a viewer shows it live under 30 seconds, stale to 60, then absent                                                                                                     |
+| **API-015** | The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E)                                                               |
+| **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                                                                                               |
 
 **API-014 is not claimed**: it names notifications and streamed model output beside presence and locks,
 and neither exists; the AsyncAPI document carries each as it is built.

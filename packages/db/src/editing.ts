@@ -144,6 +144,10 @@ async function lockRows(trx: TenantTransaction, ids: readonly string[]) {
       'l.taking_session',
       'l.taking_until',
       'l.taken_from',
+      // An ask past its last moment is no ask (the PL final review, finding 7): nothing clears it.
+      sql<boolean>`l.taking_until is not null and l.taking_until + make_interval(secs => ${TAKE_ASK_LASTS_MS / 1000}) > clock_timestamp()`.as(
+        'taking_stands',
+      ),
       sql<Date>`l.active_at + make_interval(mins => (select lock_take_minutes from editing_policy))`.as(
         'takeable_at',
       ),
@@ -162,7 +166,10 @@ function lockOf(row: Awaited<ReturnType<typeof lockRows>>[number]): LockState {
     activeAt: row.active_at,
     takeableAt: row.takeable_at,
     taking:
-      row.taking_by === null || row.taking_session === null || row.taking_until === null
+      !row.taking_stands ||
+      row.taking_by === null ||
+      row.taking_session === null ||
+      row.taking_until === null
         ? null
         : {
             by: row.taking_by,
@@ -413,8 +420,12 @@ export async function saveIteration(
 export type TakeAnswer =
   /** Taken: the lock is the asker's session's now. */
   | { readonly answer: 'taken'; readonly lock: LockState; readonly from: LockState }
-  /** Asked, or asked already: the holder has until then to keep it. */
-  | { readonly answer: 'asked'; readonly lock: LockState }
+  /**
+   * Asked, or asked already: the holder has until then to keep it, and the asker asks again after
+   * `retryAfterMs` - by the database's clock, so the asker's own clock cannot ask too soon or too late
+   * (the PL final review, finding 1).
+   */
+  | { readonly answer: 'asked'; readonly lock: LockState; readonly retryAfterMs: number }
   /** Nobody holds it: claim it instead. */
   | { readonly answer: 'lock.free' }
   /** The asker holds it already, from this or another of their windows: Continue here. */
@@ -445,7 +456,9 @@ export async function takeLock(trx: TenantTransaction, input: EditingSession): P
   if (askStands && (ask.by !== input.principal || ask.session !== input.session)) {
     return { answer: 'lock.taking', lock };
   }
-  if (askStands && now < ask.until.getTime()) return { answer: 'asked', lock };
+  if (askStands && now < ask.until.getTime()) {
+    return { answer: 'asked', lock, retryAfterMs: ask.until.getTime() - now };
+  }
   if (askStands) {
     // The grace has passed with the holder idle: any activity would have ended the ask (CL-A).
     await trx
@@ -475,5 +488,9 @@ export async function takeLock(trx: TenantTransaction, input: EditingSession): P
     })
     .where('artifact_id', '=', input.artifactId)
     .execute();
-  return { answer: 'asked', lock: (await readLock(trx, input.artifactId))! };
+  return {
+    answer: 'asked',
+    lock: (await readLock(trx, input.artifactId))!,
+    retryAfterMs: TAKE_GRACE_MS,
+  };
 }

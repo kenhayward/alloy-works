@@ -2295,13 +2295,17 @@ export function ComponentEditor({
                 )}
               </Notice>
             )}
-            {phase === 'editing' && heard?.holder?.id === principalId && heard.taking && (
-              <Notice tone="editing">
-                <p role="alert">
-                  {`${heard.taking.by.name ?? 'Somebody'} has asked to take over this component. Keep working to keep it; otherwise it is theirs at ${new Date(heard.taking.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`}
-                </p>
-              </Notice>
-            )}
+            {phase === 'editing' &&
+              heard?.holder?.id === principalId &&
+              heard.taking &&
+              // An ask a minute past its grace has lapsed, though nothing says so (finding 7).
+              Date.parse(heard.taking.until) + 60_000 > Date.now() && (
+                <Notice tone="editing">
+                  <p role="alert">
+                    {`${heard.taking.by.name ?? 'Somebody'} has asked to take over this component. Keep working to keep it; otherwise it is theirs at ${new Date(heard.taking.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`}
+                  </p>
+                </Notice>
+              )}
             {phase === 'editing' && heard?.holder && heard.holder.id !== principalId && (
               <Notice tone="editing">
                 <p role="alert">

@@ -39,7 +39,7 @@
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
 > system of record, publishing workers, PostgreSQL and object storage, and the data flowing between
-> them - is [`design/system.md`](design/system.md). Part of it exists here: the web service as the system of record, one worker and its queue, PostgreSQL with a schema per environment, and the object store, each described below; publishing beyond a PDF and a Word document, search, realtime beyond one stream, and the rest do not.
+> them - is [`design/system.md`](design/system.md). Part of it exists here: the web service as the system of record, one worker and its queue, PostgreSQL with a schema per environment, and the object store, each described below; publishing beyond a PDF and a Word document, search, notifications, and the rest do not.
 
 **This document describes the repository as it stands.** The subsystems being designed on top of it
 live in [`design/`](design/), one document per subsystem, each naming the requirements it answers.
@@ -1962,9 +1962,28 @@ streams it holds. A stream registers with the fan-out and waits for its subscrip
 database has acknowledged the `LISTEN` covering its channel - before its snapshot is read, and holds
 what arrives until the snapshot has gone, so nothing committed in between is lost or overtaken by
 older state. `ready` rejects rather than waits when the `LISTEN` cannot be made or the listener is
-closed, and the stream then ends for the browser to come back. Nothing in the renderer calls it:
-that arrives with the scaffolding's last plan (see [`plans/`](plans/)). The rest of the proposed
-system is [`design/system.md`](design/system.md).
+closed, and the stream then ends for the browser to come back. The rest of the proposed system is
+[`design/system.md`](design/system.md).
+
+## Presence and locks, live
+
+The document page and the component editor each follow a stream scoped to what they show, built by
+[the PL plan](plans/2026-10-11-pl-presence-and-locks.md) under [realtime.md](design/realtime.md) and
+[collaboration.md](design/collaboration.md).
+
+| Where                                                         | Holds                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db: migrations/tenant/0067_live`                             | Triggers notifying the tenant's channel, named after their own schema: a lock claimed, moved, released, asked for or its release moved to another minute; a document's new version; and any access change, from `access_changed()`                                                          |
+| `db: migrations/tenant/0068_presence`, `0071_presence_key`    | `presence`, unlogged, a row per person and window, beaten every 20 seconds; its trigger                                                                                                                                                                                                     |
+| `db: migrations/tenant/0069_lock_periods`, `0070_lock_taking` | The release and take periods on `editing_policy`, take shorter by a `CHECK`; `component_lock.active_at`, the ask (`taking_*`) and `taken_from`                                                                                                                                              |
+| `db: src/live.ts`                                             | `streamScope`, what a viewer's stream may hear of; `locksShown`; `beatPresence`, `presenceShown` (redacted, aged by the database's clock), `leavePresence` and the sweep                                                                                                                    |
+| `db: src/editing.ts`                                          | `takeLock`: asked, a minute's grace, taken; `holding` refusing `lock.taken` to the session it was taken from                                                                                                                                                                                |
+| `service: src/stream.ts`                                      | `GET /v1/stream?document=` or `?component=`, 404 for a scope not readable: a snapshot of locks and presence, then each event read as it stands and filtered; `permissions` and the end on any access change; every stream ended at five minutes; the environment's own stream samples alone |
+| `service: src/presence.ts`, `src/editing.ts`                  | `PUT /v1/presence`, `DELETE /v1/presence/{viewer}`; `POST /v1/components/{id}/lock/take` and `lock.taken`                                                                                                                                                                                   |
+| `api-contract: src/events.ts`, `asyncapi.json`                | The stream's events as zod, published as AsyncAPI 3.0 at `/asyncapi/v1.json` and drift-checked                                                                                                                                                                                              |
+| `web: src/structure/live.ts`, `PeopleHere.tsx`                | The document's stream followed and this window's presence beaten; who else is here on the bar and each card; live locks on every card; the outline read again on another person's change, and its rows marked (`OutlinePanel`'s `marks`)                                                    |
+| `web: src/editor/TakeOver.tsx`, `lockLive.ts`                 | **Take over** and its wait; the holder warned and told on the component's own stream                                                                                                                                                                                                        |
+| `web: src/admin/Editing.tsx`                                  | Administration's Editing: both lock periods and the iteration window                                                                                                                                                                                                                        |
 
 ## Publishing
 

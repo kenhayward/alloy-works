@@ -1014,6 +1014,7 @@ export function DocumentPage({
   /** Shows a document, and remembers it as the latest one the page holds (written only here). */
   const show = useCallback((document: Opened) => {
     latest.current = document;
+    outlineGeneration.current += 1;
     setLoaded({ state: 'open', document });
   }, []);
 
@@ -1021,16 +1022,22 @@ export function DocumentPage({
   // says, once no act of this page's own is in flight - one that is, answers with the outline as it
   // then stands, and the read waits for it. This page's own change comes back as the version it holds.
   const outlineBehind = useRef(false);
+  // Counts each outline shown and each read begun: a read whose answer arrives after either is older
+  // than what the page now holds, and is dropped (the PL final review, finding 3).
+  const outlineGeneration = useRef(0);
   const readOutlineAgain = useCallback(async () => {
     if (pending.current) {
       outlineBehind.current = true;
       return;
     }
     outlineBehind.current = false;
+    outlineGeneration.current += 1;
+    const asked = outlineGeneration.current;
     try {
       const { data } = await client.GET('/v1/documents/{id}', { params: { path: { id } } });
       const read = documentIn(data);
       if (read === undefined || read === 'unreadable' || pending.current) return;
+      if (outlineGeneration.current !== asked) return;
       if (latest.current !== null && read.version.id === latest.current.version.id) return;
       show(read);
     } catch {
