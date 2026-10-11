@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiTokens } from '../account/ApiTokens.js';
+import { Sessions } from '../account/Sessions.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
 import styles from './Header.module.css';
@@ -136,7 +137,7 @@ function ThemeMenu() {
 /**
  * The band across the top of every screen, in the theme's chrome (ADR-0046): the mark, which goes
  * Home, and the environment; search and commands in the middle; then the Theme button and the
- * account chip, which holds API tokens and Sign out. The module the page is in is the rail's to say.
+ * account chip, which holds API tokens, Sessions and Sign out. The module the page is in is the rail's to say.
  */
 export function Header({
   onSearch = () => undefined,
@@ -151,6 +152,7 @@ export function Header({
   const [environment, setEnvironment] = useState<string | undefined>();
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
   const [managingTokens, setManagingTokens] = useState(false);
+  const [seeingSessions, setSeeingSessions] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -293,6 +295,18 @@ export function Header({
                   className={styles['item']}
                   onClick={() => {
                     close();
+                    setSeeingSessions(true);
+                  }}
+                >
+                  Sessions
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className={styles['item']}
+                  onClick={() => {
+                    close();
                     void signOut();
                   }}
                 >
@@ -304,6 +318,7 @@ export function Header({
         </Menu>
       )}
       {managingTokens && <ApiTokens client={client} onClose={() => setManagingTokens(false)} />}
+      {seeingSessions && <Sessions client={client} onClose={() => setSeeingSessions(false)} />}
     </header>
   );
 }

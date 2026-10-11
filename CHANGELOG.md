@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.151.0 - 2026-10-11 (PR #557)
+
+### Added
+
+- **Publishing is guarded against unnoticed change.** Every PDF and Word document the publishing test corpus makes is checked against its recorded bytes, so a change to the engine, a typeface or a library that alters a publication fails before release.
+- **The audit log, read.** An administrator reads the environment's audit log in Administration's Audit log, newest first: when, who, what happened and what it was about. Filter it by what happened, by dates, and by who acted or what it was about, chosen from a row. The API reads it at `GET /v1/audit`.
+- **The audit log, exported.** Export on the Audit log writes every event matching its filters, as the log stood when asked, as JSON Lines to download. Asking for an export and each download are recorded on the log.
+- **Your sessions.** Sessions, in the account chip, lists everywhere you are signed in, with when each began and was last used. End any other session at once, or all but this one; whatever it was doing stops.
+
 ## 0.150.0 - 2026-10-11 (PR #552)
 
 ### Added

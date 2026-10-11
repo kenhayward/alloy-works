@@ -67,6 +67,7 @@ export const documentationGroups = [
       },
       { name: 'People and principals', description: 'Find people that access grants may name.' },
       { name: 'Groups', description: 'Manage group membership and provider-backed groups.' },
+      { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
       { name: 'Roles and grants', description: 'Inspect permissions and manage grants.' },
     ],
@@ -184,6 +185,7 @@ const operationTags = {
     'listPrincipalTokens',
     'revokePrincipalToken',
   ],
+  Sessions: ['listSessions', 'endSession', 'endOtherSessions'],
   'People and principals': ['listPeople', 'listPrincipals'],
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
@@ -367,6 +369,11 @@ const descriptions: Readonly<Record<string, string>> = {
     'Hands out a link to a written export, signed for five minutes. Each link handed out is recorded on the log.',
   listAuditEvents:
     'Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.',
+  listSessions:
+    'Lists the caller’s own sessions that have not ended: how each signed in, when it began, when it was last used and when it ends of itself, and which is this one. No device or address is kept.',
+  endSession:
+    'Ends one of the caller’s own sessions: its next request is refused and its event stream closes. Ending this one signs out.',
+  endOtherSessions: 'Ends every session of the caller’s but the one making the request.',
   createGroup:
     'Creates a local group or a group representing a value asserted by the identity provider.',
   deleteGroup:

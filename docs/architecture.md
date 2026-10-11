@@ -33,7 +33,8 @@
 > invites people by address, makes and fills groups in Administration, and grants and removes roles from
 > the access page of a component, a document, a template, a space or the environment, and makes,
 > renames, archives and restores spaces. Every act writes its event into the environment's own
-> [audit log](#the-audit-log), which nothing reads yet. The single `Component` in `packages/domain` is
+> [audit log](#the-audit-log), which an administrator reads and exports from Administration; anybody
+> sees and ends their own sessions from the account chip. The single `Component` in `packages/domain` is
 > still the scaffolding's, and nothing renders it any more.
 >
 > **Looking for the product's architecture?** The proposed system - a TypeScript web service as the
@@ -704,6 +705,17 @@ Administration's People opens a person's tokens in its side panel instead, each 
 focus coming to the panel's own words once a token's button has gone. A
 refusal is said in the service's own `message` where it gave one.
 
+### Your sessions
+
+`GET /v1/sessions`, `DELETE /v1/sessions/{id}` and `DELETE /v1/sessions` (IAM-040, AU2d), each taking
+a session alone (`apps/service/src/own-sessions.ts`): the caller's sessions not yet ended, newest first,
+each with its route and times and whether it is the one asking; one ended, or all but the asker's.
+`endOwnSessions` (`sessions.ts`) locks each live row of the caller's own, records
+`authentication.signed_out` with `ended: 'ended_by_holder'`, deletes it and says `credential_ended`, so
+its stream and long acts stop as a sign-out's do; an expired row is left to the sweep. Ending the
+asker's own clears its cookie. **Sessions**, from the account chip (`web: src/account/Sessions.tsx`),
+is the modal over them.
+
 ### The API reference
 
 The committed `openapi.json` is published and rendered as it is (API-062, service-foundations.md's
@@ -748,7 +760,8 @@ served by `registerDocs` and a stand-in `/v1/me` and upload route.
 ## The audit log
 
 Every act writes its event in its own transaction, designed in [`design/audit.md`](design/audit.md) and
-built by [AU1](plans/2026-10-08-au1-the-log-written.md); reading and exporting it are AU2's.
+built by [AU1](plans/2026-10-08-au1-the-log-written.md), and read and exported by
+[AU2](plans/2026-10-11-au2-log-read-sessions-and-regression-guard.md).
 
 | Where                                        | Holds                                                                                                                                                                                                    |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -759,6 +772,13 @@ built by [AU1](plans/2026-10-08-au1-the-log-written.md); reading and exporting i
 | `db: src/tenant-database.ts`, `admin.ts`     | `withTenant` writes a context once per transaction; `asAdministrator` names the vendor                                                                                                                   |
 | `db: src/versions.ts`                        | `content.version_cut` for every version inserted, naming its author where that is not who acts                                                                                                           |
 | `service: src/audit.ts`                      | `contextOf` a request's principal, token and trace id; refusals and failed sign-ins in a short transaction of their own                                                                                  |
+| `db: migrations/tenant/0065_audit_read`      | An index per filter, each ending in the sequence                                                                                                                                                         |
+| `db: migrations/tenant/0066_audit_export`    | `audit_export`: an export's filters, the snapshot it was asked in, the newest event that saw, its state and where it is kept                                                                             |
+| `db: src/audit-read.ts`                      | `readAuditEvents`: a page by sequence over the walk's first snapshot (`pg_visible_in_snapshot`), filtered, each event with its labels; `auditEntryJson`, the one shape a page and an export line take    |
+| `db: src/audit-export.ts`                    | `requestAuditExport`, the snapshot taken in the asking transaction; `auditExportBody`, every matching event the snapshot saw up to its newest, as JSON Lines                                             |
+| `service: src/audit-log.ts`                  | `GET /v1/audit`; `POST /v1/audit/exports`, `GET .../{id}` and `.../{id}/download`, the asking and each download an event; each deciding `administer` at the tenant                                       |
+| `worker: src/jobs/audit-export.ts`           | `audit_export`: the export written into the tenant's store, recorded on its row                                                                                                                          |
+| `web: src/admin/AuditLog.tsx`                | Administration's Audit log: the events in words, filtered, paged, exported                                                                                                                               |
 | `service: src/audit-census.test.ts`          | Every operationId, GETs included, with its kinds or why it writes none, and every writer that is not a route - jobs, sweeps, the vendor's functions, development's setup - pinned to where each is found |
 
 A worker job acts as `system`, naming who asked (`requestedBy`). Nothing in the product updates or
@@ -3664,7 +3684,8 @@ resolve and accept of one's own view need `sharesOwnView`, else `acknowledgement
 The page asks the warning on that answer, or before an Accept of a waiting own view, through
 `useOwnViewAsk`, and says whose own view a value holds.
 
-**The stop** (`apps/service/src/authority.ts`): sign-out and token revocation notify
+**The stop** (`apps/service/src/authority.ts`): sign-out, a session ended by its holder and token
+revocation notify
 `credential_ended` on the tenant's channel; an act waiting on the connector watches for it and reads
 its credential again each second (`AUTHORITY_POLL_MS`), so any replica aborts the connector request
 within two seconds; the connector kills the child of a closed request, and the source loses its

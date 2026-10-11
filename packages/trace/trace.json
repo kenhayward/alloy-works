@@ -17397,6 +17397,10 @@
           "howItIsMet": "Signing out deletes the session row, which ends it in every browser and device presenting that cookie"
         },
         {
+          "id": "IAM-040",
+          "howItIsMet": "A person sees their own sessions - route, begun, last used, this one - and ends any or all but this one; ending deletes the row, records it and stops what it was doing ([Sessions and tokens](#sessions-and-tokens))"
+        },
+        {
           "id": "IAM-041",
           "howItIsMet": "The Google route needs no customer configuration: one product-registered client, returning through `signin.<domain>` to the environment"
         },
@@ -18798,7 +18802,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 254,
+      "line": 257,
       "kind": "title"
     },
     {
@@ -18972,7 +18976,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 883,
+      "line": 914,
       "kind": "title"
     },
     {
@@ -19240,6 +19244,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-040",
+      "file": "apps/service/src/own-sessions.test.ts",
+      "line": 33,
+      "kind": "title"
+    },
+    {
       "id": "DAT-022",
       "file": "apps/service/src/placing-bindings.test.ts",
       "line": 355,
@@ -19420,6 +19430,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-040",
+      "file": "apps/service/src/stream.test.ts",
+      "line": 563,
+      "kind": "title"
+    },
+    {
       "id": "API-037",
       "file": "apps/service/src/template-routes.test.ts",
       "line": 254,
@@ -19585,6 +19601,12 @@
       "id": "IAM-031",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
       "line": 874,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-040",
+      "file": "apps/web/src/account/Sessions.test.tsx",
+      "line": 43,
       "kind": "title"
     },
     {
@@ -23586,7 +23608,7 @@
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 258,
+      "line": 270,
       "kind": "title"
     },
     {

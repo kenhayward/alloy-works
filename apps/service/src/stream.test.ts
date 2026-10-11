@@ -560,6 +560,29 @@ describe('what an environment is doing, as it happens', () => {
     }
   });
 
+  it('IAM-040 ends the stream of a session its holder ends from another of theirs, within two seconds', async () => {
+    const ended = await signIn(app, A, 'ada', idp.issuer);
+    const ending = await signIn(app, A, 'ada', idp.issuer);
+    const id = (await app.inject({ url: '/v1/sessions', headers: { host: A, cookie: ended } }))
+      .json<{ sessions: { id: string; current: boolean }[] }>()
+      .sessions.find((each) => each.current)!.id;
+    const stream = openStream(`${address}/v1/stream`, ended);
+    try {
+      expect((await stream.next()).event).toBe('snapshot');
+      const answer = await app.inject({
+        method: 'DELETE',
+        url: `/v1/sessions/${id}`,
+        headers: { host: A, cookie: ending },
+      });
+      expect(answer.statusCode).toBe(204);
+      const at = Date.now();
+      await stream.ended;
+      expect(Date.now() - at).toBeLessThan(2000);
+    } finally {
+      stream.close();
+    }
+  });
+
   it('is refused without a session', async () => {
     const response = await fetch(`${address}/v1/stream`);
     expect(response.status).toBe(401);

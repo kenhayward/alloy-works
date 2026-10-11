@@ -248,3 +248,4 @@ export {
   AuditList,
   AuditListQuery,
 } from './audit.js';
+export { SessionList, SessionParams, SessionsEnded, SessionView } from './sessions.js';

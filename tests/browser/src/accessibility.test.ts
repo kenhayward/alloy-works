@@ -132,7 +132,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     );
   });
 
-  it('passes axe on the screens every way into the editor passes: home, the lists, search, API tokens and Administration', async ({
+  it('passes axe on the screens every way into the editor passes: home, the lists, search, API tokens, Sessions and Administration', async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -219,6 +219,18 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [heading('New token', 2), page.getByRole('button', { name: 'Create token' })],
       });
       await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+      await leave(page.getByRole('dialog'));
+      // Sessions (IAM-040), the menu's third: this one marked, the rest each to be ended.
+      await account.click();
+      await page.getByRole('button', { name: 'Sessions' }).click();
+      await check('Sessions', {
+        shows: [
+          heading('Sessions', 2),
+          page.getByRole('table', { name: 'Your sessions' }).getByText('This session'),
+        ],
+        hides: [page.getByText('Loading...')],
+      });
       await page.keyboard.press('Escape');
       await leave(page.getByRole('dialog'));
 

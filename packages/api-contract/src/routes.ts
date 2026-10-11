@@ -8,6 +8,7 @@ import { peopleRoutes } from './people.js';
 import { presentationRoutes } from './presentation.js';
 import { queryDefinitionRoutes } from './query-definitions.js';
 import { searchRoutes } from './search.js';
+import { sessionRoutes } from './sessions.js';
 import { settingsRoutes } from './settings.js';
 import type { RouteContract } from './contract.js';
 import { documentRoutes } from './documents.js';
@@ -292,7 +293,8 @@ type Routes = typeof ownRoutes &
   typeof settingsRoutes &
   typeof tokenRoutes &
   typeof administeredTokenRoutes &
-  typeof auditRoutes;
+  typeof auditRoutes &
+  typeof sessionRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -317,6 +319,7 @@ export const routes: Routes = {
   ...tokenRoutes,
   ...administeredTokenRoutes,
   ...auditRoutes,
+  ...sessionRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);
