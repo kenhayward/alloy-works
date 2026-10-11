@@ -108,6 +108,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0071_presence_key',
       '0072_baselines',
       '0073_baseline_publications',
+      '0074_baseline_requests_whole',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

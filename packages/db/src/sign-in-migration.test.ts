@@ -83,6 +83,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0071_presence_key',
       '0072_baselines',
       '0073_baseline_publications',
+      '0074_baseline_requests_whole',
     ]);
 
     const read = async () =>

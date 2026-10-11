@@ -141,6 +141,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0071_presence_key',
       '0072_baselines',
       '0073_baseline_publications',
+      '0074_baseline_requests_whole',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -159,6 +160,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0071_presence_key',
       '0072_baselines',
       '0073_baseline_publications',
+      '0074_baseline_requests_whole',
     ]);
 
     expect(await queryRoles(development)).toEqual([

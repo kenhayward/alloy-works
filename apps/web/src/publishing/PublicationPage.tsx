@@ -301,7 +301,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p>
             Made from the baseline{' '}
             <a href={baselineLink(shown.document, shown.baseline)}>
-              {baselineName ?? 'it was asked for from'}
+              {baselineName ?? 'its own page'}
             </a>
             , as that baseline pinned the document and everything it uses.
           </p>

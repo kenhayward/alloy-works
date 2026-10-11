@@ -195,6 +195,29 @@ async function datasetNames(
   return new Map(rows.map((row) => [row.dataset_id, row.name]));
 }
 
+/**
+ * The images of these the principal may read, by the readable-set predicate every listing of content
+ * uses, as a publish decides an image (figures 3, ruling R6): what a baseline's read shows and its
+ * publish asks of the publisher alike (the BL final review, finding 1).
+ */
+async function readableAssets(
+  trx: TenantTransaction,
+  principal: string,
+  assets: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (assets.length === 0) return new Set();
+  const readable = await loadReadableSet(trx, principal);
+  if (!readable) return new Set();
+  const rows = await trx
+    .selectFrom('artifact as a')
+    .select('a.id')
+    .where('a.id', 'in', [...new Set(assets)])
+    .where('a.kind', '=', 'asset')
+    .where((eb) => readableArtifacts(eb, readable))
+    .execute();
+  return new Set(rows.map((row) => row.id));
+}
+
 /** A baseline as one list shows it (VER-049): superseded or not, and by which. */
 export interface BaselineSummary {
   readonly id: string;
@@ -318,7 +341,16 @@ export async function readBaseline(
     .select(['p.node', 'p.version_id', 'p.artifact_id', 'p.kind', 'v.version_digest'])
     .where('p.baseline_id', '=', baselineId)
     .execute();
-  const readable = await readableComponents(trx, reader, [...pins.map((each) => each.artifact_id)]);
+  const readable = await readableComponents(
+    trx,
+    reader,
+    pins.filter((each) => each.kind === 'component').map((each) => each.artifact_id),
+  );
+  const readableImages = await readableAssets(
+    trx,
+    reader,
+    pins.filter((each) => each.kind === 'asset').map((each) => each.artifact_id),
+  );
   const bindings = await trx
     .selectFrom('baseline_binding as b')
     .innerJoin('artifact_version as v', 'v.id', 'b.dataset_version')
@@ -348,7 +380,7 @@ export async function readBaseline(
           digest: each.version_digest,
         })),
       assets: assets
-        .filter((each) => readable.has(each.artifact_id))
+        .filter((each) => readableImages.has(each.artifact_id))
         .map((each) => ({ version: each.version_id, digest: each.version_digest })),
       bindings: bindings
         .filter((each) => shown.has(each.node))
@@ -362,7 +394,7 @@ export async function readBaseline(
     },
     withheld: {
       nodes: occurrences.filter((each) => !shown.has(each.node!)).map((each) => each.node!),
-      assets: assets.filter((each) => !readable.has(each.artifact_id)).length,
+      assets: assets.filter((each) => !readableImages.has(each.artifact_id)).length,
     },
   };
 }
@@ -522,22 +554,10 @@ export async function requestBaselinePublication(
     input.requester,
     occurrences.map((each) => each.artifact_id),
   );
-  const readableSet = assets.length === 0 ? undefined : await loadReadableSet(trx, input.requester);
-  const readableImages = new Set(
-    readableSet
-      ? (
-          await trx
-            .selectFrom('artifact as a')
-            .select('a.id')
-            .where(
-              'a.id',
-              'in',
-              assets.map((each) => each.artifact_id),
-            )
-            .where((eb) => readableArtifacts(eb, readableSet))
-            .execute()
-        ).map((row) => row.id)
-      : [],
+  const readableImages = await readableAssets(
+    trx,
+    input.requester,
+    assets.map((each) => each.artifact_id),
   );
   const nodes = occurrences
     .filter((each) => !readable.has(each.artifact_id))
@@ -634,7 +654,7 @@ export async function requestBaselinePublication(
     trx,
     'publication.requested',
     { document: baseline.document_id, version: baseline.document_version_id },
-    { request: request.id, formats },
+    { request: request.id, formats, baseline: input.baseline },
   );
   return { answer: 'requested', request: { id: request.id } };
 }

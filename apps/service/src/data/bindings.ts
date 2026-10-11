@@ -389,9 +389,19 @@ export async function pinnedBindingStates(
       held: pinnedAt.get(key(each.node, each.binding.id))?.held,
     })),
   );
+  // Nothing here is the document's now (the BL final review, finding 4): what has moved on since,
+  // and what the caller may do now, are the live document's to say, never a baseline's.
   return states.map((state) => {
     const pin = pinnedAt.get(key(state.node, state.binding.id));
-    return state.held && pin ? { ...state, held: { ...state.held, name: pin.datasetName } } : state;
+    return {
+      ...state,
+      definitionChanged: false,
+      sincePublished: null,
+      mayCheck: false,
+      mayResolve: false,
+      held:
+        state.held && pin ? { ...state.held, name: pin.datasetName, keepable: false } : state.held,
+    };
   });
 }
 
