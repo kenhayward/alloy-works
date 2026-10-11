@@ -1735,6 +1735,8 @@ describe('the address of every node', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Baselines' }));
     const panel = screen.getByRole('tabpanel', { name: 'Baselines' });
     expect(await within(panel).findByRole('listitem', { name: 'As approved' })).toBeInTheDocument();
+    // The tab chosen is remembered by the browser: back to Contents, for the page that opens next.
+    await userEvent.click(screen.getByRole('tab', { name: 'Contents' }));
   });
 
   it('puts the outline in a tabbed panel: back, Contents and the toggle, then the document as its root', async () => {
