@@ -17156,7 +17156,7 @@
         },
         {
           "id": "COL-002",
-          "howItIsMet": "Presence carries the mode - read, review or author - from the document view (CNT-104)"
+          "howItIsMet": "Presence carries the mode - read, review or author - from the document view (CNT-104); the page beats `read` or `author`, as review mode (CNT-155) is not built, and the mode is said, not checked against permission"
         },
         {
           "id": "COL-003",
@@ -17776,6 +17776,10 @@
           "howItIsMet": "Reordering in the panel is the move operation, from the panel's own drag and from its keymap"
         },
         {
+          "id": "STR-038",
+          "howItIsMet": "The contents mark what matters to an author on each node's row, said to a screen reader as its description: who else holds its component, from the document's stream; the broken references its text draws; the values its bindings failed to hold (the PL plan, PL-J)"
+        },
+        {
           "id": "STR-063",
           "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
         },
@@ -17862,6 +17866,10 @@
         {
           "id": "STR-065",
           "howItIsMet": "The contents panel is the outline, rendered: it renders the outline every operation returns rather than a copy of one, so it updates with every act the author makes, and clicking a node takes the reader to it ([Navigation](#navigation))"
+        },
+        {
+          "id": "STR-066",
+          "howItIsMet": "Another person's change reaches the contents as it happens: the document's stream says its outline changed, and the panel reads it again once no act of the reader's own is in flight, which answers with the outline as it then stands (the PL plan, PL-J)"
         }
       ]
     },
@@ -19273,13 +19281,13 @@
     {
       "id": "COL-003",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 371,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "COL-004",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 387,
+      "line": 388,
       "kind": "title"
     },
     {
@@ -19291,7 +19299,7 @@
     {
       "id": "COL-055",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 403,
+      "line": 422,
       "kind": "title"
     },
     {
@@ -19921,37 +19929,37 @@
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2000,
+      "line": 2045,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2471,
+      "line": 2516,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1989,
+      "line": 2034,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2017,
+      "line": 2062,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2055,
+      "line": 2100,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1290,
+      "line": 1335,
       "kind": "title"
     },
     {
@@ -19961,27 +19969,33 @@
       "kind": "title"
     },
     {
+      "id": "COL-044",
+      "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
+      "line": 924,
+      "kind": "title"
+    },
+    {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2900,
+      "line": 2945,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1877,
+      "line": 1922,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2265,
+      "line": 2310,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2155,
+      "line": 2200,
       "kind": "title"
     },
     {
@@ -20107,7 +20121,7 @@
     {
       "id": "COL-045",
       "file": "apps/web/src/editor/TakeOver.test.tsx",
-      "line": 80,
+      "line": 134,
       "kind": "title"
     },
     {
@@ -20405,6 +20419,18 @@
       "kind": "title"
     },
     {
+      "id": "STR-038",
+      "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
+      "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "STR-066",
+      "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
+      "line": 51,
+      "kind": "title"
+    },
+    {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
       "line": 33,
@@ -20455,13 +20481,13 @@
     {
       "id": "COL-004",
       "file": "apps/web/src/structure/live.test.tsx",
-      "line": 109,
+      "line": 110,
       "kind": "title"
     },
     {
       "id": "COL-007",
       "file": "apps/web/src/structure/live.test.tsx",
-      "line": 120,
+      "line": 121,
       "kind": "title"
     },
     {
@@ -21392,6 +21418,12 @@
       "id": "COL-009",
       "file": "packages/db/src/editing.test.ts",
       "line": 647,
+      "kind": "title"
+    },
+    {
+      "id": "COL-044",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 694,
       "kind": "title"
     },
     {

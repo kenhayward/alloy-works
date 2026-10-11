@@ -83,6 +83,7 @@ export {
   type ReferenceChoice,
 } from './references.js';
 export {
+  BROKEN_CLASS,
   BROKEN_REFERENCE,
   IN_ANOTHER_COMPONENT,
   ownTargets,

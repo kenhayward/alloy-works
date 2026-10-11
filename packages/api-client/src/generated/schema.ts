@@ -7698,6 +7698,8 @@ export interface operations {
                                 until: string;
                             } | null;
                         };
+                        /** @description Asked: how many milliseconds until asking again may take it, by the service’s clock */
+                        retryAfterMs?: number;
                     };
                 };
             };

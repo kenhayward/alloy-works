@@ -280,7 +280,11 @@ export function editingHandlers() {
           );
           return { taken: true, lock: lockView(answer.lock, principalId) };
         case 'asked':
-          return { taken: false, lock: lockView(answer.lock, principalId) };
+          return {
+            taken: false,
+            lock: lockView(answer.lock, principalId),
+            retryAfterMs: answer.retryAfterMs,
+          };
         case 'lock.free':
           throw refused(
             409,

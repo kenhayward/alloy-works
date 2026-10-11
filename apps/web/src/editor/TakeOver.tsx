@@ -10,11 +10,19 @@ const timeOf = (iso: string, seconds = false) =>
     ...(seconds ? { second: '2-digit' } : {}),
   });
 
+/** What asking stands at: asked, with when to ask again, numbered so each answer re-arms the wait. */
+interface Asked {
+  readonly until: string;
+  readonly retryAfterMs: number;
+  readonly answer: number;
+}
+
 /**
  * **Take over** (COL-009, COL-046, COL-047; collaboration.md, Taking): offered once the holder has
- * been idle the environment's take period, and before that, when it will be. Asked, it says the holder
- * has until the grace ends to keep it, and asks again then; the lock is this window's only once the
- * holder has done nothing through it. Never instant, never silent.
+ * been idle the environment's take period - appearing then of itself - and before that, saying when.
+ * Asked, it says the holder has until the grace ends to keep it, and asks again when the service says
+ * to, by the service's clock, never this window's; each answer waits afresh (the PL final review,
+ * findings 1 and 8). The lock is this window's only once the holder has done nothing through it.
  */
 export function TakeOver({
   holder,
@@ -24,15 +32,18 @@ export function TakeOver({
 }: {
   /** Who holds it, by name. */
   holder: string | null;
-  /** When it may first be asked for. */
+  /** When it may first be asked for, as the page last read it. */
   takeableAt: string;
   /** Asks, or takes once the grace has passed: the session's `takeOver`. */
   onTake: () => Promise<TakeResult>;
   now?: () => number;
 }) {
-  const [until, setUntil] = useState<string | null>(null);
+  const [asked, setAsked] = useState<Asked | null>(null);
+  const [askable, setAskable] = useState(takeableAt);
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  const [, setTick] = useState(0);
+  const answers = useRef(0);
   const live = useRef(true);
   useEffect(
     () => () => {
@@ -40,6 +51,7 @@ export function TakeOver({
     },
     [],
   );
+  useEffect(() => setAskable(takeableAt), [takeableAt]);
   const name = holder ?? 'Its holder';
 
   const ask = async () => {
@@ -48,50 +60,60 @@ export function TakeOver({
     const answer = await onTake();
     if (!live.current) return;
     setBusy(false);
-    if (answer.ok && !answer.taken) setUntil(answer.until);
-    else if (answer.ok) setUntil(null);
-    else {
-      setUntil(null);
-      setSaid(
-        answer.code === 'lock_active'
-          ? `${name} is working on it again.`
-          : answer.code === 'lock_taking'
-            ? `${answer.by ?? 'Somebody else'} has asked for it already.`
-            : answer.code === 'lock_free'
-              ? 'Nobody holds it now: begin editing to claim it.'
-              : 'It could not be asked for.',
-      );
+    answers.current += 1;
+    if (answer.ok && !answer.taken) {
+      setAsked({ until: answer.until, retryAfterMs: answer.retryAfterMs, answer: answers.current });
+      return;
     }
+    setAsked(null);
+    if (answer.ok) return;
+    if (answer.code === 'lock_active' && answer.takeableAt !== undefined) {
+      setAskable(answer.takeableAt);
+    }
+    setSaid(
+      answer.code === 'lock_active'
+        ? `${name} is working on it again.`
+        : answer.code === 'lock_taking'
+          ? `${answer.by ?? 'Somebody else'} has asked for it already.`
+          : answer.code === 'lock_free'
+            ? 'Nobody holds it now: begin editing to claim it.'
+            : 'It could not be asked for.',
+    );
   };
 
-  // Asked: asks again once the holder's grace has passed, which takes it if they did nothing.
+  // Asked: asks again when the service said to, which takes it if the holder did nothing. Each
+  // answer is a new wait, even one naming the same moment.
   useEffect(() => {
-    if (until === null) return undefined;
-    const timer = setTimeout(
-      () => void ask(),
-      Math.max(0, new Date(until).getTime() - now()) + 500,
-    );
+    if (asked === null) return undefined;
+    const timer = setTimeout(() => void ask(), asked.retryAfterMs + 500);
     return () => clearTimeout(timer);
     // `ask` is this render's, and asks again with whatever the session holds then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [until]);
+  }, [asked]);
 
-  if (until !== null) {
+  // Not yet askable: drawn again when it becomes so, since an idle holder sends nothing to say it.
+  const wait = new Date(askable).getTime() - now();
+  useEffect(() => {
+    if (asked !== null || wait <= 0) return undefined;
+    const timer = setTimeout(() => setTick((tick) => tick + 1), wait + 250);
+    return () => clearTimeout(timer);
+  }, [asked, wait]);
+
+  if (asked !== null) {
     return (
       <p role="status">
-        {`${name} has been asked for it. It is yours at ${timeOf(until, true)} unless they go on working.`}
+        {`${name} has been asked for it. It is yours at ${timeOf(asked.until, true)} unless they go on working.`}
       </p>
     );
   }
-  const askable = now() >= new Date(takeableAt).getTime();
   return (
     <>
-      {askable ? (
+      {wait <= 0 ? (
         <button type="button" disabled={busy} onClick={() => void ask()}>
           Take over
         </button>
       ) : (
-        <p>{`You may ask ${name} for it from ${timeOf(takeableAt)}.`}</p>
+        <p>{`You may ask ${name} for it from ${timeOf(askable)}.`}</p>
       )}
       <p role="status">{said}</p>
     </>

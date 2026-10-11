@@ -103,6 +103,11 @@ export interface PresenceShown {
   readonly component: string | null;
   readonly mode: PresenceMode | null;
   readonly beatAt: string;
+  /**
+   * How long ago it beat, by the database's own clock when this was read: what a viewer ages it by,
+   * so a client clock ahead or behind ages nobody wrongly (the PL final review, finding 5).
+   */
+  readonly ageMs: number;
 }
 
 /**
@@ -130,15 +135,12 @@ export async function beatPresence(
       mode: beat.mode,
     })
     .onConflict((conflict) =>
-      conflict
-        .column('viewer')
-        .doUpdateSet({
-          document_id: beat.document,
-          component_id: beat.component,
-          mode: beat.mode,
-          beat_at: sql<Date>`now()`,
-        })
-        .where('presence.principal_id', '=', beat.principalId),
+      conflict.columns(['principal_id', 'viewer']).doUpdateSet({
+        document_id: beat.document,
+        component_id: beat.component,
+        mode: beat.mode,
+        beat_at: sql<Date>`now()`,
+      }),
     )
     .returning('viewer')
     .executeTakeFirst();
@@ -182,6 +184,11 @@ export async function presenceShown(
       'r.mode',
       'r.beat_at',
     ])
+    .select(
+      sql<number>`(extract(epoch from (clock_timestamp() - r.beat_at)) * 1000)::integer`.as(
+        'age_ms',
+      ),
+    )
     .where('r.document_id', '=', document)
     .where('r.beat_at', '>', sql<Date>`now() - ${`${PRESENCE_LASTS_MS} milliseconds`}::interval`)
     .$if(viewer !== undefined, (query) => query.where('r.viewer', '=', viewer!))
@@ -195,6 +202,7 @@ export async function presenceShown(
       component: shown ? row.component_id : null,
       mode: shown ? (row.mode as PresenceMode) : null,
       beatAt: row.beat_at.toISOString(),
+      ageMs: Math.max(0, row.age_ms),
     };
   });
 }

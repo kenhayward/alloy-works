@@ -164,6 +164,26 @@ function lostTitles(lost: readonly LostTitle[]): string {
       } and try it again.`;
 }
 
+/** What a node's row says beside its title (STR-038). */
+export interface NodeMarks {
+  /** Somebody else holds its component, by name. */
+  readonly heldBy?: string | null;
+  readonly brokenReferences?: number;
+  readonly failedValues?: number;
+}
+
+/** A node's marks in words, each a phrase; none where nothing matters. */
+export function marksWords(marks: NodeMarks | undefined): string[] {
+  if (marks === undefined) return [];
+  const words: string[] = [];
+  if (marks.heldBy !== undefined) words.push(`Held by ${marks.heldBy ?? 'somebody else'}`);
+  const broken = marks.brokenReferences ?? 0;
+  if (broken > 0) words.push(broken === 1 ? '1 broken reference' : `${broken} broken references`);
+  const failed = marks.failedValues ?? 0;
+  if (failed > 0) words.push(failed === 1 ? '1 failed value' : `${failed} failed values`);
+  return words;
+}
+
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
   /** What stands above the panel's content in its box: the pane's tab strip. */
@@ -249,6 +269,11 @@ export interface OutlinePanelProps {
    * current location and kept in view in the tree as they scroll.
    */
   readonly inView?: string | null;
+  /**
+   * What matters about each node to an author (STR-038): who else holds its component, and how many
+   * broken references and failed values its text holds. None where nothing does.
+   */
+  readonly marks?: ReadonlyMap<string, NodeMarks>;
 }
 
 /**
@@ -368,6 +393,7 @@ export function OutlinePanel({
   linkOf,
   onSelected = () => {},
   inView = null,
+  marks,
   sectionFields,
   schemas,
   people,
@@ -843,7 +869,14 @@ export function OutlinePanel({
           aria-labelledby={labelId}
           // The number describes the item rather than naming it: a name is what typing a title finds
           // in a tree, and what every announcement says, and it stays put when a move renumbers it.
-          aria-describedby={shown === undefined ? undefined : numberId}
+          aria-describedby={
+            [
+              shown === undefined ? null : numberId,
+              marksWords(marks?.get(node.id)).length > 0 ? `${labelId}-marks` : null,
+            ]
+              .filter((each) => each !== null)
+              .join(' ') || undefined
+          }
           tabIndex={node.id === current ? 0 : -1}
           data-node={node.id}
           draggable={may}
@@ -897,6 +930,11 @@ export function OutlinePanel({
                 nodeLabel(node, names)
               )}
             </span>
+            {marksWords(marks?.get(node.id)).length > 0 && (
+              <span id={`${labelId}-marks`} className={styles['nodeMarks']}>
+                {marksWords(marks?.get(node.id)).join('; ')}
+              </span>
+            )}
           </div>
           {node.children.length > 0 && !collapsed.has(node.id) && (
             <ul role="group" className={styles['group']}>

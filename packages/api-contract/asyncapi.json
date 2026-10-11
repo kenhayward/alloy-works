@@ -375,6 +375,12 @@
             "beatAt": {
               "type": "string",
               "description": "When their window last said so, in UTC: live for 30 seconds, stale to 60, then absent"
+            },
+            "ageMs": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How long before this was sent it beat, by the service's clock: what a viewer ages it by"
             }
           },
           "required": [
@@ -382,7 +388,8 @@
             "person",
             "component",
             "mode",
-            "beatAt"
+            "beatAt",
+            "ageMs"
           ],
           "additionalProperties": false,
           "description": "Somebody in the document, as the viewer may see them (COL-001 to COL-003, COL-055)"

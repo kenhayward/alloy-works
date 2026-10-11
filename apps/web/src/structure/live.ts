@@ -16,14 +16,28 @@ export interface LivePresence {
   readonly component: string | null;
   readonly mode: 'read' | 'review' | 'author' | null;
   readonly beatAt: string;
+  /** How long before it was sent it beat, by the service's clock. */
+  readonly ageMs?: number;
 }
+
+/** A presence as held here: when it beat by this window's own clock, from its age when it came. */
+type Held = LivePresence & { readonly beatHere: number };
+
+const heldAt = (each: LivePresence, now: number): Held => ({
+  ...each,
+  beatHere: now - (each.ageMs ?? 0),
+});
 
 /** How fresh a window's beat is (COL-055; the PL plan, PL-C). */
 export type Freshness = 'live' | 'stale' | 'absent';
 
-/** Live under 30 seconds since the beat, stale to 60, absent after. */
-export function freshnessOf(beatAt: string, now: number): Freshness {
-  const age = now - new Date(beatAt).getTime();
+/**
+ * Live under 30 seconds since the beat, stale to 60, absent after - the beat by this window's own
+ * clock, from the age the service sent, so a clock ahead or behind ages nobody wrongly (the PL final
+ * review, finding 5).
+ */
+export function freshnessOf(beatHere: number, now: number): Freshness {
+  const age = now - beatHere;
   return age < 30_000 ? 'live' : age < 60_000 ? 'stale' : 'absent';
 }
 
@@ -71,7 +85,12 @@ export function useLiveDocument({
 }): LiveDocument {
   const viewer = useMemo(() => crypto.randomUUID(), []);
   const [locks, setLocks] = useState<ReadonlyMap<string, LiveLock>>(new Map());
-  const [presence, setPresence] = useState<ReadonlyMap<string, LivePresence>>(new Map());
+  const [presence, setPresence] = useState<ReadonlyMap<string, Held>>(new Map());
+  // This window's beat, set by the effect that beats it, said again on every new connection.
+  const beatNow = useRef<() => void>(() => undefined);
+  // The clock presence is aged by, read where each event arrives.
+  const clock = useRef(now);
+  clock.current = now;
   const [connected, setConnected] = useState(false);
   const [outlineChanges, setOutlineChanges] = useState(0);
   const [, setTick] = useState(0);
@@ -89,14 +108,20 @@ export function useLiveDocument({
             presence?: LivePresence[];
           };
           setLocks(new Map((snapshot.locks ?? []).map((lock) => [lock.component, lock])));
-          setPresence(new Map((snapshot.presence ?? []).map((each) => [each.viewer, each])));
+          setPresence(
+            new Map(
+              (snapshot.presence ?? []).map((each) => [each.viewer, heldAt(each, clock.current())]),
+            ),
+          );
           setConnected(true);
+          // Back: say where this window is at once, not at the next beat (finding 2).
+          beatNow.current();
         } else if (event === 'lock') {
           const lock = data as { component: string } & LiveLock;
           setLocks((was) => new Map(was).set(lock.component, lock));
         } else if (event === 'presence') {
           const each = data as LivePresence;
-          setPresence((was) => new Map(was).set(each.viewer, each));
+          setPresence((was) => new Map(was).set(each.viewer, heldAt(each, clock.current())));
         } else if (event === 'presence_left') {
           const { viewer: left } = data as { viewer: string };
           setPresence((was) => {
@@ -135,6 +160,7 @@ export function useLiveDocument({
         })
         .catch(() => undefined);
     };
+    beatNow.current = beat;
     beat();
     const beating = setInterval(beat, BEAT_MS);
     return () => clearInterval(beating);
@@ -151,7 +177,7 @@ export function useLiveDocument({
   const at = now();
   const people = [...presence.values()]
     .filter((each) => each.viewer !== viewer && each.person.id !== principalId)
-    .map((each) => ({ ...each, freshness: freshnessOf(each.beatAt, at) }))
+    .map(({ beatHere, ...each }) => ({ ...each, freshness: freshnessOf(beatHere, at) }))
     .filter((each) => each.freshness !== 'absent');
   return { locks, people, connected, outlineChanges };
 }

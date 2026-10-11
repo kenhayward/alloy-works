@@ -103,7 +103,8 @@ describe('a document as it happens, on the page', () => {
     now = AT + 70_000;
     stream.say('lock', { component: DOSING, holder: null, expectedRelease: null });
     await waitFor(() => expect(screen.queryByRole('list', { name: 'Also here' })).toBeNull());
-    expect(freshnessOf(new Date(AT).toISOString(), AT + 29_999)).toBe('live');
+    expect(freshnessOf(AT, AT + 29_999)).toBe('live');
+    expect(freshnessOf(AT, AT + 30_000)).toBe('stale');
   });
 
   it('COL-004 shows nobody, and says it does not know, once the stream drops', async () => {

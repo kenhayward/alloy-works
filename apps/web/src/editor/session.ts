@@ -39,7 +39,13 @@ export type ClaimResult =
  */
 export type TakeResult =
   | { readonly ok: true; readonly taken: true }
-  | { readonly ok: true; readonly taken: false; readonly until: string }
+  | {
+      readonly ok: true;
+      readonly taken: false;
+      readonly until: string;
+      /** When to ask again, by the service's clock (the PL final review, finding 1). */
+      readonly retryAfterMs: number;
+    }
   | {
       readonly ok: false;
       readonly code: 'lock_active' | 'lock_taking' | 'lock_free' | 'lock_own' | 'failed' | Refusal;

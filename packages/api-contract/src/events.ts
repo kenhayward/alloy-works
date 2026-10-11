@@ -45,6 +45,11 @@ export const PresenceEvent = z
       .describe(
         'When their window last said so, in UTC: live for 30 seconds, stale to 60, then absent',
       ),
+    ageMs: z
+      .int()
+      .describe(
+        "How long before this was sent it beat, by the service's clock: what a viewer ages it by",
+      ),
   })
   .describe('Somebody in the document, as the viewer may see them (COL-001 to COL-003, COL-055)');
 

@@ -335,6 +335,7 @@ export function sessionService(
                 ok: true,
                 taken: false,
                 until: data.lock.taking?.until ?? new Date().toISOString(),
+                retryAfterMs: data.retryAfterMs ?? 60_000,
               };
         }
         const refusal = refusalOf(response);

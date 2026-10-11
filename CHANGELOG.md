@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.152.0 - 2026-10-11 (PR #562)
+
+### Added
+
+- **A stream for one document or component.** `GET /v1/stream?document=` or `?component=` says, as it happens, who holds each component the caller may read and until when, and when the document's outline changes. Its events are described at `/asyncapi/v1.json`, beside the API's own description.
+- **See who else is in a document.** The document bar shows everybody else reading or editing it, and each component says who is in it, faded once they have not been heard from for 30 seconds and gone after a minute. Who holds a component, and until when, updates as it happens.
+- **Choose how long a lock lasts.** Administration's Editing sets how long a component stays held once its editor stops saving, 15 minutes unless changed, and how soon somebody may ask an idle editor for it, 5 minutes unless changed.
+- **Take over from somebody who has stopped.** A component somebody else holds offers Take over once they have been idle for five minutes. They are told at once and have a minute to keep it by saving anything; after that it is yours, the taking is recorded, and they are told who has it and that their saved work is kept.
+- **The contents, live and marked.** A document's contents show another person's change to its outline as it happens, and each row says who else holds its component, how many references are broken and how many values failed.
+
 ## 0.151.0 - 2026-10-11 (PR #557)
 
 ### Added

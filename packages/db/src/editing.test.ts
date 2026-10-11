@@ -691,7 +691,7 @@ describe('editing a component: its lock and its iterations', () => {
   });
 
   describe('two sessions racing the same lock, genuinely overlapping in Postgres', () => {
-    it('lets only one of two concurrent claims win, never both', async () => {
+    it('COL-044 lets only one of two concurrent claims win, never both, and tells the other at once who holds it', async () => {
       const component = await newComponent();
       const sessionA = randomUUID();
       const sessionG = randomUUID();
