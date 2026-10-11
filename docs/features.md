@@ -916,6 +916,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   name, what it may do besides reading, which it always may, and the day it works until the start of,
   from tomorrow to a year away, 90 days unless you change it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
   in the browser. **Revoke** asks first, and the next request with the token is refused.
+- **Your sessions, from the account chip.** **Sessions** lists everywhere you are signed in: how
+  each signed in, when it began and when it was last used, this one marked. **End** ends another at
+  once, and **End all other sessions** every one but this; whatever an ended session was doing stops
+  within two seconds, and its next request is refused. No device or address is kept, so sessions are
+  told apart by their times. Through the API it is `GET /v1/sessions`, `DELETE /v1/sessions/{id}` and
+  `DELETE /v1/sessions`, with a session alone.
 - **An administrator revokes anybody's tokens.** In Administration's People - a table of each person's kind and status,
   found by name and shown by kind, a page at a time - **API tokens** beside a person opens theirs in a
   panel beside the list, with what they may do across the environment and why, each token with

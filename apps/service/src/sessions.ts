@@ -144,3 +144,78 @@ export async function endSession(
   await trx.deleteFrom('session').where('id', '=', held.id).execute();
   return held.id;
 }
+
+/** A session as its holder sees it (IAM-040): no device or address is kept to show (AU-F). */
+export interface OwnSession {
+  readonly id: string;
+  readonly route: SignInRoute;
+  readonly createdAt: Date;
+  readonly lastSeenAt: Date;
+  readonly expiresAt: Date;
+}
+
+/** A principal's sessions that have not ended, as `sessionHeld` reads one alive, newest first. */
+export async function listOwnSessions(
+  trx: TenantTransaction,
+  principalId: string,
+  now: Date = new Date(),
+): Promise<OwnSession[]> {
+  const rows = await trx
+    .selectFrom('session')
+    .select(['id', 'route', 'created_at', 'last_seen_at', 'expires_at'])
+    .where('principal_id', '=', principalId)
+    .where('expires_at', '>', now)
+    .where('idle_expires_at', '>', now)
+    .orderBy('created_at', 'desc')
+    .orderBy('id')
+    .execute();
+  return rows.map((row) => ({
+    id: row.id,
+    route: row.route as SignInRoute,
+    createdAt: row.created_at,
+    lastSeenAt: row.last_seen_at,
+    expiresAt: row.expires_at,
+  }));
+}
+
+/**
+ * **Ends sessions of a principal's own by their rows** (IAM-040; the AU2 plan, SE-C): each locked,
+ * recorded as ended by its holder before it goes - or as signed out, where it is the one asking -
+ * then deleted. Only the principal's own: another's is never found. Answers the rows ended.
+ */
+export async function endOwnSessions(
+  trx: TenantTransaction,
+  principalId: string,
+  which: { readonly id: string } | { readonly allBut: string },
+): Promise<string[]> {
+  let query = trx
+    .selectFrom('session')
+    .select('id')
+    .where('principal_id', '=', principalId)
+    .orderBy('id')
+    .forUpdate();
+  query = 'id' in which ? query.where('id', '=', which.id) : query.where('id', '!=', which.allBut);
+  const held = await query.execute();
+  if (held.length === 0) return [];
+  const subject = labels(await principalLabel(trx, 'subject', principalId));
+  for (const session of held) {
+    await recordEvent(
+      trx,
+      {
+        kind: 'authentication.signed_out',
+        subject: { kind: 'principal', id: principalId },
+        detail: { ended: 'ended_by_holder', session: session.id },
+      },
+      subject,
+    );
+  }
+  await trx
+    .deleteFrom('session')
+    .where(
+      'id',
+      'in',
+      held.map((session) => session.id),
+    )
+    .execute();
+  return held.map((session) => session.id);
+}

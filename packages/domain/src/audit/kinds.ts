@@ -140,9 +140,10 @@ export const auditKindSpecs = {
     'apps/service/src/audit.ts',
   ),
   'authentication.signed_out': kind(
-    ['IAM-013'],
+    ['IAM-013', 'IAM-040'],
     z.strictObject({
-      ended: z.enum(['signed_out', 'expired', 'route_closed']),
+      // `ended_by_holder`: its holder ended it from another of their sessions (IAM-040).
+      ended: z.enum(['signed_out', 'expired', 'route_closed', 'ended_by_holder']),
       session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),
     }),

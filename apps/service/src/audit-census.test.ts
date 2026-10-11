@@ -168,6 +168,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listTokens: read,
   createToken: writes('token.issued'),
   revokeToken: writes('token.revoked'),
+  listSessions: read,
+  endSession: writes('authentication.signed_out'),
+  endOtherSessions: writes('authentication.signed_out'),
   listPrincipalTokens: read,
   revokePrincipalToken: writes('token.revoked'),
 };

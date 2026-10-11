@@ -229,6 +229,7 @@ const OTHER_TENANT_IDS: Readonly<
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
+  endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
   listPrincipalTokens: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
   revokePrincipalToken: async (tenant, db) => {
     const { principal, token } = await tokenIn(tenant, db);
@@ -803,6 +804,36 @@ const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>
  * A personal token in `tenant`, of a principal of its own, kept as its hash as any token is: each call
  * a person and a token of their own, since a hash and a subject are each held once.
  */
+/** A session of a principal the tenant holds, alive for an hour. */
+async function sessionIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(tenant, async (trx) => {
+    const principal = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const hour = new Date(Date.now() + 60 * 60 * 1000);
+    const session = await trx
+      .insertInto('session')
+      .values({
+        token_hash: randomUUID().replaceAll('-', '').padEnd(64, 'e'),
+        principal_id: principal.id,
+        route: 'organisation',
+        last_seen_at: new Date(),
+        idle_expires_at: hour,
+        expires_at: hour,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return session.id;
+  });
+}
+
 async function tokenIn(
   tenant: Tenant,
   db: TenantDatabase,
