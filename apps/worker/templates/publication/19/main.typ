@@ -53,7 +53,7 @@
 // themes 1 or 2 names any of them. A table's inset and rules, which template 12 left to the engine,
 // are the table style's here.
 #let doc = json("data.json")
-#assert(doc.schema == "publishing/19", message: "data.json is not publishing/18")
+#assert(doc.schema == "publishing/19", message: "data.json is not publishing/19")
 
 // The theme, as `assemble` projected it (`projectTypst`): each paragraph style by identifier with
 // every property concrete, the nine marks' renderings, and which style each place and role is set in.
@@ -1060,12 +1060,11 @@
       } else {
         let above = if t.headerRow.stroke == none { () } else { (table.hline(stroke: rule(t.headerRow.stroke)),) }
         let whole = if kept { (breakable: false) } else { (:) }
-        above + row.cells.enumerate().map(((x, c)) => table.cell(
-          colspan: c.colspan,
-          rowspan: c.rowspan,
-          ..whole,
-          in-weight(cell-body(c, x)),
-        ))
+        // A header column's cell heads its row here as on any other row: wrapped as `cell-of` wraps it.
+        above + row.cells.enumerate().map(((x, c)) => {
+          let spanned = table.cell(colspan: c.colspan, rowspan: c.rowspan, ..whole, in-weight(cell-body(c, x)))
+          if c.scope == "row" or c.scope == "both" { pdf.header-cell(scope: c.scope, spanned) } else { spanned }
+        })
       }
     }
     let cells-of(rows, kept, from: 0) = rows.enumerate().map(((k, row)) => group-row(row, from + k, kept)).flatten()

@@ -58,7 +58,7 @@ const ROWS: CanonicalValue[][] = REGIONS.flatMap((region) => [
   [`${region} total`, '465', region, true],
 ]);
 
-const published = (() => {
+const publishedWith = (headerColumn: boolean) => {
   const made = assemble({
     formats: ['pdf'],
     outline: parseOutlineDocument({
@@ -104,7 +104,7 @@ const published = (() => {
                 { column: 'site', header: 'Site' },
                 { column: 'reading', header: 'Reading' },
               ],
-              headerColumn: false,
+              headerColumn,
               groups: [{ column: 'region', subtotal: 'total' }],
             },
           ],
@@ -145,9 +145,11 @@ const published = (() => {
   });
   if (!made.ok) throw new Error(JSON.stringify(made.failures));
   return JSON.stringify(made.document);
-})();
-const pdf = await typst.compile(TEMPLATE, published, at);
+};
+const pdf = await typst.compile(TEMPLATE, publishedWith(false), at);
 const read = await readPdf(pdf);
+// Its first column heading each row, a subtotal's among them (the TG1 final review).
+const headed = await readPdf(await typst.compile(TEMPLATE, publishedWith(true), at));
 
 /** The pages, counted from 0, whose tagged or artifact text holds this line. */
 const pagesOf = (value: string, of: readonly (readonly string[])[]) =>
@@ -197,6 +199,17 @@ describe('a grouped bound table published (TG1)', () => {
           .filter((line) => line.startsWith(region))
           .at(-1),
       ).toBe(`${region} total`);
+    }
+  });
+
+  it("TAB-054 heads a subtotal's row by its first cell where the table's first column heads each row, as every other row", () => {
+    for (const region of REGIONS) {
+      const total = headed.reading.filter((each) => each.text.trim() === `${region} total`);
+      expect(
+        total.map((each) => each.role),
+        region,
+      ).toContain('TH');
+      expect(total.map((each) => each.role)).not.toContain('TD');
     }
   });
 

@@ -5032,6 +5032,40 @@ describe('writeDocx: a grouped bound table (the TG plan, TG1)', () => {
       expect(rowProperties(at), `row ${at}`).toHaveProperty('w:cantSplit');
   });
 
+  it("TAB-054 rules a subtotal above across every cell where its first column heads each row, beside the header column's rule (the TG1 final review)", () => {
+    const headed = tabledOf(
+      [
+        {
+          type: 'boundTable',
+          id: 't1',
+          style: 'ruled',
+          binding: {
+            type: 'binding',
+            id: 'rows',
+            query: uuid(900),
+            parameters: {},
+            mode: 'checked',
+          },
+          caption: [text('Readings')],
+          columns: [
+            { column: 'site', header: 'Site' },
+            { column: 'reading', header: 'Reading' },
+          ],
+          headerColumn: true,
+          groups: [{ column: 'region', subtotal: 'total' }],
+        },
+      ],
+      { bindings: new Map([[id('blocks'), new Map([['rows', rows]])]]), theme: ruledTheme },
+    );
+    const total = rowsOf(blocksOf(headed.docx).find((each) => each.name === 'w:tbl')!)[4]!;
+    for (const each of total) {
+      const borders = all(each, 'w:tcBorders');
+      expect(borders).toHaveLength(1);
+      expect(first(borders[0]!, 'w:top')?.attrs['w:color']).toBe('C00000');
+    }
+    expect(first(first(total[1]!, 'w:tcBorders')!, 'w:left')).toBeDefined();
+  });
+
   it("TAB-054 rules a subtotal above with the header row's rule and sets it in the header row's weight", () => {
     expect(pinnedBold(kids(cells[4]![0]!, 'w:p')[0]!)).toBe(true);
     expect(pinnedBold(kids(cells[2]![0]!, 'w:p')[0]!)).toBe(false);

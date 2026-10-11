@@ -1992,15 +1992,20 @@ class Writer {
         const each = next.shift();
         if (each === undefined) break;
         const stated = this.cellFormat(table, style, at, x, each);
-        const above =
-          kind === 'subtotal' && style.headerRow.rule !== 'none' && !stated.includes('w:tcBorders')
-            ? `<w:tcBorders>${tableRule('top', style.headerRow.rule)}</w:tcBorders>`
+        // The rule above a subtotal joins a header column's rule where the cell already states one.
+        const top =
+          kind === 'subtotal' && style.headerRow.rule !== 'none'
+            ? tableRule('top', style.headerRow.rule)
             : '';
+        const ruled = stated.includes('<w:tcBorders>')
+          ? stated.replace('<w:tcBorders>', `<w:tcBorders>${top}`)
+          : stated;
+        const above = top !== '' && ruled === stated ? `<w:tcBorders>${top}</w:tcBorders>` : '';
         const filled =
           kind === 'heading' && style.headerRow.fill !== 'none' && !stated.includes('w:shd')
             ? shading(style.headerRow.fill)
             : '';
-        const own = above + stated + filled;
+        const own = above + ruled + filled;
         const merge = each.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : '';
         // A bound table's column that must not wrap (the no-wrap half of TAB-035): Word's `w:noWrap`, after the shading.
         const noWrap = table.bound?.wrap[x] === false && each.colspan === 1 ? '<w:noWrap/>' : '';

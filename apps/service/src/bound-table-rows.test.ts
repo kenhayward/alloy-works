@@ -370,6 +370,21 @@ describe("a bound table's rows, for the page", () => {
     expect(renewed.json<{ result: { rows: unknown } }>().result.rows).toEqual([['Harbour']]);
   });
 
+  it("tags a grouped table's rows apart from the same rows ungrouped, so a grouping changed is never a 304 (the TG1 final review)", async () => {
+    const definition = await h.definition(connection.id);
+    const plain = await placed([table(whole('b1', definition.id))]);
+    const grouped = await placed([
+      table(whole('b1', definition.id), { groups: [{ column: 'name' }] }),
+    ]);
+    const version = await resolve(plain.document.id, plain.node, [['1', 'North']]);
+    expect(await resolve(grouped.document.id, grouped.node, [['1', 'North']])).toBe(version);
+    const etag = (await rowsOf('ada', plain.document.id, plain.node, version)).headers
+      .etag as string;
+    const asked = await rowsOf('ada', grouped.document.id, grouped.node, version, { etag });
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.headers.etag).not.toBe(etag);
+  });
+
   it('answers result_unreadable where the stored bytes are not its checksum', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed([table(whole('b1', definition.id))]);
@@ -431,6 +446,33 @@ describe("a bound table's rows, for the page", () => {
         });
       return { document, node, version, session, save };
     };
+
+    it('refuses a save grouping by a column the table did not name, or marking subtotals by one, definition_unreadable (the TG1 final review)', async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const { component } = await placed([table(whole('b1', definition.id))]);
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      for (const [sequence, groups] of [
+        [1, [{ column: 'id' }]],
+        [2, [{ column: 'name', subtotal: 'id' }]],
+      ] as const) {
+        const saved = await h.call(
+          'grace',
+          'PUT',
+          `/v1/components/${component.id}/iterations/${session}/${sequence}`,
+          {
+            openedFrom: component.version,
+            content: content([table(whole('b1', definition.id), { groups })]),
+          },
+        );
+        expect(saved.statusCode, saved.body).toBe(403);
+        expect(saved.json()).toMatchObject({ code: 'definition_unreadable' });
+      }
+    });
 
     it('refuses a save adding a note keyed by a column the table did not name, definition_unreadable', async () => {
       const definition = await h.definition(connection.id, {}, h.quality);
