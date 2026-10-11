@@ -6857,6 +6857,44 @@ describe("a table's columns as wide as its style says (the TG plan, TG3)", () =>
     expect(first! + second!).toBeCloseTo(1, 12);
   });
 
+  it('TAB-053 measures a cell as it is published, a list item by item (the TG3 final review)', () => {
+    const theme = widthed('content');
+    const listed = {
+      ...codes,
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'list',
+                  id: 'L1',
+                  kind: 'unordered',
+                  items: [
+                    {
+                      content: [
+                        paragraph('i1', text('A reading taken at the north gauge each day')),
+                      ],
+                    },
+                    { content: [paragraph('i2', text('Another at the south'))] },
+                  ],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
+            },
+            cell('b1', 'ok'),
+          ],
+        },
+      ],
+    };
+    const table = tableOf(
+      assemble({ ...oneComponent(listed), theme, faces: facesOf(theme) } as AssembleInput),
+    );
+    const [items, short] = table.widths!;
+    expect(items!).toBeGreaterThan(short!);
+  });
+
   it('TAB-053 leaves a style of equal widths, or one stating none, to share the measure equally, as before', () => {
     for (const widths of ['equal', undefined] as const) {
       const theme = widthed(widths);

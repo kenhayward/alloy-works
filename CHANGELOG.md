@@ -58,7 +58,7 @@ topmost version matches `version.json`. Up to 0.132.3, every pull request had it
   Table tab opens wider, at 440px, and remembers its own width.
 - The Table tab sits closer to the pane's edges. Its columns, settings and value line up at one inset,
   with less space around the columns.
-- **A table's columns are as wide as what they hold.** Under the default theme's new version, a column of short codes is narrow and one of sentences wide, the same on the page, in the PDF and in Word, instead of every column sharing the width equally. An environment still on the product's default theme moves to it; a publication already made does not change.
+- **A table's columns are as wide as what they hold.** Under the default theme's new version, a column of short codes is narrow and one of sentences wide, measured alike on the page, in the PDF and in Word, instead of every column sharing the width equally; a bound table's page measures the rows it shows. An environment still on the product's default theme moves to it; a publication already made does not change.
 - On a component's page, the space pane and the panels beside the text can be resized by dragging their
   edge and hidden to a rail, as on a document's page; each remembers its width. The panels' tabs stay
   in place while the panel under them scrolls.

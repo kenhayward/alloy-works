@@ -440,10 +440,13 @@ What TG3 built that differs:
 - **The editor measures with the browser's own advances**, unkerned, on a canvas in each run's computed
   face, rather than reading the face files: the same faces, so the same widths, which the theme suite
   holds to half a point under the contrary theme.
-- **The widths are decorations on an authored table's first row**, which `table-layout: fixed` reads, and
-  a `colgroup` in a bound table's body, which its own view draws.
-- **A cell's room follows its column's share** (`cellIndent`), so what fits a cell is judged in the width
-  it is set in.
+- **The widths are a `colgroup`**, which the fixed layout reads: an authored table's own view sets it from
+  a decoration carrying the shares, so a first-row cell spanning columns spans their own widths; a bound
+  table's grid and the read text's tables take one measured once each time they are drawn.
+- **A cell is measured as published** - a reference's words, a note's mark, a list item by item - so
+  `assemble` measures after setting the cells, and a cell's room stays an equal share (`cellIndent`).
+- **A bound table's page measures the rows it shows**, the first 50; the PDF measures all, so a long value
+  past them widens only the PDF's column.
 
 ## T3: groups, transposition and widths
 

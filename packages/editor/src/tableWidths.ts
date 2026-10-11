@@ -7,7 +7,7 @@ import {
 import type { Node } from 'prosemirror-model';
 import { Plugin, PluginKey, type EditorState } from 'prosemirror-state';
 import { TableMap } from 'prosemirror-tables';
-import { Decoration, DecorationSet, type EditorView } from 'prosemirror-view';
+import { Decoration, DecorationSet, type EditorView, type NodeView } from 'prosemirror-view';
 
 /**
  * **A table's columns as wide as what they hold, on the page** (the TG plan, TG3; TAB-053, TG-F): where
@@ -32,32 +32,66 @@ const widthsKey = new PluginKey<WidthsState>('tableWidths');
 export type TableMeasurer = (table: HTMLTableElement) => readonly number[] | null | undefined;
 
 /**
- * **The decorations for each table's widths** (TG3): its first row's cells, each as wide as the columns
- * it spans, borders and padding within, in percentages of the table, which `table-layout: fixed`
- * reads its columns from.
+ * **The decorations for each table's widths** (TG3): one on each table node, carrying its shares, which
+ * its view (`tableView`) sets as a `colgroup` - so a first-row cell spanning columns spans their own
+ * widths, as the PDF sets them, never an even split of their sum.
  */
 export function widthDecorations(doc: Node, widths: Widths): DecorationSet {
   const decorations: Decoration[] = [];
   for (const [pos, shares] of widths) {
     const table = doc.nodeAt(pos);
     if (table === null || table.type.name !== 'table') continue;
-    const map = TableMap.get(table);
-    if (map.width !== shares.length) continue;
-    const row = table.firstChild;
-    if (row === null) continue;
-    let offset = pos + 2;
-    row.forEach((cell) => {
-      const at = map.findCell(offset - pos - 1);
-      const share = shares.slice(at.left, at.right).reduce((total, each) => total + each, 0);
-      decorations.push(
-        Decoration.node(offset, offset + cell.nodeSize, {
-          style: `width: ${(share * 100).toFixed(4)}%; box-sizing: border-box`,
-        }),
-      );
-      offset += cell.nodeSize;
-    });
+    if (TableMap.get(table).width !== shares.length) continue;
+    decorations.push(Decoration.node(pos, pos + table.nodeSize, {}, { tableWidths: shares }));
   }
   return DecorationSet.create(doc, decorations);
+}
+
+/** The shares a table's decorations carry, or none. */
+export const sharesOf = (decorations: readonly Decoration[]): readonly number[] | null =>
+  (decorations.find((each) => each.spec.tableWidths !== undefined)?.spec.tableWidths as
+    readonly number[] | undefined) ?? null;
+
+/**
+ * **A table drawn with its column group** (TG3): the table, a `colgroup` of its widths where its
+ * decorations carry them, and the body ProseMirror fills. The column group is the view's own, outside
+ * the content, so changing it is no edit.
+ */
+export function tableView(
+  node: Node,
+  document: Document,
+  decorations: readonly Decoration[],
+): NodeView {
+  const dom = document.createElement('table');
+  const group = document.createElement('colgroup');
+  const body = document.createElement('tbody');
+  dom.append(group, body);
+  let set: readonly number[] | null = null;
+  const draw = (from: readonly Decoration[]) => {
+    const shares = sharesOf(from);
+    if (shares === set || (shares !== null && set !== null && shares.join() === set.join())) return;
+    set = shares;
+    group.replaceChildren(
+      ...(shares ?? []).map((share) => {
+        const column = document.createElement('col');
+        column.style.width = `${(share * 100).toFixed(4)}%`;
+        return column;
+      }),
+    );
+  };
+  draw(decorations);
+  return {
+    dom,
+    contentDOM: body,
+    update(next, nextDecorations) {
+      if (next.type !== node.type) return false;
+      draw(nextDecorations);
+      return true;
+    },
+    ignoreMutation: (mutation) =>
+      mutation.type !== 'selection' &&
+      (mutation.target === group || group.contains(mutation.target as globalThis.Node)),
+  };
 }
 
 /** A run of a drawn cell's text, in the element it stands in, whose face and weight it is set in. */
@@ -93,6 +127,7 @@ export const measureDrawnTable: TableMeasurer = (table) => {
   const width = measurerOf(table.ownerDocument);
   const taken: number[] = [];
   const cells: MeasuredCell<Element, ElementRun>[] = [];
+  const wraps: boolean[] = [];
   let padding = 0;
   Array.from(table.rows).forEach((row, y) => {
     let x = 0;
@@ -104,7 +139,8 @@ export const measureDrawnTable: TableMeasurer = (table) => {
         padding,
         (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)) / 2,
       );
-      const blocks = Array.from(cell.children).filter((each) => each.matches('[data-style], p'));
+      // Every paragraph, a list item's among them, at whatever depth it stands (the TG3 final review).
+      const blocks = Array.from(cell.querySelectorAll('p'));
       const paragraphs = (blocks.length > 0 ? blocks : [cell]).map((block) => {
         const runs: ElementRun[] = [];
         const walker = table.ownerDocument.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -125,6 +161,11 @@ export const measureDrawnTable: TableMeasurer = (table) => {
         };
       });
       cells.push({ column: x, colspan: cell.colSpan, paragraphs });
+      // A bound column that may not wrap, said by its cells' class (TB1-I): its least its whole line.
+      if (cell.colSpan === 1) {
+        const nowrap = cell.classList.contains('aw-bound-table-nowrap');
+        wraps[x] = (wraps[x] ?? false) || !nowrap;
+      }
       x += cell.colSpan;
     }
   });
@@ -134,6 +175,7 @@ export const measureDrawnTable: TableMeasurer = (table) => {
   const extents = columnExtents(columns, cells, {
     padding,
     measure,
+    noWrap: Array.from({ length: columns }, (_, at) => wraps[at] === false),
     width: (text, _, run) => width(text, run.element),
   });
   return columnWidths(extents, measure);
@@ -142,6 +184,34 @@ export const measureDrawnTable: TableMeasurer = (table) => {
 /** Each table's width decorations as the plugin holds them, for the one decorations plugin. */
 export const tableWidthDecorations = (state: EditorState): DecorationSet =>
   widthsKey.getState(state)?.set ?? DecorationSet.empty;
+
+/**
+ * **Tables drawn outside the editor's content, widthed** (TG3): a bound table's grid, or a read text's
+ * every table (`render.ts`, Reading), each measured once - `seen` remembers it - and given a `colgroup`
+ * of its widths where its style widths it by content. Measured in place, so call it once they stand in
+ * the page.
+ */
+export function widthDrawnTables(
+  root: ParentNode,
+  selector = '[data-table-style] table, .aw-bound-table-grid',
+  measure: TableMeasurer = measureDrawnTable,
+  seen: WeakSet<HTMLTableElement> = new WeakSet(),
+): void {
+  root.querySelectorAll<HTMLTableElement>(selector).forEach((table) => {
+    if (seen.has(table)) return;
+    seen.add(table);
+    const shares = measure(table);
+    table.querySelector(':scope > colgroup')?.remove();
+    if (shares === undefined || shares === null) return;
+    const group = table.ownerDocument.createElement('colgroup');
+    for (const share of shares) {
+      const column = table.ownerDocument.createElement('col');
+      column.style.width = `${(share * 100).toFixed(4)}%`;
+      group.append(column);
+    }
+    table.prepend(group);
+  });
+}
 
 /**
  * **The plugin** (TG3): after each update, each table drawn is measured again where its node changed,
@@ -170,7 +240,10 @@ export function tableWidthsPlugin(measure: TableMeasurer = measureDrawnTable): P
     },
     view(view: EditorView) {
       let measured = new WeakMap<Node, readonly number[] | null>();
+      let grids = new WeakSet<HTMLTableElement>();
       const update = () => {
+        // A view destroyed before its first measure, or before a face loaded, measures nothing.
+        if (view.isDestroyed) return;
         const current: Widths = widthsKey.getState(view.state)?.widths ?? new Map();
         const next = new Map<number, readonly number[]>();
         view.state.doc.descendants((node, pos) => {
@@ -188,19 +261,9 @@ export function tableWidthsPlugin(measure: TableMeasurer = measureDrawnTable): P
           if (shares !== null) next.set(pos, shares);
           return false;
         });
-        // A bound table's body, drawn by its own view, takes its widths as a column group.
-        view.dom.querySelectorAll<HTMLTableElement>('.aw-bound-table-grid').forEach((grid) => {
-          const shares = measure(grid);
-          grid.querySelector(':scope > colgroup')?.remove();
-          if (shares === undefined || shares === null) return;
-          const group = grid.ownerDocument.createElement('colgroup');
-          for (const share of shares) {
-            const column = grid.ownerDocument.createElement('col');
-            column.style.width = `${(share * 100).toFixed(4)}%`;
-            group.append(column);
-          }
-          grid.prepend(group);
-        });
+        // A bound table's body, drawn by its own view, takes its widths as a column group, measured
+        // once each time it is drawn: a redraw is a new grid (the TG3 final review).
+        widthDrawnTables(view.dom, '.aw-bound-table-grid', measure, grids);
         const same =
           next.size === current.size &&
           [...next].every(([pos, shares]) => {
@@ -215,6 +278,7 @@ export function tableWidthsPlugin(measure: TableMeasurer = measureDrawnTable): P
       const fonts = view.dom.ownerDocument.fonts as FontFaceSet | undefined;
       const remeasure = () => {
         measured = new WeakMap();
+        grids = new WeakSet();
         update();
       };
       fonts?.addEventListener?.('loadingdone', remeasure);

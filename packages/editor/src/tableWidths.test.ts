@@ -2,7 +2,7 @@ import { parseContentDocument, type ContentDocument } from '@alloy-works/domain'
 import { describe, expect, it } from 'vitest';
 
 import { toEditor } from './mapping.js';
-import { widthDecorations } from './tableWidths.js';
+import { sharesOf, widthDecorations } from './tableWidths.js';
 
 /**
  * A table's widths on the page (the TG plan, TG3): set on its first row's cells, each as wide as the
@@ -46,33 +46,27 @@ const tableAt = (node: ReturnType<typeof doc>) => {
   });
   return at;
 };
-const styles = (node: ReturnType<typeof doc>, shares: readonly number[]) =>
+const carried = (node: ReturnType<typeof doc>, shares: readonly number[]) =>
   widthDecorations(node, new Map([[tableAt(node), shares]]))
     .find()
-    .map((each) => (each as unknown as { type: { attrs: { style: string } } }).type.attrs.style);
+    .map((each) => sharesOf([each]));
 
 describe("a table's widths on the page (TG3)", () => {
-  it("TAB-053 sets each of its first row's cells at its column's share of the table", () => {
+  it("TAB-053 carries each table its columns' shares, which its view sets as a column group", () => {
     const node = doc([{ cells: [cell('a'), cell('b')] }, { cells: [cell('c'), cell('d')] }]);
-    expect(styles(node, [0.25, 0.75])).toEqual([
-      'width: 25.0000%; box-sizing: border-box',
-      'width: 75.0000%; box-sizing: border-box',
-    ]);
+    expect(carried(node, [0.25, 0.75])).toEqual([[0.25, 0.75]]);
   });
 
-  it('sets a first-row cell spanning columns at the share of every column it spans', () => {
+  it("carries every column's own share where a first-row cell spans columns, never their sum split evenly (the TG3 final review)", () => {
     const node = doc([
       { cells: [cell('a', 2), cell('b')] },
       { cells: [cell('c'), cell('d'), cell('e')] },
     ]);
-    expect(styles(node, [0.2, 0.3, 0.5])).toEqual([
-      'width: 50.0000%; box-sizing: border-box',
-      'width: 50.0000%; box-sizing: border-box',
-    ]);
+    expect(carried(node, [0.2, 0.3, 0.5])).toEqual([[0.2, 0.3, 0.5]]);
   });
 
-  it('sets nothing for widths of another number of columns than the table has', () => {
+  it('carries nothing for widths of another number of columns than the table has', () => {
     const node = doc([{ cells: [cell('a'), cell('b')] }]);
-    expect(styles(node, [1])).toEqual([]);
+    expect(carried(node, [1])).toEqual([]);
   });
 });
