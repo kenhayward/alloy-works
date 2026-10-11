@@ -3,6 +3,99 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.150.0 - 2026-10-11 (PR #552)
+
+### Added
+
+- **Discard** on the notice about saved changes never made a version: once you confirm, those
+  changes are no longer offered for recovery anywhere you open the component. Nothing is deleted;
+  Saved text lists them until they expire, and anything saved later is offered again.
+- **Grouped tables.** A table filled from a query can group its rows under headings, up to three levels, with the query's subtotal rows last in each group. In the PDF a group's heading repeats at the top of each page the group continues on; in Word a heading and a subtotal stay with their rows. Set through the API for now.
+- **Group and transpose a table on the Table tab.** Group adds up to three levels, each with the query's subtotal rows; Transpose by turns a result of up to 12 rows on its side, its rows becoming columns. The page shows both as a publication prints them, and the Data tab says how each table is shaped.
+
+### Changed
+
+- A document's text, and a component's in its editor, stand on a page: a sheet the layout's measure
+  wide with margins, centred on a darker desk, in light and dark alike. **Fit** fits the page, margins
+  and all. Where the window is narrower than the page, the desk scrolls sideways.
+- A document's page has a document bar under the header: the breadcrumb, **Reading** and
+  **Authoring** as two segments, **Preview**, **Show boundaries** as a button that stays pressed while
+  they show, and **Manage access** at its end. The page under it is the desk the document stands on.
+- Zoom is in the status bar, in a document and in the component editor: **Zoom out**, a slider and
+  **Zoom in** step through the levels, and the level itself is a menu that also holds **Fit**.
+- A component opened in place in a document keeps its name, toolbar, second line, save chip and
+  **Done** in a band under the document bar, on the chrome rather than the page. The band is there
+  throughout Authoring, so the page does not move when a component opens, and stays in view as the
+  text scrolls. The component's heading stays on the page while it is edited.
+- In a document in Authoring, the toolbar is always there under the document bar, centred and
+  disabled until a component's text is clicked, so nothing jumps as components open. **Done**,
+  **Save version** and **Saved text** are its first three icons, the language and direction follow
+  it, and the component's name is no longer shown there. The second line starts under the toolbar.
+- Whether the text is saved is said at the left of the status bar.
+- A toolbar icon's tooltip appears almost at once, and a hovered icon fills with the accent colour.
+- The page stands level with the panels beside it.
+- Menus, such as the zoom level's, are drawn dark in dark mode.
+- A component opened on its own leads its toolbar with **Done**, **Save version** and **Saved text**,
+  and says whether it is saved at the left of the status bar, as one opened in a document does.
+- A figure's alternative text, image style and numbering are set in **Figure settings**, a dialog
+  opened from the figure's panel; an image in a line has **Image settings**. Changes apply as they
+  are made, and Done closes it. Opened where the figure cannot be changed, it shows its settings to
+  read.
+- A figure's options under the toolbar fit on one line: its image style, a **Numbered** switch, an
+  **Alt text** chip saying how it is described (amber where a description is needed, saying why),
+  **Replace image** and **Delete figure** as icons, and **Figure settings**. The chip opens Figure
+  settings at the description. On a narrow window the labels drop, and nothing wraps.
+- A value's provenance opens in a modal panel over the page, not beside the text. It has two tabs:
+  Provenance, then Results, whose rows are read only when you choose it. Close or Escape returns you
+  to the value.
+- Recover opens **Saved text** as a dialog. Choose a saved change to see what recovering it would
+  change in the text, the words put in underlined and those taken out struck through, then Recover or
+  Cancel. Cancel recovers nothing and, from the notice, offers the changes again.
+- The notice about saved changes never made a version has a **Dismiss** button, which puts it away in
+  that tab until something newer is saved.
+- **T3's order is set.** The table rows left from T2 come first: grouping, transposition and column widths. Moving a document to a newer template version, and listing where it departs from its template, move to T9, and emphasis rules in a table style to T7, when themes can be edited.
+- The panels beside a document's text can be resized by dragging their edge, as the outline can. The
+  Table tab opens wider, at 440px, and remembers its own width.
+- The Table tab sits closer to the pane's edges. Its columns, settings and value line up at one inset,
+  with less space around the columns.
+- **A table's columns are as wide as what they hold.** Under the default theme's new version, a column of short codes is narrow and one of sentences wide, the same on the page, in the PDF and in Word, instead of every column sharing the width equally. An environment still on the product's default theme moves to it; a publication already made does not change.
+- On a component's page, the space pane and the panels beside the text can be resized by dragging their
+  edge and hidden to a rail, as on a document's page; each remembers its width. The panels' tabs stay
+  in place while the panel under them scrolls.
+- The editor's toolbar has a second line, always there while the text is open, so the text no longer
+  moves as options appear. Paragraph style stands on it, and a list's options beside it: Nest and
+  Lift for any list, and Start at and Numbering for a numbered one only. The Kind select is gone; the
+  toolbar's Bulleted and Numbered buttons change a list's kind.
+- A preformatted block's language, a figure's or an image's settings, and a selected value's line
+  now stand on the toolbar's second line too, instead of in bands that pushed the text down.
+- The Part tab sets each setting on a labelled row. Numbered is a switch, and Matter a three-way
+  switch of Front, Body and Appendix. The Equation button sits inside the Title field and Copy inside
+  the Link field, and Remove stands alone at the foot. A component's part links to the component by
+  its name.
+- The Data tab lists each part's values under its heading with a count, in the outline's order, each
+  on two lines: what it is (a value or a table) and what it shows, then its state, definition and
+  mode. A reason and Keep, Resolve or Accept show only where they apply. Show counts each state,
+  Check now is a refresh button, and a click anywhere on a row goes to the value.
+- Search finds what you type as part of a word too, in any case: `dexa` finds Dexamethasone. Whole
+  words still rank first, and phrases, `-` and scoped terms work as before.
+
+### Fixed
+
+- After leaving a document for a component, the status bar no longer shows the document's zoom,
+  save state and counts beside the component's.
+- A long value in a table's caption wraps within the caption in a document's text, instead of its
+  second line standing over the table. Space opens a value's provenance, as Enter does.
+- Zoomed in, a part's name, version and Open stand on a line of their own above its text, not over
+  its caption or heading.
+- A value's Results scroll inside the provenance panel, across as well as down, with the column
+  headings kept in view.
+- A document opened at a linked part shows that part at the top of the window again. The Part tab's
+  rows had taken the outline tree's own row style.
+- A note's Edit button in the Table tab scrolls the note's words into view, so they are no longer
+  hidden under the status bar.
+- The icons in the Table tab's buttons are centred.
+- A bound table's definition name and its version are spaced apart.
+
 ## 0.149.0 - 2026-10-10 (PR #527)
 
 ### Added

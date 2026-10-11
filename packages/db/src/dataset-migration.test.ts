@@ -185,7 +185,7 @@ describe('migration 0047, over an environment made before it', () => {
     expect(await countRows(upgraded.schema)).toEqual({
       ...counts,
       artifact: counts.artifact! + 1,
-      artifact_version: counts.artifact_version! + 6,
+      artifact_version: counts.artifact_version! + 8,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

@@ -407,7 +407,7 @@ describe("the theme's store", () => {
         answer: 'refused',
         refusals: [{ code: 'catalogue_malformed' }],
       });
-      expect(await versionsOf(trx, DEFAULT_CATALOGUE_IDS.table)).toBe(5);
+      expect(await versionsOf(trx, DEFAULT_CATALOGUE_IDS.table)).toBe(6);
       // At catalogue/3, a caption moved below its table is a change, written at 3.
       const moved = recorded(
         await addCatalogueVersion(trx, {
@@ -422,7 +422,7 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(moved).toMatchObject({ version: 6, schemaVersion: 3 });
+      expect(moved).toMatchObject({ version: 7, schemaVersion: 3 });
     });
   });
 
@@ -456,12 +456,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 8,
+        version: 9,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.8', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.9', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -518,7 +518,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(7);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(8);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -547,7 +547,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(7);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(8);
     });
   });
 });
