@@ -375,6 +375,7 @@ function nodeOf(block: BlockNode): Node {
           columns: block.columns,
           headerColumn: block.headerColumn,
           sort: block.sort ?? null,
+          groups: block.groups ?? null,
           wide: block.wide ?? null,
         },
         [
@@ -758,6 +759,7 @@ function storedBlock(node: Node, at: string): unknown {
         columns: node.attrs.columns as object,
         headerColumn: node.attrs.headerColumn as boolean,
         ...(node.attrs.sort === null ? {} : { sort: node.attrs.sort as object }),
+        ...(node.attrs.groups === null ? {} : { groups: node.attrs.groups as object }),
         ...member('boundTableEmpty', 'empty'),
         ...member('tableNote', 'note'),
         ...(notes.length === 0 ? {} : { notes }),
