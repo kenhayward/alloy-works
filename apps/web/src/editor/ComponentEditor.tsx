@@ -155,7 +155,7 @@ import {
 import { FieldsForm } from '../metadata/FieldsForm.js';
 import { resolveBridge, type PlatformBridge } from '../platform/bridge.js';
 import { spellingFor } from '../platform/spelling.js';
-import { useStatus } from '../shell/Status.js';
+import { StatusLead, useStatus } from '../shell/Status.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
@@ -2077,7 +2077,6 @@ export function ComponentEditor({
         // Where the application's F6 enters this editor's own ring (`RegionKeys`).
         data-region-entry
       >
-        {inBand && <Icon name="Authoring" size={14} />}
         {number !== undefined && (
           <span className={styles['number']} title={size}>
             {number}
@@ -2089,6 +2088,7 @@ export function ComponentEditor({
             editable={shown.mayEdit && loaded.state === 'open' && isEditablePhase(phase)}
             onChange={changeHeader}
             onRefused={setNotice}
+            titled={!inBand}
           >
             <span
               className={styles['version']}
@@ -2108,10 +2108,18 @@ export function ComponentEditor({
           </>
         )}
       </header>
-      {session && loaded.state === 'open' && (
-        <SaveIndicator save={session.save} savedAt={session.savedAt} />
-      )}
-      {(mayCut || onDone) && (
+      {session &&
+        loaded.state === 'open' &&
+        (inBand ? (
+          // A status, said in the status bar at its left while the component is open in place.
+          <StatusLead>
+            <SaveIndicator save={session.save} savedAt={session.savedAt} />
+          </StatusLead>
+        ) : (
+          <SaveIndicator save={session.save} savedAt={session.savedAt} />
+        ))}
+      {/* In the band they are the toolbar's first icons instead (ADR-0056). */}
+      {(mayCut || onDone) && !inBand && (
         <>
           <span className={styles['divider']} aria-hidden="true" />
           <Toolbar label="Component" className={styles['actions']}>
@@ -2164,6 +2172,30 @@ export function ComponentEditor({
       (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
       than absent, so what the editor can do with the text is visible before the lock is. */}
         <EditorToolbar
+          {...(inBand
+            ? {
+                leading: [
+                  {
+                    label: 'Done editing',
+                    icon: 'Done editing',
+                    disabled: doneDisabled,
+                    onPress: () => void done(),
+                  },
+                  {
+                    label: 'Save version',
+                    icon: 'Save version',
+                    disabled: !mayCut || phase !== 'editing',
+                    onPress: () => void controls.current?.saveVersion(),
+                  },
+                  {
+                    label: 'Saved text',
+                    icon: 'Saved text',
+                    disabled: !mayCut || phase !== 'editing',
+                    onPress: recover,
+                  },
+                ],
+              }
+            : {})}
           onPasteMarkdown={() => void pasteMarkdown()}
           onInsertFigure={() => setFigureDialog('Figure')}
           figurePlaceable={mayPlaceFigure}

@@ -23,6 +23,8 @@ export interface Status {
   readonly place: (where: string | null) => void;
   /** Where a page's tools stand in the bar, such as the zoom (ADR-0056): null until the bar is drawn. */
   readonly tools: HTMLElement | null;
+  /** Where a page's own state stands, at the bar's left before the notice, such as Saved. */
+  readonly lead: HTMLElement | null;
 }
 
 const StatusContext = createContext<Status | null>(null);
@@ -37,14 +39,21 @@ export function StatusProvider({ children }: { children: ReactNode }) {
   const [context, setContext] = useState<readonly string[] | null>(null);
   const [place, setPlace] = useState<string | null>(null);
   const [tools, setTools] = useState<HTMLElement | null>(null);
+  const [lead, setLead] = useState<HTMLElement | null>(null);
   const status = useMemo<Status>(
-    () => ({ say: setNotice, describe: setContext, place: setPlace, tools }),
-    [tools],
+    () => ({ say: setNotice, describe: setContext, place: setPlace, tools, lead }),
+    [tools, lead],
   );
   return (
     <StatusContext.Provider value={status}>
       {children}
-      <StatusBar notice={notice} context={context} place={place} toolsRef={setTools} />
+      <StatusBar
+        notice={notice}
+        context={context}
+        place={place}
+        toolsRef={setTools}
+        leadRef={setLead}
+      />
     </StatusContext.Provider>
   );
 }
@@ -56,6 +65,12 @@ export function StatusProvider({ children }: { children: ReactNode }) {
  */
 export function StatusTools({ children }: { children: ReactNode }) {
   const host = useStatus()?.tools ?? null;
+  return host === null ? <>{children}</> : createPortal(children, host);
+}
+
+/** A page's own state, such as whether its text is saved, at the bar's left; where it is otherwise. */
+export function StatusLead({ children }: { children: ReactNode }) {
+  const host = useStatus()?.lead ?? null;
   return host === null ? <>{children}</> : createPortal(children, host);
 }
 
@@ -82,6 +97,7 @@ export function StatusBar({
   place = null,
   tools,
   toolsRef,
+  leadRef,
 }: {
   notice: string | null;
   context: readonly string[] | null;
@@ -90,6 +106,8 @@ export function StatusBar({
   tools?: ReactNode;
   /** Where the shell's bar holds the tools pages send it. */
   toolsRef?: (element: HTMLElement | null) => void;
+  /** Where the shell's bar holds a page's own state. */
+  leadRef?: (element: HTMLElement | null) => void;
 }) {
   // How tall the bar stands over the window's foot, one line or wrapped to two, told to the page as
   // `--status-height`: what the window scrolls to stops above it, and the outline pane stuck beside
@@ -111,6 +129,7 @@ export function StatusBar({
   }, []);
   return (
     <footer ref={bar} className={styles['bar']}>
+      <div ref={leadRef} className={styles['lead']} />
       <p role="status" className={styles['notice']}>
         {notice !== null && isMove(notice) && <Icon name="Move" size={13} />}
         {notice}

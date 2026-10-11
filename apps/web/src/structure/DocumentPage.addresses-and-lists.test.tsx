@@ -1392,6 +1392,17 @@ describe('the address of every node', () => {
     expect(band).not.toBeNull();
     expect(band.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(band).toHaveTextContent("Click a component's text to edit it.");
+    // The toolbar is there, disabled, before one opens, so nothing in the band changes as one does.
+    const idle = within(band).getByRole('toolbar', { name: 'Formatting' });
+    const first = (toolbar: HTMLElement) =>
+      within(toolbar)
+        .getAllByRole('button')
+        .slice(0, 3)
+        .map((button) => button.getAttribute('aria-label'));
+    expect(first(idle)).toEqual(['Done editing', 'Save version', 'Saved text']);
+    for (const button of within(idle).getAllByRole('button')) {
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+    }
 
     await user.click(within(text).getByText('Unbox the printer.'));
     // The component's own editor: its surface on the sheet, and what it says to a reader...
@@ -1401,8 +1412,17 @@ describe('the address of every node', () => {
     expect(
       within(text).getByText('You may read this component but not edit it.'),
     ).toBeInTheDocument();
-    // ...and its toolbar, its second line and Done in the band, none of them on the sheet.
-    expect(within(band).getByRole('toolbar', { name: 'Formatting' })).toBeInTheDocument();
+    // ...and its toolbar, its second line and Done in the band, none of them on the sheet: Done,
+    // Save version and Saved text first in the toolbar, its language and direction after it, and no
+    // name, which changed the band's width as one component gave way to another.
+    const formatting = within(band).getByRole('toolbar', { name: 'Formatting' });
+    expect(first(formatting)).toEqual(['Done editing', 'Save version', 'Saved text']);
+    expect(within(formatting).getByRole('button', { name: 'Done editing' })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    );
+    expect(within(band).getByRole('button', { name: 'Base language: en-GB' })).toBeInTheDocument();
+    expect(within(band).queryByRole('textbox', { name: 'Title' })).toBeNull();
     expect(band.querySelector('[data-toolbar-line]')).not.toBeNull();
     expect(within(text).queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
     expect(band).not.toHaveTextContent("Click a component's text to edit it.");

@@ -279,6 +279,11 @@
   margin: var(--space-12) var(--space-24) 0;
 }
 
+/* The sheet level with the panels beside it: the desk adds no gap of its own above it here. */
+.layout > .text {
+  padding-top: 0;
+}
+
 .page[data-desk-page] > .layout {
   padding: var(--space-12) var(--space-16) var(--space-24);
 }
@@ -293,16 +298,6 @@
   min-height: calc(var(--inplace-toolbar) + var(--context-line) + 1px);
   border-bottom: 1px solid var(--border);
   background: var(--chrome);
-}
-
-.bandHint {
-  display: flex;
-  align-items: center;
-  min-height: var(--inplace-toolbar);
-  margin: 0;
-  padding: 0 var(--space-24);
-  color: var(--muted);
-  font-size: var(--size-13);
 }
 
 /* The document bar: one line under the header, on the chrome. */

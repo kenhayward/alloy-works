@@ -21,9 +21,46 @@
   color: var(--text);
 }
 
-.button:hover {
-  border-color: var(--strong-border);
-  background: var(--accent-weak);
+/* Hovered, filled in the accent, so the icon under the pointer stands out in either theme. */
+.button:hover:not([aria-disabled='true']) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/*
+ * The toolbar's own tooltip, shown a moment after the pointer or the focus arrives: a browser's title
+ * waits a second or more, and the delay cannot be changed. The name is the button's aria-label; this
+ * is for the eye, with the shortcut.
+ */
+.button[data-tip] {
+  position: relative;
+}
+
+.button[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: var(--z-dropdown);
+  padding: var(--space-4) var(--space-8);
+  border-radius: 6px;
+  background: var(--text);
+  box-shadow: var(--shadow-menu);
+  color: var(--bg);
+  font-size: var(--size-12);
+  font-weight: 400;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.08s;
+}
+
+.button[data-tip]:hover::after,
+.button[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 0.15s;
 }
 
 .button[aria-pressed='true'] {

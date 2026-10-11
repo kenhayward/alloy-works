@@ -29,6 +29,16 @@
   color: var(--accent);
 }
 
+/* A page's own state, such as Saved: at the left, before the notice. */
+.lead {
+  display: flex;
+  align-items: center;
+}
+
+.lead:empty {
+  display: none;
+}
+
 /* A page's tools, such as the zoom (ADR-0056): at the right, before the context. */
 .tools {
   display: flex;

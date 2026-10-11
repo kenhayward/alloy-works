@@ -37,6 +37,12 @@ export interface EditorToolbarProps {
   /** Null until the surface has mounted, which is the page's first render. */
   readonly view: EditorView | null;
   readonly enabled: boolean;
+  /**
+   * Acts on the component itself, drawn first as icons, a divider after them: Done, Save version and
+   * Saved text, for a component open in place (ADR-0056). Each may be pressed only where `disabled`
+   * is false, whatever `enabled` says of formatting.
+   */
+  readonly leading?: readonly ToolbarAct[];
   /** Where a mark's identifier comes from; the same source the surface names blocks from. */
   readonly newIdentifier: () => string;
   /** Asked for a value before a prompting command runs; resolves null when the author cancels. */
@@ -155,9 +161,18 @@ export interface EditorToolbarProps {
  * focused itself on `mousedown` would collapse the selection the command is about to act on. Keyboard
  * activation is unaffected, because it sends no `mousedown` at all.
  */
+/** A component's own act at the toolbar's head: its name, its icon, and what pressing it does. */
+export interface ToolbarAct {
+  readonly label: string;
+  readonly icon: string;
+  readonly disabled: boolean;
+  readonly onPress: () => void;
+}
+
 export function EditorToolbar({
   view,
   enabled,
+  leading,
   newIdentifier,
   prompt,
   onRefused,
@@ -208,6 +223,27 @@ export function EditorToolbar({
     // One tab stop, the arrows, Home and End along it: the shared toolbar's (LG5). The registry's
     // buttons, then Paste as Markdown, Figure and Image where they are offered: one ring either way.
     <Toolbar ref={ref} label="Formatting" className={styles['toolbar']}>
+      {leading && leading.length > 0 && (
+        <>
+          {leading.map((act) => (
+            <button
+              key={act.label}
+              type="button"
+              className={styles['button']}
+              aria-label={act.label}
+              aria-disabled={act.disabled}
+              data-tip={act.label}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                if (!act.disabled) act.onPress();
+              }}
+            >
+              <Icon name={act.icon} />
+            </button>
+          ))}
+          <Toolbar.Divider className={styles['divider']} />
+        </>
+      )}
       {EDITOR_COMMANDS.filter((command) => !SECOND_LINE.has(command.label)).map((command) => (
         // The label, not the mark: five rows have no mark at all, and `key={undefined}` on each of
         // them is a duplicate React key - a `console.error`, which the console gate turns into a
@@ -222,7 +258,7 @@ export function EditorToolbar({
             // The shortcut spelled out rather than drawn with symbols, for the reason the registry
             // gives: a screen reader says `Mod-,` as punctuation, and a keyboard without a Cmd key has
             // no glyph for it.
-            title={`${command.label} (${command.shortcutSaid})`}
+            data-tip={`${command.label} (${command.shortcutSaid})`}
             {...announces(command)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => press(command)}
@@ -240,7 +276,7 @@ export function EditorToolbar({
             className={styles['button']}
             aria-label="Paste as Markdown"
             aria-disabled={!enabled || view === null}
-            title="Paste as Markdown"
+            data-tip="Paste as Markdown"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               if (enabled && view !== null) onPasteMarkdown();
@@ -256,7 +292,7 @@ export function EditorToolbar({
           className={styles['button']}
           aria-label="Figure"
           aria-disabled={!enabled || view === null || !figurePlaceable}
-          title="Figure"
+          data-tip="Figure"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
             if (enabled && view !== null && figurePlaceable) onInsertFigure();
@@ -271,7 +307,7 @@ export function EditorToolbar({
           className={styles['button']}
           aria-label="Image"
           aria-disabled={!enabled || view === null || !imagePlaceable}
-          title="Image"
+          data-tip="Image"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
             if (enabled && view !== null && imagePlaceable) onInsertImage();

@@ -13,13 +13,13 @@
 }
 
 /*
- * The band (ADR-0056): the strip's name, the toolbar and the save chip and Done in one row, then the
- * toolbar's second line. The strip gives its parts to the row; the number and version are the
- * heading's on the sheet.
+ * The band (ADR-0056): the toolbar centred over the text, near where the pointer works, its language
+ * and direction after it, and the second line under it from the toolbar's left edge. Nothing in it
+ * names the component, so it keeps its width as one component gives way to another.
  */
 .band {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   column-gap: var(--space-12);
   padding: 0 var(--space-16);
@@ -29,58 +29,40 @@
   display: contents;
 }
 
-.band .header {
-  flex: none;
-  order: 0;
-  gap: 6px;
+.band > :global([role='toolbar'][aria-label='Formatting']) {
+  grid-row: 1;
+  grid-column: 2;
   min-height: var(--inplace-toolbar);
-  padding: 0 var(--space-8);
-  color: var(--accent);
+  border: 0;
+}
+
+/* The header gives the band its language and direction alone, after the toolbar. */
+.band .header {
+  grid-row: 1;
+  grid-column: 3;
+  justify-self: start;
+  min-height: var(--inplace-toolbar);
 }
 
 .band .header .number,
 .band .header .version,
-.band .divider {
+.band .header :global(input[aria-label='Title']) {
   display: none;
 }
 
-/* One row, scrolled sideways where the window is narrow, so the band keeps its height. */
-.band > :global([role='toolbar'][aria-label='Formatting']) {
-  flex: 1;
-  flex-wrap: nowrap;
-  order: 1;
-  min-width: 0;
-  overflow-x: auto;
-  border: 0;
-  scrollbar-width: thin;
-}
-
-.band .header :global(h2),
-.band .header :global(button) {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Saved text and Save version as their icons in the band, named by their titles; Done keeps its word. */
-.band .act[title='Saved text'],
-.band .act[title='Save version'] {
-  gap: 0;
-  font-size: 0;
-}
-
-.band > .strip > :not(.header) {
-  order: 2;
-}
-
 .band > .toolbarLine {
-  flex-basis: 100%;
-  order: 3;
+  grid-row: 2;
+  grid-column: 2 / 4;
+  justify-self: start;
   min-height: var(--context-line);
-  margin-inline: calc(-1 * var(--space-16));
-  border-top: 1px solid var(--border);
+  padding-inline: var(--space-8);
   border-bottom: 0;
+}
+
+/* What the empty band says on its second line, before a component opens. */
+.bandHint {
+  margin: 0;
+  color: var(--muted);
 }
 
 /* In place in a document, the box is the card being edited, with the ring that says so. */
@@ -249,10 +231,4 @@
   padding: var(--space-4) var(--space-12);
   border-bottom: 1px solid var(--border);
   font-size: var(--size-13);
-}
-
-/* The name in the band in accent, as the drawing has it. */
-.band .header :global(h2),
-.band .header :global(button) {
-  color: inherit;
 }

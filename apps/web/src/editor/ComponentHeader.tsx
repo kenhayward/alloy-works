@@ -31,6 +31,11 @@ export interface ComponentHeaderProps {
   readonly onRefused: (message: string) => void;
   /** What stands between the title and the chips on the strip: the version and the space. */
   readonly children?: ReactNode;
+  /**
+   * Whether the title field is offered, and what stands beside it: not in the in-place band, which
+   * names no component (ADR-0056), where the chips alone are shown. The heading stays either way.
+   */
+  readonly titled?: boolean;
 }
 
 /** A direction as a chip's name says it. */
@@ -141,6 +146,7 @@ export function ComponentHeader({
   onChange,
   onRefused,
   children,
+  titled = true,
 }: ComponentHeaderProps) {
   const [title, setTitle] = useState<Field>({ typed: header.title, inModel: header.title });
   const [tag, setTag] = useState<Field>({ typed: header.language, inModel: header.language });
@@ -162,40 +168,42 @@ export function ComponentHeader({
       <h2 id="component-title" className={styles['hidden']}>
         {header.title}
       </h2>
-      <input
-        className={styles['title']}
-        aria-label="Title"
-        title="Click to rename"
-        value={title.typed}
-        disabled={!editable}
-        onChange={(event) => {
-          const value = event.target.value;
-          // Only a title the model would take is offered to it; a field on its way to a new title -
-          // cleared, or nothing but spaces yet - is shown as typed and leaves the document alone,
-          // exactly as an unfinished language tag does, so `inModel` stays what the document holds.
-          // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
-          const answered = titleAccepted(value) ? onChange('title', value) : null;
-          setTitle((previous) => ({
-            typed: value,
-            inModel: answered?.title ?? previous.inModel,
-          }));
-        }}
-        onBlur={() => {
-          // Reverting while not editable is never wrong - a field that cannot be edited should show
-          // what the document holds, and for a reader it already does, so this never fires for one.
-          // Only the notice is read-only-safe, as the language field's is (finding H): reporting a
-          // refusal while the surface just went read-only under the author would write over the
-          // notice that explained why. Clearing never reaches the document, so `header.title` never
-          // changes and the comparison above never resyncs this field on its own: left un-reverted
-          // here, an empty input would stay empty through a version cut and through the surface going
-          // read-only, sitting beside a heading that still shows the real title with nothing left in
-          // the page able to correct it (final re-review).
-          if (titleAccepted(title.typed)) return;
-          if (editable) onRefused('A component needs a title.');
-          setTitle({ typed: header.title, inModel: header.title });
-        }}
-      />
-      {children}
+      {titled && (
+        <input
+          className={styles['title']}
+          aria-label="Title"
+          title="Click to rename"
+          value={title.typed}
+          disabled={!editable}
+          onChange={(event) => {
+            const value = event.target.value;
+            // Only a title the model would take is offered to it; a field on its way to a new title -
+            // cleared, or nothing but spaces yet - is shown as typed and leaves the document alone,
+            // exactly as an unfinished language tag does, so `inModel` stays what the document holds.
+            // Asked once, outside the updater, which stays pure: StrictMode invokes an updater twice.
+            const answered = titleAccepted(value) ? onChange('title', value) : null;
+            setTitle((previous) => ({
+              typed: value,
+              inModel: answered?.title ?? previous.inModel,
+            }));
+          }}
+          onBlur={() => {
+            // Reverting while not editable is never wrong - a field that cannot be edited should show
+            // what the document holds, and for a reader it already does, so this never fires for one.
+            // Only the notice is read-only-safe, as the language field's is (finding H): reporting a
+            // refusal while the surface just went read-only under the author would write over the
+            // notice that explained why. Clearing never reaches the document, so `header.title` never
+            // changes and the comparison above never resyncs this field on its own: left un-reverted
+            // here, an empty input would stay empty through a version cut and through the surface going
+            // read-only, sitting beside a heading that still shows the real title with nothing left in
+            // the page able to correct it (final re-review).
+            if (titleAccepted(title.typed)) return;
+            if (editable) onRefused('A component needs a title.');
+            setTitle({ typed: header.title, inModel: header.title });
+          }}
+        />
+      )}
+      {titled && children}
       <Chip name={`Base language: ${header.language}`} text={header.language}>
         <label>
           Language

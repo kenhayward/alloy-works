@@ -64,6 +64,15 @@ html {
   background: var(--surface);
 }
 
+/* The browser's own parts - a select's list, a scrollbar - drawn in the theme, and paper light. */
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+.aw-canvas {
+  color-scheme: light;
+}
+
 /*
  * The page on a desk (ADR-0056): the paper is a sheet the measure wide, with margins either side and
  * above that scale with the zoom, centred on the desk and as tall as its text - no pages, no breaks.
