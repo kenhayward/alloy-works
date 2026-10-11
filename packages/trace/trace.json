@@ -19710,7 +19710,7 @@
     {
       "id": "TAB-021",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 396,
+      "line": 404,
       "kind": "title"
     },
     {
@@ -19722,13 +19722,13 @@
     {
       "id": "TAB-037",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 418,
+      "line": 426,
       "kind": "title"
     },
     {
       "id": "TAB-048",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 458,
+      "line": 466,
       "kind": "title"
     },
     {

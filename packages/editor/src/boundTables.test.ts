@@ -436,6 +436,49 @@ describe("a bound table's groups on the page (TG2)", () => {
   });
 });
 
+describe('a transposed bound table on the page (the TG2 final review)', () => {
+  const turned = (over: Partial<BoundTableNode> = {}) =>
+    boundTable({ transpose: { header: 'site' }, ...over });
+  const held = (rows: CanonicalResult, notes: Record<string, number | null> = {}) =>
+    inDocument(
+      heldTable({ columns: DECLARED, rowCount: rows.rows.length, rows, key: ['site'], notes }),
+    );
+
+  it('counts no more rows than the result has, and shows the empty statement where it has none', () => {
+    const shown = shownIn(documentOf(turned()), held(rowsOf(5)));
+    expect(shown.columns.map((each) => each.text)).toEqual(['Site', 'S0', 'S1', 'S2', 'S3', 'S4']);
+    expect(shown.more).toBe(0);
+    expect(shown.spanning).toBeNull();
+    const none = shownIn(documentOf(turned()), held(rowsOf(0)));
+    expect(none.rows).toEqual([]);
+    expect(none.spanning).toEqual({ text: 'No rows', failed: false });
+  });
+
+  it('letters and places its notes as the publish does: a keyed note on its value where it moved, a column note on its row header', () => {
+    const keyed = {
+      type: 'footnote' as const,
+      id: 'f1',
+      anchor: { kind: 'keyed' as const, key: { site: 'S1' }, column: 'depth' },
+      content: [paragraph('f1p', text('Estimated')) as never],
+    };
+    const column = {
+      type: 'footnote' as const,
+      id: 'f2',
+      anchor: { kind: 'column' as const, column: 'depth' },
+      content: [paragraph('f2p', text('Measured')) as never],
+    };
+    const shown = shownIn(
+      documentOf(turned({ notes: [keyed, column] })),
+      held(rowsOf(3), { f1: 1 }),
+    );
+    expect(shown.notes?.map((each) => [each.id, each.letter])).toEqual([
+      ['f1', 'b'],
+      ['f2', 'a'],
+    ]);
+    expect(shown.rows[0]!.map((cell) => cell.marks ?? [])).toEqual([['a'], [], ['b'], []]);
+  });
+});
+
 describe("a bound table's notes on the page (TB3.3)", () => {
   const footnote = (id: string, anchor: object, words: string) => ({
     type: 'footnote' as const,

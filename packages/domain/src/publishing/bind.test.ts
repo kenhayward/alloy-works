@@ -1189,6 +1189,17 @@ describe('a bound table transposed, published (the TG plan, TG2)', () => {
     expect(value && 'table' in value ? value.table.transpose : undefined).toEqual({
       header: 'site',
     });
+    // Each number traced to its own column, as the result held it: the table before it was turned
+    // (the TG2 final review).
+    const printed = value && 'table' in value ? value.table : undefined;
+    expect(printed?.columns.map((each) => [each.name, each.type.base])).toEqual([
+      ['site', 'text'],
+      ['reading', 'decimal'],
+    ]);
+    expect(printed?.rows.map((row) => row.map((cell) => cell.value))).toEqual([
+      ['north', '4.5'],
+      ['south', '-1.25'],
+    ]);
   });
 
   it('fails a publish transposing more rows than a table turns, transpose_too_long', () => {

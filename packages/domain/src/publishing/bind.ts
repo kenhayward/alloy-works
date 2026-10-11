@@ -90,12 +90,15 @@ export interface PrintedTable {
     readonly column: string;
   }[];
   /**
+   * A transposed table's header column (TG2; TAB-022), absent from one not transposed: its columns,
+   * rows and notes are then recorded as before it was turned, each value under its own column.
+   */
+  readonly transpose?: { readonly header: string };
+  /**
    * A grouped table's (TG1; TAB-022): each level's column and subtotal column, each heading by the
    * printed row it opens, its level, what it printed and its canonical value, and each subtotal row by
    * its index and level. Absent from a table not grouped.
    */
-  /** A transposed table's header column (TG2; TAB-022), absent from one not transposed. */
-  readonly transpose?: { readonly header: string };
   readonly groups?: {
     readonly levels: readonly { readonly column: string; readonly subtotal: string | null }[];
     readonly headings: readonly {
@@ -325,22 +328,28 @@ export function bind(
     }
     if (gone) return table;
     const placed = placeTableNotes(table, laid, noteRows);
+    // Recorded as before it was turned (the TG2 final review): each value under its own column.
+    const record = laid.transposed?.from ?? laid;
+    const recorded =
+      laid.transposed === undefined
+        ? placed
+        : placeTableNotes({ ...table, transpose: undefined }, record, noteRows);
     values.push({
       node,
       block: table.id,
       binding: table.binding.id,
       datasetVersion: result.datasetVersion,
       table: {
-        columns: laid.columns.map((column) => ({
+        columns: record.columns.map((column) => ({
           name: column.name,
           type: column.type,
           header: column.header,
           format: column.format,
         })),
-        rows: laid.rows.map((row) =>
+        rows: record.rows.map((row) =>
           row.cells.map((cell) => ({ printed: cell.text, value: cell.value })),
         ),
-        notes: placed.map(({ note, letter, row }) => ({
+        notes: recorded.map(({ note, letter, row }) => ({
           note: note.id,
           letter,
           row,

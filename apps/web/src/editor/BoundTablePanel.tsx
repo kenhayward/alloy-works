@@ -766,9 +766,25 @@ export function BoundTablePanel({
                 className={styles['columnChoice']}
                 value={group.column}
                 disabled={!enabled}
-                onChange={(event) => set({ ...group, column: event.target.value })}
+                onChange={(event) =>
+                  // Its format was for the column it leaves; its subtotal column stays.
+                  set({
+                    column: event.target.value,
+                    ...(group.subtotal === undefined ? {} : { subtotal: group.subtotal }),
+                  })
+                }
               >
-                {namesOffered(offered, group.column).map((name) => (
+                {namesOffered(
+                  // Never an image's, nor one another level groups by (the TG2 final review).
+                  offered.filter(
+                    (each) =>
+                      each.type.base !== 'image' &&
+                      !table.groups.some(
+                        (other, index) => index !== at && other.column === each.name,
+                      ),
+                  ),
+                  group.column,
+                ).map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>

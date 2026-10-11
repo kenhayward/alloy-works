@@ -376,6 +376,14 @@ describe('the Bound table panel (TB2-F)', () => {
     ]);
     const headings = view.dom.querySelectorAll('[data-bound-table-body] th[scope="rowgroup"]');
     expect([...headings].map((each) => each.textContent)).toEqual(['2', '1']);
+    // A second level is offered no column the first groups by (the TG2 final review).
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add group' }));
+    const second = within(panel).getByRole('group', { name: 'Group 2' });
+    const offered = [...within(second).getByLabelText('Column').querySelectorAll('option')].map(
+      (each) => each.value,
+    );
+    expect(offered).not.toContain('visits');
+    await userEvent.click(within(second).getByRole('button', { name: 'Remove group 2' }));
     // Folded, it says what it groups by.
     await userEvent.click(within(panel).getByRole('button', { name: /^Sort/ }));
     expect(

@@ -129,6 +129,8 @@ export interface LaidOut {
   readonly transposed?: {
     readonly rows: readonly number[];
     readonly columns: readonly string[];
+    /** The table as laid out before it was turned, which provenance records (TAB-019). */
+    readonly from: LaidOut;
   };
   readonly empty: {
     readonly content: readonly InlineNode[];
@@ -559,31 +561,36 @@ function transposed(
       corner,
       ...heads.map((text): LaidOutColumn => ({ ...corner, header: text, align: 'end' })),
     ],
-    rows: values.map((at) => {
-      const column = laid.columns[at]!;
-      return {
-        index: -1,
-        cells: [
-          {
-            text: column.header,
-            value: null,
-            scope: 'row' as const,
-            negative: false,
-            parenthesised: false,
-          },
-          ...laid.rows.map((row) => ({
-            ...row.cells[at]!,
-            scope: null,
-            align: column.align === 'decimal' ? ('end' as const) : column.align,
-            wrap: column.wrap,
-          })),
-        ],
-      };
-    }),
+    // No rows, no row headers: the empty statement stands alone, as the publish sets it.
+    rows:
+      laid.empty !== null
+        ? []
+        : values.map((at) => {
+            const column = laid.columns[at]!;
+            return {
+              index: -1,
+              cells: [
+                {
+                  text: column.header,
+                  value: null,
+                  scope: 'row' as const,
+                  negative: false,
+                  parenthesised: false,
+                },
+                ...laid.rows.map((row) => ({
+                  ...row.cells[at]!,
+                  scope: null,
+                  align: column.align === 'decimal' ? ('end' as const) : column.align,
+                  wrap: column.wrap,
+                })),
+              ],
+            };
+          }),
     empty: laid.empty === null ? null : { ...laid.empty, colspan: 1 },
     transposed: {
       rows: laid.rows.map((row) => row.index),
       columns: values.map((at) => laid.columns[at]!.name),
+      from: laid,
     },
   };
 }

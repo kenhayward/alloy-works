@@ -16,6 +16,7 @@ import {
   type TableColumn,
   type TableFailure,
   type TablePresentation,
+  type LaidOut,
   type TableWords,
   type TakeFailure,
   type ValueFormats,
@@ -621,6 +622,8 @@ function notesPlaced(
   notes: readonly FootnoteNode[],
   held: TableHeld,
   order: readonly number[] | null,
+  /** A transposed table's layout's account of where each row and column came from (TG2). */
+  transposed?: LaidOut['transposed'],
 ): {
   readonly notes: readonly BoundTableNoteShown[];
   readonly placed: ReturnType<typeof placeTableNotes>;
@@ -636,7 +639,10 @@ function notesPlaced(
       ? []
       : placeTableNotes(
           { ...table, notes: [...notes] },
-          { rows: order.map((index) => ({ index })) },
+          {
+            rows: order.map((index) => ({ index })),
+            ...(transposed === undefined ? {} : { transposed }),
+          },
           noteRows,
         );
   const letters = new Map(placed.map((each) => [each.note.id, each.letter]));
@@ -745,7 +751,13 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
       const order = presorted
         ? rows.rows.map((_, index) => index)
         : tableOrder(table, rows, columns);
-      const { notes: notesShown, placed } = notesPlaced(table, notes, shownHeld, order);
+      const { notes: notesShown, placed } = notesPlaced(
+        table,
+        notes,
+        shownHeld,
+        order,
+        laid.transposed,
+      );
       // Each mark where its note stands: a column's in its header, a cell's in a row laid out.
       const marks = new Map<string, string[]>();
       for (const each of placed) {
@@ -774,11 +786,12 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
             ...marked(`${y} ${x}`),
           })),
         ),
+        // The result's rows, which a transposed table lays out as its columns (TG2).
         spanning:
-          laid.rows.length > 0
+          laid.empty === null
             ? null
             : { text: empty === '' ? setting.words.noRows : empty, failed: false },
-        more: rowCount - laid.rows.length,
+        more: rowCount - (laid.transposed?.rows.length ?? laid.rows.length),
         ...(notes.length === 0 ? {} : { notes: notesShown }),
         ...(table.groups === undefined
           ? {}

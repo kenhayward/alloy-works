@@ -82,7 +82,7 @@ describe('a bound table transposed', () => {
       ['start', false],
       ['start', false],
     ]);
-    expect(out.transposed).toEqual({ rows: [0, 1], columns: ['revenue', 'region'] });
+    expect(out.transposed).toMatchObject({ rows: [0, 1], columns: ['revenue', 'region'] });
   });
 
   it('TAB-021 orders the new columns by the sort, and heads them by the header column even where it is not shown', () => {
