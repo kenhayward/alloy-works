@@ -393,6 +393,28 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(bodyOf(view)).toEqual([['Site'], ['Ash'], ['Birch'], ['Cedar'], ['Dogwood']]);
   });
 
+  it("TAB-021 turns the body on its side by a header column chosen in the panel, each value at its own column's alignment (TG2)", async () => {
+    const { view, panel } = await inTable([
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+    ]);
+    await userEvent.selectOptions(within(panel).getByLabelText('Transpose by'), 'site');
+    expect(bodyOf(view)).toEqual([
+      ['Site', 'Ash', 'Birch', 'Cedar', 'Dogwood'],
+      ['Depth', '2.50', '-1.25', '3.00', '0.75'],
+    ]);
+    const depth = view.dom.querySelectorAll('[data-bound-table-body] tbody tr')[0]!;
+    expect(depth.querySelector('th')).toHaveAttribute('scope', 'row');
+    expect(depth.querySelectorAll('td')[0]).toHaveAttribute('data-align', 'end');
+    // Grouping is not offered beside it, and turning it back restores the body.
+    expect(within(panel).getByRole('button', { name: 'Add group' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.selectOptions(within(panel).getByLabelText('Transpose by'), '');
+    expect(bodyOf(view)[0]).toEqual(['Site', 'Depth']);
+  });
+
   it("TAB-037 shows in the Format dialog the table style's value for each member left unset, and a member set overriding it alone", async () => {
     const { view, panel } = await inTable(
       [

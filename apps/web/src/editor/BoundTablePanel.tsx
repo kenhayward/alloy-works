@@ -102,6 +102,8 @@ export const BOUND_TABLE_WORDS = {
   addSort: 'Add sort',
   sortHint:
     'Rows are sorted by the first key, then by each next key where the earlier ones are equal. A table takes up to four.',
+  transposeBy: 'Transpose by',
+  notTransposed: 'Not transposed',
   groups: 'Group',
   groupedBy: 'Grouped by',
   addGroup: 'Add group',
@@ -376,7 +378,8 @@ export function BoundTablePanel({
       each.type.base !== 'image' && !table.groups.some((group) => group.column === each.name),
   );
   const setGroups = (groups: readonly GroupLevel[]) => change({ groups });
-  const mayGroup = enabled && table.groups.length < 3 && ungrouped !== undefined;
+  const mayGroup =
+    enabled && table.transpose === null && table.groups.length < 3 && ungrouped !== undefined;
   const addGroup = () => {
     if (!mayGroup || ungrouped === undefined) return;
     setGroups([...table.groups, { column: ungrouped.name }]);
@@ -407,6 +410,28 @@ export function BoundTablePanel({
         </h3>
         <div className={styles['fields']}>
           <TableStyle view={view} value={table.style} enabled={enabled} />
+          <label>
+            {BOUND_TABLE_WORDS.transposeBy}
+            <select
+              value={table.transpose ?? ''}
+              disabled={!enabled || table.groups.length > 0}
+              onChange={(event) =>
+                change({ transpose: event.target.value === '' ? null : event.target.value })
+              }
+            >
+              <option value="">{BOUND_TABLE_WORDS.notTransposed}</option>
+              {namesOffered(
+                offered.filter((each) => each.type.base !== 'image'),
+                table.transpose ?? '',
+              )
+                .filter((name) => name !== '')
+                .map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+            </select>
+          </label>
           <label>
             {BOUND_TABLE_WORDS.wide}
             <select

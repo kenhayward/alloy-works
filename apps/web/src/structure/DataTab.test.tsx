@@ -206,6 +206,30 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     expect(rowOf('table')).toHaveTextContent('A table of 1 row, grouped by region, then area');
   });
 
+  it('TAB-022 says a transposed table is turned on its side, and by which column (TG2)', () => {
+    const table = view(FIRST, 'table', 'unused');
+    const binding = { ...table.binding } as Record<string, unknown>;
+    delete binding.take;
+    drawn(states({ ...table, binding, held: { ...table.held, taken: { table: true } } }), {
+      tables: new Map([
+        [
+          `${FIRST} table`,
+          {
+            type: 'boundTable',
+            id: 't1',
+            style: 'table',
+            binding: binding as BoundTableNode['binding'],
+            caption: [],
+            columns: [{ column: 'site', header: 'Site' }],
+            headerColumn: false,
+            transpose: { header: 'site' },
+          },
+        ],
+      ]),
+    });
+    expect(rowOf('table')).toHaveTextContent('A table of 1 row, transposed by site');
+  });
+
   it('DAT-070 lists a binding whose definition changed, and each binding changed since the document was last published with what differs', () => {
     drawn(
       states(

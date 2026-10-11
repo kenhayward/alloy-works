@@ -5227,3 +5227,62 @@ describe('writeDocx: a table too wide for its measure (the TB3 plan, TB3-J)', ()
     expect(turned.report.map((each) => each.kind)).not.toContain('table_reflowed');
   });
 });
+
+describe('writeDocx: a transposed bound table (the TG plan, TG2)', () => {
+  const COLUMNS: Column[] = [
+    { name: 'site', from: { column: 'site_code' }, type: { base: 'text' } },
+    {
+      name: 'reading',
+      from: { column: 'reading_kpa' },
+      type: { base: 'decimal', precision: 10, scale: 2 },
+    },
+  ];
+  const rows: Held = {
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['reading', 'decimal'],
+      ],
+      rows: [
+        ['north', '1.5'],
+        ['south', '-2'],
+      ],
+    },
+    columns: COLUMNS,
+    datasetVersion: uuid(901),
+    images: {},
+    key: [],
+  };
+  const tabled = tabledOf(
+    [
+      {
+        type: 'boundTable',
+        id: 't1',
+        binding: { type: 'binding', id: 'rows', query: uuid(900), parameters: {}, mode: 'checked' },
+        caption: [text('Readings')],
+        columns: [
+          { column: 'site', header: 'Site' },
+          { column: 'reading', header: 'Reading', wrap: false },
+        ],
+        headerColumn: false,
+        transpose: { header: 'site' },
+      },
+    ],
+    { bindings: new Map([[id('blocks'), new Map([['rows', rows]])]]) },
+  );
+  const table = blocksOf(tabled.docx).find((each) => each.name === 'w:tbl')!;
+  const cells = rowsOf(table);
+
+  it("TAB-021 writes each value at its own column's alignment and wrap, the shown column's header heading its row", () => {
+    expect(cells.map((row) => row.map((each) => textOf(each)))).toEqual([
+      ['Site', 'north', 'south'],
+      ['Reading', '1.50', '-2.00'],
+    ]);
+    for (const at of [1, 2]) {
+      const paragraph = kids(cells[1]![at]!, 'w:p')[0]!;
+      expect(first(paragraph, 'w:jc')?.attrs['w:val']).toBe('right');
+      expect(stated(cells[1]![at]!, 'w:tcPr')).toHaveProperty('w:noWrap');
+    }
+    expect(stated(cells[1]![0]!, 'w:tcPr')).not.toHaveProperty('w:noWrap');
+  });
+});

@@ -143,6 +143,8 @@ export {
   PUBLISHING_SCHEMA_17,
   // Frozen by TG1, which made `publishing/19`: the schema template 18 reads.
   PUBLISHING_SCHEMA_18,
+  // Frozen by TG2, which made `publishing/20`: the schema template 19 reads.
+  PUBLISHING_SCHEMA_19,
 } from './published.js';
 export type {
   PublishedBlock,

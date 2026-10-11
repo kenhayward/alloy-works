@@ -82,6 +82,9 @@ export function fillBoundTable(
       const cell = dressed(document.createElement(each.scope === 'row' ? 'th' : 'td'), at);
       if (each.scope === 'row') cell.setAttribute('scope', 'row');
       if (each.negative) cell.classList.add('aw-bound-table-negative');
+      // A transposed table's value at its own column's alignment and wrap (TG2).
+      if (each.align !== undefined) cell.dataset.align = each.align;
+      if (each.wrap !== undefined) cell.classList.toggle('aw-bound-table-nowrap', !each.wrap);
       cell.textContent = each.text;
       marked(cell, each.marks);
       row.append(cell);

@@ -1409,6 +1409,8 @@ export function assemble(given: AssembleInput): Assembled {
           return {
             ...(marks?.inset === true ? { inset: true as const } : {}),
             ...(marks?.colour == null ? {} : { colour: marks.colour }),
+            ...(marks?.align === undefined ? {} : { align: marks.align }),
+            ...(marks?.wrap === false ? { nowrap: true as const } : {}),
           };
         };
         const scopeAt = (row: number, column: number): PublishedCell['scope'] => {

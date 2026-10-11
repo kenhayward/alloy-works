@@ -144,6 +144,8 @@ export function publishedProvenance(
             })),
             // A grouped table's levels, headings and subtotals (TG1, TAB-022), added to the arm at 3.
             ...(each.table.groups === undefined ? {} : { groups: each.table.groups }),
+            // A transposed table's header column (TG2, TAB-022), added to the arm at 3.
+            ...(each.table.transpose === undefined ? {} : { transpose: each.table.transpose }),
           },
         };
       }

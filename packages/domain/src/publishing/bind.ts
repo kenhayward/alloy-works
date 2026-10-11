@@ -94,6 +94,8 @@ export interface PrintedTable {
    * printed row it opens, its level, what it printed and its canonical value, and each subtotal row by
    * its index and level. Absent from a table not grouped.
    */
+  /** A transposed table's header column (TG2; TAB-022), absent from one not transposed. */
+  readonly transpose?: { readonly header: string };
   readonly groups?: {
     readonly levels: readonly { readonly column: string; readonly subtotal: string | null }[];
     readonly headings: readonly {
@@ -344,6 +346,7 @@ export function bind(
           row,
           column: (note.anchor as { readonly column: string }).column,
         })),
+        ...(table.transpose === undefined ? {} : { transpose: { header: table.transpose.header } }),
         ...(table.groups === undefined
           ? {}
           : {

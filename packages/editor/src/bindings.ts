@@ -469,6 +469,9 @@ export interface BoundTableCellShown {
   readonly text: string;
   readonly scope: 'row' | null;
   readonly negative: boolean;
+  /** A transposed table's value (TG2): its own column's alignment and wrap, over its column's. */
+  readonly align?: ColumnAlignment;
+  readonly wrap?: boolean;
   /** The letters of the notes on the cell (TB3.3), where it has any. */
   readonly marks?: readonly string[];
 }
@@ -715,6 +718,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
     ...(table.groups ?? []).flatMap((each) =>
       each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
     ),
+    ...(table.transpose === undefined ? [] : [table.transpose.header]),
   ];
   if (rows === null || named.some((name) => !sent.has(name))) {
     return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
@@ -765,6 +769,8 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
             text: cell.text,
             scope: cell.scope,
             negative: cell.negative,
+            ...(cell.align === undefined ? {} : { align: cell.align }),
+            ...(cell.wrap === undefined ? {} : { wrap: cell.wrap }),
             ...marked(`${y} ${x}`),
           })),
         ),

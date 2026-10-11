@@ -56,7 +56,8 @@ const tableOf = (rows: number, table: BoundTableNode | undefined) =>
   `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}` +
   (table?.groups === undefined
     ? ''
-    : `, grouped by ${table.groups.map((each) => each.column).join(', then ')}`);
+    : `, grouped by ${table.groups.map((each) => each.column).join(', then ')}`) +
+  (table?.transpose === undefined ? '' : `, transposed by ${table.transpose.header}`);
 
 /** A table's failure, or its notes' (TB3.3), as the stage names it. */
 type TableFailing =

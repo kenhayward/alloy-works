@@ -2008,7 +2008,11 @@ class Writer {
         const own = above + ruled + filled;
         const merge = each.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : '';
         // A bound table's column that must not wrap (the no-wrap half of TAB-035): Word's `w:noWrap`, after the shading.
-        const noWrap = table.bound?.wrap[x] === false && each.colspan === 1 ? '<w:noWrap/>' : '';
+        // A transposed table's value says its own (TG2).
+        const noWrap =
+          (each.nowrap === true || table.bound?.wrap[x] === false) && each.colspan === 1
+            ? '<w:noWrap/>'
+            : '';
         const tcPr = (merge: string) =>
           `<w:tcPr><w:tcW w:w="${column * each.colspan}" w:type="dxa"/>` +
           (each.colspan > 1 ? `<w:gridSpan w:val="${each.colspan}"/>` : '') +
@@ -2129,7 +2133,8 @@ class Writer {
     cell: PublishedCell,
     paragraphs: Paragraph[],
   ): Paragraph[] {
-    const align = table.bound?.align[x];
+    // A transposed table's value at its own column's alignment, over its table column's (TG2).
+    const align = cell.align ?? table.bound?.align[x];
     if (align === undefined || cell.colspan > 1) return paragraphs;
     const justify = align === 'start' ? 'left' : align === 'centre' ? 'center' : 'right';
     return paragraphs.map((paragraph) => {

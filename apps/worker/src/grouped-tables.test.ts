@@ -58,7 +58,11 @@ const ROWS: CanonicalValue[][] = REGIONS.flatMap((region) => [
   [`${region} total`, '465', region, true],
 ]);
 
-const publishedWith = (headerColumn: boolean) => {
+const publishedWith = (
+  headerColumn: boolean,
+  rows = ROWS,
+  shape: object = { groups: [{ column: 'region', subtotal: 'total' }] },
+) => {
   const made = assemble({
     formats: ['pdf'],
     outline: parseOutlineDocument({
@@ -105,7 +109,7 @@ const publishedWith = (headerColumn: boolean) => {
                 { column: 'reading', header: 'Reading' },
               ],
               headerColumn,
-              groups: [{ column: 'region', subtotal: 'total' }],
+              ...shape,
             },
           ],
         }) as ContentDocument,
@@ -125,7 +129,7 @@ const publishedWith = (headerColumn: boolean) => {
                   ['region', 'text'],
                   ['total', 'boolean'],
                 ],
-                rows: ROWS,
+                rows,
               },
               columns: COLUMNS,
               datasetVersion: '00000000-0000-4000-8000-0000000000d1',
@@ -215,6 +219,40 @@ describe('a grouped bound table published (TG1)', () => {
 
   it('passes veraPDF as PDF/UA-1, its headings headers and its repeats artifacts', async () => {
     const verdict = await checkPdfUa1(pdf);
+    expect(verdict.failures).toEqual([]);
+    expect(verdict.compliant).toBe(true);
+  });
+});
+
+const years = ['North', 'South', 'East'].map((region, at): CanonicalValue[] => [
+  `Site ${at + 1}`,
+  `${at + 1}.5`,
+  region,
+  false,
+]);
+const turned = await typst.compile(
+  TEMPLATE,
+  publishedWith(false, years, { transpose: { header: 'site' } }),
+  at,
+);
+const turnedRead = await readPdf(turned);
+
+describe('a transposed bound table published (TG2)', () => {
+  it('TAB-021 heads each value column by its row and each row by its shown column, a header cell in the structure tree', () => {
+    const headers = turnedRead.reading
+      .filter((each) => each.role === 'TH')
+      .map((each) => each.text.trim());
+    expect(headers).toEqual(
+      expect.arrayContaining(['Site', 'Site 1', 'Site 2', 'Site 3', 'Reading']),
+    );
+    const cells = turnedRead.reading
+      .filter((each) => each.role === 'TD')
+      .map((each) => each.text.trim());
+    expect(cells).toEqual(['1.50', '2.50', '3.50']);
+  });
+
+  it('passes veraPDF as PDF/UA-1', async () => {
+    const verdict = await checkPdfUa1(turned);
     expect(verdict.failures).toEqual([]);
     expect(verdict.compliant).toBe(true);
   });

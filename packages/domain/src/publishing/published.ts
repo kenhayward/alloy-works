@@ -8,7 +8,9 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/19` is the document whose **bound tables may be grouped** (the TG plan, TG1): a grouped
+ * `publishing/20` is the document whose **bound tables may be transposed** (the TG plan, TG2): a
+ * transposed table's value cells carry their own column's `align` and `nowrap`. Otherwise it is
+ * `publishing/19`, the document whose **bound tables may be grouped** (the TG plan, TG1): a grouped
  * table's `bound.groups` says which body row is a group's heading and which the query's subtotal, each
  * at its level. Otherwise it is `publishing/18`, the document whose **tables say how they are set
  * where too wide** (the TB3 plan, TB3-G and TB3-H): each table carries `wide`, its own or its style's, `scale` where neither says.
@@ -39,7 +41,7 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/19';
+export const PUBLISHING_SCHEMA = 'publishing/20';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -173,6 +175,12 @@ export const PUBLISHING_SCHEMA_17 = 'publishing/17';
  * `publishing/16` is: `apps/worker/templates/publication/18/` asserts it.
  */
 export const PUBLISHING_SCHEMA_18 = 'publishing/18';
+
+/**
+ * The document as it stood before a bound table could be transposed, frozen by TG2 for the reason
+ * `publishing/16` is: `apps/worker/templates/publication/19/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_19 = 'publishing/19';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -458,6 +466,12 @@ export interface PublishedCell {
   readonly inset?: true;
   /** A bound table's negative, set in its table style's negative colour (TAB-016). Absent elsewhere. */
   readonly colour?: string;
+  /**
+   * A transposed bound table's value (TG2; TAB-021): its own column's alignment, over its table
+   * column's, and whether it must not wrap. Absent elsewhere.
+   */
+  readonly align?: 'start' | 'centre' | 'end' | 'decimal';
+  readonly nowrap?: true;
 }
 
 /**
