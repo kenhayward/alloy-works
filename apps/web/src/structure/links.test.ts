@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  baselineLink,
   documentAccessLink,
   documentAddress,
   documentLink,
@@ -13,6 +14,30 @@ const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const NODE = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
 
 describe('the addresses of a document and its nodes', () => {
+  it('STR-047 addresses a document as a baseline holds it, and a node in it, and reads them back', () => {
+    const BASELINE = 'bbbbbbbb-0000-4000-8000-000000000001';
+    expect(baselineLink(DOCUMENT, BASELINE)).toBe(`#/documents/${DOCUMENT}/baselines/${BASELINE}`);
+    expect(documentAddress(baselineLink(DOCUMENT, BASELINE, NODE))).toEqual({
+      kind: 'baseline',
+      document: DOCUMENT,
+      baseline: BASELINE,
+      node: NODE,
+    });
+    expect(documentAddress(baselineLink(DOCUMENT, BASELINE))).toEqual({
+      kind: 'baseline',
+      document: DOCUMENT,
+      baseline: BASELINE,
+      node: null,
+    });
+    for (const other of [
+      `#/documents/${DOCUMENT}/baselines`,
+      `#/documents/${DOCUMENT}/baselines/${BASELINE}/nodes`,
+      `#/documents/${DOCUMENT}/baselines/${BASELINE}/more`,
+    ]) {
+      expect(documentAddress(other), other).toBeNull();
+    }
+  });
+
   it('reads the list, a document and a node of a document, and nothing else', () => {
     expect(documentAddress('#/documents')).toEqual({ kind: 'documents' });
     expect(documentAddress(`#/documents/${DOCUMENT}`)).toEqual({

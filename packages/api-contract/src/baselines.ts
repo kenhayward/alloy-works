@@ -6,6 +6,7 @@ import {
   PublishFailureView,
   RequestPublicationBody,
 } from './publishing.js';
+import { BindingStateView } from './bindings.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** What making a baseline takes: the version the caller is looking at, and its name (VER-046). */
@@ -105,6 +106,46 @@ export const BaselineView = BaselineSummaryView.extend({
 });
 export type BaselineView = z.infer<typeof BaselineView>;
 
+/**
+ * The document as a baseline holds it, for its page (STR-047; the BL plan, BL-I): every part from the
+ * pins, never the document as it is now, and as the caller may read it.
+ */
+export const BaselinePageView = z.object({
+  baseline: BaselineSummaryView,
+  version: z
+    .object({ id: LowercaseUuid, number: z.string() })
+    .describe('The document version pinned'),
+  outline: z
+    .record(z.string(), z.unknown())
+    .describe(
+      "The pinned version's outline, as the caller is shown it: a reference to a component the caller may not read carries `component: null`, as the document's own outline does",
+    ),
+  layout: z
+    .object({
+      version: z.object({ id: LowercaseUuid, number: z.string() }),
+      scheme: z.record(z.string(), z.unknown()).describe("The pinned layout's numbering scheme"),
+      words: z.record(z.string(), z.unknown()).describe("The pinned layout's own words"),
+    })
+    .describe('The layout version pinned, which numbers it'),
+  texts: z
+    .array(
+      z.object({
+        node: z.string(),
+        component: LowercaseUuid,
+        version: z.object({ id: LowercaseUuid, number: z.string() }),
+        title: z.string(),
+        content: z
+          .record(z.string(), z.unknown())
+          .describe("The pinned version's content document"),
+      }),
+    )
+    .describe('Each occurrence the caller may read, at its pinned version'),
+  bindings: z
+    .array(BindingStateView)
+    .describe('What each binding of those occurrences held when the baseline was made'),
+});
+export type BaselinePageView = z.infer<typeof BaselinePageView>;
+
 /** A refusal of a baseline: a publish's, and the places resolving failed, each by its node. */
 export const BaselineRefusal = PublicationRefusal.extend({
   places: z
@@ -194,6 +235,31 @@ export const baselineRoutes = {
     params: BaselineParams,
     responses: {
       200: { description: 'The baseline', schema: BaselineView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a reader of the document reads its baselines',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such baseline in this environment, or one of a document the caller may not read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getBaselineView: {
+    operationId: 'getBaselineView',
+    method: 'GET',
+    path: '/v1/baselines/{id}/view',
+    summary: 'The document as a baseline holds it, to read',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { baseline: 'id' } },
+    params: BaselineParams,
+    responses: {
+      200: {
+        description: 'The pinned document, as the caller may read it',
+        schema: BaselinePageView,
+      },
       401: unauthenticated,
       403: {
         description: 'Never answered: a reader of the document reads its baselines',

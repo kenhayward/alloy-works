@@ -3,6 +3,7 @@ import {
   baselineNameProblem,
   labelFor,
   nameKey,
+  parseProvenance,
   PUBLISHING_FORMATS,
   readContent,
   readLayout,
@@ -13,6 +14,7 @@ import {
 } from '@alloy-works/domain';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
+import type { HeldResolution } from './datasets.js';
 import { readableComponents } from './documents.js';
 import {
   documentCitesAPage,
@@ -635,4 +637,77 @@ export async function requestBaselinePublication(
     { request: request.id, formats },
   );
   return { answer: 'requested', request: { id: request.id } };
+}
+
+/** A binding as a baseline pinned it, with what it held then (BL-I). */
+export interface PinnedBinding {
+  readonly node: string;
+  readonly binding: string;
+  /** The binding's digest as its result was taken under, when the baseline was made. */
+  readonly digest: string;
+  /** The dataset's name when the baseline was made, or none. */
+  readonly datasetName: string | null;
+  /** The resolution it pinned, as a document holds one, with nothing waiting: a baseline moves on to nothing. */
+  readonly held: HeldResolution;
+}
+
+/**
+ * Every binding a baseline pins, with the resolution and dataset version it held when it was made
+ * (BL-I): what its page shows each value from, never the document's latest resolution. Who may read
+ * which is the caller's to decide, by the node's component.
+ */
+export async function pinnedBindings(
+  trx: TenantTransaction,
+  baselineId: string,
+): Promise<PinnedBinding[]> {
+  const rows = await trx
+    .selectFrom('baseline_binding as k')
+    .innerJoin('binding_resolution as r', 'r.id', 'k.resolution')
+    .innerJoin('artifact_version as v', 'v.id', 'k.dataset_version')
+    .select([
+      'k.node',
+      'k.binding',
+      'k.digest',
+      'k.dataset_name',
+      'r.id',
+      'r.document_id',
+      'r.replaces',
+      'r.act',
+      'r.resolved_by',
+      'r.resolved_at',
+      'k.dataset_id',
+      'k.dataset_version',
+      'v.revision_no',
+      'v.version_no',
+      'v.content',
+    ])
+    .where('k.baseline_id', '=', baselineId)
+    .orderBy('k.node')
+    .orderBy('k.binding')
+    .execute();
+  return rows.map((row) => ({
+    node: row.node,
+    binding: row.binding,
+    digest: row.digest,
+    datasetName: row.dataset_name,
+    held: {
+      id: String(row.id),
+      document: row.document_id,
+      node: row.node,
+      binding: row.binding,
+      digest: row.digest,
+      replaces: row.replaces,
+      act: row.act,
+      by: row.resolved_by,
+      at: new Date(row.resolved_at),
+      held: {
+        dataset: row.dataset_id,
+        version: row.dataset_version,
+        number: { revision: row.revision_no, version: row.version_no },
+        // Written by `recordDatasetVersion`, which parsed it: one that does not parse is a broken store.
+        provenance: parseProvenance(row.content),
+      },
+      waiting: null,
+    },
+  }));
 }

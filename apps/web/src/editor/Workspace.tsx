@@ -21,6 +21,7 @@ import { hashOf, placeOf, type Place } from '../shell/places.js';
 import { componentAddress, searchAddress, searchLink } from '../search/links.js';
 import { SearchPage } from '../search/SearchPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
+import { BaselinePage } from '../structure/BaselinePage.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink, templateAccessAddress } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
@@ -417,6 +418,19 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             key={documents.document}
             at={{ kind: 'document', id: documents.document }}
             client={client}
+          />
+        </>
+      );
+    }
+    if (documents?.kind === 'baseline') {
+      return (
+        <>
+          <BaselinePage
+            key={documents.baseline}
+            client={client}
+            document={documents.document}
+            baseline={documents.baseline}
+            node={documents.node}
           />
         </>
       );

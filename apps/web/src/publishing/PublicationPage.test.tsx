@@ -69,9 +69,10 @@ describe('a publication at its own address', () => {
         />
       </StrictMode>,
     );
-    expect(
-      await screen.findByText(/Made from the baseline As approved, as that baseline pinned/),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'As approved' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}/baselines/${BASELINE}`,
+    );
   });
 
   it('says it is not approved, who published which version, and offers its PDF', async () => {

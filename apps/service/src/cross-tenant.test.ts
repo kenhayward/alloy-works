@@ -173,6 +173,7 @@ const OTHER_TENANT_IDS: Readonly<
   makeBaseline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   listBaselines: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
+  getBaselineView: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   publishBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   supersedeBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),

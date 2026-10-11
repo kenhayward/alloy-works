@@ -8,7 +8,8 @@
  * and the document in it is what finds the node without a tenant-wide index of nodes.
  */
 
-const DOCUMENTS = /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access))?)?$/;
+const DOCUMENTS =
+  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26}))?)?)?$/;
 
 /**
  * What a `#/documents...` address names: the list, one document, one node of one document, or the
@@ -17,14 +18,22 @@ const DOCUMENTS = /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\
 export type DocumentAddress =
   | { readonly kind: 'documents' }
   | { readonly kind: 'document'; readonly document: string; readonly node: string | null }
-  | { readonly kind: 'access'; readonly document: string };
+  | { readonly kind: 'access'; readonly document: string }
+  /** The document as one of its baselines holds it, and a node in it (STR-047; the BL plan). */
+  | {
+      readonly kind: 'baseline';
+      readonly document: string;
+      readonly baseline: string;
+      readonly node: string | null;
+    };
 
 export function documentAddress(hash: string): DocumentAddress | null {
   const matched = DOCUMENTS.exec(hash);
   if (!matched) return null;
-  const [, document, node, access] = matched;
+  const [, document, node, access, baseline, pinned] = matched;
   if (document === undefined) return { kind: 'documents' };
   if (access !== undefined) return { kind: 'access', document };
+  if (baseline !== undefined) return { kind: 'baseline', document, baseline, node: pinned ?? null };
   return { kind: 'document', document, node: node ?? null };
 }
 
@@ -51,6 +60,14 @@ export function templateAccessLink(template: string): string {
 /** The address of a document itself: its outline's root (STR-054). */
 export function documentLink(document: string): string {
   return `#/documents/${document}`;
+}
+
+/**
+ * The address of a document as one of its baselines holds it, or of one node in it (STR-047): "section
+ * 4.2 as approved", by identifiers alone, as a node's own address is.
+ */
+export function baselineLink(document: string, baseline: string, node?: string): string {
+  return `#/documents/${document}/baselines/${baseline}${node === undefined ? '' : `/nodes/${node}`}`;
 }
 
 /** The address of one node of one document. */

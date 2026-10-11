@@ -179,6 +179,7 @@ const operationTags = {
     'makeBaseline',
     'listBaselines',
     'getBaseline',
+    'getBaselineView',
     'publishBaseline',
     'supersedeBaseline',
   ],
@@ -250,6 +251,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.',
   getBaseline:
     'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
+  getBaselineView:
+    'Reads the document as a baseline holds it: its outline at the pinned version, numbered by the pinned layout, each component’s text at its pinned version, and each value from the dataset version it pinned. A component the caller may not read is withheld, as in the document itself.',
   publishBaseline:
     'Publishes a baseline from what it pins, never from the document as it is now: the same version of every component, image and value, under the same layout and theme, compiled at the baseline’s own time, so it is the same publication whenever it is asked for on the same engine. The caller must read everything it pins.',
   supersedeBaseline:

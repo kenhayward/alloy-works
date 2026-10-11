@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 
 import styles from './BaselinesTab.module.css';
+import { baselineLink } from './links.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -189,7 +190,7 @@ export function BaselinesTab({
             return (
               <li key={baseline.id} className={styles['row']} aria-labelledby={heading}>
                 <h3 id={heading} className={styles['name']}>
-                  {baseline.name}
+                  <a href={baselineLink(document, baseline.id)}>{baseline.name}</a>
                 </h3>
                 <span className={styles['note']}>
                   {`${baseline.madeBy.name ?? 'Somebody'}, ${when.format(new Date(baseline.madeAt))}`}

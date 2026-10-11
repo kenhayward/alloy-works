@@ -57,6 +57,7 @@ import {
   type HeldResolution,
   type PendingAct,
   type StoredPending,
+  type PinnedBinding,
   type StoredConnection,
   type Tenant,
   type TenantDatabase,
@@ -104,6 +105,7 @@ import {
   type RunAnswer,
   type RunRequest,
   type TakeOutcome,
+  type ContentDocument,
 } from '@alloy-works/domain';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
@@ -334,6 +336,63 @@ async function bindingsPlaced(
     }
   }
   return placed;
+}
+
+/**
+ * A baseline's bindings as its page shows them (the BL plan, BL-I): each binding its pinned
+ * occurrences hold - those the caller may read, which the caller passes - against the resolution the
+ * baseline pinned, never the document's latest, with nothing waiting; the dataset's name as pinned.
+ */
+export async function pinnedBindingStates(
+  trx: TenantTransaction,
+  caller: Caller,
+  objects: ObjectStores | undefined,
+  tenant: Tenant,
+  input: {
+    readonly documentId: string;
+    readonly parameters: DocumentParameters;
+    readonly occurrences: readonly {
+      readonly node: string;
+      readonly component: string;
+      readonly content: ContentDocument;
+    }[];
+    readonly pinned: readonly PinnedBinding[];
+  },
+): Promise<BindingStateView[]> {
+  const pinnedAt = new Map(input.pinned.map((each) => [key(each.node, each.binding), each]));
+  const placed: Placed[] = [];
+  for (const occurrence of input.occurrences) {
+    for (const { binding, place, decorative } of bindingsIn(occurrence.content)) {
+      const question = await bindingQuestion(trx, input.documentId, binding, input.parameters);
+      placed.push({
+        node: occurrence.node,
+        component: occurrence.component,
+        binding,
+        question,
+        // The digest it was pinned under, so what it held then is what it holds here.
+        digest:
+          pinnedAt.get(key(occurrence.node, binding.id))?.digest ??
+          sha256(bindingDigestInput(question)),
+        parameters: input.parameters,
+        place,
+        ...(decorative ? { decorative } : {}),
+        ...(place === 'table'
+          ? { table: boundTableHolding(occurrence.content.content, binding.id)! }
+          : {}),
+      });
+    }
+  }
+  const views = viewer(trx, caller, objects, tenant, input.documentId);
+  const states = await views(
+    placed.map((each) => ({
+      placed: each,
+      held: pinnedAt.get(key(each.node, each.binding.id))?.held,
+    })),
+  );
+  return states.map((state) => {
+    const pin = pinnedAt.get(key(state.node, state.binding.id));
+    return state.held && pin ? { ...state, held: { ...state.held, name: pin.datasetName } } : state;
+  });
 }
 
 /**
