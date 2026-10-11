@@ -12,6 +12,7 @@ import {
   type SectionViewNode,
 } from '@alloy-works/domain';
 import {
+  BROKEN_CLASS,
   drawEquation,
   renderContent,
   widthDrawnTables,
@@ -231,6 +232,7 @@ function RenderedText({
   bindings,
   onOpen,
   onProvenance,
+  onBroken,
 }: {
   content: unknown;
   /** What its references print from, where it stands in a document (ruling R12). */
@@ -243,8 +245,12 @@ function RenderedText({
    * button by its role - never opens the editor.
    */
   onProvenance?: (binding: string, opener: HTMLElement) => void;
+  /** How many of its references are broken, once drawn (STR-038). */
+  onBroken?: (count: number) => void;
 }) {
   const place = useRef<HTMLDivElement>(null);
+  const onBrokenRef = useRef(onBroken);
+  onBrokenRef.current = onBroken;
   useStyledImages(place);
   useUnresolvedMarks(place);
   const rendered = useMemo(
@@ -273,6 +279,7 @@ function RenderedText({
     const host = place.current;
     if (!host || rendered === null) return;
     host.replaceChildren(rendered.cloneNode(true));
+    onBrokenRef.current?.(host.querySelectorAll(`.${BROKEN_CLASS}`).length);
     // Its tables as wide as what they hold, where their style says so, as the editor and the PDF
     // set them (TG3): measured once they stand in the page, and again when a face loads.
     widthDrawnTables(host);
@@ -389,6 +396,7 @@ export function DocumentText({
   editor,
   editable,
   present,
+  onBroken,
   contributions = NOTHING_KNOWN,
   boundaries = false,
   marked = null,
@@ -414,6 +422,8 @@ export function DocumentText({
   editing?: string | null;
   /** Whether the reader may edit each occurrence's component now, and who holds it, by node. */
   editable?: ReadonlyMap<string, Editable>;
+  /** How many broken references each occurrence's text holds, once drawn, by node (STR-038). */
+  onBroken?: (node: string, count: number) => void;
   /** Who else is in each component now, by component (COL-001; the PL plan, PL2). */
   present?: ReadonlyMap<string, readonly (LivePresence & { readonly freshness: Freshness })[]>;
   /** Asked to open a component in place, or with null to close it. */
@@ -655,6 +665,9 @@ export function DocumentText({
                       content={texts.get(node.id)}
                       context={contexts.get(node.id) ?? null}
                       bindings={bindingContextsByNode?.get(node.id) ?? null}
+                      {...(onBroken
+                        ? { onBroken: (count: number) => onBroken(node.id, count) }
+                        : {})}
                       {...(onEdit && editor ? { onOpen: open(node.id) } : {})}
                       {...(onProvenance
                         ? {

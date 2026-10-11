@@ -341,3 +341,11 @@
   min-width: 0;
   padding-inline: var(--space-4);
 }
+
+/* What matters about a node to an author (STR-038), after its title: who holds it, what is broken. */
+.nodeMarks {
+  margin-inline-start: var(--space-8);
+  color: var(--warn-ink, var(--muted));
+  font-size: var(--size-12);
+  white-space: nowrap;
+}

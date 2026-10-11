@@ -17776,6 +17776,10 @@
           "howItIsMet": "Reordering in the panel is the move operation, from the panel's own drag and from its keymap"
         },
         {
+          "id": "STR-038",
+          "howItIsMet": "The contents mark what matters to an author on each node's row, said to a screen reader as its description: who else holds its component, from the document's stream; the broken references its text draws; the values its bindings failed to hold (the PL plan, PL-J)"
+        },
+        {
           "id": "STR-063",
           "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
         },
@@ -17862,6 +17866,10 @@
         {
           "id": "STR-065",
           "howItIsMet": "The contents panel is the outline, rendered: it renders the outline every operation returns rather than a copy of one, so it updates with every act the author makes, and clicking a node takes the reader to it ([Navigation](#navigation))"
+        },
+        {
+          "id": "STR-066",
+          "howItIsMet": "Another person's change reaches the contents as it happens: the document's stream says its outline changed, and the panel reads it again once no act of the reader's own is in flight, which answers with the outline as it then stands (the PL plan, PL-J)"
         }
       ]
     },
@@ -20402,6 +20410,18 @@
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
       "line": 1349,
+      "kind": "title"
+    },
+    {
+      "id": "STR-038",
+      "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
+      "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "STR-066",
+      "file": "apps/web/src/structure/DocumentPage.live.test.tsx",
+      "line": 51,
       "kind": "title"
     },
     {

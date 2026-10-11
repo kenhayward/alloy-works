@@ -39,6 +39,8 @@ import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
+import { dataState } from './dataStates.js';
+import type { NodeMarks } from './OutlinePanel.js';
 import { useLiveDocument, type LiveDocument } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions } from '@alloy-works/api-client';
@@ -585,6 +587,11 @@ export function DocumentPage({
     }
     return merged;
   }, [editable, componentOfNode, live.locks, principalId]);
+  // How many broken references each occurrence's text drew (STR-038), as its card reports.
+  const [brokenByNode, setBrokenByNode] = useState<ReadonlyMap<string, number>>(new Map());
+  const onBroken = useCallback((node: string, count: number) => {
+    setBrokenByNode((was) => (was.get(node) === count ? was : new Map(was).set(node, count)));
+  }, []);
   // Who is in each component, for its card (COL-001).
   const presentIn = useMemo(() => {
     const found = new Map<string, LiveDocument['people'][number][]>();
@@ -653,6 +660,26 @@ export function DocumentPage({
   // and again whenever they are read again - after an editor's Done, a version cut, an outline act -
   // and only where a text holds a binding. A failed read shows no values, and says nothing.
   const [bindingStates, setBindingStates] = useState<readonly BindingState[] | null>(null);
+  // What matters about each node to an author (STR-038): who else holds its component, as the stream
+  // says; the broken references its text drew; the values its bindings failed to hold.
+  const outlineMarks = useMemo(() => {
+    const marks = new Map<string, NodeMarks>();
+    const mark = (node: string, more: NodeMarks) =>
+      marks.set(node, { ...(marks.get(node) ?? {}), ...more });
+    for (const [node, component] of componentOfNode) {
+      const lock = live.locks.get(component);
+      if (lock?.holder && lock.holder.id !== principalId) mark(node, { heldBy: lock.holder.name });
+    }
+    for (const [node, count] of brokenByNode)
+      if (count > 0) mark(node, { brokenReferences: count });
+    const failed = new Map<string, number>();
+    for (const view of bindingStates ?? []) {
+      if (dataState(view, false) === 'failed')
+        failed.set(view.node, (failed.get(view.node) ?? 0) + 1);
+    }
+    for (const [node, count] of failed) mark(node, { failedValues: count });
+    return marks;
+  }, [componentOfNode, live.locks, principalId, brokenByNode, bindingStates]);
   const holdsBindings = useMemo(() => [...texts.values()].some(holdsBinding), [texts]);
   // The editing session of the editor open in place once it has placed or changed a binding, whose
   // bindings the view is read with until it closes (B2-C), and a count read again by.
@@ -989,6 +1016,33 @@ export function DocumentPage({
     latest.current = document;
     setLoaded({ state: 'open', document });
   }, []);
+
+  // Another person's change to the outline (STR-066; the PL plan, PL-J): read again as its stream
+  // says, once no act of this page's own is in flight - one that is, answers with the outline as it
+  // then stands, and the read waits for it. This page's own change comes back as the version it holds.
+  const outlineBehind = useRef(false);
+  const readOutlineAgain = useCallback(async () => {
+    if (pending.current) {
+      outlineBehind.current = true;
+      return;
+    }
+    outlineBehind.current = false;
+    try {
+      const { data } = await client.GET('/v1/documents/{id}', { params: { path: { id } } });
+      const read = documentIn(data);
+      if (read === undefined || read === 'unreadable' || pending.current) return;
+      if (latest.current !== null && read.version.id === latest.current.version.id) return;
+      show(read);
+    } catch {
+      // The next change, or a reload, reads it again.
+    }
+  }, [client, id, show]);
+  useEffect(() => {
+    if (live.outlineChanges > 0) void readOutlineAgain();
+  }, [live.outlineChanges, readOutlineAgain]);
+  useEffect(() => {
+    if (!busy && outlineBehind.current) void readOutlineAgain();
+  }, [busy, readOutlineAgain]);
 
   /**
    * The document's own values, whole, as its next version with the outline unchanged
@@ -1530,6 +1584,7 @@ export function DocumentPage({
             {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
             <OutlinePanel
               outline={document.outline}
+              marks={outlineMarks}
               head={
                 // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
                 outlinePane.collapsed ? null : (
@@ -1775,6 +1830,7 @@ export function DocumentPage({
                 texts={texts}
                 editable={editableNow}
                 present={presentIn}
+                onBroken={onBroken}
                 // What each occurrence holds, as the lists beside it number it: what a reference in the
                 // text, and in the editor opened in place, is numbered from (cross-references 1). The
                 // editor takes its context through its place, and is told again as this is read again.

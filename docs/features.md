@@ -927,6 +927,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   anything they save keeps it. After that minute it is yours, the taking is on the audit log, and they
   are told who has it and that what they saved is kept for when they next hold it. Through the API,
   `POST /v1/components/{id}/lock/take`.
+- **The contents, live and marked.** Another person's change to a document's outline - a section added,
+  moved or removed - appears in the contents as it happens, without a reload. Each row says what
+  matters to an author: who else holds its component, how many broken references its text holds, and
+  how many values failed to arrive.
 - **Who else is in a document, as it happens.** A document's bar shows the initials of everybody else
   reading or editing it, each named with what they are doing, faded once not heard from for 30 seconds
   and gone after a minute; each component's label says who is in it. Who holds a component, and until
