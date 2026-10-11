@@ -10,6 +10,12 @@ and [API](../specification/requirements/API-api-mcp-and-extensibility.md), under
 per tenant (ADR-0008) and runs in the web service; the desktop app loads the same renderer
 (ADR-0003) and so uses the same stream.
 
+> **As [the PL plan](../plans/2026-10-11-pl-presence-and-locks.md) builds it**, three things differ
+> from what follows: the stream is `GET /v1/stream?document=` or `?component=` (PL-A); presence is a row
+> each viewer's window beats every 20 seconds, its events carrying when, not a connection swept by
+> instance heartbeats (PL-C); and every access change ends every stream of the tenant, as does five
+> minutes open (PL-B). Its plan says what changed while building.
+
 ## The shape in one paragraph
 
 Each open document - or a component opened on its own, outside any document - holds one Server-Sent Events stream to the service. The stream only ever says
@@ -23,20 +29,26 @@ the stream at all: it is the streamed response to the request that asked for it.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **API-016** | The stream is opened by an authenticated request; a permission change ends it, and the reconnect is authorised afresh                   |
-| **API-017** | Stated plainly: individual events are not guaranteed and are not replayed; the picture is, because every connect begins with a snapshot |
-| **API-035** | The snapshot on connect, events held until it is sent, and events applied as state                                                      |
-| **API-036** | Measured by the conformance suite with the spike's harness: every delivery, to every entitled viewer, at stepped rates                  |
-| **COL-001** | Presence names each person in the document and the component they are in                                                                |
-| **COL-002** | Presence carries the mode - read, review or author - from the document view (CNT-104)                                                   |
-| **COL-003** | A person in a component the viewer may not read is reported only as present in the document, component and mode removed                 |
-| **COL-004** | Presence lasts as long as the connection; an instance that stops beating has its viewers' presence swept within fifteen seconds         |
-| **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                 |
+| ID          | How it is met                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API-016** | The stream is opened by an authenticated request; a permission change ends it, and the reconnect is authorised afresh                                   |
+| **API-017** | Stated plainly: individual events are not guaranteed and are not replayed; the picture is, because every connect begins with a snapshot                 |
+| **API-035** | The snapshot on connect, events held until it is sent, and events applied as state                                                                      |
+| **API-036** | Measured by the conformance suite with the spike's harness: every delivery, to every entitled viewer, at stepped rates                                  |
+| **COL-001** | Presence names each person in the document and the component they are in                                                                                |
+| **COL-002** | Presence carries the mode - read, review or author - from the document view (CNT-104)                                                                   |
+| **COL-003** | A person in a component the viewer may not read is reported only as present in the document, component and mode removed                                 |
+| **COL-004** | Presence lasts while its window beats; a closed stream removes its viewer at once, and a silent one is stale then absent (PL-C)                         |
+| **COL-055** | Each presence event carries when it was beaten; a viewer shows it live under 30 seconds, stale to 60, then absent                                       |
+| **API-015** | The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E) |
+| **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                                 |
+
+**API-014 is not claimed**: it names notifications and streamed model output beside presence and locks,
+and neither exists; the AsyncAPI document carries each as it is built.
 
 Lock rules that are not about transport - who may take a lock, from whom, and how long it lasts
-(COL-005, COL-008 to COL-011) - belong to collaboration's design, which reads and writes the same row.
+(COL-005, COL-008 to COL-011) - belong to [collaboration.md](collaboration.md) and component-editor.md,
+which read and write the same row.
 
 ## The stream
 

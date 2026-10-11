@@ -1955,7 +1955,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * What is happening in this environment, as it happens
+         * What is happening in this environment, or in one document or component, as it happens
          * @description Opens a browser-session-only event stream with a snapshot and subsequent changes. See the separate realtime protocol for event meanings and delivery guarantees.
          */
         get: operations["openStream"];
@@ -37598,7 +37598,10 @@ export interface operations {
     };
     openStream: {
         parameters: {
-            query?: never;
+            query?: {
+                document?: string & (unknown & unknown);
+                component?: string & (unknown & unknown);
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -37617,6 +37620,26 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            /** @description Both a document and a component, or an id malformed */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
                 };
             };
             /** @description No session, or not one this environment issued */
@@ -37641,6 +37664,26 @@ export interface operations {
             };
             /** @description token_not_allowed: this takes a signed-in session, never a token */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document or component, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

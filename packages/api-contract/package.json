@@ -10,11 +10,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./openapi.json": "./openapi.json"
+    "./openapi.json": "./openapi.json",
+    "./asyncapi.json": "./asyncapi.json"
   },
   "files": [
     "dist",
-    "openapi.json"
+    "openapi.json",
+    "asyncapi.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

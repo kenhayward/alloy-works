@@ -15968,6 +15968,35 @@
       ]
     },
     {
+      "document": "collaboration.md",
+      "owns": [
+        {
+          "id": "COL-008",
+          "howItIsMet": "A lock is free once its holder has saved nothing for the release period, `editing_policy.lock_release_minutes`, 15 by default, which an administrator sets"
+        },
+        {
+          "id": "COL-009",
+          "howItIsMet": "`POST /v1/components/{id}/lock/take`: asked, warned, waited, then taken from an idle holder; `lock.taken` names whom from"
+        },
+        {
+          "id": "COL-044",
+          "howItIsMet": "Claims serialise on the component (`serialise`); one wins, the other is told at once, shown no editable surface, and keeps what it typed (component-editor.md's Claiming)"
+        },
+        {
+          "id": "COL-045",
+          "howItIsMet": "The holder's window hears `lock` with `taken`, or its next save is refused `lock_taken`; it names the taker, says their saved work is kept, and offers what it had not sent as text to copy; their iterations are theirs to recover when they hold the lock again"
+        },
+        {
+          "id": "COL-046",
+          "howItIsMet": "The take period, `lock_take_minutes`, 5 by default, is a tenant setting, and a value not shorter than the release period is refused"
+        },
+        {
+          "id": "COL-047",
+          "howItIsMet": "The holder is warned at the ask and given a declared grace of 60 seconds in which any saved work keeps the lock"
+        }
+      ]
+    },
+    {
       "document": "component-editor.md",
       "owns": [
         {
@@ -16025,10 +16054,6 @@
         {
           "id": "COL-006",
           "howItIsMet": "The lock gates writes to the component and nothing else: reading it, and later commenting and suggesting, never ask for it"
-        },
-        {
-          "id": "COL-008",
-          "howItIsMet": "A lock expires after a period without saved changes - provisionally fifteen minutes - which is a tenant setting; each acknowledged iteration extends it"
         },
         {
           "id": "COL-010",
@@ -17139,7 +17164,15 @@
         },
         {
           "id": "COL-004",
-          "howItIsMet": "Presence lasts as long as the connection; an instance that stops beating has its viewers' presence swept within fifteen seconds"
+          "howItIsMet": "Presence lasts while its window beats; a closed stream removes its viewer at once, and a silent one is stale then absent (PL-C)"
+        },
+        {
+          "id": "COL-055",
+          "howItIsMet": "Each presence event carries when it was beaten; a viewer shows it live under 30 seconds, stale to 60, then absent"
+        },
+        {
+          "id": "API-015",
+          "howItIsMet": "The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E)"
         },
         {
           "id": "COL-007",
@@ -18700,13 +18733,13 @@
     {
       "id": "API-062",
       "file": "apps/service/src/app.test.ts",
-      "line": 107,
+      "line": 108,
       "kind": "title"
     },
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 176,
+      "line": 185,
       "kind": "title"
     },
     {
@@ -19220,6 +19253,18 @@
       "kind": "title"
     },
     {
+      "id": "API-016",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 275,
+      "kind": "title"
+    },
+    {
+      "id": "COL-007",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 195,
+      "kind": "title"
+    },
+    {
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
       "line": 128,
@@ -19426,13 +19471,13 @@
     {
       "id": "API-047",
       "file": "apps/service/src/stream.test.ts",
-      "line": 228,
+      "line": 152,
       "kind": "title"
     },
     {
       "id": "IAM-040",
       "file": "apps/service/src/stream.test.ts",
-      "line": 563,
+      "line": 487,
       "kind": "title"
     },
     {
@@ -20885,6 +20930,12 @@
       "id": "DAT-003",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "API-015",
+      "file": "packages/api-contract/src/spec.test.ts",
+      "line": 17,
       "kind": "title"
     },
     {

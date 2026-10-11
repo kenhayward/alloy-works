@@ -76,6 +76,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0064_column_widths',
       '0065_audit_read',
       '0066_audit_export',
+      '0067_live',
     ]);
 
     const read = async () =>

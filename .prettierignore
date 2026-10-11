@@ -5,6 +5,7 @@ out/
 coverage/
 pnpm-lock.yaml
 packages/api-contract/openapi.json
+packages/api-contract/asyncapi.json
 
 # Generated from the pinned font files by `pnpm --filter @alloy-works/fonts generate`, and compared
 # with a fresh generation in a test: one family to a line, which formatting would break up.

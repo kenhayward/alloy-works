@@ -22,6 +22,11 @@ export function tenantChannel(tenantId: string): string {
  */
 export type TenantEvent =
   | { readonly kind: 'sample'; readonly id: string; readonly state: string }
+  // Said by the database's own triggers (0067; the PL plan): a lock claimed, moved, released or its
+  // expected release moved to another minute; a document's new version; any change to access.
+  | { readonly kind: 'lock'; readonly component: string }
+  | { readonly kind: 'outline'; readonly document: string }
+  | { readonly kind: 'permissions' }
   | { readonly kind: 'credential_ended'; readonly session: string }
   | { readonly kind: 'credential_ended'; readonly token: string };
 

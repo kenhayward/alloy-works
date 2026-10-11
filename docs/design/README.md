@@ -37,6 +37,7 @@ understand the storage layer, rather than something to be thrown away.
 | [bindings.md](bindings.md)                             | A bound value placed and shown in the editor, a document's values and their revisions, and the publish's binding stage              |
 | [tables.md](tables.md)                                 | A result as a bound table: its columns, order, formats and notes, laid out alike in the page and the publish                        |
 | [audit.md](audit.md)                                   | The tenant's audit log: every act, sign-in and refusal recorded, kept beyond what it describes, read and exported by administrators |
+| [collaboration.md](collaboration.md)                   | Who holds a component's lock, for how long, and how it passes from an idle holder to somebody who needs it                          |
 
 ## Why these are not one per requirement area
 
