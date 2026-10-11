@@ -40,6 +40,7 @@ const record = {
   publisher: { id: 'p', displayName: 'Ada' },
   publishedAt: '2026-09-19T09:00:00.000Z',
   approval: 'none',
+  baseline: null,
   formats: ['pdf'],
   engine: { name: 'typst', version: '0.15.1' },
   template: { name: 'publication', version: 1 },
@@ -48,6 +49,31 @@ const record = {
 };
 
 describe('a publication at its own address', () => {
+  it('PUB-045 names the baseline a publication was made from', async () => {
+    const BASELINE = 'bbbbbbbb-0000-4000-8000-000000000001';
+    render(
+      <StrictMode>
+        <PublicationPage
+          client={createApiClient({
+            baseUrl: 'http://acme.example.test',
+            fetch: (async (input: Request) =>
+              new URL(input.url).pathname === `/v1/baselines/${BASELINE}`
+                ? json(200, { id: BASELINE, name: 'As approved' })
+                : json(200, {
+                    ...record,
+                    approval: 'baseline',
+                    baseline: BASELINE,
+                  })) as unknown as typeof fetch,
+          })}
+          id={PUBLICATION}
+        />
+      </StrictMode>,
+    );
+    expect(
+      await screen.findByText(/Made from the baseline As approved, as that baseline pinned/),
+    ).toBeInTheDocument();
+  });
+
   it('says it is not approved, who published which version, and offers its PDF', async () => {
     open(
       json(200, {
@@ -58,6 +84,7 @@ describe('a publication at its own address', () => {
         publisher: { id: 'p', displayName: 'Ada' },
         publishedAt: '2026-09-19T09:00:00.000Z',
         approval: 'none',
+        baseline: null,
         formats: ['pdf'],
         engine: { name: 'typst', version: '0.15.1' },
         template: { name: 'publication', version: 1 },

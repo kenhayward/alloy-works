@@ -783,6 +783,11 @@ describe('routes that check a permission', () => {
     }),
     listBaselines: () => ({ url: `/v1/documents/${report}/baselines`, status: 404 }),
     getBaseline: () => ({ url: `/v1/baselines/${reportBaseline}`, status: 404 }),
+    publishBaseline: () => ({
+      url: `/v1/baselines/${reportBaseline}/publications`,
+      status: 404,
+      payload: { formats: ['pdf'] },
+    }),
     supersedeBaseline: () => ({
       url: `/v1/baselines/${reportBaseline}/supersession`,
       status: 404,

@@ -154,7 +154,12 @@ export const PublicationSummary = z.object({
   title: z.string().describe("The document's title at the version published"),
   publisher: z.object({ id: z.string(), displayName: z.string().nullable() }),
   publishedAt: z.string(),
-  approval: z.literal('none').describe('`none`: a draft. Nothing in T1 can approve a publication'),
+  approval: z
+    .enum(['none', 'baseline'])
+    .describe(
+      '`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it',
+    ),
+  baseline: z.string().nullable().describe('The baseline it was made from, or null'),
   formats: z.array(z.string()),
 });
 export type PublicationSummary = z.infer<typeof PublicationSummary>;

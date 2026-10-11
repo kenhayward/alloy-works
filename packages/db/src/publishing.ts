@@ -275,6 +275,21 @@ function citesAPage(blocks: readonly BlockNode[]): boolean {
 }
 
 /** A resolved occurrence with its version's content, read as its publisher resolved it. */
+/**
+ * Whether a document cites a page (PUB-074), in a section's title or in any of these components:
+ * what a publish without the PDF is refused for, asked of a baseline's pins as of a live resolution.
+ */
+export function documentCitesAPage(
+  outline: OutlineDocument,
+  contents: readonly ContentDocument[],
+): boolean {
+  let titled = false;
+  walkOutline(outline.nodes, (node) => {
+    if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
+  });
+  return titled || contents.some((each) => citesAPage(each.content));
+}
+
 export interface ReadOccurrence {
   readonly node: string;
   readonly component: string;
@@ -850,6 +865,13 @@ export interface PublicationInputs {
     readonly documentVersionId: string;
     readonly requestedBy: string;
     readonly requestedAt: Date;
+    /**
+     * The time compiled into the PDF: the request's, or for a request made from a baseline the
+     * baseline's own, to the second, so every publication of one baseline is the same bytes (BL-F).
+     */
+    readonly compiledAt: Date;
+    /** The baseline it is made from, or none. */
+    readonly baseline: string | null;
     readonly spaceId: string;
     /**
      * The formats it asked for, PDF first, as recorded (Word 1, ruling R12): the job makes one output
@@ -924,6 +946,8 @@ async function holdsBindings(trx: TenantTransaction, requestId: string): Promise
 async function recordedBindings(
   trx: TenantTransaction,
   on: { readonly request: string } | { readonly publication: string },
+  /** The baseline the request or publication was made from, or none. */
+  baseline: string | null,
 ): Promise<(RecordedBinding & { readonly node: string; readonly binding: string })[]> {
   const { rows } = await sql<{
     node: string;
@@ -939,8 +963,16 @@ async function recordedBindings(
   }>`
     select b.node, b.binding, b.resolution::text as resolution, b.dataset_version, b.dataset_id,
            v.revision_no, v.version_no, v.content,
-           (select n.name from dataset_name n where n.dataset_id = b.dataset_id
-             order by n.id desc limit 1) as name,
+           ${
+             // The dataset's name as its baseline pinned it, where it is made from one (BL-F): a name
+             // changed since changes nothing a baseline publishes. Its latest name otherwise.
+             baseline === null
+               ? sql`(select n.name from dataset_name n where n.dataset_id = b.dataset_id
+                       order by n.id desc limit 1)`
+               : sql`(select k.dataset_name from baseline_binding k
+                       where k.baseline_id = ${baseline} and k.node = b.node
+                         and k.binding = b.binding)`
+           } as name,
            d.content->'key' as key
       from ${'request' in on ? sql`publication_request_binding` : sql`publication_binding`} b
       join artifact_version v on v.id = b.dataset_version
@@ -974,7 +1006,12 @@ export async function publicationBindings(
   publicationId: string,
 ): Promise<(RecordedBinding & { readonly node: string; readonly binding: string })[]> {
   if (!UUID.test(publicationId)) return [];
-  return recordedBindings(trx, { publication: publicationId });
+  const made = await trx
+    .selectFrom('publication as p')
+    .select(sql<string | null>`to_jsonb(p) ->> 'baseline_id'`.as('baseline'))
+    .where('p.id', '=', publicationId)
+    .executeTakeFirst();
+  return recordedBindings(trx, { publication: publicationId }, made?.baseline ?? null);
 }
 
 /** A binding as a document's latest publication printed it: what changed since is compared by these. */
@@ -1052,6 +1089,8 @@ export async function publicationInputs(
       'r.document_version_id',
       'r.requested_by',
       'r.requested_at',
+      // Read from the row whole, as `recordPublication` reads it, for an environment short of 0073.
+      sql<string | null>`to_jsonb(r) ->> 'baseline_id'`.as('baseline_id'),
       'r.state',
       'r.formats',
       'r.failures',
@@ -1067,6 +1106,16 @@ export async function publicationInputs(
     .where('r.id', '=', requestId)
     .executeTakeFirst();
   if (!request || request.state !== 'queued') return undefined;
+  const madeAt =
+    request.baseline_id === null
+      ? null
+      : (
+          await trx
+            .selectFrom('baseline')
+            .select('made_at')
+            .where('id', '=', request.baseline_id)
+            .executeTakeFirstOrThrow()
+        ).made_at;
   const read = readOutline(request.content, {
     artifact: request.document_id,
     version: request.document_version_id,
@@ -1132,7 +1181,7 @@ export async function publicationInputs(
   const bindings = new Map<string, Map<string, RecordedBinding>>();
   const holding = [...occurrences.values()].some((each) => bindingsIn(each.content).length > 0);
   for (const { node, binding, ...recorded } of holding
-    ? await recordedBindings(trx, { request: requestId })
+    ? await recordedBindings(trx, { request: requestId }, request.baseline_id)
     : []) {
     if (!bindings.has(node)) bindings.set(node, new Map());
     bindings.get(node)!.set(binding, recorded);
@@ -1166,6 +1215,11 @@ export async function publicationInputs(
       documentVersionId: request.document_version_id,
       requestedBy: request.requested_by,
       requestedAt: request.requested_at,
+      compiledAt:
+        madeAt === null
+          ? request.requested_at
+          : new Date(Math.floor(madeAt.getTime() / 1000) * 1000),
+      baseline: request.baseline_id,
       spaceId: request.space_id!,
       formats: request.formats as [PublishingFormat, ...PublishingFormat[]],
     },
@@ -1291,6 +1345,9 @@ export async function recordPublication(
       'r.layout_version_id',
       'r.theme_id',
       'r.theme_version_id',
+      // Read from the row whole, so an environment migrated short of 0073, as a migration's own test
+      // makes one, records a publication as it always did: none where the column is not there yet.
+      sql<string | null>`to_jsonb(r) ->> 'baseline_id'`.as('baseline_id'),
       'a.space_id',
     ])
     .where('r.id', '=', input.requestId)
@@ -1366,6 +1423,7 @@ async function insertPublication(
     readonly layout_version_id: string | null;
     readonly theme_id: string | null;
     readonly theme_version_id: string | null;
+    readonly baseline_id: string | null;
     readonly space_id: string | null;
   },
   input: NewPublication,
@@ -1387,7 +1445,11 @@ async function insertPublication(
       document_version_id: request.document_version_id,
       publisher: request.requested_by,
       published_at: request.requested_at,
-      approval: 'none',
+      // Made from a baseline where its request was (0073), which commit holds it to.
+      // An environment short of 0073 has no column to name, and nothing made from a baseline.
+      ...(request.baseline_id === null
+        ? { approval: 'none' as const }
+        : { approval: 'baseline' as const, baseline_id: request.baseline_id }),
       formats: request.formats,
       engine: pdf ? 'typst' : null,
       engine_version: pdf?.engineVersion ?? null,
@@ -1881,7 +1943,9 @@ export interface StoredPublication {
   readonly title: string;
   readonly publisher: { readonly id: string; readonly displayName: string | null };
   readonly publishedAt: Date;
-  readonly approval: 'none';
+  /** `baseline` where it was made from one (0073), which `baseline` names; `none` otherwise. */
+  readonly approval: 'none' | 'baseline';
+  readonly baseline: string | null;
   readonly formats: readonly PublishingFormat[];
   /** The PDF's engine and template, or none where the publication has no PDF (0027). */
   readonly engine: { readonly name: 'typst'; readonly version: string } | null;
@@ -1917,6 +1981,7 @@ const publicationColumns = [
   'p.document_version_id',
   'p.published_at',
   'p.approval',
+  'p.baseline_id',
   'p.formats',
   'p.engine_version',
   'p.template_version',
@@ -2154,7 +2219,8 @@ function summaryOf(row: {
   document_version_id: string;
   title: string;
   published_at: Date;
-  approval: 'none';
+  approval: 'none' | 'baseline';
+  baseline_id: string | null;
   formats: PublishingFormat[];
   engine_version: string | null;
   template_version: number | null;
@@ -2175,6 +2241,7 @@ function summaryOf(row: {
     publisher: { id: row.publisher_id, displayName: row.publisher_name },
     publishedAt: row.published_at,
     approval: row.approval,
+    baseline: row.baseline_id,
     formats: row.formats,
     engine: row.engine_version === null ? null : { name: 'typst', version: row.engine_version },
     template:

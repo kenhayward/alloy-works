@@ -6,6 +6,8 @@ import type {
   BaselineView,
   DocumentParams,
   MakeBaselineBody,
+  PublicationRequestView,
+  PublishBaselineBody,
   SupersedeBaselineBody,
 } from '@alloy-works/api-contract';
 import {
@@ -13,13 +15,14 @@ import {
   listBaselines,
   makeBaseline,
   readBaseline,
+  requestBaselinePublication,
   supersedeBaseline,
   type BaselineSummary,
   type TenantTransaction,
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { refusePublish } from './publishing.js';
+import { refusePublish, requestedView } from './publishing.js';
 import { refused } from './wire-codes.js';
 
 const summaryView = (baseline: BaselineSummary): BaselineSummaryView => ({
@@ -112,6 +115,38 @@ export function baselineHandlers() {
         },
         withheld: { nodes: [...withheld.nodes], assets: withheld.assets },
       };
+    },
+
+    /**
+     * A publish of the baseline from its pins (BL-F): decided on its document, as a publish is, and
+     * asked for in that same transaction; the caller reads everything it pins, or is told by node.
+     */
+    publishBaseline: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<PublicationRequestView> => {
+      const { id } = request.params as BaselineParams;
+      const { formats } = request.body as PublishBaselineBody;
+      const answer = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats,
+        requester: principalId,
+      });
+      switch (answer.answer) {
+        case 'requested':
+          return requestedView(trx, answer.request.id);
+        case 'baseline.unreadable':
+          throw refused(
+            400,
+            'baseline.unreadable',
+            'This baseline pins something you may not read, so you cannot publish it.',
+            { nodes: answer.nodes, assets: answer.assets },
+          );
+        default: {
+          const document = await baselineDocument(trx, id);
+          return refusePublish(trx, document!, answer);
+        }
+      }
     },
 
     supersedeBaseline: async (

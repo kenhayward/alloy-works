@@ -225,6 +225,36 @@ describe('baselines over HTTP (baselines.md)', () => {
     expect(refused.body).not.toContain(secret.artifactId);
   });
 
+  it('PUB-046 publishes a baseline, as a request named by the baseline, and refuses whoever may not publish it', async () => {
+    const document = await documentWith();
+    const baseline = (await make(document, 'To publish')).json<{ id: string }>().id;
+    const asked = await call('POST', `/v1/baselines/${baseline}/publications`, 'ada', {
+      formats: ['pdf'],
+    });
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.json()).toMatchObject({ state: 'queued' });
+    const row = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select(['baseline_id', 'document_version_id'])
+        .where('id', '=', asked.json<{ id: string }>().id)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ baseline_id: baseline, document_version_id: document.id });
+    expect(
+      (
+        await call('POST', `/v1/baselines/${baseline}/publications`, 'grace', {
+          formats: ['pdf'],
+        })
+      ).statusCode,
+    ).toBe(403);
+    const unsupported = await call('POST', `/v1/baselines/${baseline}/publications`, 'ada', {
+      formats: ['epub'],
+    });
+    expect(unsupported.statusCode).toBe(400);
+    expect(unsupported.json()).toMatchObject({ code: 'format_unsupported' });
+  });
+
   it('VER-049 marks a baseline superseded by a later one, keeps it readable, and lists by state', async () => {
     const document = await documentWith();
     const first = (await make(document, 'Issue 1')).json<{ id: string }>().id;

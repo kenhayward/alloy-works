@@ -175,7 +175,13 @@ const operationTags = {
     'getAssetVersionContent',
   ],
   Previews: ['requestPreview'],
-  Baselines: ['makeBaseline', 'listBaselines', 'getBaseline', 'supersedeBaseline'],
+  Baselines: [
+    'makeBaseline',
+    'listBaselines',
+    'getBaseline',
+    'publishBaseline',
+    'supersedeBaseline',
+  ],
   'Publication requests': ['requestPublication', 'getPublicationRequest'],
   Publications: [
     'listPublications',
@@ -244,6 +250,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.',
   getBaseline:
     'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
+  publishBaseline:
+    'Publishes a baseline from what it pins, never from the document as it is now: the same version of every component, image and value, under the same layout and theme, compiled at the baseline’s own time, so it is the same publication whenever it is asked for on the same engine. The caller must read everything it pins.',
   supersedeBaseline:
     'Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.',
   takeLock:

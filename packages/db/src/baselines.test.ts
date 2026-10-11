@@ -19,6 +19,7 @@ import {
   listBaselines,
   makeBaseline,
   readBaseline,
+  requestBaselinePublication,
   supersedeBaseline,
   type MakeBaselineAnswer,
 } from './baselines.js';
@@ -32,6 +33,7 @@ import { addThemeVersion, defaultTheme } from './themes.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createQueryDefinition, type StoredQueryDefinition } from './queryDefinitions.js';
+import { publicationInputs } from './publishing.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
@@ -463,6 +465,106 @@ describe('baselines', () => {
       },
       expect.objectContaining({ node: node.id, binding: 'k2', dataset_name: 'Depths at north' }),
     ]);
+
+    // Published later, it prints the name it pinned, not the one the dataset has now (BL-F).
+    const inputs = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return publicationInputs(trx, asked.request.id);
+    });
+    expect(inputs!.bindings.get(node.id)!.get('k1')!.dataset.name).toBe('Depths at north');
+    expect(inputs!.request.baseline).toBe(id);
+  });
+
+  it('PUB-046 publishes a baseline from its pins, at its own time, whatever its components became', async () => {
+    const printer = await component(general, ada, 'Install the printer');
+    const node = reference(printer.artifactId);
+    const document = await documentWith([node]);
+    const id = made(await make(document, 'Pinned'));
+    const later = await revise(printer, [
+      { type: 'paragraph', id: 'p9', style: 'body', content: [] },
+    ]);
+
+    const inputs = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return publicationInputs(trx, asked.request.id);
+    });
+    expect(inputs!.occurrences.get(node.id)!.version).toBe(printer.id);
+    expect(inputs!.occurrences.get(node.id)!.version).not.toBe(later.id);
+    const madeAt = (await tenant((trx) => readBaseline(trx, id, ada)))!.madeAt;
+    expect(inputs!.request.compiledAt.getTime()).toBe(Math.floor(madeAt.getTime() / 1000) * 1000);
+  });
+
+  it('refuses to publish a baseline to somebody who may not read all it pins, by node, and a format its layout does not make', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const hidden = reference(secret.artifactId);
+    const document = await tenant(async (trx) => {
+      const madeDocument = await createDocument(trx, {
+        spaceId: general,
+        title: 'Grace’s second report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: grace,
+      });
+      if (madeDocument.answer !== 'created') throw new Error(madeDocument.answer);
+      const recorded = await recordVersion(trx, {
+        artifactId: madeDocument.version.artifactId,
+        openedFrom: madeDocument.version.id,
+        author: grace,
+        substance: {
+          kind: 'document',
+          content: { ...(madeDocument.version.content as OutlineDocument), nodes: [hidden] },
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version;
+    });
+    const id = made(await make(document, 'Grace’s second', grace));
+    const ask = (requester: string, formats: string[]) =>
+      tenant((trx) => requestBaselinePublication(trx, { baseline: id, formats, requester }));
+    expect(await ask(ada, ['pdf'])).toEqual({
+      answer: 'baseline.unreadable',
+      nodes: [hidden.id],
+      assets: 0,
+    });
+    expect(await ask(grace, ['epub'])).toEqual({ answer: 'format.unsupported', formats: ['epub'] });
+  });
+
+  it('refuses at commit a request naming a baseline whose rows are not exactly its pins', async () => {
+    const printer = await component(general, ada, 'Pinned once');
+    const document = await documentWith([reference(printer.artifactId)]);
+    const id = made(await make(document, 'Whole'));
+    const row = await tenant((trx) =>
+      trx.selectFrom('baseline').selectAll().where('id', '=', id).executeTakeFirstOrThrow(),
+    );
+    await expect(
+      tenant((trx) =>
+        trx
+          .insertInto('publication_request')
+          .values({
+            document_id: row.document_id,
+            document_version_id: row.document_version_id,
+            formats: ['pdf'],
+            requested_by: ada,
+            failures: '[]',
+            layout_id: row.layout_id,
+            layout_version_id: row.layout_version_id,
+            theme_id: row.theme_id,
+            theme_version_id: row.theme_version_id,
+            baseline_id: id,
+          })
+          .execute(),
+      ),
+    ).rejects.toThrow(/exactly what the baseline pins/);
   });
 
   it('VER-049 marks a baseline superseded by a later one of its document, once, keeps it readable, and lists by state', async () => {

@@ -35,6 +35,7 @@ function service(initial: readonly string[] = []) {
     digest: 'a'.repeat(64),
   });
   const asked: string[] = [];
+  const published: { path: string; formats: string[] }[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
@@ -48,6 +49,11 @@ function service(initial: readonly string[] = []) {
         .sort((a, b) => (a.madeAt < b.madeAt ? 1 : -1))
         .map(view);
       return json(200, { baselines: shown });
+    }
+    if (url.pathname.endsWith('/publications')) {
+      const { formats } = (await request.json()) as { formats: string[] };
+      published.push({ path: url.pathname, formats });
+      return json(200, { id: 'cccccccc-0000-4000-8000-000000000001', state: 'queued' });
     }
     if (url.pathname.endsWith('/baselines')) {
       const { name } = (await request.json()) as { name: string };
@@ -72,7 +78,11 @@ function service(initial: readonly string[] = []) {
     row.superseded = { by, principal: ADA, at: '2026-10-11T18:00:00.000Z' };
     return json(200, view(row));
   }) as unknown as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }), asked };
+  return {
+    client: createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }),
+    asked,
+    published,
+  };
 }
 
 describe('the Baselines tab', () => {
@@ -131,6 +141,21 @@ describe('the Baselines tab', () => {
     expect(asked).toContain(`GET /v1/documents/${DOCUMENT}/baselines?state=current`);
   });
 
+  it('PUB-046 publishes a baseline to the formats chosen, and says where it will be listed', async () => {
+    const { client, published } = service(['Issue 1']);
+    render(<BaselinesTab client={client} document={DOCUMENT} version={VERSION} mayPublish />);
+    const row = await screen.findByRole('listitem', { name: /Issue 1/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Publish' }));
+    await userEvent.selectOptions(within(row).getByLabelText('Formats'), 'PDF and Word');
+    await userEvent.click(within(row).getByRole('button', { name: 'Publish now' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Publishing Issue 1. It is listed in Publications once it is made.',
+    );
+    expect(published).toEqual([
+      { path: `/v1/baselines/${id(1)}/publications`, formats: ['pdf', 'docx'] },
+    ]);
+  });
+
   it('shows the baselines to somebody who may not publish, with nothing to make or mark', async () => {
     const { client } = service(['Issue 1', 'Issue 2']);
     render(
@@ -139,6 +164,7 @@ describe('the Baselines tab', () => {
     await screen.findByRole('listitem', { name: /Issue 1/ });
     expect(screen.queryByLabelText('Name')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Mark superseded' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
   });
 
   it('says when the document has none yet', async () => {

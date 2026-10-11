@@ -944,6 +944,8 @@ describe('requesting and recording a publication', () => {
         documentVersionId: version.id,
         requestedBy: ada,
         requestedAt: row.requested_at,
+        compiledAt: row.requested_at,
+        baseline: null,
         spaceId: general,
         formats: ['pdf'],
       });
@@ -1582,6 +1584,7 @@ describe('requesting and recording a publication', () => {
         // The time it was asked for, which is the time compiled into the PDF.
         published_at: request.requested_at,
         approval: 'none',
+        baseline_id: null,
         formats: ['pdf'],
         engine: 'typst',
         engine_version: '0.15.1',

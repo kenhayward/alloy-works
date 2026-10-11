@@ -35,6 +35,8 @@ export interface PublicationRequestTable {
   theme_kind: ColumnType<'theme', never, never>;
   /** A publish or a preview, named when it is asked for and never changed (0035). */
   kind: ColumnType<'publish' | 'preview', 'publish' | 'preview' | undefined, never>;
+  /** The baseline it is made from, read from its pins and never resolved again (0073), or none. */
+  baseline_id: ColumnType<string | null, string | null | undefined, never>;
   /**
    * A preview's PDF in the tenant's store by its hash, and when it expires: all four exactly when a
    * preview is done, written only in the move that finishes it, and never on a publish (0035).
@@ -105,7 +107,9 @@ export interface PublicationTable {
   document_kind: ColumnType<'document', never, never>;
   publisher: ColumnType<string, string, never>;
   published_at: ColumnType<Date, Date, never>;
-  approval: ColumnType<'none', 'none', never>;
+  approval: ColumnType<'none' | 'baseline', 'none' | 'baseline', never>;
+  /** The baseline its request was made from (0073), or none. */
+  baseline_id: ColumnType<string | null, string | null | undefined, never>;
   /** The PDF first, as the request names them (0027). */
   formats: ColumnType<PublishingFormat[], PublishingFormat[], never>;
   /** The PDF's engine and template: all four null exactly where the publication has no PDF (0027). */

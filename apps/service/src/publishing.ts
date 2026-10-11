@@ -90,6 +90,7 @@ const summaryView = (publication: PublicationSummary): PublicationSummaryView =>
   publisher: { ...publication.publisher },
   publishedAt: publication.publishedAt.toISOString(),
   approval: publication.approval,
+  baseline: publication.baseline,
   formats: [...publication.formats],
 });
 
@@ -137,6 +138,16 @@ async function answered(
   if (answer.answer !== 'requested') return refusePublish(trx, id, answer);
   const made = await readPublicationRequest(trx, answer.request.id);
   if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);
+  return requestView(made, noStore);
+}
+
+/** A request just recorded, as its view: what a publish, a preview or a baseline's publish answers. */
+export async function requestedView(
+  trx: TenantTransaction,
+  requestId: string,
+): Promise<PublicationRequestView> {
+  const made = await readPublicationRequest(trx, requestId);
+  if (!made) throw new Error(`The request ${requestId} was not recorded`);
   return requestView(made, noStore);
 }
 

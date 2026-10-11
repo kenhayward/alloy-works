@@ -18880,7 +18880,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 266,
+      "line": 267,
       "kind": "title"
     },
     {
@@ -18926,6 +18926,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-046",
+      "file": "apps/service/src/baseline-routes.test.ts",
+      "line": 228,
+      "kind": "title"
+    },
+    {
       "id": "VER-017",
       "file": "apps/service/src/baseline-routes.test.ts",
       "line": 142,
@@ -18946,7 +18952,7 @@
     {
       "id": "VER-049",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 228,
+      "line": 258,
       "kind": "title"
     },
     {
@@ -19078,7 +19084,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 948,
+      "line": 950,
       "kind": "title"
     },
     {
@@ -20278,7 +20284,7 @@
     {
       "id": "SCH-064",
       "file": "apps/web/src/listing/views.test.tsx",
-      "line": 116,
+      "line": 117,
       "kind": "title"
     },
     {
@@ -20288,27 +20294,39 @@
       "kind": "title"
     },
     {
+      "id": "PUB-045",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 52,
+      "kind": "title"
+    },
+    {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 357,
+      "line": 384,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-046",
+      "file": "apps/web/src/structure/BaselinesTab.test.tsx",
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/BaselinesTab.test.tsx",
-      "line": 79,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "VER-046",
       "file": "apps/web/src/structure/BaselinesTab.test.tsx",
-      "line": 96,
+      "line": 106,
       "kind": "title"
     },
     {
       "id": "VER-049",
       "file": "apps/web/src/structure/BaselinesTab.test.tsx",
-      "line": 108,
+      "line": 118,
       "kind": "title"
     },
     {
@@ -20597,6 +20615,30 @@
       "id": "ADM-039",
       "file": "apps/worker/src/audit-export.test.ts",
       "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-013",
+      "file": "apps/worker/src/baseline-publish.test.ts",
+      "line": 329,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-045",
+      "file": "apps/worker/src/baseline-publish.test.ts",
+      "line": 329,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-046",
+      "file": "apps/worker/src/baseline-publish.test.ts",
+      "line": 329,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-075",
+      "file": "apps/worker/src/baseline-publish.test.ts",
+      "line": 210,
       "kind": "title"
     },
     {
@@ -21340,49 +21382,55 @@
     {
       "id": "DAT-038",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 390,
+      "line": 392,
       "kind": "title"
     },
     {
       "id": "PUB-013",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 270,
+      "line": 272,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-046",
+      "file": "packages/db/src/baselines.test.ts",
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "STY-028",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 270,
+      "line": 272,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 242,
+      "line": 244,
       "kind": "title"
     },
     {
       "id": "VER-023",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 493,
+      "line": 595,
       "kind": "title"
     },
     {
       "id": "VER-043",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 317,
+      "line": 319,
       "kind": "title"
     },
     {
       "id": "VER-046",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 294,
+      "line": 296,
       "kind": "title"
     },
     {
       "id": "VER-049",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 468,
+      "line": 570,
       "kind": "title"
     },
     {
@@ -21652,7 +21700,7 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2517,
+      "line": 2520,
       "kind": "title"
     },
     {
@@ -21664,7 +21712,7 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 957,
+      "line": 959,
       "kind": "title"
     },
     {

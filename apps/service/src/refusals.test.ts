@@ -128,6 +128,7 @@ describe('the rule behind a refusal', () => {
       // A baseline's own guards (the BL plan): a place that does not resolve as its maker reads it,
       // and a supersession by anything but a later baseline of the document, or a second one.
       'baseline.unresolved',
+      'baseline.unreadable',
       'superseder.invalid',
       'superseded.already',
     ];

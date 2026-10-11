@@ -88,6 +88,7 @@ const WIRE_CODES = {
   'space.last': 'space_last',
   'name.taken': 'name_taken',
   'baseline.unresolved': 'baseline_unresolved',
+  'baseline.unreadable': 'baseline_unreadable',
   'superseder.invalid': 'superseder_invalid',
   'superseded.already': 'superseded_already',
 } as const satisfies Record<string, string>;

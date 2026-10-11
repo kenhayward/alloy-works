@@ -870,6 +870,7 @@ describe('the workspace', () => {
           publisher: { id: 'p1', displayName: 'Ada' },
           publishedAt: '2026-09-19T09:00:00.000Z',
           approval: 'none',
+          baseline: null,
           formats: ['pdf'],
           engine: { name: 'typst', version: '0.15.1' },
           template: { name: 'publication', version: 1 },

@@ -363,6 +363,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -378,6 +379,7 @@ describe('migration 0024, which gives every environment its default theme', () =
     expect(triggers).toEqual(
       [
         'publication_request_finish_once',
+        'publication_request_is_its_baseline',
         'publication_request_made_under_a_layout',
         'publication_request_made_under_a_theme',
         'publication_request_swept_only',
@@ -1070,6 +1072,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1149,6 +1152,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1857,6 +1861,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -1979,6 +1984,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -2028,6 +2034,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0070_lock_taking',
       '0071_presence_key',
       '0072_baselines',
+      '0073_baseline_publications',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };
