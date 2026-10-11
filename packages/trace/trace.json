@@ -12712,7 +12712,7 @@
       "id": "TAB-028",
       "area": "TAB",
       "statement": "Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**)",
-      "tranche": "T3",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 151
@@ -13270,7 +13270,7 @@
       "id": "TPL-028",
       "area": "TPL",
       "statement": "Departures must be listable: what this document has that the template does not, and what it lacks",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 152
@@ -13279,7 +13279,7 @@
       "id": "TPL-029",
       "area": "TPL",
       "statement": "A section the template marked required must not be removable without a stated reason, recorded on the document",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 153
@@ -13324,7 +13324,7 @@
       "id": "TPL-033",
       "area": "TPL",
       "statement": "Moving a document to a newer template version must be an explicit, audited act, and must be refusable",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 173
@@ -13333,7 +13333,7 @@
       "id": "TPL-034",
       "area": "TPL",
       "statement": "Such a move must report what it will change before it runs, and must be abandonable at that point",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 174
@@ -13351,7 +13351,7 @@
       "id": "TPL-058",
       "area": "TPL",
       "statement": "Moving a document forward (TPL-033) must bring its fields to the current versions of the schemas and fields its template assigns as well as its outline to a newer template version, and must be possible when only a schema or a field has changed. The report TPL-034 requires must name each field that changes and each value that would not be carried forward, as **MET-036** treats a component's",
-      "tranche": "T3",
+      "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 176
@@ -17962,6 +17962,30 @@
         {
           "id": "CNT-039",
           "howItIsMet": "A note into generated content names its row by key value, never by position"
+        },
+        {
+          "id": "TAB-008",
+          "howItIsMet": "`groups` names a column; each group opens with a heading row ([Groups](#groups))"
+        },
+        {
+          "id": "TAB-043",
+          "howItIsMet": "Up to three groups, outermost first; groups order first, the sort within each"
+        },
+        {
+          "id": "TAB-042",
+          "howItIsMet": "A heading keeps with its group's first row and a subtotal, the query's row, with its last, in the PDF and Word; the style says how they look"
+        },
+        {
+          "id": "TAB-021",
+          "howItIsMet": "The reshaping here is `groups` and `transpose`, nothing else ([Transposition](#transposition))"
+        },
+        {
+          "id": "TAB-022",
+          "howItIsMet": "Each is a member of the block, shown on the Table tab and recorded in provenance"
+        },
+        {
+          "id": "TAB-053",
+          "howItIsMet": "The table style's `widths`, `equal` or `content`, computed once and set alike by the editor, the PDF and Word; a no-wrap column as wide as its widest cell ([Widths](#widths))"
         }
       ]
     },

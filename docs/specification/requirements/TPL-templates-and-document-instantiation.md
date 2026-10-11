@@ -149,8 +149,8 @@ not have the section every other report from this template has" is worth somebod
 | ID          | Requirement                                                                                                                                                                                                                           | Tranche | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | **TPL-027** | A document must own its outline after instantiation, and must be able to depart from the template's starting shape                                                                                                                    | T1      | Specified |
-| **TPL-028** | Departures must be listable: what this document has that the template does not, and what it lacks                                                                                                                                     | T3      | Specified |
-| **TPL-029** | A section the template marked required must not be removable without a stated reason, recorded on the document                                                                                                                        | T3      | Specified |
+| **TPL-028** | Departures must be listable: what this document has that the template does not, and what it lacks                                                                                                                                     | T9      | Specified |
+| **TPL-029** | A section the template marked required must not be removable without a stated reason, recorded on the document                                                                                                                        | T9      | Specified |
 | **TPL-030** | Publishing must fail where a required section is absent                                                                                                                                                                               | T1      | Withdrawn |
 | **TPL-044** | A component the template declared required (TPL-014) must not be removable without a stated reason recorded on the document, and publishing must fail where one is absent - the treatment TPL-029 and TPL-013 give a required section | T4      | Specified |
 
@@ -170,10 +170,10 @@ a component floats or pins; this is the prior question of whether it may leave a
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **TPL-031** | Changing a template must not alter any document already created from it                                                                                                                                                                                                                                                                                                                                  | Constraint | Specified |
 | **TPL-032** | It must be possible to list the documents created from a given template version                                                                                                                                                                                                                                                                                                                          | T7         | Specified |
-| **TPL-033** | Moving a document to a newer template version must be an explicit, audited act, and must be refusable                                                                                                                                                                                                                                                                                                    | T3         | Specified |
-| **TPL-034** | Such a move must report what it will change before it runs, and must be abandonable at that point                                                                                                                                                                                                                                                                                                        | T3         | Specified |
+| **TPL-033** | Moving a document to a newer template version must be an explicit, audited act, and must be refusable                                                                                                                                                                                                                                                                                                    | T9         | Specified |
+| **TPL-034** | Such a move must report what it will change before it runs, and must be abandonable at that point                                                                                                                                                                                                                                                                                                        | T9         | Specified |
 | **TPL-035** | A move that cannot be completed must leave the document exactly as it was                                                                                                                                                                                                                                                                                                                                | Constraint | Specified |
-| **TPL-058** | Moving a document forward (TPL-033) must bring its fields to the current versions of the schemas and fields its template assigns as well as its outline to a newer template version, and must be possible when only a schema or a field has changed. The report TPL-034 requires must name each field that changes and each value that would not be carried forward, as **MET-036** treats a component's | T3         | Specified |
+| **TPL-058** | Moving a document forward (TPL-033) must bring its fields to the current versions of the schemas and fields its template assigns as well as its outline to a newer template version, and must be possible when only a schema or a field has changed. The report TPL-034 requires must name each field that changes and each value that would not be carried forward, as **MET-036** treats a component's | T9         | Specified |
 
 **Section 9 is a migration wearing the clothes of a setting**, which is why it is written as one.
 The tempting design is a checkbox marked "keep this document up to date with its template". What
@@ -413,3 +413,19 @@ the rest a row of its own.
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 65, of which 14 superseded and 1 withdrawn | 69, of which 16 superseded and 1 withdrawn |
+
+### Template governance moves to T9 (ADR-0057), 2026-10-11
+
+Not a review. Ken set T3's build order, and the template rows that rest on nothing in T3 and that
+nothing in T3 rests on left for T9, beside workflow's other governed acts, recorded by
+[ADR-0057](../../decisions/0057-t3s-order-and-template-moves-leave-for-t9.md). A row moving tranche
+whole keeps its identifier.
+
+| What was found                                                          | Change                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------- |
+| Departures and a required section's stated reason are not collaboration | **TPL-028 and TPL-029** move to T9          |
+| Moving a document forward is a refusable, reported, audited act         | **TPL-033, TPL-034 and TPL-058** move to T9 |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 69, of which 16 superseded and 1 withdrawn | 69, of which 16 superseded and 1 withdrawn |
