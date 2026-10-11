@@ -222,6 +222,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0069_lock_periods',
       '0070_lock_taking',
       '0071_presence_key',
+      '0072_baselines',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

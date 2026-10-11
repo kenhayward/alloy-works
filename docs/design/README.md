@@ -34,6 +34,7 @@ understand the storage layer, rather than something to be thrown away.
 | [definitions.md](definitions.md)                       | Fields, schemas and component types made and changed, and values written, shown and held at publication                             |
 | [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions                                    |
 | [data.md](data.md)                                     | Connections, query definitions and stored results, and the connector: the one process that reaches a source                         |
+| [baselines.md](baselines.md)                           | A named, immutable version of a whole document: made, superseded, published to the same bytes, and addressed                        |
 | [bindings.md](bindings.md)                             | A bound value placed and shown in the editor, a document's values and their revisions, and the publish's binding stage              |
 | [tables.md](tables.md)                                 | A result as a bound table: its columns, order, formats and notes, laid out alike in the page and the publish                        |
 | [audit.md](audit.md)                                   | The tenant's audit log: every act, sign-in and refusal recorded, kept beyond what it describes, read and exported by administrators |

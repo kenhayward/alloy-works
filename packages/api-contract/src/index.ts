@@ -271,3 +271,13 @@ export {
 } from './events.js';
 export { StreamQuery } from './schemas.js';
 export { PresenceBody, PresenceParams } from './presence.js';
+export {
+  BaselineList,
+  BaselineListQuery,
+  BaselineParams,
+  BaselineRefusal,
+  BaselineSummaryView,
+  BaselineView,
+  MakeBaselineBody,
+  SupersedeBaselineBody,
+} from './baselines.js';

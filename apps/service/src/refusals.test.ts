@@ -33,6 +33,7 @@ describe('the rule behind a refusal', () => {
       ['parameter.unused', 'parameter_unused', 'TPL-068'],
       ['parameter.fixed', 'parameter_fixed', 'TPL-021'],
       ['acknowledgement.required', 'acknowledgement_required', 'DAT-091'],
+      ['name.taken', 'name_taken', 'VER-046'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -124,6 +125,11 @@ describe('the rule behind a refusal', () => {
       'space.name_invalid',
       'space.name_taken',
       'space.last',
+      // A baseline's own guards (the BL plan): a place that does not resolve as its maker reads it,
+      // and a supersession by anything but a later baseline of the document, or a second one.
+      'baseline.unresolved',
+      'superseder.invalid',
+      'superseded.already',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

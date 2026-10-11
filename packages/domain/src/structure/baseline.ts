@@ -1,0 +1,58 @@
+import { canonicalJson } from '../stored/canonical.js';
+
+/** A version a baseline pins, by its id and its version digest (VER-042). */
+export interface PinnedVersion {
+  readonly version: string;
+  readonly digest: string;
+}
+
+/** Everything a baseline pins (docs/design/baselines.md): what its digest is over. */
+export interface BaselinePins {
+  readonly document: PinnedVersion;
+  readonly layout: PinnedVersion;
+  readonly theme: PinnedVersion;
+  readonly template: PinnedVersion | null;
+  readonly occurrences: readonly (PinnedVersion & { readonly node: string })[];
+  readonly assets: readonly PinnedVersion[];
+  readonly bindings: readonly {
+    readonly node: string;
+    readonly binding: string;
+    /** The binding's own digest, as its resolution was taken under. */
+    readonly digest: string;
+    readonly datasetVersion: string;
+    readonly datasetDigest: string;
+  }[];
+}
+
+const byKey =
+  <T>(key: (each: T) => string) =>
+  (a: T, b: T) =>
+    key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0;
+
+/**
+ * The canonical string a baseline's digest is SHA-256 over (VER-043): every pin, each list sorted, so
+ * the one value is recomputable by anybody who may read every pin. Hashed in `packages/db`, which
+ * owns hashing, as a version's digests are.
+ */
+export function baselineDigestInput(pins: BaselinePins): string {
+  return canonicalJson({
+    ...pins,
+    occurrences: [...pins.occurrences].sort(byKey((each) => each.node)),
+    assets: [...pins.assets].sort(byKey((each) => each.version)),
+    bindings: [...pins.bindings].sort(byKey((each) => `${each.node} ${each.binding}`)),
+  });
+}
+
+const CONTROL = /\p{Cc}/u;
+
+/**
+ * Why a baseline's name cannot be stored (VER-046), or null: 1 to 120 characters, nothing before or
+ * after it, no control character. Its uniqueness is its document's, by `nameKey`.
+ */
+export function baselineNameProblem(name: string): string | null {
+  const characters = [...name].length;
+  if (characters < 1 || characters > 120) return 'A name is 1 to 120 characters';
+  if (name !== name.trim()) return 'A name has no space before or after it';
+  if (CONTROL.test(name)) return 'A name holds no control character';
+  return null;
+}

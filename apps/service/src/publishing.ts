@@ -21,6 +21,7 @@ import {
   readPublicationRequest,
   requestPublication,
   type PublicationRequestAnswer,
+  type PublishRefusal,
   type PublicationSummary,
   type StoredPublicationRequest,
   type Tenant,
@@ -133,6 +134,21 @@ async function answered(
   id: string,
   answer: PublicationRequestAnswer,
 ): Promise<PublicationRequestView> {
+  if (answer.answer !== 'requested') return refusePublish(trx, id, answer);
+  const made = await readPublicationRequest(trx, answer.request.id);
+  if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);
+  return requestView(made, noStore);
+}
+
+/**
+ * A refusal before anything is recorded, a publish's or a baseline's (BL-A), in the words the page
+ * shows at the door.
+ */
+export async function refusePublish(
+  trx: TenantTransaction,
+  id: string,
+  answer: PublishRefusal,
+): Promise<never> {
   switch (answer.answer) {
     // A component's id authorises cleanly - `authorise` never looks at the kind - and is then not
     // a document.
@@ -215,11 +231,6 @@ async function answered(
         `This document holds ${said.length === 1 ? 'a value' : 'values'} with no result to print: ${said.join(', ')}. Resolve ${said.length === 1 ? 'it' : 'them'} in this document first.`,
         { attribution: 'product', document: id, bindings: answer.bindings },
       );
-    }
-    case 'requested': {
-      const made = await readPublicationRequest(trx, answer.request.id);
-      if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);
-      return requestView(made, noStore);
     }
   }
 }

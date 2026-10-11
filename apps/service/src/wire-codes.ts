@@ -86,6 +86,10 @@ const WIRE_CODES = {
   'space.name_invalid': 'space_name_invalid',
   'space.name_taken': 'space_name_taken',
   'space.last': 'space_last',
+  'name.taken': 'name_taken',
+  'baseline.unresolved': 'baseline_unresolved',
+  'superseder.invalid': 'superseder_invalid',
+  'superseded.already': 'superseded_already',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -140,6 +144,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'parameter.fixed': 'TPL-021',
   // One's own view held without the warning that every reader of the document will see it (D7-H).
   'acknowledgement.required': 'DAT-091',
+  // A baseline's name, unique in its document whatever its case (baselines.md).
+  'name.taken': 'VER-046',
 };
 
 /** The wire's spelling of a store's dotted answer. */

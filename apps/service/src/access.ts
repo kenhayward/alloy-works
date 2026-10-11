@@ -124,6 +124,18 @@ async function targetOf(
       .executeTakeFirst();
     return version ? parseLevel(`artifact:${version.artifact_id}`) : undefined;
   }
+  if ('baseline' in declared) {
+    // A baseline is decided on the document it is of (BL-H): one this tenant does not hold is no
+    // level at all, and so not found.
+    const id = params[declared.baseline];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const baseline = await trx
+      .selectFrom('baseline')
+      .select('document_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return baseline ? parseLevel(`artifact:${baseline.document_id}`) : undefined;
+  }
   const [kind, name] =
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];

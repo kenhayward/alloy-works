@@ -24,6 +24,7 @@ import {
   pendingResult,
   receiveAssetBytes,
   recordAsset,
+  makeBaseline,
   recordPublication,
   requestPublication,
   setGroupMembers,
@@ -169,6 +170,10 @@ const OTHER_TENANT_IDS: Readonly<
   getPublicationBindings: async (tenant, db) => ({
     id: (await publicationIn(tenant, db)).publication,
   }),
+  makeBaseline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  listBaselines: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
+  supersedeBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   takeLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -315,6 +320,8 @@ const VALID_INPUT: Readonly<
   takeLock: { payload: { session: SESSION } },
   requestPublication: { payload: { version: SESSION, formats: ['pdf'] } },
   requestPreview: { payload: { version: SESSION } },
+  makeBaseline: { payload: { version: SESSION, name: 'Elsewhere' } },
+  supersedeBaseline: { payload: { by: SESSION } },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
   listIterations: { query: `session=${SESSION}` },
   getIteration: { query: `session=${SESSION}` },
@@ -715,6 +722,27 @@ const publicationIn = async (tenant: Tenant, db: TenantDatabase) => {
       ],
     });
     return { request: asked.request.id, publication: publication! };
+  });
+};
+
+/** A baseline in environment B, of its document, made by the document's author. */
+const baselineIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const document = await documentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select(['id', 'author_id'])
+      .where('artifact_id', '=', document)
+      .orderBy('version_no', 'desc')
+      .executeTakeFirstOrThrow();
+    const made = await makeBaseline(trx, {
+      documentId: document,
+      version: version.id,
+      name: `Elsewhere ${randomUUID()}`,
+      maker: version.author_id!,
+    });
+    if (made.answer !== 'made') throw new Error(`refused: ${made.answer}`);
+    return made.baseline;
   });
 };
 

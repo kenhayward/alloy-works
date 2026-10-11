@@ -219,6 +219,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/baselines/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A baseline and what it pins, as the caller may read it
+         * @description Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.
+         */
+        get: operations["getBaseline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/baselines/{id}/supersession": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a baseline superseded by a later one of its document
+         * @description Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.
+         */
+        post: operations["supersedeBaseline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components": {
         parameters: {
             query?: never;
@@ -725,6 +765,30 @@ export interface paths {
         get: operations["getDocument"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/baselines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This document's baselines, newest first
+         * @description Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.
+         */
+        get: operations["listBaselines"];
+        put?: never;
+        /**
+         * Pin the latest version of this document, and everything it uses, under a name
+         * @description Pins the latest version of the document, as a publish would read it: each occurrence’s version, each image’s, each binding’s dataset version, and the layout, theme and template versions in force. Refused on anything a publish would refuse, or a place the caller may not read, each by its node. The name is unique in the document whatever its case, and never changes.
+         */
+        post: operations["makeBaseline"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5893,6 +5957,428 @@ export interface operations {
                 };
             };
             /** @description export_not_ready: the export is still being written, or failed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getBaseline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The baseline */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "name": "example",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "superseded": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "principal": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "pins": {
+                     *         "document": {
+                     *           "version": "00000000-0000-4000-8000-000000000001",
+                     *           "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                     *         },
+                     *         "layout": {
+                     *           "version": "00000000-0000-4000-8000-000000000001",
+                     *           "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                     *         },
+                     *         "theme": {
+                     *           "version": "00000000-0000-4000-8000-000000000001",
+                     *           "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                     *         },
+                     *         "template": {
+                     *           "version": "00000000-0000-4000-8000-000000000001",
+                     *           "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+                     *         },
+                     *         "occurrences": [],
+                     *         "assets": [],
+                     *         "bindings": []
+                     *       },
+                     *       "withheld": {
+                     *         "nodes": [],
+                     *         "assets": 0
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        name: string;
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @description SHA-256 over everything it pins (VER-043) */
+                        digest: string;
+                        /** @description Null while it is current */
+                        superseded: {
+                            /** @description The baseline that superseded it */
+                            by: string & (unknown & unknown);
+                            /** @description Who marked it */
+                            principal: string & (unknown & unknown);
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Every pin the caller may read. A caller who may read all of them recomputes `digest` as SHA-256 over the canonical JSON of this object, each list sorted (`baselineDigestInput`) */
+                        pins: {
+                            document: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            };
+                            layout: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            };
+                            theme: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            };
+                            template: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            } | null;
+                            occurrences: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                                node: string;
+                            }[];
+                            assets: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            }[];
+                            bindings: {
+                                node: string;
+                                binding: string;
+                                /** @description The binding's own digest, as its result was taken under */
+                                digest: string;
+                                datasetVersion: string & (unknown & unknown);
+                                datasetDigest: string;
+                            }[];
+                        };
+                        /** @description What the caller may not read, as little as says it is there */
+                        withheld: {
+                            /** @description Each occurrence whose component the caller may not read */
+                            nodes: string[];
+                            /** @description How many images the caller may not read */
+                            assets: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the document reads its baselines */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline in this environment, or one of a document the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    supersedeBaseline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "by": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description A later baseline of the same document */
+                    by: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Superseded: still read, listed and published as before */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "name": "example",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "superseded": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "principal": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        name: string;
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @description SHA-256 over everything it pins (VER-043) */
+                        digest: string;
+                        /** @description Null while it is current */
+                        superseded: {
+                            /** @description The baseline that superseded it */
+                            by: string & (unknown & unknown);
+                            /** @description Who marked it */
+                            principal: string & (unknown & unknown);
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `superseder_invalid`: `by` is not a later baseline of the same document */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not publish it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline in this environment, or one of a document the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `superseded_already`: it is superseded already */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13164,6 +13650,464 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listBaselines: {
+        parameters: {
+            query?: {
+                state?: "current" | "superseded";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every one in the state asked for */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "baselines": []
+                     *     }
+                     */
+                    "application/json": {
+                        baselines: {
+                            id: string & (unknown & unknown);
+                            document: string & (unknown & unknown);
+                            name: string;
+                            madeBy: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            madeAt: string;
+                            /** @description SHA-256 over everything it pins (VER-043) */
+                            digest: string;
+                            /** @description Null while it is current */
+                            superseded: {
+                                /** @description The baseline that superseded it */
+                                by: string & (unknown & unknown);
+                                /** @description Who marked it */
+                                principal: string & (unknown & unknown);
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the document reads its baselines */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    makeBaseline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The document version the caller is pinning, which must be the latest */
+                    version: string & (unknown & unknown);
+                    /** @description Its name: 1 to 120 characters, nothing before or after, no control character, unique in the document whatever its case. Never changed */
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Made */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "name": "example",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *       "superseded": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "principal": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        name: string;
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @description SHA-256 over everything it pins (VER-043) */
+                        digest: string;
+                        /** @description Null while it is current */
+                        superseded: {
+                            /** @description The baseline that superseded it */
+                            by: string & (unknown & unknown);
+                            /** @description Who marked it */
+                            principal: string & (unknown & unknown);
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description `name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved` */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                        /**
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
+                         * @enum {string}
+                         */
+                        attribution?: "product";
+                        /** @description binding_unresolved: the document holding the bindings */
+                        document?: string;
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
+                        bindings?: {
+                            node: string;
+                            binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
+                        }[];
+                        /** @description baseline_unresolved: each place resolving failed, by its node */
+                        places?: {
+                            /** @enum {string} */
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not publish it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the document has a newer version, which `current` names; `name_taken`: another baseline of this document has this name */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description version_precondition: the version the document is at */
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description section_required: each section the document's template requires that none of its sections came from */
+                        sections?: {
+                            key: string;
+                            title: string;
+                        }[];
+                        /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
+                        failures?: {
+                            node: string | null;
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            [key: string]: unknown;
+                        }[];
+                        /**
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
+                         * @enum {string}
+                         */
+                        attribution?: "product";
+                        /** @description binding_unresolved: the document holding the bindings */
+                        document?: string;
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
+                        bindings?: {
+                            node: string;
+                            binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
+                        }[];
+                        /** @description baseline_unresolved: each place resolving failed, by its node */
+                        places?: {
+                            /** @enum {string} */
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
+                            /** @enum {string} */
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed";
+                            /** @description The outline node it concerns */
+                            node: string | null;
+                            /** @description The block within that node's component */
+                            block: string | null;
+                            /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
+                            detail: string | null;
+                        }[];
                     };
                 };
             };

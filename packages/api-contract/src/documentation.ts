@@ -49,6 +49,10 @@ export const documentationGroups = [
   {
     name: 'Publishing',
     tags: [
+      {
+        name: 'Baselines',
+        description: 'Pin a document and everything it uses under a name, and supersede one.',
+      },
       { name: 'Previews', description: 'Request a short-lived PDF preview.' },
       { name: 'Publication requests', description: 'Submit and follow publishing work.' },
       { name: 'Publications', description: 'List and retrieve completed publications.' },
@@ -171,6 +175,7 @@ const operationTags = {
     'getAssetVersionContent',
   ],
   Previews: ['requestPreview'],
+  Baselines: ['makeBaseline', 'listBaselines', 'getBaseline', 'supersedeBaseline'],
   'Publication requests': ['requestPublication', 'getPublicationRequest'],
   Publications: [
     'listPublications',
@@ -233,6 +238,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads one retained editing iteration, including its content and values. The caller must still hold the editing lock.',
   saveIteration:
     'Saves the complete component content for the named editing session and sequence. An editing lock and the version precondition still apply.',
+  makeBaseline:
+    'Pins the latest version of the document, as a publish would read it: each occurrence’s version, each image’s, each binding’s dataset version, and the layout, theme and template versions in force. Refused on anything a publish would refuse, or a place the caller may not read, each by its node. The name is unique in the document whatever its case, and never changes.',
+  listBaselines:
+    'Lists the document’s baselines newest first, each with who made it, when, its digest and whether it is superseded. Filter by state with `state`.',
+  getBaseline:
+    'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
+  supersedeBaseline:
+    'Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.',
   takeLock:
     'Asks for a component an idle holder has: refused until they have been idle the environment’s take period. Asked, the holder is told at once on their stream and keeps it if they save anything within a minute; asked again by the same session once that minute has passed, the lock is the asker’s, and the taking is on the audit log.',
   claimLock:

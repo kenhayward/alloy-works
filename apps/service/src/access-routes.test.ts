@@ -23,6 +23,7 @@ import {
   receiveAssetBytes,
   recordAsset,
   recordPublication,
+  makeBaseline,
   requestPublication,
   STARTER_COMPONENT_TYPE_ID,
   type NewGrant,
@@ -124,6 +125,7 @@ describe('routes that check a permission', () => {
   let audit: string;
   let report: string;
   let reportPublication: string;
+  let reportBaseline: string;
   let plan: string;
   let readings: string;
   let dailyReadings: string;
@@ -267,6 +269,15 @@ describe('routes that check a permission', () => {
       });
       if (!recorded) throw new Error('The publication was not recorded');
       reportPublication = recorded;
+      // And a baseline of it, which a route on a baseline must refuse as it refuses the document.
+      const pinned = await makeBaseline(trx, {
+        documentId: report,
+        version: made.version.id,
+        name: 'As approved',
+        maker: ids.ada!,
+      });
+      if (pinned.answer !== 'made') throw new Error(`refused: ${pinned.answer}`);
+      reportBaseline = pinned.baseline;
       // And a template in Clinical, which a route reading or changing it must refuse to name.
       const template = await createTemplate(trx, {
         spaceId: clinical,
@@ -765,6 +776,18 @@ describe('routes that check a permission', () => {
     }),
     listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
     getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
+    makeBaseline: () => ({
+      url: `/v1/documents/${report}/baselines`,
+      status: 404,
+      payload: { version: MISSING, name: 'Probe' },
+    }),
+    listBaselines: () => ({ url: `/v1/documents/${report}/baselines`, status: 404 }),
+    getBaseline: () => ({ url: `/v1/baselines/${reportBaseline}`, status: 404 }),
+    supersedeBaseline: () => ({
+      url: `/v1/baselines/${reportBaseline}/supersession`,
+      status: 404,
+      payload: { by: MISSING },
+    }),
     getPublicationBindings: () => ({
       url: `/v1/publications/${reportPublication}/bindings`,
       status: 404,

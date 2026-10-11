@@ -80,6 +80,7 @@ import {
   type ProviderSettings,
   type SignInStart,
 } from './oidc.js';
+import { baselineHandlers } from './baselines.js';
 import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
 import { rendererFallback, serveRenderer } from './renderer.js';
 import type { SecretStore } from './secrets.js';
@@ -485,6 +486,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...auditHandlers(tenantOf, options.objects),
     ...ownSessionHandlers(db, tenantOf, principalOf, { name: SESSION_COOKIE, options: COOKIE }),
     ...presenceHandlers(db, tenantOf, principalOf),
+    ...baselineHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 
