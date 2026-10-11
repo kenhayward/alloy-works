@@ -1815,8 +1815,8 @@ export function assemble(given: AssembleInput): Assembled {
       padding,
       measure,
       ...(wrap === undefined ? {} : { noWrap: wrap.map((each) => !each) }),
-      width: (text, paragraphStyle, strong, slanted) => {
-        const face = advancesOf(paragraphStyle, strong, slanted);
+      width: (text, paragraphStyle, run) => {
+        const face = advancesOf(paragraphStyle, run.strong, run.slanted);
         if (face === null) unreadable = true;
         return (face?.width(text) ?? 0) * paragraphStyle.properties.size;
       },

@@ -422,6 +422,9 @@ function tableRules(style: TableStyle, cell: ResolvedParagraphStyle | undefined)
         `{ ${side('top', style.headerRow.rule)}; }`,
     );
   }
+  // Its columns as wide as what they hold (TG3; TAB-053): said for the page, which measures them as
+  // `assemble` does and sets the widths both share.
+  if (style.widths === 'content') rules.push(`${at} { --aw-table-widths: content; }`);
   // A grouped bound table's heading in the header row's fill and weight, and the query's subtotal in
   // its weight under its rule, as template 19 sets them (TG2; TAB-054). A bound cell holds its text
   // directly, so the weight is the cell's own.

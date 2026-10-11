@@ -180,3 +180,6 @@ export type {
   PublishedTableNote,
   PublishedTitleRun,
 } from './published.js';
+// TG3: a table's columns measured by what they hold, shared by `assemble` and the editor.
+export { columnExtents, columnWidths } from './widths.js';
+export type { ColumnExtent, MeasuredCell, MeasuredParagraph, MeasuredRun } from './widths.js';

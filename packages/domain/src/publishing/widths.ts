@@ -40,23 +40,26 @@ export function columnWidths(
   return widths.map((each) => each / measure);
 }
 
-/** What one cell sets: its paragraphs' runs, each with whether it is bold and slanted, by style. */
-export interface MeasuredParagraph<S> {
+/** A run of a cell's text: its words, and whether it is bold and slanted. */
+export interface MeasuredRun {
+  readonly text: string;
+  readonly strong: boolean;
+  readonly slanted: boolean;
+}
+
+/** What one cell sets: its paragraphs' runs, by style. */
+export interface MeasuredParagraph<S, R extends MeasuredRun = MeasuredRun> {
   readonly style: S;
-  readonly runs: readonly {
-    readonly text: string;
-    readonly strong: boolean;
-    readonly slanted: boolean;
-  }[];
+  readonly runs: readonly R[];
   /** Whether it holds what no face measures - an equation, an image (TG-G). */
   readonly opaque: boolean;
 }
 
 /** A cell to measure: the column it starts in, the columns it spans and its paragraphs. */
-export interface MeasuredCell<S> {
+export interface MeasuredCell<S, R extends MeasuredRun = MeasuredRun> {
   readonly column: number;
   readonly colspan: number;
-  readonly paragraphs: readonly MeasuredParagraph<S>[];
+  readonly paragraphs: readonly MeasuredParagraph<S, R>[];
 }
 
 /**
@@ -66,14 +69,15 @@ export interface MeasuredCell<S> {
  * text in its style, bold and slanted as marked, unkerned. A column holding what no face measures
  * takes an equal share of the measure as both (TG-G).
  */
-export function columnExtents<S>(
+export function columnExtents<S, R extends MeasuredRun = MeasuredRun>(
   columns: number,
-  cells: readonly MeasuredCell<S>[],
+  cells: readonly MeasuredCell<S, R>[],
   options: {
     readonly padding: number;
     readonly measure: number;
     readonly noWrap?: readonly boolean[];
-    readonly width: (text: string, style: S, strong: boolean, slanted: boolean) => number;
+    /** A part of a run, measured in its paragraph's style as the run is set. */
+    readonly width: (text: string, style: S, run: R) => number;
   },
 ): ColumnExtent[] {
   const least = Array.from({ length: columns }, () => 0);
@@ -89,7 +93,7 @@ export function columnExtents<S>(
         const parts = run.text.split(/([ \t\n]+)/u);
         for (const part of parts) {
           if (part === '') continue;
-          const wide = options.width(part, paragraph.style, run.strong, run.slanted);
+          const wide = options.width(part, paragraph.style, run);
           line += wide;
           if (/^[ \t\n]+$/u.test(part)) {
             least[cell.column] = Math.max(least[cell.column]!, word);

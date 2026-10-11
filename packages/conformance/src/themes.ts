@@ -188,7 +188,7 @@ const ALIGNMENTS = ['start', 'end', 'centre', 'justify'] as const;
  * **The second theme: every property the editor projects, changed** - every paragraph style's face,
  * size, weight, posture, colour, fill and its padding, alignment, three indents, two spaces, line
  * spacing and contextual spacing; every mark's weight, posture, underline, colour, face and scale; both
- * table styles' header treatment, banding, rules, padding and caption side; each figure style's size,
+ * table styles' header treatment, banding, rules, padding, caption side and column widths; each figure style's size,
  * alignment and caption side, and the image in a line's height; and the paper. Preformatted text keeps
  * its monospaced face, whose advance is what the template counts its columns by.
  */
@@ -247,6 +247,8 @@ export function contraryTheme(): { readonly name: string; readonly content: Them
       },
       padding: 7,
       caption: was.caption === 'above' ? 'below' : 'above',
+      // Its columns as wide as what they hold where the default shares the measure (TG3).
+      widths: was.widths === 'content' ? 'equal' : 'content',
     }),
     (was) =>
       was.placement === 'inline'

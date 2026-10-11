@@ -42,8 +42,8 @@ describe('columnWidths', () => {
 
 describe('columnExtents', () => {
   // Every character half an em, in a 10pt style; bold a whole em.
-  const width = (text: string, size: number, strong: boolean) =>
-    [...text].length * size * (strong ? 1 : 0.5);
+  const width = (text: string, size: number, run: { strong: boolean }) =>
+    [...text].length * size * (run.strong ? 1 : 0.5);
   const cell = (
     column: number,
     text: string,

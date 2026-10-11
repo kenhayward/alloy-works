@@ -36,6 +36,7 @@ import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
 import { placeDecorations } from './places.js';
 import { styleCheckPlugin, unresolvedOf } from './resolution.js';
+import { tableWidthDecorations, tableWidthsPlugin } from './tableWidths.js';
 
 // A footnote's paragraph is a paragraph to CNT-023 (footnotes 1, ruling R6): the stored model has one
 // paragraph type, and holds two empty ones apart in a footnote as it does anywhere else.
@@ -575,6 +576,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       boundTableFocusPlugin(),
       // The page's check of the theme the surface is set in, and the marks it makes (ET-I, STY-070).
       styleCheckPlugin(),
+      // A table's columns as wide as what they hold, where its style says so (TG3; TAB-053).
+      tableWidthsPlugin(),
       // One decorations plugin, holding the spellcheck rule, the empty attribution's placeholder and
       // what each cross-reference shows: the view merges every plugin's set anyway, and one set is one
       // thing to test.
@@ -592,6 +595,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               ...bindingDecorations(state.doc, bindingContextOf(state)).find(),
               // The bound table the cursor stands in, outlined, and its focused column (ADR-0051).
               ...boundTableFocusDecorations(state).find(),
+              // Each table's columns as wide as what they hold, where its style says so (TG3).
+              ...tableWidthDecorations(state).find(),
             ]),
         },
       }),

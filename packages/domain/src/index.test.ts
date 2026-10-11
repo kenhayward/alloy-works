@@ -229,6 +229,8 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_19',
         'PUBLISHING_SCHEMA_20',
         'assemble',
+        'columnExtents',
+        'columnWidths',
         'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
