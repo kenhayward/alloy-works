@@ -1,4 +1,5 @@
 import { walkOutline, readOutline } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { readDocument, readableComponents } from './documents.js';
 import { readLocks } from './editing.js';
@@ -75,4 +76,122 @@ export async function locksShown(
         }
       : { component, holder: null, expectedRelease: null };
   });
+}
+
+/** What a person is doing in a document (COL-002): reading, reviewing or authoring, from its view. */
+export type PresenceMode = 'read' | 'review' | 'author';
+
+/** How long a beat counts: a window silent longer is absent (COL-055; the PL plan, PL-C). */
+export const PRESENCE_LASTS_MS = 60_000;
+
+/** One window's presence as a stream shows it, its component and mode withheld where unreadable. */
+export interface PresenceShown {
+  readonly viewer: string;
+  readonly person: { readonly id: string; readonly name: string | null };
+  readonly component: string | null;
+  readonly mode: PresenceMode | null;
+  readonly beatAt: string;
+}
+
+/**
+ * **A window's beat** (COL-001, COL-002; the PL plan, PL-C): who is in which document, in which
+ * component and doing what, written now. A window is its principal's alone: a beat naming another's is
+ * refused. The caller has decided the person may read the document and the component.
+ */
+export async function beatPresence(
+  trx: TenantTransaction,
+  beat: {
+    readonly viewer: string;
+    readonly principalId: string;
+    readonly document: string;
+    readonly component: string | null;
+    readonly mode: PresenceMode;
+  },
+): Promise<boolean> {
+  const written = await trx
+    .insertInto('presence')
+    .values({
+      viewer: beat.viewer,
+      principal_id: beat.principalId,
+      document_id: beat.document,
+      component_id: beat.component,
+      mode: beat.mode,
+    })
+    .onConflict((conflict) =>
+      conflict
+        .column('viewer')
+        .doUpdateSet({
+          document_id: beat.document,
+          component_id: beat.component,
+          mode: beat.mode,
+          beat_at: sql<Date>`now()`,
+        })
+        .where('presence.principal_id', '=', beat.principalId),
+    )
+    .returning('viewer')
+    .executeTakeFirst();
+  return written !== undefined;
+}
+
+/** A window gone: its stream closed, or it said so. Only its principal's own; whether it was there. */
+export async function leavePresence(
+  trx: TenantTransaction,
+  principalId: string,
+  viewer: string,
+): Promise<boolean> {
+  const left = await trx
+    .deleteFrom('presence')
+    .where('viewer', '=', viewer)
+    .where('principal_id', '=', principalId)
+    .executeTakeFirst();
+  return left.numDeletedRows > 0n;
+}
+
+/**
+ * **Everyone in a document now, as a viewer may see them** (COL-001 to COL-003): each window beaten
+ * within the last minute - an older row is absence, whatever the sweep has not yet tidied - with its
+ * person's name; a component the viewer may not read, and its mode, withheld, so they are present in the
+ * document alone. One window, where `viewer` is given.
+ */
+export async function presenceShown(
+  trx: TenantTransaction,
+  document: string,
+  readable: ReadonlySet<string>,
+  viewer?: string,
+): Promise<PresenceShown[]> {
+  const rows = await trx
+    .selectFrom('presence as r')
+    .innerJoin('principal as p', 'p.id', 'r.principal_id')
+    .select([
+      'r.viewer',
+      'r.principal_id',
+      'p.display_name',
+      'r.component_id',
+      'r.mode',
+      'r.beat_at',
+    ])
+    .where('r.document_id', '=', document)
+    .where('r.beat_at', '>', sql<Date>`now() - ${`${PRESENCE_LASTS_MS} milliseconds`}::interval`)
+    .$if(viewer !== undefined, (query) => query.where('r.viewer', '=', viewer!))
+    .orderBy('r.beat_at')
+    .execute();
+  return rows.map((row) => {
+    const shown = row.component_id === null || readable.has(row.component_id);
+    return {
+      viewer: row.viewer,
+      person: { id: row.principal_id, name: row.display_name },
+      component: shown ? row.component_id : null,
+      mode: shown ? (row.mode as PresenceMode) : null,
+      beatAt: row.beat_at.toISOString(),
+    };
+  });
+}
+
+/** The worker's tidying (PL-C): rows past a minute, which no stream shows already. */
+export async function sweepPresence(trx: TenantTransaction): Promise<number> {
+  const swept = await trx
+    .deleteFrom('presence')
+    .where('beat_at', '<=', sql<Date>`now() - ${`${PRESENCE_LASTS_MS} milliseconds`}::interval`)
+    .executeTakeFirst();
+  return Number(swept.numDeletedRows);
 }

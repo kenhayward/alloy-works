@@ -191,7 +191,19 @@ export {
   type AuditPageRequest,
 } from './audit-read.js';
 export { isSnapshot } from './listing.js';
-export { locksShown, streamScope, type LockShown, type StreamScope } from './live.js';
+export {
+  beatPresence,
+  leavePresence,
+  locksShown,
+  presenceShown,
+  PRESENCE_LASTS_MS,
+  streamScope,
+  sweepPresence,
+  type LockShown,
+  type PresenceMode,
+  type PresenceShown,
+  type StreamScope,
+} from './live.js';
 export {
   auditExportBody,
   failAuditExport,

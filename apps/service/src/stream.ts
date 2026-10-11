@@ -1,5 +1,7 @@
 import {
+  leavePresence,
   locksShown,
+  presenceShown,
   streamScope,
   type StreamScope,
   type Tenant,
@@ -28,6 +30,8 @@ export interface ScopedStream {
   readonly scope: StreamScope;
   readonly principalId: string;
   readonly components: ReadonlySet<string>;
+  /** The window this stream is, as its presence beats name it: closing takes its presence with it. */
+  readonly viewer?: string;
 }
 
 /**
@@ -93,6 +97,19 @@ export async function streamToViewer(options: {
       if (!gone && lock) send('lock', lock);
       return;
     }
+    const document = 'document' in scoped.scope ? scoped.scope.document : null;
+    if (event.kind === 'presence' && event.document === document) {
+      // Read as it now stands: a row silent past a minute, or gone, is absence (COL-055).
+      const [shown] = await db.withTenant(tenant, (trx) =>
+        presenceShown(trx, document, components, event.viewer),
+      );
+      if (!gone) send(shown ? 'presence' : 'presence_left', shown ?? { viewer: event.viewer });
+      return;
+    }
+    if (event.kind === 'presence_left' && event.document === document) {
+      send('presence_left', { viewer: event.viewer });
+      return;
+    }
     if (
       event.kind === 'outline' &&
       'document' in scoped.scope &&
@@ -136,6 +153,13 @@ export async function streamToViewer(options: {
     clearInterval(beat);
     clearTimeout(lifetime);
     subscription.stop();
+    // A dropped connection is absence at once, not 30 seconds of a live claim (COL-004).
+    if (scoped?.viewer !== undefined) {
+      const viewer = scoped.viewer;
+      void db
+        .withTenant(tenant, (trx) => leavePresence(trx, scoped.principalId, viewer))
+        .catch((error: unknown) => request.log.error({ err: error }, 'a presence was not removed'));
+    }
   }
   function end() {
     stop();
@@ -158,11 +182,13 @@ export async function streamToViewer(options: {
                 .execute(),
             ),
           }
-        : {
-            locks: (await db.withTenant(tenant, (trx) => locksShown(trx, components))).filter(
-              (lock) => lock.holder !== null,
-            ),
-          };
+        : await db.withTenant(tenant, async (trx) => ({
+            locks: (await locksShown(trx, components)).filter((lock) => lock.holder !== null),
+            presence:
+              'document' in scoped.scope
+                ? await presenceShown(trx, scoped.scope.document, components)
+                : [],
+          }));
     if (gone) return;
     send('snapshot', snapshot);
     sent = true;

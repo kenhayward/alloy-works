@@ -39,6 +39,9 @@ import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
+import { useLiveDocument, type LiveDocument } from './live.js';
+import { PeopleHere } from './PeopleHere.js';
+import type { FollowOptions } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
 import { DataTab } from './DataTab.js';
@@ -430,6 +433,8 @@ export interface DocumentPageProps {
   readonly followMs?: number;
   /** The reader, for a component edited in place; without one, the text is read only. */
   readonly principalId?: string;
+  /** Follows the document's stream: given in tests. */
+  readonly follow?: (options: FollowOptions) => () => void;
 }
 
 /**
@@ -516,6 +521,7 @@ export function DocumentPage({
   onArriveAgain,
   followMs = FOLLOW_MS,
   principalId,
+  follow,
 }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const outlinePane = usePaneWidth(OUTLINE_PANE);
@@ -540,6 +546,54 @@ export function DocumentPage({
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
+  // Each occurrence's component, by node, for what the stream says of components (the PL plan, PL2).
+  const componentOfNode = useMemo(() => {
+    const found = new Map<string, string>();
+    if (loaded.state !== 'open') return found;
+    walkOutline(loaded.document.outline.nodes, (node) => {
+      if (node.type === 'reference' && node.component !== null) found.set(node.id, node.component);
+    });
+    return found;
+  }, [loaded]);
+  // The document as it happens: who holds each component, who else is here (COL-001 to COL-007).
+  const live = useLiveDocument({
+    client,
+    document: loaded.state === 'open' ? loaded.document.id : null,
+    principalId,
+    component: editing === null ? null : (componentOfNode.get(editing) ?? null),
+    mode: editing === null ? 'read' : 'author',
+    ...(follow === undefined ? {} : { follow }),
+  });
+  // What the page read of each component's lock, overtaken by what the stream has said since.
+  const editableNow = useMemo(() => {
+    const merged = new Map(editable);
+    for (const [node, state] of editable) {
+      const component = componentOfNode.get(node);
+      const heard = component === undefined ? undefined : live.locks.get(component);
+      if (heard === undefined) continue;
+      merged.set(node, {
+        ...state,
+        lock:
+          heard.holder === null || heard.expectedRelease === null
+            ? null
+            : {
+                holder: { name: heard.holder.name },
+                expectedRelease: heard.expectedRelease,
+                yours: heard.holder.id === principalId,
+              },
+      });
+    }
+    return merged;
+  }, [editable, componentOfNode, live.locks, principalId]);
+  // Who is in each component, for its card (COL-001).
+  const presentIn = useMemo(() => {
+    const found = new Map<string, LiveDocument['people'][number][]>();
+    for (const person of live.people) {
+      if (person.component === null) continue;
+      found.set(person.component, [...(found.get(person.component) ?? []), person]);
+    }
+    return found;
+  }, [live.people]);
   useEffect(() => {
     if (shownVersion === null) return undefined;
     let current = true;
@@ -1437,6 +1491,7 @@ export function DocumentPage({
               <Icon name="Show boundaries" size={14} />
               Show boundaries
             </button>
+            <PeopleHere people={live.people} connected={live.connected} />
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
             <span className={styles['access']}>
               <ManageAccessLink
@@ -1718,7 +1773,8 @@ export function DocumentPage({
                 words={document.words}
                 names={names}
                 texts={texts}
-                editable={editable}
+                editable={editableNow}
+                present={presentIn}
                 // What each occurrence holds, as the lists beside it number it: what a reference in the
                 // text, and in the editor opened in place, is numbered from (cross-references 1). The
                 // editor takes its context through its place, and is told again as this is read again.

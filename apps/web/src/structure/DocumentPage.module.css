@@ -405,3 +405,43 @@
 .dockStrip {
   order: -1;
 }
+
+/* Who else is in the document (the PL plan, PL2): initials on the bar, a stale one faded. */
+.people {
+  display: flex;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.peopleMark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--sunken);
+  color: var(--text);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.peopleMark[data-freshness='stale'] {
+  opacity: 0.5;
+}
+
+.peopleOff {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.peopleHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

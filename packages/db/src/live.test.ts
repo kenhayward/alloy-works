@@ -6,7 +6,14 @@ import { createComponent } from './creation.js';
 import { createDocument } from './documents.js';
 import { claimLock } from './editing.js';
 import { grant } from './grants.js';
-import { locksShown, streamScope } from './live.js';
+import {
+  beatPresence,
+  leavePresence,
+  locksShown,
+  presenceShown,
+  streamScope,
+  sweepPresence,
+} from './live.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { listenToTenants, type TenantEvent, type TenantListener } from './realtime.js';
@@ -199,5 +206,75 @@ describe("what a document's stream hears, said by the database (the PL plan)", (
         expectedRelease: expect.any(String),
       },
     ]);
+  });
+
+  it("says a window's beat and its leaving, shows each person in the document with what the viewer may read of where they are, and none silent a minute", async () => {
+    const VIEWER = '33333333-3333-4333-8333-333333333333';
+    const { open, closed, report } = await service.withTenant(tenant, async (trx) => {
+      const made = await createDocument(trx, {
+        spaceId: general,
+        title: 'Where people are',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return {
+        open: await component(trx, general, 'Here'),
+        closed: await component(trx, restricted, 'Elsewhere'),
+        report: made.version.artifactId,
+      };
+    });
+    const beat = (component: string | null, who = ada) =>
+      service.withTenant(tenant, (trx) =>
+        beatPresence(trx, {
+          viewer: VIEWER,
+          principalId: who,
+          document: report,
+          component,
+          mode: 'author',
+        }),
+      );
+    expect(await heard(() => beat(closed))).toEqual([
+      { kind: 'presence', viewer: VIEWER, document: report },
+    ]);
+    // Grace may not read where Ada is: Ada is in the document alone.
+    const asGrace = await service.withTenant(tenant, (trx) =>
+      presenceShown(trx, report, new Set([open])),
+    );
+    expect(asGrace).toEqual([
+      {
+        viewer: VIEWER,
+        person: { id: ada, name: 'Ada' },
+        component: null,
+        mode: null,
+        beatAt: expect.any(String),
+      },
+    ]);
+    await beat(open);
+    expect(
+      await service.withTenant(tenant, (trx) => presenceShown(trx, report, new Set([open]))),
+    ).toEqual([expect.objectContaining({ component: open, mode: 'author' })]);
+
+    // A window is its principal's: another's beat on it is refused.
+    expect(await beat(open, grace)).toBe(false);
+
+    // Silent a minute: absent, and the sweep tidies it.
+    await service.withTenant(tenant, (trx) =>
+      sql`update presence set beat_at = now() - interval '61 seconds' where viewer = ${VIEWER}`.execute(
+        trx,
+      ),
+    );
+    expect(
+      await service.withTenant(tenant, (trx) => presenceShown(trx, report, new Set([open]))),
+    ).toEqual([]);
+    expect(await heard(() => service.withTenant(tenant, (trx) => sweepPresence(trx)))).toEqual([
+      { kind: 'presence_left', viewer: VIEWER, document: report },
+    ]);
+
+    await beat(open);
+    expect(
+      await heard(() => service.withTenant(tenant, (trx) => leavePresence(trx, ada, VIEWER))),
+    ).toEqual([{ kind: 'presence_left', viewer: VIEWER, document: report }]);
   });
 });

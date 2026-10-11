@@ -25,6 +25,7 @@ const REASONS = {
   upload: 'An upload waiting for its bytes: its asset is ingested, or the upload refused, later',
   source: "Reads the source through the connector: nothing of the tenant's changes",
   platform: "The platform's own provisioning, outside the tenant's acts",
+  presence: 'Where a window is, which is presence, not an act: unlogged, and gone in a minute',
 } as const;
 
 type Entry = { readonly writes: readonly AuditKind[] } | { readonly none: keyof typeof REASONS };
@@ -169,6 +170,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   createToken: writes('token.issued'),
   revokeToken: writes('token.revoked'),
   listSessions: read,
+  beatPresence: { none: 'presence' },
+  leavePresence: { none: 'presence' },
   endSession: writes('authentication.signed_out'),
   endOtherSessions: writes('authentication.signed_out'),
   listPrincipalTokens: read,
@@ -193,6 +196,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepExpiredIterations: { none: 'iteration' },
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
+    sweepStalePresence: { none: 'presence' },
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {

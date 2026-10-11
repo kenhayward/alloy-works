@@ -69,6 +69,7 @@ import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers } from './audit-log.js';
 import { ownSessionHandlers } from './own-sessions.js';
+import { presenceHandlers } from './presence.js';
 import { spaceHandlers } from './spaces.js';
 import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
@@ -483,6 +484,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...administeredTokenHandlers(),
     ...auditHandlers(tenantOf, options.objects),
     ...ownSessionHandlers(db, tenantOf, principalOf, { name: SESSION_COOKIE, options: COOKIE }),
+    ...presenceHandlers(db, tenantOf, principalOf),
 
     getHealth: async () => ({ status: 'ok' }),
 
@@ -813,7 +815,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
         credential: request.credential,
         ...(scope === undefined || components === undefined
           ? {}
-          : { scoped: { scope, principalId, components } }),
+          : {
+              scoped: {
+                scope,
+                principalId,
+                components,
+                ...(query.viewer === undefined ? {} : { viewer: query.viewer }),
+              },
+            }),
         ...(options.streamLifetimeMs === undefined ? {} : { lifetimeMs: options.streamLifetimeMs }),
       });
       return reply;

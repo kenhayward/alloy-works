@@ -155,6 +155,9 @@ export const StreamQuery = z
       "One document's locks and outline, as the caller may read them",
     ),
     component: LowercaseUuid.optional().describe("One component's lock, opened on its own"),
+    viewer: LowercaseUuid.optional().describe(
+      "This window's id, as its presence beats give it: the stream closing takes its presence with it",
+    ),
   })
   .refine((query) => query.document === undefined || query.component === undefined, {
     message: 'A document or a component, not both',

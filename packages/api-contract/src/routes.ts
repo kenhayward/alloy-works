@@ -5,6 +5,7 @@ import { componentRoutes } from './components.js';
 import { connectionRoutes } from './connections.js';
 import { definitionRoutes } from './definitions.js';
 import { peopleRoutes } from './people.js';
+import { presenceRoutes } from './presence.js';
 import { presentationRoutes } from './presentation.js';
 import { queryDefinitionRoutes } from './query-definitions.js';
 import { searchRoutes } from './search.js';
@@ -305,7 +306,8 @@ type Routes = typeof ownRoutes &
   typeof tokenRoutes &
   typeof administeredTokenRoutes &
   typeof auditRoutes &
-  typeof sessionRoutes;
+  typeof sessionRoutes &
+  typeof presenceRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -331,6 +333,7 @@ export const routes: Routes = {
   ...administeredTokenRoutes,
   ...auditRoutes,
   ...sessionRoutes,
+  ...presenceRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

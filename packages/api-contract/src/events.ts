@@ -23,6 +23,29 @@ export const LockEvent = z
   })
   .describe("A component's lock, as it now stands (COL-007)");
 
+export const PresenceEvent = z
+  .object({
+    viewer: Id.describe('The window, as its own beats name it'),
+    person: z.object({ id: Id, name: z.string().nullable() }),
+    component: Id.nullable().describe(
+      'Where they are; null between components, or where the viewer may not read it',
+    ),
+    mode: z
+      .enum(['read', 'review', 'author'])
+      .nullable()
+      .describe('What they are doing; null where the viewer may not read where'),
+    beatAt: z
+      .string()
+      .describe(
+        'When their window last said so, in UTC: live for 30 seconds, stale to 60, then absent',
+      ),
+  })
+  .describe('Somebody in the document, as the viewer may see them (COL-001 to COL-003, COL-055)');
+
+export const PresenceLeftEvent = z
+  .object({ viewer: Id })
+  .describe('A window left the document, or fell silent past a minute');
+
 export const SampleEvent = z
   .object({ kind: z.literal('sample'), id: Id, state: z.string() })
   .describe("A development sample's state");
@@ -57,6 +80,15 @@ export const streamEvents = {
     summary:
       "A lock claimed, moved, released, or its expected release moved to another minute; sent on a document's or a component's stream to whoever may read the component",
     schema: LockEvent,
+  },
+  presence: {
+    summary:
+      "Somebody's window beat or moved in the document; sent on its stream to everyone, redacted",
+    schema: PresenceEvent,
+  },
+  presence_left: {
+    summary: "A window left the stream's document",
+    schema: PresenceLeftEvent,
   },
   outline: {
     summary: "The document's outline changed; sent on its stream",

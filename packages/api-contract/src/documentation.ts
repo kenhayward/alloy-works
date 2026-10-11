@@ -186,6 +186,7 @@ const operationTags = {
     'revokePrincipalToken',
   ],
   Sessions: ['listSessions', 'endSession', 'endOtherSessions'],
+  'Event stream': ['openStream', 'beatPresence', 'leavePresence'],
   'People and principals': ['listPeople', 'listPrincipals'],
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
@@ -200,7 +201,6 @@ const operationTags = {
   Search: ['search'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
-  'Event stream': ['openStream'],
 } as const;
 
 const byOperation = new Map<string, string>(
@@ -373,6 +373,9 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the caller’s own sessions that have not ended: how each signed in, when it began, when it was last used and when it ends of itself, and which is this one. No device or address is kept.',
   endSession:
     'Ends one of the caller’s own sessions: its next request is refused and its event stream closes. Ending this one signs out.',
+  beatPresence:
+    'Says this window is in a document: in which component, if any, and doing what. A window beats every 20 seconds and on each change; the document’s other viewers hear it on their streams, without the component and mode where they may not read it, and stop showing it a minute after its last beat.',
+  leavePresence: 'Says this window has left its document. Its stream closing says so too.',
   endOtherSessions: 'Ends every session of the caller’s but the one making the request.',
   createGroup:
     'Creates a local group or a group representing a value asserted by the identity provider.',

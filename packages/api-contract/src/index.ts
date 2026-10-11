@@ -255,9 +255,12 @@ export {
   LockEvent,
   OutlineEvent,
   PermissionsEvent,
+  PresenceEvent,
+  PresenceLeftEvent,
   SampleEvent,
   ScopedSnapshot,
   streamEvents,
   type StreamEventName,
 } from './events.js';
 export { StreamQuery } from './schemas.js';
+export { PresenceBody, PresenceParams } from './presence.js';
