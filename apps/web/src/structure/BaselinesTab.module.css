@@ -1,0 +1,66 @@
+/*
+ * The Baselines tab (the BL plan, Task 2): making one at its head, then the filter, then each
+ * baseline as its name, who and when, and its state, with marking it superseded beneath.
+ */
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: 0 var(--space-12) var(--space-12);
+  font-size: var(--size-13);
+}
+
+.make,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4) 0;
+}
+
+.make > input,
+.controls > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.note:empty {
+  display: none;
+}
+
+.refused {
+  margin: 0;
+  color: var(--danger);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.name {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.act {
+  align-self: flex-start;
+}

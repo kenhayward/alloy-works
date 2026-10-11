@@ -843,11 +843,12 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 943 (2026-10-11): BL2's Baselines tab.
     // 939 (2026-10-11): BL1's baselines - the store, the routes and the digest's input.
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(939);
+    expect(model.citations).toHaveLength(943);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -924,6 +925,7 @@ describe('scanning the repository for test files', () => {
     // 49, from 47 (2026-10-08): shell/Rail.test.tsx and shell/CommandPalette.test.tsx, citing nothing.
     // 50, from 49 (2026-10-08): parts/parts.test.tsx, the shared parts, citing nothing.
     // 51, from 50 (2026-10-10): editor/ComponentDock.test.tsx, the Table tab offered, citing nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(57);
+    // 58, from 57 (2026-10-11): structure/BaselinesTab.test.tsx, citing VER-017, VER-046 and VER-049.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(58);
   });
 });

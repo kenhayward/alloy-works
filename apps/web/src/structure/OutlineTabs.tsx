@@ -12,10 +12,14 @@ export interface OutlineTab {
   readonly icon: string;
 }
 
-/** The pane's tabs: Contents, and Data where the document holds a binding (BI-H). */
+/**
+ * The pane's tabs: Contents, Data where the document holds a binding (BI-H), and its Baselines (the
+ * BL plan).
+ */
 export const OUTLINE_TABS: readonly OutlineTab[] = [
   { key: 'contents', label: 'Contents', icon: 'Contents' },
   { key: 'data', label: 'Data', icon: 'Value' },
+  { key: 'baselines', label: 'Baselines', icon: 'Keep' },
 ];
 
 /** The tabs offered: Data only where the document holds a binding. */
