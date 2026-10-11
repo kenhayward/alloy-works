@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.153.0 - 2026-10-11 (PR #566)
+
+### Added
+
+- **Baselines.** A baseline pins a document, and the version of everything it uses, under a name that never changes. Make one, list them, read one and mark it superseded by a later one through the API.
+- **A Baselines tab.** The document page lists its baselines, newest first and filtered by state. Whoever may publish the document can make one under a name and mark one superseded by a later one.
+- **Publishing a baseline.** A baseline publishes from what it pinned, never the document as it is now, so it makes the same PDF and Word document whenever it is published. The publication names the baseline it was made from.
+- **A baseline's own page.** A link names a baseline, or a section in it, and opens the document as that baseline holds it: its outline, text and values as pinned, however the document has changed since.
+
 ## 0.152.0 - 2026-10-11 (PR #562)
 
 ### Added

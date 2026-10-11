@@ -5,7 +5,7 @@ resolved once and pinned. [storage-and-versioning.md](storage-and-versioning.md)
 rests on (VER-017 to VER-023); this document owns the acts - making one, superseding it, publishing
 it and addressing it - and the rows those acts answer.
 
-> **Being built** by [the BL plan](../plans/2026-10-11-bl-baselines.md), T3's third phase
+> **Built** by [the BL plan](../plans/2026-10-11-bl-baselines.md), T3's third phase
 > ([ADR-0057](../decisions/0057-t3s-order-and-template-moves-leave-for-t9.md)).
 
 ## The shape in one paragraph
