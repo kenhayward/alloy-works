@@ -1010,3 +1010,124 @@ describe("a bound table's notes published (the TB3 plan, TB3-B, TB3-C and TB3-E)
     expect(JSON.stringify(notes)).not.toContain('north');
   });
 });
+
+describe("a bound table's groups published (the TG plan, TG1)", () => {
+  const whole = (name: string) => {
+    const each = { ...binding(name) } as Record<string, unknown>;
+    delete each.take;
+    return each;
+  };
+  const GROUPED: Column[] = [
+    ...COLUMNS,
+    { name: 'region', from: { column: 'region' }, type: { base: 'text' } },
+    { name: 'total', from: { column: 'total' }, type: { base: 'boolean' } },
+  ];
+  const rows = (...each: CanonicalValue[][]): Held => ({
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['reading', 'decimal'],
+        ['region', 'text'],
+        ['total', 'boolean'],
+      ],
+      rows: each,
+    },
+    columns: GROUPED,
+    datasetVersion: '00000000-0000-4000-8000-0000000000d1',
+    images: {},
+    key: ['site'],
+  });
+  const SALES = rows(
+    ['south-1', '3', 'South', false],
+    ['north-1', '4', 'North', false],
+    ['south-2', '1', 'South', false],
+    [null, '4', 'South', true],
+  );
+  const grouped = (extra: Record<string, unknown> = {}) =>
+    component({
+      type: 'boundTable',
+      id: 't1',
+      binding: whole('rows'),
+      caption: [text('Readings')],
+      columns: [
+        { column: 'site', header: 'Site' },
+        { column: 'reading', header: 'Reading' },
+      ],
+      headerColumn: false,
+      groups: [{ column: 'region', subtotal: 'total' }],
+      ...extra,
+    });
+  const published = (made: ReturnType<typeof assemble>) => {
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const table = blocksOf((made.document as PublishedDocument).nodes).find(
+      (block) => block.type === 'table',
+    );
+    if (table === undefined || table.type !== 'table') throw new Error('no table');
+    return table;
+  };
+  const words = (cell: { blocks: readonly PublishedBlock[] }) =>
+    cell.blocks
+      .flatMap((block) => (block.type === 'paragraph' ? block.runs : []))
+      .map((run) => ('text' in run ? run.text : ''))
+      .join('');
+
+  it("TAB-008 publishes each group's heading as a row of one cell spanning the table, marked a heading at its level", () => {
+    const table = published(assembled(grouped(), new Map([['rows', SALES]])));
+    expect(table.rows.map((row) => row.cells.map(words))).toEqual([
+      ['Site', 'Reading'],
+      ['South'],
+      ['south-1', '3.00'],
+      ['south-2', '1.00'],
+      ['Not available', '4.00'],
+      ['North'],
+      ['north-1', '4.00'],
+    ]);
+    expect(table.rows[1]!.cells[0]).toMatchObject({ colspan: 2, scope: null });
+    expect(table.bound?.groups).toEqual([
+      { kind: 'heading', level: 1 },
+      null,
+      null,
+      { kind: 'subtotal', level: 1 },
+      { kind: 'heading', level: 1 },
+      null,
+    ]);
+  });
+
+  it("TAB-054 marks the query's subtotal row at its level, so the PDF and Word can keep it under its heading", () => {
+    const table = published(assembled(grouped(), new Map([['rows', SALES]])));
+    expect(table.bound?.groups?.filter((row) => row?.kind === 'subtotal')).toEqual([
+      { kind: 'subtotal', level: 1 },
+    ]);
+  });
+
+  it('TAB-022 records the grouping in what the publication printed: each level, and each heading by the row it opens and its canonical value', () => {
+    const made = assembled(grouped(), new Map([['rows', SALES]]));
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const [value] = made.values;
+    expect(value && 'table' in value ? value.table.groups : undefined).toEqual({
+      levels: [{ column: 'region', subtotal: 'total' }],
+      headings: [
+        { row: 0, level: 1, printed: 'South', value: 'South' },
+        { row: 3, level: 1, printed: 'North', value: 'North' },
+      ],
+      subtotals: [{ row: 2, level: 1 }],
+    });
+  });
+
+  it('publishes an ungrouped table with no groups, as before', () => {
+    const table = published(assembled(grouped({ groups: undefined }), new Map([['rows', SALES]])));
+    expect(table.bound).not.toHaveProperty('groups');
+  });
+
+  it('fails a publish whose subtotal column is not boolean, subtotal_not_boolean, naming the table and the column', () => {
+    const made = assembled(
+      grouped({ groups: [{ column: 'region', subtotal: 'site' }] }),
+      new Map([['rows', SALES]]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toContainEqual(
+      expect.objectContaining({ code: 'subtotal_not_boolean', block: 't1', detail: 'site' }),
+    );
+  });
+});

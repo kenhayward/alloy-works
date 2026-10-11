@@ -411,6 +411,8 @@ export const editorSchema = new Schema({
         columns: {},
         headerColumn: { default: false },
         sort: { default: null },
+        // Its groups, outermost first (TG1), null where absent, as `sort` is.
+        groups: { default: null },
         // How it is set where too wide (TB3-G), as a table's is.
         wide: { default: null },
       },

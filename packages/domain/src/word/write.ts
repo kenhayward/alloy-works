@@ -1971,7 +1971,14 @@ class Writer {
     // What continues into each row: at each column where a cell above spans into it, that cell's
     // properties with the merge continued, and its width in columns.
     const continued = table.rows.map(() => new Map<number, { properties: string; span: number }>());
+    // A grouped bound table's rows (TG1; TAB-054): a group's heading and the query's subtotal each
+    // in the header row's weight, the heading in its fill and the subtotal under its rule; the heading
+    // kept with the row after it and the row before a subtotal with the subtotal, none split. Word
+    // repeats no heading, which it sets only at a table's top.
+    const kindOf = (at: number) => table.bound?.groups?.[at - table.headerRows]?.kind;
+    const keptOn = (at: number) => kindOf(at) === 'heading' || kindOf(at + 1) === 'subtotal';
     return table.rows.map((row, at) => {
+      const kind = kindOf(at);
       const cells: { properties: string; paragraphs: Paragraph[] }[] = [];
       let x = 0;
       const next = [...row.cells];
@@ -1984,7 +1991,21 @@ class Writer {
         }
         const each = next.shift();
         if (each === undefined) break;
-        const own = this.cellFormat(table, style, at, x, each);
+        const stated = this.cellFormat(table, style, at, x, each);
+        // The rule above a subtotal joins a header column's rule where the cell already states one.
+        const top =
+          kind === 'subtotal' && style.headerRow.rule !== 'none'
+            ? tableRule('top', style.headerRow.rule)
+            : '';
+        const ruled = stated.includes('<w:tcBorders>')
+          ? stated.replace('<w:tcBorders>', `<w:tcBorders>${top}`)
+          : stated;
+        const above = top !== '' && ruled === stated ? `<w:tcBorders>${top}</w:tcBorders>` : '';
+        const filled =
+          kind === 'heading' && style.headerRow.fill !== 'none' && !stated.includes('w:shd')
+            ? shading(style.headerRow.fill)
+            : '';
+        const own = above + ruled + filled;
         const merge = each.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : '';
         // A bound table's column that must not wrap (the no-wrap half of TAB-035): Word's `w:noWrap`, after the shading.
         const noWrap = table.bound?.wrap[x] === false && each.colspan === 1 ? '<w:noWrap/>' : '';
@@ -1998,21 +2019,28 @@ class Writer {
         for (let below = 1; below < each.rowspan; below += 1) {
           continued[at + below]?.set(x, { properties: tcPr('<w:vMerge/>'), span: each.colspan });
         }
+        const set = this.boundCell(
+          table,
+          x,
+          each,
+          this.cell(
+            kind === undefined ? each : { ...each, scope: 'column' },
+            style,
+            place,
+            passage,
+            each.colour ?? null,
+          ),
+        );
         cells.push({
           properties: tcPr(merge),
-          paragraphs: this.boundCell(
-            table,
-            x,
-            each,
-            this.cell(each, style, place, passage, each.colour ?? null),
-          ),
+          paragraphs: keptOn(at) ? set.map((paragraph) => ({ ...paragraph, keepNext: true })) : set,
         });
         x += each.colspan;
       }
       const heading = at < table.headerRows;
+      const whole = style.breaks.keepRowsWhole || kind !== undefined || keptOn(at);
       const properties =
-        (!heading && style.breaks.keepRowsWhole ? '<w:cantSplit/>' : '') +
-        (heading ? '<w:tblHeader/>' : '');
+        (!heading && whole ? '<w:cantSplit/>' : '') + (heading ? '<w:tblHeader/>' : '');
       return { properties: properties === '' ? '' : `<w:trPr>${properties}</w:trPr>`, cells };
     });
   }

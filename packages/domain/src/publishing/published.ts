@@ -8,8 +8,10 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/18` is the document whose **tables say how they are set where too wide** (the TB3 plan,
- * TB3-G and TB3-H): each table carries `wide`, its own or its style's, `scale` where neither says.
+ * `publishing/19` is the document whose **bound tables may be grouped** (the TG plan, TG1): a grouped
+ * table's `bound.groups` says which body row is a group's heading and which the query's subtotal, each
+ * at its level. Otherwise it is `publishing/18`, the document whose **tables say how they are set
+ * where too wide** (the TB3 plan, TB3-G and TB3-H): each table carries `wide`, its own or its style's, `scale` where neither says.
  * Otherwise it is `publishing/17`, the document whose **tables letter their own notes** (the TB3 plan, TB3-D and
  * TB3-E): a footnote in a table's cell is a lettered mark there - a link to its note in a body cell, a
  * plain letter in a header row - and its note is a paragraph beneath the table, in the table's
@@ -37,7 +39,7 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/18';
+export const PUBLISHING_SCHEMA = 'publishing/19';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -165,6 +167,12 @@ export const PUBLISHING_SCHEMA_16 = 'publishing/16';
  * reason `publishing/16` is: `apps/worker/templates/publication/17/` asserts it.
  */
 export const PUBLISHING_SCHEMA_17 = 'publishing/17';
+
+/**
+ * The document as it stood before a bound table could be grouped, frozen by TG1 for the reason
+ * `publishing/16` is: `apps/worker/templates/publication/18/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_18 = 'publishing/18';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -506,8 +514,21 @@ export interface PublishedTable {
     readonly align: readonly ('start' | 'centre' | 'end' | 'decimal')[];
     readonly wrap: readonly boolean[];
     readonly source: readonly PublishedInline[] | null;
+    /**
+     * A grouped table's (TG1; TAB-008, TAB-054), absent from one not grouped: per body row, a group's
+     * heading - one cell spanning the table - or the query's subtotal, each at its level, outermost 1;
+     * null for any other row. A template sets a heading as a header of its level that repeats, and
+     * Word keeps each with the row it belongs beside.
+     */
+    readonly groups?: readonly PublishedGroupRow[];
   };
 }
+
+/** A grouped table's body row (TG1): a heading or a subtotal at its level, else null. */
+export type PublishedGroupRow = {
+  readonly kind: 'heading' | 'subtotal';
+  readonly level: number;
+} | null;
 
 /**
  * A figure (figures 3, ruling R2): `number`'s label, or null where none is given, and its caption as

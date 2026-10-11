@@ -57,18 +57,19 @@ scientific or engineering reader expects.
 
 ## 4. Rows
 
-| ID          | Requirement                                                                                                                                                                                                            | Tranche | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **TAB-006** | A table must preserve the order the query returned, unless it declares its own sort                                                                                                                                    | T2      | Specified |
-| **TAB-007** | A declared sort must be stable, so that two rows that tie do not swap between runs                                                                                                                                     | T2      | Specified |
-| **TAB-008** | Rows must be groupable by a column, with a group heading row                                                                                                                                                           | T3      | Specified |
-| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                         | T3      | Withdrawn |
-| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                          | T3      | Withdrawn |
-| **TAB-011** | A table returning no rows must render a declared empty state rather than a table with a header and nothing under it                                                                                                    | T2      | Specified |
-| **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group       | T3      | Specified |
-| **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T3      | Specified |
-| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T3      | Withdrawn |
-| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T3      | Withdrawn |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                | Tranche | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **TAB-006** | A table must preserve the order the query returned, unless it declares its own sort                                                                                                                                                                                                                                        | T2      | Specified             |
+| **TAB-007** | A declared sort must be stable, so that two rows that tie do not swap between runs                                                                                                                                                                                                                                         | T2      | Specified             |
+| **TAB-008** | Rows must be groupable by a column, with a group heading row                                                                                                                                                                                                                                                               | T3      | Specified             |
+| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                                                                                                                             | T3      | Withdrawn             |
+| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                                                                                                                              | T3      | Withdrawn             |
+| **TAB-011** | A table returning no rows must render a declared empty state rather than a table with a header and nothing under it                                                                                                                                                                                                        | T2      | Specified             |
+| **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group                                                                                                           | T3      | Specified             |
+| **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's                                                                                                     | T3      | Superseded by TAB-054 |
+| **TAB-054** | A group heading must stay with the first row of its group across a page break, and a subtotal must never begin a page without its group's heading above it: kept with its group's last row, or beneath the heading repeated. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T3      | Specified             |
+| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                                                                                                                    | T3      | Withdrawn             |
+| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)                                                                                                              | T3      | Withdrawn             |
 
 **TAB-009, TAB-010, TAB-044 and TAB-047 are withdrawn: totals are never computed here** (TAB-Q04,
 [ADR-0045](../../decisions/0045-t3-is-the-collaboration.md)). A total or a subtotal is a row the query
@@ -203,7 +204,7 @@ of [the publishing design](../../design/publishing.md#tables), filed as issue #2
 | This document      | Rests on                                                                           |
 | ------------------ | ---------------------------------------------------------------------------------- |
 | TAB-036            | DAT-080, DAT-012 - a column is addressed by the key the query declares             |
-| TAB-042            | STY-013 - the table style says how a break behaves                                 |
+| TAB-054            | STY-013 - the table style says how a break behaves                                 |
 | TAB-045            | LOC-028, CNT-140 - the locale a document publishes in                              |
 | TAB-047            | DAT-085 - provenance for a number no query returned                                |
 | TAB-039 to TAB-041 | PUB-090, PUB-031 and PUB-032 - tagged output, reading order and header association |
@@ -376,3 +377,19 @@ table style (TAB-029), and no tenant can make or change a theme until T7 (STY-02
 | Counts       | Before                                    | After                                     |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
 | Requirements | 53, of which 5 superseded and 4 withdrawn | 53, of which 5 superseded and 4 withdrawn |
+
+### A subtotal kept under its heading (TG1), 2026-10-11
+
+Not a review. TG1's spike found that the pinned Typst keeps a heading with its group's first row but
+cannot keep a row with the one before it: it has no footer inside a table, and the one way round it
+puts an empty cell in every row of the tagged table. Ken chose a heading repeated on each page its
+group continues on, so a subtotal that begins a page stands beneath it; Word keeps a subtotal with its
+group's last row.
+
+| What was found                                           | Change                            |
+| -------------------------------------------------------- | --------------------------------- |
+| The PDF cannot keep a subtotal with its group's last row | **TAB-042 superseded by TAB-054** |
+
+| Counts       | Before                                    | After                                     |
+| ------------ | ----------------------------------------- | ----------------------------------------- |
+| Requirements | 53, of which 5 superseded and 4 withdrawn | 54, of which 6 superseded and 4 withdrawn |

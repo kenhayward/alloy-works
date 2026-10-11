@@ -28,7 +28,7 @@ The design's TG-A to TG-I, and:
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TG-J | **`layoutTable` returns typed rows**: `{ kind: 'row', cells }`, `{ kind: 'heading', level, text }`, `{ kind: 'subtotal', level, cells }`. The laid-out `table` (TB1-H) carries the same, so `assemble`, the template and Word read one shape |
 | TG-K | **`orderRows(rows, groups, sort)`**, pure, beside `sortResult`: groups by first appearance, subtotals last, the stable sort within. The rows route and `layoutTable` both call it, so a reader's presorted rows and the stage agree          |
-| TG-L | **`publishing/19` with template 19 in TG1, `publishing/20` with template 20 in TG3**, each freezing its predecessor (TB3-K)                                                                                                                  |
+| TG-L | **`publishing/19` with template 19 in TG1, `publishing/20` with template 20 in TG2, `publishing/21` with template 21 in TG3**, each freezing its predecessor (TB3-K)                                                                         |
 | TG-M | **Provenance's table arm gains `reshape`**: the groups with their subtotal columns, or the transposition's header column (TAB-022); and each heading's canonical value                                                                       |
 
 ## Spike (TG1, first)
@@ -50,7 +50,7 @@ Against the pinned Typst 0.15.1 with `a11y-extras`, the questions that could cha
   catalogue/3).
 - Tests: **`TAB-008`** rows grouped by a column under a heading holding its formatted value.
   **`TAB-043`** two levels nest outermost first, groups in first-appearance order and the sort applying
-  within each. **`TAB-042`** a row true in the subtotal column prints last in its group, unsorted, at
+  within each. **`TAB-054`** a row true in the subtotal column prints last in its group, unsorted, at
   its level. **`TAB-023`** grouping and subtotals print every value the rows hold, no more. Uncited:
   `subtotal_ambiguous`, `subtotal_not_boolean`, `column_missing` for a grouped column, a null group's
   heading as the null text, headings counted against `TABLE_ROWS_MAX`.
@@ -59,8 +59,8 @@ Against the pinned Typst 0.15.1 with `a11y-extras`, the questions that could cha
 
 - `bind.ts`, `assemble.ts`, template 19 per S1, `word/write.ts` per S2, provenance per TG-M,
   `publishing/19` per TG-L.
-- Tests: **`TAB-042`** a heading on a page's last possible line moves to the next page with its first
-  row, and a subtotal never opens a page, in the PDF (the conformance kit's glyph positions) and in
+- Tests: **`TAB-054`** a heading on a page's last possible line moves to the next page with its first
+  row, and a subtotal opening a page stands under its heading repeated, in the PDF (the conformance kit's glyph positions) and in
   Word's XML (`w:keepNext`, `w:cantSplit`). **`TAB-022`** provenance names the grouping and each
   heading's canonical value. **`TAB-008`** the heading is a header row in the structure tree, veraPDF
   clean.
@@ -115,3 +115,13 @@ the API.
 - **Widths drift**: kerning, which advances ignore, wraps a word the other renderer did not. Measured
   by the theme suite; the fix is a hair of slack in the minimum, not a second algorithm.
 - **Old publications**: unaffected; templates 18 and 19 are frozen (TG-L).
+
+## Changed while building
+
+| #     | TG1                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1    | **Headings keep; subtotals cannot.** Typst 0.15.1's `table.header(level:)` mid-table is never orphaned and tags as a header, swept across every break position; there is no footer inside a table, and a zero-width spanning column adds a data cell to every tagged row. Ken chose headings repeated at the head of each page their group continues on: **TAB-042 superseded by TAB-054** |
+| TG1-A | **No `group` member on the table style**: unauthorable before T7 (TG-A's reason). A heading takes the header row's fill and weight; a subtotal its weight and its rule above                                                                                                                                                                                                               |
+| TG1-B | **TG-J replaced**: a `LaidOutRow` carries `opens` (the headings it opens) and `subtotal` (the level it totals), so the page, the rows route and notes read `rows` unchanged                                                                                                                                                                                                                |
+| TG1-C | **`provenance.json` stays at 3**: a grouped table's `groups` (levels, headings by printed row, subtotals) is added to the arm, as TB3's `notes` were                                                                                                                                                                                                                                       |
+| TG1-D | **The PDF test reads repeats as artifacts**: a repeated heading is `artifactText` on its page, and `items` holds tagged text alone                                                                                                                                                                                                                                                         |

@@ -70,6 +70,11 @@ const namedBy = (table: BoundTableNode) =>
   new Set([
     ...table.columns.map((each) => each.column),
     ...(table.sort ?? []).map((each) => each.column),
+    // A grouped column prints its values as headings, and a subtotal column decides which rows are
+    // totals (TG1): each is a column named.
+    ...(table.groups ?? []).flatMap((each) =>
+      each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
+    ),
     ...(table.notes ?? []).flatMap(({ anchor }) =>
       anchor.kind === 'keyed'
         ? [anchor.column, ...Object.keys(anchor.key)]

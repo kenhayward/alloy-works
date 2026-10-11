@@ -4954,6 +4954,127 @@ describe('writeDocx: a bound table (the TB1 plan, TB1-I; TB1.2)', () => {
   });
 });
 
+describe('writeDocx: a grouped bound table (the TG plan, TG1)', () => {
+  const COLUMNS: Column[] = [
+    { name: 'site', from: { column: 'site_code' }, type: { base: 'text' } },
+    {
+      name: 'reading',
+      from: { column: 'reading_kpa' },
+      type: { base: 'decimal', precision: 10, scale: 2 },
+    },
+    { name: 'region', from: { column: 'region' }, type: { base: 'text' } },
+    { name: 'total', from: { column: 'total' }, type: { base: 'boolean' } },
+  ];
+  const rows: Held = {
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['reading', 'decimal'],
+        ['region', 'text'],
+        ['total', 'boolean'],
+      ],
+      rows: [
+        ['north', '1.5', 'Upland', false],
+        ['south', '2', 'Upland', false],
+        ['all', '3.5', 'Upland', true],
+      ],
+    },
+    columns: COLUMNS,
+    datasetVersion: uuid(901),
+    images: {},
+    key: [],
+  };
+  // In a style whose header row is filled, bold and ruled, so each is seen where it is carried over.
+  const tabled = tabledOf(
+    [
+      {
+        type: 'boundTable',
+        id: 't1',
+        style: 'ruled',
+        binding: { type: 'binding', id: 'rows', query: uuid(900), parameters: {}, mode: 'checked' },
+        caption: [text('Readings')],
+        columns: [
+          { column: 'site', header: 'Site' },
+          { column: 'reading', header: 'Reading' },
+        ],
+        headerColumn: false,
+        groups: [{ column: 'region', subtotal: 'total' }],
+      },
+    ],
+    { bindings: new Map([[id('blocks'), new Map([['rows', rows]])]]), theme: ruledTheme },
+  );
+  const table = blocksOf(tabled.docx).find((each) => each.name === 'w:tbl')!;
+  const cells = rowsOf(table);
+  const rowProperties = (at: number) => stated(kids(table, 'w:tr')[at]!, 'w:trPr');
+  const keeps = (at: number) =>
+    cells[at]!.flatMap((each) => kids(each, 'w:p')).every((each) =>
+      properties(each).includes('w:keepNext'),
+    );
+
+  it("TAB-008 writes a group's heading as one cell spanning the table, bold as the header row is, in its fill", () => {
+    expect(cells.map((row) => row.map((each) => textOf(each)))).toEqual([
+      ['Site', 'Reading'],
+      ['Upland'],
+      ['north', '1.50'],
+      ['south', '2.00'],
+      ['all', '3.50'],
+    ]);
+    expect(stated(cells[1]![0]!, 'w:tcPr')['w:gridSpan']).toEqual({ 'w:val': '2' });
+    expect(pinnedBold(kids(cells[1]![0]!, 'w:p')[0]!)).toBe(true);
+    expect(stated(cells[1]![0]!, 'w:tcPr')['w:shd']).toMatchObject({ 'w:fill': 'D9E2F3' });
+  });
+
+  it("TAB-054 keeps a heading with its group's first row and a subtotal with its group's last row, neither row split", () => {
+    expect(keeps(1)).toBe(true);
+    expect(keeps(2)).toBe(false);
+    expect(keeps(3)).toBe(true);
+    for (const at of [1, 3, 4])
+      expect(rowProperties(at), `row ${at}`).toHaveProperty('w:cantSplit');
+  });
+
+  it("TAB-054 rules a subtotal above across every cell where its first column heads each row, beside the header column's rule (the TG1 final review)", () => {
+    const headed = tabledOf(
+      [
+        {
+          type: 'boundTable',
+          id: 't1',
+          style: 'ruled',
+          binding: {
+            type: 'binding',
+            id: 'rows',
+            query: uuid(900),
+            parameters: {},
+            mode: 'checked',
+          },
+          caption: [text('Readings')],
+          columns: [
+            { column: 'site', header: 'Site' },
+            { column: 'reading', header: 'Reading' },
+          ],
+          headerColumn: true,
+          groups: [{ column: 'region', subtotal: 'total' }],
+        },
+      ],
+      { bindings: new Map([[id('blocks'), new Map([['rows', rows]])]]), theme: ruledTheme },
+    );
+    const total = rowsOf(blocksOf(headed.docx).find((each) => each.name === 'w:tbl')!)[4]!;
+    for (const each of total) {
+      const borders = all(each, 'w:tcBorders');
+      expect(borders).toHaveLength(1);
+      expect(first(borders[0]!, 'w:top')?.attrs['w:color']).toBe('C00000');
+    }
+    expect(first(first(total[1]!, 'w:tcBorders')!, 'w:left')).toBeDefined();
+  });
+
+  it("TAB-054 rules a subtotal above with the header row's rule and sets it in the header row's weight", () => {
+    expect(pinnedBold(kids(cells[4]![0]!, 'w:p')[0]!)).toBe(true);
+    expect(pinnedBold(kids(cells[2]![0]!, 'w:p')[0]!)).toBe(false);
+    for (const each of cells[4]!) {
+      expect(first(first(each, 'w:tcBorders')!, 'w:top')?.attrs['w:color']).toBe('C00000');
+    }
+  });
+});
+
 describe('writeDocx: a table too wide for its measure (the TB3 plan, TB3-J)', () => {
   const note = (name: string, words: string) => ({
     type: 'footnote',

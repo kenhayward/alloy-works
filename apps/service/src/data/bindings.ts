@@ -2420,7 +2420,8 @@ export function bindingHandlers(
         ...(own ? (found.table.sort ?? []).map((each) => each.column) : []),
       ]);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
-      const order = own ? null : (found.table.sort ?? []);
+      // Its sort and its groups, which order the rows sent alike (TG1).
+      const order = own ? null : [found.table.sort ?? [], found.table.groups ?? []];
       // The keyed notes' anchors, so a note added or removed is answered anew, never a 304 (TB3.3).
       const anchors = (found.table.notes ?? []).flatMap((each) =>
         each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key]] : [],

@@ -415,6 +415,10 @@ export const TABLE_FAILURE_WORDS = {
     `No rows - the format of ${failure.column} sets ${failure.detail}, which does not apply to its values`,
   table_too_long: (failure) =>
     `No rows - the result has ${failure.detail} rows, more than a table prints`,
+  subtotal_not_boolean: (failure) =>
+    `No rows - ${failure.column} marks subtotals, so it must hold true or false`,
+  subtotal_ambiguous: (failure) =>
+    `No rows - row ${Number(failure.detail) + 1} of the result is a subtotal at two levels`,
 } satisfies {
   readonly [K in TableFailure['code']]: (failure: TableFailure & { readonly code: K }) => string;
 };
@@ -515,7 +519,7 @@ export function boundTableNotes(node: Node): FootnoteNode[] {
  * notes' anchors (`boundTableNotes`), which the page reads their rows by (TB3.3).
  */
 export function storedBoundTable(node: Node): BoundTableNode {
-  const { id, style, numbered, binding, columns, headerColumn, sort } = node.attrs;
+  const { id, style, numbered, binding, columns, headerColumn, sort, groups } = node.attrs;
   const notes = boundTableNotes(node);
   return {
     type: 'boundTable',
@@ -527,6 +531,8 @@ export function storedBoundTable(node: Node): BoundTableNode {
     columns: columns as BoundTableNode['columns'],
     headerColumn: headerColumn as boolean,
     ...(sort === null ? {} : { sort: sort as NonNullable<BoundTableNode['sort']> }),
+    // Its groups too (TG1), so the page orders rows and letters notes as the publish does.
+    ...(groups === null ? {} : { groups: groups as NonNullable<BoundTableNode['groups']> }),
     ...(notes.length === 0 ? {} : { notes }),
   };
 }

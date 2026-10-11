@@ -1414,6 +1414,8 @@ export function assemble(given: AssembleInput): Assembled {
         const scopeAt = (row: number, column: number): PublishedCell['scope'] => {
           // A bound table's empty statement is a data cell, whatever its first column does (TAB-011).
           if (laidOut?.empty === true && row >= block.headerRows) return null;
+          // A group's heading is set as a header of its level by the template, not by its cell (TG1).
+          if (laidOut?.groups?.[row - block.headerRows]?.kind === 'heading') return null;
           const heading = row < block.headerRows;
           const leading = column < block.headerColumns;
           if (heading && leading) return 'both';
@@ -1459,7 +1461,14 @@ export function assemble(given: AssembleInput): Assembled {
             wide: block.wide ?? tableStyle?.wide ?? 'scale',
             ...(laidOut === null
               ? {}
-              : { bound: { align: laidOut.align, wrap: laidOut.wrap, source } }),
+              : {
+                  bound: {
+                    align: laidOut.align,
+                    wrap: laidOut.wrap,
+                    source,
+                    ...(laidOut.groups === undefined ? {} : { groups: laidOut.groups }),
+                  },
+                }),
           },
         ];
       }

@@ -89,6 +89,21 @@ export interface PrintedTable {
     readonly row: number | null;
     readonly column: string;
   }[];
+  /**
+   * A grouped table's (TG1; TAB-022): each level's column and subtotal column, each heading by the
+   * printed row it opens, its level, what it printed and its canonical value, and each subtotal row by
+   * its index and level. Absent from a table not grouped.
+   */
+  readonly groups?: {
+    readonly levels: readonly { readonly column: string; readonly subtotal: string | null }[];
+    readonly headings: readonly {
+      readonly row: number;
+      readonly level: number;
+      readonly printed: string;
+      readonly value: CanonicalValue;
+    }[];
+    readonly subtotals: readonly { readonly row: number; readonly level: number }[];
+  };
 }
 
 /**
@@ -278,7 +293,7 @@ export function bind(
         fail(
           each.code,
           table.id,
-          each.code === 'table_too_long'
+          each.code === 'table_too_long' || each.code === 'subtotal_ambiguous'
             ? each.detail
             : each.code === 'format_mismatch'
               ? `${each.column}: ${each.detail}`
@@ -328,6 +343,27 @@ export function bind(
           row,
           column: (note.anchor as { readonly column: string }).column,
         })),
+        ...(table.groups === undefined
+          ? {}
+          : {
+              groups: {
+                levels: table.groups.map((group) => ({
+                  column: group.column,
+                  subtotal: group.subtotal ?? null,
+                })),
+                headings: laid.rows.flatMap((row, at) =>
+                  (row.opens ?? []).map((heading) => ({
+                    row: at,
+                    level: heading.level,
+                    printed: heading.text,
+                    value: heading.value,
+                  })),
+                ),
+                subtotals: laid.rows.flatMap((row, at) =>
+                  row.subtotal === undefined ? [] : [{ row: at, level: row.subtotal }],
+                ),
+              },
+            }),
       },
     });
     // The empty statement's own bindings are set only where it prints - the result has no rows - so a
