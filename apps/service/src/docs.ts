@@ -7,6 +7,9 @@ import { AppError } from './errors.js';
 
 const require = createRequire(import.meta.url);
 const documentBytes = readFileSync(require.resolve('@alloy-works/api-contract/openapi.json'));
+// The stream's events, which OpenAPI cannot say, beside it (API-014, API-015; the PL plan, PL-E).
+const eventsBytes = readFileSync(require.resolve('@alloy-works/api-contract/asyncapi.json'));
+const eventsEtag = `"${createHash('sha256').update(eventsBytes).digest('hex')}"`;
 const scalarBytes = readFileSync(
   join(dirname(require.resolve('@scalar/api-reference')), 'browser', 'standalone.js'),
 );
@@ -179,6 +182,13 @@ export function registerDocs(
     void reply.header('ETag', documentEtag);
     if (request.headers['if-none-match'] === documentEtag) return reply.status(304).send();
     return reply.type('application/vnd.oai.openapi+json;version=3.1').send(documentBytes);
+  });
+  app.get('/asyncapi/v1.json', { onRequest: knownHost }, (request, reply) => {
+    secure(reply);
+    void reply.header('Cache-Control', 'no-cache');
+    void reply.header('ETag', eventsEtag);
+    if (request.headers['if-none-match'] === eventsEtag) return reply.status(304).send();
+    return reply.type('application/json').send(eventsBytes);
   });
   app.get('/docs', { onRequest: knownHost }, (_request, reply) => {
     secure(reply);

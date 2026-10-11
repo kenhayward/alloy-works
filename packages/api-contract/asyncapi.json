@@ -1,0 +1,282 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Alloy Works stream",
+    "version": "1",
+    "description": "What `GET /v1/stream` sends, as Server-Sent Events: each frame's `event` is a message's name, and its `data` that message's payload. Opened with a signed-in session alone, never a token. Every connection begins with `snapshot`; events are not replayed, so a reconnect is a connect (API-017). `?document=` or `?component=` scopes it to one thing the viewer may read, else it is answered 404; without either it is the environment's own stream."
+  },
+  "channels": {
+    "stream": {
+      "address": "/v1/stream",
+      "messages": {
+        "snapshot": {
+          "$ref": "#/components/messages/snapshot"
+        },
+        "lock": {
+          "$ref": "#/components/messages/lock"
+        },
+        "outline": {
+          "$ref": "#/components/messages/outline"
+        },
+        "permissions": {
+          "$ref": "#/components/messages/permissions"
+        },
+        "sample": {
+          "$ref": "#/components/messages/sample"
+        }
+      }
+    }
+  },
+  "operations": {
+    "receive": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/stream"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/stream/messages/snapshot"
+        },
+        {
+          "$ref": "#/channels/stream/messages/lock"
+        },
+        {
+          "$ref": "#/channels/stream/messages/outline"
+        },
+        {
+          "$ref": "#/channels/stream/messages/permissions"
+        },
+        {
+          "$ref": "#/channels/stream/messages/sample"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "snapshot": {
+        "name": "snapshot",
+        "summary": "The state now, sent first on every connection; events follow and apply as state",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "locks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "component": {
+                        "type": "string",
+                        "description": "An id, as the API names the thing elsewhere"
+                      },
+                      "holder": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "An id, as the API names the thing elsewhere"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Who holds it; null once it is free"
+                      },
+                      "expectedRelease": {
+                        "description": "When it is free unless its holder goes on working, in UTC; null once it is free",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "component",
+                      "holder",
+                      "expectedRelease"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A component's lock, as it now stands (COL-007)"
+                  },
+                  "description": "Every held lock in the scope the viewer may read"
+                }
+              },
+              "required": [
+                "locks"
+              ],
+              "additionalProperties": false,
+              "description": "A document's or a component's stream, as it stands when it opens"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "samples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "An id, as the API names the thing elsewhere"
+                      },
+                      "state": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "state"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "samples"
+              ],
+              "additionalProperties": false,
+              "description": "The environment's own stream, as it stands when it opens"
+            }
+          ]
+        }
+      },
+      "lock": {
+        "name": "lock",
+        "summary": "A lock claimed, moved, released, or its expected release moved to another minute; sent on a document's or a component's stream to whoever may read the component",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "holder": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "An id, as the API names the thing elsewhere"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who holds it; null once it is free"
+            },
+            "expectedRelease": {
+              "description": "When it is free unless its holder goes on working, in UTC; null once it is free",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "holder",
+            "expectedRelease"
+          ],
+          "additionalProperties": false,
+          "description": "A component's lock, as it now stands (COL-007)"
+        }
+      },
+      "outline": {
+        "name": "outline",
+        "summary": "The document's outline changed; sent on its stream",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "document": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            }
+          },
+          "required": [
+            "document"
+          ],
+          "additionalProperties": false,
+          "description": "The stream's document has a new version: read its outline again (STR-066)"
+        }
+      },
+      "permissions": {
+        "name": "permissions",
+        "summary": "Access changed in the environment; sent on every stream, which then ends",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false,
+          "description": "Somebody's access changed; the stream ends after this, and its next connection is authorised afresh (API-016)"
+        }
+      },
+      "sample": {
+        "name": "sample",
+        "summary": "A development sample's state; sent on the environment's own stream alone",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "sample"
+            },
+            "id": {
+              "type": "string",
+              "description": "An id, as the API names the thing elsewhere"
+            },
+            "state": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "id",
+            "state"
+          ],
+          "additionalProperties": false,
+          "description": "A development sample's state"
+        }
+      }
+    }
+  }
+}

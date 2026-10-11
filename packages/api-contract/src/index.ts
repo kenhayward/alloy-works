@@ -249,3 +249,15 @@ export {
   AuditListQuery,
 } from './audit.js';
 export { SessionList, SessionParams, SessionsEnded, SessionView } from './sessions.js';
+export {
+  buildAsyncApi,
+  EnvironmentSnapshot,
+  LockEvent,
+  OutlineEvent,
+  PermissionsEvent,
+  SampleEvent,
+  ScopedSnapshot,
+  streamEvents,
+  type StreamEventName,
+} from './events.js';
+export { StreamQuery } from './schemas.js';

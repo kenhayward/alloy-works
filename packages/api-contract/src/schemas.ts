@@ -147,3 +147,16 @@ export const AccessExplanation = z.object({
   ),
 });
 export type AccessExplanation = z.infer<typeof AccessExplanation>;
+
+/** A stream's scope (the PL plan, PL-A): one document, one component, or neither for the environment's own. */
+export const StreamQuery = z
+  .object({
+    document: LowercaseUuid.optional().describe(
+      "One document's locks and outline, as the caller may read them",
+    ),
+    component: LowercaseUuid.optional().describe("One component's lock, opened on its own"),
+  })
+  .refine((query) => query.document === undefined || query.component === undefined, {
+    message: 'A document or a component, not both',
+  });
+export type StreamQuery = z.infer<typeof StreamQuery>;

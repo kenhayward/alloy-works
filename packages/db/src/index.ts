@@ -191,6 +191,7 @@ export {
   type AuditPageRequest,
 } from './audit-read.js';
 export { isSnapshot } from './listing.js';
+export { locksShown, streamScope, type LockShown, type StreamScope } from './live.js';
 export {
   auditExportBody,
   failAuditExport,

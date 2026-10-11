@@ -27,6 +27,7 @@ import {
   ExplainQuery,
   GoogleHandoff,
   Health,
+  StreamQuery,
   Me,
   Sample,
   SampleParams,
@@ -169,13 +170,23 @@ const ownRoutes = {
     operationId: 'openStream',
     method: 'GET',
     path: '/v1/stream',
-    summary: 'What is happening in this environment, as it happens',
+    summary:
+      'What is happening in this environment, or in one document or component, as it happens',
     tenantScoped: true,
     access: { check: 'session', credential: 'session' },
+    query: StreamQuery,
     responses: {
       200: { description: 'The stream: a snapshot, then what happens next', stream: true },
+      400: {
+        description: 'Both a document and a component, or an id malformed',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: tokenNotAllowed,
+      404: {
+        description: 'No such document or component, or none the caller may read',
+        schema: ErrorBody,
+      },
       503: { description: 'This environment cannot stream yet', schema: ErrorBody },
     },
   },

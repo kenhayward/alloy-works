@@ -13,6 +13,7 @@ import {
   type Sample,
   type SampleParams,
   type SignInCallback,
+  type StreamQuery,
 } from '@alloy-works/api-contract';
 import {
   claimInvitation,
@@ -22,6 +23,7 @@ import {
   loadFacts,
   notifyTenant,
   openSecret,
+  streamScope,
   SealedSecretRefused,
   syncProviderGroups,
   type SignInRoute,
@@ -139,6 +141,8 @@ export interface AppOptions extends HttpOptions {
   readonly objects?: ObjectStores;
   /** Where this environment's events come from; without it, no stream. */
   readonly events?: TenantListener;
+  /** How long a stream lives before it ends and is read afresh; five minutes but in tests. */
+  readonly streamLifetimeMs?: number;
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
   readonly tenantCacheMs?: number;
@@ -786,7 +790,32 @@ export function buildApp(options: AppOptions): FastifyInstance {
           'This environment cannot stream yet. Try again later.',
         );
       }
-      await streamToViewer({ request, reply, db, events, tenant, credential: request.credential });
+      const query = request.query as StreamQuery;
+      const scope =
+        query.document !== undefined
+          ? { document: query.document }
+          : query.component !== undefined
+            ? { component: query.component }
+            : undefined;
+      // Decided before the stream opens: a scope the viewer may not read is not there (PL-A).
+      const principalId = principalOf(request).principalId;
+      const components =
+        scope === undefined
+          ? undefined
+          : await db.withTenant(tenant, (trx) => streamScope(trx, principalId, scope));
+      if (scope !== undefined && components === undefined) throw notFound();
+      await streamToViewer({
+        request,
+        reply,
+        db,
+        events,
+        tenant,
+        credential: request.credential,
+        ...(scope === undefined || components === undefined
+          ? {}
+          : { scoped: { scope, principalId, components } }),
+        ...(options.streamLifetimeMs === undefined ? {} : { lifetimeMs: options.streamLifetimeMs }),
+      });
       return reply;
     },
 

@@ -98,7 +98,8 @@ describe('the service', () => {
         (route) =>
           route.method !== 'HEAD' &&
           !route.url.startsWith('/docs') &&
-          route.url !== '/openapi/v1.json',
+          route.url !== '/openapi/v1.json' &&
+          route.url !== '/asyncapi/v1.json',
       )
       .map((route) => key(route.method, route.url));
     expect(served.sort()).toEqual(declared.sort());
@@ -126,6 +127,11 @@ describe('the service', () => {
     const asset = await at(scalarPath!);
     expect(asset.statusCode).toBe(200);
     expect(asset.headers['cache-control']).toContain('immutable');
+    // And the stream's events, beside it (API-015).
+    const events = await at('/asyncapi/v1.json');
+    expect(events.statusCode).toBe(200);
+    expect(events.json()).toHaveProperty('asyncapi', '3.0.0');
+    expect(events.headers.etag).toBeDefined();
     expect((await at('/openapi/v1.json', 'nobody.alloy.test')).json()).toMatchObject({
       code: 'tenant_not_found',
     });
@@ -133,11 +139,14 @@ describe('the service', () => {
       .filter(
         (route) =>
           route.method !== 'HEAD' &&
-          (route.url.startsWith('/docs') || route.url === '/openapi/v1.json'),
+          (route.url.startsWith('/docs') ||
+            route.url === '/openapi/v1.json' ||
+            route.url === '/asyncapi/v1.json'),
       )
       .map((route) => `${route.method} ${route.url}`)
       .sort();
     expect(infrastructure).toEqual([
+      'GET /asyncapi/v1.json',
       'GET /docs',
       'GET /docs/v1/',
       `GET ${scalarPath}`,
