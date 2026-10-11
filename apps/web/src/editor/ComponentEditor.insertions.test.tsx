@@ -759,7 +759,10 @@ describe('cross-references in the editor (cross-references 1)', () => {
 
     act(() => view!.dispatch(view!.state.tr.insertText('Now s', 1, 2)));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');

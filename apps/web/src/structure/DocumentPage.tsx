@@ -29,7 +29,7 @@ import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
-import { StatusBar, StatusTools, useStatus } from '../shell/Status.js';
+import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
@@ -790,11 +790,13 @@ export function DocumentPage({
   const shownDocument = loaded.state === 'open' ? loaded.document : null;
   const context = shownDocument === null ? null : aboutDocument(shownDocument);
   const contextKey = context?.join('\n') ?? null;
+  // Said only while this page is the one shown: a page left for another stays mounted, hidden.
+  const pageShown = usePageShown();
   useEffect(() => {
-    if (status === null || contextKey === null) return undefined;
+    if (status === null || contextKey === null || !pageShown) return undefined;
     status.describe(contextKey.split('\n'));
     return () => status.describe(null);
-  }, [status, contextKey]);
+  }, [status, contextKey, pageShown]);
   const pending = useRef(false);
   // The document as the page last received it - written where an answer arrives, never during render.
   const latest = useRef<Opened | null>(null);

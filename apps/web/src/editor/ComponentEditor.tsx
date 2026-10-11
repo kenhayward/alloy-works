@@ -2108,60 +2108,11 @@ export function ComponentEditor({
           </>
         )}
       </header>
-      {session &&
-        loaded.state === 'open' &&
-        (inBand ? (
-          // A status, said in the status bar at its left while the component is open in place.
-          <StatusLead>
-            <SaveIndicator save={session.save} savedAt={session.savedAt} />
-          </StatusLead>
-        ) : (
+      {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
+      {session && loaded.state === 'open' && (
+        <StatusLead>
           <SaveIndicator save={session.save} savedAt={session.savedAt} />
-        ))}
-      {/* In the band they are the toolbar's first icons instead (ADR-0056). */}
-      {(mayCut || onDone) && !inBand && (
-        <>
-          <span className={styles['divider']} aria-hidden="true" />
-          <Toolbar label="Component" className={styles['actions']}>
-            {/* The author's own saved text, listed while editing: the lock is already this
-                session's, so nothing is claimed (final review of W11.2, D1). */}
-            {mayCut && (
-              <button
-                className={styles['act']}
-                type="button"
-                title="Saved text"
-                disabled={phase !== 'editing'}
-                onClick={recover}
-              >
-                <Icon name="Saved text" />
-                Saved text
-              </button>
-            )}
-            {mayCut && (
-              <button
-                className={`primary ${styles['act']}`}
-                type="button"
-                title="Save version"
-                disabled={phase !== 'editing'}
-                onClick={() => void controls.current?.saveVersion()}
-              >
-                <Icon name="Save version" />
-                Save version
-              </button>
-            )}
-            <button
-              className={styles['act']}
-              type="button"
-              aria-label="Done editing"
-              title="Done editing"
-              disabled={doneDisabled}
-              onClick={() => void done()}
-            >
-              <Icon name="Done editing" />
-              Done
-            </button>
-          </Toolbar>
-        </>
+        </StatusLead>
       )}
     </div>
   );
@@ -2172,30 +2123,26 @@ export function ComponentEditor({
       (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
       than absent, so what the editor can do with the text is visible before the lock is. */}
         <EditorToolbar
-          {...(inBand
-            ? {
-                leading: [
-                  {
-                    label: 'Done editing',
-                    icon: 'Done editing',
-                    disabled: doneDisabled,
-                    onPress: () => void done(),
-                  },
-                  {
-                    label: 'Save version',
-                    icon: 'Save version',
-                    disabled: !mayCut || phase !== 'editing',
-                    onPress: () => void controls.current?.saveVersion(),
-                  },
-                  {
-                    label: 'Saved text',
-                    icon: 'Saved text',
-                    disabled: !mayCut || phase !== 'editing',
-                    onPress: recover,
-                  },
-                ],
-              }
-            : {})}
+          leading={[
+            {
+              label: 'Done editing',
+              icon: 'Done editing',
+              disabled: doneDisabled,
+              onPress: () => void done(),
+            },
+            {
+              label: 'Save version',
+              icon: 'Save version',
+              disabled: !mayCut || phase !== 'editing',
+              onPress: () => void controls.current?.saveVersion(),
+            },
+            {
+              label: 'Saved text',
+              icon: 'Saved text',
+              disabled: !mayCut || phase !== 'editing',
+              onPress: recover,
+            },
+          ]}
           onPasteMarkdown={() => void pasteMarkdown()}
           onInsertFigure={() => setFigureDialog('Figure')}
           figurePlaceable={mayPlaceFigure}

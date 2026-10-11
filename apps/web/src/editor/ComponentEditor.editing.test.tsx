@@ -194,7 +194,12 @@ describe('the component editor', () => {
     );
     const view = await surface();
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Done editing' })).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Done editing' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
+    );
     await waitFor(() =>
       expect(asked.map((each) => each.route)).toContain(
         'PUT /v1/components/{id}/iterations/{session}/1',
@@ -696,7 +701,11 @@ describe('the component editor', () => {
       'false',
     );
     expect(screen.getByText('You may read this component but not edit it.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    // Save version is the toolbar's, there and disabled for a reader (ADR-0056).
+    expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     // The formatting toolbar stays in the accessibility tree, reachable and inert: a reader can see
     // what the editor would do with the text without being able to do it.
     const formatting = screen.getByRole('toolbar', { name: 'Formatting' });
@@ -1264,7 +1273,10 @@ describe('the component editor', () => {
     const view = await surface();
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
     );
     const at = view.state.doc.content.size - 1;
     view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(at))));
@@ -1320,7 +1332,10 @@ describe('the component editor', () => {
 
     view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Save version' })).not.toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Save version' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save version' }));
     await screen.findByText('Version 0.2 saved.');

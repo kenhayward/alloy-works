@@ -26,7 +26,7 @@ import { documentAddress, documentLink, templateAccessAddress } from '../structu
 import { TemplateList } from '../structure/TemplateList.js';
 import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { OutlineRail } from '../structure/OutlineTabs.js';
-import { StatusTools } from '../shell/Status.js';
+import { PageShown, StatusTools } from '../shell/Status.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
 import { ComponentEditor } from './ComponentEditor.js';
@@ -197,7 +197,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         .filter(([at, shown]) => at === place || isWork(shown.hash))
         .map(([at, shown]) => (
           <div key={at} className={styles['kept']} hidden={at !== place}>
-            {pageFor(shown.hash, shown.arrivals, me)}
+            <PageShown value={at === place}>{pageFor(shown.hash, shown.arrivals, me)}</PageShown>
           </div>
         ))}
     </>

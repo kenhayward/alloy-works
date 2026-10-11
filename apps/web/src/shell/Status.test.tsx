@@ -2,7 +2,14 @@ import { act, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { StatusBar, StatusLead, StatusProvider, StatusTools, useStatus } from './Status.js';
+import {
+  PageShown,
+  StatusBar,
+  StatusLead,
+  StatusProvider,
+  StatusTools,
+  useStatus,
+} from './Status.js';
 
 /** A page that says something through the bar, as the document page does. */
 function Saying({ notice, context }: { notice: string | null; context?: readonly string[] }) {
@@ -116,6 +123,23 @@ describe('the status bar', () => {
     expect(
       saved.compareDocumentPosition(screen.getByRole('status')) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('holds nothing from a page kept but not shown, such as a document left for a component', () => {
+    render(
+      <StatusProvider>
+        <PageShown value={false}>
+          <StatusTools>
+            <button type="button">Zoom in</button>
+          </StatusTools>
+          <StatusLead>
+            <span>Saved</span>
+          </StatusLead>
+        </PageShown>
+      </StatusProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Zoom in' })).toBeNull();
+    expect(screen.queryByText('Saved')).toBeNull();
   });
 
   it('holds the tools where they are, with no shell to hold them', () => {
