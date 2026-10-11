@@ -98,8 +98,6 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
-import { Toolbar } from '../parts/Toolbar.js';
-import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
