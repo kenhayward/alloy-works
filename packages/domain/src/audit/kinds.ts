@@ -279,8 +279,18 @@ export const auditKindSpecs = {
   'artifact.archived': kind(['LIF-057'], empty, LATER),
   'artifact.deleted': kind(['LIF-057'], empty, LATER),
   'revision.designated': kind(['LIF-026'], empty, LATER),
-  'baseline.made': kind(['LIF-026'], empty, LATER),
-  'baseline.superseded': kind(['LIF-026'], empty, LATER),
+  // A baseline made, and one superseded by a later one (the BL plan): about the document version it
+  // pins, the subject; its name is the document's content, never the log's.
+  'baseline.made': kind(
+    ['LIF-026', 'VER-021'],
+    z.strictObject({ baseline: Id }),
+    'packages/db/src/baselines.ts',
+  ),
+  'baseline.superseded': kind(
+    ['LIF-026', 'VER-049'],
+    z.strictObject({ baseline: Id, by: Id }),
+    'packages/db/src/baselines.ts',
+  ),
   'content.restored': kind(['LIF-026', 'CNT-170'], empty, LATER),
   'reference.repointed': kind(['CNT-161'], empty, LATER),
   // A lock taken from an idle holder after their grace (COL-009; collaboration.md): whom from, and

@@ -129,6 +129,9 @@ describe('the domain package', () => {
         // The audit log read (AU2b): its filters, and the kinds a family names.
         'auditFilterProblem',
         'kindsMatching',
+        // A baseline's digest input and its name (the BL plan).
+        'baselineDigestInput',
+        'baselineNameProblem',
         // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',
         'componentTypes',

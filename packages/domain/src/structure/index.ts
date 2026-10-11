@@ -76,3 +76,6 @@ export type {
   ResolvingDocument,
   UnresolvedReason,
 } from './references.js';
+
+export { baselineDigestInput, baselineNameProblem } from './baseline.js';
+export type { BaselinePins, PinnedVersion } from './baseline.js';

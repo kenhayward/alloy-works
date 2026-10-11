@@ -9,6 +9,12 @@ import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
 import type {
+  BaselineBindingTable,
+  BaselinePinTable,
+  BaselineSupersessionTable,
+  BaselineTable,
+} from './baselines-tables.js';
+import type {
   PublicationCheckGivenUpTable,
   PublicationCheckTable,
   PublicationInputTable,
@@ -656,6 +662,10 @@ export interface TenantTables {
   binding_resolution: BindingResolutionTable;
   dataset_pending: DatasetPendingTable;
   dataset_take: DatasetTakeTable;
+  baseline: BaselineTable;
+  baseline_pin: BaselinePinTable;
+  baseline_binding: BaselineBindingTable;
+  baseline_supersession: BaselineSupersessionTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

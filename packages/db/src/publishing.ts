@@ -61,7 +61,15 @@ import type { TenantTransaction } from './tables.js';
 import { bindingQuestion, documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
 import { sha256Hex } from './version-digest.js';
-import { headingOf, latestVersion, readVersion, type VersionHeading } from './versions.js';
+import type { StoredLayout } from './layouts.js';
+import type { StoredTheme } from './themes.js';
+import {
+  headingOf,
+  latestVersion,
+  readVersion,
+  type StoredVersion,
+  type VersionHeading,
+} from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -267,7 +275,7 @@ function citesAPage(blocks: readonly BlockNode[]): boolean {
 }
 
 /** A resolved occurrence with its version's content, read as its publisher resolved it. */
-interface ReadOccurrence {
+export interface ReadOccurrence {
   readonly node: string;
   readonly component: string;
   readonly version: string;
@@ -474,7 +482,7 @@ export interface UnresolvedBinding {
 }
 
 /** A binding's latest resolution, recorded on a request when its digest matches (B3-C). */
-interface HeldBinding {
+export interface HeldBinding {
   readonly node: string;
   readonly binding: string;
   readonly digest: string;
@@ -537,6 +545,149 @@ async function bindingsHeld(
   return { held, unresolved };
 }
 
+/** What a document resolves to for a publish or a baseline, as one principal (BL-A). */
+export interface Publishable {
+  readonly answer: 'publishable';
+  readonly latest: StoredVersion;
+  readonly outline: OutlineDocument;
+  readonly layout: StoredLayout;
+  readonly theme: StoredTheme;
+  /** Each occurrence resolved to a version the principal may read, with its content. */
+  readonly resolved: readonly ReadOccurrence[];
+  /** What resolving found that a request records and a baseline refuses, each by its node. */
+  readonly failures: readonly PublishFailure[];
+  readonly bindings: readonly HeldBinding[];
+  readonly assets: readonly { readonly version: string; readonly asset: string }[];
+}
+
+/** A refusal a request or a baseline is answered with before anything is recorded. */
+export type PublishRefusal = Exclude<PublicationRequestAnswer, { readonly answer: 'requested' }>;
+
+/**
+ * A document's latest version resolved as `principal` (the BL plan, BL-A), and every check a publish
+ * makes before it records anything, in the order a publish has always made them: `requestPublication`
+ * and `makeBaseline` both stand on it, so a baseline pins exactly what a publish would read. `formats`
+ * is null for a baseline, which has none: the checks that need them are its publish's.
+ */
+export async function resolvePublishable(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly version: string;
+    readonly principal: string;
+    readonly formats: readonly string[] | null;
+    readonly kind: 'publish' | 'preview';
+  },
+): Promise<Publishable | PublishRefusal> {
+  const { formats, kind } = input;
+  const latest = await latestVersion(trx, input.documentId);
+  if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
+  if (latest.id !== input.version) {
+    return { answer: 'version.precondition', current: headingOf(latest) };
+  }
+
+  // Made under the document's layout at its latest version - its template's, or the environment's
+  // declared one (templates.md) - recorded by its key: the job publishes under that version, whatever
+  // the layout becomes before it runs.
+  const layout = await documentLayout(trx, input.documentId);
+  // Under a layout that makes no PDF a preview of one is refused here too, naming `pdf`.
+  if (formats !== null) {
+    const unsupported = unsupportedFormats(layout.layout, formats);
+    if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
+    // A preview is the PDF alone (PV-C): Word's pagination would be our guess at Word's, which is why
+    // CNT-095 was narrowed. Each format beyond it is named once, in the order asked.
+    if (kind === 'preview') {
+      const beyond = [...new Set(formats.filter((format) => format !== 'pdf'))];
+      if (beyond.length > 0) return { answer: 'format.unsupported', formats: beyond };
+    }
+    // The contract refuses both; this function is public, and would otherwise record a request for
+    // formats nobody named, or one format twice.
+    if (formats.length === 0 || new Set(formats).size !== formats.length) {
+      return { answer: 'format.unsupported', formats: [] };
+    }
+  }
+  const read = readOutline(latest.content, { artifact: input.documentId, version: latest.id });
+  if (!read.ok) throw new Error(`The document ${input.documentId} at ${latest.id} does not read`);
+  if (!speaksFor(layout.layout.language, read.outline.language)) {
+    return {
+      answer: 'layout.language',
+      document: read.outline.language,
+      layout: layout.layout.language,
+    };
+  }
+
+  const outcomes = await resolveOccurrences(trx, read.outline, input.principal);
+  const failures: PublishFailure[] = outcomes.flatMap((each) =>
+    each.outcome === 'resolved'
+      ? []
+      : [
+          {
+            stage: 'resolve' as const,
+            code:
+              each.outcome === 'unreadable'
+                ? ('occurrence_unreadable' as const)
+                : ('occurrence_unresolved' as const),
+            node: each.node,
+            block: null,
+            detail: null,
+          },
+        ],
+  );
+  const resolved = await readResolved(
+    trx,
+    outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
+  );
+  // Decided from what the publisher may read, as everything here is: a component they may not read is
+  // never read for a page, and fails the request as an unreadable occurrence instead.
+  if (formats !== null && !formats.includes('pdf')) {
+    let titled = false;
+    walkOutline(read.outline.nodes, (node) => {
+      if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
+    });
+    if (titled || resolved.some((each) => citesAPage(each.content.content))) {
+      return { answer: 'page_reference.without_pdf' };
+    }
+  }
+  // A document made from a template is held to it at the door, after every check above and before
+  // anything is queued, sections first (templates.md, TE-H): its required sections, by the recorded
+  // version, and its values and its sections', against the fields resolved now (TE-K).
+  const rules = await documentRules(trx, input.documentId);
+  if (rules.bound) {
+    const sections = missingSections(rules.definition, read.outline);
+    if (sections.length > 0) return { answer: 'section.required', sections };
+    if (!rules.resolved.ok) {
+      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+    }
+    const failures = valueFailures(rules.resolved, read.outline, latest.values);
+    if (failures.length > 0) return { answer: 'metadata.invalid', failures };
+  }
+  // Every binding the publisher's resolved components hold, by its latest resolution in this document
+  // (B3-C): one without a result, or with one taken under another digest, refuses the request by name.
+  const bindings = await bindingsHeld(trx, input.documentId, resolved, latest.parameters);
+  if (bindings.unresolved.length > 0) {
+    return { answer: 'binding.unresolved', bindings: bindings.unresolved };
+  }
+  const images = await resolveImages(trx, resolved, input.principal);
+  const held = await componentFailures(trx, resolved);
+  // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
+  // its latest version, recorded by its key beside the layout's (themes 1, ruling R5): the version
+  // names its catalogues' versions, so the job sets the publication from exactly what was chosen now,
+  // whatever the theme becomes before it runs. Read whole, so a theme that does not read is a broken
+  // store here rather than in the job.
+  const theme = await documentTheme(trx, input.documentId);
+  return {
+    answer: 'publishable',
+    latest,
+    outline: read.outline,
+    layout,
+    theme,
+    resolved,
+    failures: [...failures, ...held, ...images.failures],
+    bindings: bindings.held,
+    assets: images.assets,
+  };
+}
+
 /**
  * One publish asked for, decided and recorded in the caller's transaction (docs/design/publishing.md,
  * "Who may publish"): `publish` has been decided on the document before this runs, under the access
@@ -568,99 +719,15 @@ export async function requestPublication(
   },
 ): Promise<PublicationRequestAnswer> {
   const kind = input.kind ?? 'publish';
-  const latest = await latestVersion(trx, input.documentId);
-  if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
-  if (latest.id !== input.version) {
-    return { answer: 'version.precondition', current: headingOf(latest) };
-  }
-
-  // Made under the document's layout at its latest version - its template's, or the environment's
-  // declared one (templates.md) - recorded by its key: the job publishes under that version, whatever
-  // the layout becomes before it runs.
-  const layout = await documentLayout(trx, input.documentId);
-  // Under a layout that makes no PDF a preview of one is refused here too, naming `pdf`.
-  const unsupported = unsupportedFormats(layout.layout, input.formats);
-  if (unsupported.length > 0) return { answer: 'format.unsupported', formats: unsupported };
-  // A preview is the PDF alone (PV-C): Word's pagination would be our guess at Word's, which is why
-  // CNT-095 was narrowed. Each format beyond it is named once, in the order asked.
-  if (kind === 'preview') {
-    const beyond = [...new Set(input.formats.filter((format) => format !== 'pdf'))];
-    if (beyond.length > 0) return { answer: 'format.unsupported', formats: beyond };
-  }
-  // The contract refuses both; this function is public, and would otherwise record a request for
-  // formats nobody named, or one format twice.
-  if (input.formats.length === 0 || new Set(input.formats).size !== input.formats.length) {
-    return { answer: 'format.unsupported', formats: [] };
-  }
-  const read = readOutline(latest.content, { artifact: input.documentId, version: latest.id });
-  if (!read.ok) throw new Error(`The document ${input.documentId} at ${latest.id} does not read`);
-  if (!speaksFor(layout.layout.language, read.outline.language)) {
-    return {
-      answer: 'layout.language',
-      document: read.outline.language,
-      layout: layout.layout.language,
-    };
-  }
-
-  const outcomes = await resolveOccurrences(trx, read.outline, input.requester);
-  const failures: PublishFailure[] = outcomes.flatMap((each) =>
-    each.outcome === 'resolved'
-      ? []
-      : [
-          {
-            stage: 'resolve' as const,
-            code:
-              each.outcome === 'unreadable'
-                ? ('occurrence_unreadable' as const)
-                : ('occurrence_unresolved' as const),
-            node: each.node,
-            block: null,
-            detail: null,
-          },
-        ],
-  );
-  const resolved = await readResolved(
-    trx,
-    outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
-  );
-  // Decided from what the publisher may read, as everything here is: a component they may not read is
-  // never read for a page, and fails the request as an unreadable occurrence instead.
-  if (!input.formats.includes('pdf')) {
-    let titled = false;
-    walkOutline(read.outline.nodes, (node) => {
-      if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
-    });
-    if (titled || resolved.some((each) => citesAPage(each.content.content))) {
-      return { answer: 'page_reference.without_pdf' };
-    }
-  }
-  // A document made from a template is held to it at the door, after every check above and before
-  // anything is queued, sections first (templates.md, TE-H): its required sections, by the recorded
-  // version, and its values and its sections', against the fields resolved now (TE-K).
-  const rules = await documentRules(trx, input.documentId);
-  if (rules.bound) {
-    const sections = missingSections(rules.definition, read.outline);
-    if (sections.length > 0) return { answer: 'section.required', sections };
-    if (!rules.resolved.ok) {
-      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
-    }
-    const failures = valueFailures(rules.resolved, read.outline, latest.values);
-    if (failures.length > 0) return { answer: 'metadata.invalid', failures };
-  }
-  // Every binding the publisher's resolved components hold, by its latest resolution in this document
-  // (B3-C): one without a result, or with one taken under another digest, refuses the request by name.
-  const bindings = await bindingsHeld(trx, input.documentId, resolved, latest.parameters);
-  if (bindings.unresolved.length > 0) {
-    return { answer: 'binding.unresolved', bindings: bindings.unresolved };
-  }
-  const images = await resolveImages(trx, resolved, input.requester);
-  const held = await componentFailures(trx, resolved);
-  // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
-  // its latest version, recorded by its key beside the layout's (themes 1, ruling R5): the version
-  // names its catalogues' versions, so the job sets the publication from exactly what was chosen now,
-  // whatever the theme becomes before it runs. Read whole, so a theme that does not read is a broken
-  // store here rather than in the job.
-  const theme = await documentTheme(trx, input.documentId);
+  const found = await resolvePublishable(trx, {
+    documentId: input.documentId,
+    version: input.version,
+    principal: input.requester,
+    formats: input.formats,
+    kind,
+  });
+  if (found.answer !== 'publishable') return found;
+  const { latest, layout, theme, resolved, failures, bindings } = found;
   const request = await trx
     .insertInto('publication_request')
     .values({
@@ -669,7 +736,7 @@ export async function requestPublication(
       // Every one named is one the layout makes, which is one of these, checked above.
       formats: PUBLISHING_FORMATS.filter((format) => input.formats.includes(format)),
       requested_by: input.requester,
-      failures: JSON.stringify([...failures, ...held, ...images.failures]),
+      failures: JSON.stringify(failures),
       layout_id: layout.artifactId,
       layout_version_id: layout.versionId,
       theme_id: theme.artifactId,
@@ -692,11 +759,11 @@ export async function requestPublication(
       )
       .execute();
   }
-  if (images.assets.length > 0) {
+  if (found.assets.length > 0) {
     await trx
       .insertInto('publication_request_asset')
       .values(
-        images.assets.map((each) => ({
+        found.assets.map((each) => ({
           request_id: request.id,
           version_id: each.version,
           asset_id: each.asset,
@@ -704,11 +771,11 @@ export async function requestPublication(
       )
       .execute();
   }
-  if (bindings.held.length > 0) {
+  if (bindings.length > 0) {
     await trx
       .insertInto('publication_request_binding')
       .values(
-        bindings.held.map((each) => ({
+        bindings.map((each) => ({
           request_id: request.id,
           node: each.node,
           binding: each.binding,

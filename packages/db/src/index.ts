@@ -68,6 +68,9 @@ export {
   type OccurrenceOutcome,
   type PublicationInputs,
   type PublicationRequestAnswer,
+  type PublishRefusal,
+  resolvePublishable,
+  type Publishable,
   publishedBindings,
   type PublishedBinding,
   type RecordedBinding,
@@ -547,3 +550,14 @@ export {
   type SortOrder,
 } from './listing.js';
 export { recallAnswer, rememberAnswer, type KeyedRequest, type Recalled } from './idempotency.js';
+export {
+  baselineDocument,
+  listBaselines,
+  makeBaseline,
+  readBaseline,
+  supersedeBaseline,
+  type BaselineRecord,
+  type BaselineSummary,
+  type MakeBaselineAnswer,
+  type SupersedeAnswer,
+} from './baselines.js';

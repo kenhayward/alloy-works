@@ -29,6 +29,8 @@ export type RouteTarget =
   | { readonly artifact: string }
   /** The path parameter holding an artifact VERSION's id: decided on the artifact it belongs to. */
   | { readonly artifactVersion: string }
+  /** The path parameter holding a baseline's id: decided on the document it is of (BL-H). */
+  | { readonly baseline: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };
