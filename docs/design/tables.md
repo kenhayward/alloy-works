@@ -13,10 +13,11 @@ grid, caption, note and rendering - [publishing.md's Tables](publishing.md#table
 and the value catalogue - [themes.md](themes.md)'s and bindings.md's BI-F; and the Word writer -
 [word-output.md](word-output.md)'s.
 
-**Not here, and not T2's** ([ADR-0042](../decisions/0042-grouping-totals-transposition-and-emphasis-rules-move-to-t3.md)):
-grouping, totals and subtotals, transposition and conditional emphasis rules - every computation in
-the presentation layer. A tenant groups and totals in the query (TAB-020). Revising a bound cell by
-hand is T3's with the rest of revision (ADR-0036, DAT-063).
+**Not T2's** ([ADR-0042](../decisions/0042-grouping-totals-transposition-and-emphasis-rules-move-to-t3.md)):
+grouping, transposition, emphasis rules and column widths by the table style, designed for T3 in
+[Groups, transposition and widths](#t3-groups-transposition-and-widths). Totals are never computed
+here (ADR-0045): a total is the query's (TAB-020). Revising a bound cell by hand is T3's with the rest
+of revision (ADR-0036, DAT-063).
 
 > **Built: TB1, TB2 and TB3.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
 > built the `boundTable` block and its walks, `formatCell` and `layoutTable`, the table style's formats
@@ -51,48 +52,53 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 
 ## Requirements owned
 
-| Requirement | How                                                                                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **TAB-001** | `columns` lists the result columns shown, in order ([The presentation](#the-presentation))                                                                                |
-| **TAB-002** | Each column carries its `header`, required, defaulting in the editor to the column's name                                                                                 |
-| **TAB-003** | A column's `unit` prints in its header, bracketed as the table style says, or after each value where the column asks                                                      |
-| **TAB-004** | A column the dataset version does not have is `column_missing`, in the page and at the stage, never an empty column                                                       |
-| **TAB-036** | Every declaration lives in the block and names a column by the result's column name, never a position; T3's declarations follow the same rule                             |
-| **TAB-048** | A column named twice is refused unless every header naming it differs, `column_repeated`                                                                                  |
-| **TAB-006** | With no `sort`, rows print in the dataset version's stored order: the definition's declared order, or for a multiset the canonical order data.md stores                   |
-| **TAB-007** | `sort` is stable over the stored order, so ties keep it and never swap between runs ([Order](#order))                                                                     |
-| **TAB-011** | No rows prints the headers and the declared empty statement spanning the table                                                                                            |
-| **TAB-012** | A column's format is the table style's format for its type, overridden by the column's ([Formatting](#formatting))                                                        |
-| **TAB-013** | Number, currency, percentage, date, time, duration and unit                                                                                                               |
-| **TAB-014** | `places` per column, applied to every value in it                                                                                                                         |
-| **TAB-015** | `rounding` is declared, half away from zero or half to even, and stated in provenance                                                                                     |
-| **TAB-016** | `negative`: a minus sign or parentheses, and optionally the style's negative colour beside either, never alone                                                            |
-| **TAB-017** | `null` prints declared text, which may not be empty or a number; an empty text cell prints empty                                                                          |
-| **TAB-019** | Formatting reads the canonical value and changes nothing; provenance records each printed cell's canonical value                                                          |
-| **TAB-037** | The override merges property by property ([Formatting](#formatting))                                                                                                      |
-| **TAB-038** | A unit labels; no format converts a quantity                                                                                                                              |
-| **TAB-045** | Separators and date order come from the value catalogue's formats for the document's language (BI-F)                                                                      |
-| **TAB-046** | A number column aligns on its decimal separator by layout, not by added characters; alignment by type is the table style's                                                |
-| **TAB-052** | A column declares `wrap: false` where it must not wrap: its cells are set on one line in the PDF and carry `w:noWrap` in Word                                             |
-| **TAB-024** | A note anchors to a cell by the definition's key and a column ([Notes](#notes))                                                                                           |
-| **TAB-025** | A note anchors to a column; the table's `note` is the note on the whole table                                                                                             |
-| **TAB-026** | Notes in any table, bound or authored, are lettered in the table's own sequence and printed beneath it                                                                    |
-| **TAB-027** | `source`, inline content printed beneath the table after a layout word                                                                                                    |
-| **TAB-033** | `wide`: `scale` or `rotate`, the table style's default, applied to every table, bound or authored ([Wide tables](#wide-tables))                                           |
-| **TAB-051** | A scaled or rotated table is one tagged table and one Word table                                                                                                          |
-| **DAT-012** | A note by key needs a definition declaring a key: `key_required` where it is placed                                                                                       |
-| **DAT-028** | A block binding produces a table whose presentation is this block's and the table style's, never the binding's                                                            |
-| **DAT-033** | A table's values are formatted by its table style over the value catalogue, the same declaration bindings.md formats an inline value by; neither is stored in the binding |
-| **DAT-048** | A note whose row the result no longer has is `note_row_missing`, naming the note, the key and the definition, in the page and at the stage                                |
-| **DAT-069** | An empty result where the definition declares one valid prints headers and the statement; declared invalid, the run already failed (DAT-068)                              |
-| **CNT-039** | A note into generated content names its row by key value, never by position                                                                                               |
+| Requirement | How                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **TAB-001** | `columns` lists the result columns shown, in order ([The presentation](#the-presentation))                                                                                     |
+| **TAB-002** | Each column carries its `header`, required, defaulting in the editor to the column's name                                                                                      |
+| **TAB-003** | A column's `unit` prints in its header, bracketed as the table style says, or after each value where the column asks                                                           |
+| **TAB-004** | A column the dataset version does not have is `column_missing`, in the page and at the stage, never an empty column                                                            |
+| **TAB-036** | Every declaration lives in the block and names a column by the result's column name, never a position; T3's declarations follow the same rule                                  |
+| **TAB-048** | A column named twice is refused unless every header naming it differs, `column_repeated`                                                                                       |
+| **TAB-006** | With no `sort`, rows print in the dataset version's stored order: the definition's declared order, or for a multiset the canonical order data.md stores                        |
+| **TAB-007** | `sort` is stable over the stored order, so ties keep it and never swap between runs ([Order](#order))                                                                          |
+| **TAB-011** | No rows prints the headers and the declared empty statement spanning the table                                                                                                 |
+| **TAB-012** | A column's format is the table style's format for its type, overridden by the column's ([Formatting](#formatting))                                                             |
+| **TAB-013** | Number, currency, percentage, date, time, duration and unit                                                                                                                    |
+| **TAB-014** | `places` per column, applied to every value in it                                                                                                                              |
+| **TAB-015** | `rounding` is declared, half away from zero or half to even, and stated in provenance                                                                                          |
+| **TAB-016** | `negative`: a minus sign or parentheses, and optionally the style's negative colour beside either, never alone                                                                 |
+| **TAB-017** | `null` prints declared text, which may not be empty or a number; an empty text cell prints empty                                                                               |
+| **TAB-019** | Formatting reads the canonical value and changes nothing; provenance records each printed cell's canonical value                                                               |
+| **TAB-037** | The override merges property by property ([Formatting](#formatting))                                                                                                           |
+| **TAB-038** | A unit labels; no format converts a quantity                                                                                                                                   |
+| **TAB-045** | Separators and date order come from the value catalogue's formats for the document's language (BI-F)                                                                           |
+| **TAB-046** | A number column aligns on its decimal separator by layout, not by added characters; alignment by type is the table style's                                                     |
+| **TAB-052** | A column declares `wrap: false` where it must not wrap: its cells are set on one line in the PDF and carry `w:noWrap` in Word                                                  |
+| **TAB-024** | A note anchors to a cell by the definition's key and a column ([Notes](#notes))                                                                                                |
+| **TAB-025** | A note anchors to a column; the table's `note` is the note on the whole table                                                                                                  |
+| **TAB-026** | Notes in any table, bound or authored, are lettered in the table's own sequence and printed beneath it                                                                         |
+| **TAB-027** | `source`, inline content printed beneath the table after a layout word                                                                                                         |
+| **TAB-033** | `wide`: `scale` or `rotate`, the table style's default, applied to every table, bound or authored ([Wide tables](#wide-tables))                                                |
+| **TAB-051** | A scaled or rotated table is one tagged table and one Word table                                                                                                               |
+| **DAT-012** | A note by key needs a definition declaring a key: `key_required` where it is placed                                                                                            |
+| **DAT-028** | A block binding produces a table whose presentation is this block's and the table style's, never the binding's                                                                 |
+| **DAT-033** | A table's values are formatted by its table style over the value catalogue, the same declaration bindings.md formats an inline value by; neither is stored in the binding      |
+| **DAT-048** | A note whose row the result no longer has is `note_row_missing`, naming the note, the key and the definition, in the page and at the stage                                     |
+| **DAT-069** | An empty result where the definition declares one valid prints headers and the statement; declared invalid, the run already failed (DAT-068)                                   |
+| **CNT-039** | A note into generated content names its row by key value, never by position                                                                                                    |
+| **TAB-008** | `groups` names a column; each group opens with a heading row ([Groups](#groups))                                                                                               |
+| **TAB-043** | Up to three groups, outermost first; groups order first, the sort within each                                                                                                  |
+| **TAB-042** | A heading keeps with its group's first row and a subtotal, the query's row, with its last, in the PDF and Word; the style says how they look                                   |
+| **TAB-021** | The reshaping here is `groups` and `transpose`, nothing else ([Transposition](#transposition))                                                                                 |
+| **TAB-022** | Each is a member of the block, shown on the Table tab and recorded in provenance                                                                                               |
+| **TAB-053** | The table style's `widths`, `equal` or `content`, computed once and set alike by the editor, the PDF and Word; a no-wrap column as wide as its widest cell ([Widths](#widths)) |
 
 STY-083 and STY-077 stay themes.md's; the members that answer them are [here](#the-table-style).
 TAB-030 is met by TAB-016's rule and claimed with T3's emphasis rules, which are what it is about.
 
-**TAB-053 is not claimed**: it asks for column widths from the table style, T3's, and no table style
-has a width member yet - columns share the measure equally. Its other half, TAB-052 (the two supersede
-TAB-035), is built: a column declares `wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
+**TAB-028 is not claimed** while [TG-A](#decisions-for-t3) is open. TAB-052 (with TAB-053, superseding
+TAB-035) is built: a column declares `wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
 override"**: the style aligns by type, and a bound table's column may override it, as `align` does.
 
 ## The presentation
@@ -403,6 +409,95 @@ table has every row.
   did not hold is, at save, a column named (the TB3 final review). A save naming a key column the version did not name is `definition_unreadable` to one who may
   not read the definition, as a column is.
 
+## T3: groups, transposition and widths
+
+The reshaping TAB-021 allows and the widths TAB-053 gives the style, added to what TB1 to TB3 built.
+Nothing here computes a number: a heading prints a value the rows hold, a subtotal is a row the query
+returned, and transposing moves values without changing how many there are (TAB-023).
+
+```ts
+BoundTableNode += {
+  groups?: { column: string, subtotal?: string, format?: FieldFormat }[],  // 1 to 3, outermost first
+  transpose?: { header: string },        // the column whose values head the new columns
+}
+TableStyle += {                          // optional at catalogue/3, as TB1's members are
+  widths?: 'equal' | 'content',          // absent, equal: what every stored style meant
+  group?: { heading: Header, subtotal: Header },   // absent, the header row's treatment, and bold above a rule
+}
+```
+
+Additive at content schema 1, as TB1 was. **Walk**: a column grouped twice is `group_repeated`;
+`transpose` beside `groups` is `transpose_grouped`. **Page and stage**: a grouped, subtotal or header
+column the result lacks is `column_missing`; a subtotal column not boolean is `subtotal_not_boolean`;
+more than 12 rows transposed is `transpose_too_long`. A column named only by `groups` or `transpose`
+is a column named, so a save naming a new one is `definition_unreadable` to whoever may not read the
+definition, as a sort column is.
+
+### Groups
+
+- **Order** (TG-B): groups by first appearance in stored order, so the query's `ORDER BY`, in the
+  source's collation, orders them; the sort then orders rows within each group (TAB-043). Group values
+  are compared in canonical form, as a key is.
+- **The heading** (TG-I) is one row spanning the table, holding the group's value formatted by the
+  column's style format under the group's `format`, a null as the format's null text. It is a header
+  for the rows beneath it: `th scope="rowgroup"` in the page, a level-2 or deeper `table.header` in
+  Typst, which tags it as a header row (spike TG1-S1). A grouped column may also be shown.
+- **A subtotal is the query's row** (TG-C, ADR-0045's consequence): `subtotal` names a boolean column,
+  and a row true in it belongs to the group at that level by the values of that level and those above,
+  prints last in it in the style's `subtotal` treatment, and is never sorted. A row true at two levels
+  is `subtotal_ambiguous`. A query writes these with `GROUPING SETS` or `ROLLUP`.
+- **Kept** (TG-D, TAB-042): a heading never ends a page and a subtotal never starts one, in every
+  style: what to keep is TAB-042's; how it looks is the style's. The PDF by Typst's header orphan
+  prevention and, for a subtotal, the rows before it kept with it (spike TG1-S1); Word by `w:keepNext`
+  on the heading's paragraph and on the row before a subtotal, and `w:cantSplit` on both.
+- **Rows printed** count headings and subtotals against `TABLE_ROWS_MAX`; the page's check, which sees
+  only the row count, says so where the laid-out table is first counted.
+- **The rows route** sends a reader the grouped and subtotal columns as well as those shown, since a
+  heading prints them, and sends rows in laid-out order.
+
+### Transposition
+
+`transpose` turns each row into a column (TG-E): the `header` column's formatted values head the new
+columns, each shown column becomes a row headed by its header and unit (`th scope="row"`), and the
+header column's own header stands in the corner. At most **12 rows**: a small result, one year by
+month. The sort orders the new columns. A cell keeps its column's format, wrap and notes; a keyed note
+marks the same value where it moved, a column note its row's header. Alignment follows each cell's
+column, but `decimal` becomes `end`, since a column now holds unlike quantities. A transposed table is
+still subject to `wide`.
+
+### Widths
+
+**The widths are computed once, by one pure function, and every renderer sets the same fractions**
+(TG-F). `columnWidths` in `packages/domain` measures each column's widest word (its minimum) and its
+widest unbroken cell (its maximum) by the faces' advances (`faceAdvances`, Word 2's R4), in the style
+each cell prints in, padding included: under `equal`, every column shares the measure, a no-wrap
+column taking its maximum first (as today); under `content`, each takes its minimum and the rest of
+the measure is shared in proportion to what each still wants, the table's own auto layout. Where the
+minima overflow the measure the table is wide and `wide` applies.
+
+- **For every table**, authored and bound, as `wide` is (TB-G). A heading or subtotal spanning the
+  table is not measured; an inline image is its image style's width; **a column holding an equation
+  takes an equal share** (TG-G), since its width is known only to the engine that sets it.
+- **The editor** reads the faces it already loads; **assemble** passes the fractions to the template;
+  **Word** sets them as `w:gridCol`, its layout already fixed. The theme measurement suite then holds
+  `content` to half a point like everything else.
+- **The default theme's next version sets `content`** (TG-H); a stored style without `widths` stays
+  `equal`.
+
+### Decisions for T3
+
+| ID   | Decision                                                                                                                                                                                         | Instead of                                                                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| TG-A | **Recommended: TAB-028 and TAB-030's claim move to T7**, beside theme authoring (STY-026, STY-067). A rule lives in the table style (TAB-029), and no tenant can make or change a theme until T7 | Building rules now that only the default theme could hold, which cannot know any tenant's column names                      |
+| TG-B | **Groups in order of first appearance**, so the query orders them                                                                                                                                | Ordering by value, which for text is code point (TB-D) where the source has a collation                                     |
+| TG-C | **A subtotal is a query row flagged by a boolean column per level**; TAB-042 kept whole                                                                                                          | Superseding TAB-042 without its subtotal, which drops what a regulated report prints under each group                       |
+| TG-D | **Keeping is always on**; the style decides how a heading and subtotal look                                                                                                                      | A style flag to turn TAB-042 off                                                                                            |
+| TG-E | **Transpose at most 12 rows, never with groups**; `decimal` becomes `end`                                                                                                                        | A wider limit, which `wide` would then shrink unreadably; grouping a transposed table, which has no meaning                 |
+| TG-F | **One `columnWidths` from the faces' advances, set by all three renderers**                                                                                                                      | Each renderer's own auto layout: CSS, Typst and Word disagree, and the editor would leave the PDF by more than half a point |
+| TG-G | **An equation's column takes an equal share**                                                                                                                                                    | Rendering the equation first to measure it, a second engine pass for one case                                               |
+| TG-H | **The default theme's next version sets `content`**                                                                                                                                              | Keeping `equal`, which TAB-053 exists to improve on                                                                         |
+| TG-I | **A heading prints the value alone**                                                                                                                                                             | "Region: North", words the layout would have to supply in every language                                                    |
+
 ## Build order
 
 1. **TB1, the bound table published**: the block and its walk, `layoutTable` and `formatCell`, the
@@ -413,7 +508,8 @@ table has every row.
    the rows route, the Bound table panel and Format dialog, the Data tab. Built.
 3. **TB3, notes and wide tables**: keyed and column notes, `key_required`, `note_row_missing`, notes
    lettered for every table, `wide` for every table, scale and rotate in the PDF and Word, both on the
-   page. Built; closes the tables.
+   page. Built; closes T2's tables.
+4. **TG, groups, transposition and widths** (T3): [the TG plan](../plans/2026-10-11-tg-groups-transposition-and-widths.md).
 
 Then the `templates.md` additions: a template's parameters, and a document's bindings set when it is
 made.
