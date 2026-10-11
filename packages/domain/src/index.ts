@@ -72,3 +72,4 @@ export { storableEverywhere } from './stored/storable.js';
 // Data, D1: a connection's settings and their check, the data failures and their attribution, the
 // column types a describe proposes, the connector's protocol and the limits (docs/design/data.md).
 export * from './data/index.js';
+export * from './compare/index.js';

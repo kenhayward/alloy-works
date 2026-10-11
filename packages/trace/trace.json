@@ -16034,6 +16034,75 @@
       ]
     },
     {
+      "document": "comparison.md",
+      "owns": [
+        {
+          "id": "VER-024",
+          "howItIsMet": "`compareContent` (content), `compareOutlines` (structure) and `compareResolved` (resolved output), in `packages/domain`"
+        },
+        {
+          "id": "VER-025",
+          "howItIsMet": "Any two versions of a component (`GET /v1/components/{id}/comparison?from&to`); any two baselines of a document, or a baseline and the document as it resolves now (`GET /v1/baselines/{id}/comparison?with`)"
+        },
+        {
+          "id": "VER-027",
+          "howItIsMet": "Matching precedes ordering: a unit matched in both is one change, `moved` and `edited` together where both hold"
+        },
+        {
+          "id": "VER-028",
+          "howItIsMet": "Identifier first; then, among blocks of one type left over, the highest Dice at or above 0.4, greedily, best first"
+        },
+        {
+          "id": "VER-029",
+          "howItIsMet": "Every change carries `matched: 'identity' \\| 'similarity'`, and the redline draws a similarity match apart"
+        },
+        {
+          "id": "VER-030",
+          "howItIsMet": "The redline drawn over the newer side in the page, and exported as one self-contained HTML file **(default)**"
+        },
+        {
+          "id": "VER-031",
+          "howItIsMet": "`compareResolved` names, per node, each cause that holds: a component version, a dataset version, a definition version, the layout's or theme's version. Conditions are T4's: the identity until then, so never a cause yet"
+        },
+        {
+          "id": "VER-045",
+          "howItIsMet": "The same for two baselines under different template versions: a definition cause told from an edit, field by field"
+        },
+        {
+          "id": "VER-050",
+          "howItIsMet": "Every route reads as its caller. A component they may not read is its node alone: where it stands, never whether it changed; in the page and the export"
+        },
+        {
+          "id": "VER-051",
+          "howItIsMet": "Content and structure: two baselines of 300 components, 20 blocks each, and a component with 300 versions listed and compared, held to counted operations in CI and timed in the service **(default, provisional)**; resolved output budgeted apart"
+        },
+        {
+          "id": "CNT-111",
+          "howItIsMet": "The editor's **Compare** lists the component's versions, who cut each and when, and draws the redline against the one chosen"
+        },
+        {
+          "id": "CNT-112",
+          "howItIsMet": "Any two versions; revisions when LIF designates them, as `revision.version` already names them"
+        },
+        {
+          "id": "CNT-113",
+          "howItIsMet": "**My changes**: the editor compares the version it opened from with what it holds now, in the browser, so it needs no lock and lags no save"
+        },
+        {
+          "id": "COL-026",
+          "howItIsMet": "The same view is the author's own changes, told apart from others' suggestions when phase 6 draws them"
+        },
+        {
+          "id": "SCH-025",
+          "howItIsMet": "`GET /v1/changes?since=` for a document (its outline, the components it places and its values accepted), a space, or a listing's results by `listing.ts`, as the caller may read them"
+        },
+        {
+          "id": "SCH-048",
+          "howItIsMet": "Versions are never deleted (VER-036), so the record begins where the artifact did, or where the environment was made; a `since` before it answers from there and says so"
+        }
+      ]
+    },
+    {
       "document": "component-editor.md",
       "owns": [
         {
@@ -22064,6 +22133,36 @@
       "kind": "title"
     },
     {
+      "id": "VER-024",
+      "file": "packages/domain/src/compare/content.test.ts",
+      "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "VER-027",
+      "file": "packages/domain/src/compare/content.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "VER-028",
+      "file": "packages/domain/src/compare/content.test.ts",
+      "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "VER-029",
+      "file": "packages/domain/src/compare/content.test.ts",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "VER-051",
+      "file": "packages/domain/src/compare/content.test.ts",
+      "line": 216,
+      "kind": "title"
+    },
+    {
       "id": "CNT-056",
       "file": "packages/domain/src/content/admission/admit.test.ts",
       "line": 241,
@@ -22756,7 +22855,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 636,
+      "line": 641,
       "kind": "title"
     },
     {

@@ -25,6 +25,7 @@ understand the storage layer, rather than something to be thrown away.
 | [relationships.md](relationships.md)                   | Declared relationships and references, and walking them without revealing what the user may not read                                |
 | [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask                                               |
 | [metadata.md](metadata.md)                             | Which fields apply to a component, what makes a value valid, and what a version records about its definitions                       |
+| [comparison.md](comparison.md)                         | What changed between two versions, two baselines or a session and its version, at three levels, as anchored changes and a redline   |
 | [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata                                |
 | [access.md](access.md)                                 | Spaces, roles and grants, and deciding what a principal may do to an artifact and why                                               |
 | [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it                                  |
