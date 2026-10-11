@@ -198,6 +198,8 @@ export const tableNodeSchema = z.strictObject({
 /** The most columns a bound table shows, and the most it sorts by (tables.md, "The presentation"). */
 export const BOUND_TABLE_COLUMNS_MAX = 64;
 export const BOUND_TABLE_SORT_MAX = 4;
+/** The most levels a bound table groups its rows by (TAB-043; tables.md, "Groups"). */
+export const BOUND_TABLE_GROUPS_MAX = 3;
 
 /**
  * **A column a bound table shows** (TAB-001 to TAB-003, TAB-036; no-wrap, half of TAB-035): the result column by its
@@ -224,10 +226,21 @@ const sortKeySchema = z.strictObject({
 });
 
 /**
+ * **A level of grouping** (TAB-008, TAB-043; tables.md, "Groups"): a result column by name whose
+ * values head the rows beneath them; a boolean column naming the query's subtotal rows at this level
+ * (TAB-042, TG-C); and a format for the heading, merged over the style's for its type.
+ */
+const groupSchema = z.strictObject({
+  column: sourceNameSchema,
+  subtotal: sourceNameSchema.optional(),
+  format: fieldFormatSchema.optional(),
+});
+
+/**
  * **A bound table** (tables.md; the TB1 plan, TB1-A and TB1-B): a block holding a binding to a whole
  * result - an inline binding's members with no `take` - and the presentation that makes a table of it.
  * Additive at content schema 1, as B6's figure binding was: nothing stored before holds one. TB3
- * adds `notes` and `wide`, optional members, additive again. What zod
+ * adds `notes` and `wide`, and TG `groups`, optional members, additive again. What zod
  * cannot hold - a column shown twice under one header, a sort naming one twice - is the walk's
  * (`document.ts`).
  */
@@ -241,6 +254,7 @@ export type BoundTableNode = {
   columns: BoundColumn[];
   headerColumn: boolean;
   sort?: z.infer<typeof sortKeySchema>[] | undefined;
+  groups?: z.infer<typeof groupSchema>[] | undefined;
   empty?: z.infer<typeof inlineNodeSchema>[] | undefined;
   source?: z.infer<typeof inlineNodeSchema>[] | undefined;
   note?: z.infer<typeof inlineNodeSchema>[] | undefined;
@@ -261,6 +275,8 @@ export const boundTableNodeSchema = z.strictObject({
   columns: z.array(boundColumnSchema).min(1).max(BOUND_TABLE_COLUMNS_MAX),
   headerColumn: z.boolean(),
   sort: z.array(sortKeySchema).min(1).max(BOUND_TABLE_SORT_MAX).optional(),
+  // Outermost first (TG's TG1), additive as TB3's members were.
+  groups: z.array(groupSchema).min(1).max(BOUND_TABLE_GROUPS_MAX).optional(),
   // `min(1)`, each: an empty one is a second spelling of an absent one, as an attribution's is.
   empty: z.array(inlineNodeSchema).min(1).optional(),
   source: z.array(inlineNodeSchema).min(1).optional(),

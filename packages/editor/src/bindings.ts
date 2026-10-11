@@ -415,6 +415,10 @@ export const TABLE_FAILURE_WORDS = {
     `No rows - the format of ${failure.column} sets ${failure.detail}, which does not apply to its values`,
   table_too_long: (failure) =>
     `No rows - the result has ${failure.detail} rows, more than a table prints`,
+  subtotal_not_boolean: (failure) =>
+    `No rows - ${failure.column} marks subtotals, so it must hold true or false`,
+  subtotal_ambiguous: (failure) =>
+    `No rows - row ${Number(failure.detail) + 1} of the result is a subtotal at two levels`,
 } satisfies {
   readonly [K in TableFailure['code']]: (failure: TableFailure & { readonly code: K }) => string;
 };

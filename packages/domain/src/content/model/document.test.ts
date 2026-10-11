@@ -2180,6 +2180,20 @@ describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
     expect(kept.columns).toHaveLength(2);
   });
 
+  it('TAB-043 keeps up to three groups, outermost first, and refuses a column grouped twice or a fourth level', () => {
+    const kept = parsedTable({
+      groups: [{ column: 'site', subtotal: 'site_total' }, { column: 'depth' }],
+    });
+    expect(kept.groups?.map((group) => group.column)).toEqual(['site', 'depth']);
+    expect(() => parsedTable({ groups: [{ column: 'site' }, { column: 'site' }] })).toThrow(
+      /T1.*groups by site/,
+    );
+    expect(() =>
+      parsedTable({ groups: ['a', 'b', 'c', 'd'].map((column) => ({ column })) }),
+    ).toThrow();
+    expect(() => parsedTable({ groups: [] })).toThrow();
+  });
+
   it('refuses a sort naming a column twice, more than four sort columns, or more than 64 columns', () => {
     const by = (column: string) => ({ column, direction: 'ascending', nulls: 'last' });
     expect(() => parsedTable({ sort: [by('depth'), by('depth')] })).toThrow(/T1.*sorts by depth/);

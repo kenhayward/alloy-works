@@ -278,7 +278,7 @@ export function bind(
         fail(
           each.code,
           table.id,
-          each.code === 'table_too_long'
+          each.code === 'table_too_long' || each.code === 'subtotal_ambiguous'
             ? each.detail
             : each.code === 'format_mismatch'
               ? `${each.column}: ${each.detail}`

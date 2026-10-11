@@ -56,7 +56,11 @@ export interface TablePresentation {
 
 /** Why a bound table cannot be laid out, each naming its column, or its member or count. */
 export type TableFailure =
-  | { readonly code: 'column_missing' | 'column_image'; readonly column: string }
+  | {
+      readonly code: 'column_missing' | 'column_image' | 'subtotal_not_boolean';
+      readonly column: string;
+    }
+  | { readonly code: 'subtotal_ambiguous'; readonly detail: string }
   | { readonly code: 'format_mismatch'; readonly column: string; readonly detail: string }
   | { readonly code: 'table_too_long'; readonly detail: string };
 
@@ -82,6 +86,25 @@ export interface LaidOutCell {
   readonly parenthesised: boolean;
 }
 
+/** A group's heading as laid out (TAB-008): its level, outermost 1, and its value formatted. */
+export interface LaidOutHeading {
+  readonly level: number;
+  readonly text: string;
+  readonly value: CanonicalValue;
+}
+
+/**
+ * **A row as laid out**: its cells and its index into the rows it was laid out from (TB3-C); the
+ * headings of the groups it opens, outermost first (TAB-008); and, for the query's subtotal row, the
+ * level it totals (TAB-042).
+ */
+export interface LaidOutRow {
+  readonly index: number;
+  readonly cells: readonly LaidOutCell[];
+  readonly opens?: readonly LaidOutHeading[];
+  readonly subtotal?: number;
+}
+
 /**
  * **A bound table laid out**: its header row, as text with a unit bracketed; its columns; its rows in
  * order; and, where it has none, the statement spanning it, a data cell (TAB-011).
@@ -89,8 +112,7 @@ export interface LaidOutCell {
 export interface LaidOut {
   readonly header: readonly { readonly text: string }[];
   readonly columns: readonly LaidOutColumn[];
-  /** Each row's cells, and its index into the rows it was laid out from (TB3-C). */
-  readonly rows: readonly { readonly index: number; readonly cells: readonly LaidOutCell[] }[];
+  readonly rows: readonly LaidOutRow[];
   readonly empty: {
     readonly content: readonly InlineNode[];
     readonly colspan: number;
@@ -139,6 +161,17 @@ const formatOf = (
     shown.format,
   );
 
+/** The format a group's heading is printed in: its type's in the style, then the group's. */
+const groupFormat = (
+  group: NonNullable<BoundTableNode['groups']>[number],
+  type: ColumnType,
+  style: TablePresentation,
+): FieldFormat =>
+  mergeFormat(
+    mergeFormat(DEFAULT_TABLE_FIELDS[type.base as FieldKey], style.fields?.[type.base as FieldKey]),
+    group.format,
+  );
+
 /**
  * **`checkTable`** (the TB2 plan, TB2-B): every failure `layoutTable` finds before it lays a row out,
  * from the declared columns and the row count alone, so the page can say a result is too long, or a
@@ -178,32 +211,143 @@ export function checkTable<C extends TableColumn>(
     const column = found(key.column);
     if (column?.type.base === 'image') failures.push({ code: 'column_image', column: key.column });
   }
+  for (const group of table.groups ?? []) {
+    if (group.subtotal !== undefined) {
+      const total = found(group.subtotal);
+      if (total !== undefined && total.type.base !== 'boolean') {
+        failures.push({ code: 'subtotal_not_boolean', column: group.subtotal });
+      }
+    }
+    const column = found(group.column);
+    if (column === undefined) continue;
+    if (column.type.base === 'image') {
+      failures.push({ code: 'column_image', column: group.column });
+      continue;
+    }
+    for (const member of formatMismatch(column.type, groupFormat(group, column.type, style))) {
+      failures.push({ code: 'format_mismatch', column: group.column, detail: member });
+    }
+  }
   if (rowCount > TABLE_ROWS_MAX) {
     failures.push({ code: 'table_too_long', detail: String(rowCount) });
   }
   return failures;
 }
 
-/** Stored order, then each sort key in turn; the stored position breaks every tie (TAB-007). */
+type SortBy = readonly {
+  readonly key: NonNullable<BoundTableNode['sort']>[number];
+  readonly type: ColumnType;
+  readonly index: number;
+}[];
+
+/** A level of grouping as ordering reads it: its group, and its columns' places in the result. */
+interface GroupBy {
+  readonly group: NonNullable<BoundTableNode['groups']>[number];
+  readonly index: number;
+  readonly subtotal: number | undefined;
+}
+
+/** Rows in stored order, then each sort key in turn; the stored position breaks every tie (TAB-007). */
+function sortIndices(result: CanonicalResult, rows: number[], sort: SortBy): number[] {
+  if (sort.length === 0) return rows;
+  return [...rows].sort((x, y) => {
+    for (const { key, type, index } of sort) {
+      const compared = compareBy(type, result.rows[x]![index]!, result.rows[y]![index]!, key);
+      if (compared !== 0) return compared;
+    }
+    return x - y;
+  });
+}
+
+/** One row of a bound table's order: its index, the groups it opens, and the level it totals. */
+interface Ordered {
+  readonly index: number;
+  readonly opens: readonly { readonly level: number; readonly value: CanonicalValue }[];
+  readonly subtotal: number | undefined;
+}
+
+/**
+ * **A bound table's order** (TAB-043; the TG plan, TG-K): groups by first appearance in stored order,
+ * outermost first, each opening with its heading; within the innermost, the rows sorted stably; and
+ * each level's subtotal rows - the query's, true in its `subtotal` column - last in their group, in
+ * stored order, never sorted (TAB-042). A subtotal at level k belongs to its group by the values of
+ * levels 1 to k alone. A row true at two levels is `subtotal_ambiguous`, naming its index.
+ */
 function orderOf(
   result: CanonicalResult,
-  sort: readonly {
-    readonly key: NonNullable<BoundTableNode['sort']>[number];
-    readonly type: ColumnType;
-    readonly index: number;
-  }[],
-): number[] {
-  const order = result.rows.map((_, index) => index);
-  if (sort.length > 0) {
-    order.sort((x, y) => {
-      for (const { key, type, index } of sort) {
-        const compared = compareBy(type, result.rows[x]![index]!, result.rows[y]![index]!, key);
-        if (compared !== 0) return compared;
-      }
-      return x - y;
-    });
+  sort: SortBy,
+  groups: readonly GroupBy[] = [],
+): Ordered[] | { readonly ambiguous: number } {
+  const all = result.rows.map((_, index) => index);
+  if (groups.length === 0) {
+    return sortIndices(result, all, sort).map((index) => ({
+      index,
+      opens: [],
+      subtotal: undefined,
+    }));
   }
-  return order;
+  const totals = new Map<number, number>();
+  for (const index of all) {
+    const levels = groups.flatMap((group, level) =>
+      group.subtotal !== undefined && result.rows[index]![group.subtotal] === true ? [level] : [],
+    );
+    if (levels.length > 1) return { ambiguous: index };
+    if (levels.length === 1) totals.set(index, levels[0]!);
+  }
+  const ordered: Ordered[] = [];
+  const opening: { level: number; value: CanonicalValue }[] = [];
+  const emit = (index: number, subtotal: number | undefined) => {
+    ordered.push({ index, opens: opening.splice(0), subtotal });
+  };
+  const within = (rows: number[], level: number) => {
+    if (level === groups.length) {
+      for (const index of sortIndices(result, rows, sort)) emit(index, undefined);
+      return;
+    }
+    const at = groups[level]!.index;
+    // Canonical values are strings, booleans or null, so the value itself keys its group, in the
+    // order its first row met it.
+    const parts = new Map<CanonicalValue, number[]>();
+    for (const index of rows) {
+      const value = result.rows[index]![at] ?? null;
+      const part = parts.get(value) ?? [];
+      part.push(index);
+      parts.set(value, part);
+    }
+    for (const [value, part] of parts) {
+      opening.push({ level: level + 1, value });
+      within(
+        part.filter((index) => totals.get(index) !== level),
+        level + 1,
+      );
+      for (const index of part.filter((each) => totals.get(each) === level)) {
+        emit(index, level + 1);
+      }
+    }
+  };
+  within(all, 0);
+  return ordered;
+}
+
+/** The sort and the groups as the result holds them, passing over any column it lacks. */
+function orderBy<C extends TableColumn>(
+  table: BoundTableNode,
+  result: CanonicalResult,
+  columns: readonly C[],
+): { readonly sort: SortBy; readonly groups: readonly GroupBy[] } {
+  const at = new Map(result.columns.map(([name], index) => [name, index]));
+  const declared = new Map(columns.map((column) => [column.name, column]));
+  const sort = (table.sort ?? []).flatMap((key) => {
+    const column = declared.get(key.column);
+    const index = at.get(key.column);
+    return column === undefined || index === undefined ? [] : [{ key, type: column.type, index }];
+  });
+  const groups = (table.groups ?? []).flatMap((group) => {
+    const index = at.get(group.column);
+    const subtotal = group.subtotal === undefined ? undefined : at.get(group.subtotal);
+    return !declared.has(group.column) || index === undefined ? [] : [{ group, index, subtotal }];
+  });
+  return { sort, groups };
 }
 
 /**
@@ -232,14 +376,16 @@ export function tableOrder<C extends TableColumn>(
   result: CanonicalResult,
   columns: readonly C[],
 ): number[] {
-  const at = new Map(result.columns.map(([name], index) => [name, index]));
-  const declared = new Map(columns.map((column) => [column.name, column]));
-  const sort = (table.sort ?? []).flatMap((key) => {
-    const column = declared.get(key.column);
-    const index = at.get(key.column);
-    return column === undefined || index === undefined ? [] : [{ key, type: column.type, index }];
-  });
-  return orderOf(result, sort);
+  const { sort, groups } = orderBy(table, result, columns);
+  const ordered = orderOf(result, sort, groups);
+  // An ambiguous subtotal fails the layout; ordered without groups, its rows are still all sent.
+  return 'ambiguous' in ordered
+    ? sortIndices(
+        result,
+        result.rows.map((_, index) => index),
+        sort,
+      )
+    : ordered.map((row) => row.index);
 }
 
 /**
@@ -292,22 +438,37 @@ export function layoutTable<C extends TableColumn>(
       wrap: shown.wrap !== false,
     };
   });
-  const sort = (table.sort ?? []).map((key) => ({
-    key,
-    type: declared.get(key.column)!.type,
-    index: at.get(key.column)!,
-  }));
-
-  const order = orderOf(result, sort);
+  const { sort, groups } = orderBy(table, result, present);
+  const order = orderOf(result, sort, groups);
+  if ('ambiguous' in order) {
+    return { failures: [{ code: 'subtotal_ambiguous', detail: String(order.ambiguous) }] };
+  }
+  const printed = order.reduce((count, row) => count + 1 + row.opens.length, 0);
+  if (printed > TABLE_ROWS_MAX) {
+    return { failures: [{ code: 'table_too_long', detail: String(printed) }] };
+  }
+  const headingOf = (level: number, value: CanonicalValue): LaidOutHeading => {
+    const { group } = groups[level - 1]!;
+    const { type } = declared.get(group.column)!;
+    return {
+      level,
+      text: formatCell(value, type, groupFormat(group, type, style), formats, words),
+      value,
+    };
+  };
   const units = table.columns.map((shown) =>
     shown.unit?.place === 'value' ? shown.unit.text : undefined,
   );
   const indexes = laidColumns.map((column) => at.get(column.name)!);
   const shownOrder = options.limit === undefined ? order : order.slice(0, options.limit);
-  const rows = shownOrder.map((index) => {
+  const rows = shownOrder.map(({ index, opens, subtotal }): LaidOutRow => {
     const row = result.rows[index]!;
     return {
       index,
+      ...(opens.length === 0
+        ? {}
+        : { opens: opens.map(({ level, value }) => headingOf(level, value)) }),
+      ...(subtotal === undefined ? {} : { subtotal }),
       cells: laidColumns.map((column, place): LaidOutCell => {
         const value = row[indexes[place]!] ?? null;
         return {

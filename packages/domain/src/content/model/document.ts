@@ -603,6 +603,13 @@ function checkBoundTable(
     }
     sorted.add(key.column);
   }
+  const grouped = new Set<string>();
+  for (const group of block.groups ?? []) {
+    if (grouped.has(group.column)) {
+      throw new Error(`Bound table ${block.id} groups by ${group.column} more than once`);
+    }
+    grouped.add(group.column);
+  }
   claim(block.binding.id, claimed.ids);
   const inline = (member: 'empty' | 'source' | 'note') => {
     const content = block[member];
