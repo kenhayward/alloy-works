@@ -843,9 +843,10 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 874 (2026-10-11): TG3's widths.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(866);
+    expect(model.citations).toHaveLength(874);
   });
 
   it('cites no identifier the corpus does not hold', () => {

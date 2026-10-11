@@ -435,6 +435,16 @@ What TG2 built that differs:
 - **The rows route sends a grouped, subtotal or header column to every reader**, since the page prints
   them, and its `ETag` covers groups and transposition.
 
+What TG3 built that differs:
+
+- **The editor measures with the browser's own advances**, unkerned, on a canvas in each run's computed
+  face, rather than reading the face files: the same faces, so the same widths, which the theme suite
+  holds to half a point under the contrary theme.
+- **The widths are decorations on an authored table's first row**, which `table-layout: fixed` reads, and
+  a `colgroup` in a bound table's body, which its own view draws.
+- **A cell's room follows its column's share** (`cellIndent`), so what fits a cell is judged in the width
+  it is set in.
+
 ## T3: groups, transposition and widths
 
 The reshaping TAB-021 allows and the widths TAB-053 gives the style, added to what TB1 to TB3 built.
