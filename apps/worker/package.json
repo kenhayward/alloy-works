@@ -11,7 +11,8 @@
     "start": "node dist/main.js",
     "fetch-typst": "tsx scripts/fetch-typst.ts",
     "fetch-verapdf": "tsx scripts/fetch-verapdf.ts",
-    "fetch-ooxml-check": "tsx scripts/fetch-ooxml-check.ts"
+    "fetch-ooxml-check": "tsx scripts/fetch-ooxml-check.ts",
+    "record": "tsx scripts/record.ts"
   },
   "dependencies": {
     "@alloy-works/db": "workspace:^",

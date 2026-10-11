@@ -353,8 +353,8 @@ It holds, in its own describe blocks:
   tables - every contents entry, every figure listed and every cross-reference printing the right
   page; 9, the same bytes of the same inputs. What the spike had that the corpus does not: case 4's
   timing, which is PUB-102's budget on its declared reference document; case 8's reference list,
-  since a citation cannot resolve until LIB in T6; and case 9's second machine, since the suite runs
-  on one.
+  since a citation cannot resolve until LIB in T6. Case 9's second machine is now every machine: the
+  recorded outputs below.
 - **The defects fixed**, by issue: #145 (a publication set in the pinned faces alone), #158 (a second
   level of bullets in a glyph the faces have, moved here from `template.test.ts`; the refusal is
   fixed, and the issue stays open for what it asks besides, a theme's markers checked against its
@@ -431,6 +431,14 @@ shows - are read from the same cases by hand when the engine or the template cha
 by any suite. **The corpus keeps its PDFs for that review** where `ALLOY_CORPUS_PDFS` names a
 directory, each named by the case that compiled it (`testing/keep.ts`); the
 [audit guide](guides/auditing-a-release.md) says how to run it so.
+
+**Every output is held to its recorded bytes** (PUB-075; `testing/recorded.ts`): the SHA-256 of each
+PDF and DOCX the corpus makes, by case and place, is pinned in `testing/recorded-outputs.json`, so a
+change to `assemble`, a template, Typst, a face or a library that moves a byte fails the corpus, naming
+the case and keeping what it made (in `ALLOY_CORPUS_DIFFERENCES`, else the system's temporary
+directory). A new case is recorded by `pnpm --filter @alloy-works/worker record`, which rewrites no
+pin; a change meant to move one by `record --accept`, in a pull request that names each case moved and
+why. The pins are CI's, on Linux.
 
 ## The publishing budget
 
