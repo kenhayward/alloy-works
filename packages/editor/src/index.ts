@@ -204,3 +204,4 @@ export {
   focusBoundTableColumn,
   holdBoundTableColumn,
 } from './boundTableFocus.js';
+export { tableWidthsPlugin, widthDrawnTables } from './tableWidths.js';

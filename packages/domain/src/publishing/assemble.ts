@@ -62,6 +62,13 @@ import {
   type ImageFrame,
 } from './measure.js';
 import { publishedLanguage } from './language.js';
+import { faceAdvances, type FaceAdvances } from '../word/advances.js';
+import {
+  columnExtents,
+  columnWidths,
+  type MeasuredCell,
+  type MeasuredParagraph,
+} from './widths.js';
 import type { DocxFormat, Layout, PdfFormat, PublishingFormat } from './layout.js';
 import { mathsText, mathsTree, type MathsRefusal } from './maths.js';
 import {
@@ -147,6 +154,11 @@ export interface AssembleInput {
    * request recorded why.
    */
   readonly assets: ReadonlyMap<string, PublishingAsset>;
+  /**
+   * Every pinned face file by its hash (TG3), which a table whose style widths its columns by what they
+   * hold is measured by. Absent, such a table shares the measure equally, as it did before.
+   */
+  readonly faces?: ReadonlyMap<string, Uint8Array>;
   /**
    * What is being made (publishing.md, "Preview"): a publication, which is a `draft` until a baseline
    * can approve one, or a `preview` of it (PUB-005, PUB-006). **A preview is assembled exactly as a
@@ -1424,6 +1436,43 @@ export function assemble(given: AssembleInput): Assembled {
           if (heading) return 'column';
           return leading ? 'row' : null;
         };
+        const publishedRows = block.rows.map((row, rowIndex) => ({
+          cells: row.cells.map((cell, cellIndex) => ({
+            // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
+            // in the room the cell has: its share of the measure, less its style's padding each
+            // side (themes 2).
+            blocks: cell.content.flatMap((each) =>
+              publishable(
+                each,
+                node,
+                'tableCell',
+                cellIndent(indent, columns, cell.colspan, padding),
+                block,
+                rowIndex < block.headerRows,
+              ),
+            ),
+            colspan: cell.colspan,
+            rowspan: cell.rowspan,
+            scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
+            ...cellMarks(rowIndex, cellIndex),
+          })),
+        }));
+        // Its columns as wide as what they hold, where its style says so and the faces are here to
+        // measure them (TG3; TAB-053): each cell as published - a reference's words, a note's mark and
+        // a list's items among it - by its faces' advances, unkerned.
+        const widths =
+          tableStyle?.widths === 'content' && input.faces !== undefined
+            ? tableWidths(
+                publishedRows,
+                starts,
+                columns,
+                padding,
+                indent,
+                tableStyle,
+                block,
+                laidOut?.wrap,
+              )
+            : null;
         return [
           {
             type: 'table',
@@ -1435,32 +1484,13 @@ export function assemble(given: AssembleInput): Assembled {
             headerRows: block.headerRows,
             headerColumns: block.headerColumns,
             columns,
-            rows: block.rows.map((row, rowIndex) => ({
-              cells: row.cells.map((cell, cellIndex) => ({
-                // Paragraphs and lists alone (decision T-D), each published as it is anywhere else -
-                // in the room the cell has: its share of the measure, less its style's padding each
-                // side (themes 2).
-                blocks: cell.content.flatMap((each) =>
-                  publishable(
-                    each,
-                    node,
-                    'tableCell',
-                    cellIndent(indent, columns, cell.colspan, padding),
-                    block,
-                    rowIndex < block.headerRows,
-                  ),
-                ),
-                colspan: cell.colspan,
-                rowspan: cell.rowspan,
-                scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
-                ...cellMarks(rowIndex, cellIndex),
-              })),
-            })),
+            rows: publishedRows,
             listed: entry !== undefined,
             note: noteSays ? note : null,
             notes: lettering.notes,
             // Its own, else its style's, else scale (TB3-G): a missing style has already failed.
             wide: block.wide ?? tableStyle?.wide ?? 'scale',
+            ...(widths === null ? {} : { widths }),
             ...(laidOut === null
               ? {}
               : {
@@ -1701,6 +1731,115 @@ export function assemble(given: AssembleInput): Assembled {
       pdf: within(measure, indent.pdf),
       word: within(wordPage === null ? measure : textMeasure(wordPage), indent.word),
     };
+  };
+
+  /** How a style's face sets its characters, bold and slanted as asked, from the pinned files (TG3). */
+  const advances = new Map<string, FaceAdvances | null>();
+  const advancesOf = (style: ResolvedParagraphStyle, strong: boolean, slanted: boolean) => {
+    const weight = strong || style.properties.bold ? 'bold' : 'regular';
+    const posture = slanted !== style.properties.italic ? 'italic' : 'normal';
+    const { files } = style.typeface;
+    const file =
+      files.find((each) => each.weight === weight && each.posture === posture) ??
+      files.find((each) => each.weight === 'regular' && each.posture === 'normal') ??
+      files[0]!;
+    if (!advances.has(file.sha256)) {
+      const bytes = input.faces?.get(file.sha256);
+      advances.set(file.sha256, bytes === undefined ? null : faceAdvances(bytes));
+    }
+    return advances.get(file.sha256) ?? null;
+  };
+  /**
+   * **A table's columns' shares by what they hold** (TG3; TAB-053, TG-F): each cell's paragraphs and
+   * list items, each run in its paragraph's style, bold where it is marked strong or a header sets it
+   * bold, slanted where emphasised; an equation or an image, which no face measures, asking an equal
+   * share; measured against the PDF's measure where it stands. Null where a face cannot be read or the
+   * columns at their least overflow the measure, which its `wide` then decides.
+   */
+  const tableWidths = (
+    rows: readonly { readonly cells: readonly PublishedCell[] }[],
+    starts: readonly (readonly number[])[],
+    columns: number,
+    padding: number,
+    indent: Indent,
+    style: NonNullable<ReturnType<ResolvedTheme['tableStyles']['get']>>,
+    block: Extract<BlockNode, { type: 'table' }>,
+    wrap: readonly boolean[] | undefined,
+  ): readonly number[] | null => {
+    const measure = textMeasure(publishedPdf(layout!.formats.pdf)) - indent.pdf;
+    const styleOf = (id: string) => theme!.paragraphStyles.get(id) ?? placeStyle('tableCell');
+    type Run = { text: string; strong: boolean; slanted: boolean; points?: number };
+    const runsOf = (inlines: readonly PublishedInline[], bold: boolean): Run[] =>
+      inlines.flatMap((each): Run[] => {
+        if ('text' in each && 'marks' in each) {
+          const kinds = each.marks.map((mark) => mark.kind);
+          return [
+            {
+              text: each.text,
+              strong: bold || kinds.includes('strong'),
+              slanted: kinds.includes('emphasis'),
+            },
+          ];
+        }
+        // What else prints words: a reference's, a note's mark, a table note's letter.
+        if ('reference' in each && 'text' in each.reference) {
+          return [{ text: each.reference.text ?? '', strong: bold, slanted: false }];
+        }
+        if ('footnote' in each)
+          return [{ text: each.footnote.label, strong: false, slanted: false }];
+        if ('tableMark' in each)
+          return [{ text: each.tableMark.letter, strong: false, slanted: false }];
+        // An image in a line is as wide as it is set.
+        if ('image' in each)
+          return [{ text: '', strong: false, slanted: false, points: each.image.width }];
+        return [];
+      });
+    const paragraphsOf = (
+      blocks: readonly PublishedBlock[],
+      bold: boolean,
+    ): MeasuredParagraph<ResolvedParagraphStyle, Run>[] =>
+      blocks.flatMap((each) => {
+        if (each.type === 'paragraph') {
+          return [
+            {
+              style: styleOf(each.style),
+              runs: runsOf(each.runs, bold),
+              opaque: each.runs.some((run) => 'equation' in run),
+            },
+          ];
+        }
+        if (each.type === 'list') {
+          return each.items.flatMap((item) => [
+            ...(item.term === null
+              ? []
+              : [{ style: placeStyle('listItem'), runs: runsOf(item.term, bold), opaque: false }]),
+            ...paragraphsOf(item.blocks, bold),
+          ]);
+        }
+        return [];
+      });
+    let unreadable = false;
+    const cells: MeasuredCell<ResolvedParagraphStyle, Run>[] = rows.flatMap((row, y) =>
+      row.cells.map((cell, x) => {
+        const column = starts[y]![x]!;
+        const header =
+          (y < block.headerRows && style.headerRow.bold) ||
+          (column < block.headerColumns && style.headerColumn.bold);
+        return { column, colspan: cell.colspan, paragraphs: paragraphsOf(cell.blocks, header) };
+      }),
+    );
+    const extents = columnExtents(columns, cells, {
+      padding,
+      measure,
+      ...(wrap === undefined ? {} : { noWrap: wrap.map((each) => !each) }),
+      width: (text, paragraphStyle, run) => {
+        if (run.points !== undefined) return run.points;
+        const face = advancesOf(paragraphStyle, run.strong, run.slanted);
+        if (face === null) unreadable = true;
+        return (face?.width(text) ?? 0) * paragraphStyle.properties.size;
+      },
+    });
+    return unreadable ? null : columnWidths(extents, measure);
   };
 
   /**

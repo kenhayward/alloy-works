@@ -448,9 +448,9 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const outputs = await outputsOf(request);
     expect(outputs.map((each) => [each.format, each.producer, each.producer_version])).toEqual(
-      expect.arrayContaining([['provenance', 'pipeline', '22']]),
+      expect.arrayContaining([['provenance', 'pipeline', '23']]),
     );
-    expect(outputs[0]!.pipeline_version).toBe('22');
+    expect(outputs[0]!.pipeline_version).toBe('23');
     const kept = outputs.find((each) => each.format === 'provenance')!;
     const text = (await bytesOf(kept.object_key)).toString('utf8');
     const provenance = JSON.parse(text);

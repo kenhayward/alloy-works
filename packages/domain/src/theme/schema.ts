@@ -367,6 +367,9 @@ export const tableStyleSchema = z.strictObject({
   unitBrackets: z.enum(['parentheses', 'brackets']).optional(),
   // How a table too wide for its measure is set (TB3-G), optional likewise: absent, `scale`.
   wide: z.enum(['scale', 'rotate']).optional(),
+  // How its columns share the measure (TG3; TAB-053), optional likewise: absent, `equal`, which is
+  // what every stored style meant; `content`, by what each column holds.
+  widths: z.enum(['equal', 'content']).optional(),
 });
 
 /** The units an image's size is given in (STY-015, STY-017). */

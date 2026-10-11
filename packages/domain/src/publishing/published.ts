@@ -8,7 +8,9 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/20` is the document whose **bound tables may be transposed** (the TG plan, TG2): a
+ * `publishing/21` is the document whose **tables may say how wide each column is** (the TG plan,
+ * TG3): `widths`, fractions of the measure, where a table style widths columns by what they hold.
+ * Otherwise it is `publishing/20`, the document whose **bound tables may be transposed** (the TG plan, TG2): a
  * transposed table's value cells carry their own column's `align` and `nowrap`. Otherwise it is
  * `publishing/19`, the document whose **bound tables may be grouped** (the TG plan, TG1): a grouped
  * table's `bound.groups` says which body row is a group's heading and which the query's subtotal, each
@@ -41,7 +43,7 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/20';
+export const PUBLISHING_SCHEMA = 'publishing/21';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -181,6 +183,12 @@ export const PUBLISHING_SCHEMA_18 = 'publishing/18';
  * `publishing/16` is: `apps/worker/templates/publication/19/` asserts it.
  */
 export const PUBLISHING_SCHEMA_19 = 'publishing/19';
+
+/**
+ * The document as it stood before a table could say how wide each column is, frozen by TG3 for the
+ * reason `publishing/16` is: `apps/worker/templates/publication/20/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_20 = 'publishing/20';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -518,6 +526,12 @@ export interface PublishedTable {
    * table is too wide.
    */
   readonly wide: WideStrategy;
+  /**
+   * Each column's share of the measure, as fractions summing to one, where its table style widths its
+   * columns by what they hold (TG3; TAB-053) and they fit; absent, they share it as before. A template
+   * and Word set these and decide nothing.
+   */
+  readonly widths?: readonly number[];
   /**
    * **A bound table's** (TB1-H, TB1-J), absent from an authored one: each column's alignment - a
    * `decimal` one set at its end with its digits unkerned, so its separators meet (TAB-046) - and

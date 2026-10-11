@@ -838,7 +838,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   heading never ends a page and repeats at the top of each page its group continues on, and in Word a
   heading and a subtotal stay with their rows. **Transposed** by a header column, a result of up to 12
   rows turns on its side: each row a column headed by its value, each shown column a row headed by
-  its header. Neither computes a number: a total is the query's. The Value dialog's **Place as** offers **As a table** wherever a
+  its header. Neither computes a number: a total is the query's. **Every table's columns**, authored
+  or bound, are as wide as what they hold under the default theme's 0.8 - a column of short codes
+  narrow, one of sentences wide - measured from the theme's faces alike on the page, in Reading and
+  Authoring, in the PDF and in Word, a bound table's page by the rows it shows; a table style can still
+  share the measure equally. The Value dialog's **Place as** offers **As a table** wherever a
   block may stand, showing the definition's first 64 columns that are not images, headed by their
   names, and saying where it left any out. A table's formatting is the **Table** tab beside the text, first among the component's panels and, in a document, while a component holding a table is open in place; it is chosen as the cursor enters a table, and the table being edited is outlined. It starts with the value - its definition a link, its mode, when it was fetched, Provenance, Change and Resolve - then sets its table style, Transpose by, Wide, and Numbered, the header column, the empty statement, note and source as toggles; then a pill per column, the one in hand pressed, and under **Column** its column, header,
   unit, alignment and wrap, moved left or right, highlighted in the table and named in the status bar - a press on a column's cell in the text takes it in hand - with **Sort**, up to four keys, **Group**, up to three, each with its subtotal rows, and **Notes** folded to a summary while another is open; viewing, or with the cursor out of any table, the tab shows the table read only; **Format** opens a

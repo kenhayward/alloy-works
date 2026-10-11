@@ -65,8 +65,9 @@ import type { JobHandler } from '../worker.js';
  * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J), 19
  * the first to letter a table's notes beneath it and place a bound table's (TB3-K), 20 the first
  * to query the template before it compiles, scaling or turning a table too wide (TB3-H, TB3-I), 21
- * the first to set a bound table's groups under their headings and record them (TG1), and 22 the
- * first to set a transposed table (TG2).
+ * the first to set a bound table's groups under their headings and record them (TG1), 22 the first
+ * to set a transposed table (TG2), and 23 the first to measure a table's columns by what they hold
+ * (TG3).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -78,7 +79,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '22',
+  [PUBLISHING_SCHEMA_CURRENT]: '23',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -329,7 +330,11 @@ export function publishJob(deps: {
       // Each value from its stored result, read from the store by its checksum, never from a source:
       // the worker holds no connector and no connection's configuration (DAT-088).
       const held = await heldResults(bindings, (key) => read.store.get(key), tenantPrefix(tenant));
+      // Every pinned face by its hash, checked as a compile checks them, which a table's columns are
+      // measured by where its style widths them by what they hold (TG3), and Word embeds.
+      const faces = await pinnedFacesByHash(deps.fonts.directory);
       const assembled = assemble({
+        faces,
         // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
         // exactly as a publish of the same request would be (PUB-006).
         status: preview ? 'preview' : 'draft',
@@ -407,9 +412,8 @@ export function publishJob(deps: {
           numbering: assembled.numbering,
           word,
           formats,
-          // Every pinned face by its hash, checked again as a compile checks them: the theme's faces
-          // were held to exactly these files above, so every file it names is here.
-          faces: await pinnedFacesByHash(deps.fonts.directory),
+          // The theme's faces were held to exactly these files above, so every file it names is here.
+          faces,
           images: new Map(images.map((image) => [image.path, image.bytes])),
           // How the PDF set each table too wide for its measure (TB3-J).
           wide: wide.flatMap(({ node, table, scale, rotate }): WideTable[] =>

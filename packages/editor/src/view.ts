@@ -1,3 +1,4 @@
+import { tableView } from './tableWidths.js';
 import type { ReportEntry } from '@alloy-works/domain';
 import type { EditorState, Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
@@ -114,6 +115,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       binding: (node, owner, _getPos, decorations) =>
         bindingView(node, owner.dom.ownerDocument, decorations),
       equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
+      // A table, its column group set from the widths its decoration carries (TG3).
+      table: (node, owner, _getPos, decorations) =>
+        tableView(node, owner.dom.ownerDocument, decorations),
       // A bound table's body, drawn with what its decoration carries (the TB2 plan, TB2-D).
       boundTableBody: (node, owner, getPos, decorations) =>
         boundTableBodyView(node, owner.dom.ownerDocument, decorations, (column) => {

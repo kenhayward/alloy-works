@@ -1920,7 +1920,7 @@ class Writer {
     passage: Passage,
   ): string {
     const inset = place.start > 0 || place.end > 0;
-    const column = this.columnWidth(table, place);
+    const widths = this.columnWidths(table, place);
     const firstRow = table.headerRows > 0;
     const firstColumn = table.headerColumns === 1;
     const banded = style.banding.fill !== 'none';
@@ -1931,7 +1931,7 @@ class Writer {
       `<w:tblStyle w:val="${tableStyleId(table.style)}"/>` +
       (passage.rtl ? '<w:bidiVisual/>' : '') +
       (inset
-        ? `<w:tblW w:w="${column * table.columns}" w:type="dxa"/>` +
+        ? `<w:tblW w:w="${widths.reduce((total, each) => total + each, 0)}" w:type="dxa"/>` +
           `<w:tblInd w:w="${twips(place.start)}" w:type="dxa"/>`
         : '<w:tblW w:w="5000" w:type="pct"/>') +
       '<w:tblLayout w:type="fixed"/>' +
@@ -1946,14 +1946,19 @@ class Writer {
       `w:lastColumn="0" w:noHBand="${banded ? 0 : 1}" w:noVBand="1"/>` +
       `<w:tblCaption w:val="${escapeXml(captionText(table))}"/>` +
       '</w:tblPr>' +
-      `<w:tblGrid>${`<w:gridCol w:w="${column}"/>`.repeat(table.columns)}</w:tblGrid>`
+      `<w:tblGrid>${widths.map((each) => `<w:gridCol w:w="${each}"/>`).join('')}</w:tblGrid>`
     );
   }
 
-  /** A column's width, in twips: an equal share of the room the table stands in. */
-  private columnWidth(table: PublishedTable, place: Place): number {
-    const room = textBlockWidth(this.numbers.format, this.turning) - place.start - place.end;
-    return Math.round(twips(room) / table.columns);
+  /**
+   * Each column's width, in twips: its share of the room the table stands in - its fraction where the
+   * table carries `widths` (TG3; TAB-053), else an equal share.
+   */
+  private columnWidths(table: PublishedTable, place: Place): number[] {
+    const room = twips(textBlockWidth(this.numbers.format, this.turning) - place.start - place.end);
+    return table.widths === undefined
+      ? Array.from({ length: table.columns }, () => Math.round(room / table.columns))
+      : table.widths.map((share) => Math.round(room * share));
   }
 
   /**
@@ -1967,7 +1972,9 @@ class Writer {
     place: Place,
     passage: Passage,
   ): WordTable['rows'] {
-    const column = this.columnWidth(table, place);
+    const widths = this.columnWidths(table, place);
+    const spanning = (x: number, colspan: number) =>
+      widths.slice(x, x + colspan).reduce((total, each) => total + each, 0);
     // What continues into each row: at each column where a cell above spans into it, that cell's
     // properties with the merge continued, and its width in columns.
     const continued = table.rows.map(() => new Map<number, { properties: string; span: number }>());
@@ -2014,7 +2021,7 @@ class Writer {
             ? '<w:noWrap/>'
             : '';
         const tcPr = (merge: string) =>
-          `<w:tcPr><w:tcW w:w="${column * each.colspan}" w:type="dxa"/>` +
+          `<w:tcPr><w:tcW w:w="${spanning(x, each.colspan)}" w:type="dxa"/>` +
           (each.colspan > 1 ? `<w:gridSpan w:val="${each.colspan}"/>` : '') +
           merge +
           own +

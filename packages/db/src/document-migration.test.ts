@@ -136,6 +136,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     // The component and its version are as they were.
@@ -263,6 +264,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     const { rows } = await queryAs(

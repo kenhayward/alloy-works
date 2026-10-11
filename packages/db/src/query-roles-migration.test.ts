@@ -131,6 +131,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -139,6 +140,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0061_audit_hardening',
       '0062_search_contains',
       '0063_unsaved_discarded',
+      '0064_column_widths',
     ]);
 
     expect(await queryRoles(development)).toEqual([

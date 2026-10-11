@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  DEFAULT_CATALOGUES,
-  DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
-  DEFAULT_THEME_VERSION,
+  SEVENTH_DEFAULT_CATALOGUES,
+  SEVENTH_DEFAULT_CATALOGUE_VERSIONS,
+  SEVENTH_DEFAULT_THEME_VERSION,
   defaultLayout as productDefaultLayout,
   FIFTH_DEFAULT_CATALOGUE_VERSIONS,
   LAYOUT_SCHEMA_VERSION,
@@ -156,14 +156,14 @@ describe('migration 0055, which gives the default theme and layout what a bound 
     await migrated(tenant);
 
     expect((await chainOf(tenant, DEFAULT_CATALOGUE_IDS.table)).at(-1)).toEqual({
-      id: DEFAULT_CATALOGUE_VERSIONS.table,
+      id: SEVENTH_DEFAULT_CATALOGUE_VERSIONS.table,
       version_no: 5,
       author_id: null,
       schema_version: 3,
     });
     expect((await chainOf(tenant, DEFAULT_THEME_ID)).slice(-2)).toEqual([
       { id: SIXTH_DEFAULT_THEME_VERSION, version_no: 6, author_id: null, schema_version: 1 },
-      { id: DEFAULT_THEME_VERSION, version_no: 7, author_id: null, schema_version: 1 },
+      { id: SEVENTH_DEFAULT_THEME_VERSION, version_no: 7, author_id: null, schema_version: 1 },
     ]);
     expect((await chainOf(tenant, DEFAULT_LAYOUT_ID)).at(-1)).toMatchObject({
       version_no: 8,
@@ -180,9 +180,9 @@ describe('migration 0055, which gives the default theme and layout what a bound 
         made: await publicationInputs(trx, now),
       };
     });
-    expect(theme).toMatchObject({ versionId: DEFAULT_THEME_VERSION, number: '0.7' });
+    expect(theme).toMatchObject({ versionId: SEVENTH_DEFAULT_THEME_VERSION, number: '0.7' });
     expect(theme.theme.tableStyles.get('table')).toMatchObject({
-      fields: DEFAULT_CATALOGUES.table.styles[0]!.fields,
+      fields: SEVENTH_DEFAULT_CATALOGUES.table.styles[0]!.fields,
       unitBrackets: 'parentheses',
     });
     expect(layout).toMatchObject({ number: '0.8', layout: EIGHTH_DEFAULT_LAYOUT });
@@ -192,7 +192,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
       versionId: layoutBefore,
       layout: { ...SEVENTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION },
     });
-    expect(made!.theme!.versionId).toBe(DEFAULT_THEME_VERSION);
+    expect(made!.theme!.versionId).toBe(SEVENTH_DEFAULT_THEME_VERSION);
     expect(made!.layout!.versionId).toBe(layout.versionId);
   });
 
@@ -225,7 +225,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
     expect((await chainOf(tenant, DEFAULT_LAYOUT_ID)).at(-1)!.id).toBe(own.layout);
     // The table catalogue's fifth goes in all the same: it is named by nothing until a theme names it.
     expect((await chainOf(tenant, DEFAULT_CATALOGUE_IDS.table)).at(-1)!.id).toBe(
-      DEFAULT_CATALOGUE_VERSIONS.table,
+      SEVENTH_DEFAULT_CATALOGUE_VERSIONS.table,
     );
     expect(
       (await service.withTenant(tenant, (trx) => defaultTheme(trx))).theme.tableStyles.get('table'),
@@ -240,8 +240,11 @@ describe('migration 0055, which gives the default theme and layout what a bound 
         openedFrom: FIFTH_DEFAULT_CATALOGUE_VERSIONS.table,
         author: ada,
         catalogue: {
-          ...DEFAULT_CATALOGUES.table,
-          styles: DEFAULT_CATALOGUES.table.styles.map((style) => ({ ...style, padding: 6 })),
+          ...SEVENTH_DEFAULT_CATALOGUES.table,
+          styles: SEVENTH_DEFAULT_CATALOGUES.table.styles.map((style) => ({
+            ...style,
+            padding: 6,
+          })),
         },
       });
       if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
@@ -269,6 +272,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
     });
     const shaped = await shape(upgraded);
     expect(shaped).toEqual(await shape(fresh));
+    // Upgraded past 0055 to the theme as it stands: 0064's 0.8 on top (TG3).
     expect(shaped.declared).toEqual(DEFAULT_THEME);
   });
 });

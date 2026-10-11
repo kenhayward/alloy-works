@@ -6,6 +6,7 @@ import { markTypes } from '../content/model/marks.js';
 import type { ResolvedTheme } from '../theme/read.js';
 import type { ParagraphProperties, StyleTarget, Typeface } from '../theme/schema.js';
 import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
+import { syntheticFace } from '../word/face.fixture.js';
 import { projectTypst } from '../theme/typst.js';
 import {
   OUTLINE_SCHEMA_VERSION,
@@ -56,6 +57,7 @@ import {
   PUBLISHING_SCHEMA_17,
   PUBLISHING_SCHEMA_18,
   PUBLISHING_SCHEMA_19,
+  PUBLISHING_SCHEMA_20,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1152,8 +1154,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/20, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/20');
+  it('assembles under a layout as publishing/21, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/21');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1739,8 +1741,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/20, and publishing/4 to publishing/19 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/20');
+  it('makes publishing/21, and publishing/4 to publishing/20 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/21');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1757,6 +1759,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_17).toBe('publishing/17');
     expect(PUBLISHING_SCHEMA_18).toBe('publishing/18');
     expect(PUBLISHING_SCHEMA_19).toBe('publishing/19');
+    expect(PUBLISHING_SCHEMA_20).toBe('publishing/20');
   });
 });
 
@@ -4575,11 +4578,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/20, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/21, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/20');
+    expect(assembled.document.schema).toBe('publishing/21');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -6792,6 +6795,113 @@ describe('a binding met by assemble', () => {
         failures.filter((each) => each.detail === 'binding'),
         formats.join(),
       ).toEqual([]);
+    }
+  });
+});
+
+describe("a table's columns as wide as its style says (the TG plan, TG3)", () => {
+  /** A theme whose `table` style widths its columns as asked. */
+  const widthed = (widths: 'equal' | 'content' | undefined) => {
+    const inputs = defaultInputs();
+    inputs.catalogues.table.styles = inputs.catalogues.table.styles.map((each) => {
+      if (each.id !== 'table') return each;
+      const rest = { ...each };
+      delete rest.widths;
+      return widths === undefined ? rest : { ...rest, widths };
+    });
+    return resolved(inputs);
+  };
+  /** Every file the theme names as a face whose every character is half an em. */
+  const facesOf = (theme: ResolvedTheme) =>
+    new Map(
+      [...theme.typefaces.values()].flatMap((face) =>
+        face.files.map((file, at): [string, Uint8Array] => [
+          file.sha256,
+          syntheticFace(new Map(), { seed: at + 1 }),
+        ]),
+      ),
+    );
+  const cell = (name: string, value: string) => ({
+    content: [paragraph(name, text(value))],
+    colspan: 1,
+    rowspan: 1,
+  });
+  const codes = {
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [
+      { cells: [cell('a1', 'N1'), cell('b1', 'A reading taken at the north gauge each morning')] },
+      { cells: [cell('a2', 'S2'), cell('b2', 'Another taken at the south gauge')] },
+    ],
+  };
+  const tableOf = (made: ReturnType<typeof assemble>) => {
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const found = blocksOf(made as Assembled<PublishedDocument>).find(
+      (block) => block.type === 'table',
+    );
+    if (found?.type !== 'table') throw new Error('no table');
+    return found;
+  };
+
+  it("TAB-053 gives a style's content widths: a column of short codes narrower than one of sentences, the two the whole measure", () => {
+    const theme = widthed('content');
+    const table = tableOf(
+      assemble({ ...oneComponent(codes), theme, faces: facesOf(theme) } as AssembleInput),
+    );
+    const [first, second] = table.widths!;
+    expect(first!).toBeLessThan(second!);
+    expect(first! + second!).toBeCloseTo(1, 12);
+  });
+
+  it('TAB-053 measures a cell as it is published, a list item by item (the TG3 final review)', () => {
+    const theme = widthed('content');
+    const listed = {
+      ...codes,
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'list',
+                  id: 'L1',
+                  kind: 'unordered',
+                  items: [
+                    {
+                      content: [
+                        paragraph('i1', text('A reading taken at the north gauge each day')),
+                      ],
+                    },
+                    { content: [paragraph('i2', text('Another at the south'))] },
+                  ],
+                },
+              ],
+              colspan: 1,
+              rowspan: 1,
+            },
+            cell('b1', 'ok'),
+          ],
+        },
+      ],
+    };
+    const table = tableOf(
+      assemble({ ...oneComponent(listed), theme, faces: facesOf(theme) } as AssembleInput),
+    );
+    const [items, short] = table.widths!;
+    expect(items!).toBeGreaterThan(short!);
+  });
+
+  it('TAB-053 leaves a style of equal widths, or one stating none, to share the measure equally, as before', () => {
+    for (const widths of ['equal', undefined] as const) {
+      const theme = widthed(widths);
+      const table = tableOf(
+        assemble({ ...oneComponent(codes), theme, faces: facesOf(theme) } as AssembleInput),
+      );
+      expect(table).not.toHaveProperty('widths');
     }
   });
 });

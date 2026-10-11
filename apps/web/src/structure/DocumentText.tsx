@@ -14,6 +14,7 @@ import {
 import {
   drawEquation,
   renderContent,
+  widthDrawnTables,
   TEXT_CLASS,
   type BindingContext,
   type ReferenceContext,
@@ -270,6 +271,13 @@ function RenderedText({
     const host = place.current;
     if (!host || rendered === null) return;
     host.replaceChildren(rendered.cloneNode(true));
+    // Its tables as wide as what they hold, where their style says so, as the editor and the PDF
+    // set them (TG3): measured once they stand in the page, and again when a face loads.
+    widthDrawnTables(host);
+    const fonts = host.ownerDocument.fonts as FontFaceSet | undefined;
+    const again = () => widthDrawnTables(host);
+    fonts?.addEventListener?.('loadingdone', again);
+    return () => fonts?.removeEventListener?.('loadingdone', again);
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;

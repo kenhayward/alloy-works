@@ -145,6 +145,8 @@ export {
   PUBLISHING_SCHEMA_18,
   // Frozen by TG2, which made `publishing/20`: the schema template 19 reads.
   PUBLISHING_SCHEMA_19,
+  // Frozen by TG3, which made `publishing/21`: the schema template 20 reads.
+  PUBLISHING_SCHEMA_20,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -178,3 +180,6 @@ export type {
   PublishedTableNote,
   PublishedTitleRun,
 } from './published.js';
+// TG3: a table's columns measured by what they hold, shared by `assemble` and the editor.
+export { columnExtents, columnWidths } from './widths.js';
+export type { ColumnExtent, MeasuredCell, MeasuredParagraph, MeasuredRun } from './widths.js';

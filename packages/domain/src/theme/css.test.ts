@@ -695,6 +695,23 @@ describe('projectCss for tables and images (W8.3)', () => {
     );
   });
 
+  it('TAB-053 says where a table style widths its columns by what they hold, for the page to measure them (TG3)', () => {
+    expect(rulesFor(ruledAndStriped(), `${at}`)).not.toContain('--aw-table-widths: content');
+    const content = projectCss(
+      resolved(
+        (() => {
+          const inputs = defaultInputs();
+          inputs.catalogues.table.styles = inputs.catalogues.table.styles.map((each) => ({
+            ...each,
+            widths: 'content' as const,
+          }));
+          return inputs;
+        })(),
+      ),
+    );
+    expect(content).toContain('[data-table-style="table"] { --aw-table-widths: content; }');
+  });
+
   it("TAB-054 sets a group's heading in the header row's fill and weight, and a subtotal in its weight under its rule, as the template does (TG2)", () => {
     const text = ruledAndStriped();
     expect(rulesFor(text, `${at} [scope="rowgroup"]`)).toEqual([

@@ -2663,6 +2663,14 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   sets one to `rotate` in the text itself on landscape pages of its own; the Word writer gives a rotated
   table a landscape section of its own, footnotes numbered on across it, and reports `table_reflowed`
   for each table the PDF scaled. `PUBLISHING_SCHEMA_17` freezes `publishing/17`.
+- **Grouped, transposed and content-width tables (`publishing/19` to `/21`, templates 19 to 21,
+  `PIPELINE_VERSION` `'21'` to `'23'`; TG1 to TG3).** A bound table's `bound.groups` marks each body row a
+  group's heading or the query's subtotal at its level; template 19 sets a heading as a `table.header` of
+  its level that repeats, and Word keeps each with its row (`w:keepNext`, `w:cantSplit`). A transposed
+  table's value cells carry their own `align` and `nowrap` (template 20). A table whose style says
+  `widths: 'content'` carries `widths`, fractions `assemble` measured from the pinned faces' advances
+  (`publishing/widths.ts`, `AssembleInput.faces`), which template 21 sets as `fr` columns and Word as
+  `w:gridCol`. `PUBLISHING_SCHEMA_18` to `_20` freeze each predecessor.
 - **Equations (`publishing/11`, template 11).** `packages/domain/src/publishing/maths.ts` is the one
   converter both writers are to read (EQ-B): `mathsTree` reads an equation's stored MathML with the
   strict reader and returns the maths tree - rows, identifiers with their variant by MathML Core's
@@ -3792,7 +3800,14 @@ gaining a table arm: each column's header and format and each printed cell besid
 
 **On the page** (TB2). `checkTable` (`data/table.ts`) answers `layoutTable`'s failures from the declared
 columns and the row count alone, so `table_too_long` shows without a row read; `layoutTable` takes a
-`limit`, sorting every row and formatting the first. **The rows route**, `GET
+`limit`, sorting every row and formatting the first. **Groups and transposition** (TG1, TG2): the block's
+`groups` order rows by first appearance with the query's subtotal rows last (`orderOf`), each laid-out row
+carrying the headings it opens; `transpose` turns a result of up to 12 rows on its side, `transposed`
+naming where each row and column came from, which notes are placed by and provenance records the table
+as before it was turned. **Widths** (TG3): `tableWidths.ts`'s plugin measures each drawn table whose
+style says `--aw-table-widths: content` with the browser's unkerned advances, shares it out by the same
+`columnWidths` `assemble` uses, and sets the widths on the first row's cells as decorations, or a bound
+grid's `colgroup`. **The rows route**, `GET
 /v1/documents/{id}/bindings/{node}/{binding}/rows?version=`, `read` on the document, answers only the
 version held and only for a bound table, from the object read by checksum: to a reader, the columns
 it shows alone, its rows sorted by `sortResult` (`presorted`); to the lock holder's own `session`, where

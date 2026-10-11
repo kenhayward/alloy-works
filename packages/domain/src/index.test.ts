@@ -227,7 +227,10 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_17',
         'PUBLISHING_SCHEMA_18',
         'PUBLISHING_SCHEMA_19',
+        'PUBLISHING_SCHEMA_20',
         'assemble',
+        'columnExtents',
+        'columnWidths',
         'publishedImagePath',
         'publishFailureCodes',
         'setWithoutAGlyph',
@@ -615,6 +618,11 @@ describe('the domain package', () => {
         'SIXTH_DEFAULT_CATALOGUE_VERSIONS',
         'SIXTH_DEFAULT_THEME',
         'SIXTH_DEFAULT_THEME_VERSION',
+        'SEVENTH_DEFAULT_CATALOGUES',
+        'SEVENTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'SEVENTH_DEFAULT_CATALOGUE_VERSIONS',
+        'SEVENTH_DEFAULT_THEME',
+        'SEVENTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });
