@@ -332,6 +332,8 @@ export {
 export {
   editingPolicy,
   ITERATION_RETENTION_BOUNDS,
+  LOCK_RELEASE_BOUNDS,
+  LOCK_TAKE_BOUNDS,
   iterationRetained,
   setEditingPolicy,
   sweepIterations,

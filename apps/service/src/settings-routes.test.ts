@@ -124,7 +124,7 @@ describe("the environment's editing settings through the service", () => {
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       const answer = await call(user, 'GET');
       expect(answer.statusCode, user).toBe(200);
-      expect(answer.json(), user).toEqual({ iterationRetentionDays: 30 });
+      expect(answer.json(), user).toMatchObject({ iterationRetentionDays: 30 });
     }
     expect((await call(undefined, 'GET')).statusCode).toBe(401);
   });
@@ -136,15 +136,15 @@ describe("the environment's editing settings through the service", () => {
       expect(refused.json(), user).toMatchObject({ code: 'forbidden' });
     }
     expect((await call(undefined, 'PUT', { iterationRetentionDays: 7 })).statusCode).toBe(401);
-    expect(await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx))).toEqual({
+    expect(await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx))).toMatchObject({
       iterationRetentionDays: 30,
     });
 
     const changed = await call('ada', 'PUT', { iterationRetentionDays: 90 });
     expect(changed.statusCode).toBe(200);
-    expect(changed.json()).toEqual({ iterationRetentionDays: 90 });
-    expect((await call('alice', 'GET')).json()).toEqual({ iterationRetentionDays: 90 });
-    expect(await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx))).toEqual({
+    expect(changed.json()).toMatchObject({ iterationRetentionDays: 90 });
+    expect((await call('alice', 'GET')).json()).toMatchObject({ iterationRetentionDays: 90 });
+    expect(await tenantDb.withTenant(tenant, (trx) => editingPolicy(trx))).toMatchObject({
       iterationRetentionDays: 90,
     });
   });
@@ -194,12 +194,36 @@ describe("the environment's editing settings through the service", () => {
       { iterationRetentionDays: 0 },
       { iterationRetentionDays: 366 },
       { iterationRetentionDays: 2.5 },
-      {},
+      { lockReleaseMinutes: 4 },
     ]) {
       const answer = await call('ada', 'PUT', payload);
       expect(answer.statusCode, JSON.stringify(payload)).toBe(400);
       expect(answer.json(), JSON.stringify(payload)).toMatchObject({ code: 'invalid_request' });
     }
-    expect((await call('ada', 'GET')).json()).toEqual({ iterationRetentionDays: 90 });
+    expect((await call('ada', 'GET')).json()).toMatchObject({ iterationRetentionDays: 90 });
+  });
+
+  it('COL-046 refuses a take period not shorter than the release period, and changes nothing', async () => {
+    const answer = await call('ada', 'PUT', { lockReleaseMinutes: 10, lockTakeMinutes: 10 });
+    expect(answer.statusCode).toBe(400);
+    expect(answer.json()).toMatchObject({ code: 'lock_periods_invalid' });
+    expect((await call('ada', 'GET')).json()).toMatchObject({
+      lockReleaseMinutes: 15,
+      lockTakeMinutes: 5,
+    });
+  });
+
+  it('COL-008 lets an administrator set how long a lock lasts and how soon it may be taken, and says so to everyone', async () => {
+    try {
+      const changed = await call('ada', 'PUT', { lockReleaseMinutes: 30, lockTakeMinutes: 10 });
+      expect(changed.statusCode, changed.body).toBe(200);
+      expect(changed.json()).toMatchObject({ lockReleaseMinutes: 30, lockTakeMinutes: 10 });
+      expect((await call('alice', 'GET')).json()).toMatchObject({
+        lockReleaseMinutes: 30,
+        lockTakeMinutes: 10,
+      });
+    } finally {
+      await call('ada', 'PUT', { lockReleaseMinutes: 15, lockTakeMinutes: 5 });
+    }
   });
 });

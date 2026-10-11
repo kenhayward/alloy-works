@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { routes } from './routes.js';
-import { EditingSettings } from './settings.js';
+import { EditingSettingsBody } from './settings.js';
 
 describe("the environment's editing settings", () => {
   it('states the window to anybody signed in, and lets only an administrator of the environment change it', () => {
@@ -18,19 +18,27 @@ describe("the environment's editing settings", () => {
     });
   });
 
-  it('takes a whole number of days from 1 to 365, and nothing else', () => {
-    for (const days of [1, 30, 365]) {
-      expect(EditingSettings.safeParse({ iterationRetentionDays: days }).success).toBe(true);
+  it('takes a whole number of days from 1 to 365, and each lock period in its bounds, each alone or together, and nothing else', () => {
+    for (const body of [
+      { iterationRetentionDays: 1 },
+      { iterationRetentionDays: 365 },
+      { lockReleaseMinutes: 15, lockTakeMinutes: 5 },
+      { lockTakeMinutes: 1 },
+      {},
+    ]) {
+      expect(EditingSettingsBody.safeParse(body).success, JSON.stringify(body)).toBe(true);
     }
     for (const body of [
       { iterationRetentionDays: 0 },
       { iterationRetentionDays: 366 },
       { iterationRetentionDays: 1.5 },
       { iterationRetentionDays: '30' },
-      {},
+      { lockReleaseMinutes: 4 },
+      { lockReleaseMinutes: 241 },
+      { lockTakeMinutes: 0 },
       { iterationRetentionDays: 30, lockMinutes: 15 },
     ]) {
-      expect(EditingSettings.safeParse(body).success, JSON.stringify(body)).toBe(false);
+      expect(EditingSettingsBody.safeParse(body).success, JSON.stringify(body)).toBe(false);
     }
   });
 });

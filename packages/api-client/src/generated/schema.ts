@@ -1667,7 +1667,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The environment's editing settings: how long saved changes are kept
+         * The environment's editing settings: how long saved changes are kept, and a lock lasts
          * @description Reads the environment’s editing settings, including how long saved changes are retained.
          */
         get: operations["getEditingSettings"];
@@ -33579,12 +33579,18 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "iterationRetentionDays": 1
+                     *       "iterationRetentionDays": 1,
+                     *       "lockReleaseMinutes": 5,
+                     *       "lockTakeMinutes": 1
                      *     }
                      */
                     "application/json": {
                         /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
                         iterationRetentionDays: number;
+                        /** @description How many minutes a lock lasts once its holder does nothing: 5 to 240, 15 unless changed (COL-008) */
+                        lockReleaseMinutes: number;
+                        /** @description How many minutes before an idle holder may be asked for the lock: 1 to 239, always fewer than the release period, 5 unless changed (COL-046) */
+                        lockTakeMinutes: number;
                     };
                 };
             };
@@ -33644,14 +33650,14 @@ export interface operations {
         };
         requestBody: {
             content: {
-                /**
-                 * @example {
-                 *       "iterationRetentionDays": 1
-                 *     }
-                 */
+                /** @example {} */
                 "application/json": {
                     /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
-                    iterationRetentionDays: number;
+                    iterationRetentionDays?: number;
+                    /** @description How many minutes a lock lasts once its holder does nothing: 5 to 240, 15 unless changed (COL-008) */
+                    lockReleaseMinutes?: number;
+                    /** @description How many minutes before an idle holder may be asked for the lock: 1 to 239, always fewer than the release period, 5 unless changed (COL-046) */
+                    lockTakeMinutes?: number;
                 };
             };
         };
@@ -33668,16 +33674,22 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "iterationRetentionDays": 1
+                     *       "iterationRetentionDays": 1,
+                     *       "lockReleaseMinutes": 5,
+                     *       "lockTakeMinutes": 1
                      *     }
                      */
                     "application/json": {
                         /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
                         iterationRetentionDays: number;
+                        /** @description How many minutes a lock lasts once its holder does nothing: 5 to 240, 15 unless changed (COL-008) */
+                        lockReleaseMinutes: number;
+                        /** @description How many minutes before an idle holder may be asked for the lock: 1 to 239, always fewer than the release period, 5 unless changed (COL-046) */
+                        lockTakeMinutes: number;
                     };
                 };
             };
-            /** @description A window that is not a whole number of days from 1 to 365 */
+            /** @description invalid_request: a value out of its bounds. lock_periods_invalid: a take period not shorter than the release period */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

@@ -21,6 +21,7 @@ import {
   sessionContent,
 } from './editing.js';
 import { migrate } from './migrate.js';
+import { editingPolicy, setEditingPolicy } from './retention.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -209,6 +210,61 @@ describe('editing a component: its lock and its iterations', () => {
       const period = LOCK_PERIOD_MINUTES * 60_000;
       expect(answer.lock.expiresAt.getTime()).toBeGreaterThanOrEqual(before + period - 5_000);
       expect(answer.lock.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + period + 5_000);
+    });
+
+    it('COL-008 lasts the release period an administrator sets, and is free to anybody once its holder has done nothing for it', async () => {
+      const set = (change: Parameters<typeof setEditingPolicy>[1]) =>
+        service.withTenant(production, (trx) => setEditingPolicy(trx, change));
+      expect(await set({ lockReleaseMinutes: 7, lockTakeMinutes: 2 })).toMatchObject({
+        policy: { lockReleaseMinutes: 7, lockTakeMinutes: 2 },
+      });
+      try {
+        const component = await newComponent();
+        const before = Date.now();
+        const answer = await service.withTenant(production, (trx) =>
+          claimLock(trx, { artifactId: component.id, principal: ada, session: randomUUID() }),
+        );
+        if (answer.answer !== 'claimed') throw new Error(answer.answer);
+        expect(answer.lock.expiresAt.getTime()).toBeGreaterThanOrEqual(before + 7 * 60_000 - 5_000);
+        expect(answer.lock.expiresAt.getTime()).toBeLessThanOrEqual(
+          Date.now() + 7 * 60_000 + 5_000,
+        );
+
+        // Its holder idle past the period: free, and Grace claims it.
+        await service.withTenant(production, (trx) =>
+          sql`update component_lock set claimed_at = now() - interval '9 minutes',
+            active_at = now() - interval '8 minutes',
+            expires_at = now() - interval '1 minute' where artifact_id = ${component.id}`.execute(
+            trx,
+          ),
+        );
+        expect(
+          await service.withTenant(production, (trx) =>
+            claimLock(trx, { artifactId: component.id, principal: grace, session: randomUUID() }),
+          ),
+        ).toMatchObject({ answer: 'claimed', lock: { holder: grace } });
+      } finally {
+        await set({ lockReleaseMinutes: 15, lockTakeMinutes: 5 });
+      }
+    });
+
+    it('COL-046 refuses a take period not shorter than the release period, in the store and by the table itself', async () => {
+      expect(
+        await service.withTenant(production, (trx) =>
+          setEditingPolicy(trx, { lockReleaseMinutes: 10, lockTakeMinutes: 10 }),
+        ),
+      ).toEqual({ refused: 'lock_periods.invalid' });
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`update editing_policy set lock_take_minutes = 20, lock_release_minutes = 10`.execute(
+            trx,
+          ),
+        ),
+      ).rejects.toThrow(/editing_policy_take_before_release|check constraint/);
+      expect(await service.withTenant(production, (trx) => editingPolicy(trx))).toMatchObject({
+        lockReleaseMinutes: 15,
+        lockTakeMinutes: 5,
+      });
     });
 
     it('answers lock.held, naming the holder and when it is expected back, to anybody else', async () => {

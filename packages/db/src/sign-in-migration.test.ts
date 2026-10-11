@@ -78,6 +78,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0066_audit_export',
       '0067_live',
       '0068_presence',
+      '0069_lock_periods',
     ]);
 
     const read = async () =>

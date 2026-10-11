@@ -290,6 +290,8 @@ export interface ThemeDefaultTable {
 export interface EditingPolicyTable {
   singleton: ColumnType<boolean, never, never>;
   iteration_retention_days: ColumnType<number, never, number>;
+  lock_release_minutes: ColumnType<number, never, number>;
+  lock_take_minutes: ColumnType<number, never, number>;
 }
 
 export interface AccessPolicyTable {
@@ -367,6 +369,7 @@ export interface ComponentLockTable {
   principal_id: string;
   session_id: string;
   claimed_at: ColumnType<Date, Date | undefined, Date>;
+  active_at: ColumnType<Date, Date | undefined, Date>;
   expires_at: Date;
 }
 

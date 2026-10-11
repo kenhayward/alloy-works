@@ -19463,6 +19463,18 @@
       "kind": "title"
     },
     {
+      "id": "COL-008",
+      "file": "apps/service/src/settings-routes.test.ts",
+      "line": 216,
+      "kind": "title"
+    },
+    {
+      "id": "COL-046",
+      "file": "apps/service/src/settings-routes.test.ts",
+      "line": 206,
+      "kind": "title"
+    },
+    {
       "id": "VER-004",
       "file": "apps/service/src/settings-routes.test.ts",
       "line": 123,
@@ -19700,6 +19712,18 @@
       "id": "ADM-039",
       "file": "apps/web/src/admin/AuditLog.test.tsx",
       "line": 148,
+      "kind": "title"
+    },
+    {
+      "id": "COL-008",
+      "file": "apps/web/src/admin/Editing.test.tsx",
+      "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "COL-046",
+      "file": "apps/web/src/admin/Editing.test.tsx",
+      "line": 27,
       "kind": "title"
     },
     {
@@ -21299,9 +21323,21 @@
       "kind": "title"
     },
     {
+      "id": "COL-008",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 215,
+      "kind": "title"
+    },
+    {
+      "id": "COL-046",
+      "file": "packages/db/src/editing.test.ts",
+      "line": 251,
+      "kind": "title"
+    },
+    {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 333,
+      "line": 389,
       "kind": "title"
     },
     {

@@ -68,7 +68,12 @@ export {
   RoleList,
   RoleListQuery,
 } from './managing-access.js';
-export { DataSettings, DataSettingsBody, EditingSettings } from './settings.js';
+export {
+  DataSettings,
+  DataSettingsBody,
+  EditingSettings,
+  EditingSettingsBody,
+} from './settings.js';
 export {
   InvitationBody,
   InvitationList,

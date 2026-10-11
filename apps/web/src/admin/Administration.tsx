@@ -6,6 +6,7 @@ import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
 import { AuditLog } from './AuditLog.js';
+import { Editing } from './Editing.js';
 import { Groups } from './Groups.js';
 import { Overview } from './Overview.js';
 import { People } from './People.js';
@@ -24,6 +25,7 @@ type Client = ReturnType<typeof createApiClient>;
 const SECTIONS = [
   { slug: 'overview', title: 'Overview', group: 'Environment' },
   { slug: 'spaces', title: 'Spaces', group: 'Environment' },
+  { slug: 'editing', title: 'Editing', group: 'Environment' },
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
@@ -178,7 +180,7 @@ export function Administration({
 
   useEffect(() => {
     // Spaces are made, renamed and archived by an administrator of the environment (SP-A).
-    if (shown === 'overview' || shown === 'spaces') askAdminister('tenant');
+    if (shown === 'overview' || shown === 'spaces' || shown === 'editing') askAdminister('tenant');
   }, [shown, askAdminister]);
   const mayChangeSpaces = administers.get('tenant') === true;
   useEffect(() => {
@@ -238,6 +240,9 @@ export function Administration({
             administers={(space) => administers.get(`space:${space}`) === true}
             onChanged={() => setSpacesRead((count) => count + 1)}
           />
+        )}
+        {shown === 'editing' && (
+          <Editing client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}

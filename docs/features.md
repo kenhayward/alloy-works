@@ -916,6 +916,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   name, what it may do besides reading, which it always may, and the day it works until the start of,
   from tomorrow to a year away, 90 days unless you change it; the token is then shown once, with **Copy**, and is gone when the dialog closes: nothing keeps it
   in the browser. **Revoke** asks first, and the next request with the token is refused.
+- **How long a lock lasts, an environment's choice.** Administration's **Editing** sets how long a
+  component stays held once its editor stops saving - 15 minutes unless changed, 5 to 240 - and how
+  soon an idle holder may be asked for it - 5 unless changed, always less - beside how long saved
+  changes are kept. Anybody signed in reads them; an administrator changes them
+  (`PUT /v1/settings/editing`).
 - **Who else is in a document, as it happens.** A document's bar shows the initials of everybody else
   reading or editing it, each named with what they are doing, faded once not heard from for 30 seconds
   and gone after a minute; each component's label says who is in it. Who holds a component, and until

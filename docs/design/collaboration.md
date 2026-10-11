@@ -5,6 +5,9 @@ needs it - the lock rules [realtime.md](realtime.md) leaves to "collaboration's 
 [component-editor.md](component-editor.md) claims and saves under. Threads, suggestions and review
 rounds (COL's later phases, ADR-0057) will join this document as their turns come.
 
+> **Built so far** ([the PL plan](../plans/2026-10-11-pl-presence-and-locks.md)): the settings and
+> `active_at` (PL3). **Taking is not yet** (PL4).
+
 ## The shape in one paragraph
 
 A lock lasts while its holder saves: each acknowledged iteration moves its **activity** on, and a lock

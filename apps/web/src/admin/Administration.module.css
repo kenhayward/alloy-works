@@ -655,3 +655,19 @@
 .exported {
   margin: 0;
 }
+
+/* Editing: each setting a field, its words above and what it means below. */
+.settings {
+  display: grid;
+  gap: var(--space-16);
+  max-width: 560px;
+}
+
+.setting {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.setting input {
+  width: 120px;
+}
