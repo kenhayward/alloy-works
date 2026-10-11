@@ -7,6 +7,8 @@
 
 .back {
   display: inline-grid;
+  /* Never shrunk below a target's size by the tabs beside it: three of them took it to 17px (BL2). */
+  flex: 0 0 auto;
   place-items: center;
   width: 28px;
   margin: 3px 0 3px var(--space-4);

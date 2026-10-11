@@ -46,7 +46,7 @@ import {
   testTenantDatabase,
 } from './testing/database.js';
 import { sha256Hex } from './version-digest.js';
-import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import { createArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
 const nodeId = () => blockIdentifierFrom(randomBytes(16));
 const base = { numbered: true, matter: 'body' as const, pageBreak: 'none' as const, values: {} };
@@ -539,6 +539,101 @@ describe('baselines', () => {
     expect(await ask(grace, ['epub'])).toEqual({ answer: 'format.unsupported', formats: ['epub'] });
   });
 
+  /** An image in General, and a component placing it in a figure. */
+  const placingAnImage = (object: string) =>
+    tenant(async (trx) => {
+      const image = await createArtifact(trx, {
+        spaceId: general,
+        author: ada,
+        substance: {
+          kind: 'asset',
+          content: {
+            schemaVersion: 1,
+            object: `${production.role}/sha256/${object.repeat(64)}`,
+            format: 'png',
+            bytes: 3530,
+            width: 800,
+            height: 600,
+            orientation: 1,
+            colour: 'rgb',
+            alpha: false,
+            depth: 8,
+            resolution: null,
+            alternative: { text: 'Two red squares', language: 'en-GB' },
+          },
+        } as never,
+      });
+      return image;
+    });
+
+  it('VER-043 shows a reader every image they may read, so a document with one has a digest they can recompute', async () => {
+    const image = await placingAnImage('d');
+    const holder = await component(general, ada, 'Shapes');
+    await revise(holder, [
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: image.id,
+        imageStyle: 'figure',
+        caption: [{ type: 'text', value: 'Shapes', marks: [] }],
+        alternative: { kind: 'inherited' },
+      },
+    ] as ContentDocument['content']);
+    const document = await documentWith([reference(holder.artifactId)]);
+    const id = made(await make(document, 'With an image'));
+
+    const read = await tenant((trx) => readBaseline(trx, id, ada));
+    expect(read!.withheld).toEqual({ nodes: [], assets: 0 });
+    expect(read!.pins.assets.map((each) => each.version)).toEqual([image.id]);
+    expect(sha256Hex(baselineDigestInput(read!.pins))).toBe(read!.digest);
+  });
+
+  it('refuses a part added to a baseline’s request after the transaction that asked for it, and a preview naming a baseline', async () => {
+    const image = await placingAnImage('e');
+    const document = await documentWith([]);
+    const id = made(await make(document, 'Asked once'));
+    const asked = await tenant((trx) =>
+      requestBaselinePublication(trx, { baseline: id, formats: ['pdf'], requester: ada }),
+    );
+    if (asked.answer !== 'requested') throw new Error(asked.answer);
+    await expect(
+      tenant((trx) =>
+        trx
+          .insertInto('publication_request_asset')
+          .values({
+            request_id: asked.request.id,
+            version_id: image.id,
+            asset_id: image.artifactId,
+          })
+          .execute(),
+      ),
+    ).rejects.toThrow(/in the transaction that asked for it/);
+
+    const row = await tenant((trx) =>
+      trx.selectFrom('baseline').selectAll().where('id', '=', id).executeTakeFirstOrThrow(),
+    );
+    await expect(
+      tenant((trx) =>
+        trx
+          .insertInto('publication_request')
+          .values({
+            kind: 'preview',
+            document_id: row.document_id,
+            document_version_id: row.document_version_id,
+            formats: ['pdf'],
+            requested_by: ada,
+            failures: '[]',
+            layout_id: row.layout_id,
+            layout_version_id: row.layout_version_id,
+            theme_id: row.theme_id,
+            theme_version_id: row.theme_version_id,
+            baseline_id: id,
+          })
+          .execute(),
+      ),
+    ).rejects.toThrow(/publication_request_baseline_publish/);
+  });
+
   it('refuses at commit a request naming a baseline whose rows are not exactly its pins', async () => {
     const printer = await component(general, ada, 'Pinned once');
     const document = await documentWith([reference(printer.artifactId)]);
@@ -639,6 +734,23 @@ describe('baselines', () => {
     const first = made(await make(document, 'Logged 1'));
     const second = made(await make(document, 'Logged 2'));
     await tenant((trx) => supersedeBaseline(trx, { baseline: first, by: second, principal: ada }));
+    const asked = await tenant((trx) =>
+      requestBaselinePublication(trx, { baseline: second, formats: ['pdf'], requester: ada }),
+    );
+    if (asked.answer !== 'requested') throw new Error(asked.answer);
+    const requested = await tenant((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('kind', '=', 'publication.requested')
+        .where('subject', '=', document.artifactId)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(requested.detail).toEqual({
+      request: asked.request.id,
+      formats: ['pdf'],
+      baseline: second,
+    });
     const events = await tenant((trx) =>
       trx
         .selectFrom('audit_event')

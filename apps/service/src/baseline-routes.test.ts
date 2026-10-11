@@ -106,7 +106,7 @@ describe('baselines over HTTP (baselines.md)', () => {
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
     });
-    for (const who of ['ada', 'grace']) {
+    for (const who of ['ada', 'grace', 'ivy']) {
       cookies[who] = await signIn(app, HOST, who, idp.issuer);
       ids[who] = (await call('GET', '/v1/me', who)).json<{ id: string }>().id;
     }
@@ -120,6 +120,9 @@ describe('baselines over HTTP (baselines.md)', () => {
         ['ada', 'Publisher', clinical],
         ['grace', 'Reader', clinical],
         ['grace', 'Author', quality],
+        // Ivy reads both and publishes Clinical: a baseline a reader of only one is shown part of.
+        ['ivy', 'Publisher', clinical],
+        ['ivy', 'Reader', quality],
       ] as const) {
         await grant(trx, {
           roleId: await role(name),
@@ -253,6 +256,77 @@ describe('baselines over HTTP (baselines.md)', () => {
     });
     expect(unsupported.statusCode).toBe(400);
     expect(unsupported.json()).toMatchObject({ code: 'format_unsupported' });
+  });
+
+  it('STR-047 shows the document as a baseline holds it, after the document has moved on, withholding what the reader may not read', async () => {
+    const [open, secret] = await tenantDb.withTenant(tenant, async (trx) => {
+      const made = [];
+      for (const [space, author, title] of [
+        [clinical, ids.ada!, 'Install the printer'],
+        [quality, ids.grace!, 'Calibration'],
+      ] as const) {
+        const component = await createComponent(trx, {
+          spaceId: space,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author,
+        });
+        if (component.answer !== 'created') throw new Error(component.answer);
+        made.push(component.version);
+      }
+      return made;
+    });
+    const reference = (id: string, component: string): OutlineNode => ({
+      type: 'reference',
+      id,
+      component,
+      mode: { kind: 'latest' },
+      numbered: true,
+      matter: 'body',
+      pageBreak: 'none',
+      values: {},
+      children: [],
+    });
+    const SHOWN = 's'.repeat(26);
+    const document = await documentWith([
+      reference(SHOWN, open!.artifactId),
+      reference(NODE, secret!.artifactId),
+    ]);
+    const baseline = (await make(document, 'As approved', 'ivy')).json<{ id: string }>().id;
+    // The document moves on: a node removed.
+    await tenantDb.withTenant(tenant, (trx) =>
+      recordVersion(trx, {
+        artifactId: document.artifactId,
+        openedFrom: document.id,
+        author: ids.ada!,
+        substance: {
+          kind: 'document',
+          content: { ...(document.content as OutlineDocument), nodes: [] },
+        },
+      }),
+    );
+
+    const view = await call('GET', `/v1/baselines/${baseline}/view`, 'ada');
+    expect(view.statusCode, view.body).toBe(200);
+    const body = view.json<{
+      version: { id: string };
+      outline: { nodes: { id: string; component: string | null }[] };
+      texts: { node: string; title: string; version: { id: string } }[];
+    }>();
+    expect(body.version.id).toBe(document.id);
+    expect(body.outline.nodes.map((node) => [node.id, node.component])).toEqual([
+      [SHOWN, open!.artifactId],
+      [NODE, null],
+    ]);
+    expect(body.texts).toEqual([
+      expect.objectContaining({
+        node: SHOWN,
+        title: 'Install the printer',
+        version: expect.objectContaining({ id: open!.id }),
+      }),
+    ]);
+    expect(view.body).not.toContain(secret!.artifactId);
   });
 
   it('VER-049 marks a baseline superseded by a later one, keeps it readable, and lists by state', async () => {

@@ -18880,7 +18880,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 267,
+      "line": 268,
       "kind": "title"
     },
     {
@@ -18928,31 +18928,37 @@
     {
       "id": "PUB-046",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 228,
+      "line": 231,
+      "kind": "title"
+    },
+    {
+      "id": "STR-047",
+      "file": "apps/service/src/baseline-routes.test.ts",
+      "line": 261,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 142,
+      "line": 145,
       "kind": "title"
     },
     {
       "id": "VER-046",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 174,
+      "line": 177,
       "kind": "rule"
     },
     {
       "id": "VER-046",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 169,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "VER-049",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 258,
+      "line": 332,
       "kind": "title"
     },
     {
@@ -19084,7 +19090,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 950,
+      "line": 951,
       "kind": "title"
     },
     {
@@ -20302,7 +20308,13 @@
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 384,
+      "line": 385,
+      "kind": "title"
+    },
+    {
+      "id": "STR-047",
+      "file": "apps/web/src/structure/BaselinePage.test.tsx",
+      "line": 74,
       "kind": "title"
     },
     {
@@ -20567,6 +20579,12 @@
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "STR-047",
+      "file": "apps/web/src/structure/links.test.ts",
+      "line": 17,
       "kind": "title"
     },
     {
@@ -21412,7 +21430,7 @@
     {
       "id": "VER-023",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 595,
+      "line": 690,
       "kind": "title"
     },
     {
@@ -21430,7 +21448,7 @@
     {
       "id": "VER-049",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 570,
+      "line": 665,
       "kind": "title"
     },
     {

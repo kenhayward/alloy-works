@@ -554,6 +554,7 @@ export {
   baselineDocument,
   listBaselines,
   makeBaseline,
+  pinnedBindings,
   readBaseline,
   requestBaselinePublication,
   supersedeBaseline,
@@ -561,5 +562,6 @@ export {
   type BaselineRecord,
   type BaselineSummary,
   type MakeBaselineAnswer,
+  type PinnedBinding,
   type SupersedeAnswer,
 } from './baselines.js';

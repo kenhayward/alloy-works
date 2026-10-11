@@ -3,6 +3,7 @@ import {
   baselineNameProblem,
   labelFor,
   nameKey,
+  parseProvenance,
   PUBLISHING_FORMATS,
   readContent,
   readLayout,
@@ -13,6 +14,7 @@ import {
 } from '@alloy-works/domain';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
+import type { HeldResolution } from './datasets.js';
 import { readableComponents } from './documents.js';
 import {
   documentCitesAPage,
@@ -193,6 +195,29 @@ async function datasetNames(
   return new Map(rows.map((row) => [row.dataset_id, row.name]));
 }
 
+/**
+ * The images of these the principal may read, by the readable-set predicate every listing of content
+ * uses, as a publish decides an image (figures 3, ruling R6): what a baseline's read shows and its
+ * publish asks of the publisher alike (the BL final review, finding 1).
+ */
+async function readableAssets(
+  trx: TenantTransaction,
+  principal: string,
+  assets: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (assets.length === 0) return new Set();
+  const readable = await loadReadableSet(trx, principal);
+  if (!readable) return new Set();
+  const rows = await trx
+    .selectFrom('artifact as a')
+    .select('a.id')
+    .where('a.id', 'in', [...new Set(assets)])
+    .where('a.kind', '=', 'asset')
+    .where((eb) => readableArtifacts(eb, readable))
+    .execute();
+  return new Set(rows.map((row) => row.id));
+}
+
 /** A baseline as one list shows it (VER-049): superseded or not, and by which. */
 export interface BaselineSummary {
   readonly id: string;
@@ -316,7 +341,16 @@ export async function readBaseline(
     .select(['p.node', 'p.version_id', 'p.artifact_id', 'p.kind', 'v.version_digest'])
     .where('p.baseline_id', '=', baselineId)
     .execute();
-  const readable = await readableComponents(trx, reader, [...pins.map((each) => each.artifact_id)]);
+  const readable = await readableComponents(
+    trx,
+    reader,
+    pins.filter((each) => each.kind === 'component').map((each) => each.artifact_id),
+  );
+  const readableImages = await readableAssets(
+    trx,
+    reader,
+    pins.filter((each) => each.kind === 'asset').map((each) => each.artifact_id),
+  );
   const bindings = await trx
     .selectFrom('baseline_binding as b')
     .innerJoin('artifact_version as v', 'v.id', 'b.dataset_version')
@@ -346,7 +380,7 @@ export async function readBaseline(
           digest: each.version_digest,
         })),
       assets: assets
-        .filter((each) => readable.has(each.artifact_id))
+        .filter((each) => readableImages.has(each.artifact_id))
         .map((each) => ({ version: each.version_id, digest: each.version_digest })),
       bindings: bindings
         .filter((each) => shown.has(each.node))
@@ -360,7 +394,7 @@ export async function readBaseline(
     },
     withheld: {
       nodes: occurrences.filter((each) => !shown.has(each.node!)).map((each) => each.node!),
-      assets: assets.filter((each) => !readable.has(each.artifact_id)).length,
+      assets: assets.filter((each) => !readableImages.has(each.artifact_id)).length,
     },
   };
 }
@@ -520,22 +554,10 @@ export async function requestBaselinePublication(
     input.requester,
     occurrences.map((each) => each.artifact_id),
   );
-  const readableSet = assets.length === 0 ? undefined : await loadReadableSet(trx, input.requester);
-  const readableImages = new Set(
-    readableSet
-      ? (
-          await trx
-            .selectFrom('artifact as a')
-            .select('a.id')
-            .where(
-              'a.id',
-              'in',
-              assets.map((each) => each.artifact_id),
-            )
-            .where((eb) => readableArtifacts(eb, readableSet))
-            .execute()
-        ).map((row) => row.id)
-      : [],
+  const readableImages = await readableAssets(
+    trx,
+    input.requester,
+    assets.map((each) => each.artifact_id),
   );
   const nodes = occurrences
     .filter((each) => !readable.has(each.artifact_id))
@@ -632,7 +654,80 @@ export async function requestBaselinePublication(
     trx,
     'publication.requested',
     { document: baseline.document_id, version: baseline.document_version_id },
-    { request: request.id, formats },
+    { request: request.id, formats, baseline: input.baseline },
   );
   return { answer: 'requested', request: { id: request.id } };
+}
+
+/** A binding as a baseline pinned it, with what it held then (BL-I). */
+export interface PinnedBinding {
+  readonly node: string;
+  readonly binding: string;
+  /** The binding's digest as its result was taken under, when the baseline was made. */
+  readonly digest: string;
+  /** The dataset's name when the baseline was made, or none. */
+  readonly datasetName: string | null;
+  /** The resolution it pinned, as a document holds one, with nothing waiting: a baseline moves on to nothing. */
+  readonly held: HeldResolution;
+}
+
+/**
+ * Every binding a baseline pins, with the resolution and dataset version it held when it was made
+ * (BL-I): what its page shows each value from, never the document's latest resolution. Who may read
+ * which is the caller's to decide, by the node's component.
+ */
+export async function pinnedBindings(
+  trx: TenantTransaction,
+  baselineId: string,
+): Promise<PinnedBinding[]> {
+  const rows = await trx
+    .selectFrom('baseline_binding as k')
+    .innerJoin('binding_resolution as r', 'r.id', 'k.resolution')
+    .innerJoin('artifact_version as v', 'v.id', 'k.dataset_version')
+    .select([
+      'k.node',
+      'k.binding',
+      'k.digest',
+      'k.dataset_name',
+      'r.id',
+      'r.document_id',
+      'r.replaces',
+      'r.act',
+      'r.resolved_by',
+      'r.resolved_at',
+      'k.dataset_id',
+      'k.dataset_version',
+      'v.revision_no',
+      'v.version_no',
+      'v.content',
+    ])
+    .where('k.baseline_id', '=', baselineId)
+    .orderBy('k.node')
+    .orderBy('k.binding')
+    .execute();
+  return rows.map((row) => ({
+    node: row.node,
+    binding: row.binding,
+    digest: row.digest,
+    datasetName: row.dataset_name,
+    held: {
+      id: String(row.id),
+      document: row.document_id,
+      node: row.node,
+      binding: row.binding,
+      digest: row.digest,
+      replaces: row.replaces,
+      act: row.act,
+      by: row.resolved_by,
+      at: new Date(row.resolved_at),
+      held: {
+        dataset: row.dataset_id,
+        version: row.dataset_version,
+        number: { revision: row.revision_no, version: row.version_no },
+        // Written by `recordDatasetVersion`, which parsed it: one that does not parse is a broken store.
+        provenance: parseProvenance(row.content),
+      },
+      waiting: null,
+    },
+  }));
 }

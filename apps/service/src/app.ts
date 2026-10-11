@@ -486,7 +486,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...auditHandlers(tenantOf, options.objects),
     ...ownSessionHandlers(db, tenantOf, principalOf, { name: SESSION_COOKIE, options: COOKIE }),
     ...presenceHandlers(db, tenantOf, principalOf),
-    ...baselineHandlers(),
+    ...baselineHandlers(tenantOf, options.objects),
 
     getHealth: async () => ({ status: 'ok' }),
 

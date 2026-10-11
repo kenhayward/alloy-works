@@ -5,7 +5,7 @@ resolved once and pinned. [storage-and-versioning.md](storage-and-versioning.md)
 rests on (VER-017 to VER-023); this document owns the acts - making one, superseding it, publishing
 it and addressing it - and the rows those acts answer.
 
-> **Being built** by [the BL plan](../plans/2026-10-11-bl-baselines.md), T3's third phase
+> **Built** by [the BL plan](../plans/2026-10-11-bl-baselines.md), T3's third phase
 > ([ADR-0057](../decisions/0057-t3s-order-and-template-moves-leave-for-t9.md)).
 
 ## The shape in one paragraph
@@ -38,6 +38,16 @@ publishing.md's; this design builds them. `POST /v1/documents/{id}/baselines` is
 (`publish` on the document); the theme and layout versions in force are columns, foreign keys like
 every pin. `baseline.gate` is held null by a `check` until LIF has gates to name: making one at a gate
 is the lifecycle service's call, built with it.
+
+**What the digest and the name do not say** (the BL final review):
+
+- **The digest is of the pins, not of the bytes.** A publication also depends on the baseline's own
+  time, compiled into the PDF, and on the engine; two baselines of one version have one digest and
+  publish different bytes.
+- **The name's rule is held in two spellings.** The table's check knows Postgres's `[[:space:]]`,
+  which takes no no-break space, and `nameKey` folds case alone, so two names a reader takes for one
+  - a full-width letter, a trailing zero-width space - are two. `baselineNameProblem` is the stricter
+    for the first; NFKC and a case fold are the change if they bite.
 
 **Not claimed:**
 

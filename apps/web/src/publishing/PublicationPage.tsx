@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState } from 'react';
 import { Notice } from '../states/Notice.js';
+import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
 import { reportIn, reportLines, type ReportEntry } from './formats.js';
 import styles from './PublicationPage.module.css';
@@ -298,8 +299,11 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         </p>
         {shown.baseline !== null && (
           <p>
-            Made from the baseline {baselineName ?? 'it was asked for from'}, as that baseline
-            pinned the document and everything it uses.
+            Made from the baseline{' '}
+            <a href={baselineLink(shown.document, shown.baseline)}>
+              {baselineName ?? 'its own page'}
+            </a>
+            , as that baseline pinned the document and everything it uses.
           </p>
         )}
         {shown.engine !== null && shown.template !== null && (

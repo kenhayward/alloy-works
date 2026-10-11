@@ -246,7 +246,9 @@ export const auditKindSpecs = {
   'asset.relicensed': kind(['LIF-064'], empty, LATER),
   'publication.requested': kind(
     ['LIF-026'],
-    z.strictObject({ request: Id, formats: z.array(AuditName).min(1) }),
+    // `baseline` names the baseline a publish is made from (the BL final review); absent for one
+    // of the document as it is.
+    z.strictObject({ request: Id, formats: z.array(AuditName).min(1), baseline: Id.optional() }),
     'packages/db/src/publishing.ts',
   ),
   // A publication's events are about the document version it publishes: the subject.

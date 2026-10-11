@@ -273,6 +273,7 @@ export { StreamQuery } from './schemas.js';
 export { PresenceBody, PresenceParams } from './presence.js';
 export {
   BaselineList,
+  BaselinePageView,
   BaselineListQuery,
   BaselineParams,
   BaselineRefusal,
