@@ -97,3 +97,13 @@ an export, and a session ended by someone else.
   changed; a change no case should show is a defect.
 - **Large logs**: an export is built in memory in T3; streamed to the store when a tenant's log is
   large enough to need it.
+
+## Changed while building
+
+| #     | AU2a and AU2b                                                                                                                                                                                                               |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1    | **The bytes are the same on Windows and Linux**: the pins recorded on Windows passed CI's worker suite unchanged (#554)                                                                                                     |
+| R2    | **A library's version bump reaches the worker** by `turbo ls --affected`; `reach.js` is unchanged                                                                                                                           |
+| AU2-A | **A family is filtered as its kinds, each exact** (`kind in (...)`), not as a range: Postgres compares text by its collation, which passes over the dot, so `space.` to `space/` matched nothing. The index serves the list |
+| AU2-B | **`to` is inclusive to the millisecond**: the log holds microseconds and an API instant milliseconds, so `to` is read as `at < to + 1ms`                                                                                    |
+| AU2-C | **The read's handler is `audit-log.ts`**: `apps/service/src/audit.ts` already holds the audit context and refusals                                                                                                          |
