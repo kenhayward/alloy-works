@@ -237,6 +237,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
 
       // A row's menu, offering Archive to whoever may retire it, and the archived listed alone
       // (lifecycle.md). Nothing is archived: the suites share the stack.
+      // The chosen component's panel closed first: it lies over the rows' menus.
+      const chosen = page
+        .getByRole('complementary')
+        .filter({ has: page.getByRole('list', { name: 'Versions' }) });
+      await chosen.getByRole('button', { name: 'Close' }).click();
+      await leave(chosen);
       await page
         .getByRole('button', { name: /^Actions for / })
         .first()
