@@ -27,7 +27,8 @@ export type Applied =
 
 const MEMBERS = ['title', 'language', 'direction'] as const;
 
-const same = (left: unknown, right: unknown) => canonicalJson(left) === canonicalJson(right);
+const same = (left: unknown, right: unknown) =>
+  left !== undefined && right !== undefined && canonicalJson(left) === canonicalJson(right);
 
 /** Every identifier anywhere in a value: a block's, an item's, a footnote's. */
 function identifiersIn(value: unknown, into: Set<string>): Set<string> {
@@ -129,10 +130,10 @@ export function applySuggestion(
     if (draftedSet.has(id) || !now.has(id)) continue;
     if (standing(id)) order.splice(order.indexOf(id), 1);
   }
-  // Changed: in both, differing.
+  // Changed: in both, differing. One already as the draft has it, by somebody's hand, is done.
   for (const block of proposed.content) {
     const before = was.get(block.id);
-    if (before === undefined || same(before, block)) continue;
+    if (before === undefined || same(before, block) || same(now.get(block.id), block)) continue;
     if (standing(block.id)) taking.set(block.id, block);
   }
   // Moved: out of the longest run the base and the draft keep in order.
@@ -174,8 +175,10 @@ export function applySuggestion(
       placeAfter(id, after);
       continue;
     }
-    // Added: identifiers already taken are given fresh ones (CNT-009).
+    // Added: one already there as drafted, by somebody's hand, is done; identifiers already taken
+    // are given fresh ones (CNT-009).
     const block = proposed.content[index]!;
+    if (same(now.get(id), block)) continue;
     const renamed = new Map<string, string>();
     for (const each of identifiersIn(block, new Set())) {
       if (taken.has(each)) renamed.set(each, fresh());

@@ -587,6 +587,22 @@ export {
   type ThreadSummary,
 } from './threads.js';
 export {
+  acceptSuggestion,
+  applying,
+  listSuggestions,
+  makeSuggestion,
+  PENDING_PER_AUTHOR,
+  pendingCounts,
+  proposedDigest,
+  readSuggestion,
+  rejectSuggestion,
+  suggestionOn,
+  withdrawSuggestion,
+  type MakeAnswer,
+  type ResolveAnswer,
+  type StoredSuggestion,
+} from './suggestions.js';
+export {
   cadencesOf,
   DEFAULT_CADENCES,
   deleteNotification,

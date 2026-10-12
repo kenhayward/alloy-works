@@ -86,6 +86,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0074_baseline_requests_whole',
       '0075_changes_since',
       '0076_threads_and_inbox',
+      '0077_suggestions',
     ]);
 
     const read = async () =>

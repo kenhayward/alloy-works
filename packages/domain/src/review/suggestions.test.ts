@@ -182,4 +182,24 @@ describe('a suggestion applied to the component as it is now', () => {
     const answer = applySuggestion(opened, removing, now, fresh);
     expect(answer).toMatchObject({ applies: false, stale: [{ block: null, why: 'invalid' }] });
   });
+
+  it('takes a change somebody already made by hand as done, and applies the rest', () => {
+    const proposed = doc(
+      para('a', 'Unbox it carefully.'),
+      para('b', 'Set the tray.'),
+      para('c', 'Wait.'),
+      para('n', 'New.'),
+    );
+    const byHand = doc(
+      para('a', 'Unbox it carefully.'),
+      para('b', 'Set the tray.'),
+      para('c', 'Wait.'),
+    );
+    expect(texts(applySuggestion(base, proposed, byHand, fresh))).toEqual([
+      ['a', 'Unbox it carefully.'],
+      ['b', 'Set the tray.'],
+      ['c', 'Wait.'],
+      ['n', 'New.'],
+    ]);
+  });
 });
