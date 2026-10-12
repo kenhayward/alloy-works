@@ -9,7 +9,10 @@ afterEach(() => {
 });
 
 /** The editor as a reviewer's draft (the SG plan, SG-J): a reviewer who may not edit the component. */
-function drafting(onSend = vi.fn(async (_content: unknown) => true), onDiscard = vi.fn()) {
+function drafting(
+  onSend = vi.fn(async (_content: unknown, _version: string) => true),
+  onDiscard = vi.fn(),
+) {
   const { asked, surface } = open(
     { 'GET /v1/components/{id}': () => json(200, opened({ mayEdit: false })) },
     undefined,

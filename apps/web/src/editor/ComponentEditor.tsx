@@ -1528,7 +1528,7 @@ export function ComponentEditor({
       setSurface(null);
       view.destroy();
     };
-  }, [component, client, principalId]);
+  }, [component, client, principalId, drafting]);
 
   // Arrived at by a link naming a block, on opening or while open: the caret goes to the block's start,
   // or it is selected where it has nothing to type into - an equation, a footnote - or the page says
@@ -2098,10 +2098,13 @@ export function ComponentEditor({
   // forgotten once it is made.
   const sendDraft = async () => {
     const view = surface;
-    if (!draftRef.current || view === null) return;
+    if (!draftRef.current || view === null || loaded.state !== 'open') return;
     setSending(true);
     try {
-      const sent = await draftRef.current.onSend(fromEditor(view.state.doc));
+      const sent = await draftRef.current.onSend(
+        fromEditor(view.state.doc),
+        loaded.component.version.id,
+      );
       if (sent) forgetDraft(componentId, principalId);
     } finally {
       setSending(false);

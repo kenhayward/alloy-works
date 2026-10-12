@@ -9,7 +9,7 @@ import type { SessionService } from './session.js';
  */
 export interface DraftMode {
   /** Sends the draft as a suggestion; true once it is made, which closes the draft. */
-  readonly onSend: (content: ContentDocument) => Promise<boolean>;
+  readonly onSend: (content: ContentDocument, version: string) => Promise<boolean>;
   /** Leaves the draft without sending it. */
   readonly onDiscard: () => void;
   /** Whether the reviewer may add an image to the component's space (`create`). */
