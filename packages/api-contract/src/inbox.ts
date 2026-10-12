@@ -26,8 +26,10 @@ export const NotificationView = z.object({
   actor: z
     .object({ id: LowercaseUuid, name: z.string().nullable() })
     .nullable()
-    .describe('Who did it; null on a digest'),
-  thread: LowercaseUuid.nullable().describe('The thread; null on a digest'),
+    .describe('Who did it; null on a digest, or where the caller may no longer read what it is on'),
+  thread: LowercaseUuid.nullable().describe(
+    'The thread; null on a digest, or where the caller may no longer read what it is on',
+  ),
   on: Place.nullable().describe('What the thread is on; null on a digest'),
   counts: z
     .object({
@@ -38,7 +40,9 @@ export const NotificationView = z.object({
       places: z.array(Place),
     })
     .nullable()
-    .describe('A digest’s: how many of each kind, on which threads, and where (COL-035)'),
+    .describe(
+      'A digest’s: how many of each kind, and on which threads and where, of those the caller may still read (COL-035)',
+    ),
   at: z.iso.datetime(),
   read: z.boolean(),
 });
@@ -68,6 +72,12 @@ const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
 } as const;
+/** A person's inbox is theirs in a signed-in window, never a token's (the TH final review). */
+const tokenNotAllowed = {
+  description:
+    'token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep',
+  schema: ErrorBody,
+} as const;
 const notYours = {
   description: 'No notification of the caller’s by that id: nobody reads another’s',
   schema: ErrorBody,
@@ -81,7 +91,7 @@ export const inboxRoutes = {
     path: '/v1/inbox',
     summary: 'The caller’s notifications, newest first',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     query: InboxQuery,
     responses: {
       200: { description: 'A page of them', schema: InboxView },
@@ -90,6 +100,7 @@ export const inboxRoutes = {
         schema: ErrorBody,
       },
       401: unauthenticated,
+      403: tokenNotAllowed,
     },
   },
   markNotificationRead: {
@@ -98,11 +109,12 @@ export const inboxRoutes = {
     path: '/v1/inbox/{id}/read',
     summary: 'Mark one of the caller’s notifications read',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     params: NotificationParams,
     responses: {
       204: { description: 'Read' },
       401: unauthenticated,
+      403: tokenNotAllowed,
       404: notYours,
     },
   },
@@ -112,11 +124,12 @@ export const inboxRoutes = {
     path: '/v1/inbox/{id}',
     summary: 'Delete one of the caller’s notifications',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     params: NotificationParams,
     responses: {
       204: { description: 'Deleted' },
       401: unauthenticated,
+      403: tokenNotAllowed,
       404: notYours,
     },
   },
@@ -126,10 +139,11 @@ export const inboxRoutes = {
     path: '/v1/inbox/preferences',
     summary: 'How often the caller is told of each kind',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     responses: {
       200: { description: 'Each kind’s cadence', schema: InboxPreferences },
       401: unauthenticated,
+      403: tokenNotAllowed,
     },
   },
   setInboxPreferences: {
@@ -138,11 +152,12 @@ export const inboxRoutes = {
     path: '/v1/inbox/preferences',
     summary: 'Choose how often the caller is told of each kind',
     tenantScoped: true,
-    access: { check: 'session' },
+    access: { check: 'session', credential: 'session' },
     body: InboxPreferencesBody,
     responses: {
       200: { description: 'Each kind’s cadence, as now chosen', schema: InboxPreferences },
       401: unauthenticated,
+      403: tokenNotAllowed,
     },
   },
 } as const;

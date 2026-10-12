@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.155.0 - 2026-10-12 (PR #575)
+
+### Added
+
+- **Threads.** Start a discussion on a span of text, a table cell, a whole component or a section of a document, reply, and resolve it. Threads sit beside the content and never change it; an edited comment keeps every earlier text, and a thread whose text has gone is listed as orphaned. Through the API and in Review.
+- **Review mode.** A document's third mode, beside Reading and Authoring, for whoever may comment: the text as Reading shows it, each thread marked where it stands, and a Threads panel to start a thread on selected words, a table cell, a whole component or a section, reply, edit your own comment with its earlier text kept, and resolve.
+- **The inbox.** You are told when a comment names you, when somebody replies on a thread you are in, and when one is resolved: at once, in a daily digest after 07:00 UTC, or never, as you choose. A notification never carries the comment's words, says nothing more than that something happened once you may no longer read it, and is kept 90 days. Open it from the account chip, which says how many are unread.
+
 ## 0.154.0 - 2026-10-12 (PR #571)
 
 ### Added

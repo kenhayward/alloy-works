@@ -131,10 +131,19 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
     setNext(data.next);
   };
 
+  // Marked where it stands, so the pages already shown stay shown (the TH final review).
   const markRead = async (each: Notification) => {
     if (each.read) return;
-    await client.POST('/v1/inbox/{id}/read', { params: { path: { id: each.id } } });
-    await load();
+    const { response } = await client.POST('/v1/inbox/{id}/read', {
+      params: { path: { id: each.id } },
+    });
+    if (!response.ok) return;
+    setRead((was) =>
+      was === null || was === 'failed'
+        ? was
+        : was.map((one) => (one.id === each.id ? { ...one, read: true } : one)),
+    );
+    setUnread((count) => Math.max(count - 1, 0));
   };
 
   // Read as the reader, now: a thread they may no longer read is gone to them (COL-036).
@@ -152,9 +161,13 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
         })
         .catch(() => setNames(new Map()));
     }
-    const { data } = await client.GET('/v1/threads/{id}', {
+    const { data, response } = await client.GET('/v1/threads/{id}', {
       params: { path: { id: each.thread } },
     });
+    if (!data && response.status !== 404) {
+      setStatus('The thread could not be read. Try again.');
+      return;
+    }
     setOpened({ id: each.id, thread: data ? (data as unknown as Thread) : 'gone' });
     await markRead(each);
   };

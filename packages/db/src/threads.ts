@@ -182,7 +182,7 @@ export async function startThread(
   });
   const comment = await insertComment(trx, thread.id, input.author, checked.parts);
   const mentioned = mentionsIn(checked.parts);
-  const untold = await tell(trx, {
+  const { untold } = await tell(trx, {
     kind: 'mention',
     actor: input.author,
     thread: thread.id,
@@ -246,20 +246,21 @@ export async function addComment(
   const comment = await insertComment(trx, input.thread, input.author, checked.parts);
   const mentioned = mentionsIn(checked.parts);
   const on = (await threadOn(trx, input.thread))!;
-  const untold = await tell(trx, {
+  const { untold, told } = await tell(trx, {
     kind: 'mention',
     actor: input.author,
     thread: input.thread,
     artifact: on,
     recipients: mentioned,
   });
-  // A reply tells every earlier commenter but its author, and none it has told of a mention already.
+  // A reply tells every earlier commenter but its author, and none it has told of a mention already:
+  // one whose mentions are never told is told of the reply as their reply cadence says.
   await tell(trx, {
     kind: 'reply',
     actor: input.author,
     thread: input.thread,
     artifact: on,
-    recipients: earlier.filter((each) => !mentioned.includes(each)),
+    recipients: earlier.filter((each) => !told.includes(each)),
   });
   return { answer: 'done', thread: input.thread, comment, mentioned, untold };
 }
@@ -307,7 +308,7 @@ export async function editComment(
   // A mention an edit adds tells its person; one already there tells nobody again (TH-E).
   const before = new Set(mentionsIn(last.parts as CommentParts));
   const mentioned = mentionsIn(checked.parts).filter((each) => !before.has(each));
-  const untold = await tell(trx, {
+  const { untold } = await tell(trx, {
     kind: 'mention',
     actor: input.author,
     thread: input.thread,

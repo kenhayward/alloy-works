@@ -82,6 +82,16 @@ Each PR: affected suites, `pnpm trace check`, typecheck, lint, format; TH3 and T
 suite. The final review hunts a notification or a thread revealing what its reader may not read, a
 thread lost or deletable, and an anchor that drifts silently.
 
+## Final review
+
+Fixed in TH4: anchors found by the drawn block's identifier, not its words (two blocks or two tables'
+cells with the same words, an inline node drawing text the content does not); marks held by value, so
+a selection survives; every page of threads read; the inbox a session's only; a notification on what
+its reader may no longer read keeps only that it happened; a reply told where a mention was not;
+the inbox marks read in place and tells a failed read from a gone thread. Known: editing a comment
+whose mentions stand mid-text moves them to its end; `anchorStands` reads the quote alone, by TH's
+first-occurrence rule.
+
 ## Risks
 
 - **Quoted text twice in one block**: the anchor holds the text before it, so the first occurrence

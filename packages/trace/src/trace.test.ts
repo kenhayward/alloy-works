@@ -843,6 +843,7 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 1022 (2026-10-12): TH4's inbox dialog, the final review's tests and the close.
     // 1017 (2026-10-12): TH3's Review - the panel, the page, anchoring and the axe walk.
     // 1010 (2026-10-12): TH2's inbox - the store, the routes and the worker's fold.
     // 996 (2026-10-12): TH1's threads - the domain, the store and the routes.
@@ -857,7 +858,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1017);
+    expect(model.citations).toHaveLength(1022);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -938,6 +939,7 @@ describe('scanning the repository for test files', () => {
     // 59, from 58 (2026-10-11): structure/BaselinePage.test.tsx, citing STR-047.
     // 62, from 59 (2026-10-12): compare/Redline, compare/BaselineComparisonPage and editor/VersionsPanel tests.
     // 64, from 62 (2026-10-12): review/ThreadsPanel and structure/DocumentPage.review tests.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(64);
+    // 65, from 64 (2026-10-12): account/Inbox.test.tsx, citing COL-034, COL-036, COL-062 and COL-063.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(65);
   });
 });

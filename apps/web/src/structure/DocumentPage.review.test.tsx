@@ -185,6 +185,22 @@ describe('Review (collaboration.md, "Review mode")', () => {
     await waitFor(() =>
       expect(text.querySelector('mark[data-thread]')).toHaveTextContent('the printer'),
     );
+    // And a selection in text already marked holds: the text is not drawn again under it.
+    const marked = text.querySelector('mark[data-thread]')!.previousSibling!;
+    const again = document.createRange();
+    again.setStart(marked, 0);
+    again.setEnd(marked, 5);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(again);
+    document.dispatchEvent(new Event('selectionchange'));
+    await waitFor(() =>
+      expect(
+        within(within(panel).getByLabelText('On')).getByRole('option', {
+          name: 'The selected text “Unbox”',
+        }),
+      ).toBeInTheDocument(),
+    );
+    expect(window.getSelection()!.toString()).toBe('Unbox');
   });
 
   it('keeps Review as the reader’s choice for the next document', async () => {

@@ -1,24 +1,31 @@
 import { unitTexts, type ContentDocument, type ThreadAnchor } from '@alloy-works/domain';
+import { BLOCK_ATTRIBUTE } from '@alloy-works/editor';
 
 /**
  * Where a thread can stand in a component's drawn text, and where each stands (collaboration.md,
- * Threads; the TH plan, Task 3). The drawn text carries no block identifiers, so a block is found by
- * its text, as `unitTexts` - the comparison's and the anchor check's one account of it - gives it: the
- * block whose text holds the words, read with the words before them where two hold the same.
+ * Threads; the TH plan, Task 3). Each drawn block carries its identifier (`BLOCK_ATTRIBUTE`), so a
+ * block is found by who it is, never by its words: two blocks may hold the same ones, and an inline
+ * node draws text the stored content does not (the TH final review).
  */
 
-/** The elements that draw a block of text, one per block. */
-const BLOCKS = 'p, pre, dt, dd, h1, h2, h3, h4, h5, h6, figcaption, caption';
 /** As the service bounds an anchor (TH-B). */
 const QUOTE_MAX = 500;
 const BEFORE_MAX = 200;
 
-type Units = ReturnType<typeof unitTexts>;
+const BLOCK = `[${BLOCK_ATTRIBUTE}]`;
 
-const cellsOf = (units: Units) =>
-  [...units].filter(([key]) => key.startsWith('cell:')).map(([key, unit]) => ({ key, unit }));
-const blocksOf = (units: Units) =>
-  [...units].filter(([key, unit]) => !key.startsWith('cell:') && unit.text.length > 0);
+/** The innermost drawn block holding a node, inside `root`. */
+function blockOf(node: Node, root: HTMLElement): HTMLElement | null {
+  const element = node instanceof Element ? node : node.parentElement;
+  const block = element?.closest<HTMLElement>(BLOCK) ?? null;
+  return block !== null && root.contains(block) ? block : null;
+}
+
+/** A drawn block by its identifier. */
+const drawnBlock = (root: HTMLElement, id: string) =>
+  [...root.querySelectorAll<HTMLElement>(BLOCK)].find(
+    (each) => each.getAttribute(BLOCK_ATTRIBUTE) === id,
+  ) ?? null;
 
 /** The text before a point in a block, as the drawn text holds it. */
 function textBefore(block: Element, node: Node, offset: number): string {
@@ -29,30 +36,9 @@ function textBefore(block: Element, node: Node, offset: number): string {
 }
 
 /**
- * The block a drawn block element stands for: the one whose text is its text, or else holds it; where
- * several do, the one in the same place among them.
- */
-function blockKeyOf(
-  element: Element,
-  root: HTMLElement,
-  units: Units,
-  quote: string,
-  before: string,
-) {
-  const drawn = element.textContent ?? '';
-  const holding = blocksOf(units).filter(([, unit]) => unit.text.includes(before + quote));
-  const same = holding.filter(([, unit]) => unit.text === drawn);
-  const candidates = same.length > 0 ? same : holding;
-  if (candidates.length <= 1) return candidates[0]?.[0];
-  // Two blocks with one text: the nth such element in the drawn text is the nth such block.
-  const elements = [...root.querySelectorAll(BLOCKS)].filter((each) => each.textContent === drawn);
-  return candidates[elements.indexOf(element)]?.[0] ?? candidates[0]![0];
-}
-
-/**
  * The anchor a reader's selection in one component's drawn text proposes, or none: a selection inside
- * one block is a span of it; a caret in a table's cell is the cell. Anything else - a caret in running
- * text, a selection across blocks, one outside `root` - proposes nothing.
+ * one block is a span of it; a caret in a table's cell is the cell, by its first block. Anything else
+ * - a caret in running text, a selection across blocks, one outside `root` - proposes nothing.
  */
 export function anchorFromSelection(
   selection: Selection,
@@ -62,27 +48,22 @@ export function anchorFromSelection(
   if (selection.rangeCount === 0) return null;
   const range = selection.getRangeAt(0);
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
-  const at = (node: Node) =>
-    (node instanceof Element ? node : node.parentElement)?.closest(BLOCKS) ?? null;
   const units = unitTexts(content);
   if (range.collapsed) {
-    const cell = (
-      range.startContainer instanceof Element
-        ? range.startContainer
-        : range.startContainer.parentElement
-    )?.closest('td, th');
+    const start = range.startContainer;
+    const cell = (start instanceof Element ? start : start.parentElement)?.closest('td, th');
     if (!cell || !root.contains(cell)) return null;
-    const first = cell.querySelector(BLOCKS)?.textContent ?? '';
-    const found = cellsOf(units).find(({ key }) => units.get(key.slice(5))?.text === first);
-    return found ? { kind: 'cell', table: found.unit.parent, block: found.key.slice(5) } : null;
+    const first = cell.querySelector(BLOCK)?.getAttribute(BLOCK_ATTRIBUTE);
+    const unit = first == null ? undefined : units.get(`cell:${first}`);
+    return unit && first ? { kind: 'cell', table: unit.parent, block: first } : null;
   }
-  const block = at(range.startContainer);
-  if (block === null || block !== at(range.endContainer)) return null;
+  const block = blockOf(range.startContainer, root);
+  if (block === null || block !== blockOf(range.endContainer, root)) return null;
+  const id = block.getAttribute(BLOCK_ATTRIBUTE)!;
   const quote = range.toString();
-  if (quote.trim().length === 0 || quote.length > QUOTE_MAX) return null;
+  if (!units.has(id) || quote.trim().length === 0 || quote.length > QUOTE_MAX) return null;
   const before = textBefore(block, range.startContainer, range.startOffset).slice(-BEFORE_MAX);
-  const key = blockKeyOf(block, root, units, quote, before);
-  return key === undefined ? null : { kind: 'span', block: key, quote, before };
+  return { kind: 'span', block: id, quote, before };
 }
 
 /** Where a thread stands, to be marked. */
@@ -92,9 +73,9 @@ export interface Placed {
 }
 
 /**
- * Marks where each thread stands in a component's drawn text: a span's words wrapped in a `mark`, a
- * cell marked itself, each carrying its thread's identifier. One that no longer stands marks nothing.
- * Whole-component and node threads are marked by the card and the heading, not here.
+ * Marks where each thread stands in a component's drawn text: a span's words wrapped in a `mark` in
+ * its own block, a cell marked itself, each carrying its thread's identifier. One that no longer
+ * stands marks nothing. Whole-component and node threads are marked by the card and the heading.
  */
 export function markAnchors(
   root: HTMLElement,
@@ -102,26 +83,15 @@ export function markAnchors(
   placed: readonly Placed[],
 ) {
   const units = unitTexts(content);
-  const blocks = [...root.querySelectorAll(BLOCKS)];
   for (const { thread, anchor } of placed) {
     if (anchor.kind === 'cell') {
-      const unit = units.get(`cell:${anchor.block}`);
-      const first = units.get(anchor.block)?.text;
-      if (unit?.parent !== anchor.table || first === undefined) continue;
-      const cell = [...root.querySelectorAll('td, th')].find(
-        (each) =>
-          each.querySelector(BLOCKS)?.textContent === first && !each.hasAttribute('data-thread'),
-      );
-      cell?.setAttribute('data-thread', thread);
+      if (units.get(`cell:${anchor.block}`)?.parent !== anchor.table) continue;
+      drawnBlock(root, anchor.block)?.closest('td, th')?.setAttribute('data-thread', thread);
       continue;
     }
     if (anchor.kind !== 'span') continue;
-    const unit = units.get(anchor.block);
-    if (!unit?.text.includes(anchor.quote)) continue;
-    // The block's own element: the nth with its text, where it is the nth block holding that text.
-    const same = blocksOf(units).filter(([, each]) => each.text === unit.text);
-    const elements = blocks.filter((each) => each.textContent === unit.text);
-    const element = elements[same.findIndex(([key]) => key === anchor.block)] ?? elements[0];
+    if (!units.get(anchor.block)?.text.includes(anchor.quote)) continue;
+    const element = drawnBlock(root, anchor.block);
     if (!element) continue;
     const drawn = element.textContent ?? '';
     const held = drawn.indexOf(anchor.before + anchor.quote);

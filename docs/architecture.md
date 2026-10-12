@@ -2019,6 +2019,22 @@ anchored changes first, which every redline reads and suggestions will stand on.
 | `web: src/compare/Redline.tsx`, `BaselineComparisonPage.tsx`                            | The redline, said in words to a screen reader; the comparison page at `#/documents/{id}/baselines/{b}/compare/{with}`, and its export as one HTML file in the theme's colours                                                                                                                                                                                        |
 | `web: src/editor/VersionsPanel.tsx`                                                     | The Versions panel's **Compare** and **My changes**, the latter compared in the browser from what the editor holds                                                                                                                                                                                                                                                   |
 
+## Threads, the inbox and review
+
+Discussion beside the content, built by [the TH plan](plans/2026-10-12-th-threads-inbox-and-review.md)
+under [collaboration.md](design/collaboration.md): a thread is a row, never a mark, so no version is
+made and suggestions (ADR-0058) will stand on the same anchors.
+
+| Where                                                                     | Holds                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/review/threads.ts`                                           | `threadAnchorSchema` (span, cell, component, node), `commentPartsSchema` (words and mentions), `anchorStands` on `unitTexts`                                                                                              |
+| `migrations/tenant/0076_threads_and_inbox`, `db: src/threads.ts`          | `thread`, `thread_comment`, `thread_comment_text`, `thread_resolution`: inserted and read only; replies and resolution serialised by an advisory lock; four audit kinds                                                   |
+| `db: src/inbox.ts`                                                        | `tell` in the act's transaction, by cadence and readability; `notification`, `notification_held`, `notification_preference`; `foldDigests` at the 07:00 UTC boundary, claiming by delete; `sweepNotifications` at 90 days |
+| `service: src/threads.ts`, `src/inbox.ts`, `src/access.ts`                | The thread routes, decided on what a thread is on (`{ thread }`); orphaned computed when listed, per occurrence; the inbox, session only, withholding all but the fact once unreadable                                    |
+| `worker: src/sweep.ts`                                                    | `foldNotificationDigests` and `sweepOldNotifications` each tick, in every tenant                                                                                                                                          |
+| `web: src/review/`, `structure/DocumentPage.tsx`, `editor: src/render.ts` | Review: the Threads panel; anchors from a selection by the drawn block's `data-block`; marks in the text                                                                                                                  |
+| `web: src/account/Inbox.tsx`, `shell/Header.tsx`                          | The inbox from the account chip, its unread count and preferences                                                                                                                                                         |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a
