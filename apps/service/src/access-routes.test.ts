@@ -24,6 +24,7 @@ import {
   recordAsset,
   recordPublication,
   makeBaseline,
+  startThread,
   requestPublication,
   STARTER_COMPONENT_TYPE_ID,
   type NewGrant,
@@ -126,6 +127,7 @@ describe('routes that check a permission', () => {
   let report: string;
   let reportPublication: string;
   let reportBaseline: string;
+  let reportThread: string;
   let plan: string;
   let readings: string;
   let dailyReadings: string;
@@ -278,6 +280,21 @@ describe('routes that check a permission', () => {
       });
       if (pinned.answer !== 'made') throw new Error(`refused: ${pinned.answer}`);
       reportBaseline = pinned.baseline;
+      // And a thread on Dosing, which a route on a thread must refuse as it refuses Dosing (TH-J).
+      const dosingVersion = await trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', dosing)
+        .executeTakeFirstOrThrow();
+      const thread = await startThread(trx, {
+        on: dosing,
+        version: dosingVersion.id,
+        anchor: { kind: 'component' },
+        parts: [{ text: 'Is this right?' }],
+        author: ids.ada!,
+      });
+      if (thread.answer !== 'done') throw new Error(`refused: ${thread.answer}`);
+      reportThread = thread.thread;
       // And a template in Clinical, which a route reading or changing it must refuse to name.
       const template = await createTemplate(trx, {
         spaceId: clinical,
@@ -806,6 +823,30 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { by: MISSING },
     }),
+    startDocumentThread: () => ({
+      url: `/v1/documents/${report}/threads`,
+      status: 404,
+      payload: { version: MISSING, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
+    }),
+    listDocumentThreads: () => ({ url: `/v1/documents/${report}/threads`, status: 404 }),
+    startComponentThread: () => ({
+      url: `/v1/components/${dosing}/threads`,
+      status: 404,
+      payload: { version: MISSING, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
+    }),
+    listComponentThreads: () => ({ url: `/v1/components/${dosing}/threads`, status: 404 }),
+    getThread: () => ({ url: `/v1/threads/${reportThread}`, status: 404 }),
+    addComment: () => ({
+      url: `/v1/threads/${reportThread}/comments`,
+      status: 404,
+      payload: { parts: [{ text: 'Hm' }] },
+    }),
+    editComment: () => ({
+      url: `/v1/threads/${reportThread}/comments/${MISSING}`,
+      status: 404,
+      payload: { parts: [{ text: 'Hm' }] },
+    }),
+    resolveThread: () => ({ url: `/v1/threads/${reportThread}/resolution`, status: 404 }),
     getPublicationBindings: () => ({
       url: `/v1/publications/${reportPublication}/bindings`,
       status: 404,

@@ -262,6 +262,13 @@ describe('threads', () => {
     expect(await ids({ on: [version.artifactId], since: new Date(Date.now() + 60_000) })).toEqual(
       [],
     );
+    // Paged by start and id: the page after the first holds the rest.
+    const [newest] = await tenant((trx) =>
+      listThreads(trx, { on: [version.artifactId], limit: 1 }),
+    );
+    expect(
+      await ids({ on: [version.artifactId], after: { at: newest!.createdAt, id: newest!.id } }),
+    ).toEqual([first.thread]);
   });
 
   it('COL-049 COL-054 gives nobody a way to delete or change a thread or a comment, and stores every time as an instant', async () => {

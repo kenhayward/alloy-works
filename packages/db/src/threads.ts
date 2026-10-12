@@ -395,7 +395,7 @@ export async function readThread(
 }
 
 /**
- * The threads on these artifacts (COL-018), newest first, filtered by state, by who started them and
+ * The threads on these artifacts (COL-018), newest first and paged by start and id, filtered by state, by who started them and
  * by whether anything was said since an instant. Who may read which is the caller's to have decided.
  */
 export async function listThreads(
@@ -405,6 +405,9 @@ export async function listThreads(
     readonly state?: 'open' | 'resolved';
     readonly author?: string;
     readonly since?: Date;
+    /** Where the previous page ended: the last thread's start and id. */
+    readonly after?: { readonly at: Date; readonly id: string };
+    readonly limit?: number;
   },
 ): Promise<ThreadSummary[]> {
   if (input.on.length === 0) return [];
@@ -443,7 +446,14 @@ export async function listThreads(
   if (input.state === 'resolved') query = query.where('r.thread_id', 'is not', null);
   if (input.author !== undefined) query = query.where('t.created_by', '=', input.author);
   if (input.since !== undefined) query = query.where('m.last_at', '>', input.since);
-  const rows = await query.orderBy('t.created_at', 'desc').orderBy('t.id').execute();
+  // Keyed to the millisecond a cursor can carry, not Postgres' microsecond.
+  const started = sql<Date>`date_trunc('milliseconds', t.created_at)`;
+  if (input.after !== undefined) {
+    const { at, id } = input.after;
+    query = query.where(sql<boolean>`(${started}, t.id) < (${at}, ${id}::uuid)`);
+  }
+  if (input.limit !== undefined) query = query.limit(input.limit);
+  const rows = await query.orderBy(started, 'desc').orderBy('t.id', 'desc').execute();
   return rows.map((row) => ({
     id: row.id,
     on: row.on_id,

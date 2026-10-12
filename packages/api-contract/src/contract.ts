@@ -31,6 +31,8 @@ export type RouteTarget =
   | { readonly artifactVersion: string }
   /** The path parameter holding a baseline's id: decided on the document it is of (BL-H). */
   | { readonly baseline: string }
+  /** The path parameter holding a thread's id: decided on what it is on (TH-J). */
+  | { readonly thread: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };

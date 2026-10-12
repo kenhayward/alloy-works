@@ -843,6 +843,7 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 996 (2026-10-12): TH1's threads - the domain, the store and the routes.
     // 980 (2026-10-12): CP4's resolved comparison and what changed since.
     // 973 (2026-10-12): CP3's redline, Versions panel and comparison page.
     // 963 (2026-10-11): CP2's comparison routes.
@@ -854,7 +855,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(980);
+    expect(model.citations).toHaveLength(996);
   });
 
   it('cites no identifier the corpus does not hold', () => {

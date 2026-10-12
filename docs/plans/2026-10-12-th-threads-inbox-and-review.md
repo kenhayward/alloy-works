@@ -42,7 +42,7 @@ collaboration.md's, and:
 
 - Migration 0076; `packages/db/src/threads.ts`: `startThread`, `addComment`, `editComment`,
   `resolveThread`, `listThreads` (document and component), `readThread` (with every text), anchor
-  checks and orphan computation; routes `POST /v1/threads`, `GET /v1/threads/{id}`,
+  checks and orphan computation; routes `POST /v1/components/{id}/threads` and `/v1/documents/{id}/threads`, `GET /v1/threads/{id}`,
   `POST /v1/threads/{id}/comments`, `PUT /v1/threads/{id}/comments/{comment}`,
   `POST /v1/threads/{id}/resolution`, `GET /v1/documents/{id}/threads`, `GET /v1/components/{id}/threads`;
   audit `thread.started`, `comment.added`, `comment.edited`, `thread.resolved`; the `{ thread }` target;

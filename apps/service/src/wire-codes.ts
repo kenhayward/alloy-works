@@ -91,6 +91,10 @@ const WIRE_CODES = {
   'baseline.unreadable': 'baseline_unreadable',
   'superseder.invalid': 'superseder_invalid',
   'superseded.already': 'superseded_already',
+  'anchor.invalid': 'anchor_invalid',
+  'parts.invalid': 'parts_invalid',
+  'thread.resolved': 'thread_resolved',
+  'comment.not_yours': 'comment_not_yours',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
