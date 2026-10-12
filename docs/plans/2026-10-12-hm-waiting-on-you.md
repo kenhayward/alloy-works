@@ -52,3 +52,23 @@ person was told at once.
 - The final review hunts anything listed that the person may not read or resolve, and an item that
   stays after it is resolved. `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the
   version (0.159.0) and the baseline.
+
+## Changed while building
+
+| Where | Planned                                              | Built, and why                                                                                                                                                                                                                                                  |
+| ----- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs   | Two                                                  | Two, #583 and #584                                                                                                                                                                                                                                              |
+| HM-B  | The person's latest publish request                  | Latest by `(requested_at, made_tx, id)`, a baseline's publish neither listing nor clearing; the item names its request; migration 0081 indexes the read (the final review, 3, 4, 5)                                                                             |
+| HM-C  | Every component holding their iterations checked     | At most 50, those with their newest retained iterations, checked for whether a version holds them; the total counts at most those (the final review, 4)                                                                                                         |
+| HM-D  | Any publication                                      | A baseline's publication neither lists nor clears it: a baseline pins an older version on purpose (Ken agreed)                                                                                                                                                  |
+| HM-G  | The reason in the product's words                    | A summary per failure code, with no detail and no place; the link `#/documents/{id}/publishing/requests/{request}` shows that request's failures on the Publishing panel, which otherwise shows only a publish followed in the session (the final review, 1, 2) |
+| HM-E  | A connection whose credential was set and not tested | Rare in practice: setting a credential tests it at once, so it is listed only where that test could not be recorded                                                                                                                                             |
+
+## Final review
+
+Fixed: broken sentences on Home for failures worded from their detail (1); the Publishing panel
+showing nothing of the failure Home linked to (2); a baseline's publish clearing or making a failed
+publish (3); an unindexed read of requests and an unbounded check of iterations under the access
+epoch (4); same-second ties (5); titles citing beyond their tests (6); re-listing after a resolve
+unpinned (7); a hand-copied contract type crashing on an unknown kind (8). Left: the index's use is
+by design, not measured with EXPLAIN; a refusal at the door is never listed.

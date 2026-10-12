@@ -3,6 +3,13 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.159.0 - 2026-10-12 (PR #584)
+
+### Added
+
+- **Needs your attention, on Home.** Home lists what waits on you that you may resolve, each with its reason and one link: a document whose latest publish of yours failed, with the reason in brief and a link to its Publishing panel showing why; a component holding changes of yours not in a version; a document published from an earlier version; a connection not tested since its credential was set. When nothing waits, it says so. Nothing you may not read is listed or counted. A publication of a baseline is not counted as published from an earlier version. Through the API at `/v1/me/attention`.
+- **A document opened at its Publishing panel.** `#/documents/{id}/publishing` opens the document with its Publishing panel showing, the panels shown if they were hidden, without changing the panel the document opens at next. `#/documents/{id}/publishing/requests/{request}` shows there a failed publish of yours.
+
 ## 0.158.0 - 2026-10-12 (PR #582)
 
 ### Added

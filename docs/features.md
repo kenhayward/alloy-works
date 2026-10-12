@@ -940,6 +940,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
+  resolve, each with its reason and one link, and nothing they may not read listed or counted: a
+  document whose latest publish of theirs failed, its reason in brief, linking to its Publishing
+  panel showing that publish's failures; a component holding changes of theirs not in a version
+  (checked for the 50 with their newest changes), linking to it, whose **Recover** or **Discard**
+  resolves them; a document whose latest publication they may read or made is of an earlier version,
+  a baseline's publication aside; a connection not tested since its credential was set. One item each,
+  at most 20 with how many more; when nothing waits, it says so. `#/documents/{id}/publishing` opens a
+  document at its Publishing panel. Through the API at `/v1/me/attention`, a signed-in person's alone.
 - **Review rounds.** In Review, the **Rounds** panel opens a round on a document, to whoever may edit
   it: a title, its reviewers - people who may comment on or suggest to the document and read all it
   covers - the whole document or some of its sections, a due date, and the document as it is or one of

@@ -2078,6 +2078,17 @@ A round asking named people to review a document by a date, built by
 | `service: src/rounds.ts`, `src/threads.ts`, `src/baselines.ts`  | The routes, decided on the round's document (`{ round }`); a baseline's threads judged against its pins, and its review flags                                        |
 | `web: src/review/RoundsPanel.tsx`, `structure/BaselinePage.tsx` | Review's Rounds panel; Review on a baseline's page                                                                                                                   |
 
+## Needs your attention
+
+What waits on the person signed in, computed when Home asks and stored nowhere, built by
+[the HM plan](plans/2026-10-12-hm-waiting-on-you.md) and designed in [home.md](design/home.md).
+
+| Where                                                                                 | Holds                                                                                                                                         |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0080_attention`, `0081_attention_requests`; `db: src/attention.ts` | `whatWaits`: each kind found in SQL over the readable set, the act decided on what is found, one item per artifact, at most 20 with the total |
+| `service: src/attention.ts`                                                           | `GET /v1/me/attention`, a session's alone                                                                                                     |
+| `web: src/home/Home.tsx`, `publishing/failures.ts`, `structure/links.ts`              | Home's list, a failure's summary per code, and the Publishing address                                                                         |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a
