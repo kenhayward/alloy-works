@@ -2,16 +2,18 @@
 
 What happens to an artifact at the end of its working life, short of deletion
 ([ADR-0060](../decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md)). This design
-covers **archival**, built by [the AH plan](../plans/2026-10-12-ah-archival-and-holds.md), whose
-decisions are the detail. Legal holds are AH2's; deletion is DL's.
+covers **archival** and **legal holds**, built by [the AH plan](../plans/2026-10-12-ah-archival-and-holds.md),
+whose decisions are the detail. Deletion is DL's.
 
 ## Requirements owned
 
 | Requirement | How                                                                                   |
 | ----------- | ------------------------------------------------------------------------------------- |
 | **LIF-020** | Archival, below: out of ordinary listings and search, still retrievable; AH-B to AH-D |
+| **LIF-022** | Legal holds, below: placed with who, when and why, removed only by a recorded act     |
 
-LIF-057's kinds, `artifact.archived` and `artifact.unarchived`, are [audit.md](audit.md)'s claim.
+LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `hold.applied` and `hold.removed`, are
+[audit.md](audit.md)'s claim. LIF-021 and LIF-023 (a hold refuses deletion) are DL's.
 
 ## Archival
 
@@ -50,3 +52,33 @@ still filtered by what the reader may read; the listings' **Archived** filter as
 
 **Audited** (LIF-057): `artifact.archived` and `artifact.unarchived`, about the artifact, with its
 space.
+
+## Legal holds
+
+**Who**: an administrator of the environment, `administer` decided at the tenant itself, places,
+releases and lists holds; a space's administrator does not, nor does a token not scoped to it.
+
+**On what**: a component, a document, a publication or an asset, or a space, which holds every
+artifact in it while the hold stands. Several holds may stand on one thing. A baseline is not held of
+itself: it is its document's, which a hold on the document or its space covers.
+
+**Stored insert-only** (0084): `legal_hold` keeps each hold, on an artifact by `(artifact_id, kind)`
+or on a space, never both, with its reason (trimmed, never empty), who and when; `legal_hold_release`
+keeps its release, once by its key, with a reason of its own, who and when. Nothing is updated or
+deleted; a hold is in force while it has no release. A release is taken under the hold's advisory
+lock, so two at once record one; a second is refused (`hold_released`).
+
+**What a hold does now**: it is recorded, listed and shown. Nothing deletes yet; DL makes a hold
+refuse deletion. A hold does not refuse archival.
+
+**Where it shows**: Administration > **Legal holds** lists every hold, newest first, with what it
+holds, who placed it, when and why, and its release, and offers **Release** on one in force. That
+listing, `GET /v1/holds`, and the answers to placing and releasing are the only places a reason is
+shown; it is never written to the audit log (LIF-030). **Place a hold** is offered on a component's
+and a document's page and on a space's row in Spaces, to environment administrators alone, each
+asking why. A component's and a document's view say `onHold` only to whoever may `retire` it or
+administer the environment, false to anyone else: a hold may be confidential. Its page then shows
+**On hold**.
+
+**Audited** (LIF-057): `hold.applied` and `hold.removed`, `{ hold }` its id, about the artifact or the
+space it holds, with its space.

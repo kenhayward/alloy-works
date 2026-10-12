@@ -216,6 +216,9 @@ export function service(
     /** Whether the caller may retire it, answered beside `administers`; and whether it is archived. */
     retires?: boolean;
     archived?: boolean;
+    /** Whether the view says it is on hold, and that the caller may place a hold. */
+    onHold?: boolean;
+    mayHold?: boolean;
     /** What each component's head contributes, by component; nothing where it is not named. */
     holds?: Record<
       string,
@@ -288,6 +291,8 @@ export function service(
     mayReview: options.mayReview ?? false,
     archived,
     mayRetire: options.retires ?? false,
+    onHold: options.onHold ?? false,
+    mayHold: options.mayHold ?? false,
     layout: options.layout ?? layoutView(defaultLayout.scheme),
     ...(options.parameters === undefined
       ? {}
@@ -359,6 +364,7 @@ export function service(
       archived = url.endsWith('/archive');
       return json(200, { archived });
     }
+    if (url === '/v1/holds' && request.method === 'POST') return json(200, { id: 'h1' });
     // The document's baselines (the BL plan): one, made by Ada.
     if (url === `/v1/documents/${DOCUMENT}/baselines` && request.method === 'GET') {
       return json(200, {

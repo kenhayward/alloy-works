@@ -82,6 +82,8 @@ export function Spaces({
         });
         more.push({ label: 'Archive', onSelect: () => setAct({ kind: 'archive', space }) });
       }
+      // A legal hold on everything in it (AH-G), an environment administrator's as the rest is.
+      more.push({ label: 'Place a hold', onSelect: () => setAct({ kind: 'hold', space }) });
     }
     return { shown, more };
   };

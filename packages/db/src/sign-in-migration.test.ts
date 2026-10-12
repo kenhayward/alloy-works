@@ -93,6 +93,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0081_attention_requests',
       '0082_restored_from',
       '0083_archival',
+      '0084_legal_holds',
     ]);
 
     const read = async () =>

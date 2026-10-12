@@ -28,6 +28,7 @@ import { flushSync } from 'react-dom';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
@@ -128,6 +129,10 @@ interface Opened {
   readonly archived: boolean;
   /** Whether the reader may archive and unarchive it. */
   readonly mayRetire: boolean;
+  /** Under a legal hold, told only to whoever may retire it or administer the environment. */
+  readonly onHold: boolean;
+  /** Whether the reader may place a legal hold: an environment administrator. */
+  readonly mayHold: boolean;
   /**
    * The scheme of the layout version this document would be published under, parsed once per view:
    * what the page numbers with (STR-036), so nothing it shows is a number a publish could not print.
@@ -190,6 +195,8 @@ function documentIn(data: unknown): Read {
     mayReview,
     archived,
     mayRetire,
+    onHold,
+    mayHold,
     layout,
     fields,
     schemas,
@@ -232,6 +239,8 @@ function documentIn(data: unknown): Read {
     mayReview: mayReview === true,
     archived: archived === true,
     mayRetire: mayRetire === true,
+    onHold: onHold === true,
+    mayHold: mayHold === true,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
     formats:
@@ -1823,6 +1832,7 @@ export function DocumentPage({
             </button>
             <PeopleHere people={live.people} connected={live.connected} />
             {document.archived && <Chip>Archived</Chip>}
+            {document.onHold && <Chip>On hold</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
               Archive or Unarchive to whoever may retire it (lifecycle.md). */}
             <span className={styles['access']}>
@@ -1836,6 +1846,19 @@ export function DocumentPage({
                 className={styles['toggle']}
                 onChanged={(archived, said) => {
                   if (latest.current?.id === document.id) show({ ...latest.current, archived });
+                  setNotice(said);
+                }}
+              />
+              <PlaceHoldButton
+                client={client}
+                target={{ artifact: document.id }}
+                title={document.outline.title}
+                mayHold={document.mayHold}
+                className={styles['toggle']}
+                onPlaced={(said) => {
+                  if (latest.current?.id === document.id) {
+                    show({ ...latest.current, onHold: true });
+                  }
                   setNotice(said);
                 }}
               />

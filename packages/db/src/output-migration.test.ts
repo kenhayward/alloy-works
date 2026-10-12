@@ -234,6 +234,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0081_attention_requests',
       '0082_restored_from',
       '0083_archival',
+      '0084_legal_holds',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

@@ -261,6 +261,14 @@ export const ComponentView = z.object({
       'Archived: left out of ordinary listings and search, and still read, referenced and edited',
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
+  onHold: z
+    .boolean()
+    .describe(
+      "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment",
+    ),
+  mayHold: z
+    .boolean()
+    .describe('Whether the caller may place a legal hold: an environment administrator'),
   lock: Lock.nullable(),
   unsaved: z
     .object({ savedAt: z.string().describe('When the service accepted it') })

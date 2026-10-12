@@ -8,6 +8,7 @@ import { About } from './About.js';
 import { AuditLog } from './AuditLog.js';
 import { Editing } from './Editing.js';
 import { Groups } from './Groups.js';
+import { Holds } from './Holds.js';
 import { Overview } from './Overview.js';
 import { People } from './People.js';
 import { useListing } from './listing.js';
@@ -29,6 +30,7 @@ const SECTIONS = [
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
+  { slug: 'holds', title: 'Legal holds', group: 'System' },
   { slug: 'audit', title: 'Audit log', group: 'System' },
   { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
@@ -83,6 +85,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     });
     count('groups', async () => {
       const { data } = await client.GET('/v1/groups', { params: { query: { limit: '1' } } });
+      return data?.total;
+    });
+    count('holds', async () => {
+      const { data } = await client.GET('/v1/holds', { params: { query: { limit: '1' } } });
       return data?.total;
     });
     count('roles', async () => {
@@ -247,6 +253,7 @@ export function Administration({
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'holds' && <Holds client={client} />}
         {shown === 'audit' && <AuditLog client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>

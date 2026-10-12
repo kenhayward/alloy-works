@@ -1687,6 +1687,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every legal hold, in force or released, newest first
+         * @description Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.
+         */
+        get: operations["listHolds"];
+        put?: never;
+        /**
+         * Place a legal hold on an artifact or a space
+         * @description Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.
+         */
+        post: operations["placeHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/holds/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release a legal hold
+         * @description Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.
+         */
+        post: operations["releaseHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/inbox": {
         parameters: {
             query?: never;
@@ -9273,6 +9317,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "lock": {
                      *         "holder": {
                      *           "id": "example",
@@ -9328,6 +9374,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         lock: {
                             holder: {
                                 id: string;
@@ -17827,6 +17877,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -17932,6 +17984,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -32651,6 +32707,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -32756,6 +32814,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -32892,6 +32954,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -33124,6 +33190,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -33500,6 +33570,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -33605,6 +33677,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -33741,6 +33817,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -33973,6 +34053,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -36361,6 +36445,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -36466,6 +36552,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -36602,6 +36692,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -36834,6 +36928,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -38629,6 +38727,577 @@ export interface operations {
                 };
             };
             /** @description group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listHolds: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of holds */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            target: {
+                                /** @enum {string} */
+                                kind: "component" | "document" | "publication" | "asset" | "space";
+                                id: string;
+                                /** @description Its title or name now; null where it has none */
+                                title: string | null;
+                            };
+                            /** @description Why it was placed */
+                            reason: string;
+                            appliedBy: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            /** @description When it was placed */
+                            appliedAt: string;
+                            /** @description Its release; null while it is in force */
+                            released: {
+                                /** @description Why it was released */
+                                reason: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their display name, or address; null where neither is known */
+                                    name: string | null;
+                                };
+                                at: string;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end */
+                        next: string | null;
+                        /** @description How many holds there are in all, released ones too */
+                        total: number;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    placeHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "target": {
+                 *         "artifact": "00000000-0000-4000-8000-000000000001"
+                 *       },
+                 *       "reason": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description What to hold: an artifact, or a space and everything in it */
+                    target: {
+                        /** @description A component, document, publication or asset, by its id */
+                        artifact: string & (unknown & unknown);
+                    } | {
+                        /** @description A space, by its id: holds every artifact in it */
+                        space: string & (unknown & unknown);
+                    };
+                    /** @description Why, trimmed, 1 to 2000 characters. Shown only in Administration, never in the audit log */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Placed, and in force */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "target": {
+                     *         "kind": "component",
+                     *         "id": "example",
+                     *         "title": "example"
+                     *       },
+                     *       "reason": "example",
+                     *       "appliedBy": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "appliedAt": "example",
+                     *       "released": {
+                     *         "reason": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        target: {
+                            /** @enum {string} */
+                            kind: "component" | "document" | "publication" | "asset" | "space";
+                            id: string;
+                            /** @description Its title or name now; null where it has none */
+                            title: string | null;
+                        };
+                        /** @description Why it was placed */
+                        reason: string;
+                        appliedBy: {
+                            id: string;
+                            /** @description Their display name, or address; null where neither is known */
+                            name: string | null;
+                        };
+                        /** @description When it was placed */
+                        appliedAt: string;
+                        /** @description Its release; null while it is in force */
+                        released: {
+                            /** @description Why it was released */
+                            reason: string;
+                            by: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No target, two, or an empty reason */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact or space in this environment, or an artifact no hold takes */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    releaseHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Why, trimmed, 1 to 2000 characters. Shown only in Administration, never in the audit log */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Released */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "target": {
+                     *         "kind": "component",
+                     *         "id": "example",
+                     *         "title": "example"
+                     *       },
+                     *       "reason": "example",
+                     *       "appliedBy": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "appliedAt": "example",
+                     *       "released": {
+                     *         "reason": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        target: {
+                            /** @enum {string} */
+                            kind: "component" | "document" | "publication" | "asset" | "space";
+                            id: string;
+                            /** @description Its title or name now; null where it has none */
+                            title: string | null;
+                        };
+                        /** @description Why it was placed */
+                        reason: string;
+                        appliedBy: {
+                            id: string;
+                            /** @description Their display name, or address; null where neither is known */
+                            name: string | null;
+                        };
+                        /** @description When it was placed */
+                        appliedAt: string;
+                        /** @description Its release; null while it is in force */
+                        released: {
+                            /** @description Why it was released */
+                            reason: string;
+                            by: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description An empty reason */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such hold in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description hold_released: it was released already */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47236,6 +47905,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "lock": {
                      *         "holder": {
                      *           "id": "example",
@@ -47291,6 +47962,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         lock: {
                             holder: {
                                 id: string;
@@ -48263,6 +48938,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "onHold": false,
+                     *       "mayHold": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -48368,6 +49045,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                        onHold: boolean;
+                        /** @description Whether the caller may place a legal hold: an environment administrator */
+                        mayHold: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */

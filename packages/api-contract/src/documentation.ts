@@ -105,6 +105,10 @@ export const documentationGroups = [
     tags: [
       { name: 'Search', description: 'Search content the caller may read.' },
       { name: 'Settings', description: 'Read and change environment settings.' },
+      {
+        name: 'Legal holds',
+        description: 'Place a legal hold on an artifact or a space, list holds and release one.',
+      },
       { name: 'Audit log', description: 'Read and export the environment’s audit log.' },
     ],
   },
@@ -291,6 +295,7 @@ const operationTags = {
   ],
   Search: ['search'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
+  'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
 
@@ -558,6 +563,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads an export of the audit log: whether its job has written it, and how many events it holds.',
   downloadAuditExport:
     'Hands out a link to a written export, signed for five minutes. Each link handed out is recorded on the log.',
+  placeHold:
+    'Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.',
+  releaseHold:
+    'Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.',
+  listHolds:
+    'Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.',
   listAuditEvents:
     'Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.',
   listSessions:

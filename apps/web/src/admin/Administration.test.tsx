@@ -626,6 +626,25 @@ describe("Administration's menu", () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
     ).toEqual(['#/admin/people', '#/admin/groups', '#/admin/roles']);
+    expect(
+      within(screen.getByRole('list', { name: 'System' }))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['#/admin/holds', '#/admin/audit', '#/admin/about']);
+  });
+
+  it('opens Legal holds, counted from its listing', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/holds': () => json(200, { items: [], next: null, total: 0 }),
+    });
+    render(<Administration client={client} about={null} />);
+    await waitFor(() => expect(section('Legal holds')).toHaveTextContent('Legal holds0'));
+    await userEvent.click(section('Legal holds'));
+    expect(
+      await screen.findByRole('heading', { name: 'Legal holds', level: 1 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Nothing is on hold.')).toBeInTheDocument();
   });
 
   it('opens the section the address names, and Overview for one it does not know', async () => {
@@ -1165,6 +1184,7 @@ function spacesService(administers: readonly string[] = ['tenant', 'space:s1', '
     const route = `${request.method} ${url.pathname}`;
     if (route === 'GET /v1/tenant') return json(200, { name: 'Development' });
     if (route === 'GET /v1/access') return administering(...administers)(url);
+    if (route === 'POST /v1/holds') return json(200, { id: 'h1' });
     if (route === 'GET /v1/spaces') {
       return json(200, { items: spaces.map((each) => ({ ...each })), next: null });
     }
@@ -1360,6 +1380,26 @@ describe('Spaces in Administration', () => {
         { method: 'POST', path: '/v1/spaces', body: { name: wide.repeat(200) } },
       ]),
     );
+  });
+
+  it('LIF-022 lets an environment administrator place a hold on a space from its row, asking why', async () => {
+    const { client, sent } = spacesService();
+    const { table } = await openSpaces(client);
+    await userEvent.click(
+      await within(table).findByRole('button', { name: 'More actions for General' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Place a hold' }));
+    const placing = screen.getByRole('dialog', { name: 'Place a hold on General' });
+    expect(placing).toHaveTextContent('Everything in this space is held');
+    await userEvent.click(within(placing).getByRole('button', { name: 'Place hold' }));
+    expect(within(placing).getByText('Give a reason.')).toBeInTheDocument();
+    expect(sent).toEqual([]);
+    await userEvent.type(within(placing).getByRole('textbox', { name: 'Reason' }), 'Matter 7');
+    await userEvent.click(within(placing).getByRole('button', { name: 'Place hold' }));
+    expect(await screen.findByText('Placed a hold on General.')).toBeInTheDocument();
+    expect(sent).toEqual([
+      { method: 'POST', path: '/v1/holds', body: { target: { space: 's1' }, reason: 'Matter 7' } },
+    ]);
   });
 
   it('offers none of it to one who administers only a space', async () => {

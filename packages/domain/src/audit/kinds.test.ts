@@ -176,6 +176,8 @@ describe('the audit kinds', () => {
       'publication.produced': { request: ID, publication: OTHER },
       'publication.failed': { request: ID, codes: ['occurrence_unreadable', 'engine'] },
       'audit.label_erased': { labels: 3 },
+      'hold.applied': { hold: ID },
+      'hold.removed': { hold: OTHER },
     };
     for (const [kind, detail] of Object.entries(examples)) {
       expect(parseAuditDetail(kind as (typeof auditKinds)[number], detail), kind).toEqual(detail);

@@ -128,6 +128,10 @@
       "description": "Read and change environment settings."
     },
     {
+      "name": "Legal holds",
+      "description": "Place a legal hold on an artifact or a space, list holds and release one."
+    },
+    {
       "name": "Audit log",
       "description": "Read and export the environment’s audit log."
     },
@@ -198,6 +202,7 @@
       "tags": [
         "Search",
         "Settings",
+        "Legal holds",
         "Audit log"
       ]
     },
@@ -24782,6 +24787,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "lock": {
                       "anyOf": [
                         {
@@ -25034,6 +25047,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "lock",
                     "unsaved",
                     "sequence",
@@ -25060,6 +25075,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "lock": {
                     "holder": {
                       "id": "example",
@@ -48967,6 +48984,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -49055,6 +49080,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -49094,6 +49121,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -109234,6 +109263,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -109322,6 +109359,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -109361,6 +109400,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -109721,6 +109762,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -109809,6 +109858,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -110411,6 +110462,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -110499,6 +110558,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -111767,6 +111828,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -111855,6 +111924,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -111894,6 +111965,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -112254,6 +112327,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -112342,6 +112423,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -112944,6 +113027,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -113032,6 +113123,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -119731,6 +119824,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -119819,6 +119920,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -119858,6 +119961,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -120218,6 +120323,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -120306,6 +120419,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -120908,6 +121023,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "onHold": {
+                          "type": "boolean",
+                          "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                        },
+                        "mayHold": {
+                          "type": "boolean",
+                          "description": "Whether the caller may place a legal hold: an environment administrator"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -120996,6 +121119,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "onHold",
+                        "mayHold",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -125541,6 +125666,1365 @@
           },
           "409": {
             "description": "group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/holds": {
+      "get": {
+        "operationId": "listHolds",
+        "summary": "Every legal hold, in force or released, newest first",
+        "description": "Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.",
+        "tags": [
+          "Legal holds"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of holds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "target": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "component",
+                                  "document",
+                                  "publication",
+                                  "asset",
+                                  "space"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "description": "Its title or name now; null where it has none",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "title"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "Why it was placed"
+                          },
+                          "appliedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Their display name, or address; null where neither is known",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "appliedAt": {
+                            "type": "string",
+                            "description": "When it was placed"
+                          },
+                          "released": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "reason": {
+                                    "type": "string",
+                                    "description": "Why it was released"
+                                  },
+                                  "by": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "Their display name, or address; null where neither is known",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  "at": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reason",
+                                  "by",
+                                  "at"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Its release; null while it is in force"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "target",
+                          "reason",
+                          "appliedBy",
+                          "appliedAt",
+                          "released"
+                        ]
+                      }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many holds there are in all, released ones too"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next",
+                    "total"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "next": "example",
+                  "total": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "placeHold",
+        "summary": "Place a legal hold on an artifact or a space",
+        "description": "Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.",
+        "tags": [
+          "Legal holds"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "artifact": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "A component, document, publication or asset, by its id"
+                          }
+                        },
+                        "required": [
+                          "artifact"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "space": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ],
+                            "description": "A space, by its id: holds every artifact in it"
+                          }
+                        },
+                        "required": [
+                          "space"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "What to hold: an artifact, or a space and everything in it"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "description": "Why, trimmed, 1 to 2000 characters. Shown only in Administration, never in the audit log"
+                  }
+                },
+                "required": [
+                  "target",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "target": {
+                  "artifact": "00000000-0000-4000-8000-000000000001"
+                },
+                "reason": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Placed, and in force",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "component",
+                            "document",
+                            "publication",
+                            "asset",
+                            "space"
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "description": "Its title or name now; null where it has none",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id",
+                        "title"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Why it was placed"
+                    },
+                    "appliedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Their display name, or address; null where neither is known",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "appliedAt": {
+                      "type": "string",
+                      "description": "When it was placed"
+                    },
+                    "released": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "reason": {
+                              "type": "string",
+                              "description": "Why it was released"
+                            },
+                            "by": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "Their display name, or address; null where neither is known",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "reason",
+                            "by",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its release; null while it is in force"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "reason",
+                    "appliedBy",
+                    "appliedAt",
+                    "released"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "target": {
+                    "kind": "component",
+                    "id": "example",
+                    "title": "example"
+                  },
+                  "reason": "example",
+                  "appliedBy": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "appliedAt": "example",
+                  "released": {
+                    "reason": "example",
+                    "by": {
+                      "id": "example",
+                      "name": "example"
+                    },
+                    "at": "example"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No target, two, or an empty reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such artifact or space in this environment, or an artifact no hold takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/holds/{id}/release": {
+      "post": {
+        "operationId": "releaseHold",
+        "summary": "Release a legal hold",
+        "description": "Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.",
+        "tags": [
+          "Legal holds"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "description": "Why, trimmed, 1 to 2000 characters. Shown only in Administration, never in the audit log"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "reason": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Released",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "component",
+                            "document",
+                            "publication",
+                            "asset",
+                            "space"
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "description": "Its title or name now; null where it has none",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id",
+                        "title"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Why it was placed"
+                    },
+                    "appliedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Their display name, or address; null where neither is known",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "appliedAt": {
+                      "type": "string",
+                      "description": "When it was placed"
+                    },
+                    "released": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "reason": {
+                              "type": "string",
+                              "description": "Why it was released"
+                            },
+                            "by": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "Their display name, or address; null where neither is known",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "reason",
+                            "by",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its release; null while it is in force"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "reason",
+                    "appliedBy",
+                    "appliedAt",
+                    "released"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "target": {
+                    "kind": "component",
+                    "id": "example",
+                    "title": "example"
+                  },
+                  "reason": "example",
+                  "appliedBy": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "appliedAt": "example",
+                  "released": {
+                    "reason": "example",
+                    "by": {
+                      "id": "example",
+                      "name": "example"
+                    },
+                    "at": "example"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An empty reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such hold in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "hold_released: it was released already",
             "content": {
               "application/json": {
                 "schema": {
@@ -149235,6 +150719,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "lock": {
                       "anyOf": [
                         {
@@ -149487,6 +150979,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "lock",
                     "unsaved",
                     "sequence",
@@ -149513,6 +151007,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "lock": {
                     "holder": {
                       "id": "example",
@@ -152455,6 +153951,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "onHold": {
+                      "type": "boolean",
+                      "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
+                    },
+                    "mayHold": {
+                      "type": "boolean",
+                      "description": "Whether the caller may place a legal hold: an environment administrator"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -152543,6 +154047,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "onHold",
+                    "mayHold",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -152582,6 +154088,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "onHold": false,
+                  "mayHold": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,

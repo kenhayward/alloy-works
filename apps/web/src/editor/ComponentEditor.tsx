@@ -99,6 +99,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
@@ -559,6 +560,8 @@ export function ComponentEditor({
   const [notice, setNotice] = useState<string | null>(null);
   // Archived or unarchived on this page since it opened: what it shows over the GET's (lifecycle.md).
   const [archivedNow, setArchivedNow] = useState<boolean | null>(null);
+  // A hold placed from this page since it opened: shown On hold without reading the view again.
+  const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
   const status = useStatus();
@@ -2215,6 +2218,8 @@ export function ComponentEditor({
               {session?.version.number ?? shown.version.number} · {shown.space.name}
             </span>
             {archived && <Chip>Archived</Chip>}
+            {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
+            {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
             <ArchiveButton
               client={client}
               kind="component"
@@ -2225,6 +2230,17 @@ export function ComponentEditor({
               className={styles['archive']}
               onChanged={(now, said) => {
                 setArchivedNow(now);
+                setNotice(said);
+              }}
+            />
+            <PlaceHoldButton
+              client={client}
+              target={{ artifact: componentId }}
+              title={header.title}
+              mayHold={shown.mayHold === true}
+              className={styles['archive']}
+              onPlaced={(said) => {
+                setHeldNow(true);
                 setNotice(said);
               }}
             />

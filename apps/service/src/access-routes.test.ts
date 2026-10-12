@@ -1167,6 +1167,19 @@ describe('routes that check a permission', () => {
       payload: { principals: [] },
     }),
     deleteGroup: () => ({ url: `/v1/groups/${MISSING}`, status: 403 }),
+    // A legal hold is an administrator's of the whole environment (AH-G): refused before it is
+    // looked for.
+    listHolds: () => ({ url: '/v1/holds', status: 403 }),
+    placeHold: () => ({
+      url: '/v1/holds',
+      status: 403,
+      payload: { target: { artifact: dosing }, reason: 'Mine' },
+    }),
+    releaseHold: () => ({
+      url: `/v1/holds/${MISSING}/release`,
+      status: 403,
+      payload: { reason: 'Mine' },
+    }),
     // The audit log is read by an administrator of the whole environment (AU-G).
     listAuditEvents: () => ({ url: '/v1/audit', status: 403 }),
     requestAuditExport: () => ({ url: '/v1/audit/exports', status: 403, payload: {} }),

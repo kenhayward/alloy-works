@@ -247,7 +247,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(747); // 747 (2026-10-12): AH1 - lifecycle.md claims LIF-020; storage-and-versioning.md drops VER-037 for DL. 747 (2026-10-12): RS2 - structure.md claims CNT-182. 746 (2026-10-12): RS1 - component-editor.md claims CNT-170. 745 (2026-10-12): HM1 - home.md claims SCH-070. 744 (2026-10-12): RR1 - collaboration.md claims COL-028 to COL-032, COL-057 and COL-058. 737 (2026-10-12): RV1 - bindings.md claims DAT-057 and DAT-115, tables.md DAT-063. 734 (2026-10-12): SG1 - collaboration.md claims COL-020 to COL-025, COL-041 to COL-043, COL-048 and COL-052. 723 (2026-10-12): TH1 - collaboration.md claims COL-012 to COL-019, COL-034 to COL-036, COL-049 to COL-051, COL-053, COL-054, COL-062, COL-063, CNT-155, CNT-157 and IAM-081. 702 (2026-10-11): CP1 - comparison.md claims VER-024, VER-025, VER-027 to VER-031, VER-045, VER-050, VER-051, CNT-111 to CNT-113, COL-026, SCH-025 and SCH-048. 686 (2026-10-11): BL1 - baselines.md claims VER-043, VER-046, VER-049, DAT-038, PUB-045, PUB-046, PUB-075 and STR-047. 678 (2026-10-11): PL5 - structure.md claims STR-038 and STR-066. 676 (2026-10-11): PL1 - collaboration.md claims COL-009, COL-044 to COL-047 and takes COL-008 from component-editor.md; realtime.md claims COL-055 and API-015. 669 (2026-10-11): AU2d - service-foundations.md claims IAM-040. 668 (2026-10-11): TG1 - tables.md claims TAB-023 and TAB-054 for TAB-042. 667 (2026-10-11): TG - tables.md claims TAB-008, TAB-021, TAB-022, TAB-042, TAB-043, TAB-053. 661 (2026-10-09): MC - data.md claims DAT-119. 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(748); // 748 (2026-10-12): AH2 - lifecycle.md claims LIF-022. 747 (2026-10-12): AH1 - lifecycle.md claims LIF-020; storage-and-versioning.md drops VER-037 for DL. 747 (2026-10-12): RS2 - structure.md claims CNT-182. 746 (2026-10-12): RS1 - component-editor.md claims CNT-170. 745 (2026-10-12): HM1 - home.md claims SCH-070. 744 (2026-10-12): RR1 - collaboration.md claims COL-028 to COL-032, COL-057 and COL-058. 737 (2026-10-12): RV1 - bindings.md claims DAT-057 and DAT-115, tables.md DAT-063. 734 (2026-10-12): SG1 - collaboration.md claims COL-020 to COL-025, COL-041 to COL-043, COL-048 and COL-052. 723 (2026-10-12): TH1 - collaboration.md claims COL-012 to COL-019, COL-034 to COL-036, COL-049 to COL-051, COL-053, COL-054, COL-062, COL-063, CNT-155, CNT-157 and IAM-081. 702 (2026-10-11): CP1 - comparison.md claims VER-024, VER-025, VER-027 to VER-031, VER-045, VER-050, VER-051, CNT-111 to CNT-113, COL-026, SCH-025 and SCH-048. 686 (2026-10-11): BL1 - baselines.md claims VER-043, VER-046, VER-049, DAT-038, PUB-045, PUB-046, PUB-075 and STR-047. 678 (2026-10-11): PL5 - structure.md claims STR-038 and STR-066. 676 (2026-10-11): PL1 - collaboration.md claims COL-009, COL-044 to COL-047 and takes COL-008 from component-editor.md; realtime.md claims COL-055 and API-015. 669 (2026-10-11): AU2d - service-foundations.md claims IAM-040. 668 (2026-10-11): TG1 - tables.md claims TAB-023 and TAB-054 for TAB-042. 667 (2026-10-11): TG - tables.md claims TAB-008, TAB-021, TAB-022, TAB-042, TAB-043, TAB-053. 661 (2026-10-09): MC - data.md claims DAT-119. 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -857,6 +857,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1137 (2026-10-12): AH2's legal holds.
     // 1130 (2026-10-12): AH1's archival.
     // 1122 (2026-10-12): the RS final review; a fake service's restore cites VER-032 no more.
     // 1123 (2026-10-12): RS2's restore of a document and the audited re-point.
@@ -869,7 +870,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1130);
+    expect(model.citations).toHaveLength(1137);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -954,6 +955,7 @@ describe('scanning the repository for test files', () => {
     // 68, from 65 (2026-10-12): editor/ComponentEditor.draft, review/SuggestionsPanel and structure/DocumentPage.suggestions tests.
     // 72, from 71 (2026-10-12): structure/DocumentVersions.test.tsx, citing VER-033 and VER-035.
     // 73, from 72 (2026-10-12): editor/ComponentEditor.archival.test.tsx, citing LIF-020.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(73);
+    // 75, from 73 (2026-10-12): admin/Holds.test.tsx, citing LIF-022, and editor/ComponentEditor.holds.test.tsx.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(75);
   });
 });

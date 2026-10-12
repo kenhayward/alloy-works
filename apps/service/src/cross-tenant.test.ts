@@ -32,6 +32,7 @@ import {
   recordPublication,
   requestPublication,
   setGroupMembers,
+  placeHold,
   uploadForDatasetImage,
   type Tenant,
   type TenantDatabase,
@@ -239,6 +240,7 @@ const OTHER_TENANT_IDS: Readonly<
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
   setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
+  releaseHold: async (tenant, db) => ({ id: await holdIdIn(tenant, db) }),
   getAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   downloadAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   updateSpace: async (tenant, db) => ({ id: await spaceIdIn(tenant, db) }),
@@ -412,6 +414,8 @@ const VALID_INPUT: Readonly<
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
+  placeHold: { payload: { target: { space: SESSION }, reason: 'Elsewhere' } },
+  releaseHold: { payload: { reason: 'Elsewhere' } },
   requestAuditExport: { payload: {} },
   beatPresence: {
     payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },
@@ -1019,6 +1023,30 @@ const groupIdIn = (tenant: Tenant, db: TenantDatabase) =>
     if (!('set' in filled)) throw new Error(`refused: ${filled.refused}`);
     return made.group.id;
   });
+
+/** A legal hold in `tenant`, on a component of its own. */
+const holdIdIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const component = await componentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const by = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `kai-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const placed = await placeHold(trx, {
+      target: { artifact: component },
+      reason: 'Elsewhere',
+      by: by.id,
+    });
+    if (placed.answer !== 'placed') throw new Error(placed.answer);
+    return placed.id;
+  });
+};
 
 /**
  * A personal token in `tenant`, of a principal of its own, kept as its hash as any token is: each call

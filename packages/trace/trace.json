@@ -17125,6 +17125,10 @@
         {
           "id": "LIF-020",
           "howItIsMet": "Archival, below: out of ordinary listings and search, still retrievable; AH-B to AH-D"
+        },
+        {
+          "id": "LIF-022",
+          "howItIsMet": "Legal holds, below: placed with who, when and why, removed only by a recorded act"
         }
       ]
     },
@@ -19190,7 +19194,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 324,
+      "line": 327,
       "kind": "title"
     },
     {
@@ -19436,7 +19440,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1134,
+      "line": 1162,
       "kind": "title"
     },
     {
@@ -19659,6 +19663,18 @@
       "id": "IAM-009",
       "file": "apps/service/src/group-routes.test.ts",
       "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-022",
+      "file": "apps/service/src/hold-routes.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "apps/service/src/hold-routes.test.ts",
+      "line": 273,
       "kind": "title"
     },
     {
@@ -20432,7 +20448,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1223,
+      "line": 1243,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-022",
+      "file": "apps/web/src/admin/Administration.test.tsx",
+      "line": 1385,
       "kind": "title"
     },
     {
@@ -20457,6 +20479,12 @@
       "id": "COL-046",
       "file": "apps/web/src/admin/Editing.test.tsx",
       "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-022",
+      "file": "apps/web/src/admin/Holds.test.tsx",
+      "line": 54,
       "kind": "title"
     },
     {
@@ -21398,7 +21426,7 @@
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 660,
+      "line": 685,
       "kind": "title"
     },
     {
@@ -22680,6 +22708,18 @@
       "kind": "title"
     },
     {
+      "id": "LIF-022",
+      "file": "packages/db/src/holds.test.ts",
+      "line": 71,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "packages/db/src/holds.test.ts",
+      "line": 155,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "packages/db/src/idempotency.test.ts",
       "line": 89,
@@ -23252,7 +23292,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 191,
+      "line": 193,
       "kind": "title"
     },
     {
@@ -25406,13 +25446,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 671,
+      "line": 684,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 348,
+      "line": 361,
       "kind": "title"
     },
     {
@@ -25431,6 +25471,12 @@
       "id": "STR-073",
       "file": "tests/browser/src/budgets.test.ts",
       "line": 268,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-022",
+      "file": "tests/browser/src/holds.test.ts",
+      "line": 28,
       "kind": "title"
     },
     {
