@@ -15,6 +15,15 @@ import type {
   BaselineTable,
 } from './baselines-tables.js';
 import type {
+  NotificationHeldTable,
+  NotificationPreferenceTable,
+  NotificationTable,
+  ThreadCommentTable,
+  ThreadCommentTextTable,
+  ThreadResolutionTable,
+  ThreadTable,
+} from './threads-tables.js';
+import type {
   PublicationCheckGivenUpTable,
   PublicationCheckTable,
   PublicationInputTable,
@@ -666,6 +675,13 @@ export interface TenantTables {
   baseline_pin: BaselinePinTable;
   baseline_binding: BaselineBindingTable;
   baseline_supersession: BaselineSupersessionTable;
+  thread: ThreadTable;
+  thread_comment: ThreadCommentTable;
+  thread_comment_text: ThreadCommentTextTable;
+  thread_resolution: ThreadResolutionTable;
+  notification: NotificationTable;
+  notification_held: NotificationHeldTable;
+  notification_preference: NotificationPreferenceTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

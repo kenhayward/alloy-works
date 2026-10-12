@@ -302,6 +302,28 @@ export const auditKindSpecs = {
     z.strictObject({ from: Id, session: Id }),
     'apps/service/src/editing.ts',
   ),
+  // A thread started, a comment added or edited, a thread resolved (the TH plan): about what the
+  // thread is on, the subject; identifiers alone, never the words (COL-036).
+  'thread.started': kind(
+    ['COL-012'],
+    z.strictObject({ thread: Id, anchor: AuditName }),
+    'packages/db/src/threads.ts',
+  ),
+  'comment.added': kind(
+    ['COL-014', 'COL-015'],
+    z.strictObject({ thread: Id, comment: Id, mentions: z.int().nonnegative() }),
+    'packages/db/src/threads.ts',
+  ),
+  'comment.edited': kind(
+    ['COL-051'],
+    z.strictObject({ thread: Id, comment: Id }),
+    'packages/db/src/threads.ts',
+  ),
+  'thread.resolved': kind(
+    ['COL-013'],
+    z.strictObject({ thread: Id }),
+    'packages/db/src/threads.ts',
+  ),
   'suggestion.accepted': kind(['COL-024'], empty, LATER),
   'suggestion.rejected': kind(['COL-024'], empty, LATER),
   'template.moved': kind(['TPL-033'], empty, LATER),

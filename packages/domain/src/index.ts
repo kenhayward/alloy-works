@@ -73,3 +73,4 @@ export { storableEverywhere } from './stored/storable.js';
 // column types a describe proposes, the connector's protocol and the limits (docs/design/data.md).
 export * from './data/index.js';
 export * from './compare/index.js';
+export * from './review/index.js';
