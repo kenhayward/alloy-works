@@ -33483,6 +33483,35 @@
                       },
                       "description": "The version's values its component's fields no longer take, not carried forward"
                     },
+                    "changed": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "The field's name now, or null where none is held",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "latest": {
+                            "description": "The latest's value, absent where it holds none"
+                          },
+                          "restored": {
+                            "description": "The value the restore would hold, absent where it would hold none"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "name"
+                        ]
+                      },
+                      "description": "Each value the restore would hold, carried forward, otherwise than the latest's"
+                    },
                     "refusals": {
                       "type": "array",
                       "items": {
@@ -33494,9 +33523,11 @@
                               "restore_unreadable",
                               "restore_locked",
                               "values_invalid",
-                              "restore_unchanged"
+                              "restore_unchanged",
+                              "content_invalid",
+                              "definition_unreadable"
                             ],
-                            "description": "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is"
+                            "description": "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid and definition_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name"
                           },
                           "holder": {
                             "description": "restore_locked: who holds the lock",
@@ -33564,6 +33595,7 @@
                     "from",
                     "latest",
                     "notCarried",
+                    "changed",
                     "refusals"
                   ]
                 },
@@ -33584,6 +33616,7 @@
                     "note": "example"
                   },
                   "notCarried": [],
+                  "changed": [],
                   "refusals": []
                 }
               }
@@ -33940,7 +33973,7 @@
             }
           },
           "400": {
-            "description": "`values_invalid`: a value its field now fixes at another",
+            "description": "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it",
             "content": {
               "application/json": {
                 "schema": {
@@ -34138,7 +34171,7 @@
             }
           },
           "403": {
-            "description": "The caller may read the component but may not edit it",
+            "description": "The caller may read the component but may not edit it; or definition_unreadable: a bound table names a column of a query definition the caller may not read that the latest does not name",
             "content": {
               "application/json": {
                 "schema": {
@@ -120740,23 +120773,50 @@
                       "description": "What the restore would change from the latest"
                     },
                     "titles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "node": {
-                            "type": "string"
-                          },
-                          "title": {
-                            "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "older": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "title"
+                            ]
                           }
                         },
-                        "required": [
-                          "node",
-                          "title"
-                        ]
+                        "newer": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "title"
+                            ]
+                          }
+                        }
                       },
-                      "description": "Each reference the caller may read, by the title of the component it places"
+                      "required": [
+                        "older",
+                        "newer"
+                      ],
+                      "description": "Each reference the caller may read, on each side, by the title of the component version it places there"
                     },
                     "refusals": {
                       "type": "array",
@@ -120855,7 +120915,10 @@
                   "older": {},
                   "newer": {},
                   "structure": [],
-                  "titles": [],
+                  "titles": {
+                    "older": [],
+                    "newer": []
+                  },
                   "refusals": []
                 }
               }

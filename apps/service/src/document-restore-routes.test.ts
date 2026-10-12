@@ -8,6 +8,8 @@ import {
   findRole,
   grant,
   migrate,
+  recordVersion,
+  substanceOf,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -210,7 +212,10 @@ describe("a document's versions and its restore over HTTP (the RS plan, Task 2)"
       document: made.id,
       from: { id: first.version.id, number: '0.2' },
       latest: { id: second.version.id, number: '0.3' },
-      titles: [{ node: second.outline.nodes[0]!.id, title: 'Install the printer' }],
+      titles: {
+        older: [{ node: second.outline.nodes[0]!.id, title: 'Install the printer' }],
+        newer: [],
+      },
       refusals: [],
     });
     expect(view.structure).toContainEqual(
@@ -220,6 +225,42 @@ describe("a document's versions and its restore over HTTP (the RS plan, Task 2)"
     expect(JSON.stringify(view)).not.toContain('Calibrate the scanner');
     // Grace restores it: the reference she may not read was already the latest's, so it stands.
     expect((await restore(made.id, first.version, second.version, 'grace')).statusCode).toBe(200);
+  });
+
+  it("names a reference re-pinned by each side's own version of its component (the RS final review)", async () => {
+    const printer = await component('Install the printer');
+    const renamed = await tenantDb.withTenant(tenant, async (trx) => {
+      const substance = substanceOf(printer);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const next = await recordVersion(trx, {
+        artifactId: printer.artifactId,
+        openedFrom: printer.id,
+        author: ids.ada!,
+        substance: {
+          ...substance,
+          content: { ...substance.content, title: 'Install the new printer' },
+        },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+      return next.version;
+    });
+    const made = await document();
+    const first = await act(
+      made,
+      reference(printer.artifactId, { kind: 'pinned', version: printer.id }),
+    );
+    const node = first.outline.nodes[0]!.id;
+    const second = await act(first, {
+      operation: 'set',
+      node,
+      mode: { kind: 'pinned', version: renamed.id },
+    });
+    const view = (await preview(made.id, first.version)).json<DocumentRestorationView>();
+    expect(view.titles).toEqual({
+      older: [{ node, title: 'Install the new printer' }],
+      newer: [{ node, title: 'Install the printer' }],
+    });
+    expect(second.version.number).toBe('0.3');
   });
 
   it('CNT-182 audits who changes which version a reference takes, from which to which, by an outline act and by a restore', async () => {

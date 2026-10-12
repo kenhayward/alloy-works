@@ -1,14 +1,18 @@
 import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
+  type MetadataSchemaDefinition,
+  type MetadataValues,
   type OutlineDocument,
   type OutlineOperation,
   type SectionNode,
+  type TemplateDefinition,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
-import { createDocument, editOutline } from './documents.js';
+import { createDocument, editOutline, recordDocumentValues } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
@@ -35,6 +39,12 @@ import {
 
 const REVIEW = '5c4e0000-0000-4000-8000-0000000000aa';
 const STATUS = 'f1e1d000-0000-4000-8000-0000000000aa';
+// A field added since, and one a template requires; the schemas applying them (the RS final review).
+const PHASE = 'f1e1d000-0000-4000-8000-0000000000bb';
+const OWNER = 'f1e1d000-0000-4000-8000-0000000000cc';
+const DOCUMENT = '5c4e0000-0000-4000-8000-0000000000bb';
+const SECTIONS = '5c4e0000-0000-4000-8000-0000000000cc';
+const OWNED = '5c4e0000-0000-4000-8000-0000000000dd';
 
 const text = (value: string) => [{ type: 'text' as const, value, marks: [] }];
 const identity = (id: string) =>
@@ -110,6 +120,61 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
       });
       if (answer.answer !== 'recorded') throw new Error(answer.answer);
       return answer.version;
+    });
+
+  /** The document's own values written, by Ada. */
+  const valued = (opened: StoredVersion, values: MetadataValues) =>
+    work(async (trx) => {
+      const answer = await recordDocumentValues(trx, {
+        documentId: opened.artifactId,
+        openedFrom: opened.id,
+        author: ada,
+        values,
+      });
+      if (answer.answer !== 'recorded') throw new Error(JSON.stringify(answer));
+      return answer.version;
+    });
+
+  /** A schema's next version, with these entries. */
+  const reschema = (id: string, entries: MetadataSchemaDefinition['entries']) =>
+    work(async (trx) => {
+      const schema = (await latestVersion(trx, id))!;
+      const answer = await recordVersion(trx, {
+        artifactId: id,
+        openedFrom: schema.id,
+        author: ada,
+        substance: { kind: 'metadataSchema', content: { ...identity(id), entries } },
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+    });
+
+  /** A document made from a template applying these schemas, with one section, Method. */
+  const templated = (schemas: TemplateDefinition['schemas']) =>
+    work(async (trx) => {
+      const template = await createTemplate(trx, {
+        spaceId: general,
+        author: ada,
+        definition: {
+          schemaVersion: TEMPLATE_SCHEMA_VERSION,
+          name: 'Valued',
+          theme: DEFAULT_THEME_ID,
+          layout: DEFAULT_LAYOUT_ID,
+          schemas,
+          outline: { sections: [section('method', 'Method')] },
+          changes: { add: true, remove: true, reorder: true },
+        },
+      });
+      if (template.answer !== 'created') throw new Error(template.answer);
+      const document = await createDocument(trx, {
+        spaceId: general,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+        template: template.template.id,
+      });
+      if (document.answer !== 'created') throw new Error(document.answer);
+      return document.version;
     });
 
   const outline = (version: StoredVersion) => version.content as OutlineDocument;
@@ -197,6 +262,31 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
           },
         },
       });
+      for (const field of [PHASE, OWNER]) {
+        await createArtifact(trx, {
+          author: ada,
+          substance: {
+            kind: 'field',
+            content: { ...identity(field), dataType: 'text', multiplicity: 'one', validation: {} },
+          },
+        });
+      }
+      for (const [schema, fields] of [
+        [DOCUMENT, [STATUS]],
+        [SECTIONS, [STATUS]],
+        [OWNED, [STATUS, OWNER]],
+      ] as const) {
+        await createArtifact(trx, {
+          author: ada,
+          substance: {
+            kind: 'metadataSchema',
+            content: {
+              ...identity(schema),
+              entries: fields.map((field) => ({ field, required: false, fixed: false })),
+            },
+          },
+        });
+      }
     });
   });
 
@@ -416,6 +506,123 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
     });
     expect(await countOf(made.artifactId)).toBe(3);
     expect((await work((trx) => latestVersion(trx, made.artifactId)))!.id).toBe(reordered.id);
+  });
+
+  it("VER-032 restores the document's own values and a section's, each written with the default of a field added since, a fixed one included", async () => {
+    const made = await templated([
+      { schema: DOCUMENT, level: 'document', requires: [] },
+      { schema: SECTIONS, level: 'section', requires: [] },
+    ]);
+    const node = outline(made).nodes[0]!.id;
+    const first = await valued(
+      await act(made, { operation: 'set', node, values: { [STATUS]: 'final' } }),
+      { [STATUS]: 'final' },
+    );
+    const second = await valued(
+      await act(first, { operation: 'set', node, values: { [STATUS]: 'draft' } }),
+      { [STATUS]: 'draft' },
+    );
+    const added = [
+      { field: STATUS, required: false, fixed: false },
+      { field: PHASE, required: false, fixed: true, default: 'Trial' },
+    ];
+    await reschema(DOCUMENT, added);
+    await reschema(SECTIONS, added);
+    const shown = await preview(first);
+    expect(shown!.refusals).toEqual([]);
+    const answer = await restore(first, second);
+    if (answer.answer !== 'restored') throw new Error(JSON.stringify(answer));
+    const written = { [STATUS]: 'final', [PHASE]: 'Trial' };
+    expect(answer.version.values).toEqual(written);
+    expect((outline(answer.version).nodes[0] as SectionNode).values).toEqual(written);
+    // What the preview showed is what was written, so restoring it again changes nothing.
+    expect(shown!.substance).toMatchObject({ content: answer.version.content, values: written });
+    expect(await preview(first)).toMatchObject({ refusals: [{ answer: 'restore.unchanged' }] });
+  });
+
+  it("refuses the document's own value its template's field now fixes at another", async () => {
+    const made = await templated([{ schema: OWNED, level: 'document', requires: [] }]);
+    const first = await valued(made, { [STATUS]: 'final' });
+    const second = await valued(first, { [STATUS]: 'draft' });
+    await reschema(OWNED, [
+      { field: STATUS, required: false, fixed: true, default: 'draft' },
+      { field: OWNER, required: false, fixed: false },
+    ]);
+    const refused = { answer: 'values.invalid', failures: [{ field: STATUS, rule: 'fixed' }] };
+    expect(await restore(first, second)).toMatchObject(refused);
+    expect(await preview(first)).toMatchObject({ refusals: [refused] });
+    expect(await countOf(made.artifactId)).toBe(3);
+    await reschema(OWNED, [
+      { field: STATUS, required: false, fixed: false },
+      { field: OWNER, required: false, fixed: false },
+    ]);
+  });
+
+  it('refuses values its template no longer resolves to check, naming what does not resolve', async () => {
+    const made = await templated([{ schema: OWNED, level: 'document', requires: [OWNER] }]);
+    const first = await valued(made, { [STATUS]: 'final' });
+    const second = await valued(first, { [STATUS]: 'draft' });
+    // The schema no longer groups the owner the template requires.
+    await reschema(OWNED, [{ field: STATUS, required: false, fixed: false }]);
+    const refused = {
+      answer: 'template.unresolved',
+      unresolved: [{ reference: 'requires', id: OWNED, field: OWNER }],
+    };
+    expect(await restore(first, second)).toEqual(refused);
+    expect(await preview(first)).toMatchObject({ refusals: [refused] });
+    expect(await countOf(made.artifactId)).toBe(3);
+  });
+
+  it('refuses a document version that no longer reads', async () => {
+    const made = await blank();
+    const first = await act(made, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'section', title: text('Method') },
+    });
+    // A version whose outline no reader takes, as only a fault could leave one, then a later one.
+    const unreadable = await work(async (trx) => {
+      const { rows } = await sql<{ id: string }>`
+        insert into artifact_version (artifact_id, kind, revision_no, version_no, author_id,
+          schema_version, content, content_hash, metadata_values, not_carried, parameters,
+          version_digest)
+        select artifact_id, kind, revision_no, version_no + 1, author_id, 999,
+          jsonb_set(content, '{schemaVersion}', '999'), content_hash, metadata_values, not_carried,
+          parameters, version_digest
+        from artifact_version where id = ${first.id}
+        returning id`.execute(trx);
+      return (await readVersion(trx, rows[0]!.id))!;
+    });
+    const later = await direct(unreadable, { ...outline(first), nodes: [] });
+    expect(await restore(unreadable, later)).toEqual({ answer: 'restore.unreadable' });
+    expect(await preview(unreadable)).toMatchObject({
+      refusals: [{ answer: 'restore.unreadable' }],
+      substance: undefined,
+    });
+    expect(await countOf(made.artifactId)).toBe(4);
+  });
+
+  it('CNT-182 audits a restore re-pointing a reference between the latest and the approved version', async () => {
+    const printer = await component();
+    const made = await blank();
+    const first = await act(made, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'reference', component: printer.artifactId, mode: { kind: 'latest' } },
+    });
+    const node = outline(first).nodes[0]!.id;
+    const second = await act(first, { operation: 'set', node, mode: { kind: 'approved' } });
+    const answer = await restore(first, second);
+    if (answer.answer !== 'restored') throw new Error(answer.answer);
+    expect(
+      (await eventsOf(answer.version.id))
+        .filter((each) => each.kind === 'reference.repointed')
+        .map((each) => each.detail),
+    ).toEqual([
+      { node, component: printer.artifactId, from: { kind: 'approved' }, to: { kind: 'latest' } },
+    ]);
   });
 
   // Last: it changes the schema the template here applies to sections.

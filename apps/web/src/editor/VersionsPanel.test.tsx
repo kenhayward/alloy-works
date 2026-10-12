@@ -127,8 +127,18 @@ const summary = (id: string, number: string) => ({
   note: null,
 });
 
-/** A component at 0.3 over 0.2, whose restore of 0.2 is previewed with `refusals` and then made. */
-function restoring(refusals: readonly unknown[] = []) {
+/**
+ * A component at 0.3 over 0.2, whose restore of 0.2 is previewed with `refusals` and then made: the
+ * preview made against `latest`, and the restore answered `answer` where given.
+ */
+function restoring(
+  refusals: readonly unknown[] = [],
+  over: {
+    readonly latest?: ReturnType<typeof summary>;
+    readonly changed?: readonly unknown[];
+    readonly answer?: () => Response;
+  } = {},
+) {
   const asked: string[] = [];
   const sent: unknown[] = [];
   let restored = false;
@@ -149,13 +159,15 @@ function restoring(refusals: readonly unknown[] = []) {
       return json(200, {
         component: COMPONENT,
         from: summary(V2, '0.2'),
-        latest: summary(V3, '0.3'),
+        latest: over.latest ?? summary(V3, '0.3'),
         notCarried: [{ field: REGION, name: 'Region', value: 'EU' }],
+        changed: over.changed ?? [],
         refusals,
       });
     }
     if (url.pathname.endsWith('/restore')) {
       sent.push(await input.json());
+      if (over.answer) return over.answer();
       restored = true;
       return json(200, { version: summary(V4, '0.4') });
     }
@@ -176,7 +188,6 @@ function restoring(refusals: readonly unknown[] = []) {
 const editable = () => ({
   older: docOf('Set the new tray.'),
   newer: docOf('Set the new tray.'),
-  mayEdit: true,
 });
 
 describe('restoring an earlier version from the Versions panel', () => {
@@ -184,7 +195,13 @@ describe('restoring an earlier version from the Versions panel', () => {
     const { client, asked, sent } = restoring();
     const onRestored = vi.fn();
     render(
-      <VersionsPanel client={client} id={COMPONENT} mine={editable} onRestored={onRestored} />,
+      <VersionsPanel
+        client={client}
+        id={COMPONENT}
+        mine={editable}
+        mayEdit
+        onRestored={onRestored}
+      />,
     );
     const list = await screen.findByRole('list', { name: 'Versions' });
     // The latest is no earlier version to restore.
@@ -205,7 +222,7 @@ describe('restoring an earlier version from the Versions panel', () => {
 
   it('says in words why a restore is refused, and offers no restore', async () => {
     const { client } = restoring([{ code: 'restore_locked', holder: { id: 'g', name: 'Grace' } }]);
-    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} />);
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
     await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
     const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
@@ -217,15 +234,111 @@ describe('restoring an earlier version from the Versions panel', () => {
     expect(within(preview).queryByRole('button', { name: 'Restore this version' })).toBeNull();
   });
 
+  it("posts and shows the latest the preview was made against, comparing with it, not the list's (the RS final review)", async () => {
+    const V5 = 'cccccccc-0000-4000-8000-000000000007';
+    const { client, asked, sent } = restoring([], { latest: summary(V5, '0.5') });
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    expect(
+      await within(preview).findByText(/^A new version after 0\.5, holding what 0\.2 holds\./),
+    ).toBeInTheDocument();
+    await screen.findByRole('list', { name: 'Changes from 0.3 to 0.2' });
+    expect(asked).toContain(`GET /v1/components/${COMPONENT}/comparison?from=${V5}&to=${V2}`);
+    await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
+    expect(sent).toEqual([{ latest: V5 }]);
+  });
+
+  it('reads the versions again when the latest has moved on since the preview', async () => {
+    const { client, asked } = restoring([], {
+      answer: () =>
+        json(409, {
+          code: 'version_precondition',
+          message: 'This component has a newer version.',
+          current: summary(V4, '0.4'),
+        }),
+    });
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    const lists = () => asked.filter((each) => each.endsWith(`${COMPONENT}/versions`)).length;
+    expect(lists()).toBe(1);
+    await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
+    expect(
+      await screen.findByText(
+        'A newer version was saved since this was shown. Look at it again before restoring.',
+      ),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(lists()).toBe(2));
+  });
+
+  it('shows each value the restore would change from the latest', async () => {
+    const AUDIENCE = 'cccccccc-0000-4000-8000-000000000008';
+    const { client } = restoring([], {
+      changed: [
+        { field: AUDIENCE, name: 'Audience', latest: 'Nurses', restored: 'Engineers' },
+        { field: REGION, name: null, latest: 'EU' },
+      ],
+    });
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const changed = await screen.findByRole('list', { name: 'Values changed' });
+    expect(
+      within(changed)
+        .getAllByRole('listitem')
+        .map((each) => each.textContent),
+    ).toEqual(['Audience: Engineers, now Nurses', 'A field no longer held: empty, now EU']);
+  });
+
+  it('offers Restore once the editor says the caller may edit, without being opened again', async () => {
+    const { client } = restoring();
+    const { rerender } = render(
+      <VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit={false} />,
+    );
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
+    rerender(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    expect(await within(list).findByRole('button', { name: 'Restore 0.2' })).toBeInTheDocument();
+  });
+
+  it('restores once however often Restore this version is pressed, saying so in a live region there from the start', async () => {
+    const { client, sent } = restoring();
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    const status = within(preview).getByRole('status');
+    expect(status).toBeEmptyDOMElement();
+    const button = await within(preview).findByRole('button', { name: 'Restore this version' });
+    await userEvent.dblClick(button);
+    expect(await within(status).findByText('Restored as version 0.4.')).toBeInTheDocument();
+    expect(sent).toEqual([{ latest: V3 }]);
+  });
+
+  it("says in words that a save's checks refuse the restore", async () => {
+    const { client } = restoring([{ code: 'definition_unreadable' }, { code: 'content_invalid' }]);
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    expect(
+      await within(preview).findByText(
+        'A table in this version shows a column of a query you may not read, so only someone who may read it can restore this version.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(preview).getByText(
+        'This version holds content that can no longer be saved, so it cannot be restored.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('offers no restore to a reader who may not edit', async () => {
     const { client } = restoring();
-    render(
-      <VersionsPanel
-        client={client}
-        id={COMPONENT}
-        mine={() => ({ ...editable(), mayEdit: false })}
-      />,
-    );
+    render(<VersionsPanel client={client} id={COMPONENT} mine={editable} mayEdit={false} />);
     const list = await screen.findByRole('list', { name: 'Versions' });
     expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
     expect(within(list).getByRole('button', { name: 'Compare 0.2 with 0.3' })).toBeInTheDocument();

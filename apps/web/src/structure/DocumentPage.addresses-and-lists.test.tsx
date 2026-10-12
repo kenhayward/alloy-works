@@ -2308,7 +2308,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     );
   });
 
-  it('VER-032 restores an earlier version from the Versions panel, and the page then shows the new latest', async () => {
+  it('restores an earlier version from the Versions panel, and the page then shows the new latest', async () => {
     const fake = service(outline([section(METHOD, 'Method')]));
     fake.change(outline([section(METHOD, 'Results')]));
     render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);

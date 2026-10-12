@@ -857,6 +857,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1122 (2026-10-12): the RS final review; a fake service's restore cites VER-032 no more.
     // 1123 (2026-10-12): RS2's restore of a document and the audited re-point.
     // 1112 (2026-10-12): RS1's restore of a component.
     // 1102 (2026-10-12): HM2's Needs your attention on Home.
@@ -867,7 +868,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1123);
+    expect(model.citations).toHaveLength(1122);
   });
 
   it('cites no identifier the corpus does not hold', () => {

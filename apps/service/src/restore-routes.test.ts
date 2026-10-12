@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { ComponentVersionList, RestorationView } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
@@ -42,7 +44,12 @@ describe("restoring a component's earlier version over HTTP (the RS plan, Task 1
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
 
-  const call = (method: 'GET' | 'POST', url: string, who: string, payload?: object) =>
+  const call = (
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    url: string,
+    who: string,
+    payload?: object,
+  ) =>
     app.inject({
       method,
       url,
@@ -189,7 +196,42 @@ describe("restoring a component's earlier version over HTTP (the RS plan, Task 1
     ]);
   });
 
-  it('CNT-170 VER-033 audits the restore, an act apart from editing, as content.restored by whoever restored, beside the cut', async () => {
+  it('CNT-170 reaches back past the version a session opened from only by restoring, an audited act apart from editing', async () => {
+    const { first, second } = await component();
+    const session = randomUUID();
+    const base = `/v1/components/${first.artifactId}`;
+    expect((await call('POST', `${base}/lock`, 'ada', { session })).statusCode).toBe(200);
+    // The session opened at 0.2: a save naming 0.1 is refused, naming 0.2.
+    const saved = await call('PUT', `${base}/iterations/${session}/1`, 'ada', {
+      openedFrom: first.id,
+      content: first.content,
+    });
+    expect(saved.statusCode).toBe(409);
+    expect(saved.json()).toMatchObject({
+      code: 'version_precondition',
+      current: { number: '0.2' },
+    });
+    const released = await call(
+      'DELETE',
+      `${base}/lock?session=${session}&openedFrom=${second.id}`,
+      'ada',
+    );
+    expect(released.statusCode, released.body).toBe(200);
+    expect(await versionsOf(first.artifactId)).toBe(2);
+    // Restoring 0.1 reaches it, audited as a restore.
+    const { version } = (await restore(first, second)).json<{ version: { id: string } }>();
+    const kinds = await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('kind')
+        .where('subject_version', '=', version.id)
+        .orderBy('sequence')
+        .execute(),
+    );
+    expect(kinds.map((each) => each.kind)).toContain('content.restored');
+  });
+
+  it('VER-033 audits the restore, an act apart from editing, as content.restored by whoever restored, beside the cut', async () => {
     const { first, second } = await component();
     const { version } = (await restore(first, second, 'grace')).json<{ version: { id: string } }>();
     const events = await tenantDb.withTenant(tenant, (trx) =>

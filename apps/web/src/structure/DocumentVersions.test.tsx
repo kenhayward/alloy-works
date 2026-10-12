@@ -56,13 +56,37 @@ const summary = (id: string, number: string) => ({
   note: null,
 });
 
-/** A document at 0.3 over 0.2, whose restore of 0.2 brings Method back, previewed then made. */
-function service(refusals: readonly unknown[] = []) {
+const reference = (key: string): OutlineNode => ({
+  id: key.repeat(26),
+  type: 'reference',
+  component: 'cccccccc-0000-4000-8000-000000000001',
+  mode: { kind: 'latest' },
+  numbered: true,
+  matter: 'body',
+  pageBreak: 'none',
+  values: {},
+  children: [],
+});
+
+/**
+ * A document at 0.3 over 0.2, whose restore of 0.2 brings Method back, previewed then made: the
+ * preview made against `latest`, its outlines and titles as given, the restore answered `answer`.
+ */
+function service(
+  refusals: readonly unknown[] = [],
+  over: {
+    readonly latest?: ReturnType<typeof summary>;
+    readonly older?: OutlineDocument;
+    readonly newer?: OutlineDocument;
+    readonly titles?: unknown;
+    readonly answer?: () => Response;
+  } = {},
+) {
   const asked: string[] = [];
   const sent: unknown[] = [];
   let restored = false;
-  const older = outline([section('a', 'Introduction')]);
-  const newer = outline([section('a', 'Introduction'), section('b', 'Method')]);
+  const older = over.older ?? outline([section('a', 'Introduction')]);
+  const newer = over.newer ?? outline([section('a', 'Introduction'), section('b', 'Method')]);
   const fetching = vi.fn(async (input: Request) => {
     const url = new URL(input.url);
     asked.push(`${input.method} ${url.pathname}`);
@@ -80,15 +104,16 @@ function service(refusals: readonly unknown[] = []) {
       return json(200, {
         document: DOCUMENT,
         from: summary(V2, '0.2'),
-        latest: summary(V3, '0.3'),
+        latest: over.latest ?? summary(V3, '0.3'),
         older,
         newer,
         structure: compareOutlines(older, newer).changes,
-        titles: [],
+        titles: over.titles ?? { older: [], newer: [] },
         refusals,
       });
     }
     sent.push(await input.json());
+    if (over.answer) return over.answer();
     restored = true;
     return json(200, { version: summary(V4, '0.4') });
   }) as unknown as typeof fetch;
@@ -133,6 +158,77 @@ describe("a document's Versions panel", () => {
       ),
     ).toBeInTheDocument();
     expect(within(preview).queryByRole('button', { name: 'Restore this version' })).toBeNull();
+  });
+
+  it('posts and shows the latest the preview was made against, not the list head (the RS final review)', async () => {
+    const V5 = 'dddddddd-0000-4000-8000-000000000005';
+    const { client, sent } = service([], { latest: summary(V5, '0.5') });
+    render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    expect(
+      await within(preview).findByText(/^A new version after 0\.5, with the outline 0\.2 had\./),
+    ).toBeInTheDocument();
+    await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
+    expect(sent).toEqual([{ latest: V5 }]);
+  });
+
+  it('reads the versions again when the latest has moved on since the preview, and when the outline changes', async () => {
+    const { client, asked } = service([], {
+      answer: () =>
+        json(409, {
+          code: 'version_precondition',
+          message: 'This document has a newer version.',
+          current: summary(V4, '0.4'),
+        }),
+    });
+    const lists = () => asked.filter((each) => each.endsWith(`${DOCUMENT}/versions`)).length;
+    const { rerender } = render(
+      <DocumentVersions client={client} id={DOCUMENT} mayEdit latest={V3} />,
+    );
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    expect(lists()).toBe(1);
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
+    expect(
+      await screen.findByText(
+        'A newer version was saved since this was shown. Look at it again before restoring.',
+      ),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(lists()).toBe(2));
+    // The page shows a newer version, made by an outline act.
+    rerender(<DocumentVersions client={client} id={DOCUMENT} mayEdit latest={V4} />);
+    await vi.waitFor(() => expect(lists()).toBe(3));
+  });
+
+  it('restores once however often Restore this version is pressed, saying so in a live region there from the start', async () => {
+    const { client, sent } = service();
+    render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    const status = within(preview).getByRole('status');
+    expect(status).toBeEmptyDOMElement();
+    const button = await within(preview).findByRole('button', { name: 'Restore this version' });
+    await userEvent.dblClick(button);
+    expect(await within(status).findByText('Restored as version 0.4.')).toBeInTheDocument();
+    expect(sent).toEqual([{ latest: V3 }]);
+  });
+
+  it("names a reference by its own side's title: one the restore removes by the latest's", async () => {
+    const node = 'r'.repeat(26);
+    const { client } = service([], {
+      older: outline([section('a', 'Introduction'), reference('r')]),
+      newer: outline([section('a', 'Introduction')]),
+      titles: { older: [{ node, title: 'Install the new printer' }], newer: [] },
+    });
+    render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const changes = await screen.findByRole('list', { name: 'What restoring 0.2 would change' });
+    expect(changes.querySelector('del')).toHaveTextContent('Install the new printer');
   });
 
   it('lists the versions to a reader who may not edit, offering no restore', async () => {

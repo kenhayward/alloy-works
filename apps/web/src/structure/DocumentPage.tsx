@@ -2178,6 +2178,7 @@ export function DocumentPage({
                         client={client}
                         id={document.id}
                         mayEdit={document.mayEdit}
+                        latest={document.version.id}
                         onRestored={() => void readOutlineAgain()}
                       />
                     )}

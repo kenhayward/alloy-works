@@ -37,6 +37,7 @@ export function ComponentDock({
   onTableHost = () => {},
   pane,
   mine,
+  mayEdit = false,
   onRestored,
 }: {
   client: Client;
@@ -49,6 +50,8 @@ export function ComponentDock({
   pane?: Pane;
   /** What the editor opened and shows now, for My changes (CNT-113). */
   mine?: () => Mine | null;
+  /** Whether the caller may edit the component, and so restore an earlier version. */
+  mayEdit?: boolean;
   /** Told once an earlier version is restored, so the editor opens the new latest. */
   onRestored?: () => void;
 }) {
@@ -109,6 +112,7 @@ export function ComponentDock({
               client={client}
               id={id}
               {...(mine ? { mine } : {})}
+              mayEdit={mayEdit}
               {...(onRestored ? { onRestored } : {})}
             />
           )}

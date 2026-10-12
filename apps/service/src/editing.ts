@@ -120,12 +120,17 @@ const keyedBy = (table: BoundTableNode) =>
 export function storableContent(value: unknown): ContentDocument {
   try {
     const content = parseContentDocument(value);
-    if (!hasText(content.title) || !storableEverywhere(content)) throw new Error('unstorable');
+    if (!storable(content)) throw new Error('unstorable');
     return content;
   } catch {
     // A fixed message: what failed to parse is the author's content, and never goes back as prose.
     throw refused(400, 'content.invalid', 'The content is not a document this product can store.');
   }
+}
+
+/** `storableContent`'s two rules beyond the parse, for content already read (the RS final review). */
+export function storable(content: ContentDocument): boolean {
+  return hasText(content.title) && storableEverywhere(content);
 }
 
 /**
@@ -144,8 +149,24 @@ export async function mayNameColumns(
   content: ContentDocument,
   openedFrom: string,
 ): Promise<void> {
+  if (await namesUnreadableColumn(trx, request, content, openedFrom)) {
+    throw refused(
+      403,
+      'definition.unreadable',
+      'A bound table names a column of a query definition you may not read.',
+    );
+  }
+}
+
+/** Whether `mayNameColumns` refuses this content, answered rather than thrown. */
+export async function namesUnreadableColumn(
+  trx: TenantTransaction,
+  request: FastifyRequest,
+  content: ContentDocument,
+  openedFrom: string,
+): Promise<boolean> {
   const tables = boundTablesIn(content.content);
-  if (tables.length === 0) return;
+  if (tables.length === 0) return false;
   const before = new Map(
     boundTablesIn((await readVersion(trx, openedFrom))?.content ?? null).map((table) => [
       table.id,
@@ -161,14 +182,9 @@ export async function mayNameColumns(
     const added =
       [...namedBy(table)].some((column) => !named.has(column)) ||
       [...keyedBy(table)].some((asked) => !keyed.has(asked));
-    if (added && !(await reads(table.binding.query))) {
-      throw refused(
-        403,
-        'definition.unreadable',
-        'A bound table names a column of a query definition you may not read.',
-      );
-    }
+    if (added && !(await reads(table.binding.query))) return true;
   }
+  return false;
 }
 
 /**

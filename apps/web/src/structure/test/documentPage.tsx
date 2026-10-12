@@ -399,7 +399,7 @@ export function service(
         older,
         newer,
         structure: compareOutlines(older, newer).changes,
-        titles: [],
+        titles: { older: [], newer: [] },
         refusals: [],
       });
     }

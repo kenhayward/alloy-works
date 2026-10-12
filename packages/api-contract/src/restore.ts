@@ -30,9 +30,16 @@ const Failure = z.object({
 /** Why a restore would be refused, as the write would say it (the RS plan, RS-E). */
 const RestoreRefusalView = z.object({
   code: z
-    .enum(['restore_unreadable', 'restore_locked', 'values_invalid', 'restore_unchanged'])
+    .enum([
+      'restore_unreadable',
+      'restore_locked',
+      'values_invalid',
+      'restore_unchanged',
+      'content_invalid',
+      'definition_unreadable',
+    ])
     .describe(
-      'restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is',
+      "restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid and definition_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name",
     ),
   holder: z
     .object({ id: z.string(), name: z.string().nullable() })
@@ -55,6 +62,19 @@ export const RestorationView = z.object({
       }),
     )
     .describe("The version's values its component's fields no longer take, not carried forward"),
+  changed: z
+    .array(
+      z.object({
+        field: z.string(),
+        name: z.string().nullable().describe("The field's name now, or null where none is held"),
+        latest: z.unknown().optional().describe("The latest's value, absent where it holds none"),
+        restored: z
+          .unknown()
+          .optional()
+          .describe('The value the restore would hold, absent where it would hold none'),
+      }),
+    )
+    .describe("Each value the restore would hold, carried forward, otherwise than the latest's"),
   refusals: z.array(RestoreRefusalView).describe('Empty where it may be restored'),
 });
 export type RestorationView = z.infer<typeof RestorationView>;
@@ -97,8 +117,13 @@ export const DocumentRestorationView = z.object({
   newer: z.record(z.string(), z.unknown()).describe('The outline the restore would make, withheld'),
   structure: z.array(UnitChangeView).describe('What the restore would change from the latest'),
   titles: z
-    .array(z.object({ node: z.string(), title: z.string() }))
-    .describe('Each reference the caller may read, by the title of the component it places'),
+    .object({
+      older: z.array(z.object({ node: z.string(), title: z.string() })),
+      newer: z.array(z.object({ node: z.string(), title: z.string() })),
+    })
+    .describe(
+      'Each reference the caller may read, on each side, by the title of the component version it places there',
+    ),
   refusals: z.array(DocumentRestoreRefusalView).describe('Empty where it may be restored'),
 });
 export type DocumentRestorationView = z.infer<typeof DocumentRestorationView>;
@@ -167,11 +192,16 @@ export const restoreRoutes = {
     responses: {
       200: { description: 'Restored, as a new version', schema: RestoreAnswer },
       400: {
-        description: '`values_invalid`: a value its field now fixes at another',
+        description:
+          "values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it",
         schema: EditingRefusal,
       },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may read the component but may not edit it; or definition_unreadable: a bound table names a column of a query definition the caller may not read that the latest does not name',
+        schema: ErrorBody,
+      },
       404: notFound,
       409: {
         description:

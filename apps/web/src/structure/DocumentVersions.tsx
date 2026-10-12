@@ -1,20 +1,28 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { outlineTexts, readOutlineView, type UnitChange, type UnitText } from '@alloy-works/domain';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Redline } from '../compare/Redline.js';
-import { documentRestoreWords, type RestoreRefusal } from '../editor/restoreWords.js';
+import {
+  documentRestoreWords,
+  restoreAnswerText,
+  type RestoreAnswer,
+  type RestoreRefusal,
+} from '../editor/restoreWords.js';
 import { VersionList, type ListedVersion } from '../editor/VersionList.js';
 import styles from '../editor/VersionList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** A document's restore previewed (VER-035): the outline's changes from the latest, and refusals. */
+/**
+ * A document's restore previewed (VER-035): the outline's changes from the latest the preview was
+ * made against, which the write names (the RS final review), and refusals.
+ */
 interface Restoring {
   readonly version: ListedVersion;
-  readonly latest: ListedVersion;
   readonly preview:
     | {
+        readonly latest: { readonly id: string; readonly number: string };
         readonly structure: readonly UnitChange[];
         readonly texts: {
           readonly older: ReadonlyMap<string, UnitText>;
@@ -25,7 +33,7 @@ interface Restoring {
       }
     | 'reading'
     | 'failed';
-  readonly answer: { readonly restored: string } | { readonly refused: string } | null;
+  readonly answer: RestoreAnswer;
 }
 
 /**
@@ -37,11 +45,14 @@ export function DocumentVersions({
   client,
   id,
   mayEdit,
+  latest,
   onRestored,
 }: {
   client: Client;
   id: string;
   mayEdit: boolean;
+  /** The version the page shows: the list is read again when another is made, as by an outline act. */
+  latest?: string;
   /** Told once a version is restored, so the page shows the new latest. */
   onRestored?: () => void;
 }) {
@@ -49,10 +60,18 @@ export function DocumentVersions({
   const [read, setRead] = useState(0);
   // The preview last asked for: an answer to an earlier one, arriving later, is not shown.
   const asked = useRef(0);
+  // A restore sent and not yet answered: a second press sends nothing.
+  const sending = useRef(false);
+  const shown = useRef(latest);
+  useEffect(() => {
+    if (shown.current === latest) return;
+    shown.current = latest;
+    setRead((count) => count + 1);
+  }, [latest]);
 
-  const preview = async (version: ListedVersion, latest: ListedVersion) => {
+  const preview = async (version: ListedVersion) => {
     const ask = (asked.current += 1);
-    setRestoring({ version, latest, preview: 'reading', answer: null });
+    setRestoring({ version, preview: 'reading', answer: null });
     const answer = await client
       .GET('/v1/documents/{id}/versions/{version}/restoration', {
         params: { path: { id, version: version.id } },
@@ -66,14 +85,18 @@ export function DocumentVersions({
     };
     setRestoring({
       version,
-      latest,
       preview: data
         ? {
+            latest: data.latest,
             structure: data.structure as readonly UnitChange[],
             texts: {
               older: texts(data.older, data.latest.id),
               newer: texts(data.newer, data.from.id),
-              names: new Map(data.titles.map((each) => [each.node, each.title])),
+              // Each side's own: a unit the restore removes is the latest's, any other the restored
+              // side's, as the redline draws it.
+              names: new Map(
+                [...data.titles.older, ...data.titles.newer].map((each) => [each.node, each.title]),
+              ),
             },
             refusals: data.refusals,
           }
@@ -83,12 +106,16 @@ export function DocumentVersions({
   };
 
   const restore = async (now: Restoring) => {
+    if (sending.current || typeof now.preview !== 'object') return;
+    sending.current = true;
+    setRestoring({ ...now, answer: 'sending' });
     const answer = await client
       .POST('/v1/documents/{id}/versions/{version}/restore', {
         params: { path: { id, version: now.version.id } },
-        body: { latest: now.latest.id },
+        body: { latest: now.preview.latest.id },
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => (sending.current = false));
     const restored = answer?.data?.version.number;
     const refusal = answer?.error as RestoreRefusal | undefined;
     setRestoring({
@@ -98,9 +125,11 @@ export function DocumentVersions({
           ? { restored }
           : { refused: documentRestoreWords(refusal ?? { code: 'failed' }) },
     });
-    if (restored === undefined) return;
-    setRead((count) => count + 1);
-    onRestored?.();
+    // Restored, or the latest moved on since the preview: the list is read again either way.
+    if (restored !== undefined || refusal?.code === 'version_precondition') {
+      setRead((count) => count + 1);
+    }
+    if (restored !== undefined) onRestored?.();
   };
 
   const label = restoring && `Restore ${restoring.version.number}`;
@@ -111,12 +140,7 @@ export function DocumentVersions({
         id={id}
         of="document"
         read={read}
-        {...(mayEdit
-          ? {
-              onRestore: (version: ListedVersion, latest: ListedVersion) =>
-                void preview(version, latest),
-            }
-          : {})}
+        {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
       />
       {restoring && label && (
         <section aria-label={label} className={styles['compared']}>
@@ -127,7 +151,7 @@ export function DocumentVersions({
           {typeof restoring.preview === 'object' && (
             <>
               <p className={styles['muted']}>
-                {`A new version after ${restoring.latest.number}, with the outline ${restoring.version.number} had. Its parameters stay as they are now, and ${restoring.version.number} itself stays as it is.`}
+                {`A new version after ${restoring.preview.latest.number}, with the outline ${restoring.version.number} had. Its parameters stay as they are now, and ${restoring.version.number} itself stays as it is.`}
               </p>
               <Redline
                 changes={restoring.preview.structure}
@@ -139,20 +163,20 @@ export function DocumentVersions({
                   {documentRestoreWords(refusal)}
                 </p>
               ))}
-              {restoring.answer === null && restoring.preview.refusals.length === 0 && (
-                <button type="button" onClick={() => void restore(restoring)}>
-                  Restore this version
-                </button>
-              )}
-              {restoring.answer !== null && (
-                <p role="status">
-                  {'restored' in restoring.answer
-                    ? `Restored as version ${restoring.answer.restored}.`
-                    : restoring.answer.refused}
-                </p>
-              )}
+              {(restoring.answer === null || restoring.answer === 'sending') &&
+                restoring.preview.refusals.length === 0 && (
+                  <button
+                    type="button"
+                    disabled={restoring.answer === 'sending'}
+                    onClick={() => void restore(restoring)}
+                  >
+                    Restore this version
+                  </button>
+                )}
             </>
           )}
+          {/* There from the start, so what the restore answers is announced. */}
+          <p role="status">{restoreAnswerText(restoring.answer)}</p>
         </section>
       )}
     </div>

@@ -80,6 +80,9 @@ describe('the domain package', () => {
         'readDefinition',
         // Read by search's projection, to say a person's value by their name (search.md).
         'isUserValue',
+        // What a restore's preview changes, value by value (the RS final review).
+        'hasMember',
+        'sameValue',
         'resolveComponentFields',
         // A template's assignments at one level resolve as a component type's do (templates.md).
         'resolveAssignedFields',

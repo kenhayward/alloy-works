@@ -653,13 +653,22 @@ export async function recordRepoints(
 export type RestoredOutlineRefusal =
   { readonly answer: 'outline.invalid'; readonly reason: string } | ValuesRefused;
 
+/** A whole outline and the document's values as a restore would store them, and what refuses it. */
+export interface RestoredOutline {
+  readonly refusals: readonly RestoredOutlineRefusal[];
+  readonly outline: OutlineDocument;
+  readonly values: MetadataValues;
+}
+
 /**
  * `editOutline`'s guards over a whole outline replacing the latest, as a restore makes it (the RS
  * plan, RS-F): `mayReference` for each reference new or re-pointed against the latest; the template's
  * changes over the whole outline; and `checkWrittenValues` for each section's values, and the
- * document's, that differ from the latest's. Each refusal, in an outline act's words.
+ * document's, that differ from the latest's. Each refusal, in an outline act's words. Those values
+ * are stored as an outline act and `recordDocumentValues` store them: `writtenValues`, each field
+ * left without a member given its default, a fixed one included (the RS final review).
  */
-export async function restoredOutlineRefused(
+export async function restoredOutline(
   trx: TenantTransaction,
   input: {
     readonly documentId: string;
@@ -667,13 +676,13 @@ export async function restoredOutlineRefused(
     readonly latest: { readonly outline: OutlineDocument; readonly values: MetadataValues };
     readonly restored: { readonly outline: OutlineDocument; readonly values: MetadataValues };
   },
-): Promise<RestoredOutlineRefusal[]> {
+): Promise<RestoredOutline> {
   const { latest, restored } = input;
   const before = new Map<string, OutlineNode>();
   walkOutline(latest.outline.nodes, (node) => before.set(node.id, node));
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const targets: { component: string; version: string | null }[] = [];
-  const written: MetadataValues[] = [];
+  const written = new Map<string, MetadataValues>();
   walkOutline(restored.outline.nodes, (node) => {
     const was = before.get(node.id);
     if (node.type === 'reference') {
@@ -687,7 +696,7 @@ export async function restoredOutlineRefused(
       const version = node.mode.kind === 'pinned' ? node.mode.version : null;
       targets.push({ component: node.component, version });
     } else if (was === undefined || !same(was.values, node.values)) {
-      written.push(node.values);
+      written.set(node.id, node.values);
     }
   });
   const refusals: RestoredOutlineRefusal[] = [];
@@ -704,18 +713,31 @@ export async function restoredOutlineRefused(
     }
   }
   const valuesWritten = !same(latest.values, restored.values);
-  if (written.length === 0 && !valuesWritten) return refusals;
+  const asRead = { refusals, ...restored };
+  if (written.size === 0 && !valuesWritten) return asRead;
   if (rules.bound && !rules.resolved.ok) {
     refusals.push({ answer: 'template.unresolved', unresolved: rules.resolved.unresolved });
-    return refusals;
+    return asRead;
   }
   const fields = rules.bound && rules.resolved.ok ? rules.resolved : { section: [], document: [] };
   const failures = [
-    ...written.flatMap((values) => checkWrittenValues(fields.section, values)),
+    ...[...written.values()].flatMap((values) => checkWrittenValues(fields.section, values)),
     ...(valuesWritten ? checkWrittenValues(fields.document, restored.values) : []),
   ];
   if (failures.length > 0) refusals.push({ answer: 'values.invalid', failures });
-  return refusals;
+  const rewrite = (nodes: readonly OutlineNode[]): OutlineNode[] =>
+    nodes.map((node) => {
+      const children = rewrite(node.children);
+      const values = written.get(node.id);
+      return node.type === 'section' && values !== undefined
+        ? { ...node, values: writtenValues(fields.section, values), children }
+        : ({ ...node, children } as OutlineNode);
+    });
+  return {
+    refusals,
+    outline: { ...restored.outline, nodes: rewrite(restored.outline.nodes) },
+    values: valuesWritten ? writtenValues(fields.document, restored.values) : restored.values,
+  };
 }
 
 /**

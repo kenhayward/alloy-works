@@ -12517,6 +12517,7 @@ export interface operations {
                      *         "note": "example"
                      *       },
                      *       "notCarried": [],
+                     *       "changed": [],
                      *       "refusals": []
                      *     }
                      */
@@ -12549,13 +12550,23 @@ export interface operations {
                             name: string | null;
                             value: unknown;
                         }[];
+                        /** @description Each value the restore would hold, carried forward, otherwise than the latest's */
+                        changed: {
+                            field: string;
+                            /** @description The field's name now, or null where none is held */
+                            name: string | null;
+                            /** @description The latest's value, absent where it holds none */
+                            latest?: unknown;
+                            /** @description The value the restore would hold, absent where it would hold none */
+                            restored?: unknown;
+                        }[];
                         /** @description Empty where it may be restored */
                         refusals: {
                             /**
-                             * @description restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is
+                             * @description restore_unreadable: the version no longer reads. restore_locked: somebody is editing it, the caller included. values_invalid: a value its field now fixes at another. restore_unchanged: it would make what the latest already is. content_invalid and definition_unreadable: a save's checks on its content refuse it, the second where a bound table names a column of a query definition the caller may not read that the latest does not name
                              * @enum {string}
                              */
-                            code: "restore_unreadable" | "restore_locked" | "values_invalid" | "restore_unchanged";
+                            code: "restore_unreadable" | "restore_locked" | "values_invalid" | "restore_unchanged" | "content_invalid" | "definition_unreadable";
                             /** @description restore_locked: who holds the lock */
                             holder?: {
                                 id: string;
@@ -12719,7 +12730,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `values_invalid`: a value its field now fixes at another */
+            /** @description values_invalid: a value its field now fixes at another. content_invalid: a save's checks on its content refuse it */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -12789,7 +12800,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the component but may not edit it */
+            /** @description The caller may read the component but may not edit it; or definition_unreadable: a bound table names a column of a query definition the caller may not read that the latest does not name */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -36498,7 +36509,10 @@ export interface operations {
                      *       "older": {},
                      *       "newer": {},
                      *       "structure": [],
-                     *       "titles": [],
+                     *       "titles": {
+                     *         "older": [],
+                     *         "newer": []
+                     *       },
                      *       "refusals": []
                      *     }
                      */
@@ -36579,11 +36593,17 @@ export interface operations {
                             split: string | null;
                             joined: string | null;
                         })[];
-                        /** @description Each reference the caller may read, by the title of the component it places */
+                        /** @description Each reference the caller may read, on each side, by the title of the component version it places there */
                         titles: {
-                            node: string;
-                            title: string;
-                        }[];
+                            older: {
+                                node: string;
+                                title: string;
+                            }[];
+                            newer: {
+                                node: string;
+                                title: string;
+                            }[];
+                        };
                         /** @description Empty where it may be restored */
                         refusals: {
                             /**

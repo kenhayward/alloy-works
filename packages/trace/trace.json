@@ -19485,25 +19485,25 @@
     {
       "id": "CNT-182",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 225,
+      "line": 266,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 165,
+      "line": 167,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 165,
+      "line": 167,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/service/src/document-restore-routes.test.ts",
-      "line": 191,
+      "line": 193,
       "kind": "title"
     },
     {
@@ -19911,31 +19911,31 @@
     {
       "id": "API-037",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 259,
+      "line": 301,
       "kind": "title"
     },
     {
       "id": "CNT-170",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 192,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 164,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 179,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 213,
+      "line": 255,
       "kind": "title"
     },
     {
@@ -20913,7 +20913,7 @@
     {
       "id": "VER-035",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 183,
+      "line": 194,
       "kind": "title"
     },
     {
@@ -21283,12 +21283,6 @@
       "kind": "title"
     },
     {
-      "id": "VER-032",
-      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2311,
-      "kind": "title"
-    },
-    {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
       "line": 465,
@@ -21399,13 +21393,13 @@
     {
       "id": "VER-033",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 99,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 99,
+      "line": 124,
       "kind": "title"
     },
     {
@@ -22491,25 +22485,25 @@
     {
       "id": "CNT-182",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 208,
+      "line": 298,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 250,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 273,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 307,
+      "line": 397,
       "kind": "title"
     },
     {
@@ -22785,7 +22779,7 @@
     {
       "id": "MET-018",
       "file": "packages/db/src/restore.test.ts",
-      "line": 428,
+      "line": 459,
       "kind": "title"
     },
     {
@@ -23943,7 +23937,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 659,
+      "line": 662,
       "kind": "title"
     },
     {
