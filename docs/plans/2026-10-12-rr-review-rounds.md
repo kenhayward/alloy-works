@@ -69,6 +69,29 @@ while the round is open; anybody on it sees at once whether everybody has review
   shown to whoever may not read its document. `features.md`, `README.md`, `architecture.md`, the
   CHANGELOG, the version (0.158.0) and the baseline.
 
+## Changed while building
+
+| Where | Planned                                                 | Built, and why                                                                                                         |
+| ----- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| PRs   | Four PRs                                                | One, #582: the four parts were stacked while RV3 waited on CI, and one PR is what ADR-0039 prefers                     |
+| RR-B  | The reviewers' check after opening                      | Before anything is recorded or anybody told: `openRound` asks the caller how many may not review (the final review, 7) |
+| RR-B  | People                                                  | People who have signed in: an invitation not yet accepted is refused, since withdrawing it removes its principal       |
+| RR-D  | Counts since the round opened                           | Counted on what the round covers, at the version it opened on, and up to its closing                                   |
+| RR-G  | Review on a baseline for whoever may comment or suggest | For whoever may comment: Review there starts threads alone                                                             |
+
+## Final review
+
+Fixed: an invitation not yet accepted named as a reviewer, which withdrawing it would then fail on (1);
+a completion on a baseline round recorded against the document as it is, not the baseline's text
+(2); COL-050 and COL-057's who and when untested (3, 4); counts outside the round's scope and after
+it closed (5); the reviewers' check after the round was recorded and its reviewers told (7); an
+outcome assumed where none was given (8); the panel's acts unnamed by their round, its due date's
+zone unsaid, and a refusal leaving it stale (10); Review offered on a baseline to one who may only
+suggest (12); a digest able to name a round (13); HM's row (14). Left: the race of an act with
+closing and a scope node's descendants are untested beyond the lock and the walk; the inbox opens the
+document, not its Rounds tab; a baseline's Review mentions nobody; principals cannot be deleted while a
+round names them, which erasure (LIF) must meet, as the other review tables already ask.
+
 ## Risks
 
 - **A suggestion on a baseline round** is made on the document as it is (RR-G): a reviewer reading the

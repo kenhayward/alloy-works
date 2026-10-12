@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
+import { invite } from './invitations.js';
 import { listInbox } from './inbox.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -142,9 +143,23 @@ describe('review rounds', () => {
       reviewers: [robot],
     });
     expect(await open(on, [])).toEqual({ answer: 'reviewers.invalid', reviewers: [] });
+    // Nor one invited who has not yet accepted, whom withdrawing the invitation would remove.
+    const invited = await tenant((trx) =>
+      invite(trx, { email: 'ivy@example.com', external: false, invitedBy: ada }),
+    );
+    if (!('invited' in invited)) throw new Error(invited.refused);
+    expect(await open(on, [grace, invited.invited.principalId])).toEqual({
+      answer: 'reviewers.invalid',
+      reviewers: [invited.invited.principalId],
+    });
+    // The caller's own decision on grants refuses before anything is recorded or anybody told.
+    expect(await open(on, [grace], { unable: async () => 1 })).toEqual({
+      answer: 'reviewers.unable',
+      count: 1,
+    });
   });
 
-  it('COL-029 COL-032 COL-057 records each reviewer starting, completing with nothing to say, and reopening, each once, and nothing once closed', async () => {
+  it('COL-029 COL-032 COL-050 COL-057 records each reviewer starting, completing with nothing to say against the version they read, and reopening with who and when, each once, and nothing once closed', async () => {
     const on = await document();
     const opened = await open(on, [grace, ada]);
     if (opened.answer !== 'opened') throw new Error(opened.answer);
@@ -165,9 +180,21 @@ describe('review rounds', () => {
       expect.objectContaining({ reviewer: grace, state: 'complete', outcome: 'nothing_to_say' }),
     );
     // Recorded against the version it was completed on (COL-050).
-    expect(done.round.acts.at(-1)!.version).toBe(opened.round.madeAgainst);
+    expect(done.round.acts.at(-1)).toMatchObject({
+      reviewer: grace,
+      act: 'completed',
+      outcome: 'nothing_to_say',
+      version: opened.round.madeAgainst,
+    });
     expect((await act(grace, 'completed')).answer).toBe('review.complete');
-    expect((await act(grace, 'reopened')).answer).toBe('done');
+    const reopened = await act(grace, 'reopened');
+    if (reopened.answer !== 'done') throw new Error(reopened.answer);
+    // Recorded with who and when (COL-057).
+    expect(reopened.round.acts.at(-1)).toMatchObject({
+      reviewer: grace,
+      act: 'reopened',
+      at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+    });
     expect((await tenant((trx) => readRound(trx, round)))!.summary.reviewers).toContainEqual({
       reviewer: grace,
       state: 'in_progress',
@@ -183,7 +210,7 @@ describe('review rounds', () => {
     expect((await act(grace, 'completed')).answer).toBe('round.closed');
   });
 
-  it('keeps every round, reviewer and act: the runtime role changes and removes none', async () => {
+  it('COL-050 keeps every round, reviewer and act: the runtime role changes and removes none', async () => {
     for (const table of ['review_round', 'review_round_reviewer', 'review_round_event']) {
       await expect(
         tenant((trx) => sql`delete from ${sql.table(table)}`.execute(trx)),

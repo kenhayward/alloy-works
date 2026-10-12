@@ -135,6 +135,8 @@ export function RoundsPanel({
             : await client.POST('/v1/rounds/{id}/closure', { params: { path } });
     if (!answer.data) {
       setRefused(refusalOf(answer.error, 'That could not be done.'));
+      // What changed meanwhile - a round closed, a completion made elsewhere - is shown as it is.
+      await read();
       return;
     }
     setSaid(
@@ -219,7 +221,11 @@ export function RoundsPanel({
             </ul>
             <div className={styles['actions']}>
               {round.reviewing && mine?.state === 'not_started' && (
-                <button type="button" onClick={() => void act(round.id, 'start')}>
+                <button
+                  type="button"
+                  aria-describedby={heading}
+                  onClick={() => void act(round.id, 'start')}
+                >
                   Start
                 </button>
               )}
@@ -227,12 +233,14 @@ export function RoundsPanel({
                 <>
                   <button
                     type="button"
+                    aria-describedby={heading}
                     onClick={() => void act(round.id, 'completion', 'commented')}
                   >
                     Done, with comments
                   </button>
                   <button
                     type="button"
+                    aria-describedby={heading}
                     onClick={() => void act(round.id, 'completion', 'nothing_to_say')}
                   >
                     Done, nothing to say
@@ -240,13 +248,21 @@ export function RoundsPanel({
                 </>
               )}
               {round.reviewing && mine?.state === 'complete' && (
-                <button type="button" onClick={() => void act(round.id, 'reopening')}>
+                <button
+                  type="button"
+                  aria-describedby={heading}
+                  onClick={() => void act(round.id, 'reopening')}
+                >
                   Reopen
                 </button>
               )}
               {round.mayClose && (
-                <button type="button" onClick={() => void act(round.id, 'closure')}>
-                  Close
+                <button
+                  type="button"
+                  aria-describedby={heading}
+                  onClick={() => void act(round.id, 'closure')}
+                >
+                  Close the round
                 </button>
               )}
             </div>
@@ -372,8 +388,15 @@ function OpenRound({
         id={`${ids}-due`}
         type="datetime-local"
         value={due}
+        min={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+          .toISOString()
+          .slice(0, 16)}
+        aria-describedby={`${ids}-due-note`}
         onChange={(event) => setDue(event.target.value)}
       />
+      <p id={`${ids}-due-note`} className={styles['note']}>
+        In your own time zone.
+      </p>
       <label htmlFor={`${ids}-baseline`}>Review</label>
       <select
         id={`${ids}-baseline`}

@@ -123,7 +123,7 @@ alter table notification
   add constraint notification_digest check (
     (kind = 'digest') = (counts is not null)
     and (
-      kind = 'digest'
+      (kind = 'digest' and round_id is null and thread_id is null)
       or (kind = 'round' and actor is not null and round_id is not null and thread_id is null
           and artifact_id is not null)
       or (kind <> 'round' and actor is not null and thread_id is not null and round_id is null

@@ -30,7 +30,9 @@ export function reviewerState(acts: readonly RoundAct[]): ReviewerState {
   const latest = acts.at(-1);
   if (latest === undefined) return { state: 'not_started' };
   if (latest.act === 'completed') {
-    return { state: 'complete', outcome: latest.outcome ?? 'commented', at: latest.at };
+    // A completion always names its outcome (the table holds it to one): none is read as none.
+    if (latest.outcome === undefined) throw new Error('A completion names its outcome');
+    return { state: 'complete', outcome: latest.outcome, at: latest.at };
   }
   return { state: 'in_progress' };
 }

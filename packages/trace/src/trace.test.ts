@@ -861,7 +861,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1090);
+    expect(model.citations).toHaveLength(1097);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -944,6 +944,6 @@ describe('scanning the repository for test files', () => {
     // 64, from 62 (2026-10-12): review/ThreadsPanel and structure/DocumentPage.review tests.
     // 65, from 64 (2026-10-12): account/Inbox.test.tsx, citing COL-034, COL-036, COL-062 and COL-063.
     // 68, from 65 (2026-10-12): editor/ComponentEditor.draft, review/SuggestionsPanel and structure/DocumentPage.suggestions tests.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(70);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(71);
   });
 });

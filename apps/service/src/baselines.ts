@@ -209,10 +209,8 @@ export function baselineHandlers(
         return facts !== undefined && decide('comment', facts).allowed;
       };
       const onDocument = decide('comment', authorised.facts).allowed;
-      const mayReview =
-        onDocument ||
-        decide('suggest', authorised.facts).allowed ||
-        texts.some((each) => mayCommentOn(each.component));
+      // Review here starts threads alone (RR-G), so it is offered where one may be started.
+      const mayReview = onDocument || texts.some((each) => mayCommentOn(each.component));
       const bindings = await pinnedBindingStates(
         trx,
         callerOf(request),

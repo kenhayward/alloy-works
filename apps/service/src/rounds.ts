@@ -8,7 +8,6 @@ import type {
 import {
   actOnRound,
   closeRound,
-  latestVersion,
   loadFacts,
   openRound,
   readRound,
@@ -95,18 +94,19 @@ async function viewOf(
     ).map((row) => [row.id, row.display_name]),
   );
   const who = (id: string) => ({ id, name: names.get(id) ?? null });
-  // What the reader may read the reviewers' feedback on: the document and each component it places
-  // that they may read now.
-  const latest = await latestVersion(trx, round.document);
-  const outline =
-    latest && readOutline(latest.content, { artifact: round.document, version: latest.id });
+  // What the reviewers' feedback is counted on (RR-D; the RR final review, 5): the document and each
+  // component the round covers, at the version it opened on, that the reader may read now.
+  const covered = await coveredNodes(trx, round.document, round.madeAgainst, round.scope);
   const readable = new Set<string>([round.document]);
-  if (outline?.ok) {
-    for (const each of await resolveOccurrences(trx, outline.outline, reader)) {
-      if (each.outcome === 'resolved') readable.add(each.component);
+  if (covered !== undefined) {
+    for (const each of await resolveOccurrences(trx, covered.outline, reader)) {
+      if (each.outcome === 'resolved' && covered.covered.has(each.node)) {
+        readable.add(each.component);
+      }
     }
   }
   const on = [...readable];
+  const until = round.closed?.at ?? new Date('9999-12-31T00:00:00.000Z');
   const threads = await trx
     .selectFrom('thread')
     .select(['created_by'])
@@ -114,6 +114,7 @@ async function viewOf(
     .where('on_id', 'in', on)
     .where('created_by', 'in', round.reviewers)
     .where('created_at', '>=', round.openedAt)
+    .where('created_at', '<=', until)
     .groupBy('created_by')
     .execute();
   const suggestions = await trx
@@ -123,6 +124,7 @@ async function viewOf(
     .where('component_id', 'in', on)
     .where('made_by', 'in', round.reviewers)
     .where('made_at', '>=', round.openedAt)
+    .where('made_at', '<=', until)
     .groupBy('made_by')
     .execute();
   const counted = (rows: readonly { readonly count: string }[], pick: (row: never) => string) =>
@@ -226,6 +228,20 @@ export function roundHandlers() {
         baseline: body.baseline ?? null,
         reviewers: body.reviewers,
         by: principalId,
+        // Each reviewer may review it and read all it covers, at the version it opens on (RR-B),
+        // decided before anything is recorded or anybody told (the RR final review, 7).
+        unable: async (madeAgainst, scope) => {
+          const covered = await coveredNodes(trx, id, madeAgainst, scope);
+          let count = 0;
+          for (const reviewer of new Set(body.reviewers)) {
+            const may =
+              covered !== undefined &&
+              (await mayReview(trx, reviewer, id)) &&
+              (await readsAllCovered(trx, reviewer, covered));
+            if (!may) count += 1;
+          }
+          return count;
+        },
       });
       if (answer.answer === 'document.missing') throw notFound();
       if (answer.answer === 'baseline.missing') {
@@ -246,18 +262,7 @@ export function roundHandlers() {
       if (answer.answer === 'reviewers.invalid') {
         throw refusedReviewers(Math.max(answer.reviewers.length, 1));
       }
-      // Each reviewer may review it and read all it covers, at the version it opened on (RR-B); else
-      // nothing is kept.
-      const covered = await coveredNodes(trx, id, answer.round.madeAgainst, answer.round.scope);
-      let unable = 0;
-      for (const reviewer of answer.round.reviewers) {
-        const may =
-          (await mayReview(trx, reviewer, id)) &&
-          covered !== undefined &&
-          (await readsAllCovered(trx, reviewer, covered));
-        if (!may) unable += 1;
-      }
-      if (unable > 0) throw refusedReviewers(unable);
+      if (answer.answer === 'reviewers.unable') throw refusedReviewers(answer.count);
       return viewOf(trx, answer.round, principalId, mayEditOn(authorised));
     },
 

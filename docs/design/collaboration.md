@@ -233,3 +233,5 @@ applies and approves nothing; a gate requiring a round is T9's LIF.
 - **On a baseline**: Review mode on the baseline's page, threads started on the pinned versions and
   judged against them; a suggestion is drafted on the document as it is.
 - **Told**: each reviewer named, a notification of its own kind, carrying no text.
+- **Kept**: a principal a round names cannot be deleted while it stands, as with the other review
+  rows; erasure (LIF) must meet this.

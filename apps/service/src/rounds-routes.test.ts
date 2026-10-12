@@ -272,6 +272,17 @@ describe('review rounds over HTTP (collaboration.md, Review rounds)', () => {
     ).toMatchObject({ code: 'round_baseline_missing' });
     // Ivy may read the document but not open a round on it.
     expect((await open(document.artifactId, {}, 'ivy')).statusCode).toBe(403);
+    // Ada may comment on a report placing a component of Quality's, which she may not read: she
+    // cannot review all it covers, so is refused, by count, and nothing is kept.
+    const hidden = await component([para('q1', 'Quality only.')], quality, 'grace');
+    const report = await documentWith([
+      reference('b'.repeat(26), hidden.artifactId, { kind: 'latest' }),
+    ]);
+    const blind = await open(report.artifactId, { reviewers: [ids.ada] });
+    expect(blind.json()).toMatchObject({ code: 'round_reviewers_invalid', count: 1 });
+    expect((await call('GET', `/v1/documents/${report.artifactId}/rounds`, 'ada')).json()).toEqual({
+      rounds: [],
+    });
   });
 
   it('COL-029 COL-032 COL-057 COL-058 lets a reviewer start, complete with comments, reopen and complete again while it is open, counts what they said, and nothing once closed', async () => {

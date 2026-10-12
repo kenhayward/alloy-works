@@ -42,7 +42,8 @@ export type OpenAnswer =
   | { readonly answer: 'document.missing' }
   | { readonly answer: 'baseline.missing' }
   | { readonly answer: 'scope.invalid'; readonly nodes: readonly string[] }
-  | { readonly answer: 'reviewers.invalid'; readonly reviewers: readonly string[] };
+  | { readonly answer: 'reviewers.invalid'; readonly reviewers: readonly string[] }
+  | { readonly answer: 'reviewers.unable'; readonly count: number };
 
 /** Takes the round's lock to the end of the transaction (RR-F), as a thread's acts do. */
 async function lockRound(trx: TenantTransaction, round: string): Promise<void> {
@@ -108,6 +109,11 @@ export async function openRound(
     readonly baseline: string | null;
     readonly reviewers: readonly string[];
     readonly by: string;
+    /**
+     * How many of the reviewers may not review it (RR-B), asked of the version it will open on and its
+     * scope before anything is recorded or anybody told: the caller's decision, on grants.
+     */
+    readonly unable?: (madeAgainst: string, scope: readonly string[]) => Promise<number>;
   },
 ): Promise<OpenAnswer> {
   let against: string;
@@ -142,6 +148,19 @@ export async function openRound(
             .select('id')
             .where('id', 'in', reviewers)
             .where('kind', '=', 'user')
+            // Not one invited who has not yet accepted: withdrawing that invitation removes them
+            // (the RR final review, 1).
+            .where((eb) =>
+              eb.not(
+                eb.exists(
+                  eb
+                    .selectFrom('invitation')
+                    .select('invitation.email')
+                    .whereRef('invitation.principal_id', '=', 'principal.id')
+                    .where('invitation.accepted_at', 'is', null),
+                ),
+              ),
+            )
             .execute()
         ).map((row) => row.id),
   );
@@ -149,6 +168,8 @@ export async function openRound(
   if (reviewers.length === 0 || reviewers.length > ROUND_REVIEWERS_MAX || refused.length > 0) {
     return { answer: 'reviewers.invalid', reviewers: refused };
   }
+  const unable = input.unable === undefined ? 0 : await input.unable(against, input.scope);
+  if (unable > 0) return { answer: 'reviewers.unable', count: unable };
   const made = await trx
     .insertInto('review_round')
     .values({
@@ -290,23 +311,31 @@ export async function actOnRound(
   const state = round.summary.reviewers.find((each) => each.reviewer === input.reviewer)!.state;
   if (input.act === 'started' && state !== 'not_started') return { answer: 'done', round };
   if (input.act === 'completed' && state === 'complete') return { answer: 'review.complete' };
+  // A completion always says how (COL-032): never assumed.
+  if (input.act === 'completed' && input.outcome === undefined) {
+    throw new Error('A completion names its outcome');
+  }
   if (input.act === 'reopened' && state !== 'complete') return { answer: 'review.not_complete' };
+  // What it was completed against (COL-050): the baseline's text a round on one reads, else the
+  // document as it is then.
   const version =
-    input.act === 'completed' ? ((await latestVersion(trx, round.document))?.id ?? null) : null;
+    input.act !== 'completed'
+      ? null
+      : round.baseline !== null
+        ? round.madeAgainst
+        : ((await latestVersion(trx, round.document))?.id ?? null);
   await trx
     .insertInto('review_round_event')
     .values({
       round_id: input.round,
       act: input.act,
       principal_id: input.reviewer,
-      outcome: input.act === 'completed' ? (input.outcome ?? 'commented') : null,
+      outcome: input.act === 'completed' ? input.outcome! : null,
       version_id: version,
     })
     .execute();
   if (input.act === 'completed') {
-    await recordRoundEvent(trx, 'review.completed', input.round, {
-      outcome: input.outcome ?? 'commented',
-    });
+    await recordRoundEvent(trx, 'review.completed', input.round, { outcome: input.outcome! });
   } else if (input.act === 'reopened') {
     await recordRoundEvent(trx, 'review.reopened', input.round, {});
   }

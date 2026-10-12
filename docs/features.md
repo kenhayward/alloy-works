@@ -940,6 +940,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Review rounds.** In Review, the **Rounds** panel opens a round on a document, to whoever may edit
+  it: a title, its reviewers - people who may comment on or suggest to the document and read all it
+  covers - the whole document or some of its sections, a due date, and the document as it is or one of
+  its baselines. Each reviewer is told, and says **Start**, **Done, with comments** or **Done, nothing
+  to say**, and may **Reopen** while the round is open; nothing is read from silence. Each reviewer's
+  state, the threads and suggestions they made in it, and whether everybody has reviewed are shown to
+  anybody who may read the document. **Close the round** ends it; it applies and approves nothing. A
+  round on a baseline is reviewed on the baseline's page, whose Review starts threads on the pinned
+  text. Through the API at `/v1/documents/{id}/rounds` and `/v1/rounds`.
 - **Values revised by hand.** In a document, a value's panel offers **Revise by hand** - and a bound
   table's, **Revise a cell by hand**, by its row's key and a value column - to whoever may edit the
   document: the value, typed in its column's type and shown as it will print, and why. It stands in
