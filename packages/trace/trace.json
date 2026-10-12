@@ -25406,13 +25406,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 665,
+      "line": 671,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 342,
+      "line": 348,
       "kind": "title"
     },
     {
