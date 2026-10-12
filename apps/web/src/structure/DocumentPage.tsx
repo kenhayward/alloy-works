@@ -54,9 +54,10 @@ import { useLiveDocument, type LiveDocument } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
-import { documentAccessLink, nodeLink } from './links.js';
+import { baselineLink, documentAccessLink, nodeLink } from './links.js';
 import { BaselinesTab } from './BaselinesTab.js';
 import { anchorFromSelection, type Placed } from '../review/anchoring.js';
+import { RoundsPanel } from '../review/RoundsPanel.js';
 import { SuggestionsPanel } from '../review/SuggestionsPanel.js';
 import {
   anchorWords,
@@ -497,6 +498,8 @@ const DOCK_PANELS = [
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
   { key: 'threads', label: 'Threads' },
   { key: 'suggestions', label: 'Suggestions' },
+  // In Review (the RR plan, Task 4).
+  { key: 'rounds', label: 'Rounds' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -1726,7 +1729,8 @@ export function DocumentPage({
     (each) =>
       (each.key !== 'document' || holdsOwn) &&
       (each.key !== 'table' || heldTable.holds) &&
-      ((each.key !== 'threads' && each.key !== 'suggestions') || reviewing),
+      ((each.key !== 'threads' && each.key !== 'suggestions' && each.key !== 'rounds') ||
+        reviewing),
   );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
@@ -2047,6 +2051,32 @@ export function DocumentPage({
                           return node === undefined ? 'a component' : place(node);
                         }}
                         onChanged={() => setTextsAttempt((count) => count + 1)}
+                      />
+                    </div>
+                  )}
+                  {reviewing && (
+                    <div
+                      id={dockIds('rounds').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('rounds').tab}
+                      hidden={shownDock !== 'rounds'}
+                    >
+                      <RoundsPanel
+                        client={client}
+                        document={document.id}
+                        principalId={principalId}
+                        mayOpen={document.mayEdit}
+                        people={people}
+                        sections={(() => {
+                          const all: { id: string; label: string }[] = [];
+                          walkOutline(document.outline.nodes, (node) =>
+                            all.push({ id: node.id, label: place(node.id) }),
+                          );
+                          return all;
+                        })()}
+                        onOpenBaseline={(baseline) => {
+                          window.location.hash = baselineLink(document.id, baseline);
+                        }}
                       />
                     </div>
                   )}
