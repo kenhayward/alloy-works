@@ -369,6 +369,22 @@ export const auditKindSpecs = {
     z.strictObject({ suggestion: Id }),
     'packages/db/src/suggestions.ts',
   ),
+  'round.opened': kind(
+    ['COL-028'],
+    z.strictObject({
+      round: Id,
+      reviewers: z.number().int().min(1).max(50),
+      baseline: Id.optional(),
+    }),
+    'packages/db/src/rounds.ts',
+  ),
+  'round.closed': kind(['COL-028'], z.strictObject({ round: Id }), 'packages/db/src/rounds.ts'),
+  'review.completed': kind(
+    ['COL-032'],
+    z.strictObject({ round: Id, outcome: z.enum(['commented', 'nothing_to_say']) }),
+    'packages/db/src/rounds.ts',
+  ),
+  'review.reopened': kind(['COL-057'], z.strictObject({ round: Id }), 'packages/db/src/rounds.ts'),
   'template.moved': kind(['TPL-033'], empty, LATER),
   'binding.revised': kind(['DAT-058', 'LIF-064'], Revised, 'apps/service/src/data/revisions.ts'),
   'relationship.made': kind(['LIF-064', 'REL-011'], empty, LATER),

@@ -9,6 +9,11 @@ import type { ColumnType, Generated, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
 import type { AssetUploadTable } from './assets-tables.js';
 import type {
+  ReviewRoundEventTable,
+  ReviewRoundReviewerTable,
+  ReviewRoundTable,
+} from './rounds-tables.js';
+import type {
   BaselineBindingTable,
   BaselinePinTable,
   BaselineSupersessionTable,
@@ -700,6 +705,9 @@ export interface TenantTables {
   baseline_supersession: BaselineSupersessionTable;
   thread: ThreadTable;
   suggestion: SuggestionTable;
+  review_round: ReviewRoundTable;
+  review_round_reviewer: ReviewRoundReviewerTable;
+  review_round_event: ReviewRoundEventTable;
   suggestion_resolution: SuggestionResolutionTable;
   thread_comment: ThreadCommentTable;
   thread_comment_text: ThreadCommentTextTable;

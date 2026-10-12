@@ -38,12 +38,14 @@ export interface NotificationTable {
   id: ColumnType<string, string | undefined, never>;
   recipient: ColumnType<string, string, never>;
   kind: ColumnType<
-    'mention' | 'reply' | 'resolution' | 'digest',
-    'mention' | 'reply' | 'resolution' | 'digest',
+    'mention' | 'reply' | 'resolution' | 'round' | 'digest',
+    'mention' | 'reply' | 'resolution' | 'round' | 'digest',
     never
   >;
   actor: ColumnType<string | null, string | null, never>;
   thread_id: ColumnType<string | null, string | null, never>;
+  /** A round's notification names it (0079; RR-H); none before 0079. */
+  round_id: ColumnType<string | null, string | null | undefined, never>;
   artifact_id: ColumnType<string | null, string | null, never>;
   counts: ColumnType<unknown, string | null, never>;
   at: ColumnType<Date, Date | undefined, never>;
@@ -54,15 +56,20 @@ export interface NotificationTable {
 export interface NotificationHeldTable {
   id: Generated<string>;
   recipient: ColumnType<string, string, never>;
-  kind: ColumnType<'mention' | 'reply' | 'resolution', 'mention' | 'reply' | 'resolution', never>;
+  kind: ColumnType<
+    'mention' | 'reply' | 'resolution' | 'round',
+    'mention' | 'reply' | 'resolution' | 'round',
+    never
+  >;
   actor: ColumnType<string, string, never>;
-  thread_id: ColumnType<string, string, never>;
+  thread_id: ColumnType<string | null, string | null, never>;
+  round_id: ColumnType<string | null, string | null | undefined, never>;
   artifact_id: ColumnType<string, string, never>;
   at: ColumnType<Date, Date | undefined, never>;
 }
 
 export interface NotificationPreferenceTable {
   principal_id: string;
-  kind: 'mention' | 'reply' | 'resolution';
+  kind: 'mention' | 'reply' | 'resolution' | 'round';
   cadence: 'at_once' | 'daily' | 'never';
 }

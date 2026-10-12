@@ -604,6 +604,17 @@ export {
   type StoredSuggestion,
 } from './suggestions.js';
 export {
+  actOnRound,
+  closeRound,
+  openRound,
+  readRound,
+  roundsOf,
+  ROUND_REVIEWERS_MAX,
+  type ActAnswer,
+  type OpenAnswer,
+  type StoredRound,
+} from './rounds.js';
+export {
   latestRevisions,
   recordRevision,
   revisionsNamed,
