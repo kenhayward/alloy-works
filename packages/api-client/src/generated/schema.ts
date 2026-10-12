@@ -8644,7 +8644,7 @@ export interface operations {
                         }[];
                         /** @description Whether the caller may comment on the document */
                         mayComment: boolean;
-                        /** @description Whether the caller may review it here: comment on or suggest to the document, or comment on a component it pins (IAM-081; the RR plan, RR-G) */
+                        /** @description Whether the caller may review it here: comment on the document, or on a component it pins (the RR plan, RR-G) */
                         mayReview: boolean;
                     };
                 };
