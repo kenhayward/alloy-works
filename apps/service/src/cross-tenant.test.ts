@@ -1419,6 +1419,35 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
     expect((await reader(b)).grants).toBe(theirs.grants);
   });
 
+  it("placeHold will not hold another environment's component or space", async () => {
+    const held = (tenant: Tenant) =>
+      tenantDb.withTenant(tenant, async (trx) =>
+        Number(
+          (
+            await trx
+              .selectFrom('legal_hold')
+              .select((eb) => eb.fn.countAll<string>().as('count'))
+              .executeTakeFirstOrThrow()
+          ).count,
+        ),
+      );
+    const before = await held(b);
+    for (const target of [
+      { artifact: await componentIdIn(b, tenantDb) },
+      { space: await spaceIdIn(b, tenantDb) },
+    ]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/holds',
+        headers: { host: A, cookie: fromA },
+        payload: { target, reason: 'Elsewhere' },
+      });
+      expect(response.statusCode, JSON.stringify(target)).toBe(404);
+      expect(response.json()).toMatchObject({ code: 'not_found' });
+    }
+    expect(await held(b)).toBe(before);
+  });
+
   it("will not fill a group with another environment's person, nor grant to another environment's group", async () => {
     const theirs = await tenantDb.withTenant(b, async (trx) => ({
       person: (await trx.selectFrom('principal').select('id').executeTakeFirstOrThrow()).id,

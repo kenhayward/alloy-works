@@ -66,6 +66,9 @@ describe('Legal holds in a browser', () => {
       await releasing.getByRole('button', { name: 'Release hold' }).press('Enter');
       await administration.getByText(`Released the hold on ${space}.`, { exact: true }).waitFor();
       await row.getByText('Released', { exact: true }).waitFor();
+      await checkAxe(page, 'Administration, Legal holds after a release', task.meta, {
+        shows: row.getByText('Released', { exact: true }),
+      });
     });
   });
 });

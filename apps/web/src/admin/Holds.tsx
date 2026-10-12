@@ -34,7 +34,8 @@ const KINDS: Readonly<Record<string, string>> = {
 
 const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-const titleOf = (hold: HoldRow) => hold.target.title ?? `the ${KINDS[hold.target.kind] ?? 'item'}`;
+const titleOf = (hold: HoldRow) =>
+  hold.target.title ?? `the ${(KINDS[hold.target.kind] ?? 'item').toLowerCase()}`;
 const named = (person: Person) => person.name ?? 'Somebody';
 
 /**
@@ -99,7 +100,7 @@ export function Holds({ client }: { client: Client }) {
                     </td>
                     <td>
                       {hold.released === null ? (
-                        <Chip tone="ok">In force</Chip>
+                        <Chip>In force</Chip>
                       ) : (
                         <>
                           <Chip>Released</Chip>

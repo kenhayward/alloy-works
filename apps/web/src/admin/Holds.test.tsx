@@ -11,6 +11,7 @@ const json = (status: number, body: unknown) =>
 const HOLD = '0b6f6b8e-4a39-4c1e-9d0f-3c0a8f1e2d41';
 const OLD = '6a1d9c2e-7b3f-4e8a-9c5d-1f2e3a4b5c6d';
 const IVY = { id: '11111111-1111-4111-8111-111111111111', name: 'Ivy' };
+const UNTITLED = '2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d';
 
 /** The holds listing and its release, as the service answers them. */
 function service(status = 200) {
@@ -33,13 +34,21 @@ function service(status = 200) {
       appliedAt: '2026-10-01T09:00:00.000Z',
       released: { reason: 'Audit done', by: IVY, at: '2026-10-05T09:00:00.000Z' },
     },
+    {
+      id: UNTITLED,
+      target: { kind: 'publication', id: 'p1', title: null },
+      reason: 'Audit request',
+      appliedBy: IVY,
+      appliedAt: '2026-09-01T09:00:00.000Z',
+      released: null,
+    },
   ];
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url).pathname;
     if (request.method === 'GET') {
       return status === 200
-        ? json(200, { items: holds(), next: null, total: 2 })
+        ? json(200, { items: holds(), next: null, total: 3 })
         : json(status, {});
     }
     const body = (await request.json()) as { reason: string };
@@ -85,6 +94,18 @@ describe("Administration's Legal holds", () => {
     expect(sent).toEqual([{ url: `/v1/holds/${HOLD}/release`, body: { reason: 'Matter closed' } }]);
     const table = screen.getByRole('table', { name: 'Legal holds' });
     expect(await within(table).findByText('Matter closed', { exact: false })).toBeInTheDocument();
+  });
+
+  it('names a hold on something untitled by its kind, and shows one in force as a fact, not a success', async () => {
+    const { client } = service();
+    render(<Holds client={client} />);
+    const table = await screen.findByRole('table', { name: 'Legal holds' });
+    const untitled = within(table).getAllByRole('row')[3]!;
+    expect(untitled).toHaveTextContent('the publication');
+    expect(
+      within(untitled).getByRole('button', { name: 'Release the hold on the publication' }),
+    ).toBeInTheDocument();
+    expect(within(untitled).getByText('In force')).toHaveAttribute('data-tone', 'neutral');
   });
 
   it('says so to somebody who may not see the holds', async () => {

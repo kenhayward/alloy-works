@@ -10,6 +10,8 @@ import { createTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
+import { publish } from './testing/every-kind.js';
+import { createArtifact } from './versions.js';
 import {
   freshDatabase,
   TEST_PASSWORDS,
@@ -207,6 +209,85 @@ describe('legal holds (lifecycle.md; the AH plan, AH-E to AH-H)', () => {
       return rows.map((row) => row.text).join(' ');
     });
     expect(logged).not.toMatch(/Secret/);
+  });
+
+  it('LIF-057 names a held publication and asset by title and space, in the log and the listing', async () => {
+    const { space, grace } = await fresh();
+    const made = await as(async (trx) => {
+      const input = { spaceId: space, language: 'en-GB', direction: 'ltr', author: grace } as const;
+      const document = await createDocument(trx, { ...input, title: 'Published manual' });
+      if (document.answer !== 'created') throw new Error(document.answer);
+      const publication = await publish(trx, {
+        document: document.version,
+        author: grace,
+        role: tenant.role,
+      });
+      const asset = await createArtifact(trx, {
+        author: grace,
+        spaceId: space,
+        substance: {
+          kind: 'asset',
+          content: {
+            schemaVersion: 1,
+            object: `${tenant.role}/sha256/${'d'.repeat(64)}`,
+            format: 'png',
+            bytes: 10,
+            width: 1,
+            height: 1,
+            orientation: 1,
+            colour: 'rgb',
+            alpha: false,
+            depth: 8,
+            resolution: null,
+            alternative: { text: 'A heron in reeds', language: 'en' },
+          },
+        },
+      });
+      return { publication, asset: asset.artifactId };
+    });
+    const spaceName = await as(
+      async (trx) =>
+        (
+          await trx
+            .selectFrom('space')
+            .select('name')
+            .where('id', '=', space)
+            .executeTakeFirstOrThrow()
+        ).name,
+    );
+    for (const [artifact, kind, title] of [
+      [made.publication, 'publication', 'Published manual'],
+      [made.asset, 'asset', 'A heron in reeds'],
+    ] as const) {
+      const placed = await as((trx) =>
+        placeHold(trx, { target: { artifact }, reason: 'A matter', by: grace }),
+      );
+      if (placed.answer !== 'placed') throw new Error(placed.answer);
+      await as((trx) => releaseHold(trx, { hold: placed.id, reason: 'Closed', by: grace }));
+      const listed = (await holds()).items.find((each) => each.id === placed.id)!;
+      expect(listed.target).toEqual({ kind, id: artifact, title });
+      const events = await as(async (trx) => {
+        const { rows } = await sql<{
+          kind: string;
+          subject_kind: string;
+          space: string | null;
+          labels: unknown;
+        }>`
+          select e.kind, e.subject_kind, e.space,
+            (select jsonb_object_agg(l.role, l.text) from audit_label l where l.sequence = e.sequence) as labels
+          from audit_event e where e.kind like 'hold.%' and e.subject = ${artifact}
+          order by e.sequence`.execute(trx);
+        return rows;
+      });
+      expect(events).toEqual(
+        ['hold.applied', 'hold.removed'].map((each) => ({
+          kind: each,
+          subject_kind: kind,
+          space,
+          labels: { subject: title, space: spaceName },
+        })),
+      );
+    }
   });
 
   it('refuses at the store a change to a hold, a second release, and a hold on two things', async () => {

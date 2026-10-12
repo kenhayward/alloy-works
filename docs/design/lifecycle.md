@@ -18,8 +18,9 @@ LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `hold.applied` and 
 ## Archival
 
 **What archives**: a component or a document, by whoever may **`retire`** it, decided at the artifact
-by the usual walk. Administrator holds `retire`; an external principal never does, whatever the
-grants say (`externalCap`), and a token must be scoped to it. A connection's and a query definition's
+by the usual walk. Administrator holds `retire`: 0083 gave it to the role named Administrator,
+matched by name, whatever its permissions had become, and to no role renamed from it. An external
+principal never does, whatever the grants say (`externalCap`), and a token must be scoped to it. A connection's and a query definition's
 **Retire** are their own acts and stay under `administer`; a space's archive is its own act too and
 archives nothing in it.
 
@@ -44,7 +45,8 @@ trigger refuses an act equal to the one before it. No reason is kept: it would b
 | Search, its facets and counts ([search.md](search.md))                | `search_entry.archived`, set by the acts and by indexing           |
 
 **Where it does not**: the shared readable set (`readableArtifacts`), so references, the outline,
-the inbox, baselines and publishing read archived content as before. Indexing reads the flag, so an
+the inbox, baselines and publishing read archived content as before; and `GET /v1/changes?space=`
+(`packages/db/src/changes.ts`), which reports changes, and an archived artifact's are still changes. Indexing reads the flag, so an
 edit of an archived artifact does not bring it back into search.
 
 **Listed alone when asked**: `?archived=only` on either listing lists the archived and nothing else,
@@ -78,7 +80,10 @@ shown; it is never written to the audit log (LIF-030). **Place a hold** is offer
 and a document's page and on a space's row in Spaces, to environment administrators alone, each
 asking why. A component's and a document's view say `onHold` only to whoever may `retire` it or
 administer the environment, false to anyone else: a hold may be confidential. Its page then shows
-**On hold**.
+**On hold**. Legal holds names what each holds by its title now - a publication by its document's
+title at the version published, an asset by its alternative text - whether or not the administrator
+may read it, as [audit.md](audit.md) does: administrators may read everything, and the audit log
+shows the same labels.
 
 **Audited** (LIF-057): `hold.applied` and `hold.removed`, `{ hold }` its id, about the artifact or the
 space it holds, with its space.

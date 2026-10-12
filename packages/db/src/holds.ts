@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
-import { artifactPlace, recordEvent } from './audit.js';
+import { isLabelledKind, labelFor } from '@alloy-works/domain';
+import { labelled, labels, recordEvent } from './audit.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -138,7 +139,7 @@ async function recordHoldEvent(
     );
     return;
   }
-  const place = await artifactPlace(trx, on.id);
+  const place = await heldPlace(trx, on.kind, on.id);
   await recordEvent(
     trx,
     {
@@ -147,8 +148,64 @@ async function recordHoldEvent(
       space: place.space,
       detail: { hold },
     },
-    place.labels,
+    labels(
+      labelled('subject', place.title, on.id),
+      labelled('space', place.spaceName, place.space),
+    ),
   );
+}
+
+interface HeldPlace {
+  readonly version: string | null;
+  readonly title: string | null;
+  readonly space: string | null;
+  readonly spaceName: string | null;
+}
+
+/**
+ * Where a held artifact is and what it is called now. A publication has no versions: its document's
+ * title at the version it published, as publications are listed. An asset has no name: its
+ * alternative text, as search finds it.
+ */
+async function heldPlace(trx: TenantTransaction, kind: HeldKind, id: string): Promise<HeldPlace> {
+  if (kind === 'publication') {
+    const row = await trx
+      .selectFrom('publication as p')
+      .innerJoin('artifact as a', 'a.id', 'p.id')
+      .innerJoin('artifact_version as v', 'v.id', 'p.document_version_id')
+      .leftJoin('space as s', 's.id', 'a.space_id')
+      .select([sql<string | null>`v.content ->> 'title'`.as('title'), 'a.space_id', 's.name'])
+      .where('p.id', '=', id)
+      .executeTakeFirst();
+    return {
+      version: null,
+      title: row?.title ?? null,
+      space: row?.space_id ?? null,
+      spaceName: row?.name ?? null,
+    };
+  }
+  const row = await trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+    .leftJoin('space as s', 's.id', 'a.space_id')
+    .select(['v.id', 'v.kind', 'v.content', 'a.space_id', 's.name'])
+    .where('v.artifact_id', '=', id)
+    .orderBy('v.revision_no', 'desc')
+    .orderBy('v.version_no', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (!row) return { version: null, title: null, space: null, spaceName: null };
+  const content = row.content as Record<string, unknown>;
+  const alternative = content.alternative as { readonly text?: unknown } | null | undefined;
+  const title =
+    kind === 'asset'
+      ? typeof alternative?.text === 'string'
+        ? alternative.text
+        : undefined
+      : isLabelledKind(row.kind)
+        ? labelFor(row.kind, content)
+        : undefined;
+  return { version: row.id, title: title ?? null, space: row.space_id, spaceName: row.name };
 }
 
 /** Whether an artifact is held now: by a hold of its own, or its space's, not released (AH-F). */
@@ -219,9 +276,7 @@ async function listed(trx: TenantTransaction, row: HoldRow): Promise<ListedHold>
   const title =
     row.space_id !== null
       ? row.space_name
-      : ((await artifactPlace(trx, row.artifact_id!)).labels.find(
-          (label) => label.role === 'subject',
-        )?.text ?? null);
+      : (await heldPlace(trx, row.kind!, row.artifact_id!)).title;
   return {
     id: row.id,
     target:

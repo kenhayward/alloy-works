@@ -1,6 +1,7 @@
 import type { ComponentView, DocumentView, HoldList, HoldView } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
+  createArtifact,
   createComponent,
   createDocument,
   createSpace,
@@ -8,6 +9,8 @@ import {
   findRole,
   grant,
   migrate,
+  recordPublication,
+  requestPublication,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -17,6 +20,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
+import { defaultNumberingScheme } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -99,20 +103,30 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
     });
-    for (const who of ['ivy', 'ada', 'grace']) {
+    for (const who of ['ivy', 'ada', 'grace', 'alice']) {
       cookies[who] = await signIn(app, HOST, who, idp.issuer);
       ids[who] = (await call('GET', '/v1/me', who)).json<{ id: string }>().id;
     }
     await tenantDb.withTenant(tenant, async (trx) => {
       clinical = (await createSpace(trx, 'Clinical')).id;
-      // Ivy administers the environment; Ada authors and administers Clinical; Grace authors it.
-      await grant(trx, {
-        roleId: (await findRole(trx, 'Administrator'))!.id,
-        subject: { principal: ids.ivy! },
-        level: { kind: 'tenant' },
-        effect: 'allow',
-        grantedBy: ids.ivy!,
-      });
+      // Ivy administers the environment, and so does Alice, external; Ada authors and administers
+      // Clinical; Grace authors it.
+      for (const who of ['ivy', 'alice']) {
+        await grant(trx, {
+          roleId: (await findRole(trx, 'Administrator'))!.id,
+          subject: { principal: ids[who]! },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: ids.ivy!,
+          // An external principal's grants count only while they expire within the cap.
+          ...(who === 'alice' ? { expiresAt: new Date(Date.now() + 7 * 86_400_000) } : {}),
+        });
+      }
+      await trx
+        .updateTable('principal')
+        .set({ kind: 'external' })
+        .where('id', '=', ids.alice!)
+        .execute();
       for (const [who, name] of [
         ['ada', 'Author'],
         ['ada', 'Administrator'],
@@ -175,6 +189,84 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
     );
   });
 
+  it('LIF-022 places and releases a hold on a publication and an asset, each listed by its title', async () => {
+    const published = await tenantDb.withTenant(tenant, async (trx) => {
+      const document = await createDocument(trx, {
+        spaceId: clinical,
+        title: 'Published manual',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ids.ada!,
+      });
+      if (document.answer !== 'created') throw new Error(document.answer);
+      const asked = await requestPublication(trx, {
+        documentId: document.version.artifactId,
+        version: document.version.id,
+        formats: ['pdf'],
+        requester: ids.ada!,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      const publication = await recordPublication(trx, {
+        requestId: asked.request.id,
+        pipelineVersion: '5',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        dataSha256: 'b'.repeat(64),
+        numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+        outputs: [
+          {
+            format: 'pdf',
+            engineVersion: '0.15.1',
+            templateVersion: 5,
+            key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1000,
+          },
+        ],
+      });
+      const asset = await createArtifact(trx, {
+        author: ids.ada!,
+        spaceId: clinical,
+        substance: {
+          kind: 'asset',
+          content: {
+            schemaVersion: 1,
+            object: `${tenant.role}/sha256/${'d'.repeat(64)}`,
+            format: 'png',
+            bytes: 10,
+            width: 1,
+            height: 1,
+            orientation: 1,
+            colour: 'rgb',
+            alpha: false,
+            depth: 8,
+            resolution: null,
+            alternative: { text: 'A heron in reeds', language: 'en' },
+          },
+        },
+      });
+      return { publication: publication!, asset: asset.artifactId };
+    });
+    for (const [artifact, kind, title] of [
+      [published.publication, 'publication', 'Published manual'],
+      [published.asset, 'asset', 'A heron in reeds'],
+    ] as const) {
+      const placed = await place({ artifact }, 'A matter');
+      expect(placed.statusCode, placed.body).toBe(200);
+      const hold = placed.json<HoldView>();
+      expect(hold.target).toEqual({ kind, id: artifact, title });
+      const released = await call('POST', `/v1/holds/${hold.id}/release`, 'ivy', {
+        reason: 'Closed',
+      });
+      expect(released.statusCode, released.body).toBe(200);
+      const listed = (await call('GET', '/v1/holds?limit=100', 'ivy')).json<HoldList>();
+      expect(listed.items.find((each) => each.id === hold.id)?.target).toEqual({
+        kind,
+        id: artifact,
+        title,
+      });
+    }
+  });
+
   it("LIF-022 holds a space's artifacts by the space's hold", async () => {
     const manual = await made('document', 'Space-held manual');
     const space = await place({ space: clinical }, 'Whole space');
@@ -195,10 +287,11 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
     );
   });
 
-  it('places, releases and lists holds only for an environment administrator', async () => {
+  it('places, releases and lists holds only for an environment administrator, never an external one', async () => {
     const held = await made('component', 'Guarded procedure');
-    // Ada administers its space, and Grace authors it: neither may.
-    for (const who of ['ada', 'grace']) {
+    // Ada administers its space, and Grace authors it: neither may. Alice administers the
+    // environment, but administering is capped for an external principal.
+    for (const who of ['ada', 'grace', 'alice']) {
       expect((await place({ artifact: held }, 'Not mine', who)).statusCode, who).toBe(403);
       expect((await place({ space: clinical }, 'Not mine', who)).statusCode, who).toBe(403);
       expect((await call('GET', '/v1/holds', who)).statusCode, who).toBe(403);
