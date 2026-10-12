@@ -1,5 +1,5 @@
 import { parseContentDocument, type ContentDocument } from '@alloy-works/domain';
-import { DOMSerializer, type Node, type Slice } from 'prosemirror-model';
+import { DOMSerializer, type DOMOutputSpec, type Node, type Slice } from 'prosemirror-model';
 import type { EditorView } from 'prosemirror-view';
 
 import {
@@ -56,9 +56,7 @@ export function renderContent(
     return null;
   }
   if (!opened.editable) return null;
-  const rendered = DOMSerializer.fromSchema(editorSchema).serializeFragment(opened.doc.content, {
-    document,
-  });
+  const rendered = identifiedSerializer().serializeFragment(opened.doc.content, { document });
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawBindings(rendered, bindingsShown(opened.doc, bindings), bindings);
   drawBoundFigures(rendered, boundFiguresShown(opened.doc, bindings));
@@ -67,6 +65,56 @@ export function renderContent(
   drawImages(rendered);
   drawPlaces(rendered, opened.doc);
   return rendered;
+}
+
+/** The attribute naming the block a drawn element stands for, by its identifier. */
+export const BLOCK_ATTRIBUTE = 'data-block';
+
+let identified: DOMSerializer | undefined;
+
+/**
+ * The editor's own serializer, with each block that holds an identifier drawn carrying it in
+ * `data-block` (the TH plan's final review): what a thread's anchor is found by in the read text,
+ * which its words alone cannot do where two blocks hold the same ones or an inline node draws text the
+ * stored content does not hold. The read text only: the editor's surface and what it copies carry none.
+ */
+function identifiedSerializer(): DOMSerializer {
+  if (identified) return identified;
+  const base = DOMSerializer.fromSchema(editorSchema);
+  const nodes = Object.fromEntries(
+    Object.entries(base.nodes).map(([name, toDOM]) => [
+      name,
+      (node: Node) => withBlockId(toDOM(node), node),
+    ]),
+  );
+  identified = new DOMSerializer(nodes, base.marks);
+  return identified;
+}
+
+function withBlockId(spec: DOMOutputSpec, node: Node): DOMOutputSpec {
+  const id: unknown = node.attrs['id'];
+  if (!node.isBlock || typeof id !== 'string' || id === '') return spec;
+  if (Array.isArray(spec)) {
+    const [tag, second, ...rest] = spec as unknown as [string, unknown, ...unknown[]];
+    const isAttributes =
+      typeof second === 'object' &&
+      second !== null &&
+      !Array.isArray(second) &&
+      !('nodeType' in (second as object));
+    return (isAttributes
+      ? [tag, { ...(second as object), [BLOCK_ATTRIBUTE]: id }, ...rest]
+      : [
+          tag,
+          { [BLOCK_ATTRIBUTE]: id },
+          ...(spec as unknown as unknown[]).slice(1),
+        ]) as unknown as DOMOutputSpec;
+  }
+  const element =
+    typeof spec === 'object' && spec !== null && 'dom' in spec ? spec.dom : (spec as unknown);
+  if (typeof element === 'object' && element !== null && 'setAttribute' in element) {
+    (element as Element).setAttribute(BLOCK_ATTRIBUTE, id);
+  }
+  return spec;
 }
 
 /**

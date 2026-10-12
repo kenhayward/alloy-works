@@ -193,6 +193,22 @@ describe('the header band', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('COL-063 says on the account chip how many notifications are unread, and opens the inbox from it', async () => {
+    render(
+      <Header
+        fetch={serviceThat({
+          ...signedIn,
+          '/v1/inbox': { notifications: [], unread: 3, next: null },
+          '/v1/inbox/preferences': { mention: 'at_once', reply: 'at_once', resolution: 'daily' },
+        })}
+      />,
+    );
+    const chip = await screen.findByRole('button', { name: /^Ada Lovelace\s*3\s*unread$/ });
+    await userEvent.click(chip);
+    await userEvent.click(screen.getByRole('button', { name: 'Inbox (3 unread)' }));
+    expect(await screen.findByRole('dialog', { name: 'Inbox' })).toBeInTheDocument();
+  });
+
   it('chooses Light, Dark or Auto from the Theme button, shows which is chosen, and remembers it', async () => {
     render(<Header fetch={serviceThat(signedIn)} />);
 

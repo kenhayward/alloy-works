@@ -270,6 +270,11 @@ function RenderedText({
   onBrokenRef.current = onBroken;
   useStyledImages(place);
   useUnresolvedMarks(place);
+  // The marks by what they say, not by the array the page drew them in: a new array every render
+  // would redraw the text, and with it collapse the reader's selection (the TH final review).
+  const marksSaid = JSON.stringify(marks ?? []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const marksHeld = useMemo(() => marks, [marksSaid]);
   const rendered = useMemo(
     () => renderContent(content, document, context, bindings),
     [content, context, bindings],
@@ -296,9 +301,9 @@ function RenderedText({
     const host = place.current;
     if (!host || rendered === null) return;
     host.replaceChildren(rendered.cloneNode(true));
-    if (marks !== undefined && marks.length > 0) {
+    if (marksHeld !== undefined && marksHeld.length > 0) {
       try {
-        markAnchors(host, parseContentDocument(content), marks);
+        markAnchors(host, parseContentDocument(content), marksHeld);
       } catch {
         // Content that does not read marks nothing: it drew nothing either.
       }
@@ -311,7 +316,7 @@ function RenderedText({
     const again = () => widthDrawnTables(host);
     fonts?.addEventListener?.('loadingdone', again);
     return () => fonts?.removeEventListener?.('loadingdone', again);
-  }, [rendered, marks, content]);
+  }, [rendered, marksHeld, content]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;
   if (!onOpen) {

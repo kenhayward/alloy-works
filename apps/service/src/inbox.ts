@@ -10,7 +10,9 @@ import {
   deleteNotification,
   listInbox,
   markRead,
+  readableOf,
   setCadences,
+  threadOn,
   titlesFor,
   type Tenant,
   type TenantDatabase,
@@ -54,13 +56,28 @@ export function inboxHandlers(
           ]),
         );
         const place = (id: string) => ({ id, title: titles.get(id) ?? null });
+        // Of something its reader may no longer read, that it happened and when, and nothing more:
+        // not who did it, nor the thread, nor in a digest which threads or where (the TH final review).
+        const readable = await readableOf(
+          trx,
+          recipient,
+          shown.flatMap((each) => [
+            ...(each.artifact === null ? [] : [each.artifact]),
+            ...(each.counts?.artifacts ?? []),
+          ]),
+        );
+        const onReadable = new Set<string>();
+        for (const thread of new Set(shown.flatMap((each) => each.counts?.threads ?? []))) {
+          const on = await threadOn(trx, thread);
+          if (on !== undefined && readable.has(on)) onReadable.add(thread);
+        }
         const last = shown[shown.length - 1];
         return {
           notifications: shown.map((each) => ({
             id: each.id,
             kind: each.kind,
-            actor: each.actor,
-            thread: each.thread,
+            actor: each.artifact !== null && !readable.has(each.artifact) ? null : each.actor,
+            thread: each.artifact !== null && !readable.has(each.artifact) ? null : each.thread,
             on: each.artifact === null ? null : place(each.artifact),
             counts:
               each.counts === null
@@ -69,8 +86,10 @@ export function inboxHandlers(
                     mention: each.counts.mention,
                     reply: each.counts.reply,
                     resolution: each.counts.resolution,
-                    threads: [...each.counts.threads],
-                    places: each.counts.artifacts.map(place),
+                    threads: each.counts.threads.filter((thread) => onReadable.has(thread)),
+                    places: each.counts.artifacts
+                      .filter((artifact) => readable.has(artifact))
+                      .map(place),
                   },
             at: each.at.toISOString(),
             read: each.readAt !== null,

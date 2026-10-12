@@ -38,9 +38,9 @@ const content: ContentDocument = {
 };
 
 /** The content drawn as the document's text draws it, in the page. */
-function drawn(): HTMLElement {
+function drawn(of: ContentDocument = content): HTMLElement {
   const host = document.createElement('div');
-  host.append(renderContent(content, document)!);
+  host.append(renderContent(of, document)!);
   document.body.append(host);
   return host;
 }
@@ -118,5 +118,72 @@ describe('a thread’s anchor, from what the reader selected', () => {
     ]);
     // In the second block, where its text before it says, not the first holding the same words.
     expect(marks[0]!.closest('p')!.textContent).toBe('Set the tray again.');
+  });
+
+  // The final review's cases: words two blocks hold, an inline node drawing what the content does not,
+  // and two tables with a cell of the same words.
+  const table = (id: string, cell: string, words: string): BlockNode => ({
+    type: 'table',
+    id,
+    style: 'table',
+    caption: [text(`Table ${id}`)],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [para(cell, words)], colspan: 1, rowspan: 1 }] }],
+  });
+  const alike: ContentDocument = {
+    ...content,
+    content: [
+      para('a1', 'The pump is red.'),
+      {
+        type: 'paragraph',
+        id: 'a2',
+        style: 'body',
+        content: [
+          text('The pump runs.'),
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [para('n1p', 'A note.')],
+          },
+          text(' More.'),
+        ],
+      } as BlockNode,
+      table('t1', 'y1', 'Yes'),
+      table('t2', 'y2', 'Yes'),
+    ],
+  };
+
+  it('COL-012 anchors to the block selected, never another holding the same words, whatever its inline nodes draw', () => {
+    const host = drawn(alike);
+    expect(anchorFromSelection(select(host, 'The pump runs.', 0, 8), host, alike)).toMatchObject({
+      block: 'a2',
+      quote: 'The pump',
+    });
+    markAnchors(host, alike, [
+      { thread: 'x', anchor: { kind: 'span', block: 'a2', quote: 'The pump', before: '' } },
+    ]);
+    expect(host.querySelector('mark[data-thread="x"]')!.closest('[data-block]')).toHaveAttribute(
+      'data-block',
+      'a2',
+    );
+  });
+
+  it('COL-012 anchors a caret to its own table’s cell where another table’s cell holds the same words, and marks it there', () => {
+    const host = drawn(alike);
+    const cells = [...host.querySelectorAll('td')];
+    const range = document.createRange();
+    range.setStart(cells[1]!.querySelector('p')!.firstChild!, 1);
+    range.collapse(true);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    expect(anchorFromSelection(window.getSelection()!, host, alike)).toEqual({
+      kind: 'cell',
+      table: 't2',
+      block: 'y2',
+    });
+    markAnchors(host, alike, [{ thread: 'y', anchor: { kind: 'cell', table: 't2', block: 'y2' } }]);
+    expect(cells.map((cell) => cell.getAttribute('data-thread'))).toEqual([null, 'y']);
   });
 });

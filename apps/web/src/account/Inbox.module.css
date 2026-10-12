@@ -1,0 +1,91 @@
+/* The inbox, from the account chip (the TH plan, Task 4): the notifications, then how often. */
+.inbox h2 {
+  margin: 0 0 var(--space-8);
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-8) 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row[data-unread='true'] .said {
+  font-weight: 600;
+}
+
+.said {
+  overflow-wrap: anywhere;
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.thread ol {
+  margin: 0;
+  padding-inline-start: var(--space-16);
+}
+
+.thread p {
+  margin: 0 0 var(--space-4);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mention {
+  color: var(--accent);
+}
+
+.preferences {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: var(--space-12) 0 0;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.preference {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.preferences > button {
+  align-self: flex-start;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}

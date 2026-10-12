@@ -182,6 +182,26 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
     expect((await inbox('alice')).notifications).toEqual([]);
   });
 
+  it('COL-036 says of a notification on something its reader may no longer read only that it happened', async () => {
+    const { version } = await mentioning('grace');
+    await tenantDb.withTenant(tenant, async (trx) => {
+      await grant(trx, {
+        roleId: (await findRole(trx, 'Reader'))!.id,
+        subject: { principal: ids.grace! },
+        level: { kind: 'artifact', id: version.artifactId },
+        effect: 'deny',
+        grantedBy: ids.ada!,
+      });
+    });
+    const [told] = (await inbox('grace')).notifications;
+    expect(told).toMatchObject({
+      kind: 'mention',
+      actor: null,
+      thread: null,
+      on: { id: version.artifactId, title: null },
+    });
+  });
+
   it('COL-063 COL-062 marks read and deletes a person’s own notification, and answers anybody else’s as not there', async () => {
     await mentioning('grace');
     const { notifications, unread } = await inbox('grace');
@@ -226,5 +246,27 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
     expect(
       (await call('PUT', '/v1/inbox/preferences', 'ivy', { mention: 'hourly' })).statusCode,
     ).toBe(400);
+  });
+
+  it('refuses a token: the inbox is a signed-in person’s, whose scopes a token could not keep', async () => {
+    const issued = await call('POST', '/v1/tokens', 'ivy', {
+      name: 'Script',
+      scopes: [],
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    expect(issued.statusCode, issued.body).toBe(200);
+    const secret = issued.json<{ secret: string }>().secret;
+    for (const [method, url] of [
+      ['GET', '/v1/inbox'],
+      ['GET', '/v1/inbox/preferences'],
+    ] as const) {
+      const answer = await app.inject({
+        method,
+        url,
+        headers: { host: HOST, authorization: `Bearer ${secret}` },
+      });
+      expect(answer.statusCode, url).toBe(403);
+      expect(answer.json()).toMatchObject({ code: 'token_not_allowed' });
+    }
   });
 });

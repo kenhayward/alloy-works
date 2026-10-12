@@ -940,6 +940,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Threads and Review.** A document has a third mode, **Review**, for whoever may comment on it or
+  on a component it places: the text as Reading shows it, with each thread marked where it stands -
+  words underlaid, a cell outlined, and a count on a component's label or a section's heading - and a
+  **Threads** panel. Select words in a component's text, or put the caret in a table cell, and start a
+  thread on them; or on a whole component or a section. Reply, mention people, edit your own comment
+  (every earlier text is kept and readable), and resolve, once; a resolved thread takes nothing more.
+  Filter by open or resolved. A thread whose words have gone is listed as orphaned, never lost; in a
+  document a component's thread is placed by the version each occurrence shows. Threads are never
+  deleted, never in the content, and never make a version. Through the API, `/v1/components/{id}/threads`,
+  `/v1/documents/{id}/threads` and `/v1/threads/{id}`.
+- **The inbox.** The account chip says how many notifications are unread and opens the **Inbox**: who
+  mentioned you, replied on a thread you are in, or resolved one, and where, newest first, each opened
+  to read its thread as you may read it now, marked read or deleted. Choose, per kind, at once, a daily
+  digest after 07:00 UTC, or never; mentions and replies come at once and resolutions daily unless you
+  choose. A notification never holds the comment's words; once you may no longer read what it is on it
+  says only that something happened. Kept 90 days. Through the API at `/v1/inbox`, with a session only.
 - **Baselines.** A document's outline pane has a **Baselines** tab. Whoever may publish the document
   makes one of the version shown, under a name unique in the document that never changes: it pins the
   version of every component, image and value the document uses, and the layout and theme it is
@@ -1462,5 +1478,7 @@ Named explicitly so nobody has to read the source to find out:
   kept, pinned and compared, and nothing yet approves one. A publication of a
   baseline still says it is not approved, until a workflow can approve one. Conditional text
   and suggestion handling are described in the content model and neither runs.
+- No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread
+  is seen by whoever may read what it is on.
 - No signed or published release - the installer builds locally and is unsigned.
 - No auto-update.

@@ -236,12 +236,25 @@ export function ThreadsPanel({
 
   const nameOf = (id: string) => people.find((each) => each.id === id)?.name ?? 'Somebody';
 
+  // Every page of them, so every thread is listed and marked, however many (the TH final review).
   const read = useCallback(async () => {
-    const answer = await client.GET('/v1/documents/{id}/threads', {
-      params: { path: { id: document }, query: show === 'all' ? {} : { state: show } },
-    });
-    if (!answer.data) return setThreads(null);
-    const listed = answer.data.threads as unknown as ThreadSummary[];
+    const listed: ThreadSummary[] = [];
+    let cursor: string | undefined;
+    do {
+      const answer = await client.GET('/v1/documents/{id}/threads', {
+        params: {
+          path: { id: document },
+          query: {
+            limit: '100',
+            ...(show === 'all' ? {} : { state: show }),
+            ...(cursor === undefined ? {} : { cursor }),
+          },
+        },
+      });
+      if (!answer.data) return setThreads(null);
+      listed.push(...(answer.data.threads as unknown as ThreadSummary[]));
+      cursor = answer.data.next ?? undefined;
+    } while (cursor !== undefined);
     setThreads(listed);
     onThreadsNow(listed);
   }, [client, document, show, onThreadsNow]);

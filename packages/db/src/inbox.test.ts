@@ -167,6 +167,26 @@ describe('the inbox', () => {
     expect((await inbox(grace)).notifications).toHaveLength(before);
   });
 
+  it('tells an earlier commenter of a reply naming them where their mentions are never told', async () => {
+    const thread = await started(said('Is this right?'), clinical, grace);
+    await tenant((trx) => setCadences(trx, grace, { mention: 'never' }));
+    try {
+      const before = (await inbox(grace)).notifications.length;
+      await tenant((trx) =>
+        addComment(trx, {
+          thread: thread.thread,
+          parts: [{ text: 'Yes, ' }, { mention: grace }],
+          author: ada,
+        }),
+      );
+      const now = (await inbox(grace)).notifications;
+      expect(now).toHaveLength(before + 1);
+      expect(now[0]).toMatchObject({ kind: 'reply', thread: thread.thread });
+    } finally {
+      await tenant((trx) => setCadences(trx, grace, { mention: 'at_once' }));
+    }
+  });
+
   it('COL-063 COL-036 lists a person’s notifications newest first, unread marked, holding identifiers and never the text', async () => {
     const thread = await started(said('Is this right?'), clinical, grace);
     await tenant((trx) =>

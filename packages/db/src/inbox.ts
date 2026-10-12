@@ -95,7 +95,7 @@ export async function setCadences(
  * Tells each recipient of an act on a thread, in the act's transaction (TH-G): but its actor, each
  * only where they may read what the thread is on, decided now (TH-E), and by their cadence - a
  * notification at once, an event held for the day's digest, or nothing. Answers those who may not read
- * it, who are told nothing, for the author's composer to say so (COL-015).
+ * it, who are told nothing, for the author's composer to say so (COL-015), and those it told.
  */
 export async function tell(
   trx: TenantTransaction,
@@ -106,8 +106,9 @@ export async function tell(
     readonly artifact: string;
     readonly recipients: readonly string[];
   },
-): Promise<string[]> {
+): Promise<{ readonly untold: string[]; readonly told: string[] }> {
   const untold: string[] = [];
+  const told: string[] = [];
   for (const recipient of new Set(input.recipients)) {
     if (recipient === input.actor) continue;
     if (!(await readableOf(trx, recipient, [input.artifact])).has(input.artifact)) {
@@ -125,8 +126,9 @@ export async function tell(
     };
     if (cadence === 'at_once') await trx.insertInto('notification').values(row).execute();
     else await trx.insertInto('notification_held').values(row).execute();
+    told.push(recipient);
   }
-  return untold;
+  return { untold, told };
 }
 
 /**

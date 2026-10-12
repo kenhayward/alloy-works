@@ -189,7 +189,7 @@ export { mountEditor, TEXT_CLASS, type MountOptions } from './view.js';
 // A section title's field: one line of text and inline equations (equations 3, ruling R1).
 export { titleFromEditor, titleSchema, titleToEditor, type TitleRun } from './title.js';
 export { mountTitleEditor, type TitleEditor, type TitleEditorOptions } from './titleView.js';
-export { renderContent } from './render.js';
+export { BLOCK_ATTRIBUTE, renderContent } from './render.js';
 export { paragraphPlaces } from './places.js';
 export { paragraphsAt, setImageStyle, setParagraphStyle, setTableStyle } from './styles.js';
 export { setStyleCheck, textWhereAt } from './resolution.js';

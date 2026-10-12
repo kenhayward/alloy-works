@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -72,13 +72,16 @@ function service() {
     const thread = threads.find((each) => url.pathname.includes(each.id));
     if (request.method === 'GET' && url.pathname.endsWith('/threads')) {
       const state = url.searchParams.get('state');
+      const shown = threads
+        .filter((each) =>
+          state === null ? true : state === 'open' ? !each.resolution : !!each.resolution,
+        )
+        .map(summary);
+      // A page of one, so the panel must follow `next` to list them all.
+      const at = Number(url.searchParams.get('cursor') ?? '0');
       return json(200, {
-        threads: threads
-          .filter((each) =>
-            state === null ? true : state === 'open' ? !each.resolution : !!each.resolution,
-          )
-          .map(summary),
-        next: null,
+        threads: shown.slice(at, at + 1),
+        next: at + 1 < shown.length ? String(at + 1) : null,
       });
     }
     if (request.method === 'GET') return json(200, view(thread!));
@@ -206,8 +209,21 @@ describe('the threads panel in Review', () => {
     expect(screen.queryByLabelText('Reply')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
 
+    // A second thread: the list, paged by the service, holds both.
     await userEvent.click(screen.getByRole('button', { name: 'All threads' }));
-    expect(await screen.findByText('No threads here.')).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('On'), 'selection');
+    await userEvent.type(screen.getByLabelText('Comment'), 'Second');
+    await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
+    await screen.findByRole('heading', { name: '“the tray”' });
+    await userEvent.click(screen.getByRole('button', { name: 'All threads' }));
+    await userEvent.selectOptions(screen.getByLabelText('Show'), 'all');
+    expect(await screen.findByRole('button', { name: '“the tray”' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'The whole component' })).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Show'), 'open');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'The whole component' })).toBeNull(),
+    );
+    expect(screen.getByRole('button', { name: '“the tray”' })).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText('Show'), 'resolved');
     const listed = await screen.findByRole('button', { name: 'The whole component' });
     expect(within(listed.closest('li')!).getByText('Resolved')).toBeInTheDocument();

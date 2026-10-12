@@ -106910,13 +106910,10 @@
         "tags": [
           "Inbox"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -107028,7 +107025,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "Who did it; null on a digest"
+                            "description": "Who did it; null on a digest, or where the caller may no longer read what it is on"
                           },
                           "thread": {
                             "anyOf": [
@@ -107047,7 +107044,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "The thread; null on a digest"
+                            "description": "The thread; null on a digest, or where the caller may no longer read what it is on"
                           },
                           "on": {
                             "anyOf": [
@@ -107161,7 +107158,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "A digest’s: how many of each kind, on which threads, and where (COL-035)"
+                            "description": "A digest’s: how many of each kind, and on which threads and where, of those the caller may still read (COL-035)"
                           },
                           "at": {
                             "type": "string",
@@ -107302,6 +107299,47 @@
               }
             }
           },
+          "403": {
+            "description": "token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "default": {
             "description": "An error, in the one shape every error takes",
             "content": {
@@ -107354,13 +107392,10 @@
         "tags": [
           "Inbox"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -107405,6 +107440,47 @@
           },
           "401": {
             "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep",
             "content": {
               "application/json": {
                 "schema": {
@@ -107537,13 +107613,10 @@
         "tags": [
           "Inbox"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -107588,6 +107661,47 @@
           },
           "401": {
             "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep",
             "content": {
               "application/json": {
                 "schema": {
@@ -107720,13 +107834,10 @@
         "tags": [
           "Inbox"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -107840,6 +107951,47 @@
               }
             }
           },
+          "403": {
+            "description": "token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "default": {
             "description": "An error, in the one shape every error takes",
             "content": {
@@ -107890,13 +108042,10 @@
         "tags": [
           "Inbox"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -108012,6 +108161,47 @@
           },
           "401": {
             "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "token_not_allowed: the inbox is a signed-in person’s, never a token’s, whose scopes it could not keep",
             "content": {
               "application/json": {
                 "schema": {
