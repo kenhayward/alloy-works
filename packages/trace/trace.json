@@ -15976,11 +15976,11 @@
         },
         {
           "id": "DAT-058",
-          "howItIsMet": "A revision is a row of its own, `binding_revision`, beside the resolution and never in place of it: the value entered, the dataset version it stands in front of, who, when and the reason; insert-only, each naming the revision it replaces, so the rows are its audit with what it was and what it became"
+          "howItIsMet": "A revision is a row of its own, `binding_revision`, in front of a resolution and never in place of it: the value entered, the resolution it stands in front of, who, when and the reason; insert-only, each naming the revision it replaces, and audited with the value it was and the value it became"
         },
         {
           "id": "DAT-060",
-          "howItIsMet": "A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and accepting it must say `withdraw` or `keep`, refused `revision_decision_required` otherwise; keeping records the revision again against the newer version in the same transaction"
+          "howItIsMet": "A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and every act recording a resolution over a standing revision (accept, confirm, resolve) must say `withdraw` or `keep`, naming the revisions it decides over, refused `revision_decision_required` or `revision_precondition` otherwise; keeping records each again in front of the new resolution in the same transaction"
         },
         {
           "id": "DAT-116",
@@ -15993,6 +15993,14 @@
         {
           "id": "DAT-062",
           "howItIsMet": "The provenance panel, the Data tab and `provenance.json` give a revised value both halves: the revision - value, who, when, why - and the dataset version's provenance with the value the query returned"
+        },
+        {
+          "id": "DAT-057",
+          "howItIsMet": "An author revises a value in place, inline or a bound table's cell (by key, [tables.md](tables.md#revised-cells)), without editing the definition or the binding: `POST .../bindings/revisions`, the document's act ([A value revised by hand](#a-value-revised-by-hand)). A bound image is an image, not a value revised by hand"
+        },
+        {
+          "id": "DAT-115",
+          "howItIsMet": "A revised value is marked as a person's wherever the product shows it: a marker always shown, _revised by hand_, in the editor and the read text in either mode, Review among them; its own state in the Data tab; both halves in the provenance panel and `provenance.json`. Print is unmarked, as DAT-115 allows"
         },
         {
           "id": "DAT-097",
@@ -18242,6 +18250,10 @@
         {
           "id": "DAT-048",
           "howItIsMet": "A note whose row the result no longer has is `note_row_missing`, naming the note, the key and the definition, in the page and at the stage"
+        },
+        {
+          "id": "DAT-063",
+          "howItIsMet": "A revision to a cell names its row by key and its column; its row gone is `revision_row_missing`, naming the revision, the key and the definition, in the page and at the stage ([Revised cells](#revised-cells))"
         },
         {
           "id": "DAT-069",
@@ -20758,6 +20770,12 @@
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
       "line": 385,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-063",
+      "file": "apps/web/src/publishing/Publishing.test.tsx",
+      "line": 751,
       "kind": "title"
     },
     {
@@ -23487,7 +23505,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 651,
+      "line": 654,
       "kind": "title"
     },
     {
@@ -23883,97 +23901,115 @@
     {
       "id": "DAT-012",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 890,
+      "line": 891,
       "kind": "title"
     },
     {
       "id": "DAT-028",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 514,
+      "line": 515,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 178,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "DAT-048",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 908,
+      "line": 909,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-062",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1256,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-063",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1283,
       "kind": "title"
     },
     {
       "id": "DAT-069",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 649,
+      "line": 650,
       "kind": "title"
     },
     {
       "id": "DAT-087",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 153,
+      "line": 154,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 337,
+      "line": 338,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1256,
       "kind": "title"
     },
     {
       "id": "TAB-004",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 723,
+      "line": 724,
       "kind": "title"
     },
     {
       "id": "TAB-008",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 1074,
+      "line": 1075,
       "kind": "title"
     },
     {
       "id": "TAB-021",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 1170,
+      "line": 1171,
       "kind": "title"
     },
     {
       "id": "TAB-022",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 1103,
+      "line": 1104,
       "kind": "title"
     },
     {
       "id": "TAB-024",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 963,
+      "line": 964,
       "kind": "title"
     },
     {
       "id": "TAB-025",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 979,
+      "line": 980,
       "kind": "title"
     },
     {
       "id": "TAB-045",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 663,
+      "line": 664,
       "kind": "title"
     },
     {
       "id": "TAB-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 571,
+      "line": 572,
       "kind": "title"
     },
     {
       "id": "TAB-054",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 1096,
+      "line": 1097,
       "kind": "title"
     },
     {
@@ -23998,6 +24034,18 @@
       "id": "PUB-108",
       "file": "packages/domain/src/publishing/order.test.ts",
       "line": 384,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-062",
+      "file": "packages/domain/src/publishing/provenance.test.ts",
+      "line": 214,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "packages/domain/src/publishing/provenance.test.ts",
+      "line": 214,
       "kind": "title"
     },
     {

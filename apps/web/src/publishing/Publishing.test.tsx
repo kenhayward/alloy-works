@@ -740,12 +740,35 @@ describe('publishing from the document page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     for (const words of [
-      'This table has a note on a row, but its query definition declares no key to find the row by. Give the query definition a key, or put the note on a column.',
+      'This table has a note or a value revised by hand on a row, but its query definition declares no key to find the row by. Give the query definition a key, put the note on a column, or withdraw the revision.',
       'A note on this table names the row with the key {"site":"West"}, which its result no longer has. Change or remove the note, or resolve the table again.',
       'A note on this table names the row with the key {"depth":"7"}, which its result no longer has. Its query definition\'s key is site. Change or remove the note, or resolve the table again.',
     ]) {
       expect(why).toHaveTextContent(words);
     }
+  });
+
+  it('DAT-063 names each value revised by hand in a bound table that a publish could not place, the key and why', async () => {
+    const failed = (code: string, detail: string) => ({
+      stage: 'bind' as const,
+      code: code as 'revision_row_missing',
+      node: 'n7',
+      block: 't1',
+      detail,
+    });
+    const fake = failing([
+      failed('revision_row_missing', '12: {"site":"West"}: q1'),
+      failed('revision_column_unavailable', '13: reading'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A value revised by hand in this table is on the row with the key {"site":"West"}, which its result no longer has. Withdraw the revision, or resolve the table again.',
+    );
+    expect(why).toHaveTextContent(
+      'A value revised by hand in this table is in the column reading, which the table no longer shows, or now groups, totals or turns by.',
+    );
   });
 
   it('names each table too wide to publish, and why, suggesting rotate where a table could turn (TB3-H)', async () => {

@@ -2,6 +2,7 @@ import type { Binding } from '../data/binding.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
 import type { ParameterValues } from '../data/parameters.js';
 import type { Provenance } from '../data/provenance.js';
+import type { RevisionRecord } from '../data/revision.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { sectionNumbers, type NumberingTable } from '../structure/numbering.js';
 
@@ -42,9 +43,9 @@ interface FromResult {
 
 /**
  * The version every new `provenance.json` is written at: 2 since a value gained an image arm (B6-I),
- * 3 since a bound table's (TB1-J).
+ * 3 since a bound table's (TB1-J), 4 since a value or a cell revised by hand carries its revision (RV-G).
  */
-export const PUBLISHED_PROVENANCE_VERSION = 3;
+export const PUBLISHED_PROVENANCE_VERSION = 4;
 
 /**
  * **`provenance.json`** (the B3 plan, B3-G; DAT-042, PUB-049): every value a publication printed,
@@ -62,6 +63,10 @@ export const PUBLISHED_PROVENANCE_VERSION = 3;
  * stays as written. **A table's `notes`** (the TB3 plan) are each note printed beneath it, by its letter,
  * the printed row it marks (null for a column's) and its column - never a keyed note's key, which the
  * table need not print: added to the arm at 3, absent from a file of pipeline 18 or earlier.
+ *
+ * **At 4** (the RV plan, RV-G; DAT-062, DAT-115): a value, or a bound table's cell, a person revised by
+ * hand carries `revision` - the value they entered, who, when and why - beside `value`, which stays
+ * what the query returned, and `printed`, which is the revision as printed. Absent where none stood.
  */
 export interface PublishedProvenance {
   readonly schemaVersion: typeof PUBLISHED_PROVENANCE_VERSION;
@@ -71,6 +76,7 @@ export interface PublishedProvenance {
         readonly printed: string;
         readonly value: string | boolean;
         readonly column: { readonly name: string; readonly type: ValueType };
+        readonly revision?: RevisionRecord;
       })
     | (FromResult & {
         readonly take: Binding['take'];
@@ -134,7 +140,11 @@ export function publishedProvenance(
               format: column.format,
             })),
             rows: each.table.rows.map((row) =>
-              row.map((cell) => ({ printed: cell.printed, value: cell.value })),
+              row.map((cell) => ({
+                printed: cell.printed,
+                value: cell.value,
+                ...(cell.revision === undefined ? {} : { revision: cell.revision }),
+              })),
             ),
             notes: each.table.notes.map(({ note, letter, row, column }) => ({
               note,
@@ -164,6 +174,7 @@ export function publishedProvenance(
         printed: each.printed,
         value: each.value,
         column: { name: each.column.name, type: each.column.type },
+        ...(each.revision === undefined ? {} : { revision: each.revision }),
       };
     }),
   };

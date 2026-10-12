@@ -70,7 +70,7 @@ const numbering = {
 describe('publishedProvenance', () => {
   it('records each value: where, what was printed and from what, and the result it was taken from', () => {
     expect(publishedProvenance([value], datasets, numbering)).toEqual({
-      schemaVersion: 3,
+      schemaVersion: 4,
       values: [
         {
           node: NODE,
@@ -116,7 +116,7 @@ describe('publishedProvenance', () => {
       datasetVersion: VERSION,
     };
     const made = publishedProvenance([value, image], datasets, numbering);
-    expect(made.schemaVersion).toBe(3);
+    expect(made.schemaVersion).toBe(4);
     const [, recorded] = made.values;
     expect(recorded).toMatchObject({
       block: 'f1',
@@ -130,7 +130,7 @@ describe('publishedProvenance', () => {
     expect(recorded).not.toHaveProperty('value');
   });
 
-  it("TAB-019 TAB-015 records a bound table at schema 3: each column's header and format, its rounding rule stated, and each printed cell with the canonical value it was printed from", () => {
+  it("TAB-019 TAB-015 records a bound table at schema 3 and after: each column's header and format, its rounding rule stated, and each printed cell with the canonical value it was printed from", () => {
     const decimal = { base: 'decimal', precision: 40, scale: 30 } as const;
     const canonical = '1234.567890123456789012345678901';
     const table: PrintedValue = {
@@ -155,7 +155,7 @@ describe('publishedProvenance', () => {
       },
     };
     const made = publishedProvenance([value, table], datasets, numbering);
-    expect(made.schemaVersion).toBe(3);
+    expect(made.schemaVersion).toBe(4);
     const [, recorded] = made.values;
     expect(recorded).toEqual({
       node: NODE,
@@ -209,6 +209,26 @@ describe('publishedProvenance', () => {
       numbering,
     );
     expect(made.values[0]).toMatchObject({ table: { notes } });
+  });
+
+  it('DAT-062 DAT-115 records a revised value at schema 4: what the query returned, what was printed, and the revision - its value, who, when and why', () => {
+    const revision = {
+      value: '4300',
+      by: { id: '00000000-0000-4000-8000-0000000000a1', name: 'Ada' },
+      at: '2026-10-12T10:00:00.000Z',
+      reason: 'The meter was recalibrated.',
+    };
+    const made = publishedProvenance(
+      [{ ...value, printed: '4,300.00', revision }],
+      datasets,
+      numbering,
+    );
+    expect(made.schemaVersion).toBe(4);
+    expect(made.values[0]).toMatchObject({ printed: '4,300.00', value: '4200.5', revision });
+    // A value no person revised carries none.
+    expect(publishedProvenance([value], datasets, numbering).values[0]).not.toHaveProperty(
+      'revision',
+    );
   });
 
   it('holds no SQL, no connection and no column source, whatever the stored provenance carries beside them', () => {

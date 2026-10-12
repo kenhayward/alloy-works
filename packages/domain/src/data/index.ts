@@ -191,6 +191,7 @@ export type { CellWords } from './format-cell.js';
 export { checkTable, layoutTable, sortResult, TABLE_ROWS_MAX, tableOrder } from './table.js';
 export {
   canonicalKeyValue,
+  keyedRow,
   keyNamesTheKey,
   matchNoteRows,
   placeTableNotes,
@@ -257,3 +258,5 @@ export {
 export type { BoundObjectKey, ObjectKey, S3KeyPair } from './s3.js';
 export { checkFileCondition, fileConditionSchema, fileFilter, sortRows } from './file-filter.js';
 export type { FileCondition, FileOperand } from './file-filter.js';
+export { revisionCellKey, revisionRecord } from './revision.js';
+export type { RevisionCell, RevisionRecord, StandingRevision } from './revision.js';

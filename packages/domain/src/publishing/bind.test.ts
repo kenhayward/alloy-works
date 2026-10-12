@@ -16,6 +16,7 @@ import type { ValueFormats } from '../theme/schema.js';
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble } from './assemble.js';
+import { revisionCellKey, type StandingRevision } from '../data/revision.js';
 import { bind, type Held } from './bind.js';
 import { defaultLayout } from './layout.js';
 import type { PublishedBlock, PublishedDocument, PublishedNode } from './published.js';
@@ -1212,5 +1213,168 @@ describe('a bound table transposed, published (the TG plan, TG2)', () => {
     expect(made.failures).toContainEqual(
       expect.objectContaining({ code: 'transpose_too_long', block: 't1', detail: '13' }),
     );
+  });
+});
+
+describe('a value revised by hand, through the binding stage (the RV plan, RV-F)', () => {
+  const ADA = { id: '00000000-0000-4000-8000-0000000000a1', name: 'Ada' };
+  const revision = (
+    id: string,
+    value: string,
+    cell: { key: Record<string, string>; column: string } | null = null,
+  ): StandingRevision => ({
+    id,
+    cell,
+    value,
+    by: ADA,
+    at: '2026-10-12T10:00:00.000Z',
+    reason: 'The meter was recalibrated.',
+  });
+  const revisedHeld = (r: CanonicalResult, ...standing: StandingRevision[]): Held => ({
+    ...(held(r) as Exclude<Held, 'unreadable'>),
+    revisions: new Map(standing.map((each) => [revisionCellKey(each.cell), each])),
+  });
+  const whole = (name: string) => {
+    const each = { ...binding(name) } as Record<string, unknown>;
+    delete each.take;
+    return each;
+  };
+  const boundTable = {
+    type: 'boundTable',
+    id: 't1',
+    binding: whole('rows'),
+    caption: [text('Readings')],
+    columns: [
+      { column: 'site', header: 'Site' },
+      { column: 'reading', header: 'Reading' },
+    ],
+    headerColumn: false,
+    sort: [{ column: 'reading', direction: 'descending', nulls: 'last' }],
+  };
+  const ROWS = result(['north', '1.5'], ['south', '7'], ['east', '3']);
+
+  it("DAT-062 DAT-115 prints a revised value in the binding's place, unmarked, and records what the query returned beside the revision", () => {
+    const content = component(paragraph('p1', text('The reading is '), binding('b1'), text('.')));
+    const { bound, values, failures } = bind(
+      NODE,
+      content,
+      new Map([['b1', revisedHeld(result(['north', '4200.5']), revision('7', '4300'))]]),
+      DEFAULT_VALUE_FORMATS,
+    );
+    expect(failures).toEqual([]);
+    // Printed as any value is: plain text, no mark (DAT-115).
+    expect(bound.content[0]).toEqual(
+      paragraph('p1', text('The reading is '), text('4,300.00'), text('.')),
+    );
+    expect(values).toEqual([
+      expect.objectContaining({
+        printed: '4,300.00',
+        value: '4200.5',
+        revision: {
+          value: '4300',
+          by: ADA,
+          at: '2026-10-12T10:00:00.000Z',
+          reason: 'The meter was recalibrated.',
+        },
+      }),
+    ]);
+  });
+
+  it("DAT-063 prints a revised cell in its row found by key wherever the sort puts it, and records the query's value beside the revision", () => {
+    const made = assembled(
+      component(boundTable),
+      new Map([
+        [
+          'rows',
+          revisedHeld(ROWS, revision('8', '9', { key: { site: 'north' }, column: 'reading' })),
+        ],
+      ]),
+    );
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const recorded = made.values[0]!;
+    if (!('table' in recorded)) throw new Error('no table');
+    // Sorted by what it prints: north, revised to 9, now first.
+    expect(recorded.table.rows).toEqual([
+      [
+        { printed: 'north', value: 'north' },
+        {
+          printed: '9.00',
+          value: '1.5',
+          revision: {
+            value: '9',
+            by: ADA,
+            at: '2026-10-12T10:00:00.000Z',
+            reason: 'The meter was recalibrated.',
+          },
+        },
+      ],
+      [
+        { printed: 'south', value: 'south' },
+        { printed: '7.00', value: '7' },
+      ],
+      [
+        { printed: 'east', value: 'east' },
+        { printed: '3.00', value: '3' },
+      ],
+    ]);
+  });
+
+  it('DAT-063 fails a revised cell whose row is gone, revision_row_missing, naming the revision, the key and the definition, and one whose column is not shown', () => {
+    const made = assembled(
+      component(boundTable),
+      new Map([
+        [
+          'rows',
+          revisedHeld(
+            ROWS,
+            revision('8', '9', { key: { site: 'west' }, column: 'reading' }),
+            revision('9', 'x', { key: { site: 'north' }, column: 'depth' }),
+          ),
+        ],
+      ]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'revision_row_missing',
+        node: NODE,
+        block: 't1',
+        detail: `8: {"site":"west"}: ${QUERY}`,
+      },
+      {
+        stage: 'bind',
+        code: 'revision_column_unavailable',
+        node: NODE,
+        block: 't1',
+        detail: '9: depth',
+      },
+    ]);
+  });
+
+  it('DAT-063 fails a revised cell on a definition declaring no key, key_required, and one on the key itself, which places its row', () => {
+    const cell = revision('8', 'west', { key: { site: 'north' }, column: 'site' });
+    const keyless = assembled(
+      component(boundTable),
+      new Map([['rows', { ...(revisedHeld(ROWS, cell) as Exclude<Held, 'unreadable'>), key: [] }]]),
+    );
+    expect(keyless.ok).toBe(false);
+    if (keyless.ok) return;
+    expect(keyless.failures).toEqual([
+      { stage: 'bind', code: 'key_required', node: NODE, block: 't1', detail: QUERY },
+    ]);
+    const onKey = assembled(component(boundTable), new Map([['rows', revisedHeld(ROWS, cell)]]));
+    expect(onKey.ok).toBe(false);
+    if (onKey.ok) return;
+    expect(onKey.failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'revision_column_unavailable',
+        node: NODE,
+        block: 't1',
+        detail: '8: site',
+      },
+    ]);
   });
 });

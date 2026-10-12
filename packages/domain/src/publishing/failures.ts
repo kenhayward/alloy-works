@@ -192,6 +192,13 @@ export const publishFailureCodes = [
   // other columns than the definition's, `: the key is <columns>` after them.
   'key_required',
   'note_row_missing',
+  // bind, from RV (RV-F; DAT-063): a revision standing on a cell whose row the result no longer has,
+  // its `detail` `<revision>: <key>: <definition>` as `note_row_missing`'s, and `: the key is
+  // <columns>` where its key names others; and one on a column the table does not show, or on its
+  // key, a group's column or subtotal or the column it is turned by,
+  // `<revision>: <column>`.
+  'revision_row_missing',
+  'revision_column_unavailable',
   // bind, from TG (TG1): a group's subtotal column that is not boolean, its `detail` the column; and a
   // row a subtotal at two levels, its `detail` the row's index in the result.
   'subtotal_not_boolean',
