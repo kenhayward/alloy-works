@@ -208,9 +208,15 @@ export function ThreadsPanel({
   placeOf,
   onThreads,
   onGoTo,
+  baseline,
 }: {
   client: Client;
   document: string;
+  /**
+   * A baseline whose pinned text the threads are read against (the RR plan, RR-G; COL-031), in place
+   * of the document as it is now.
+   */
+  baseline?: string | undefined;
   targets: readonly ReviewTarget[];
   people: readonly Person[];
   principalId?: string | undefined;
@@ -241,23 +247,26 @@ export function ThreadsPanel({
     const listed: ThreadSummary[] = [];
     let cursor: string | undefined;
     do {
-      const answer = await client.GET('/v1/documents/{id}/threads', {
-        params: {
-          path: { id: document },
-          query: {
-            limit: '100',
-            ...(show === 'all' ? {} : { state: show }),
-            ...(cursor === undefined ? {} : { cursor }),
-          },
-        },
-      });
+      const query = {
+        limit: '100',
+        ...(show === 'all' ? {} : { state: show }),
+        ...(cursor === undefined ? {} : { cursor }),
+      };
+      const answer =
+        baseline === undefined
+          ? await client.GET('/v1/documents/{id}/threads', {
+              params: { path: { id: document }, query },
+            })
+          : await client.GET('/v1/baselines/{id}/threads', {
+              params: { path: { id: baseline }, query },
+            });
       if (!answer.data) return setThreads(null);
       listed.push(...(answer.data.threads as unknown as ThreadSummary[]));
       cursor = answer.data.next ?? undefined;
     } while (cursor !== undefined);
     setThreads(listed);
     onThreadsNow(listed);
-  }, [client, document, show, onThreadsNow]);
+  }, [client, document, baseline, show, onThreadsNow]);
 
   useEffect(() => {
     void read().catch(() => setThreads(null));

@@ -257,6 +257,8 @@ export function threadHandlers() {
       const query = request.query as ThreadListQuery;
       const limit = query.limit === undefined ? PAGE : Number(query.limit);
       const after = keysetAfter('threads', query.cursor);
+      // `readBaseline` answers only the occurrences the caller may read (BL-H), so a component they
+      // may not read is never listed, nor its threads.
       const occurrences = new Map<string, { node: string; version: string }[]>();
       for (const pin of read.pins.occurrences) {
         const version = await readVersion(trx, pin.version);
