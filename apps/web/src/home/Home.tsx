@@ -87,7 +87,7 @@ function wordsFor(item: Waiting) {
     case 'changes_not_in_version':
       return {
         headline: `${title} holds changes of yours not in a version`,
-        detail: 'Recover resumes them, or discards them.',
+        detail: 'Open it to recover them, or to discard them.',
         action: 'Open',
         href: `#/components/${id}`,
       };

@@ -135,7 +135,7 @@ describe('Home', () => {
         link: 'Open',
         said: [
           'Install the printer holds changes of yours not in a version',
-          'Recover resumes them, or discards them.',
+          'Open it to recover them, or to discard them.',
         ],
         href: `#/components/${PRINTER}`,
       },
