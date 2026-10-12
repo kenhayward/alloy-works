@@ -36,6 +36,7 @@ describe('the rule behind a refusal', () => {
       ['name.taken', 'name_taken', 'VER-046'],
       ['suggestion.stale', 'suggestion_stale', 'COL-052'],
       ['suggestion.not_yours', 'suggestion_not_yours', 'COL-048'],
+      ['revision.decision_required', 'revision_decision_required', 'DAT-060'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -142,6 +143,16 @@ describe('the rule behind a refusal', () => {
       'suggestion.resolved',
       'suggestion.scope',
       'edits.pending',
+      // The RV plan's (RV-C, RV-D): a revision from what the binding no longer holds, of what cannot
+      // be revised, of a row the result lacks, a withdrawal of nothing, a value not of its column or
+      // blank, and a cell's key naming other columns. Guards of the design's own.
+      'revision.precondition',
+      'revision.not_possible',
+      'revision.not_standing',
+      'revision.row_missing',
+      'value.invalid',
+      'value.empty',
+      'key.required',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

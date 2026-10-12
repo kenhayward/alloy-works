@@ -581,6 +581,27 @@ export interface DatasetPendingTable {
   state: ColumnType<'pending' | 'refused', never, 'refused'>;
   failure: ColumnType<unknown, never, string>;
   created_at: ColumnType<Date, never, never>;
+  /** A resolve's decision over the revisions standing (0078; RV-D): JSONB in as text, or none. */
+  revisions: ColumnType<unknown, string | null | undefined, never>;
+}
+
+/** A value revised by hand, in front of a resolution (0078; the RV plan, RV-A): insert and read. */
+export interface BindingRevisionTable {
+  id: ColumnType<string, never, never>;
+  document_id: ColumnType<string, string, never>;
+  document_kind: ColumnType<'document', 'document' | undefined, never>;
+  node_id: ColumnType<string, string, never>;
+  binding_id: ColumnType<string, string, never>;
+  /** '' for an inline binding, else the cell's canonical JSON. */
+  cell: ColumnType<string, string, never>;
+  resolution: ColumnType<string, string, never>;
+  act: ColumnType<'revise' | 'withdraw', 'revise' | 'withdraw', never>;
+  /** JSONB in as the text of a JSON document; null exactly for a withdrawal. */
+  value: ColumnType<unknown, string | null, never>;
+  reason: ColumnType<string, string, never>;
+  replaces: ColumnType<string | null, string | null, never>;
+  revised_by: ColumnType<string, string, never>;
+  revised_at: ColumnType<Date, never, never>;
 }
 
 /**
@@ -671,6 +692,7 @@ export interface TenantTables {
   dataset_name: DatasetNameTable;
   binding_resolution: BindingResolutionTable;
   dataset_pending: DatasetPendingTable;
+  binding_revision: BindingRevisionTable;
   dataset_take: DatasetTakeTable;
   baseline: BaselineTable;
   baseline_pin: BaselinePinTable;

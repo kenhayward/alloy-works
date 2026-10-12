@@ -44,6 +44,8 @@ export interface BaselineBindingTable {
   dataset_id: ColumnType<string, string, never>;
   dataset_kind: ColumnType<'dataset', never, never>;
   dataset_name: ColumnType<string | null, string | null, never>;
+  /** The revisions it read, in ascending order (0078; RV-E): bigint[], read as strings. */
+  revisions: ColumnType<string[], string[] | undefined, never>;
 }
 
 /** Superseded once, by a later baseline of the same document (0072; VER-049). */

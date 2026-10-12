@@ -172,6 +172,10 @@ export {
 } from './connections.js';
 export {
   AcceptBindingBody,
+  ReviseBindingBody,
+  RevisionCellView,
+  RevisionDecision,
+  RevisionView,
   BindingFailureView,
   BindingRefusal,
   BindingHoldersView,

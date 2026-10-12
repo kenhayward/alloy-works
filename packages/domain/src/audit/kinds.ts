@@ -100,6 +100,31 @@ const Binding = z.strictObject({
   outcome: z.enum(['unchanged', 'revision']).optional(),
 });
 
+/** A canonical value in a revision's detail: what it was and what it became (DAT-058). */
+const Canonical = z.union([z.string().max(10000), z.boolean(), z.null()]);
+
+/**
+ * A value revised by hand, or a revision withdrawn (the RV plan, RV-C, RV-D): where - its document,
+ * node, binding and any cell - the resolution it stands in front of, the revision recorded, and the
+ * value it was (the query's, or the revision it replaces) and the value it became.
+ */
+const Revised = z.strictObject({
+  document: Id,
+  node: Identifier,
+  binding: Identifier,
+  cell: z
+    .strictObject({
+      key: z.record(z.string().max(200), Canonical),
+      column: z.string().max(200),
+    })
+    .optional(),
+  act: z.enum(['revise', 'withdraw', 'keep']),
+  resolution: z.string().regex(/^[0-9]{1,19}$/),
+  revision: z.string().regex(/^[0-9]{1,19}$/),
+  was: Canonical,
+  became: Canonical,
+});
+
 /** An export, and what of. */
 const Exported = z.strictObject({ export: Id, of: z.enum(['audit']) });
 
@@ -345,7 +370,7 @@ export const auditKindSpecs = {
     'packages/db/src/suggestions.ts',
   ),
   'template.moved': kind(['TPL-033'], empty, LATER),
-  'binding.revised': kind(['DAT-058', 'LIF-064'], empty, LATER),
+  'binding.revised': kind(['DAT-058', 'LIF-064'], Revised, 'apps/service/src/data/revisions.ts'),
   'relationship.made': kind(['LIF-064', 'REL-011'], empty, LATER),
   'relationship.changed': kind(['LIF-064', 'REL-033'], empty, LATER),
   'relationship.removed': kind(['LIF-064', 'REL-011'], empty, LATER),

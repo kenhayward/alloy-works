@@ -21,6 +21,12 @@ export interface BaselinePins {
     readonly digest: string;
     readonly datasetVersion: string;
     readonly datasetDigest: string;
+    /**
+     * The values revised by hand standing in front of it (the RV plan, RV-E), by identifier with the
+     * value each holds, ascending; absent where none stood, so a baseline made before them hashes as it
+     * did.
+     */
+    readonly revisions?: readonly { readonly id: string; readonly value: string | boolean }[];
   }[];
 }
 

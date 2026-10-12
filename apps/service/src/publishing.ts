@@ -533,6 +533,15 @@ export function publishingHandlers(
             ...(disclosed ? { ran: { ...p.ran }, connection: { ...p.connection } } : {}),
             images: { ...p.images },
           },
+          revisions: each.revisions.map((revision) => ({
+            id: revision.id,
+            cell:
+              revision.cell === null ? null : { ...revision.cell, key: { ...revision.cell.key } },
+            value: revision.value,
+            by: { ...revision.by },
+            at: revision.at,
+            reason: revision.reason,
+          })),
         });
       }
       return { bindings };

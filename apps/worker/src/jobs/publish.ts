@@ -18,6 +18,7 @@ import {
   OUTPUT_CONTENT_TYPES,
   provenanceBytes,
   publishedProvenance,
+  revisionCellKey,
   PUBLISHING_SCHEMA_1,
   WORD_WRITER_VERSION,
   writeDocx,
@@ -181,7 +182,19 @@ export async function heldResults(
   for (const [node, held] of bindings) {
     const results = new Map<string, Held>();
     for (const [binding, recorded] of held) {
-      results.set(binding, await readOnce(recorded.datasetVersion, recorded.dataset, recorded.key));
+      const result = await readOnce(recorded.datasetVersion, recorded.dataset, recorded.key);
+      // The revisions the request read stand in front of it (the RV plan, RV-E, RV-F).
+      results.set(
+        binding,
+        result === 'unreadable' || recorded.revisions.length === 0
+          ? result
+          : {
+              ...result,
+              revisions: new Map(
+                recorded.revisions.map((each) => [revisionCellKey(each.cell), each]),
+              ),
+            },
+      );
     }
     byNode.set(node, results);
   }

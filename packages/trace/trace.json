@@ -19089,7 +19089,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 297,
+      "line": 304,
       "kind": "title"
     },
     {
@@ -19335,7 +19335,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1056,
+      "line": 1068,
       "kind": "title"
     },
     {
@@ -19798,6 +19798,36 @@
       "id": "API-006",
       "file": "apps/service/src/refusals.test.ts",
       "line": 7,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-057",
+      "file": "apps/service/src/revisions-routes.test.ts",
+      "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-058",
+      "file": "apps/service/src/revisions-routes.test.ts",
+      "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-060",
+      "file": "apps/service/src/revisions-routes.test.ts",
+      "line": 227,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-060",
+      "file": "apps/service/src/revisions-routes.test.ts",
+      "line": 199,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-063",
+      "file": "apps/service/src/revisions-routes.test.ts",
+      "line": 262,
       "kind": "title"
     },
     {
@@ -21213,43 +21243,49 @@
     {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 445,
+      "line": 446,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 430,
+      "line": 431,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-062",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "DAT-088",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 398,
+      "line": 399,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 787,
+      "line": 834,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 787,
+      "line": 834,
       "kind": "title"
     },
     {
       "id": "PUB-049",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 445,
+      "line": 446,
       "kind": "title"
     },
     {
       "id": "STY-082",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 505,
+      "line": 552,
       "kind": "title"
     },
     {
@@ -21963,67 +21999,73 @@
     {
       "id": "DAT-038",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 393,
+      "line": 394,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-062",
+      "file": "packages/db/src/baselines.test.ts",
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "PUB-013",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 273,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "PUB-046",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 511,
+      "line": 605,
       "kind": "title"
     },
     {
       "id": "SCH-025",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 725,
+      "line": 819,
       "kind": "title"
     },
     {
       "id": "SCH-048",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 749,
+      "line": 843,
       "kind": "title"
     },
     {
       "id": "STY-028",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 273,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 245,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "VER-023",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 765,
+      "line": 859,
       "kind": "title"
     },
     {
       "id": "VER-043",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 320,
+      "line": 321,
       "kind": "title"
     },
     {
       "id": "VER-046",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 297,
+      "line": 298,
       "kind": "title"
     },
     {
       "id": "VER-049",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 693,
+      "line": 787,
       "kind": "title"
     },
     {
@@ -22075,21 +22117,27 @@
       "kind": "title"
     },
     {
+      "id": "DAT-058",
+      "file": "packages/db/src/datasets.test.ts",
+      "line": 1289,
+      "kind": "title"
+    },
+    {
       "id": "DAT-070",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 733,
+      "line": 734,
       "kind": "title"
     },
     {
       "id": "DAT-085",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 358,
+      "line": 359,
       "kind": "title"
     },
     {
       "id": "DAT-092",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 277,
+      "line": 278,
       "kind": "title"
     },
     {

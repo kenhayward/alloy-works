@@ -964,6 +964,19 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { node: 'a'.repeat(26), binding: 'b1', replaces: MISSING },
     }),
+    reviseBinding: () => ({
+      url: `/v1/documents/${report}/bindings/revisions`,
+      status: 404,
+      payload: {
+        node: 'a'.repeat(26),
+        binding: 'b1',
+        act: 'revise',
+        value: '1',
+        reason: 'Probe',
+        resolution: '1',
+        replaces: null,
+      },
+    }),
     getBindingHolders: () => ({ url: `/v1/components/${dosing}/bindings/b1/holders`, status: 404 }),
     nameDataset: () => ({
       url: `/v1/datasets/${dailyReadings}/name`,

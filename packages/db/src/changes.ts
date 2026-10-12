@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { readOutline } from '@alloy-works/domain';
 import { loadReadableSet } from './access-facts.js';
 import { resolveOccurrences } from './publishing.js';
+import { revisionsKept } from './revisions.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion } from './versions.js';
@@ -16,7 +17,10 @@ export interface ChangedArtifact {
   readonly latest: { readonly id: string; readonly number: string; readonly at: Date };
 }
 
-/** A value a document holds resolved or accepted since the instant. */
+/**
+ * A value a document holds resolved or accepted since the instant, or revised by hand or its revision
+ * withdrawn (`revise`, `withdraw`; the RV plan, RV-H).
+ */
 export interface ChangedValue {
   readonly document: string;
   readonly node: string;
@@ -142,12 +146,30 @@ export async function changesSince(
             .orderBy('id', 'desc')
             .execute()
         ).filter((row) => readableNodes.get(row.document_id)?.has(row.node_id) === true);
+  // Each value revised by hand, or its revision withdrawn, since (DAT-115): a changed value is never
+  // a change nobody can see.
+  const revised =
+    documents.length === 0 || !(await revisionsKept(trx))
+      ? []
+      : (
+          await trx
+            .selectFrom('binding_revision')
+            .select(['document_id', 'node_id', 'binding_id', 'act', 'revised_at as resolved_at'])
+            .where('document_id', 'in', documents)
+            .where('revised_at', '>', input.since)
+            .orderBy('revised_at', 'desc')
+            .orderBy('id', 'desc')
+            .execute()
+        ).filter((row) => readableNodes.get(row.document_id)?.has(row.node_id) === true);
+  const changed = [...values, ...(revised as unknown as typeof values)].sort(
+    (a, b) => b.resolved_at.getTime() - a.resolved_at.getTime(),
+  );
   return {
     recordBegins,
     fromRecordStart: recordBegins !== null && input.since < recordBegins,
     artifacts,
-    more: rows.length > CHANGES_MAX || values.length > CHANGES_MAX,
-    values: values.slice(0, CHANGES_MAX).map((row) => ({
+    more: rows.length > CHANGES_MAX || changed.length > CHANGES_MAX,
+    values: changed.slice(0, CHANGES_MAX).map((row) => ({
       document: row.document_id,
       node: row.node_id,
       binding: row.binding_id,

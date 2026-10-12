@@ -102,6 +102,14 @@ const WIRE_CODES = {
   'suggestion.stale': 'suggestion_stale',
   'suggestion.scope': 'suggestion_scope',
   'edits.pending': 'edits_pending',
+  'revision.decision_required': 'revision_decision_required',
+  'revision.precondition': 'revision_precondition',
+  'revision.not_possible': 'revision_not_possible',
+  'revision.not_standing': 'revision_not_standing',
+  'revision.row_missing': 'revision_row_missing',
+  'value.invalid': 'value_invalid',
+  'value.empty': 'value_empty',
+  'key.required': 'key_required',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -156,6 +164,7 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'parameter.fixed': 'TPL-021',
   // One's own view held without the warning that every reader of the document will see it (D7-H).
   'acknowledgement.required': 'DAT-091',
+  'revision.decision_required': 'DAT-060',
   // A baseline's name, unique in its document whatever its case (baselines.md).
   'name.taken': 'VER-046',
   // A suggestion that no longer fits the component, said with its places (collaboration.md).

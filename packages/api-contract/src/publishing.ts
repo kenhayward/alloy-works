@@ -361,6 +361,25 @@ export const PublicationBindingView = z.object({
         "Each image the result holds, by its SHA-256, to the asset version it was admitted as: an image a binding placed is printed from that asset version's bytes",
       ),
   }),
+  revisions: z
+    .array(
+      z.object({
+        id: z.string(),
+        cell: z
+          .object({
+            key: z.record(z.string(), z.union([z.string(), z.boolean(), z.null()])),
+            column: z.string(),
+          })
+          .nullable(),
+        value: z.union([z.string(), z.boolean()]),
+        by: z.object({ id: z.string(), name: z.string().nullable() }),
+        at: z.string(),
+        reason: z.string(),
+      }),
+    )
+    .describe(
+      'Each value a person revised by hand that the publication printed in front of the result (DAT-062): its value or cell, who, when and why',
+    ),
 });
 export type PublicationBindingView = z.infer<typeof PublicationBindingView>;
 

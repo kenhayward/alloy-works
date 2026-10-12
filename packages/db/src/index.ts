@@ -495,6 +495,7 @@ export {
   type StoredPending,
   type DatasetName,
   type PendingAct,
+  type PendingRevisions,
   type HeldResolution,
   type HeldVersion,
   type RecordedDatasetVersion,
@@ -602,6 +603,13 @@ export {
   type ResolveAnswer,
   type StoredSuggestion,
 } from './suggestions.js';
+export {
+  latestRevisions,
+  recordRevision,
+  revisionsNamed,
+  revisionsStanding,
+  type StoredRevision,
+} from './revisions.js';
 export {
   cadencesOf,
   DEFAULT_CADENCES,

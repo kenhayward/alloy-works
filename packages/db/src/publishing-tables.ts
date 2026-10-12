@@ -74,6 +74,8 @@ export interface PublicationRequestBindingTable {
   dataset_version: ColumnType<string, string, never>;
   dataset_id: ColumnType<string, string, never>;
   dataset_kind: ColumnType<'dataset', never, never>;
+  /** The revisions it read, in ascending order (0078; RV-E): bigint[], read as strings. */
+  revisions: ColumnType<string[], string[] | undefined, never>;
 }
 
 /** A binding a publication printed from: exactly its request's (0050), insert and read alone. */
@@ -85,6 +87,8 @@ export interface PublicationBindingTable {
   dataset_version: ColumnType<string, string, never>;
   dataset_id: ColumnType<string, string, never>;
   dataset_kind: ColumnType<'dataset', never, never>;
+  /** The revisions it read, in ascending order (0078; RV-E): bigint[], read as strings. */
+  revisions: ColumnType<string[], string[] | undefined, never>;
 }
 
 /** An image a publication printed: exactly its request's, insert and read and nothing else. */
