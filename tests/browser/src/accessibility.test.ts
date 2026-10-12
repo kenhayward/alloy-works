@@ -638,6 +638,20 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .getByRole('tabpanel', { name: 'Suggestions' })
           .getByText('No suggestions here.'),
       });
+      // And its rounds, with a round being opened (the RR plan, Task 4).
+      await page
+        .getByRole('tablist', { name: 'Document panels' })
+        .getByRole('tab', { name: 'Rounds' })
+        .click();
+      const rounds = page.getByRole('tabpanel', { name: 'Rounds' });
+      await check('the Rounds panel in Review', {
+        shows: rounds.getByText('No review rounds here.'),
+      });
+      await rounds.getByRole('button', { name: 'Open a round' }).click();
+      await check('a round being opened', {
+        shows: rounds.getByRole('form', { name: 'A new round' }),
+      });
+      await rounds.getByRole('button', { name: 'Cancel' }).click();
       await page.getByRole('radio', { name: 'Authoring' }).check();
       await check('the document view in Authoring', {
         shows: [
