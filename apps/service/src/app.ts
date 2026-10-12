@@ -82,6 +82,7 @@ import {
 } from './oidc.js';
 import { baselineHandlers } from './baselines.js';
 import { threadHandlers } from './threads.js';
+import { attentionHandlers } from './attention.js';
 import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
 import { suggestionHandlers } from './suggestions.js';
@@ -497,6 +498,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...changesHandlers(db, tenantOf),
     ...threadHandlers(),
     ...inboxHandlers(db, tenantOf, principalOf),
+    ...attentionHandlers(db, tenantOf, principalOf),
     ...suggestionHandlers(),
     ...roundHandlers(),
 

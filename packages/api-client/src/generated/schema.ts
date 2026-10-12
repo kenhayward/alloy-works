@@ -1655,6 +1655,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/attention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What waits on the caller that they may resolve
+         * @description Lists what waits on the caller that they may resolve, one item per document, component or connection: a document whose latest publish the caller asked for failed, with its first failure’s code; a component holding changes of theirs not in a version; a document last published from an earlier version than its latest; a connection not tested since its credential was set. Each is listed only where the caller may read it and do what resolves it, and goes once that is done. Computed when asked; at most 20, with the total.
+         */
+        get: operations["getAttention"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -37959,6 +37979,117 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getAttention: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What waits, and how many */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "total": 0
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description One per artifact, the most pressing kind first, newest first within it; at most 20 */
+                        items: {
+                            /**
+                             * @description What waits: your latest attempt to publish a document failed; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set
+                             * @enum {string}
+                             */
+                            kind: "publish_failed" | "changes_not_in_version" | "published_earlier" | "connection_untested";
+                            artifact: {
+                                id: string & (unknown & unknown);
+                                /** @enum {string} */
+                                kind: "document" | "component" | "connection";
+                                /** @description Its title or name, as you read it now */
+                                title: string | null;
+                            };
+                            /** @description A failed publish’s: the code of its first failure, as the publication request names it */
+                            reason?: string;
+                        }[];
+                        /** @description How many wait, of all of them */
+                        total: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description token_not_allowed: what waits is a signed-in person’s, never a token’s, whose scopes it could not keep */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

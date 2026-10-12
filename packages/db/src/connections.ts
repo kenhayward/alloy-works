@@ -397,6 +397,17 @@ export async function usableCredentialOf(
   return { answer: 'usable', sealed: row.sealed, credentialId: String(row.id) };
 }
 
+/**
+ * Whether a connection's credential is set, by the listing's rule: its latest credential row's digest
+ * is the target its latest version names. A credential for another target is no credential.
+ */
+export function credentialSetFor(
+  latestDigest: string | null | undefined,
+  settings: Pick<ConnectionSettings, 'type' | 'source'>,
+): boolean {
+  return latestDigest === targetDigest(settings);
+}
+
 /** A finding a test may record (D1-M; the D7 plan, D7-D, by 0054). */
 export type ConnectionFinding = 'account_not_read_only' | 'account_holds_privilege';
 
@@ -481,8 +492,11 @@ export type LatestConnectionTest = ConnectionTestRecord & {
   readonly credentialCurrent: boolean;
 };
 
-/** Whether a test row was made with its connection's latest credential row, as SQL reads it. */
-const CREDENTIAL_CURRENT = sql<boolean>`coalesce(t.credential_id = (
+/**
+ * Whether a test row, aliased `t`, was made with its connection's latest credential row, as SQL reads
+ * it.
+ */
+export const CREDENTIAL_CURRENT = sql<boolean>`coalesce(t.credential_id = (
     select max(c.id) from connection_credential c where c.connection_id = t.connection_id), false)`;
 
 /** The latest test of a connection, or undefined where none has been recorded. */
@@ -677,8 +691,7 @@ export async function listReadableConnections(
       space: { id: row.space_id, name: row.space_name },
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
       changedAt: new Date(row.created_at),
-      credentialSet:
-        latestDigest.get(row.id) === targetDigest({ type: row.type, source: row.source }),
+      credentialSet: credentialSetFor(latestDigest.get(row.id), row),
       lastTest: lastTests.get(row.id) ?? null,
     })),
     next,

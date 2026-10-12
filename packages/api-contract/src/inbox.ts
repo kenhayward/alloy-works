@@ -74,6 +74,35 @@ export type InboxPreferences = z.infer<typeof InboxPreferences>;
 export const InboxPreferencesBody = InboxPreferences.partial();
 export type InboxPreferencesBody = z.infer<typeof InboxPreferencesBody>;
 
+/** One thing waiting on the caller that they may resolve (home.md, Needs your attention). */
+export const AttentionItemView = z.object({
+  kind: z
+    .enum(['publish_failed', 'changes_not_in_version', 'published_earlier', 'connection_untested'])
+    .describe(
+      'What waits: your latest attempt to publish a document failed; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set',
+    ),
+  artifact: z.object({
+    id: LowercaseUuid,
+    kind: z.enum(['document', 'component', 'connection']),
+    title: z.string().nullable().describe('Its title or name, as you read it now'),
+  }),
+  reason: z
+    .string()
+    .optional()
+    .describe(
+      'A failed publish’s: the code of its first failure, as the publication request names it',
+    ),
+});
+export type AttentionItemView = z.infer<typeof AttentionItemView>;
+
+export const AttentionView = z.object({
+  items: z
+    .array(AttentionItemView)
+    .describe('One per artifact, the most pressing kind first, newest first within it; at most 20'),
+  total: z.int().nonnegative().describe('How many wait, of all of them'),
+});
+export type AttentionView = z.infer<typeof AttentionView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -89,8 +118,31 @@ const notYours = {
   schema: ErrorBody,
 } as const;
 
-/** The inbox (collaboration.md, The inbox; the TH plan, Task 2): the caller's own alone. */
+/** What waits on a signed-in person, never a token's (the HM plan, HM-A). */
+const attentionTokenNotAllowed = {
+  description:
+    'token_not_allowed: what waits is a signed-in person’s, never a token’s, whose scopes it could not keep',
+  schema: ErrorBody,
+} as const;
+
+/**
+ * The inbox (collaboration.md, The inbox; the TH plan, Task 2) and what waits (home.md): the caller's
+ * own alone.
+ */
 export const inboxRoutes = {
+  getAttention: {
+    operationId: 'getAttention',
+    method: 'GET',
+    path: '/v1/me/attention',
+    summary: 'What waits on the caller that they may resolve',
+    tenantScoped: true,
+    access: { check: 'session', credential: 'session' },
+    responses: {
+      200: { description: 'What waits, and how many', schema: AttentionView },
+      401: unauthenticated,
+      403: attentionTokenNotAllowed,
+    },
+  },
   listInbox: {
     operationId: 'listInbox',
     method: 'GET',

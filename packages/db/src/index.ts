@@ -641,3 +641,10 @@ export {
   type NotificationKind,
   type StoredNotification,
 } from './inbox.js';
+export {
+  ATTENTION_KINDS,
+  ATTENTION_LIMIT,
+  whatWaits,
+  type AttentionItem,
+  type AttentionKind,
+} from './attention.js';

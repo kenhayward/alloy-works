@@ -7,9 +7,9 @@ whose decisions are the detail. **Where you left off** (SCH-069) is T7's.
 
 ## Requirements owned
 
-| ID      | Answered by                                            |
-| ------- | ------------------------------------------------------ |
-| SCH-070 | Needs your attention, below; the HM plan, HM-A to HM-H |
+| Requirement | How                                                    |
+| ----------- | ------------------------------------------------------ |
+| **SCH-070** | Needs your attention, below; the HM plan, HM-A to HM-H |
 
 ## What this document does not own
 

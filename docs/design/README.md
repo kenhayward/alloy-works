@@ -40,6 +40,7 @@ understand the storage layer, rather than something to be thrown away.
 | [tables.md](tables.md)                                 | A result as a bound table: its columns, order, formats and notes, laid out alike in the page and the publish                        |
 | [audit.md](audit.md)                                   | The tenant's audit log: every act, sign-in and refusal recorded, kept beyond what it describes, read and exported by administrators |
 | [collaboration.md](collaboration.md)                   | Who holds a component's lock, for how long, and how it passes from an idle holder to somebody who needs it                          |
+| [home.md](home.md)                                     | What waits on the person signed in that they may resolve, each with its one action, and nothing they may not read                   |
 
 ## Why these are not one per requirement area
 

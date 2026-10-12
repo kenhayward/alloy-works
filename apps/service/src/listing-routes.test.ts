@@ -392,10 +392,13 @@ describe('the listings through the service', () => {
       listTokens: '/v1/tokens',
       listPrincipalTokens: `/v1/principals/${(await get('/v1/me')).json<{ id: string }>().id}/tokens`,
     };
-    // Every route that answers a list: a new one is listed here, and so paged, or this fails.
+    // Every route that answers a list: a new one is listed here, and so paged, or this fails. What
+    // waits is capped at 20 with its total, never paged (the HM plan, HM-A).
+    const capped = ['getAttention'];
     const listings = allRoutes.filter(
       (route) =>
         route.method === 'GET' &&
+        !capped.includes(route.operationId) &&
         'items' in ((route.responses[200]?.schema as { shape?: object } | undefined)?.shape ?? {}),
     );
     expect(listings.map((route) => route.operationId).sort()).toEqual(

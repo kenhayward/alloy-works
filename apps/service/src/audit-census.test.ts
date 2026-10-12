@@ -133,6 +133,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   startReview: { none: 'started' },
   completeReview: writes('review.completed'),
   reopenReview: writes('review.reopened'),
+  getAttention: read,
   listInbox: read,
   markNotificationRead: { none: 'inbox' },
   deleteNotification: { none: 'inbox' },
