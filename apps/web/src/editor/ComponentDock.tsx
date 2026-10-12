@@ -5,7 +5,8 @@ import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { PaneToggle, type Pane } from '../layouts/PaneWidth.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import styles from './ComponentDock.module.css';
-import { VersionList } from './VersionList.js';
+import type { Mine } from './ComponentEditor.js';
+import { VersionsPanel } from './VersionsPanel.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -35,6 +36,7 @@ export function ComponentDock({
   table = { holds: false, entered: 0 },
   onTableHost = () => {},
   pane,
+  mine,
 }: {
   client: Client;
   id: string;
@@ -44,6 +46,8 @@ export function ComponentDock({
   onTableHost?: (host: HTMLElement | null) => void;
   /** Its width and whether it is hidden to a rail, which the page draws; kept mounted while hidden. */
   pane?: Pane;
+  /** What the editor opened and shows now, for My changes (CNT-113). */
+  mine?: () => Mine | null;
 }) {
   const [chosen, setChosen] = useState<PanelKey>('attributes');
   useEffect(() => {
@@ -97,7 +101,9 @@ export function ComponentDock({
           className={styles['panel']}
           hidden={shown !== 'versions'}
         >
-          {shown === 'versions' && <VersionList client={client} id={id} />}
+          {shown === 'versions' && (
+            <VersionsPanel client={client} id={id} {...(mine ? { mine } : {})} />
+          )}
         </div>
         <div
           id={ids('access').panel}

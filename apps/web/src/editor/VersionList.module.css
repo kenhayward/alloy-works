@@ -9,7 +9,7 @@
 
 .version {
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 48px 1fr auto;
   gap: var(--space-8);
   font-size: var(--size-13);
 }
@@ -32,4 +32,28 @@
   margin: 0;
   color: var(--muted);
   font-size: var(--size-13);
+}
+
+.compare {
+  align-self: start;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  align-items: flex-start;
+}
+
+.compared {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-self: stretch;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
 }

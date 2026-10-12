@@ -9,7 +9,7 @@
  */
 
 const DOCUMENTS =
-  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26}))?)?)?$/;
+  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/compare\/(now|[0-9a-f-]{36}))?)?)?$/;
 
 /**
  * What a `#/documents...` address names: the list, one document, one node of one document, or the
@@ -25,14 +25,24 @@ export type DocumentAddress =
       readonly document: string;
       readonly baseline: string;
       readonly node: string | null;
+    }
+  /** A baseline compared with a later one, or with the document now (VER-025; the CP plan). */
+  | {
+      readonly kind: 'comparison';
+      readonly document: string;
+      readonly baseline: string;
+      readonly against: string;
     };
 
 export function documentAddress(hash: string): DocumentAddress | null {
   const matched = DOCUMENTS.exec(hash);
   if (!matched) return null;
-  const [, document, node, access, baseline, pinned] = matched;
+  const [, document, node, access, baseline, pinned, against] = matched;
   if (document === undefined) return { kind: 'documents' };
   if (access !== undefined) return { kind: 'access', document };
+  if (baseline !== undefined && against !== undefined) {
+    return { kind: 'comparison', document, baseline, against };
+  }
   if (baseline !== undefined) return { kind: 'baseline', document, baseline, node: pinned ?? null };
   return { kind: 'document', document, node: node ?? null };
 }
@@ -68,6 +78,11 @@ export function documentLink(document: string): string {
  */
 export function baselineLink(document: string, baseline: string, node?: string): string {
   return `#/documents/${document}/baselines/${baseline}${node === undefined ? '' : `/nodes/${node}`}`;
+}
+
+/** The address of a baseline compared with a later one, or with the document `now`. */
+export function comparisonLink(document: string, baseline: string, against: string): string {
+  return `#/documents/${document}/baselines/${baseline}/compare/${against}`;
 }
 
 /** The address of one node of one document. */

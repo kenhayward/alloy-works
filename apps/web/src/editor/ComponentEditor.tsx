@@ -1,4 +1,5 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
+import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
   bindingsIn,
@@ -180,7 +181,18 @@ const EquationDialog = lazy(() =>
 
 type Client = ReturnType<typeof createApiClient>;
 
+/** The version an editor opened and what it shows now: what My changes compares (CNT-113). */
+export interface Mine {
+  readonly older: ContentDocument;
+  readonly newer: ContentDocument;
+}
+
 export interface ComponentEditorProps {
+  /**
+   * Handed a way to read the version this editor opened and what it shows now, once both are there,
+   * and null once they are not (the CP plan, CP-E): My changes compares them in the browser.
+   */
+  readonly onMine?: (mine: (() => Mine) | null) => void;
   readonly componentId: string;
   readonly client: Client;
   /** The signed-in principal, to tell this author's other window from somebody else. */
@@ -460,6 +472,7 @@ export function ComponentEditor({
   bridge = resolveBridge(),
   onBoundTables,
   onSaved,
+  onMine,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // The bound tables told to the page, by their nodes' attributes: told again only when one changes.
@@ -1038,6 +1051,18 @@ export function ComponentEditor({
   }, [client, componentId, attempt]);
 
   const component = loaded.state === 'open' ? loaded.component : null;
+
+  // My changes (CNT-113): the version opened and the surface as it is, read when asked, never stored.
+  useEffect(() => {
+    if (!onMine) return undefined;
+    if (!component || !surface) {
+      onMine(null);
+      return undefined;
+    }
+    const older = parseContentDocument(component.content);
+    onMine(() => ({ older, newer: fromEditor(surface.state.doc) }));
+    return () => onMine(null);
+  }, [onMine, component, surface]);
 
   useEffect(() => {
     if (!component || !place.current) return undefined;

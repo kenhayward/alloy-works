@@ -167,6 +167,21 @@ describe('the Baselines tab', () => {
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
   });
 
+  it('VER-025 offers to compare a baseline with a later one, or with the document now', async () => {
+    const { client } = service(['Issue 1', 'Issue 2']);
+    render(
+      <BaselinesTab client={client} document={DOCUMENT} version={VERSION} mayPublish={false} />,
+    );
+    const first = await screen.findByRole('listitem', { name: /Issue 1/ });
+    const link = within(first).getByRole('link', { name: 'Compare' });
+    expect(link).toHaveAttribute('href', `#/documents/${DOCUMENT}/baselines/${id(1)}/compare/now`);
+    await userEvent.selectOptions(within(first).getByLabelText('Compare with'), 'Issue 2');
+    expect(link).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}/baselines/${id(1)}/compare/${id(2)}`,
+    );
+  });
+
   it('says when the document has none yet', async () => {
     const { client } = service();
     render(<BaselinesTab client={client} document={DOCUMENT} version={VERSION} mayPublish />);

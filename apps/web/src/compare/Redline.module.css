@@ -1,0 +1,63 @@
+/* A comparison drawn as a redline (the CP plan, Task 3): one unit a row, indented by its depth. */
+.redline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--size-13);
+}
+
+.unit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.unit[data-change='unchanged'] {
+  color: var(--muted);
+}
+
+.badge {
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+.similar {
+  padding: 0 var(--space-4);
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius-8);
+  color: var(--warn);
+  font-size: var(--size-12);
+}
+
+.added {
+  background: var(--ok-bg);
+  color: var(--ok);
+  text-decoration: underline;
+}
+
+.removed {
+  background: var(--danger-bg);
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+}

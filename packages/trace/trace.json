@@ -19045,13 +19045,13 @@
     {
       "id": "VER-049",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 505,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "VER-050",
       "file": "apps/service/src/baseline-routes.test.ts",
-      "line": 479,
+      "line": 483,
       "kind": "title"
     },
     {
@@ -19931,6 +19931,30 @@
       "kind": "title"
     },
     {
+      "id": "VER-024",
+      "file": "apps/web/src/compare/BaselineComparisonPage.test.tsx",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "VER-030",
+      "file": "apps/web/src/compare/BaselineComparisonPage.test.tsx",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "VER-029",
+      "file": "apps/web/src/compare/Redline.test.tsx",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "VER-030",
+      "file": "apps/web/src/compare/Redline.test.tsx",
+      "line": 32,
+      "kind": "title"
+    },
+    {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
       "line": 669,
@@ -20321,6 +20345,30 @@
       "kind": "title"
     },
     {
+      "id": "CNT-111",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-112",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-113",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "COL-026",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 80,
+      "kind": "title"
+    },
+    {
       "id": "DAT-047",
       "file": "apps/web/src/editor/bindings.test.ts",
       "line": 151,
@@ -20420,6 +20468,12 @@
       "id": "VER-017",
       "file": "apps/web/src/structure/BaselinesTab.test.tsx",
       "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "VER-025",
+      "file": "apps/web/src/structure/BaselinesTab.test.tsx",
+      "line": 170,
       "kind": "title"
     },
     {
@@ -20677,7 +20731,13 @@
     {
       "id": "STR-047",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 17,
+      "line": 35,
+      "kind": "title"
+    },
+    {
+      "id": "VER-025",
+      "file": "apps/web/src/structure/links.test.ts",
+      "line": 18,
       "kind": "title"
     },
     {
@@ -22159,31 +22219,31 @@
     {
       "id": "VER-024",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 89,
+      "line": 95,
       "kind": "title"
     },
     {
       "id": "VER-027",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 52,
+      "line": 58,
       "kind": "title"
     },
     {
       "id": "VER-028",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 65,
+      "line": 71,
       "kind": "title"
     },
     {
       "id": "VER-029",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 78,
+      "line": 84,
       "kind": "title"
     },
     {
       "id": "VER-051",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 216,
+      "line": 222,
       "kind": "title"
     },
     {
@@ -22879,7 +22939,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 641,
+      "line": 643,
       "kind": "title"
     },
     {

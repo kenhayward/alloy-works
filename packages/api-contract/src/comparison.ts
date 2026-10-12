@@ -93,6 +93,9 @@ export const BaselineComparisonView = z.object({
   older: Side,
   newer: Side,
   structure: z.array(UnitChangeView).describe("The outline's changes"),
+  titles: z
+    .array(z.object({ node: z.string(), title: z.string() }))
+    .describe('Each reference the caller may read, by the title of the component it places'),
   components: z
     .array(
       z.object({

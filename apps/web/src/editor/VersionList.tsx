@@ -5,7 +5,9 @@ import styles from './VersionList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-interface Version {
+/** A version as the list shows it. */
+export interface ListedVersion {
+  readonly id: string;
   readonly number: string;
   readonly createdAt: string;
   readonly author: string | null;
@@ -18,8 +20,19 @@ const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
  * A component's versions, newest first: each number, who cut it and when, and its note. The latest
  * `limit` of them, or as many as one page holds.
  */
-export function VersionList({ client, id, limit }: { client: Client; id: string; limit?: number }) {
-  const [versions, setVersions] = useState<readonly Version[] | null | undefined>(undefined);
+export function VersionList({
+  client,
+  id,
+  limit,
+  onCompare,
+}: {
+  client: Client;
+  id: string;
+  limit?: number;
+  /** Offered on each version but the latest: compares it with the latest (CNT-111). */
+  onCompare?: (version: ListedVersion, latest: ListedVersion) => void;
+}) {
+  const [versions, setVersions] = useState<readonly ListedVersion[] | null | undefined>(undefined);
 
   useEffect(() => {
     let current = true;
@@ -33,6 +46,7 @@ export function VersionList({ client, id, limit }: { client: Client; id: string;
         setVersions(
           data
             ? data.items.map((each) => ({
+                id: each.id,
                 number: each.number,
                 createdAt: each.createdAt,
                 author: each.author?.name ?? null,
@@ -60,6 +74,16 @@ export function VersionList({ client, id, limit }: { client: Client; id: string;
             {`${version.author ?? 'Unknown'}, ${day.format(new Date(version.createdAt))}`}
             {version.note !== null && <span className={styles['note']}>{version.note}</span>}
           </span>
+          {onCompare && version !== versions[0] && (
+            <button
+              type="button"
+              className={styles['compare']}
+              aria-label={`Compare ${version.number} with ${versions[0]!.number}`}
+              onClick={() => onCompare(version, versions[0]!)}
+            >
+              Compare
+            </button>
+          )}
         </li>
       ))}
     </ul>

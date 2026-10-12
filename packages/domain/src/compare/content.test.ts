@@ -6,7 +6,13 @@ import {
   type OutlineDocument,
   type OutlineNode,
 } from '../structure/outline.js';
-import { compareContent, compareOutlines, createMeter, type UnitChange } from './content.js';
+import {
+  compareContent,
+  compareOutlines,
+  createMeter,
+  unitTexts,
+  type UnitChange,
+} from './content.js';
 
 const text = (value: string) => ({ type: 'text' as const, value, marks: [] });
 const para = (id: string, value: string, style = 'body'): BlockNode => ({
@@ -231,6 +237,13 @@ describe('comparing two versions of a component', () => {
     // are compared word by word.
     expect(meter.similarityPairs).toBe(0);
     expect(meter.wordCells).toBeLessThan(10 * 15 * 15);
+  });
+});
+
+describe('the text of each unit', () => {
+  it('prints each unit’s own text by its key, a footnote standing as one character', () => {
+    const texts = unitTexts(docOf(para('p1', 'Set the tray.')));
+    expect(texts.get('p1')).toEqual({ type: 'paragraph', parent: 'root', text: 'Set the tray.' });
   });
 });
 

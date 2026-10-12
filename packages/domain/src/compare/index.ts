@@ -1,2 +1,16 @@
-export { compareContent, compareOutlines, createMeter, SIMILARITY_THRESHOLD } from './content.js';
-export type { ContentComparison, Meter, TextEdit, UnitChange, WordOp } from './content.js';
+export {
+  compareContent,
+  compareOutlines,
+  createMeter,
+  outlineTexts,
+  SIMILARITY_THRESHOLD,
+  unitTexts,
+} from './content.js';
+export type {
+  ContentComparison,
+  Meter,
+  TextEdit,
+  UnitChange,
+  UnitText,
+  WordOp,
+} from './content.js';

@@ -6361,6 +6361,7 @@ export interface operations {
                      *         "outline": {}
                      *       },
                      *       "structure": [],
+                     *       "titles": [],
                      *       "components": []
                      *     }
                      */
@@ -6446,6 +6447,11 @@ export interface operations {
                             split: string | null;
                             joined: string | null;
                         })[];
+                        /** @description Each reference the caller may read, by the title of the component it places */
+                        titles: {
+                            node: string;
+                            title: string;
+                        }[];
                         /** @description Each node whose component the caller may read and whose version differs between the two sides */
                         components: {
                             node: string;
