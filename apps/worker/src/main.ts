@@ -12,9 +12,11 @@ import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
 import {
+  foldNotificationDigests,
   sweepExpiredIterations,
   sweepExpiredPreviews,
   sweepExpiredSignIns,
+  sweepOldNotifications,
   sweepStalePresence,
   sweepUncheckedPublications,
 } from './sweep.js';
@@ -80,6 +82,13 @@ const sweep = setInterval(() => {
   void sweepExpiredIterations(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired iterations'))
     .catch((error: unknown) => log.error({ err: error }, 'iteration sweep failed'));
+  // The inbox's daily digests, after 07:00 UTC, and notifications past 90 days (the TH plan, TH-F, TH-H).
+  void foldNotificationDigests(db, log)
+    .then((made) => made > 0 && log.info({ made }, 'folded inbox digests'))
+    .catch((error: unknown) => log.error({ err: error }, 'digest fold failed'));
+  void sweepOldNotifications(db, log)
+    .then((removed) => removed > 0 && log.info({ removed }, 'swept old notifications'))
+    .catch((error: unknown) => log.error({ err: error }, 'notification sweep failed'));
   // Checks that gave up, five minutes after their publication was recorded, queued again, and those
   // that gave up three times left (W14.1).
   void sweepUncheckedPublications(db, queue, log)

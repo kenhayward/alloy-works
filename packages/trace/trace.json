@@ -19033,7 +19033,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 280,
+      "line": 289,
       "kind": "title"
     },
     {
@@ -19279,7 +19279,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 997,
+      "line": 1024,
       "kind": "title"
     },
     {
@@ -19508,6 +19508,36 @@
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
       "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "COL-015",
+      "file": "apps/service/src/inbox-routes.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "COL-034",
+      "file": "apps/service/src/inbox-routes.test.ts",
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "COL-036",
+      "file": "apps/service/src/inbox-routes.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "COL-062",
+      "file": "apps/service/src/inbox-routes.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "COL-063",
+      "file": "apps/service/src/inbox-routes.test.ts",
+      "line": 185,
       "kind": "title"
     },
     {
@@ -21155,6 +21185,18 @@
       "kind": "title"
     },
     {
+      "id": "COL-035",
+      "file": "apps/worker/src/inbox-sweep.test.ts",
+      "line": 111,
+      "kind": "title"
+    },
+    {
+      "id": "COL-062",
+      "file": "apps/worker/src/inbox-sweep.test.ts",
+      "line": 111,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
       "line": 142,
@@ -21986,6 +22028,48 @@
       "id": "IAM-075",
       "file": "packages/db/src/idempotency.test.ts",
       "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "COL-015",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "COL-034",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 207,
+      "kind": "title"
+    },
+    {
+      "id": "COL-035",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 229,
+      "kind": "title"
+    },
+    {
+      "id": "COL-036",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "COL-053",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 229,
+      "kind": "title"
+    },
+    {
+      "id": "COL-062",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 286,
+      "kind": "title"
+    },
+    {
+      "id": "COL-063",
+      "file": "packages/db/src/inbox.test.ts",
+      "line": 170,
       "kind": "title"
     },
     {

@@ -188,6 +188,8 @@ const OTHER_TENANT_IDS: Readonly<
   addComment: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
   editComment: async (tenant, db) => ({ id: await threadIn(tenant, db), comment: SESSION }),
   resolveThread: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
+  markNotificationRead: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
+  deleteNotification: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   takeLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -344,6 +346,7 @@ const VALID_INPUT: Readonly<
   },
   addComment: { payload: { parts: [{ text: 'Hm' }] } },
   editComment: { payload: { parts: [{ text: 'Hm' }] } },
+  setInboxPreferences: { payload: { mention: 'daily' } },
   publishBaseline: { payload: { formats: ['pdf'] } },
   compareComponentVersions: { query: `from=${SESSION}&to=${SESSION}` },
   compareBaseline: { query: 'with=now' },
@@ -792,6 +795,30 @@ const threadIn = async (tenant: Tenant, db: TenantDatabase) => {
     });
     if (started.answer !== 'done') throw new Error(`refused: ${started.answer}`);
     return started.thread;
+  });
+};
+
+/** A notification in environment B, to the author of its thread's component, about it. */
+const notificationIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const thread = await threadIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const on = await trx
+      .selectFrom('thread')
+      .select(['on_id', 'created_by'])
+      .where('id', '=', thread)
+      .executeTakeFirstOrThrow();
+    const made = await trx
+      .insertInto('notification')
+      .values({
+        recipient: on.created_by,
+        kind: 'reply',
+        actor: on.created_by,
+        thread_id: thread,
+        artifact_id: on.on_id,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return made.id;
   });
 };
 

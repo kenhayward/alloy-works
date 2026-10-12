@@ -1,11 +1,13 @@
 import {
   CHECK_GIVE_UPS,
   enqueueJob,
+  foldDigests,
   labelled,
   publicationsToCheckAgain,
   recordEvent,
   recordCheckGivenUp,
   sweepIterations,
+  sweepNotifications,
   sweepPresence,
   sweepPreviews,
   type JobQueue,
@@ -220,6 +222,44 @@ export async function sweepStalePresence(db: TenantDatabase, log: WorkerLog): Pr
       removed += await db.withTenant(tenant, (trx) => sweepPresence(trx));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the stale presence was not swept');
+    }
+  }
+  return removed;
+}
+
+/**
+ * The inbox's daily digests (COL-035; the TH plan, TH-F), in every tenant: what each person has held
+ * from before the latest 07:00 UTC, folded into one notification each, readability decided again.
+ * Every tick asks; only the first after a boundary finds anything.
+ */
+export async function foldNotificationDigests(
+  db: TenantDatabase,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<number> {
+  let made = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      made += await db.withTenant(tenant, (trx) => foldDigests(trx, now));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the inbox digests were not folded');
+    }
+  }
+  return made;
+}
+
+/** Notifications past their 90 days (COL-062), in every tenant. */
+export async function sweepOldNotifications(
+  db: TenantDatabase,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the old notifications were not swept');
     }
   }
   return removed;

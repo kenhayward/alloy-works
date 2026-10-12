@@ -82,6 +82,7 @@ import {
 } from './oidc.js';
 import { baselineHandlers } from './baselines.js';
 import { threadHandlers } from './threads.js';
+import { inboxHandlers } from './inbox.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
 import { DOWNLOAD_SECONDS, publishingHandlers } from './publishing.js';
@@ -493,6 +494,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...comparisonHandlers(tenantOf, options.objects),
     ...changesHandlers(db, tenantOf),
     ...threadHandlers(),
+    ...inboxHandlers(db, tenantOf, principalOf),
 
     getHealth: async () => ({ status: 'ok' }),
 

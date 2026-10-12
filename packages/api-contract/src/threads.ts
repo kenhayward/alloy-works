@@ -100,6 +100,12 @@ export const ThreadView = z.object({
         .describe('Every text it has had, the latest last'),
     }),
   ),
+  untold: z
+    .array(LowercaseUuid)
+    .optional()
+    .describe(
+      'On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015)',
+    ),
 });
 export type ThreadView = z.infer<typeof ThreadView>;
 

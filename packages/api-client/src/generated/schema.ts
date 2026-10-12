@@ -1399,6 +1399,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller’s notifications, newest first
+         * @description Lists the caller’s notifications, newest first, and how many are unread. A notification names what happened, who did it, and the thread and what it is on by identifier, never the text; a title is shown only where the caller may read it now. A digest counts a day’s events.
+         */
+        get: operations["listInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/inbox/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete one of the caller’s notifications
+         * @description Deletes one of the caller’s notifications. Notifications are otherwise kept 90 days.
+         */
+        delete: operations["deleteNotification"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/inbox/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one of the caller’s notifications read
+         * @description Marks one of the caller’s notifications read.
+         */
+        post: operations["markNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/inbox/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How often the caller is told of each kind
+         * @description Reads how often the caller is told of mentions, replies and resolutions: at once, in a daily digest, or never.
+         */
+        get: operations["getInboxPreferences"];
+        /**
+         * Choose how often the caller is told of each kind
+         * @description Chooses how often the caller is told of each kind named. A daily digest is made after 07:00 UTC.
+         */
+        put: operations["setInboxPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invitations": {
         parameters: {
             query?: never;
@@ -10610,6 +10694,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
@@ -30598,6 +30684,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
@@ -32358,6 +32446,507 @@ export interface operations {
             };
             /** @description group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listInbox: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                unread?: "true";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of them */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "notifications": [],
+                     *       "unread": 0,
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        notifications: {
+                            id: string & (unknown & unknown);
+                            /** @enum {string} */
+                            kind: "mention" | "reply" | "resolution" | "digest";
+                            /** @description Who did it; null on a digest */
+                            actor: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            } | null;
+                            /** @description The thread; null on a digest */
+                            thread: (string & (unknown & unknown)) | null;
+                            /** @description What the thread is on; null on a digest */
+                            on: {
+                                id: string & (unknown & unknown);
+                                /** @description Its title, to a reader of it now alone; null to anybody else */
+                                title: string | null;
+                            } | null;
+                            /** @description A digest’s: how many of each kind, on which threads, and where (COL-035) */
+                            counts: {
+                                mention: number;
+                                reply: number;
+                                resolution: number;
+                                threads: (string & (unknown & unknown))[];
+                                places: {
+                                    id: string & (unknown & unknown);
+                                    /** @description Its title, to a reader of it now alone; null to anybody else */
+                                    title: string | null;
+                                }[];
+                            } | null;
+                            /** Format: date-time */
+                            at: string;
+                            read: boolean;
+                        }[];
+                        /** @description How many are unread, of all of them */
+                        unread: number;
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description `invalid_request`: a cursor this listing did not give out */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteNotification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No notification of the caller’s by that id: nobody reads another’s */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    markNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Read */
+            204: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No notification of the caller’s by that id: nobody reads another’s */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getInboxPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Each kind’s cadence */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "mention": "at_once",
+                     *       "reply": "at_once",
+                     *       "resolution": "at_once"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description When a comment names you; at once unless chosen
+                         * @enum {string}
+                         */
+                        mention: "at_once" | "daily" | "never";
+                        /**
+                         * @description A reply on a thread you have commented on; at once unless chosen
+                         * @enum {string}
+                         */
+                        reply: "at_once" | "daily" | "never";
+                        /**
+                         * @description A thread you have commented on resolved; daily unless chosen
+                         * @enum {string}
+                         */
+                        resolution: "at_once" | "daily" | "never";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setInboxPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /**
+                     * @description When a comment names you; at once unless chosen
+                     * @enum {string}
+                     */
+                    mention?: "at_once" | "daily" | "never";
+                    /**
+                     * @description A reply on a thread you have commented on; at once unless chosen
+                     * @enum {string}
+                     */
+                    reply?: "at_once" | "daily" | "never";
+                    /**
+                     * @description A thread you have commented on resolved; daily unless chosen
+                     * @enum {string}
+                     */
+                    resolution?: "at_once" | "daily" | "never";
+                };
+            };
+        };
+        responses: {
+            /** @description Each kind’s cadence, as now chosen */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "mention": "at_once",
+                     *       "reply": "at_once",
+                     *       "resolution": "at_once"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description When a comment names you; at once unless chosen
+                         * @enum {string}
+                         */
+                        mention: "at_once" | "daily" | "never";
+                        /**
+                         * @description A reply on a thread you have commented on; at once unless chosen
+                         * @enum {string}
+                         */
+                        reply: "at_once" | "daily" | "never";
+                        /**
+                         * @description A thread you have commented on resolved; daily unless chosen
+                         * @enum {string}
+                         */
+                        resolution: "at_once" | "daily" | "never";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -42980,6 +43569,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
@@ -43171,6 +43762,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
@@ -43403,6 +43996,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
@@ -43620,6 +44215,8 @@ export interface operations {
                                 at: string;
                             }[];
                         }[];
+                        /** @description On a comment just written: those it names who may not read what the thread is on, and so were told nothing (COL-015) */
+                        untold?: (string & (unknown & unknown))[];
                     };
                 };
             };
