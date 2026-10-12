@@ -186,6 +186,8 @@ type Client = ReturnType<typeof createApiClient>;
 export interface Mine {
   readonly older: ContentDocument;
   readonly newer: ContentDocument;
+  /** Whether the caller may edit it, and so restore an earlier version (the RS plan, RS-H). */
+  readonly mayEdit?: boolean;
 }
 
 export interface ComponentEditorProps {
@@ -1100,7 +1102,8 @@ export function ComponentEditor({
       return undefined;
     }
     const older = parseContentDocument(component.content);
-    onMine(() => ({ older, newer: fromEditor(surface.state.doc) }));
+    const { mayEdit } = component;
+    onMine(() => ({ older, newer: fromEditor(surface.state.doc), mayEdit }));
     return () => onMine(null);
   }, [onMine, component, surface]);
 

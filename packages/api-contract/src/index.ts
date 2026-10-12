@@ -58,6 +58,13 @@ export {
   SavedIterationQuery,
 } from './editing.js';
 export {
+  RestorationView,
+  RestoreAnswer,
+  RestoreBody,
+  RestoreParams,
+  restoreRoutes,
+} from './restore.js';
+export {
   GrantBody,
   GrantList,
   GrantListQuery,

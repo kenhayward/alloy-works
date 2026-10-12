@@ -567,6 +567,18 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .getByRole('tabpanel', { name: 'Versions' })
           .getByRole('list', { name: 'Versions' }),
       });
+      // Restore on an earlier version (the RS plan, RS-H): what it would make, or why it may not.
+      const versionsPanel = page.getByRole('tabpanel', { name: 'Versions' });
+      await versionsPanel
+        .getByRole('button', { name: /^Restore \d/ })
+        .first()
+        .click();
+      const restoring = versionsPanel.getByRole('region', { name: /^Restore \d/ });
+      await restoring
+        .getByText(/^A new version after|could not be read/)
+        .first()
+        .waitFor({ timeout: 15_000 });
+      await check('the Versions panel previewing a restore', { shows: restoring });
       await componentPanels.getByRole('tab', { name: 'Access' }).click();
       await check('the Access panel', {
         shows: page

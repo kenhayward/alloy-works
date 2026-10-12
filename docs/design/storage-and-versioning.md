@@ -83,6 +83,14 @@ prevents it. Refusing it in the database would take a trigger, which
 or a closed record of the definitions on the version row itself. Until a design chooses, both claims
 stand on the grant and the digest, and this is what they do not cover.
 
+**A restore is VER-006's one exception**: the one version not promoted from an iteration. It is a new
+version, numbered after the latest, made by `restoreVersion` (`packages/db/src/restore.ts`) for a
+component, with `restored_from` naming its source (0082; the [RS plan](../plans/2026-10-12-rs-restore-and-repoint.md),
+RS-B, RS-C). Its content is the earlier version's **as read now** - migrated to today's schema by
+`readContent` - so its digest may differ from its source's; its values are the earlier ones carried
+forward over the definitions current now, refused only on a `fixed` value, as a cut is. The preview
+and the write share one resolver (VER-035). A document's restore is RS2's.
+
 **VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that
 with VER-023's foreign key. VER-044 records why that answer was aimed at nothing: a restore inserts a

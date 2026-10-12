@@ -329,6 +329,13 @@ export function componentHandlers(
           createdAt: each.createdAt.toISOString(),
           author: each.author,
           note: each.note,
+          restoredFrom:
+            each.restoredFrom === null
+              ? null
+              : {
+                  id: each.restoredFrom.id,
+                  number: `${each.restoredFrom.revision}.${each.restoredFrom.version}`,
+                },
         })),
         next: versionCursor(page.next),
       };

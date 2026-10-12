@@ -85,6 +85,7 @@ import { threadHandlers } from './threads.js';
 import { attentionHandlers } from './attention.js';
 import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
+import { restoreHandlers } from './restore.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
@@ -501,6 +502,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...attentionHandlers(db, tenantOf, principalOf),
     ...suggestionHandlers(),
     ...roundHandlers(),
+    ...restoreHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

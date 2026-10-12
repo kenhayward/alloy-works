@@ -377,6 +377,8 @@ describe('the version chain as stored', () => {
         'note',
         // A document's parameters (0057), held to documents by a check: closed, as its values are.
         'parameters',
+        // The version a restore made it from (0082): authorship, about the row, as the note is.
+        'restored_from',
         'revision_no',
         'schema_version',
         'version_digest',

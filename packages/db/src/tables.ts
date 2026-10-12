@@ -270,6 +270,8 @@ export interface ArtifactVersionTable {
   /** A document's parameters, by name (0057); null for every other kind, and for a document with none. */
   parameters: ColumnType<Record<string, unknown> | null, string | null | undefined, never>;
   component_type_version_id: ColumnType<string | null, string | null, never>;
+  /** The earlier version of the same artifact a restore made this from (0082); null for any other. */
+  restored_from: ColumnType<string | null, string | undefined, never>;
   /** Generated: `componentType` when the type is set, the key tying it to what the version records. */
   component_type_kind: ColumnType<'componentType' | null, never, never>;
   version_digest: ColumnType<string, string, never>;

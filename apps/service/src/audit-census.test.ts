@@ -144,6 +144,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   releaseLock: { none: 'lock' },
   saveIteration: { none: 'iteration' },
   cutVersion: writes('content.version_cut'),
+  previewRestore: read,
+  restoreVersion: writes('content.restored', 'content.version_cut'),
   listIterations: read,
   getIteration: read,
   // What is offered to the caller to recover, about their own iterations: no act of record (the R2 plan).
