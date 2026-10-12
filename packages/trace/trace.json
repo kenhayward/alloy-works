@@ -19815,7 +19815,7 @@
     {
       "id": "DAT-060",
       "file": "apps/service/src/revisions-routes.test.ts",
-      "line": 227,
+      "line": 233,
       "kind": "rule"
     },
     {
@@ -19827,7 +19827,7 @@
     {
       "id": "DAT-063",
       "file": "apps/service/src/revisions-routes.test.ts",
-      "line": 262,
+      "line": 270,
       "kind": "title"
     },
     {
@@ -20290,6 +20290,12 @@
       "id": "VER-030",
       "file": "apps/web/src/compare/Redline.test.tsx",
       "line": 32,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-062",
+      "file": "apps/web/src/data/ProvenancePanel.test.tsx",
+      "line": 11,
       "kind": "title"
     },
     {
@@ -20905,6 +20911,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-060",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 533,
+      "kind": "title"
+    },
+    {
       "id": "DAT-070",
       "file": "apps/web/src/structure/DataTab.test.tsx",
       "line": 233,
@@ -20914,6 +20926,12 @@
       "id": "DAT-091",
       "file": "apps/web/src/structure/DataTab.test.tsx",
       "line": 395,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 525,
       "kind": "title"
     },
     {
@@ -21069,13 +21087,19 @@
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1418,
+      "line": 1445,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1349,
+      "line": 1376,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
+      "line": 1195,
       "kind": "title"
     },
     {
@@ -21157,6 +21181,30 @@
       "kind": "title"
     },
     {
+      "id": "DAT-057",
+      "file": "apps/web/src/structure/RevisionDialog.test.tsx",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-063",
+      "file": "apps/web/src/structure/RevisionDialog.test.tsx",
+      "line": 118,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-063",
+      "file": "apps/web/src/structure/dataStates.test.ts",
+      "line": 94,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "apps/web/src/structure/dataStates.test.ts",
+      "line": 84,
+      "kind": "title"
+    },
+    {
       "id": "STR-047",
       "file": "apps/web/src/structure/links.test.ts",
       "line": 35,
@@ -21202,6 +21250,12 @@
       "id": "STR-045",
       "file": "apps/web/src/structure/position.test.ts",
       "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-060",
+      "file": "apps/web/src/structure/settleBinding.test.ts",
+      "line": 388,
       "kind": "title"
     },
     {
@@ -23553,7 +23607,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 654,
+      "line": 655,
       "kind": "title"
     },
     {
@@ -24685,6 +24739,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-115",
+      "file": "packages/editor/src/bindings.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
       "id": "DAT-047",
       "file": "packages/editor/src/boundImages.test.ts",
       "line": 277,
@@ -24718,6 +24778,12 @@
       "id": "DAT-047",
       "file": "packages/editor/src/boundTables.test.ts",
       "line": 298,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-115",
+      "file": "packages/editor/src/boundTables.test.ts",
+      "line": 483,
       "kind": "title"
     },
     {
