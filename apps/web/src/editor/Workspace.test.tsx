@@ -9,6 +9,7 @@ import {
   DOCUMENT as PAGE_DOCUMENT,
   INTRODUCTION,
   outline,
+  PUBLISH_REQUEST,
   section,
   service as documentService,
 } from '../structure/test/documentPage.js';
@@ -865,6 +866,26 @@ describe('the workspace', () => {
       'true',
     );
     expect(window.localStorage.getItem(DOCK_KEY)).toBe('lists');
+  });
+
+  it('shows the failed publish a Publishing address names', async () => {
+    const fake = documentService(outline([section(INTRODUCTION, 'Introduction')]), {
+      mayPublish: true,
+      publishFailures: [
+        { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
+      ],
+    });
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      return new URL(request.url).pathname === '/v1/me' ? json(200, me) : fake.fetch(input, init);
+    }) as unknown as typeof fetch;
+    window.location.hash = `#/documents/${PAGE_DOCUMENT}/publishing/requests/${PUBLISH_REQUEST}`;
+    render(<Workspace fetch={fetching} />);
+    expect(
+      await screen.findByText(
+        'The publication could not be made, and nothing in the document caused it. Publish again later.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('answers a link into a document the caller may not read as nothing there, saying nothing of the node', async () => {

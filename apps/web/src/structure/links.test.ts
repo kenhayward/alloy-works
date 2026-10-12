@@ -95,13 +95,29 @@ describe('the addresses of a document and its nodes', () => {
     });
   });
 
-  it('addresses a document opened at its Publishing panel, and reads it back', () => {
+  it('addresses a document opened at its Publishing panel, and at a failed request there, and reads them back', () => {
+    const REQUEST = 'ffffffff-0000-4000-8000-000000000001';
     expect(publishingLink(DOCUMENT)).toBe(`#/documents/${DOCUMENT}/publishing`);
     expect(documentAddress(publishingLink(DOCUMENT))).toEqual({
       kind: 'publishing',
       document: DOCUMENT,
+      request: null,
     });
-    expect(documentAddress(`#/documents/${DOCUMENT}/publishing/more`)).toBeNull();
+    expect(publishingLink(DOCUMENT, REQUEST)).toBe(
+      `#/documents/${DOCUMENT}/publishing/requests/${REQUEST}`,
+    );
+    expect(documentAddress(publishingLink(DOCUMENT, REQUEST))).toEqual({
+      kind: 'publishing',
+      document: DOCUMENT,
+      request: REQUEST,
+    });
+    for (const other of [
+      `#/documents/${DOCUMENT}/publishing/more`,
+      `#/documents/${DOCUMENT}/publishing/requests`,
+      `#/documents/${DOCUMENT}/publishing/requests/${REQUEST}/more`,
+    ]) {
+      expect(documentAddress(other), other).toBeNull();
+    }
   });
 });
 

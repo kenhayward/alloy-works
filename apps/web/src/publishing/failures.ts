@@ -1,3 +1,5 @@
+import type { PublishFailureCode } from '@alloy-works/domain';
+
 /** One failure as the service answers it (`PublishFailureView`). */
 export interface Failure {
   readonly stage: string;
@@ -483,6 +485,93 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     default:
       return 'The publication could not be made. Publish again.';
   }
+}
+
+/**
+ * Each code in a sentence that needs neither its `detail` nor its place (home.md, Needs your
+ * attention): said away from the document, of the publish as a whole, so it names nothing of the
+ * author's text. The full words, at each place, are the Publishing panel's (`failureWords`).
+ */
+export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
+  occurrence_unreadable: 'It places a component you may not read.',
+  occurrence_unresolved: 'A reference in it waits on an approved version.',
+  asset_unreadable: 'A figure in it shows an image you may not see.',
+  component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',
+  title_not_publishable: 'A title in it holds something that cannot be published yet.',
+  block_not_publishable: 'It holds a block that cannot be published yet.',
+  inline_not_publishable: 'Its text holds an item that cannot be published yet.',
+  style_missing: "It uses a style the publication's theme does not have.",
+  language_not_publishable: 'It names a language a publication cannot take.',
+  glyph_missing: 'It holds a character that no typeface it can use has.',
+  character_disallowed: 'It holds an invisible character that cannot be published.',
+  nothing_to_publish: 'There is nothing in it to publish.',
+  layout_glyph_missing: 'Its layout uses a character that no typeface it can use has.',
+  layout_language_not_publishable: 'Its layout is in a language that cannot be published.',
+  code_glyph_missing: 'Its code holds a character the monospace typeface does not have.',
+  line_too_wide: 'A line of its preformatted text is too wide for the page.',
+  table_without_caption: 'A table in it has no caption.',
+  table_header_spans_body: 'A header cell of a table in it spans rows that are not header rows.',
+  figure_without_caption: 'A figure in it has no caption.',
+  alternative_missing: 'An image or an equation in it has no way to be read aloud.',
+  caption_too_long: "A figure's caption is too long to stand on a page with its image.",
+  image_too_wide: 'An image in a line of its text is wider than the room it stands in.',
+  image_in_caption: 'A caption in it holds an image.',
+  footnote_not_publishable_here: 'A footnote in it stands where it cannot be published.',
+  footnote_anchor_unresolved: 'A footnote in it is anchored to a cell its table does not have.',
+  footnote_empty: 'A footnote in it has no text.',
+  footnote_unnumbered: 'A footnote in it would print with no number.',
+  cross_reference_unresolved: 'A cross-reference in it points at something it does not hold.',
+  cross_reference_form_unavailable:
+    'A cross-reference in it asks for a form of its target that cannot be shown.',
+  equation_unrenderable: 'An equation in it holds something the typesetter cannot set.',
+  equation_unnumbered: 'An equation in it would print with no number.',
+  math_glyph_missing: 'An equation in it holds a character the maths typeface cannot set.',
+  style_not_applicable: 'It uses a style where that style cannot be used.',
+  typeface_not_embeddable: 'Its theme uses a typeface whose licence does not permit embedding it.',
+  typeface_unavailable: 'Its theme names a typeface it cannot be set in.',
+  continuation_words_missing: "Its layout has no words for a table's continuation label.",
+  word_not_yet: 'It holds something that cannot be published in Word yet.',
+  format_unsupported: 'Its layout has no page for Word.',
+  numbering_not_in_word: 'Word would number something in it differently from the PDF.',
+  list_not_in_word: 'Word cannot print a list in it as the PDF prints it.',
+  cross_reference_not_in_word: 'Word cannot print a cross-reference in it as the PDF prints it.',
+  preview_words_missing: "Its layout has no words for a preview's notice.",
+  heading_too_deep: 'A heading in it is nested more than six levels deep.',
+  binding_unresolved: 'A value in it has no result.',
+  value_none: "A value's result in it has no row.",
+  value_many: "A value's result in it has more than one row.",
+  row_missing: "A value's result in it has no row with the key the value names.",
+  value_null: 'A value in it takes an empty cell.',
+  value_empty: 'A value in it takes a cell holding only spaces.',
+  take_invalid: 'A value in it names a column its result does not have.',
+  result_unreadable: "A value's stored result in it could not be read.",
+  image_description_missing: 'An image bound in it has no description.',
+  image_not_placeable: 'An image in it stands in a footnote or a caption.',
+  value_not_image: "A figure's value in it is not an image.",
+  column_missing: 'A table in it uses a column its result does not have.',
+  column_image: 'A table in it shows a column of images.',
+  format_mismatch: "A table in it has a column format that does not apply to the column's values.",
+  table_too_long: 'A table in it has more rows than a table can print.',
+  table_words_missing:
+    "Its layout has no words for a table's empty result, a missing value or its source.",
+  key_required: 'A table in it needs a key to find a row by.',
+  note_row_missing: 'A note on a table in it names a row its result no longer has.',
+  revision_row_missing: 'A value revised by hand in it is on a row its result no longer has.',
+  revision_column_unavailable:
+    'A value revised by hand in it is in a column its table no longer shows as it did.',
+  subtotal_not_boolean: 'A table in it marks subtotals with a column not holding true or false.',
+  subtotal_ambiguous: 'A table in it has a row marked a subtotal at two levels.',
+  transpose_too_long: 'A transposed table in it has more rows than it can hold.',
+  table_too_wide: 'A table in it is too wide to print.',
+  engine_failed: 'The publication could not be made, and nothing in the document caused it.',
+  store_failed: 'The publication could not be stored. Publish again.',
+};
+
+/** A failed publish's summary by its code; a code this does not know, as a failed publish. */
+export function failureSummary(code: string): string {
+  return Object.hasOwn(FAILURE_SUMMARIES, code)
+    ? FAILURE_SUMMARIES[code as PublishFailureCode]
+    : 'Its latest publish failed. Publish again.';
 }
 
 /** What an author does about a value taken from a result that holds none (B3). */

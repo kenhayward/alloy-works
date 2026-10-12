@@ -44,6 +44,7 @@ import {
   SPACES,
   item,
   json,
+  PUBLISH_REQUEST,
   previewLinks,
   settled,
   SOMEBODY_ELSE,
@@ -1881,6 +1882,34 @@ describe('the address of every node', () => {
     );
     expect(window.localStorage.getItem(DOCK_KEY)).toBe('part');
     window.localStorage.removeItem('aw.document.panels.collapsed');
+  });
+
+  it('shows the failed publish the address names in the Publishing panel, each failure by its place', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
+      mayPublish: true,
+      publishFailures: [
+        {
+          stage: 'compose',
+          code: 'glyph_missing',
+          node: INTRODUCTION,
+          block: 'b1',
+          detail: 'U+0627',
+        },
+      ],
+    });
+    render(
+      <DocumentPage
+        client={client(fake.fetch)}
+        id={DOCUMENT}
+        atPanel={{ panel: 'publishing', arrival: 0, request: PUBLISH_REQUEST }}
+      />,
+    );
+    const pane = await screen.findByRole('complementary', { name: 'Panels beside the text' });
+    const why = await within(pane).findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'The character U+0627 is in no typeface this publication can use.',
+    );
+    expect(why).toHaveTextContent('Introduction');
   });
 
   it("copies the chosen node's address, and says it did", async () => {

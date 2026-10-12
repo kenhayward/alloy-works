@@ -19,6 +19,9 @@ export type PublicationList =
   paths['/v1/publications']['get']['responses']['200']['content']['application/json'];
 export type TemplateList =
   paths['/v1/templates']['get']['responses']['200']['content']['application/json'];
+/** What waits on the caller (home.md, Needs your attention). */
+export type AttentionView =
+  paths['/v1/me/attention']['get']['responses']['200']['content']['application/json'];
 /** The theme and layout a page's text is set in (themes.md, "The theme in the editor"). */
 export type PresentationView =
   paths['/v1/presentation']['get']['responses']['200']['content']['application/json'];

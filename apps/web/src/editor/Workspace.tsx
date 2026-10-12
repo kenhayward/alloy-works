@@ -468,7 +468,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             id={documents.document}
             linked={node === null ? null : { node, arrival: arrivals }}
             atPanel={
-              documents.kind === 'publishing' ? { panel: 'publishing', arrival: arrivals } : null
+              documents.kind === 'publishing'
+                ? { panel: 'publishing', arrival: arrivals, request: documents.request }
+                : null
             }
             onArriveAgain={again}
           />

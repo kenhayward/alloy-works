@@ -1,8 +1,8 @@
-import type { createApiClient } from '@alloy-works/api-client';
+import type { AttentionView, createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
 
 import { connectionLink } from '../data/links.js';
-import { failureWords } from '../publishing/failures.js';
+import { failureSummary } from '../publishing/failures.js';
 import { ModuleIcon } from '../shell/ModuleIcon.js';
 import { MODULE_GROUPS, type Module } from '../shell/modules.js';
 import { publishingLink } from '../structure/links.js';
@@ -48,16 +48,7 @@ async function totals(client: Client): Promise<Record<Counted, number | null>> {
 }
 
 /** One thing waiting on the reader, as `GET /v1/me/attention` answers it. */
-interface Waiting {
-  readonly kind:
-    'publish_failed' | 'changes_not_in_version' | 'published_earlier' | 'connection_untested';
-  readonly artifact: {
-    readonly id: string;
-    readonly kind: 'document' | 'component' | 'connection';
-    readonly title: string | null;
-  };
-  readonly reason?: string;
-}
+type Waiting = AttentionView['items'][number];
 
 type Attending =
   | { readonly state: 'reading' }
@@ -68,7 +59,8 @@ const UNTITLED = { document: 'A document', component: 'A component', connection:
 
 /**
  * What each kind says and where its one link goes (home.md, Needs your attention): a failed publish's
- * reason in the words the Publishing panel says it in.
+ * reason summarised, its full words at each place waiting at the link. A kind this does not know yet
+ * says nothing.
  */
 function wordsFor(item: Waiting) {
   const title = item.artifact.title ?? UNTITLED[item.artifact.kind];
@@ -77,12 +69,9 @@ function wordsFor(item: Waiting) {
     case 'publish_failed':
       return {
         headline: `${title} cannot publish`,
-        detail:
-          item.reason === undefined
-            ? 'Its latest publish failed. Publish again.'
-            : failureWords({ stage: '', code: item.reason, node: null, block: null, detail: null }),
+        detail: failureSummary(item.reason ?? ''),
         action: 'Open publishing',
-        href: publishingLink(id),
+        href: publishingLink(id, item.request),
       };
     case 'changes_not_in_version':
       return {
@@ -105,6 +94,8 @@ function wordsFor(item: Waiting) {
         action: 'Open',
         href: connectionLink(id),
       };
+    default:
+      return null;
   }
 }
 
@@ -120,6 +111,7 @@ const MARKS: Readonly<Record<Waiting['kind'], readonly string[]>> = {
 function WaitingItem({ item }: { item: Waiting }) {
   const id = useId();
   const words = wordsFor(item);
+  if (words === null) return null;
   return (
     <li className={styles['attentionItem']}>
       <span className={styles['attentionMark']} data-kind={item.kind}>

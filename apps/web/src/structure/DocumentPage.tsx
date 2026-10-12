@@ -461,9 +461,14 @@ export interface DocumentPageProps {
   readonly onArriveAgain?: () => void;
   /**
    * The panel the address names (`#/documents/{id}/publishing`; the HM plan, HM-G), and which arrival
-   * of it this is: each opens the pane at it, without remembering either as the reader's choice.
+   * of it this is: each opens the pane at it, without remembering either as the reader's choice. A
+   * failed request of the reader's it names is shown there.
    */
-  readonly atPanel?: { readonly panel: 'publishing'; readonly arrival: number } | null;
+  readonly atPanel?: {
+    readonly panel: 'publishing';
+    readonly arrival: number;
+    readonly request?: string | null;
+  } | null;
   /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
   readonly followMs?: number;
   /** The reader, for a component edited in place; without one, the text is read only. */
@@ -2156,6 +2161,7 @@ export function DocumentPage({
                       }
                       followMs={followMs}
                       formats={document.formats}
+                      shown={atPanel?.request ?? null}
                     />
                   </div>
                 </div>

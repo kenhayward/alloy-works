@@ -112,6 +112,7 @@ export function Publishing({
   followMs = FOLLOW_MS,
   formats = ['pdf'],
   preview,
+  shown = null,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -127,6 +128,12 @@ export function Publishing({
    * they may publish (publishing.md, "Shown beside the text"; PV-B): its pane is the page's to place.
    */
   readonly preview?: Previewing;
+  /**
+   * A request of the reader's that the page's address names (Home's link to a failed publish; the HM
+   * plan, HM-G): read once, and shown as a publish followed here is, if it failed and nothing has
+   * been asked for since.
+   */
+  readonly shown?: string | null;
 }) {
   const offersWord = formats.includes('docx');
   const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
@@ -156,6 +163,23 @@ export function Publishing({
       current = false;
     };
   }, [client, document, listAttempt]);
+
+  useEffect(() => {
+    if (shown === null) return;
+    let current = true;
+    client
+      .GET('/v1/publication-requests/{id}', { params: { path: { id: shown } } })
+      .then(({ data }) => {
+        if (current && isRecord(data) && data.state === 'failed') {
+          const failures = failuresIn(data.failures);
+          setPublish((now) => (now.state === 'idle' ? { state: 'failed', failures } : now));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, shown]);
 
   /** One answer about the request: whether it has settled, and if so, what it came to. */
   const settle = (data: unknown): boolean => {

@@ -29,13 +29,15 @@ const REPORT = 'eeeeeeee-0000-4000-8000-000000000001';
 const AUDIT = 'eeeeeeee-0000-4000-8000-000000000002';
 const PRINTER = 'cccccccc-0000-4000-8000-000000000001';
 const READINGS = 'aaaaaaaa-0000-4000-8000-000000000001';
+const REQUEST = 'ffffffff-0000-4000-8000-000000000001';
 
 const waiting = {
   items: [
     {
       kind: 'publish_failed',
       artifact: { id: REPORT, kind: 'document', title: 'The dosing report' },
-      reason: 'value_none',
+      reason: 'glyph_missing',
+      request: REQUEST,
     },
     {
       kind: 'changes_not_in_version',
@@ -127,9 +129,9 @@ describe('Home', () => {
         link: 'Open publishing',
         said: [
           'The dosing report cannot publish',
-          "This value's result has no row. Change the value, or resolve it again.",
+          'It holds a character that no typeface it can use has.',
         ],
-        href: `#/documents/${REPORT}/publishing`,
+        href: `#/documents/${REPORT}/publishing/requests/${REQUEST}`,
       },
       {
         link: 'Open',
@@ -161,7 +163,24 @@ describe('Home', () => {
     expect(within(section).getByText('2 more')).toBeInTheDocument();
   });
 
-  it('SCH-070 says so when nothing waits on the reader', async () => {
+  it('lists nothing of a kind it does not know, and the rest as ever', async () => {
+    const [failed, ...rest] = waiting.items;
+    const answer = {
+      items: [{ ...failed!, kind: 'something_new' }, ...rest],
+      total: rest.length + 1,
+    };
+    render(
+      <Home client={service({ ...everything, '/v1/me/attention': () => json(200, answer) })} />,
+    );
+
+    expect((await attention()).map((item) => item.said[0])).toEqual([
+      'Install the printer holds changes of yours not in a version',
+      'The audit was published from an earlier version',
+      'Readings has not been tested since its credential was set',
+    ]);
+  });
+
+  it('says so when nothing waits on the reader', async () => {
     render(<Home client={service(everything)} />);
 
     const section = await screen.findByRole('region', { name: 'Needs your attention' });

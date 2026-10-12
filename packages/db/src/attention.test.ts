@@ -8,7 +8,7 @@ import {
 } from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ATTENTION_LIMIT, whatWaits } from './attention.js';
+import { ATTENTION_CHANGES_CHECKED, ATTENTION_LIMIT, whatWaits } from './attention.js';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   createConnection,
@@ -24,7 +24,7 @@ import { migrate } from './migrate.js';
 import { cutVersion } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
 import { failPublicationRequest, recordPublication, requestPublication } from './publishing.js';
-import { discardUnsaved } from './recovery.js';
+import { discardUnsaved, newestUncutIteration } from './recovery.js';
 import { findRole } from './roles.js';
 import { makeBaseline, requestBaselinePublication } from './baselines.js';
 import { createSpace } from './spaces.js';
@@ -155,18 +155,19 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
       return answer.request.id;
     });
 
+  /** A request failed, as a worker records it; answers the request. */
+  const fail = (id: string, code: PublishFailureCode = 'engine_failed') =>
+    as((trx) =>
+      failPublicationRequest(trx, id, [
+        { stage: 'engine', code, node: null, block: null, detail: null },
+      ]),
+    ).then(() => id);
+
   const failed = (
     version: StoredVersion,
     requester: string,
     code: PublishFailureCode = 'engine_failed',
-  ) =>
-    requested(version, requester).then((id) =>
-      as((trx) =>
-        failPublicationRequest(trx, id, [
-          { stage: 'engine', code, node: null, block: null, detail: null },
-        ]),
-      ),
-    );
+  ) => requested(version, requester).then((id) => fail(id, code));
 
   /** A publication made of the document at this version, as a worker records one. */
   const published = (version: StoredVersion, requester: string) =>
@@ -240,7 +241,17 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
       const answer = await as((trx) => cutVersion(trx, { ...editing, openedFrom: made.id }));
       if (answer.answer !== 'recorded') throw new Error(answer.answer);
     };
-    return { id: made.artifactId, save, cut };
+    /** Discard, up to their newest save. */
+    const discard = async () => {
+      const upTo = await as((trx) =>
+        newestUncutIteration(trx, { artifactId: made.artifactId, principalId: author }),
+      );
+      if (upTo === null) throw new Error('Nothing to discard');
+      await as((trx) =>
+        discardUnsaved(trx, { artifactId: made.artifactId, principalId: author }, upTo),
+      );
+    };
+    return { id: made.artifactId, save, cut, discard };
   };
 
   /** A connection whose credential is set, by `by`, and never tested with it. */
@@ -254,21 +265,28 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
       if (answer.answer !== 'created') throw new Error(answer.answer);
       return answer.connection;
     });
-    const set = await as((trx) =>
-      setConnectionCredential(trx, {
-        id: connection.id,
-        sealed: sealSecret(key, 'source-credential', tenant.id, 'an-invented-password'),
-        by,
-        sealedFor: connection.settings,
-      }),
-    );
-    if (set.answer !== 'set') throw new Error(set.answer);
+    const setCredential = async () => {
+      const answer = await as((trx) =>
+        setConnectionCredential(trx, {
+          id: connection.id,
+          sealed: sealSecret(key, 'source-credential', tenant.id, 'an-invented-password'),
+          by,
+          sealedFor: connection.settings,
+        }),
+      );
+      if (answer.answer !== 'set') throw new Error(answer.answer);
+      return answer.credentialId;
+    };
+    let credentialId = await setCredential();
+    const setAgain = async () => {
+      credentialId = await setCredential();
+    };
     const test = () =>
       as((trx) =>
         recordConnectionTest(trx, {
           connectionId: connection.id,
           versionId: connection.version.id,
-          credentialId: set.credentialId,
+          credentialId,
           outcome: 'failed',
           findings: [],
           failure: 'connection_failed',
@@ -285,8 +303,33 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
         });
         if (answer.answer !== 'recorded') throw new Error(answer.answer);
       });
-    return { id: connection.id, test, retire };
+    return { id: connection.id, test, retire, setAgain };
   };
+
+  /** A baseline of this version, the document's latest. */
+  const baselineBy = (version: StoredVersion, name: string, maker: string) =>
+    as(async (trx) => {
+      const made = await makeBaseline(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        name,
+        maker,
+      });
+      if (made.answer !== 'made') throw new Error(made.answer);
+      return made.baseline;
+    });
+
+  /** A publish of the baseline asked for. */
+  const baselineRequested = (baseline: string, requester: string) =>
+    as(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline,
+        formats: ['pdf'],
+        requester,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return asked.request.id;
+    });
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -314,9 +357,9 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
     const component = await componentIn(space, ada, 'Install the printer');
     await component.save('Unbox the printer.');
     const older = await documentIn(space, ada, 'The older report');
-    await failed(older, ada, 'value_none');
+    const olderRequest = await failed(older, ada, 'value_none');
     const newer = await documentIn(space, ada, 'The dosing report');
-    await failed(newer, ada);
+    const newerRequest = await failed(newer, ada);
 
     expect(await waiting(ada)).toEqual({
       items: [
@@ -324,11 +367,13 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
           kind: 'publish_failed',
           artifact: { id: newer.artifactId, kind: 'document', title: 'The dosing report' },
           reason: 'engine_failed',
+          request: newerRequest,
         },
         {
           kind: 'publish_failed',
           artifact: { id: older.artifactId, kind: 'document', title: 'The older report' },
           reason: 'value_none',
+          request: olderRequest,
         },
         {
           kind: 'changes_not_in_version',
@@ -362,29 +407,9 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
 
   it('SCH-070 neither lists nor clears a document as published from an earlier version by a publication of a baseline', async () => {
     const { space, ada } = await fresh();
-    /** A baseline of this version, the document's latest, by Ada. */
-    const baselineOf = (version: StoredVersion, name: string) =>
-      as(async (trx) => {
-        const made = await makeBaseline(trx, {
-          documentId: version.artifactId,
-          version: version.id,
-          name,
-          maker: ada,
-        });
-        if (made.answer !== 'made') throw new Error(made.answer);
-        return made.baseline;
-      });
-    /** A publication of the baseline, as a worker records one. */
+    const baselineOf = (version: StoredVersion, name: string) => baselineBy(version, name, ada);
     const ofBaseline = (baseline: string) =>
-      as(async (trx) => {
-        const asked = await requestBaselinePublication(trx, {
-          baseline,
-          formats: ['pdf'],
-          requester: ada,
-        });
-        if (asked.answer !== 'requested') throw new Error(asked.answer);
-        return asked.request.id;
-      }).then((requestId) => recorded(requestId));
+      baselineRequested(baseline, ada).then((requestId) => recorded(requestId));
 
     // A baseline of the first version, published once the second exists, lists nothing.
     const pinned = await documentIn(space, ada, 'The audit');
@@ -407,6 +432,99 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
     expect((await waiting(ada)).items.map((item) => [item.kind, item.artifact.id])).toEqual([
       ['published_earlier', behind.artifactId],
     ]);
+  });
+
+  it('SCH-070 neither lists nor clears a failed publish by a publish of a baseline', async () => {
+    const { space, ada } = await fresh();
+    // Failed, then a baseline of the same version published: the failure still waits.
+    const failing = await documentIn(space, ada, 'The dosing report');
+    await failed(failing, ada);
+    await recorded(await baselineRequested(await baselineBy(failing, 'Issued', ada), ada));
+    // Published, then a baseline's publish failed: nothing waits.
+    const issued = await documentIn(space, ada, 'The audit');
+    await published(issued, ada);
+    await fail(await baselineRequested(await baselineBy(issued, 'Issued', ada), ada));
+    expect((await waiting(ada)).items.map((item) => [item.kind, item.artifact.id])).toEqual([
+      ['publish_failed', failing.artifactId],
+    ]);
+  });
+
+  it('SCH-070 takes the latest of requests made together by their identifiers, for the failure and for what clears it', async () => {
+    const { space, ada } = await fresh();
+    /**
+     * Two requests made in one transaction, so sharing their time and transaction, the first made with
+     * the lower identifier: a transaction that makes them the other way round is undone and made again.
+     */
+    const together = async (version: StoredVersion) => {
+      for (;;) {
+        const made = await as(async (trx) => {
+          const ask = async () => {
+            const answer = await requestPublication(trx, {
+              documentId: version.artifactId,
+              version: version.id,
+              formats: ['pdf'],
+              requester: ada,
+            });
+            if (answer.answer !== 'requested') throw new Error(answer.answer);
+            return answer.request.id;
+          };
+          const first = await ask();
+          const second = await ask();
+          if (first > second) throw new Error('again');
+          return { first, second };
+        }).catch((error: unknown) => {
+          if (error instanceof Error && error.message === 'again') return null;
+          throw error;
+        });
+        if (made !== null) return made;
+      }
+    };
+    const cleared = await documentIn(space, ada, 'The dosing report');
+    const clearing = await together(cleared);
+    await fail(clearing.first);
+    await recorded(clearing.second);
+    const waits = await documentIn(space, ada, 'The audit');
+    const waited = await together(waits);
+    await recorded(waited.first);
+    await fail(waited.second);
+    expect((await waiting(ada)).items.map((item) => [item.kind, item.artifact.id])).toEqual([
+      ['publish_failed', waits.artifactId],
+    ]);
+  });
+
+  it('SCH-070 lists again what is asked again: a credential set after a test, a save after Discard', async () => {
+    const { space, ada } = await fresh();
+    const connection = await connectionIn(space, ada, 'Readings');
+    await connection.test();
+    const component = await componentIn(space, ada, 'Install the printer');
+    await component.save('Unbox the printer.');
+    await component.discard();
+    expect(await waiting(ada)).toEqual({ items: [], total: 0 });
+
+    await connection.setAgain();
+    await component.save('Unbox the printer, then plug it in.');
+    expect((await waiting(ada)).items.map((item) => [item.kind, item.artifact.id])).toEqual([
+      ['changes_not_in_version', component.id],
+      ['connection_untested', connection.id],
+    ]);
+  });
+
+  it('SCH-070 clears an earlier publication by a later one somebody else made that the person may read', async () => {
+    const { space, ada, grace } = await fresh();
+    const behind = await documentIn(space, ada, 'The audit');
+    await published(behind, ada);
+    const latest = await retitled(behind, ada, 'The audit, revised');
+    expect((await waiting(ada)).total).toBe(1);
+    await published(latest, grace);
+    expect(await waiting(ada)).toEqual({ items: [], total: 0 });
+  });
+
+  it(`checks at most the ${ATTENTION_CHANGES_CHECKED} components holding the person's newest changes`, async () => {
+    const { space, ada } = await fresh();
+    for (let each = 0; each <= ATTENTION_CHANGES_CHECKED; each += 1) {
+      await (await componentIn(space, ada, `Step ${each}`)).save('Unbox the printer.');
+    }
+    expect((await waiting(ada)).total).toBe(ATTENTION_CHANGES_CHECKED);
   });
 
   it('SCH-070 clears each item once the person does what it asks: a publication made, a version cut or the changes discarded, a test run', async () => {
@@ -454,8 +572,22 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
     ]);
   });
 
-  it('SCH-032 lists and counts nothing the person may not read, nor anything they may not resolve', async () => {
+  it('SCH-070 lists nothing a person may read and may not resolve, their own attempt and work included', async () => {
     const { space, ada, ivy } = await fresh();
+    const document = await documentIn(space, ada, 'The dosing report');
+    await failed(document, ada);
+    const behind = await documentIn(space, ada, 'The audit');
+    await published(behind, ada);
+    await retitled(behind, ada, 'The audit, revised');
+    await connectionIn(space, ada, 'Readings');
+    await failed(document, ivy);
+    const hers = await componentIn(space, ivy, 'Clean the printer');
+    await hers.save('Wipe it down.');
+    expect(await waiting(ivy)).toEqual({ items: [], total: 0 });
+  });
+
+  it('SCH-032 lists and counts nothing the person may not read', async () => {
+    const { space, ada } = await fresh();
     const document = await documentIn(space, ada, 'The dosing report');
     await failed(document, ada);
     const behind = await documentIn(space, ada, 'The audit');
@@ -465,13 +597,6 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
     await component.save('Unbox the printer.');
     const connection = await connectionIn(space, ada, 'Readings');
     expect((await waiting(ada)).total).toBe(4);
-
-    // Ivy reads every one, and may resolve none: her own failed attempt and unversioned work alike.
-    await failed(document, ivy);
-    const hers = await componentIn(space, ivy, 'Clean the printer');
-    await hers.save('Wipe it down.');
-    expect(await waiting(ivy)).toEqual({ items: [], total: 0 });
-
     for (const id of [document.artifactId, behind.artifactId, component.id, connection.id]) {
       await hide(id, ada);
     }

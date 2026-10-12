@@ -66,6 +66,8 @@ const open = (
   followMs = 0,
   /** What the layout makes; the PDF alone unless a test says Word too. */
   formats?: readonly string[],
+  /** A failed request the page's address names. */
+  shown?: string,
 ) =>
   render(
     <StrictMode>
@@ -77,6 +79,7 @@ const open = (
         placeOf={(node) => (node === HIDDEN ? '1.2 A component' : '1.1 Calibration')}
         followMs={followMs}
         {...(formats === undefined ? {} : { formats })}
+        {...(shown === undefined ? {} : { shown })}
       />
     </StrictMode>,
   );
@@ -183,6 +186,40 @@ describe('publishing from the document page', () => {
     expect(why).toHaveTextContent(
       '1.1 Calibration: This text holds formatting or an inline item that cannot be published yet.',
     );
+  });
+
+  it('shows the failed publish its address names, each failure by its place, and nothing of one that did not fail', async () => {
+    const failures = [
+      { stage: 'compose', code: 'glyph_missing', node: CALIBRATION, block: 'b2', detail: 'U+0627' },
+    ];
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`GET /v1/publication-requests/${REQUEST}`]: [{ ...queued(failures), state: 'failed' }],
+    });
+    const { unmount } = open(fake.fetch, true, 0, undefined, REQUEST);
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      '1.1 Calibration: The character U+0627 is in no typeface this publication can use.',
+    );
+    expect(
+      screen.getByText('The document could not be published. Put these right and publish again:'),
+    ).toBeInTheDocument();
+    unmount();
+
+    const made = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    open(made.fetch, true, 0, undefined, REQUEST);
+    await waitFor(() =>
+      expect(made.sent.map((each) => each.url)).toContain(`/v1/publication-requests/${REQUEST}`),
+    );
+    expect(
+      await screen.findByText('Nothing has been published from this document.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Why it could not be published' })).toBeNull();
   });
 
   it("names a component's field its definitions refuse, and says where to put it right", async () => {

@@ -31,6 +31,12 @@ export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 /** How many items are answered; the total counts the rest. */
 export const ATTENTION_LIMIT = 20;
 
+/**
+ * How many components, those holding a person's newest changes, are asked whether a version holds
+ * them (HM-C): each asking reads the component's versions.
+ */
+export const ATTENTION_CHANGES_CHECKED = 50;
+
 export interface AttentionItem {
   readonly kind: AttentionKind;
   readonly artifact: {
@@ -41,6 +47,8 @@ export interface AttentionItem {
   };
   /** A failed publish's: its first stored failure's code. */
   readonly reason?: string;
+  /** A failed publish's: the request, which its requester reads with every failure. */
+  readonly request?: string;
 }
 
 /** The act that resolves each kind, decided before it is listed (HM-F). */
@@ -56,17 +64,25 @@ interface Found {
   readonly id: string;
   readonly at: Date;
   readonly reason?: string;
+  readonly request?: string;
 }
 
-/** HM-B: their latest publish of a readable document failed, and nothing later they read or made. */
+/**
+ * HM-B: their latest publish of a readable document failed, and nothing later they read or made. A
+ * baseline's publish is of a pinned version (0073), so it neither fails nor clears one. Requests made
+ * in one transaction share their time and `made_tx` (all made before 0074 share one), so `id` breaks
+ * the tie, here and in what clears.
+ */
 async function publishFailed(trx: TenantTransaction, me: string, readable: ReadableSet) {
-  const { rows } = await sql<{ id: string; at: Date; reason: string | null }>`
-    select r.document_id as id, r.finished_at as at, r.failures -> 0 ->> 'code' as reason
+  const { rows } = await sql<{ id: string; at: Date; reason: string | null; request: string }>`
+    select r.document_id as id, r.finished_at as at, r.failures -> 0 ->> 'code' as reason,
+      r.id as request
     from (
-      select distinct on (document_id) document_id, state, failures, finished_at, requested_at, made_tx
+      select distinct on (document_id)
+        id, document_id, state, failures, finished_at, requested_at, made_tx
       from publication_request
-      where requested_by = ${me} and kind = 'publish'
-      order by document_id, requested_at desc, made_tx desc
+      where requested_by = ${me} and kind = 'publish' and baseline_id is null
+      order by document_id, requested_at desc, made_tx desc, id desc
     ) r
     join artifact a on a.id = r.document_id
     where r.state = 'failed' and ${readableArtifactsAs('a', readable)}
@@ -74,8 +90,8 @@ async function publishFailed(trx: TenantTransaction, me: string, readable: Reada
         select 1 from publication p
         join publication_request pr on pr.id = p.request_id
         join artifact pa on pa.id = p.id
-        where p.document_id = r.document_id
-          and (pr.requested_at, pr.made_tx) > (r.requested_at, r.made_tx)
+        where p.document_id = r.document_id and p.baseline_id is null
+          and (pr.requested_at, pr.made_tx, pr.id) > (r.requested_at, r.made_tx, r.id)
           and (p.publisher = ${me} or ${readableArtifactsAs('pa', readable)})
       )
   `.execute(trx);
@@ -84,12 +100,14 @@ async function publishFailed(trx: TenantTransaction, me: string, readable: Reada
     id: row.id,
     at: row.at,
     ...(row.reason === null ? {} : { reason: row.reason }),
+    request: row.request,
   }));
 }
 
 /**
- * HM-C: readable components holding retained iterations of theirs newer than any discard; whether a
- * version holds them is `newestUncutIteration`'s, asked of the permitted ones alone.
+ * HM-C: readable components holding retained iterations of theirs newer than any discard, the
+ * `ATTENTION_CHANGES_CHECKED` holding the newest; whether a version holds them is
+ * `newestUncutIteration`'s, asked of the permitted ones alone.
  */
 async function withIterations(trx: TenantTransaction, me: string, readable: ReadableSet) {
   const { rows } = await sql<{ id: string }>`
@@ -101,6 +119,8 @@ async function withIterations(trx: TenantTransaction, me: string, readable: Read
       and ${readableArtifactsAs('a', readable)}
     group by i.artifact_id, d.up_to
     having d.up_to is null or max(i.created_at) > d.up_to
+    order by max(i.created_at) desc, i.artifact_id
+    limit ${ATTENTION_CHANGES_CHECKED}
   `.execute(trx);
   return rows.map((row) => row.id);
 }
@@ -124,7 +144,7 @@ async function publishedEarlier(trx: TenantTransaction, me: string, readable: Re
       join artifact_version pv on pv.id = p.document_version_id
       where p.document_id = a.id and p.baseline_id is null
         and (p.publisher = ${me} or ${readableArtifactsAs('pa', readable)})
-      order by p.published_at desc, pa.created_at desc limit 1
+      order by p.published_at desc, pa.created_at desc, p.id desc limit 1
     ) lp on true
     where a.kind = 'document' and ${readableArtifactsAs('a', readable)}
       and (lp.revision_no, lp.version_no) < (lv.revision_no, lv.version_no)
@@ -259,6 +279,7 @@ export async function whatWaits(
         title: titles.get(each.id)!.title,
       },
       ...(each.reason === undefined ? {} : { reason: each.reason }),
+      ...(each.request === undefined ? {} : { request: each.request }),
     })),
     total: found.length,
   };

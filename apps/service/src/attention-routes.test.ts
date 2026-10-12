@@ -296,7 +296,8 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
   it('SCH-070 lists each kind with its reason and title, and clears each once the person does what it asks', async () => {
     const space = await fresh();
     const failing = await documentIn(space, 'The dosing report');
-    await failed(await publish('ada', failing, failing.version));
+    const request = await publish('ada', failing, failing.version);
+    await failed(request);
     const behind = await documentIn(space, 'The audit');
     await made(await publish('ada', behind, behind.version));
     const latest = await moveOn(behind);
@@ -311,6 +312,7 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
         kind: 'publish_failed',
         artifact: { id: failing.id, kind: 'document', title: 'The dosing report' },
         reason: 'engine_failed',
+        request,
       },
       {
         kind: 'changes_not_in_version',
@@ -349,6 +351,21 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
     expect(await listed('ada')).not.toContainEqual(['published_earlier', behind.id]);
     await ok('POST', `/v1/connections/${connection}/test`, 'ada', {});
     expect(await attention('ada')).toEqual({ items: [], total: 0 });
+  });
+
+  it('names the failed request, which its requester reads with every failure and nobody else reads', async () => {
+    const space = await fresh();
+    const failing = await documentIn(space, 'The dosing report');
+    await failed(await publish('ada', failing, failing.version));
+    const [item] = (await attention('ada')).items;
+    expect(item).toMatchObject({ kind: 'publish_failed', request: expect.any(String) });
+    expect(await ok('GET', `/v1/publication-requests/${item!.request!}`, 'ada')).toMatchObject({
+      state: 'failed',
+      failures: [{ code: 'engine_failed' }],
+    });
+    expect(
+      (await call('GET', `/v1/publication-requests/${item!.request!}`, 'grace')).statusCode,
+    ).toBe(404);
   });
 
   it('SCH-070 clears a failed publish and an earlier publication by a publication the publisher made, though they may not read it', async () => {
@@ -409,7 +426,25 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
     });
   });
 
-  it('SCH-032 lists and counts nothing the caller may not read, nor anything they may not resolve', async () => {
+  it('SCH-070 lists for each person only what waits on them that they may resolve', async () => {
+    const space = await fresh();
+    const failing = await documentIn(space, 'The dosing report');
+    await failed(await publish('ada', failing, failing.version));
+    const behind = await documentIn(space, 'The audit');
+    await made(await publish('ada', behind, behind.version));
+    await moveOn(behind);
+    await editedIn(space, 'Install the printer');
+    const connection = await connectionIn(space, 'Readings');
+    // What waits on anybody who may resolve it waits on Grace too, but not Ada's own attempt or
+    // work; Ivy reads all of it and may resolve none.
+    expect(await listed('grace')).toEqual([
+      ['published_earlier', behind.id],
+      ['connection_untested', connection],
+    ]);
+    expect(await attention('ivy')).toEqual({ items: [], total: 0 });
+  });
+
+  it('SCH-032 lists and counts nothing the caller may not read', async () => {
     const space = await fresh();
     const failing = await documentIn(space, 'The dosing report');
     await failed(await publish('ada', failing, failing.version));
@@ -419,14 +454,6 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
     const component = await editedIn(space, 'Install the printer');
     const connection = await connectionIn(space, 'Readings');
     expect((await attention('ada')).total).toBe(4);
-    // What waits on anybody who may resolve it waits on Grace too, but not Ada's own attempt or
-    // work; Ivy reads all of it and may resolve none.
-    expect(await listed('grace')).toEqual([
-      ['published_earlier', behind.id],
-      ['connection_untested', connection],
-    ]);
-    expect(await attention('ivy')).toEqual({ items: [], total: 0 });
-
     for (const id of [failing.id, behind.id, component.id, connection]) await hide('ada', id);
     const hidden = await call('GET', '/v1/me/attention', 'ada');
     expect(hidden.json()).toEqual({ items: [], total: 0 });
