@@ -7,7 +7,7 @@
 > may overturn.
 
 **Goal:** Home lists, for the person signed in, what waits on them that they may resolve, each with
-its one action, and nothing they may not read (SCH-068, SCH-032).
+its one action, and nothing they may not read (SCH-070, SCH-032).
 
 | PR  | Holds                                                                                          |
 | --- | ---------------------------------------------------------------------------------------------- |
@@ -21,8 +21,7 @@ it stands.** Only a full resolve answers it (`resolvePublishable`, then the work
 equations, figures, bound tables), and running that for each document on each Home holds the
 tenant's access epoch and binding locks for seconds. A failed attempt is stored, with its reasons
 (`publication_request.failures`). **Recommended (default)**: amend the item to "a document whose
-latest attempt to publish it failed, with the reason" (a change history in SCH). Until Ken amends it,
-the design names the gap and does not claim SCH-068. A refusal at the door is never listed: the
+latest attempt to publish it failed, with the reason". Ken agreed: **SCH-070** supersedes SCH-068. A refusal at the door is never listed: the
 person was told at once.
 
 ## Decisions
@@ -44,7 +43,7 @@ person was told at once.
   the contract and its documentation; the sweeps.
 - Tests: each kind listed and cleared by its act (HM-H); one item per artifact; nothing unreadable or
   unpermitted listed or counted; the cap and total; a token refused.
-- Design: `home.md`; SCH-068 named as a gap pending the amendment.
+- Design: `home.md`, claiming SCH-070.
 
 ## Task 2: Home, and the close - HM2
 

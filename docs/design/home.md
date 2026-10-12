@@ -2,19 +2,20 @@
 
 Home is a page, not the only way between modules ([ADR-0046](../decisions/0046-the-ledger-interface.md)):
 a greeting, the environment, and each module with its count, every count of what the reader may read.
-This design adds **Needs your attention** (SCH-068), built by [the HM plan](../plans/2026-10-12-hm-waiting-on-you.md),
+This design adds **Needs your attention** (SCH-070), built by [the HM plan](../plans/2026-10-12-hm-waiting-on-you.md),
 whose decisions are the detail. **Where you left off** (SCH-069) is T7's.
 
 ## Requirements owned
 
-None yet: SCH-068 waits on the amendment below.
+| ID      | Answered by                                            |
+| ------- | ------------------------------------------------------ |
+| SCH-070 | Needs your attention, below; the HM plan, HM-A to HM-H |
 
 ## What this document does not own
 
-| Left unclaimed | Why                                                                                                                                                                                                                                                                        |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SCH-068        | **A named gap.** Its first item, "a document that cannot publish", is answered for the documents whose latest attempt by the person failed, from the stored failure; a full resolve on each Home is too costly. Claimed once Ken amends the item (the HM plan's challenge) |
-| SCH-069        | Where you left off: T7's                                                                                                                                                                                                                                                   |
+| Left unclaimed | Why                      |
+| -------------- | ------------------------ |
+| SCH-069        | Where you left off: T7's |
 
 ## Needs your attention
 
