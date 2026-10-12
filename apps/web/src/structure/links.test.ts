@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   baselineLink,
+  comparisonLink,
   documentAccessLink,
   documentAddress,
   documentLink,
@@ -14,6 +15,23 @@ const DOCUMENT = 'eeeeeeee-0000-4000-8000-000000000001';
 const NODE = 'iiiiiiiiiiiiiiiiiiiiiiiiii';
 
 describe('the addresses of a document and its nodes', () => {
+  it('VER-025 addresses a baseline compared with a later one, or with the document now', () => {
+    const BASELINE = 'bbbbbbbb-0000-4000-8000-000000000001';
+    const LATER = 'bbbbbbbb-0000-4000-8000-000000000002';
+    expect(documentAddress(comparisonLink(DOCUMENT, BASELINE, LATER))).toEqual({
+      kind: 'comparison',
+      document: DOCUMENT,
+      baseline: BASELINE,
+      against: LATER,
+    });
+    expect(documentAddress(comparisonLink(DOCUMENT, BASELINE, 'now'))).toMatchObject({
+      against: 'now',
+    });
+    expect(
+      documentAddress(`#/documents/${DOCUMENT}/baselines/${BASELINE}/compare/later`),
+    ).toBeNull();
+  });
+
   it('STR-047 addresses a document as a baseline holds it, and a node in it, and reads them back', () => {
     const BASELINE = 'bbbbbbbb-0000-4000-8000-000000000001';
     expect(baselineLink(DOCUMENT, BASELINE)).toBe(`#/documents/${DOCUMENT}/baselines/${BASELINE}`);

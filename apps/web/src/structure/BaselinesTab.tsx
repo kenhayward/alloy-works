@@ -2,7 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 
 import styles from './BaselinesTab.module.css';
-import { baselineLink } from './links.js';
+import { baselineLink, comparisonLink } from './links.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -68,6 +68,8 @@ export function BaselinesTab({
   const [by, setBy] = useState('');
   const [publishing, setPublishing] = useState<string | null>(null);
   const [formats, setFormats] = useState<Formats>('pdf');
+  // What each baseline is to be compared with: a later one, or the document now (VER-025).
+  const [against, setAgainst] = useState<Readonly<Record<string, string>>>({});
   const ids = useId();
 
   const read = useCallback(async () => {
@@ -200,6 +202,26 @@ export function BaselinesTab({
                     ? 'Current'
                     : `Superseded by ${nameOf(baseline.superseded.by)}`}
                 </span>
+                <div className={styles['controls']}>
+                  <label htmlFor={`${heading}-against`}>Compare with</label>
+                  <select
+                    id={`${heading}-against`}
+                    value={against[baseline.id] ?? 'now'}
+                    onChange={(event) =>
+                      setAgainst({ ...against, [baseline.id]: event.target.value })
+                    }
+                  >
+                    <option value="now">The document now</option>
+                    {later.map((each) => (
+                      <option key={each.id} value={each.id}>
+                        {each.name}
+                      </option>
+                    ))}
+                  </select>
+                  <a href={comparisonLink(document, baseline.id, against[baseline.id] ?? 'now')}>
+                    Compare
+                  </a>
+                </div>
                 {mayPublish &&
                   (publishing === baseline.id ? (
                     <div className={styles['controls']}>

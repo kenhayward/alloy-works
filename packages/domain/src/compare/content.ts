@@ -243,6 +243,38 @@ function unitsOf(document: ContentDocument): Unit[] {
   return units;
 }
 
+/** A unit as a redline prints it: its type, its parent's key and its own text. */
+export interface UnitText {
+  readonly type: string;
+  readonly parent: string;
+  readonly text: string;
+}
+
+/**
+ * Every unit of a document by its key, as a redline prints an inserted or a deleted one: an inline
+ * node that is not text stands as U+FFFC, and a unit holding no text of its own has none.
+ */
+export function unitTexts(document: ContentDocument): ReadonlyMap<string, UnitText> {
+  return new Map(
+    unitsOf(document).map((unit) => [
+      unit.key,
+      { type: unit.type, parent: unit.parent, text: plain(unit.tokens) },
+    ]),
+  );
+}
+
+/** Every node of an outline by its identifier: a section's title as its text, a reference none. */
+export function outlineTexts(
+  outline: OutlineDocument | OutlineView,
+): ReadonlyMap<string, UnitText> {
+  return new Map(
+    outlineUnits(outline).map((unit) => [
+      unit.key,
+      { type: unit.type, parent: unit.parent, text: plain(unit.tokens) },
+    ]),
+  );
+}
+
 /** The spike's similarity tokens: lower-cased words, no punctuation - what 0.4 was tuned on. */
 const similarityWords = (value: string) =>
   new Set(

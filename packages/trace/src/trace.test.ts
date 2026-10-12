@@ -843,6 +843,7 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 973 (2026-10-12): CP3's redline, Versions panel and comparison page.
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
@@ -852,7 +853,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(963);
+    expect(model.citations).toHaveLength(973);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -931,6 +932,7 @@ describe('scanning the repository for test files', () => {
     // 51, from 50 (2026-10-10): editor/ComponentDock.test.tsx, the Table tab offered, citing nothing.
     // 58, from 57 (2026-10-11): structure/BaselinesTab.test.tsx, citing VER-017, VER-046 and VER-049.
     // 59, from 58 (2026-10-11): structure/BaselinePage.test.tsx, citing STR-047.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(59);
+    // 62, from 59 (2026-10-12): compare/Redline, compare/BaselineComparisonPage and editor/VersionsPanel tests.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(62);
   });
 });

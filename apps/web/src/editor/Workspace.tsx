@@ -21,6 +21,7 @@ import { hashOf, placeOf, type Place } from '../shell/places.js';
 import { componentAddress, searchAddress, searchLink } from '../search/links.js';
 import { SearchPage } from '../search/SearchPage.js';
 import { DocumentList } from '../structure/DocumentList.js';
+import { BaselineComparisonPage } from '../compare/BaselineComparisonPage.js';
 import { BaselinePage } from '../structure/BaselinePage.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
 import { documentAddress, documentLink, templateAccessAddress } from '../structure/links.js';
@@ -30,7 +31,7 @@ import { OutlineRail } from '../structure/OutlineTabs.js';
 import { PageShown, StatusTools } from '../shell/Status.js';
 import { ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
-import { ComponentEditor } from './ComponentEditor.js';
+import { ComponentEditor, type Mine } from './ComponentEditor.js';
 import { COMPONENT_PANELS, ComponentDock } from './ComponentDock.js';
 import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
@@ -147,6 +148,11 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   // Where an open component's table is formatted, and whether it holds one (ADR-0052).
   const [tableHost, setTableHost] = useState<HTMLElement | null>(null);
   const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
+  // What the open editor opened and shows now, read by the Versions panel's My changes (CNT-113).
+  const mineOf = useRef<(() => Mine) | null>(null);
+  const onMine = useCallback((mine: (() => Mine) | null) => {
+    mineOf.current = mine;
+  }, []);
   // The panes beside an open component, sized and hidden as the document page's are.
   const spacePane = usePaneWidth(SPACE_PANE);
   const dockPane = usePaneWidth(COMPONENT_DOCK_PANE);
@@ -273,6 +279,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
                 fieldsHost={fieldsHost}
                 tableHost={tableHost}
                 onTable={setHeldTable}
+                onMine={onMine}
               />
             </PresentationProvider>
           </div>
@@ -301,6 +308,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             table={heldTable}
             onTableHost={setTableHost}
             pane={dockPane}
+            mine={() => mineOf.current?.() ?? null}
           />
         </div>
       );
@@ -418,6 +426,19 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             key={documents.document}
             at={{ kind: 'document', id: documents.document }}
             client={client}
+          />
+        </>
+      );
+    }
+    if (documents?.kind === 'comparison') {
+      return (
+        <>
+          <BaselineComparisonPage
+            key={`${documents.baseline} ${documents.against}`}
+            client={client}
+            document={documents.document}
+            baseline={documents.baseline}
+            against={documents.against}
           />
         </>
       );

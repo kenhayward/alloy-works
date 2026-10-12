@@ -136,6 +136,8 @@ describe('the domain package', () => {
         'compareContent',
         'compareOutlines',
         'createMeter',
+        'outlineTexts',
+        'unitTexts',
         'SIMILARITY_THRESHOLD',
         // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',

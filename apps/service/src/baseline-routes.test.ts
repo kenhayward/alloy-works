@@ -456,6 +456,10 @@ describe('baselines over HTTP (baselines.md)', () => {
       expect.objectContaining({ change: 'inserted', newer: 'b'.repeat(26) }),
     );
     expect(body.components.map((each) => each.node)).toEqual(['a'.repeat(26)]);
+    expect(compared.json<{ titles: { node: string; title: string }[] }>().titles).toContainEqual({
+      node: 'b'.repeat(26),
+      title: 'Tray',
+    });
     expect(body.components[0]!.changes[0]).toMatchObject({
       change: 'matched',
       edited: { ops: expect.any(Array) },

@@ -792,3 +792,20 @@ async function record(
   }
   return { answer: 'recorded', version };
 }
+
+/**
+ * Each version's title, from its content, by version: what a comparison names a reference by. Who
+ * may read which is the caller's to have decided.
+ */
+export async function versionTitles(
+  trx: TenantTransaction,
+  versions: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  if (versions.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('artifact_version')
+    .select(['id', sql<string>`content->>'title'`.as('title')])
+    .where('id', 'in', [...new Set(versions)])
+    .execute();
+  return new Map(rows.map((row) => [row.id, row.title ?? '']));
+}

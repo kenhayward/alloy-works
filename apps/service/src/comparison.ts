@@ -12,6 +12,7 @@ import {
   readableComponents,
   readVersion,
   resolveOccurrences,
+  versionTitles,
   type StoredVersion,
   type TenantTransaction,
 } from '@alloy-works/db';
@@ -139,6 +140,14 @@ export function comparisonHandlers() {
       const olderOutline = withheld(older.outline);
       const newerOutline = withheld(newer.outline);
 
+      // Each readable reference's title, from the newer side's version where it has one.
+      const placed = new Map([...older.occurrences, ...newer.occurrences]);
+      const titleOf = await versionTitles(trx, [...placed.values()]);
+      const titles = [...placed].map(([node, version]) => ({
+        node,
+        title: titleOf.get(version) ?? '',
+      }));
+
       const components: BaselineComparisonView['components'] = [];
       for (const [node, version] of newer.occurrences) {
         const was = older.occurrences.get(node);
@@ -173,6 +182,7 @@ export function comparisonHandlers() {
           outline: newerOutline as unknown as Record<string, unknown>,
         },
         structure: changesView(compareOutlines(olderOutline, newerOutline).changes),
+        titles,
         components,
       };
     },

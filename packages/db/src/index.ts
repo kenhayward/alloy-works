@@ -234,6 +234,7 @@ export {
 export {
   createArtifact,
   latestVersion,
+  versionTitles,
   versionContents,
   listVersions,
   readVersion,

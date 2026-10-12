@@ -17731,6 +17731,25 @@
                       },
                       "description": "The outline's changes"
                     },
+                    "titles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "title"
+                        ]
+                      },
+                      "description": "Each reference the caller may read, by the title of the component it places"
+                    },
                     "components": {
                       "type": "array",
                       "items": {
@@ -18031,6 +18050,7 @@
                     "older",
                     "newer",
                     "structure",
+                    "titles",
                     "components"
                   ]
                 },
@@ -18058,6 +18078,7 @@
                     "outline": {}
                   },
                   "structure": [],
+                  "titles": [],
                   "components": []
                 }
               }
