@@ -495,6 +495,7 @@ export {
   type StoredPending,
   type DatasetName,
   type PendingAct,
+  type PendingRevisions,
   type HeldResolution,
   type HeldVersion,
   type RecordedDatasetVersion,

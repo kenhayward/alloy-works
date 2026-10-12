@@ -18,6 +18,7 @@ import {
   prepareDatabase,
   recordDatasetVersion,
   recordResolution,
+  recordRevision,
   recordVersion,
   requestPublication,
   sha256Hex,
@@ -477,6 +478,52 @@ describe('publishing a document holding a value', () => {
     ]) {
       expect(text).not.toContain(secret);
     }
+  });
+
+  it('DAT-062 prints a value revised by hand as its request read it, provenance.json giving both halves; a revision made after the request is not printed', async () => {
+    const version = await documentHoldingAValue();
+    const resolution = await within((trx) =>
+      trx
+        .selectFrom('binding_resolution')
+        .select('id')
+        .where('document_id', '=', version.artifactId)
+        .orderBy('id', 'desc')
+        .executeTakeFirstOrThrow(),
+    );
+    const revise = (value: string, replaces: string | null) =>
+      within((trx) =>
+        recordRevision(trx, {
+          document: version.artifactId,
+          node: NODE,
+          binding: 'v1',
+          cell: '',
+          resolution: String(resolution.id),
+          act: 'revise',
+          value,
+          reason: 'The gauge was recalibrated.',
+          replaces,
+          by: ada,
+        }),
+      );
+    const first = await revise('-4300', null);
+    const request = await ask(version, ['pdf']);
+    // After the request: never what it prints.
+    await revise('-1', first.id);
+    expect(await work()).toBe('done');
+    const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
+    const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
+    expect(provenance.schemaVersion).toBe(4);
+    expect(provenance.values).toMatchObject([
+      {
+        printed: '-4,300.00',
+        value: VALUE,
+        revision: {
+          value: '-4300',
+          by: { id: ada },
+          reason: 'The gauge was recalibrated.',
+        },
+      },
+    ]);
   });
 
   it('DAT-042 publishes a document whose bound block a condition removes, its provenance.json beside it listing nothing printed', async () => {

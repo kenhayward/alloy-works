@@ -751,6 +751,14 @@ export interface StoredPending {
   readonly state: 'pending' | 'refused';
   readonly failure: unknown;
   readonly createdAt: Date;
+  /** A resolve's decision over the revisions standing when it ran (0078; RV-D), or none. */
+  readonly revisions: PendingRevisions | null;
+}
+
+/** What a resolve decided of the revisions standing on what its binding held (RV-D). */
+export interface PendingRevisions {
+  readonly decision: 'withdraw' | 'keep';
+  readonly over: readonly string[];
 }
 
 type PendingRow = {
@@ -768,6 +776,7 @@ type PendingRow = {
   state: 'pending' | 'refused';
   failure: unknown;
   created_at: Date;
+  revisions?: unknown;
 };
 
 const pendingOf = (row: PendingRow): StoredPending => ({
@@ -785,6 +794,7 @@ const pendingOf = (row: PendingRow): StoredPending => ({
   state: row.state,
   failure: row.failure,
   createdAt: row.created_at,
+  revisions: (row.revisions ?? null) as PendingRevisions | null,
 });
 
 /**
@@ -807,6 +817,8 @@ export async function pendingResult(
     readonly provenance: Provenance;
     readonly uploads: readonly string[];
     readonly by: string;
+    /** What the act decided of the revisions standing, where any stood (RV-D). */
+    readonly revisions?: PendingRevisions | undefined;
   },
 ): Promise<StoredPending> {
   const provenance = parseProvenanceForWrite(input.provenance);
@@ -826,6 +838,7 @@ export async function pendingResult(
       provenance: JSON.stringify(provenance),
       uploads: [...input.uploads],
       requested_by: input.by,
+      ...(input.revisions === undefined ? {} : { revisions: JSON.stringify(input.revisions) }),
     })
     .returningAll()
     .executeTakeFirstOrThrow();

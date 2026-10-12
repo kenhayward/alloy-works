@@ -16,6 +16,7 @@ import type {
   PendingResultView,
   QueryDefinitionParams,
   ResolveBindingsBody,
+  ReviseBindingBody,
   ResolveBindingsView,
   TakeOutcomeView,
 } from '@alloy-works/api-contract';
@@ -33,6 +34,7 @@ import {
   finishPending,
   holdObject,
   inSavepoint,
+  latestRevisions,
   lockBindings,
   lockDatasetQuestions,
   nameDataset,
@@ -45,11 +47,13 @@ import {
   recordDatasetVersion,
   recordEvent,
   recordResolution,
+  recordRevision,
   recordTake,
   refusePending,
   publishedBindings,
   resolutionsOf,
   resolveOccurrences,
+  revisionsStanding,
   sessionContent,
   takeDigest,
   takesOf,
@@ -57,6 +61,7 @@ import {
   type HeldResolution,
   type PendingAct,
   type StoredPending,
+  type StoredRevision,
   type PinnedBinding,
   type StoredConnection,
   type Tenant,
@@ -76,6 +81,7 @@ import {
   effectiveLimits,
   identityKey,
   literalValues,
+  keyNamesTheKey,
   matchNoteRows,
   parametersDigestInput,
   parseQueryDefinition,
@@ -83,12 +89,14 @@ import {
   readContent,
   readImageHeader,
   readOutline,
+  revisionCellKey,
   walkOutline,
   takeOutcomeSchema,
   takes,
   takeValue,
   sortResult,
   TABLE_ROWS_MAX,
+  valueProblem,
   type AnyBinding,
   type AssetFormat,
   type Binding,
@@ -96,10 +104,12 @@ import {
   type BindingPlace,
   type CanonicalResult,
   type Column,
+  type ColumnType,
   type DocumentParameters,
   type DraftDefinition,
   type Limits,
   type ParameterValues,
+  type RevisionCell,
   type Provenance,
   type QueryDefinition,
   type RunAnswer,
@@ -126,6 +136,7 @@ import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
 import { actingKey, ownViewOf, provenanceIdentity, runIdentity, type Acting } from './acting.js';
 import { failureViewFor, type FailureIn } from './failure-words.js';
+import { carryRevisions, recordRevisionEvent, revisionsDecided } from './revisions.js';
 import { connectionFacts, requireSqlPermitted } from './sql-access.js';
 
 /**
@@ -1381,6 +1392,33 @@ function takesAsked(
 }
 
 /**
+ * The takes a binding's standing cell revisions ask of the version held (RV-H): each cell's row by its
+ * key and its column, so a row the result no longer has is said (`row_missing`, DAT-063).
+ */
+function cellTakesAsked(
+  placed: Placed,
+  held: HeldResolution | undefined,
+  revisions: readonly StoredRevision[],
+): TakeAsked[] {
+  if (!held || held.digest !== placed.digest) return [];
+  return revisions.flatMap((each) =>
+    each.cell === null || each.resolution !== held.id
+      ? []
+      : [
+          {
+            version: held.held.version,
+            take: cellTake(each.cell),
+            provenance: held.held.provenance,
+          },
+        ],
+  );
+}
+
+/** A cell's take: the row its key names, and its column. */
+const cellTake = (cell: RevisionCell): Take =>
+  ({ key: cell.key, column: cell.column }) as unknown as Take;
+
+/**
  * Everything the bindings view answers beside what D3 answered (B1-I), for one request: each
  * binding's taken values, its definition's title and version and its connection's name where the
  * caller may read them, and who resolved it by name.
@@ -1545,22 +1583,62 @@ function viewer(
     );
   }
 
+  /**
+   * Each binding's revisions as the view lists them (RV-H): the latest of its value or of each cell,
+   * standing where it is in front of the resolution held, lapsed otherwise; a standing cell's row gone
+   * said.
+   */
+  async function revisionsOf(
+    placed: Placed,
+    held: HeldResolution | undefined,
+    revisions: readonly StoredRevision[],
+    taken: ReadonlyMap<string, Taken>,
+  ): Promise<BindingStateView['revisions']> {
+    const out: BindingStateView['revisions'] = [];
+    for (const each of revisions) {
+      const stands = held !== undefined && each.resolution === held.id;
+      const fresh = stands && held.digest === placed.digest;
+      const cellTaken =
+        fresh && each.cell !== null
+          ? taken.get(takeKey(held.held.version, cellTake(each.cell)))
+          : undefined;
+      out.push({
+        id: each.id,
+        cell: each.cell,
+        value: each.value!,
+        reason: each.reason,
+        by: { id: each.by, displayName: await nameOf(each.by) },
+        at: each.at.toISOString(),
+        stands,
+        ...(cellTaken !== undefined
+          ? {
+              rowMissing: 'failure' in cellTaken && cellTaken.failure === 'row_missing',
+            }
+          : {}),
+      });
+    }
+    return out;
+  }
+
+  let revised: Promise<Map<string, StoredRevision[]>> | undefined;
+
   /** The view of each binding as a document holds it now (D3-J, D3-R, B1-I), in the order given. */
   return async function views(
     each: readonly { readonly placed: Placed; readonly held: HeldResolution | undefined }[],
   ): Promise<BindingStateView[]> {
-    const taken = await takenOf(
-      trx,
-      store,
-      keyFor,
-      each.flatMap(({ placed, held }) => takesAsked(placed, held, caller.principalId)),
-    );
+    const latest = await (revised ??= latestRevisions(trx, documentId));
+    const revisionsAt = (placed: Placed) => latest.get(key(placed.node, placed.binding.id)) ?? [];
+    const taken = await takenOf(trx, store, keyFor, [
+      ...each.flatMap(({ placed, held }) => takesAsked(placed, held, caller.principalId)),
+      ...each.flatMap(({ placed, held }) => cellTakesAsked(placed, held, revisionsAt(placed))),
+    ]);
     const out: BindingStateView[] = [];
     for (const { placed, held } of each) {
       const shown = {
         definition: await definitionOf(placed, held),
         connection: await connectionOf(held),
         ...(await dataFacts(placed, held)),
+        revisions: await revisionsOf(placed, held, revisionsAt(placed), taken),
       };
       if (!held) {
         out.push({
@@ -1728,7 +1806,7 @@ const BY_ACT = {
 async function recordLoggedResolution(
   trx: TenantTransaction,
   input: Parameters<typeof recordResolution>[1],
-): Promise<void> {
+): Promise<Awaited<ReturnType<typeof recordResolution>>> {
   const row = await recordResolution(trx, input);
   await recordBindingEvent(trx, BY_ACT[row.act], {
     document: row.document,
@@ -1737,7 +1815,22 @@ async function recordLoggedResolution(
     dataset: row.dataset,
     version: row.version,
   });
+  return row;
 }
+
+/**
+ * The type of the column a revision stands in, in a result (RV-D): a cell's own column, or the column
+ * an inline binding takes.
+ */
+/** A control character, which neither a revised value nor its reason holds. */
+const CONTROL = /\p{Cc}/u;
+
+const columnTypeIn =
+  (provenance: Provenance, placed: Placed) =>
+  (cell: RevisionCell | null): ColumnType | undefined => {
+    const column = cell?.column ?? (takes(placed.binding) ? placed.binding.take.column : undefined);
+    return provenance.columns.find((each) => each.name === column)?.type;
+  };
 
 type ResolveResult = ResolveBindingsView['results'][number];
 type CheckResult = CheckBindingsView['results'][number];
@@ -1791,6 +1884,19 @@ export async function resolveAct(
     }
     prepared.push(ready);
   }
+  // Never silent over a value revised by hand (DAT-060): each binding's decision, before anything runs.
+  const decisions = new Map(asked.map((each) => [key(each.node, each.binding), each.revisions]));
+  {
+    const heldNow = await heldBy(trx, id, placed);
+    const views = viewer(trx, caller, objects, tenant, id);
+    for (const each of prepared) {
+      const at = key(each.placed.node, each.placed.binding.id);
+      const holding = heldNow.get(at);
+      await revisionsDecided(trx, holding?.id, decisions.get(at), async () => ({
+        current: await stateView(views, each.placed, holding),
+      }));
+    }
+  }
   const questions = [...new Map(prepared.map((each) => [each.question, each])).values()];
   // The bindings read from the session: a pending result of one finishes as a resolve from it.
   const sessionNodes = new Set(
@@ -1828,6 +1934,20 @@ export async function resolveAct(
           );
           const seesSource = await seeingSourceNow(record, caller, prepared);
           const held = await heldBy(record, id, placed);
+          // Decided again under the bindings' locks: a revision made while the source answered
+          // refuses the act, and nothing is recorded (RV-D).
+          const standing = new Map<string, readonly StoredRevision[]>();
+          const views = viewer(record, caller, objects, tenant, id);
+          for (const each of succeeded) {
+            const at = key(each.placed.node, each.placed.binding.id);
+            const holding = held.get(at);
+            standing.set(
+              at,
+              await revisionsDecided(record, holding?.id, decisions.get(at), async () => ({
+                current: await stateView(views, each.placed, holding),
+              })),
+            );
+          }
           // Every question this records, in turn, before the first: after the bindings' locks, as every
           // act takes them, so two acts recording the same questions never wait on each other.
           await lockDatasetQuestions(record, recordable(succeeded, ran));
@@ -1873,6 +1993,7 @@ export async function resolveAct(
                 provenance: admission.provenance,
                 uploads: admission.uploads,
                 by: principalId,
+                revisions: decisions.get(key(node, binding.id)),
               });
               results.push({ node, binding: binding.id, pending: waiting.id });
               continue;
@@ -1888,7 +2009,7 @@ export async function resolveAct(
             }
             await recordTaken(record, recorded.version.id, each, outcome);
             const before = held.get(key(node, binding.id));
-            await recordLoggedResolution(record, {
+            const resolved = await recordLoggedResolution(record, {
               document: id,
               node,
               binding: binding.id,
@@ -1900,6 +2021,13 @@ export async function resolveAct(
                 before && before.held.dataset === recorded.dataset.id ? before.held.version : null,
               act: 'resolve',
               by: principalId,
+            });
+            await carryRevisions(record, {
+              standing: standing.get(key(node, binding.id)) ?? [],
+              decision: decisions.get(key(node, binding.id))?.decision,
+              to: resolved.id,
+              by: principalId,
+              typeOf: columnTypeIn(admission.provenance, each.placed),
             });
             results.push({
               node,
@@ -2231,7 +2359,11 @@ export function bindingHandlers(
         throw acknowledgementRequired(naming);
       }
       await mayTakeResult(trx, callerOf(request), held.waiting.provenance, naming);
-      await recordLoggedResolution(trx, {
+      // Never silent over a value revised by hand (DAT-060): withdrawn or kept, as the caller says.
+      const standing = await revisionsDecided(trx, held.id, body.revisions, async () => ({
+        current: await stateView(views, found, held),
+      }));
+      const accepted = await recordLoggedResolution(trx, {
         document: id,
         node: found.node,
         binding: found.binding.id,
@@ -2240,6 +2372,13 @@ export function bindingHandlers(
         replaces: held.held.version,
         act: 'accept',
         by: principalId,
+      });
+      await carryRevisions(trx, {
+        standing,
+        decision: body.revisions?.decision,
+        to: accepted.id,
+        by: principalId,
+        typeOf: columnTypeIn(held.waiting.provenance, found),
       });
       return stateView(
         views,
@@ -2333,7 +2472,10 @@ export function bindingHandlers(
         const take = checkTake(found.binding.take, parseQueryDefinition(ran!.content));
         if (take !== null) throw named(refused(400, 'take.invalid', `${take}.`), naming);
       }
-      await recordLoggedResolution(trx, {
+      const standing = await revisionsDecided(trx, held.id, body.revisions, async () => ({
+        current: await stateView(views, found, held),
+      }));
+      const confirmed = await recordLoggedResolution(trx, {
         document: id,
         node: found.node,
         binding: found.binding.id,
@@ -2343,11 +2485,211 @@ export function bindingHandlers(
         act: 'confirm',
         by: principalId,
       });
+      await carryRevisions(trx, {
+        standing,
+        decision: body.revisions?.decision,
+        to: confirmed.id,
+        by: principalId,
+        typeOf: columnTypeIn(held.held.provenance, found),
+      });
       return stateView(
         views,
         found,
         (await heldBy(trx, id, placed)).get(key(body.node, body.binding)),
       );
+    },
+
+    /**
+     * **Revise, or withdraw, a value by hand** (bindings.md, "A value revised by hand"; the RV plan,
+     * RV-C): a revision row in front of the resolution the binding holds, never in place of it
+     * (DAT-058), of an inline value or a bound table's cell by key (DAT-057, DAT-063). Queries nothing
+     * and needs `edit` on the document alone, the route's: it is the person's value, not the source's.
+     * Under the binding's lock, so it takes turns with every act that records a resolution.
+     */
+    reviseBinding: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as DocumentBindingParams;
+      const body = request.body as ReviseBindingBody;
+      const placed = await bindingsPlaced(trx, id, principalId);
+      if (!placed) throw notFound();
+      const found = placed.find(
+        (each) => each.node === body.node && each.binding.id === body.binding,
+      );
+      const naming = { binding: body.binding, node: body.node, document: id };
+      if (!found) {
+        throw bindingMissing(
+          naming,
+          `The component the node ${body.node} places holds no binding ${body.binding}.`,
+        );
+      }
+      await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
+      const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
+      const caller = callerOf(request);
+      const tenant = tenantOf(request);
+      const current = async () => ({
+        current: await stateView(viewer(trx, caller, objects, tenant, id), found, held),
+      });
+      if (!held || held.id !== body.resolution) {
+        throw refused(
+          409,
+          'revision.precondition',
+          'This binding no longer holds the result this was revised from.',
+          await current(),
+        );
+      }
+      if (held.digest !== found.digest) {
+        throw refused(
+          409,
+          'binding.stale',
+          `The binding ${found.binding.id} changed since its result was taken: resolve it, or keep its result, first.`,
+          naming,
+        );
+      }
+      const cell = body.cell ?? null;
+      const at = revisionCellKey(cell);
+      const standing = ((await revisionsStanding(trx, [held.id])).get(held.id) ?? []).find(
+        (each) => revisionCellKey(each.cell) === at,
+      );
+      if ((standing?.id ?? null) !== body.replaces) {
+        throw refused(
+          409,
+          'revision.precondition',
+          'The value revised by hand here is no longer the one this replaces.',
+          await current(),
+        );
+      }
+      const reason = body.reason.normalize('NFC');
+      if (reason.trim() === '' || CONTROL.test(reason)) {
+        throw named(
+          refused(400, 'value.invalid', 'A reason is words, with no control characters.'),
+          naming,
+        );
+      }
+      const answer = async () => stateView(viewer(trx, caller, objects, tenant, id), found, held);
+
+      if (body.act === 'withdraw') {
+        if (!standing) {
+          throw refused(
+            409,
+            'revision.not_standing',
+            'No value revised by hand stands here to withdraw.',
+            naming,
+          );
+        }
+        const withdrawn = await recordRevision(trx, {
+          document: id,
+          node: found.node,
+          binding: found.binding.id,
+          cell: at,
+          resolution: held.id,
+          act: 'withdraw',
+          value: null,
+          reason,
+          replaces: standing.id,
+          by: principalId,
+        });
+        await recordRevisionEvent(trx, withdrawn, 'withdraw', standing.value);
+        return answer();
+      }
+
+      // What can be revised (RV-C): a value the binding takes, or a value column a bound table shows.
+      const notPossible = (why: string) =>
+        refused(409, 'revision.not_possible', why, { ...naming, ...(cell ? { cell } : {}) });
+      const { provenance } = held.held;
+      let take: Take;
+      if (cell === null) {
+        if (!takes(found.binding) || found.place === 'figure') {
+          throw notPossible(
+            "A bound table is revised by its cells, and a bound figure's image is not a value.",
+          );
+        }
+        take = found.binding.take;
+      } else {
+        const table = found.table;
+        if (found.place !== 'table' || table === undefined) {
+          throw notPossible('Only a bound table has cells to revise.');
+        }
+        const definitionKeyColumns = await definitionKey(trx, provenance.queryDefinition.version);
+        if (definitionKeyColumns.length === 0 || !keyNamesTheKey(cell.key, definitionKeyColumns)) {
+          throw named(
+            refused(
+              400,
+              'key.required',
+              definitionKeyColumns.length === 0
+                ? 'Its query definition declares no key to find a row by.'
+                : `A cell's key names every key column: ${definitionKeyColumns.join(', ')}.`,
+            ),
+            naming,
+          );
+        }
+        const fixed = new Set([
+          ...definitionKeyColumns,
+          ...(table.groups ?? []).flatMap((group) =>
+            group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
+          ),
+          ...(table.transpose === undefined ? [] : [table.transpose.header]),
+        ]);
+        if (
+          !table.columns.some((shown) => shown.column === cell.column) ||
+          fixed.has(cell.column)
+        ) {
+          throw notPossible(
+            `The column ${cell.column} is not a value column the table shows: never its key, a group's column or subtotal, or the column it is turned by.`,
+          );
+        }
+        take = cellTake(cell);
+      }
+      const type = provenance.columns.find((each) => each.name === take.column)?.type;
+      if (type === undefined || type.base === 'image') {
+        throw notPossible(`The column ${take.column} holds no value that can be revised by hand.`);
+      }
+      const opened = objects && (() => objects.forTenant(trx, tenant));
+      const keyFor = (checksum: string) => `${tenantPrefix(tenant)}sha256/${checksum}`;
+      const outcome = (
+        await takenOf(trx, opened, keyFor, [{ version: held.held.version, take, provenance }])
+      ).get(takeKey(held.held.version, take));
+      if (outcome !== undefined && 'failure' in outcome && outcome.failure === 'row_missing') {
+        throw refused(
+          409,
+          'revision.row_missing',
+          `The result this binding holds has no row by the key ${JSON.stringify(cell?.key ?? {})}.`,
+          { ...naming, ...(cell ? { cell } : {}) },
+        );
+      }
+      if (outcome === undefined || !('value' in outcome)) {
+        throw notPossible('Its result gives no value here to revise.');
+      }
+      const value =
+        typeof body.value === 'string' ? body.value!.normalize('NFC') : (body.value as boolean);
+      if (typeof value === 'string' && value.trim() === '') {
+        throw named(refused(400, 'value.empty', 'A value revised by hand is never blank.'), naming);
+      }
+      if (
+        (typeof value === 'string' && CONTROL.test(value)) ||
+        valueProblem(type, value) !== null
+      ) {
+        throw named(
+          refused(
+            400,
+            'value.invalid',
+            `That is not a value of the column ${take.column}, which is ${type.base}.`,
+          ),
+          naming,
+        );
+      }
+      const revised = await recordRevision(trx, {
+        document: id,
+        node: found.node,
+        binding: found.binding.id,
+        cell: at,
+        resolution: held.id,
+        act: 'revise',
+        value,
+        reason,
+        replaces: standing?.id ?? null,
+        by: principalId,
+      });
+      await recordRevisionEvent(trx, revised, 'revise', standing?.value ?? outcome.value);
+      return answer();
     },
 
     /**
@@ -2702,7 +3044,7 @@ async function mayFinish(
   trx: TenantTransaction,
   caller: Caller,
   pending: StoredPending,
-): Promise<HeldResolution | undefined> {
+): Promise<{ holding: HeldResolution | undefined; placed: Placed }> {
   const naming = {
     definition: pending.provenance.queryDefinition.artifact,
     binding: pending.binding,
@@ -2722,7 +3064,7 @@ async function mayFinish(
   const found = placed.find(
     (each) => each.node === pending.node && each.binding.id === pending.binding,
   );
-  if (found?.digest !== pending.digest) throw bindingChanged(naming);
+  if (found === undefined || found.digest !== pending.digest) throw bindingChanged(naming);
   const holding = (await heldBy(trx, pending.document, placed)).get(
     key(pending.node, pending.binding),
   );
@@ -2734,7 +3076,7 @@ async function mayFinish(
       naming,
     );
   }
-  return holding;
+  return { holding, placed: found };
 }
 
 /**
@@ -2816,8 +3158,21 @@ export function pendingHandlers(
             return refuse(bindingFailure({ code: 'image_refused', ...at }, naming));
           }
           let holding: HeldResolution | undefined;
+          let found: Placed;
+          let standing: readonly StoredRevision[] = [];
           try {
-            holding = await mayFinish(trx, caller, pending);
+            ({ holding, placed: found } = await mayFinish(trx, caller, pending));
+            // The resolve's decision over the revisions standing, held to them still (RV-D).
+            if (pending.act !== 'check') {
+              standing = await revisionsDecided(
+                trx,
+                holding?.id,
+                pending.revisions === null
+                  ? undefined
+                  : { decision: pending.revisions.decision, over: [...pending.revisions.over] },
+                async () => naming,
+              );
+            }
           } catch (error) {
             if (!(error instanceof AppError)) throw error;
             return refuse(bindingFailure(error, naming));
@@ -2854,7 +3209,7 @@ export function pendingHandlers(
                 : { node, binding, outcome: 'revision', version: recorded.version.id },
             );
           }
-          await recordLoggedResolution(trx, {
+          const resolved = await recordLoggedResolution(trx, {
             document,
             node,
             binding,
@@ -2864,6 +3219,13 @@ export function pendingHandlers(
               holding && holding.held.dataset === recorded.dataset.id ? holding.held.version : null,
             act: 'resolve',
             by: caller.principalId,
+          });
+          await carryRevisions(trx, {
+            standing,
+            decision: pending.revisions?.decision,
+            to: resolved.id,
+            by: caller.principalId,
+            typeOf: columnTypeIn(provenance, found),
           });
           return view({
             node,

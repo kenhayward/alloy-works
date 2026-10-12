@@ -128,7 +128,10 @@ export function baselineHandlers(
           ...pins,
           occurrences: [...pins.occurrences],
           assets: [...pins.assets],
-          bindings: [...pins.bindings],
+          bindings: pins.bindings.map(({ revisions, ...each }) => ({
+            ...each,
+            ...(revisions === undefined ? {} : { revisions: [...revisions] }),
+          })),
         },
         withheld: { nodes: [...withheld.nodes], assets: withheld.assets },
       };

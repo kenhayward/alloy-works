@@ -86,8 +86,7 @@ export async function revisionsDecided(
     );
   }
   const same =
-    asked.over.length === standing.length &&
-    standing.every((each) => asked.over.includes(each.id));
+    asked.over.length === standing.length && standing.every((each) => asked.over.includes(each.id));
   if (!same) throw await precondition(current);
   return standing;
 }
