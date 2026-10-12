@@ -151,6 +151,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0076_threads_and_inbox',
       '0077_suggestions',
       '0078_binding_revisions',
+      '0079_review_rounds',
     ]);
 
     // The component and its version are as they were.
@@ -293,6 +294,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0076_threads_and_inbox',
       '0077_suggestions',
       '0078_binding_revisions',
+      '0079_review_rounds',
     ]);
 
     const { rows } = await queryAs(

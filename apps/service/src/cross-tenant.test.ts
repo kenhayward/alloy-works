@@ -26,6 +26,7 @@ import {
   recordAsset,
   makeBaseline,
   makeSuggestion,
+  openRound,
   startThread,
   recordPublication,
   requestPublication,
@@ -177,6 +178,7 @@ const OTHER_TENANT_IDS: Readonly<
   listBaselines: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   getBaselineView: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
+  listBaselineThreads: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   compareComponentVersions: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   compareBaselineResolved: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
@@ -197,6 +199,13 @@ const OTHER_TENANT_IDS: Readonly<
   acceptSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
   rejectSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
   withdrawSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
+  openRound: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  listRounds: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getRound: async (tenant, db) => ({ id: await roundIn(tenant, db) }),
+  closeRound: async (tenant, db) => ({ id: await roundIn(tenant, db) }),
+  startReview: async (tenant, db) => ({ id: await roundIn(tenant, db) }),
+  completeReview: async (tenant, db) => ({ id: await roundIn(tenant, db) }),
+  reopenReview: async (tenant, db) => ({ id: await roundIn(tenant, db) }),
   markNotificationRead: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
   deleteNotification: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -368,6 +377,14 @@ const VALID_INPUT: Readonly<
   addComment: { payload: { parts: [{ text: 'Hm' }] } },
   makeSuggestion: { payload: { version: SESSION, content: { title: 'Elsewhere' } } },
   resolveSuggestions: { payload: { act: 'reject', scope: `artifact:${SESSION}` } },
+  openRound: {
+    payload: {
+      title: 'Elsewhere',
+      dueAt: new Date(Date.now() + 86_400_000).toISOString(),
+      reviewers: [SESSION],
+    },
+  },
+  completeReview: { payload: { outcome: 'commented' } },
   editComment: { payload: { parts: [{ text: 'Hm' }] } },
   setInboxPreferences: { payload: { mention: 'daily' } },
   publishBaseline: { payload: { formats: ['pdf'] } },
@@ -801,6 +818,29 @@ const baselineIn = async (tenant: Tenant, db: TenantDatabase) => {
 
 /** A thread in environment B, on its component, started by the component's author. */
 /** A suggestion in environment B, on its component, by the component's author. */
+/** A round on a document of the tenant's, by that document's author. */
+const roundIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const document = await documentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const author = await trx
+      .selectFrom('artifact_version')
+      .select('author_id')
+      .where('artifact_id', '=', document)
+      .executeTakeFirstOrThrow();
+    const opened = await openRound(trx, {
+      document,
+      title: `Elsewhere ${randomUUID()}`,
+      scope: [],
+      dueAt: new Date(Date.now() + 86_400_000),
+      baseline: null,
+      reviewers: [author.author_id!],
+      by: author.author_id!,
+    });
+    if (opened.answer !== 'opened') throw new Error(`refused: ${opened.answer}`);
+    return opened.round.id;
+  });
+};
+
 const suggestionIn = async (tenant: Tenant, db: TenantDatabase) => {
   const component = await componentIdIn(tenant, db);
   return db.withTenant(tenant, async (trx) => {

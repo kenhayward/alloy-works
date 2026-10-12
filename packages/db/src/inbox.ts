@@ -5,15 +5,22 @@ import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 
 /** What a person may be told of (COL-034). */
-export type NotificationKind = 'mention' | 'reply' | 'resolution';
+export type NotificationKind = 'mention' | 'reply' | 'resolution' | 'round';
 export type Cadence = 'at_once' | 'daily' | 'never';
-export const NOTIFICATION_KINDS: readonly NotificationKind[] = ['mention', 'reply', 'resolution'];
+export const NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  'mention',
+  'reply',
+  'resolution',
+  'round',
+];
 
 /** Each kind's cadence where a person has chosen none (TH-F). */
 export const DEFAULT_CADENCES: Readonly<Record<NotificationKind, Cadence>> = {
   mention: 'at_once',
   reply: 'at_once',
   resolution: 'daily',
+  // Named as a reviewer (RR-H): told at once.
+  round: 'at_once',
 };
 
 /** How long a notification is kept (TH-H; COL-062). */
@@ -24,7 +31,11 @@ export interface DigestCounts {
   readonly mention: number;
   readonly reply: number;
   readonly resolution: number;
+  /** Rounds one was named on (RR-H); absent from a digest folded before 0079, which counts none. */
+  readonly round?: number;
   readonly threads: readonly string[];
+  /** The rounds named, by identifier; absent before 0079. */
+  readonly rounds?: readonly string[];
   readonly artifacts: readonly string[];
 }
 
@@ -34,6 +45,8 @@ export interface StoredNotification {
   readonly kind: NotificationKind | 'digest';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
+  /** A round's notification names it (RR-H). */
+  readonly round: string | null;
   readonly artifact: string | null;
   readonly counts: DigestCounts | null;
   readonly at: Date;
@@ -102,7 +115,9 @@ export async function tell(
   input: {
     readonly kind: NotificationKind;
     readonly actor: string;
-    readonly thread: string;
+    /** What it is about: a thread, or a round (RR-H). */
+    readonly thread?: string;
+    readonly round?: string;
     readonly artifact: string;
     readonly recipients: readonly string[];
   },
@@ -121,7 +136,9 @@ export async function tell(
       recipient,
       kind: input.kind,
       actor: input.actor,
-      thread_id: input.thread,
+      thread_id: input.thread ?? null,
+      // Named only for a round, so a schema before 0079 is never asked for the column.
+      ...(input.round === undefined ? {} : { round_id: input.round }),
       artifact_id: input.artifact,
     };
     if (cadence === 'at_once') await trx.insertInto('notification').values(row).execute();
@@ -155,6 +172,8 @@ export async function listInbox(
       'n.actor',
       'p.display_name',
       'n.thread_id',
+      // Through the row whole: a schema before 0079 has no such column.
+      sql<string | null>`to_jsonb(n) ->> 'round_id'`.as('round_id'),
       'n.artifact_id',
       'n.counts',
       'n.at',
@@ -178,6 +197,7 @@ export async function listInbox(
       kind: row.kind,
       actor: row.actor === null ? null : { id: row.actor, name: row.display_name },
       thread: row.thread_id,
+      round: row.round_id,
       artifact: row.artifact_id,
       counts: row.counts as DigestCounts | null,
       at: row.at,
@@ -273,7 +293,13 @@ export async function foldDigests(trx: TenantTransaction, now: Date): Promise<nu
   const held = await trx
     .deleteFrom('notification_held')
     .where('at', '<', boundary)
-    .returning(['recipient', 'kind', 'thread_id', 'artifact_id'])
+    .returning([
+      'recipient',
+      'kind',
+      'thread_id',
+      'artifact_id',
+      sql<string | null>`to_jsonb(notification_held) ->> 'round_id'`.as('round_id'),
+    ])
     .execute();
   const byRecipient = new Map<string, typeof held>();
   for (const row of held) {
@@ -294,7 +320,9 @@ export async function foldDigests(trx: TenantTransaction, now: Date): Promise<nu
       mention: kept.filter((row) => row.kind === 'mention').length,
       reply: kept.filter((row) => row.kind === 'reply').length,
       resolution: kept.filter((row) => row.kind === 'resolution').length,
-      threads: [...new Set(kept.map((row) => row.thread_id))],
+      round: kept.filter((row) => row.kind === 'round').length,
+      threads: [...new Set(kept.flatMap((row) => (row.thread_id === null ? [] : [row.thread_id])))],
+      rounds: [...new Set(kept.flatMap((row) => (row.round_id === null ? [] : [row.round_id])))],
       artifacts: [...new Set(kept.map((row) => row.artifact_id))],
     };
     await trx

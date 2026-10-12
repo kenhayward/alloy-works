@@ -15,6 +15,7 @@ import {
   baselineDocument,
   listBaselines,
   makeBaseline,
+  loadFactsFor,
   pinnedBindings,
   readableComponents,
   readVersion,
@@ -26,6 +27,7 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  decide,
   readContent,
   readLayout,
   readOutline,
@@ -149,8 +151,9 @@ export function baselineHandlers(
      */
     getBaselineView: async (
       request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      authorised: Authorised,
     ): Promise<BaselinePageView> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as BaselineParams;
       const read = await readBaseline(trx, id, principalId);
       if (!read) throw notFound();
@@ -195,6 +198,19 @@ export function baselineHandlers(
         });
       }
       const shown = new Set(texts.map((each) => each.node));
+      // What Review offers here (RR-G): comment on the document, and on each component pinned.
+      const commenting = await loadFactsFor(
+        trx,
+        principalId,
+        texts.map((each) => each.component),
+      );
+      const mayCommentOn = (component: string) => {
+        const facts = commenting.get(component);
+        return facts !== undefined && decide('comment', facts).allowed;
+      };
+      const onDocument = decide('comment', authorised.facts).allowed;
+      // Review here starts threads alone (RR-G), so it is offered where one may be started.
+      const mayReview = onDocument || texts.some((each) => mayCommentOn(each.component));
       const bindings = await pinnedBindingStates(
         trx,
         callerOf(request),
@@ -223,8 +239,13 @@ export function baselineHandlers(
           scheme: { ...layout.layout.scheme },
           words: { ...layout.layout.words },
         },
-        texts: texts.map(({ document: _read, ...each }) => each),
+        texts: texts.map(({ document: _read, ...each }) => ({
+          ...each,
+          mayComment: mayCommentOn(each.component),
+        })),
         bindings,
+        mayComment: onDocument,
+        mayReview,
       };
     },
 

@@ -233,12 +233,14 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
       mention: 'at_once',
       reply: 'at_once',
       resolution: 'daily',
+      round: 'at_once',
     });
     const set = await call('PUT', '/v1/inbox/preferences', 'ivy', { mention: 'never' });
     expect(set.json<InboxPreferences>()).toEqual({
       mention: 'never',
       reply: 'at_once',
       resolution: 'daily',
+      round: 'at_once',
     });
     const before = (await inbox('ivy')).notifications.length;
     await mentioning('ivy');

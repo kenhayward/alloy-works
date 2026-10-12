@@ -16166,6 +16166,34 @@
         {
           "id": "COL-052",
           "howItIsMet": "A suggestion that no longer applies to the component as it is now is listed **stale**, with each place it no longer fits and why; it stays pending, never rejected on its author's behalf"
+        },
+        {
+          "id": "COL-028",
+          "howItIsMet": "A round names its reviewers, its scope - the document or nodes of it - and its due date ([Review rounds](#review-rounds))"
+        },
+        {
+          "id": "COL-029",
+          "howItIsMet": "Each reviewer is not started, in progress (**Start**, or a completion reopened) or complete, derived from their own acts"
+        },
+        {
+          "id": "COL-030",
+          "howItIsMet": "The round's summary: every reviewer by state and the count complete of all, to anybody who may read the round"
+        },
+        {
+          "id": "COL-031",
+          "howItIsMet": "A round may name a baseline: its reviewers read and comment on the baseline's fixed page in Review mode, threads judged against the pins"
+        },
+        {
+          "id": "COL-032",
+          "howItIsMet": "A completion says **with comments** or **nothing to say**, each apart from not started"
+        },
+        {
+          "id": "COL-057",
+          "howItIsMet": "A reviewer reopens their completion while the round is open, recorded with who and when"
+        },
+        {
+          "id": "COL-058",
+          "howItIsMet": "Complete only from an explicit completion; nothing is read from silence or activity elsewhere"
         }
       ]
     },
@@ -18969,13 +18997,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 549,
+      "line": 563,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 499,
+      "line": 513,
       "kind": "title"
     },
     {
@@ -19089,7 +19117,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 304,
+      "line": 314,
       "kind": "title"
     },
     {
@@ -19335,7 +19363,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1068,
+      "line": 1108,
       "kind": "title"
     },
     {
@@ -19828,6 +19856,54 @@
       "id": "DAT-063",
       "file": "apps/service/src/revisions-routes.test.ts",
       "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "COL-028",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "COL-030",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 218,
+      "kind": "title"
+    },
+    {
+      "id": "COL-031",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 322,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 319,
+      "kind": "rule"
+    },
+    {
+      "id": "COL-057",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "COL-058",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 288,
       "kind": "title"
     },
     {
@@ -20815,6 +20891,30 @@
       "kind": "title"
     },
     {
+      "id": "COL-028",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 63,
+      "kind": "title"
+    },
+    {
       "id": "COL-020",
       "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
       "line": 93,
@@ -20857,9 +20957,15 @@
       "kind": "title"
     },
     {
+      "id": "COL-031",
+      "file": "apps/web/src/structure/BaselinePage.test.tsx",
+      "line": 130,
+      "kind": "title"
+    },
+    {
       "id": "STR-047",
       "file": "apps/web/src/structure/BaselinePage.test.tsx",
-      "line": 74,
+      "line": 75,
       "kind": "title"
     },
     {
@@ -22365,13 +22471,13 @@
     {
       "id": "COL-034",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 227,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "COL-035",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 249,
+      "line": 250,
       "kind": "title"
     },
     {
@@ -22383,13 +22489,13 @@
     {
       "id": "COL-053",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 249,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "COL-062",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 306,
+      "line": 307,
       "kind": "title"
     },
     {
@@ -22516,6 +22622,36 @@
       "id": "IAM-021",
       "file": "packages/db/src/roles.test.ts",
       "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "COL-028",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "COL-050",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 162,
       "kind": "title"
     },
     {
@@ -22869,7 +23005,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 179,
+      "line": 183,
       "kind": "title"
     },
     {
@@ -23607,7 +23743,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 655,
+      "line": 657,
       "kind": "title"
     },
     {
@@ -24172,6 +24308,36 @@
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/widths.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "COL-030",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 50,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "COL-058",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 21,
       "kind": "title"
     },
     {

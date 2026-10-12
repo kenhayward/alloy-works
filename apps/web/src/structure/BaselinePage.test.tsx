@@ -1,6 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { OUTLINE_SCHEMA_VERSION, defaultNumberingScheme } from '@alloy-works/domain';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -124,5 +125,57 @@ describe('a baseline at its own address', () => {
       />,
     );
     expect(await screen.findByText('There is no such baseline.')).toBeInTheDocument();
+  });
+
+  it('COL-031 offers Review over the pinned text: threads listed against the baseline, and one started on the version it pins', async () => {
+    const asked: { path: string; body: unknown }[] = [];
+    const fetching = (async (input: Request) => {
+      const path = new URL(input.url).pathname;
+      const body = input.method === 'POST' ? await input.json() : null;
+      asked.push({ path, body });
+      if (path === `/v1/baselines/${BASELINE}/view`) {
+        return json(200, {
+          ...view,
+          texts: view.texts.map((each) => ({ ...each, mayComment: true })),
+          mayComment: false,
+          mayReview: true,
+        });
+      }
+      if (path === `/v1/baselines/${BASELINE}/threads`)
+        return json(200, { threads: [], next: null });
+      // What was sent is what this asks; the answer is the service's, not this page's.
+      return json(409, { code: 'anchor_invalid', message: 'Not here.' });
+    }) as unknown as typeof fetch;
+    render(
+      <BaselinePage
+        client={createApiClient({ baseUrl: 'http://acme.test', fetch: fetching })}
+        document={DOCUMENT}
+        baseline={BASELINE}
+        node={null}
+      />,
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Review' }));
+    const threads = await screen.findByRole('region', { name: 'Threads on this baseline' });
+    await waitFor(() =>
+      expect(asked.map((each) => each.path)).toContain(`/v1/baselines/${BASELINE}/threads`),
+    );
+    // Never the document's own list, which judges against the text as it is now.
+    expect(asked.map((each) => each.path)).not.toContain(`/v1/documents/${DOCUMENT}/threads`);
+    expect(within(threads).getByRole('combobox', { name: 'On' })).toHaveTextContent(
+      'The whole of Install the printer',
+    );
+    await userEvent.type(
+      within(threads).getByRole('textbox', { name: 'Comment' }),
+      'Is this right?',
+    );
+    await userEvent.click(within(threads).getByRole('button', { name: 'Start thread' }));
+    await waitFor(() =>
+      expect(
+        asked.find((each) => each.path === `/v1/components/${PRINTER}/threads`)?.body,
+      ).toMatchObject({
+        version: 'cccccccc-0000-4000-8000-000000000009',
+        anchor: { kind: 'component' },
+      }),
+    );
   });
 });

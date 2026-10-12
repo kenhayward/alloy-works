@@ -3,6 +3,13 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.158.0 - 2026-10-12 (PR #582)
+
+### Added
+
+- **Review rounds.** In Review, the **Rounds** panel opens a round on a document: its title, the people who are to review it, the whole document or some of its sections, a due date, and the document as it is or one of its baselines. Each reviewer is told, and says **Start**, **Done, with comments** or **Done, nothing to say**, and may **Reopen** while the round is open. Each reviewer's state, the threads and suggestions they made, and whether everybody has reviewed are shown to anybody who may read the document. Closing a round applies and approves nothing. Through the API at `/v1/documents/{id}/rounds` and `/v1/rounds`.
+- **Review over a baseline.** A baseline's page offers Review to whoever may comment on it: threads are started on the text it pins and judged against it, however the document has moved on since.
+
 ## 0.157.0 - 2026-10-12 (PR #581)
 
 ### Added

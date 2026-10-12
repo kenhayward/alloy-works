@@ -35,6 +35,8 @@ export type RouteTarget =
   | { readonly thread: string }
   /** The path parameter holding a suggestion's id: decided on its component (the SG plan). */
   | { readonly suggestion: string }
+  /** The path parameter holding a round's id: decided on its document (the RR plan). */
+  | { readonly round: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };

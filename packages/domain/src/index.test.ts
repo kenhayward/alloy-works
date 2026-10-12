@@ -143,6 +143,8 @@ describe('the domain package', () => {
         'threadAnchorSchema',
         // Suggestions (the SG plan): applied to the component as it is now.
         'applySuggestion',
+        'reviewerState',
+        'roundSummary',
         'createMeter',
         'outlineTexts',
         'unitTexts',

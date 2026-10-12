@@ -40,3 +40,21 @@
   font-size: var(--size-12);
   overflow-wrap: anywhere;
 }
+
+/* Review over a baseline (RR-G): the pinned text beside its threads. */
+.reviewing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 60rem) {
+  .reviewing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.threads {
+  min-width: 0;
+}

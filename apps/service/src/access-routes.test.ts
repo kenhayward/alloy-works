@@ -31,6 +31,7 @@ import {
   type NewGrant,
   type Tenant,
   type TenantDatabase,
+  openRound,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -131,6 +132,7 @@ describe('routes that check a permission', () => {
   let reportBaseline: string;
   let reportThread: string;
   let dosingSuggestion: string;
+  let reportRound: string;
   let plan: string;
   let readings: string;
   let dailyReadings: string;
@@ -312,6 +314,18 @@ describe('routes that check a permission', () => {
       });
       if (suggested.answer !== 'made') throw new Error(`refused: ${suggested.answer}`);
       dosingSuggestion = suggested.suggestion;
+      // And a round on Report, which a route on a round must refuse as it refuses Report.
+      const opened = await openRound(trx, {
+        document: report,
+        title: 'A round',
+        scope: [],
+        dueAt: new Date(Date.now() + 86_400_000),
+        baseline: null,
+        reviewers: [ids.ada!],
+        by: ids.ada!,
+      });
+      if (opened.answer !== 'opened') throw new Error(`refused: ${opened.answer}`);
+      reportRound = opened.round.id;
       // And a template in Clinical, which a route reading or changing it must refuse to name.
       const template = await createTemplate(trx, {
         spaceId: clinical,
@@ -818,6 +832,10 @@ describe('routes that check a permission', () => {
     listBaselines: () => ({ url: `/v1/documents/${report}/baselines`, status: 404 }),
     getBaseline: () => ({ url: `/v1/baselines/${reportBaseline}`, status: 404 }),
     getBaselineView: () => ({ url: `/v1/baselines/${reportBaseline}/view`, status: 404 }),
+    listBaselineThreads: () => ({
+      url: `/v1/baselines/${reportBaseline}/threads`,
+      status: 404,
+    }),
     compareComponentVersions: () => ({
       url: `/v1/components/${dosing}/comparison?from=${MISSING}&to=${MISSING}`,
       status: 404,
@@ -875,6 +893,25 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { act: 'reject', scope: `artifact:${dosing}` },
     }),
+    openRound: () => ({
+      url: `/v1/documents/${report}/rounds`,
+      status: 404,
+      payload: {
+        title: 'Probe',
+        dueAt: new Date(Date.now() + 86_400_000).toISOString(),
+        reviewers: [ids.ada!],
+      },
+    }),
+    listRounds: () => ({ url: `/v1/documents/${report}/rounds`, status: 404 }),
+    getRound: () => ({ url: `/v1/rounds/${reportRound}`, status: 404 }),
+    closeRound: () => ({ url: `/v1/rounds/${reportRound}/closure`, status: 404 }),
+    startReview: () => ({ url: `/v1/rounds/${reportRound}/start`, status: 404 }),
+    completeReview: () => ({
+      url: `/v1/rounds/${reportRound}/completion`,
+      status: 404,
+      payload: { outcome: 'commented' },
+    }),
+    reopenReview: () => ({ url: `/v1/rounds/${reportRound}/reopening`, status: 404 }),
     addComment: () => ({
       url: `/v1/threads/${reportThread}/comments`,
       status: 404,

@@ -2065,6 +2065,19 @@ A person's value in front of a resolution, never in place of it, built by
 | `web: src/structure/RevisionDialog.tsx`, `RevisionAsk.tsx`, `DataTab.tsx` | Revise and withdraw; the decision asked with the three values; the Data tab's state                                                                                                         |
 | `editor: src/bindings.ts`, `src/boundTableView.ts`                        | The marker _revised by hand_, on a value and a cell                                                                                                                                         |
 
+## Review rounds
+
+A round asking named people to review a document by a date, built by
+[the RR plan](plans/2026-10-12-rr-review-rounds.md) and designed in
+[collaboration.md](design/collaboration.md#review-rounds): a report, never a gate.
+
+| Where                                                           | Holds                                                                                                                                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/review/rounds.ts`                                  | `reviewerState` and `roundSummary`, from each reviewer's own acts alone                                                                                              |
+| `migrations/tenant/0079_review_rounds`, `db: src/rounds.ts`     | `review_round`, its reviewers and its events, insert-only, kept against the version it opened on; acts and closing under the round's lock; a notification of a round |
+| `service: src/rounds.ts`, `src/threads.ts`, `src/baselines.ts`  | The routes, decided on the round's document (`{ round }`); a baseline's threads judged against its pins, and its review flags                                        |
+| `web: src/review/RoundsPanel.tsx`, `structure/BaselinePage.tsx` | Review's Rounds panel; Review on a baseline's page                                                                                                                   |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

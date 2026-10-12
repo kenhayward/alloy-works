@@ -216,6 +216,7 @@ describe('the inbox', () => {
       'kind',
       'read_at',
       'recipient',
+      'round_id',
       'thread_id',
     ]);
     // A title is the reader's alone, read when asked.

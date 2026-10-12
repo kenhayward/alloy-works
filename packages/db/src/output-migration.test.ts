@@ -229,6 +229,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0076_threads_and_inbox',
       '0077_suggestions',
       '0078_binding_revisions',
+      '0079_review_rounds',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

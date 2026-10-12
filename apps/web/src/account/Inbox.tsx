@@ -9,7 +9,7 @@ import styles from './Inbox.module.css';
 import { moment, refusal } from './TokenTable.js';
 
 type Client = ReturnType<typeof createApiClient>;
-type Kind = 'mention' | 'reply' | 'resolution';
+type Kind = 'mention' | 'reply' | 'resolution' | 'round';
 type Cadence = 'at_once' | 'daily' | 'never';
 type Part = { readonly text: string } | { readonly mention: string };
 
@@ -23,11 +23,14 @@ interface Notification {
   readonly kind: Kind | 'digest';
   readonly actor: { readonly id: string; readonly name: string | null } | null;
   readonly thread: string | null;
+  /** A round a person was named a reviewer on (RR-H). */
+  readonly round?: string | null;
   readonly on: Place | null;
   readonly counts: {
     readonly mention: number;
     readonly reply: number;
     readonly resolution: number;
+    readonly round?: number;
     readonly places: readonly Place[];
   } | null;
   readonly at: string;
@@ -49,6 +52,7 @@ const KINDS: readonly { readonly kind: Kind; readonly name: string }[] = [
   { kind: 'mention', name: 'When a comment names you' },
   { kind: 'reply', name: 'Replies on threads you are in' },
   { kind: 'resolution', name: 'Threads you are in resolved' },
+  { kind: 'round', name: 'When you are named a reviewer' },
 ];
 const CADENCES: Readonly<Record<Cadence, string>> = {
   at_once: 'At once',
@@ -71,12 +75,17 @@ function said(each: Notification): string {
       return `${who} replied on ${placeWords(each.on)}`;
     case 'resolution':
       return `${who} resolved a thread on ${placeWords(each.on)}`;
+    case 'round':
+      return `${who} asked you to review ${placeWords(each.on)}`;
     case 'digest': {
       const counts = each.counts!;
       const parts = [
         counts.mention > 0 ? plural(counts.mention, 'mention', 'mentions') : null,
         counts.reply > 0 ? plural(counts.reply, 'reply', 'replies') : null,
         counts.resolution > 0 ? plural(counts.resolution, 'resolution', 'resolutions') : null,
+        (counts.round ?? 0) > 0
+          ? plural(counts.round!, 'review asked of you', 'reviews asked of you')
+          : null,
       ].filter((part): part is string => part !== null);
       return `Your daily digest: ${parts.join(', ')}, on ${counts.places.map(placeWords).join(', ')}`;
     }
@@ -225,6 +234,12 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                     <button type="button" onClick={() => void open(each)}>
                       Open
                     </button>
+                  )}
+                  {/* A round opens its document, in Review, where its rounds are listed (RR-E). */}
+                  {each.kind === 'round' && each.round != null && each.on !== null && (
+                    <a href={`#/documents/${each.on.id}`} onClick={() => void markRead(each)}>
+                      Open the document
+                    </a>
                   )}
                   {!each.read && (
                     <button type="button" onClick={() => void markRead(each)}>
