@@ -23,6 +23,7 @@ import type {
   ThreadResolutionTable,
   ThreadTable,
 } from './threads-tables.js';
+import type { SuggestionResolutionTable, SuggestionTable } from './suggestions-tables.js';
 import type {
   PublicationCheckGivenUpTable,
   PublicationCheckTable,
@@ -676,6 +677,8 @@ export interface TenantTables {
   baseline_binding: BaselineBindingTable;
   baseline_supersession: BaselineSupersessionTable;
   thread: ThreadTable;
+  suggestion: SuggestionTable;
+  suggestion_resolution: SuggestionResolutionTable;
   thread_comment: ThreadCommentTable;
   thread_comment_text: ThreadCommentTextTable;
   thread_resolution: ThreadResolutionTable;

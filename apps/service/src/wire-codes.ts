@@ -95,6 +95,13 @@ const WIRE_CODES = {
   'parts.invalid': 'parts_invalid',
   'thread.resolved': 'thread_resolved',
   'comment.not_yours': 'comment_not_yours',
+  'suggestion.empty': 'suggestion_empty',
+  'suggestion.limit': 'suggestion_limit',
+  'suggestion.resolved': 'suggestion_resolved',
+  'suggestion.not_yours': 'suggestion_not_yours',
+  'suggestion.stale': 'suggestion_stale',
+  'suggestion.scope': 'suggestion_scope',
+  'edits.pending': 'edits_pending',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -151,6 +158,10 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'acknowledgement.required': 'DAT-091',
   // A baseline's name, unique in its document whatever its case (baselines.md).
   'name.taken': 'VER-046',
+  // A suggestion that no longer fits the component, said with its places (collaboration.md).
+  'suggestion.stale': 'COL-052',
+  // The suggestion's author alone withdraws it.
+  'suggestion.not_yours': 'COL-048',
 };
 
 /** The wire's spelling of a store's dotted answer. */

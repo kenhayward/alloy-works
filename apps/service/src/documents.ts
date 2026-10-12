@@ -20,6 +20,7 @@ import {
   listReadableDocuments,
   loadFacts,
   loadFactsFor,
+  pendingCounts,
   numberingInputs,
   parameterHistory,
   readLocks,
@@ -70,6 +71,8 @@ interface Viewer {
   readonly mayComment: boolean;
   /** Whether Review is offered them: `comment` or `suggest` (IAM-081). */
   readonly mayReview: boolean;
+  /** Whether they may suggest to the components they may (the SG plan). */
+  readonly maySuggest: boolean;
 }
 
 /**
@@ -179,6 +182,7 @@ async function documentView(
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
+    maySuggest: viewer.maySuggest,
     layout: {
       id: layout.artifactId,
       version: { id: layout.versionId, number: layout.number },
@@ -400,6 +404,7 @@ export function documentHandlers(
           mayPublish: decide('publish', facts).allowed,
           mayComment: decide('comment', facts).allowed,
           mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+          maySuggest: decide('suggest', facts).allowed,
         },
         { id: answer.version.artifactId, space: held },
         answer.version,
@@ -419,6 +424,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
       };
       return documentView(viewer, document, document.version);
     },
@@ -492,6 +498,8 @@ export function documentHandlers(
         decide('read', known).allowed ? [component] : [],
       );
       const locks = await readLocks(trx, readable);
+      // How many suggestions wait on each (SG-M), of those the caller may read.
+      const pending = await pendingCounts(trx, readable);
       const editing = new Map(
         readable.map((component) => {
           const lock = locks.get(component);
@@ -505,6 +513,11 @@ export function documentHandlers(
                 ...facts.get(component)!,
                 scopes: onDocument.scopes,
               }).allowed,
+              maySuggest: decide('suggest', {
+                ...facts.get(component)!,
+                scopes: onDocument.scopes,
+              }).allowed,
+              pendingSuggestions: pending.get(component) ?? 0,
               lock: lock ? lockView(lock, principalId) : null,
             },
           ] as const;
@@ -520,6 +533,8 @@ export function documentHandlers(
             ...occurrence,
             mayEdit: known?.mayEdit ?? false,
             mayComment: known?.mayComment ?? false,
+            maySuggest: known?.maySuggest ?? false,
+            pendingSuggestions: known?.pendingSuggestions ?? 0,
             lock: known?.lock ?? null,
           };
         }),
@@ -600,6 +615,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
@@ -641,6 +657,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
@@ -724,6 +741,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();

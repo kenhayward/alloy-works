@@ -307,12 +307,22 @@ describe('what each occurrence contributes, through the service', () => {
     // Grace may edit it, but not now: Ada holds it until then. The one she holds is hers.
     const graces = await occurrencesFor('grace');
     expect(graces).toEqual([
-      { node: first, version: shared.version, mayEdit: true, mayComment: true, lock: heldByAda },
+      {
+        node: first,
+        version: shared.version,
+        mayEdit: true,
+        mayComment: true,
+        maySuggest: true,
+        pendingSuggestions: 0,
+        lock: heldByAda,
+      },
       {
         node: hidden,
         version: secret.version,
         mayEdit: true,
         mayComment: true,
+        maySuggest: true,
+        pendingSuggestions: 0,
         lock: {
           holder: { id: ids.grace!, name: 'Grace' },
           expectedRelease: expect.any(String),
@@ -322,14 +332,46 @@ describe('what each occurrence contributes, through the service', () => {
           taking: null,
         },
       },
-      { node: unapproved, version: null, mayEdit: true, mayComment: true, lock: heldByAda },
+      {
+        node: unapproved,
+        version: null,
+        mayEdit: true,
+        mayComment: true,
+        maySuggest: true,
+        pendingSuggestions: 0,
+        lock: heldByAda,
+      },
     ]);
     // Alice may read it and not edit it, and is told who holds it; of what she may not read, nothing.
     const forAlice = await call('alice', 'GET', route);
     expect(forAlice.json<{ occurrences: unknown[] }>().occurrences).toEqual([
-      { node: first, version: shared.version, mayEdit: false, mayComment: false, lock: heldByAda },
-      { node: hidden, version: null, mayEdit: false, mayComment: false, lock: null },
-      { node: unapproved, version: null, mayEdit: false, mayComment: false, lock: heldByAda },
+      {
+        node: first,
+        version: shared.version,
+        mayEdit: false,
+        mayComment: false,
+        maySuggest: false,
+        pendingSuggestions: 0,
+        lock: heldByAda,
+      },
+      {
+        node: hidden,
+        version: null,
+        mayEdit: false,
+        mayComment: false,
+        maySuggest: false,
+        pendingSuggestions: 0,
+        lock: null,
+      },
+      {
+        node: unapproved,
+        version: null,
+        mayEdit: false,
+        mayComment: false,
+        maySuggest: false,
+        pendingSuggestions: 0,
+        lock: heldByAda,
+      },
     ]);
     expect(forAlice.body).not.toContain('Grace');
     expect(forAlice.body).not.toContain(ids.grace!);
@@ -366,8 +408,24 @@ describe('what each occurrence contributes, through the service', () => {
     }>();
     expect(body.document).toBe(doc.id);
     expect(body.occurrences).toEqual([
-      { node: first, version: shared.version, mayEdit: false, mayComment: false, lock: null },
-      { node: hidden, version: null, mayEdit: false, mayComment: false, lock: null },
+      {
+        node: first,
+        version: shared.version,
+        mayEdit: false,
+        mayComment: false,
+        maySuggest: false,
+        pendingSuggestions: 0,
+        lock: null,
+      },
+      {
+        node: hidden,
+        version: null,
+        mayEdit: false,
+        mayComment: false,
+        maySuggest: false,
+        pendingSuggestions: 0,
+        lock: null,
+      },
     ]);
     expect(body.versions).toHaveLength(1);
     expect(body.versions[0]).toMatchObject({

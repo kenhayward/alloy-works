@@ -324,8 +324,26 @@ export const auditKindSpecs = {
     z.strictObject({ thread: Id }),
     'packages/db/src/threads.ts',
   ),
-  'suggestion.accepted': kind(['COL-024'], empty, LATER),
-  'suggestion.rejected': kind(['COL-024'], empty, LATER),
+  'suggestion.made': kind(
+    ['COL-021'],
+    z.strictObject({ suggestion: Id, against: Id }),
+    'packages/db/src/suggestions.ts',
+  ),
+  'suggestion.accepted': kind(
+    ['COL-024'],
+    z.strictObject({ suggestion: Id, author: Id, version: Id }),
+    'packages/db/src/suggestions.ts',
+  ),
+  'suggestion.rejected': kind(
+    ['COL-024'],
+    z.strictObject({ suggestion: Id, author: Id }),
+    'packages/db/src/suggestions.ts',
+  ),
+  'suggestion.withdrawn': kind(
+    ['COL-048'],
+    z.strictObject({ suggestion: Id }),
+    'packages/db/src/suggestions.ts',
+  ),
   'template.moved': kind(['TPL-033'], empty, LATER),
   'binding.revised': kind(['DAT-058', 'LIF-064'], empty, LATER),
   'relationship.made': kind(['LIF-064', 'REL-011'], empty, LATER),

@@ -15,7 +15,8 @@ reviewer, two edits to one sentence, a mark spanning both.
 ## Decision
 
 **A suggestion merges by whole top-level block, by identifier.** A block it changes, removes or moves
-must stand in the current version as it did in the version the suggestion was made against, or the
+must stand in the current version as it did in the version the suggestion was made against - or
+already as the draft has it, somebody having made the change by hand, which is then done - or the
 suggestion is stale there, said with the block and why; nothing is merged inside a block, a list or a
 table. The current version's order is the merge's start, so nothing the author did meanwhile is
 undone; an added block follows the block it followed in the draft, after any others added since. The

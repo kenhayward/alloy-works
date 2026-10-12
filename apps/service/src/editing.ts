@@ -111,6 +111,24 @@ const keyedBy = (table: BoundTableNode) =>
   );
 
 /**
+ * Content a save, a suggestion or an acceptance may store (the SG plan, SG-B): the content model's
+ * parse, and two rules it does not hold and every other way in does - a title that trims to nothing,
+ * which creating a component and the header both refuse (issue #116), and a string Postgres cannot
+ * store, a NUL or half a surrogate pair, which would otherwise fail the insert and be answered as our
+ * failure (issue #127). Neither is narrowed in the parse itself, which also reads what is stored.
+ */
+export function storableContent(value: unknown): ContentDocument {
+  try {
+    const content = parseContentDocument(value);
+    if (!hasText(content.title) || !storableEverywhere(content)) throw new Error('unstorable');
+    return content;
+  } catch {
+    // A fixed message: what failed to parse is the author's content, and never goes back as prose.
+    throw refused(400, 'content.invalid', 'The content is not a document this product can store.');
+  }
+}
+
+/**
  * **A column is named only by whoever may read its definition** (the TB2 final review): a bound table's
  * columns and sort stand outside its binding's digest, so a result already held would otherwise show a
  * column chosen by an author who may not read the definition - which the Value dialog asks of whoever
@@ -120,7 +138,7 @@ const keyedBy = (table: BoundTableNode) =>
  * one whose key and column the version it opened from did not hold there is refused the same way, so
  * nobody who may not read the definition probes a key value through the rows route's `notes`.
  */
-async function mayNameColumns(
+export async function mayNameColumns(
   trx: TenantTransaction,
   request: FastifyRequest,
   content: ContentDocument,
@@ -315,23 +333,7 @@ export function editingHandlers() {
     saveIteration: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const params = request.params as IterationParams;
       const body = request.body as IterationBody;
-      let content: ContentDocument;
-      try {
-        content = parseContentDocument(body.content);
-        // Two rules the content model's own parse does not hold, and every other way in does: a
-        // title that trims to nothing, which creating a component and the header both refuse
-        // (issue #116), and a string Postgres cannot store - a NUL or half a surrogate pair - which
-        // would otherwise fail the insert and be answered as our failure (issue #127). Neither is
-        // narrowed in the parse itself, because the parse also reads what is already stored.
-        if (!hasText(content.title) || !storableEverywhere(content)) throw new Error('unstorable');
-      } catch {
-        // A fixed message: what failed to parse is the author's content, and never goes back as prose.
-        throw refused(
-          400,
-          'content.invalid',
-          'The content is not a document this product can store.',
-        );
-      }
+      const content = storableContent(body.content);
       await mayNameColumns(trx, request, content, body.openedFrom);
       const answer = await saveIteration(trx, {
         artifactId: params.id,
