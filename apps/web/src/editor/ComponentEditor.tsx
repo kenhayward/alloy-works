@@ -166,6 +166,7 @@ import { UnheldFaces } from '../theme/Canvas.js';
 import { usePresentation } from '../theme/presentation.js';
 import { useHeardLock } from './lockLive.js';
 import { TakeOver } from './TakeOver.js';
+import { draftService, forgetDraft, memoryStore, readDraft, type DraftMode } from './draft.js';
 import type { FollowOptions } from '@alloy-works/api-client';
 
 /**
@@ -288,7 +289,17 @@ export interface ComponentEditorProps {
    * document reads a bound table's rows from what the author has saved, and again after each save.
    */
   readonly onSaved?: (session: string, sequence: number) => void;
+  /**
+   * A suggestion's draft (the SG plan, SG-J): no lock, no session, nothing sent until **Send
+   * suggestion**, every command the editor offers an author. Absent, the editor edits the component.
+   */
+  readonly draft?: DraftMode;
 }
+
+/** A draft's session id: never sent, since a draft's service sends nothing. */
+const DRAFT_SESSION = '00000000-0000-4000-8000-000000000000';
+/** A draft hears no lock: it holds none, and waits on nobody (COL-025). */
+const NO_FOLLOW = () => () => undefined;
 
 /** What the document does with a binding placed, changed, kept or resolved here (B2). */
 export interface BindingActs {
@@ -473,7 +484,13 @@ export function ComponentEditor({
   onBoundTables,
   onSaved,
   onMine,
+  draft,
 }: ComponentEditorProps) {
+  const drafting = draft !== undefined;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  // Whether the draft is being sent, which holds its two buttons still meanwhile.
+  const [sending, setSending] = useState(false);
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // The bound tables told to the page, by their nodes' attributes: told again only when one changes.
   const toldTables = useRef<readonly object[] | null>(null);
@@ -967,7 +984,7 @@ export function ComponentEditor({
   sessionIdRef.current = sessionId;
   // Who holds it as its stream says, so its holder hears at once that somebody asks to take it over,
   // and that they have (COL-045, COL-047).
-  const heard = useHeardLock(componentId, follow);
+  const heard = useHeardLock(componentId, drafting ? NO_FOLLOW : follow);
   const runPromptingRef = useRef(runPrompting);
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
@@ -1006,7 +1023,8 @@ export function ComponentEditor({
     // The session this window keeps for the component, if any, is asked where its sequence stands
     // (W11.3): whether it goes on with kept changes or with none, as after a cut or a restore, which
     // keep none (final review of W11.3, D3).
-    const asked = storedSessionId(componentId);
+    // A draft asks for no session: it has none, and keeps nothing at the service.
+    const asked = drafting ? null : storedSessionId(componentId);
     void client
       .GET('/v1/components/{id}', {
         params: {
@@ -1026,6 +1044,18 @@ export function ComponentEditor({
               : { state: 'failed', signedOut: response.status === 401 },
           );
           return;
+        }
+        if (drafting) {
+          // A reviewer's draft opens what this tab kept of it, where it was made from this version;
+          // it may be edited whatever the reviewer may do with the component itself, holds no lock,
+          // and has nothing unsaved at the service.
+          data = {
+            ...data,
+            mayEdit: true,
+            lock: null,
+            unsaved: null,
+            content: readDraft(data.id, principalId, data.version.id) ?? data.content,
+          };
         }
         let opened;
         try {
@@ -1048,7 +1078,7 @@ export function ComponentEditor({
     return () => {
       current = false;
     };
-  }, [client, componentId, attempt]);
+  }, [client, componentId, attempt, drafting, principalId]);
 
   const component = loaded.state === 'open' ? loaded.component : null;
 
@@ -1118,7 +1148,7 @@ export function ComponentEditor({
     // where every change replays exactly onto a document the model holds. Anything else opens as a
     // page opened afresh does, with what was on screen offered as text to copy where it can be read
     // and differs from what opens, or said to be lost where it cannot be read at all (D5).
-    const kept = readKept(component.id, principalId);
+    const kept = drafting ? null : readKept(component.id, principalId);
     const stored: StoredSession | null = kept?.readable === true ? kept.session : null;
     let offering: string | null = kept?.readable === false ? kept.text : null;
     let unreadable = kept?.readable === false && kept.text === null;
@@ -1158,14 +1188,15 @@ export function ComponentEditor({
     // a fresh session at sequence 0, never a false "newer text" notice from reusing a stale one.
     // A replay goes on under the session it was recorded in, whoever holds the lock now: the claim
     // says whether it may (RC-H).
-    const initialSession =
-      sessionIdRef.current ??
-      editingSessionFor(
-        component.id,
-        (id) =>
-          (component.lock?.yours === true && component.lock.session === id) ||
-          (replayed !== null && stored?.session === id),
-      );
+    const initialSession = drafting
+      ? DRAFT_SESSION
+      : (sessionIdRef.current ??
+        editingSessionFor(
+          component.id,
+          (id) =>
+            (component.lock?.yours === true && component.lock.session === id) ||
+            (replayed !== null && stored?.session === id),
+        ));
     sessionNow.current = initialSession;
     // Replayed under the session it was kept in, or not at all: a page that starts under another id -
     // the id it was kept under gone from storage - offers what was kept as text instead.
@@ -1223,6 +1254,8 @@ export function ComponentEditor({
             values: component.values,
             sequence: startAt,
           }),
+      // A draft records nothing in the tab for a reload: its own storage keeps it.
+      drafting ? { storage: memoryStore() } : {},
     );
     recorder.current = keeping;
     if (resumed !== null && stored !== null) {
@@ -1280,9 +1313,11 @@ export function ComponentEditor({
     pasteSaid.current = null;
     const editing = createSession({
       // A session claimed afresh is followed by what the window keeps, from which nothing is sent.
-      service: sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
-        keeping.rebind(id),
-      ),
+      service: drafting
+        ? draftService(component.id, principalId, component.version.id)
+        : sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
+            keeping.rebind(id),
+          ),
       sequence: startAt,
       onSent: (sequence) => keeping.sent(sequence),
       onAccepted: (sequence) => {
@@ -2059,6 +2094,19 @@ export function ComponentEditor({
     loaded.state === 'open' && shown.mayEdit && !ownSession && phase === 'reading'
       ? (shown.unsaved ?? null)
       : null;
+  // Sends the draft as a suggestion (the SG plan): the surface as it is, through the page's own send,
+  // forgotten once it is made.
+  const sendDraft = async () => {
+    const view = surface;
+    if (!draftRef.current || view === null) return;
+    setSending(true);
+    try {
+      const sent = await draftRef.current.onSend(fromEditor(view.state.doc));
+      if (sent) forgetDraft(componentId, principalId);
+    } finally {
+      setSending(false);
+    }
+  };
   const recover = () => {
     recoveryOpener.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -2141,7 +2189,7 @@ export function ComponentEditor({
         )}
       </header>
       {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
-      {session && loaded.state === 'open' && (
+      {session && loaded.state === 'open' && !drafting && (
         <StatusLead>
           <SaveIndicator save={session.save} savedAt={session.savedAt} />
         </StatusLead>
@@ -2155,31 +2203,51 @@ export function ComponentEditor({
       (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
       than absent, so what the editor can do with the text is visible before the lock is. */}
         <EditorToolbar
-          leading={[
-            {
-              label: 'Done editing',
-              icon: 'Done editing',
-              disabled: doneDisabled,
-              onPress: () => void done(),
-            },
-            {
-              label: 'Save version',
-              icon: 'Save version',
-              disabled: !mayCut || phase !== 'editing',
-              onPress: () => void controls.current?.saveVersion(),
-            },
-            {
-              label: 'Saved text',
-              icon: 'Saved text',
-              disabled: !mayCut || phase !== 'editing',
-              onPress: recover,
-            },
-          ]}
+          leading={
+            drafting
+              ? [
+                  {
+                    label: 'Send suggestion',
+                    icon: 'Review',
+                    disabled: sending,
+                    onPress: () => void sendDraft(),
+                  },
+                  {
+                    label: 'Discard suggestion',
+                    icon: 'Close',
+                    disabled: sending,
+                    onPress: () => {
+                      forgetDraft(componentId, principalId);
+                      draftRef.current?.onDiscard();
+                    },
+                  },
+                ]
+              : [
+                  {
+                    label: 'Done editing',
+                    icon: 'Done editing',
+                    disabled: doneDisabled,
+                    onPress: () => void done(),
+                  },
+                  {
+                    label: 'Save version',
+                    icon: 'Save version',
+                    disabled: !mayCut || phase !== 'editing',
+                    onPress: () => void controls.current?.saveVersion(),
+                  },
+                  {
+                    label: 'Saved text',
+                    icon: 'Saved text',
+                    disabled: !mayCut || phase !== 'editing',
+                    onPress: recover,
+                  },
+                ]
+          }
           onPasteMarkdown={() => void pasteMarkdown()}
           onInsertFigure={() => setFigureDialog('Figure')}
-          figurePlaceable={mayPlaceFigure}
+          figurePlaceable={mayPlaceFigure && (!drafting || draft.mayUpload)}
           onInsertImage={() => setFigureDialog('Image')}
-          imagePlaceable={mayPlaceImage}
+          imagePlaceable={mayPlaceImage && (!drafting || draft.mayUpload)}
           ref={toolbarRegion}
           view={editing}
           enabled={mayFormat}
