@@ -319,6 +319,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/baselines/{id}/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The threads on a baseline’s document and the components it pins that the caller may read, judged against the pins, newest first
+         * @description Lists the threads on a baseline’s document and on each component it pins that the caller may read, newest first, each judged standing or orphaned against the pinned version rather than the document as it is now: what a review round on a baseline reads (COL-031).
+         */
+        get: operations["listBaselineThreads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/baselines/{id}/view": {
         parameters: {
             query?: never;
@@ -7779,6 +7799,181 @@ export interface operations {
             };
         };
     };
+    listBaselineThreads: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                state?: "open" | "resolved";
+                author?: string & (unknown & unknown);
+                since?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of them */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "threads": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        threads: {
+                            id: string & (unknown & unknown);
+                            on: {
+                                id: string & (unknown & unknown);
+                                /** @enum {string} */
+                                kind: "component" | "document";
+                            };
+                            anchor: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The version it was started on */
+                            madeAgainst: string & (unknown & unknown);
+                            startedBy: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            startedAt: string;
+                            resolvedAt: string | null;
+                            comments: number;
+                            /**
+                             * Format: date-time
+                             * @description When its latest comment was added
+                             */
+                            lastAt: string;
+                            /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
+                            orphaned: boolean;
+                            /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
+                            places?: {
+                                node: string;
+                                orphaned: boolean;
+                            }[];
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description `invalid_request`: a cursor this listing did not give out */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its threads */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getBaselineView: {
         parameters: {
             query?: never;
@@ -7833,7 +8028,9 @@ export interface operations {
                      *         "words": {}
                      *       },
                      *       "texts": [],
-                     *       "bindings": []
+                     *       "bindings": [],
+                     *       "mayComment": false,
+                     *       "mayReview": false
                      *     }
                      */
                     "application/json": {
@@ -7896,6 +8093,8 @@ export interface operations {
                             content: {
                                 [key: string]: unknown;
                             };
+                            /** @description Whether the caller may comment on the component, as Review offers it (RR-G) */
+                            mayComment: boolean;
                         }[];
                         /** @description What each binding of those occurrences held when the baseline was made */
                         bindings: {
@@ -8443,6 +8642,10 @@ export interface operations {
                                 columnUnavailable?: boolean;
                             }[];
                         }[];
+                        /** @description Whether the caller may comment on the document */
+                        mayComment: boolean;
+                        /** @description Whether the caller may review it here: comment on or suggest to the document, or comment on a component it pins (IAM-081; the RR plan, RR-G) */
+                        mayReview: boolean;
                     };
                 };
             };

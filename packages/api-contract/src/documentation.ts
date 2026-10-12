@@ -226,6 +226,7 @@ const operationTags = {
     'resolveSuggestions',
   ],
   'Review rounds': [
+    'listBaselineThreads',
     'openRound',
     'listRounds',
     'getRound',
@@ -365,6 +366,8 @@ const descriptions: Readonly<Record<string, string>> = {
   acceptSuggestion:
     'Accepts a suggestion: applies it to the component as it is now, block by block, and records the result as a version by the caller. Refused while somebody else holds the component, or while the caller holds it with saved work, and where it no longer fits, saying where.',
   rejectSuggestion: 'Rejects a suggestion. Refused while somebody else holds the component.',
+  listBaselineThreads:
+    'Lists the threads on a baseline’s document and on each component it pins that the caller may read, newest first, each judged standing or orphaned against the pinned version rather than the document as it is now: what a review round on a baseline reads (COL-031).',
   openRound:
     'Opens a review round on a document: a title, the people who are to review it, its scope - the whole document or sections of it - and when the reviews are due; on the document as it is, or on one of its baselines, which its reviewers then read as a fixed text. Each reviewer must be a person who may comment on or suggest to the document and read all it covers, or the round is refused, saying how many may not. Each reviewer is told. Needs edit on the document.',
   listRounds:

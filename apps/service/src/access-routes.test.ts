@@ -832,6 +832,10 @@ describe('routes that check a permission', () => {
     listBaselines: () => ({ url: `/v1/documents/${report}/baselines`, status: 404 }),
     getBaseline: () => ({ url: `/v1/baselines/${reportBaseline}`, status: 404 }),
     getBaselineView: () => ({ url: `/v1/baselines/${reportBaseline}/view`, status: 404 }),
+    listBaselineThreads: () => ({
+      url: `/v1/baselines/${reportBaseline}/threads`,
+      status: 404,
+    }),
     compareComponentVersions: () => ({
       url: `/v1/components/${dosing}/comparison?from=${MISSING}&to=${MISSING}`,
       status: 404,

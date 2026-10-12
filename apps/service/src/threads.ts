@@ -13,6 +13,7 @@ import {
   editComment,
   latestVersion,
   listThreads,
+  readBaseline,
   readThread,
   readVersion,
   resolveOccurrences,
@@ -182,49 +183,99 @@ export function threadHandlers() {
           occurrences.set(each.component, placed);
         }
       }
-      const page = await listThreads(trx, {
-        on: [id, ...occurrences.keys()],
-        ...(query.state === undefined ? {} : { state: query.state }),
-        ...(query.author === undefined ? {} : { author: query.author }),
-        ...(query.since === undefined ? {} : { since: new Date(query.since) }),
-        ...(after === undefined ? {} : { after }),
-        limit: limit + 1,
-      });
-      const shown = page.slice(0, limit);
-      const threads: ThreadSummaryView[] = [];
-      for (const thread of shown) {
-        if (thread.on === id) {
-          threads.push(summaryView(thread, !(await stands(thread.anchor, latest.id))));
-          continue;
-        }
-        const places = [];
-        for (const placed of occurrences.get(thread.on) ?? []) {
-          places.push({
-            node: placed.node,
-            orphaned: !(await stands(thread.anchor, placed.version)),
-          });
-        }
-        threads.push(
-          summaryView(
-            thread,
-            places.every((place) => place.orphaned),
-            places,
-          ),
-        );
-      }
-      return {
-        threads,
-        next:
-          page.length > limit
-            ? keysetCursor('threads', {
-                at: shown[shown.length - 1]!.createdAt,
-                id: shown[shown.length - 1]!.id,
-              })
-            : null,
-      };
+      return listedOn(trx, id, latest.id, occurrences, query, after, limit, stands);
     };
 
+  /**
+   * One page of the threads on a document and its components, each judged standing against the
+   * version it is read at: the document's own at `documentVersion`, and a component's at each place.
+   */
+  const listedOn = async (
+    trx: TenantTransaction,
+    id: string,
+    documentVersion: string,
+    occurrences: ReadonlyMap<string, readonly { node: string; version: string }[]>,
+    query: ThreadListQuery,
+    after: ReturnType<typeof keysetAfter>,
+    limit: number,
+    stands: ReturnType<typeof standing>,
+  ): Promise<ThreadList> => {
+    const page = await listThreads(trx, {
+      on: [id, ...occurrences.keys()],
+      ...(query.state === undefined ? {} : { state: query.state }),
+      ...(query.author === undefined ? {} : { author: query.author }),
+      ...(query.since === undefined ? {} : { since: new Date(query.since) }),
+      ...(after === undefined ? {} : { after }),
+      limit: limit + 1,
+    });
+    const shown = page.slice(0, limit);
+    const threads: ThreadSummaryView[] = [];
+    for (const thread of shown) {
+      if (thread.on === id) {
+        threads.push(summaryView(thread, !(await stands(thread.anchor, documentVersion))));
+        continue;
+      }
+      const places = [];
+      for (const placed of occurrences.get(thread.on) ?? []) {
+        places.push({
+          node: placed.node,
+          orphaned: !(await stands(thread.anchor, placed.version)),
+        });
+      }
+      threads.push(
+        summaryView(
+          thread,
+          places.every((place) => place.orphaned),
+          places,
+        ),
+      );
+    }
+    return {
+      threads,
+      next:
+        page.length > limit
+          ? keysetCursor('threads', {
+              at: shown[shown.length - 1]!.createdAt,
+              id: shown[shown.length - 1]!.id,
+            })
+          : null,
+    };
+  };
+
   return {
+    /**
+     * The threads a round on a baseline reads (the RR plan, RR-G; COL-031): on its document and on each
+     * component it pins that the caller may read, judged against the pins, never the document now.
+     */
+    listBaselineThreads: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ThreadList> => {
+      const { id } = request.params as { id: string };
+      const read = await readBaseline(trx, id, principalId);
+      if (!read) throw notFound();
+      const query = request.query as ThreadListQuery;
+      const limit = query.limit === undefined ? PAGE : Number(query.limit);
+      const after = keysetAfter('threads', query.cursor);
+      const occurrences = new Map<string, { node: string; version: string }[]>();
+      for (const pin of read.pins.occurrences) {
+        const version = await readVersion(trx, pin.version);
+        if (!version) continue;
+        const placed = occurrences.get(version.artifactId) ?? [];
+        placed.push({ node: pin.node, version: pin.version });
+        occurrences.set(version.artifactId, placed);
+      }
+      return listedOn(
+        trx,
+        read.documentId,
+        read.pins.document.version,
+        occurrences,
+        query,
+        after,
+        limit,
+        standing(trx),
+      );
+    },
     startComponentThread: start('component'),
     startDocumentThread: start('document'),
     listComponentThreads: list('component'),

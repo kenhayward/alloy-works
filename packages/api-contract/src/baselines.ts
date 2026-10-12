@@ -143,12 +143,21 @@ export const BaselinePageView = z.object({
         content: z
           .record(z.string(), z.unknown())
           .describe("The pinned version's content document"),
+        mayComment: z
+          .boolean()
+          .describe('Whether the caller may comment on the component, as Review offers it (RR-G)'),
       }),
     )
     .describe('Each occurrence the caller may read, at its pinned version'),
   bindings: z
     .array(BindingStateView)
     .describe('What each binding of those occurrences held when the baseline was made'),
+  mayComment: z.boolean().describe('Whether the caller may comment on the document'),
+  mayReview: z
+    .boolean()
+    .describe(
+      'Whether the caller may review it here: comment on or suggest to the document, or comment on a component it pins (IAM-081; the RR plan, RR-G)',
+    ),
 });
 export type BaselinePageView = z.infer<typeof BaselinePageView>;
 

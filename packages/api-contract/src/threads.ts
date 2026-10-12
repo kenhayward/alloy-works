@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BaselineParams } from './baselines.js';
 import { ComponentParams } from './components.js';
 import { DocumentParams } from './documents.js';
 import { pageQuery, nextCursor } from './listing.js';
@@ -185,6 +186,30 @@ export const threadRoutes = {
   startDocumentThread: { operationId: 'startDocumentThread', ...startThread('document') },
   listComponentThreads: { operationId: 'listComponentThreads', ...listThreads('component') },
   listDocumentThreads: { operationId: 'listDocumentThreads', ...listThreads('document') },
+  listBaselineThreads: {
+    operationId: 'listBaselineThreads',
+    method: 'GET',
+    path: '/v1/baselines/{id}/threads',
+    summary:
+      'The threads on a baseline’s document and the components it pins that the caller may read, judged against the pins, newest first',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { baseline: 'id' } },
+    params: BaselineParams,
+    query: ThreadListQuery,
+    responses: {
+      200: { description: 'A page of them', schema: ThreadList },
+      400: {
+        description: '`invalid_request`: a cursor this listing did not give out',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: { description: 'Never answered: a reader reads its threads', schema: ErrorBody },
+      404: {
+        description: 'No such baseline in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
   getThread: {
     operationId: 'getThread',
     method: 'GET',

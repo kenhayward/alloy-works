@@ -178,6 +178,7 @@ const OTHER_TENANT_IDS: Readonly<
   listBaselines: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   getBaselineView: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
+  listBaselineThreads: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   compareComponentVersions: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   compareBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   compareBaselineResolved: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),

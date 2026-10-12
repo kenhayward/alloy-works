@@ -1,4 +1,4 @@
-import type { RoundView } from '@alloy-works/api-contract';
+import type { RoundView, ThreadList } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   createComponent,
@@ -7,6 +7,7 @@ import {
   createTenant,
   findRole,
   grant,
+  makeBaseline,
   migrate,
   recordVersion,
   substanceOf,
@@ -305,5 +306,32 @@ describe('review rounds over HTTP (collaboration.md, Review rounds)', () => {
       mayClose: false,
     });
     expect((await as('reopening')).json()).toMatchObject({ code: 'round_closed', rule: 'COL-057' });
+  });
+
+  it('COL-031 runs a round against a baseline: its reviewers comment on the pinned text, judged against the pins however the document moves on', async () => {
+    const { printer, document } = await documentPlacing();
+    const baseline = await tenantDb.withTenant(tenant, async (trx) => {
+      const made = await makeBaseline(trx, {
+        documentId: document.artifactId,
+        version: document.id,
+        name: 'As sent',
+        maker: ids.ada!,
+      });
+      if (made.answer !== 'made') throw new Error(made.answer);
+      return made.baseline;
+    });
+    const round = (await open(document.artifactId, { baseline })).json<RoundView>();
+    expect(round).toMatchObject({ baseline, madeAgainst: document.id });
+    // Grace comments on the pinned text; then the component moves on, and the quote is gone from it.
+    expect((await start(printer, SPAN, 'grace')).statusCode).toBe(200);
+    await revise(printer, [para('p1', 'Load the paper.')]);
+    const live = await call('GET', `/v1/documents/${document.artifactId}/threads`, 'grace');
+    expect(live.json<ThreadList>().threads[0]).toMatchObject({ orphaned: true });
+    const pinned = await call('GET', `/v1/baselines/${baseline}/threads`, 'grace');
+    expect(pinned.statusCode, pinned.body).toBe(200);
+    expect(pinned.json<ThreadList>().threads[0]).toMatchObject({ orphaned: false });
+    // The baseline's page offers Grace Review.
+    const view = await call('GET', `/v1/baselines/${baseline}/view`, 'grace');
+    expect(view.json()).toMatchObject({ mayReview: true, texts: [{ mayComment: true }] });
   });
 });

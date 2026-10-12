@@ -103,6 +103,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listBaselines: read,
   getBaseline: read,
   getBaselineView: read,
+  listBaselineThreads: read,
   compareComponentVersions: read,
   compareBaseline: read,
   compareBaselineResolved: read,
