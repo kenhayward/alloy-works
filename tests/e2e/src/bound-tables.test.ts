@@ -222,6 +222,7 @@ describe('a bound table over the whole system', () => {
         ],
       },
       notes: {},
+      revised: [],
     });
     const again = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, {
       headers: { cookie, 'if-none-match': rows.headers.get('etag')! },
