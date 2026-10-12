@@ -586,3 +586,23 @@ export {
   type ThreadAnswer,
   type ThreadSummary,
 } from './threads.js';
+export {
+  cadencesOf,
+  DEFAULT_CADENCES,
+  deleteNotification,
+  digestBoundary,
+  foldDigests,
+  listInbox,
+  markRead,
+  NOTIFICATION_KINDS,
+  NOTIFICATIONS_KEPT_DAYS,
+  readableOf,
+  setCadences,
+  sweepNotifications,
+  tell,
+  titlesFor,
+  type Cadence,
+  type DigestCounts,
+  type NotificationKind,
+  type StoredNotification,
+} from './inbox.js';

@@ -26,6 +26,8 @@ const REASONS = {
   source: "Reads the source through the connector: nothing of the tenant's changes",
   platform: "The platform's own provisioning, outside the tenant's acts",
   presence: 'Where a window is, which is presence, not an act: unlogged, and gone in a minute',
+  inbox:
+    "A person's own inbox: what they were told, read, cleared or chose, none of the tenant's content",
 } as const;
 
 type Entry = { readonly writes: readonly AuditKind[] } | { readonly none: keyof typeof REASONS };
@@ -113,6 +115,11 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   addComment: writes('comment.added'),
   editComment: writes('comment.edited'),
   resolveThread: writes('thread.resolved'),
+  listInbox: read,
+  markNotificationRead: { none: 'inbox' },
+  deleteNotification: { none: 'inbox' },
+  getInboxPreferences: read,
+  setInboxPreferences: { none: 'inbox' },
   claimLock: { none: 'lock' },
   takeLock: writes('lock.taken'),
   releaseLock: { none: 'lock' },
@@ -216,6 +223,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
     sweepStalePresence: { none: 'presence' },
+    foldNotificationDigests: { none: 'inbox' },
+    sweepOldNotifications: { none: 'inbox' },
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {

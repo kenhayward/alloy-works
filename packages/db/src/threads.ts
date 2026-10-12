@@ -10,6 +10,7 @@ import {
   type ThreadAnchor,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { tell } from './inbox.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import type { TenantTransaction } from './tables.js';
 import { readVersion } from './versions.js';
@@ -59,6 +60,8 @@ export type ThreadAnswer =
       readonly thread: string;
       readonly comment: string;
       readonly mentioned: readonly string[];
+      /** Those it names who may not read what the thread is on, and so were told nothing (COL-015). */
+      readonly untold: readonly string[];
     }
   /** The anchor does not stand on the version named (TH-C). */
   | { readonly answer: 'anchor.invalid' }
@@ -178,7 +181,15 @@ export async function startThread(
     anchor: anchor.data.kind,
   });
   const comment = await insertComment(trx, thread.id, input.author, checked.parts);
-  return { answer: 'done', thread: thread.id, comment, mentioned: mentionsIn(checked.parts) };
+  const mentioned = mentionsIn(checked.parts);
+  const untold = await tell(trx, {
+    kind: 'mention',
+    actor: input.author,
+    thread: thread.id,
+    artifact: input.on,
+    recipients: mentioned,
+  });
+  return { answer: 'done', thread: thread.id, comment, mentioned, untold };
 }
 
 async function insertComment(
@@ -231,8 +242,26 @@ export async function addComment(
   if (found.resolved !== null) return { answer: 'thread.resolved' };
   const checked = await checkedParts(trx, input.parts);
   if ('problem' in checked) return { answer: 'parts.invalid', problem: checked.problem };
+  const earlier = await threadCommenters(trx, input.thread);
   const comment = await insertComment(trx, input.thread, input.author, checked.parts);
-  return { answer: 'done', thread: input.thread, comment, mentioned: mentionsIn(checked.parts) };
+  const mentioned = mentionsIn(checked.parts);
+  const on = (await threadOn(trx, input.thread))!;
+  const untold = await tell(trx, {
+    kind: 'mention',
+    actor: input.author,
+    thread: input.thread,
+    artifact: on,
+    recipients: mentioned,
+  });
+  // A reply tells every earlier commenter but its author, and none it has told of a mention already.
+  await tell(trx, {
+    kind: 'reply',
+    actor: input.author,
+    thread: input.thread,
+    artifact: on,
+    recipients: earlier.filter((each) => !mentioned.includes(each)),
+  });
+  return { answer: 'done', thread: input.thread, comment, mentioned, untold };
 }
 
 /**
@@ -275,13 +304,17 @@ export async function editComment(
     thread: input.thread,
     comment: input.comment,
   });
+  // A mention an edit adds tells its person; one already there tells nobody again (TH-E).
   const before = new Set(mentionsIn(last.parts as CommentParts));
-  return {
-    answer: 'done',
+  const mentioned = mentionsIn(checked.parts).filter((each) => !before.has(each));
+  const untold = await tell(trx, {
+    kind: 'mention',
+    actor: input.author,
     thread: input.thread,
-    comment: input.comment,
-    mentioned: mentionsIn(checked.parts).filter((each) => !before.has(each)),
-  };
+    artifact: (await threadOn(trx, input.thread))!,
+    recipients: mentioned,
+  });
+  return { answer: 'done', thread: input.thread, comment: input.comment, mentioned, untold };
 }
 
 /** A thread resolved, once (COL-013): who and when. */
@@ -296,6 +329,13 @@ export async function resolveThread(
     .insertInto('thread_resolution')
     .values({ thread_id: input.thread, resolved_by: input.by })
     .execute();
+  await tell(trx, {
+    kind: 'resolution',
+    actor: input.by,
+    thread: input.thread,
+    artifact: (await threadOn(trx, input.thread))!,
+    recipients: await threadCommenters(trx, input.thread),
+  });
   await recordThreadEvent(trx, 'thread.resolved', input.thread, { thread: input.thread });
   return 'resolved';
 }

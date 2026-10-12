@@ -26,7 +26,8 @@ import {
 import { anchorStands, readContent, readOutline, type ThreadAnchor } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { AppError } from './errors.js';
+import type { AppError } from './errors.js';
+import { keysetAfter, keysetCursor } from './keyset.js';
 import { refused } from './wire-codes.js';
 
 const PAGE = 50;
@@ -88,41 +89,6 @@ async function kindOf(trx: TenantTransaction, id: string): Promise<string | unde
     .where('id', '=', id)
     .executeTakeFirst();
   return row?.kind;
-}
-
-/** A thread listing's cursor: the last thread's start, to the millisecond, and id. */
-function cursorOf(thread: ThreadSummary): string {
-  return Buffer.from(
-    JSON.stringify({ v: 1, l: 'threads', a: thread.createdAt.toISOString(), i: thread.id }),
-    'utf8',
-  ).toString('base64url');
-}
-
-function afterOf(cursor: string | undefined): { at: Date; id: string } | undefined {
-  if (cursor === undefined) return undefined;
-  const refusal = new AppError(
-    400,
-    'invalid_request',
-    'The cursor is not one this listing gave out.',
-  );
-  let written: { v?: unknown; l?: unknown; a?: unknown; i?: unknown };
-  try {
-    written = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as typeof written;
-  } catch {
-    throw refusal;
-  }
-  const at = typeof written?.a === 'string' ? new Date(written.a) : undefined;
-  if (
-    written?.v !== 1 ||
-    written.l !== 'threads' ||
-    at === undefined ||
-    Number.isNaN(at.getTime()) ||
-    typeof written.i !== 'string' ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(written.i)
-  ) {
-    throw refusal;
-  }
-  return { at, id: written.i };
 }
 
 /** Whether an anchor stands on a version, each version read once (TH-D). */
@@ -189,7 +155,7 @@ export function threadHandlers() {
       if (answer.answer === 'missing')
         throw refused(400, 'version.not_held', `That version is not one of this ${kind}'s.`);
       if (answer.answer !== 'done') throw refuse(answer);
-      return viewOf(trx, answer.thread);
+      return { ...(await viewOf(trx, answer.thread)), untold: [...answer.untold] };
     };
 
   const list =
@@ -199,6 +165,7 @@ export function threadHandlers() {
       if ((await kindOf(trx, id)) !== kind) throw notFound();
       const query = request.query as ThreadListQuery;
       const limit = query.limit === undefined ? PAGE : Number(query.limit);
+      const after = keysetAfter('threads', query.cursor);
       const latest = await latestVersion(trx, id);
       if (!latest) throw notFound();
       const stands = standing(trx);
@@ -220,7 +187,7 @@ export function threadHandlers() {
         ...(query.state === undefined ? {} : { state: query.state }),
         ...(query.author === undefined ? {} : { author: query.author }),
         ...(query.since === undefined ? {} : { since: new Date(query.since) }),
-        ...(afterOf(query.cursor) === undefined ? {} : { after: afterOf(query.cursor)! }),
+        ...(after === undefined ? {} : { after }),
         limit: limit + 1,
       });
       const shown = page.slice(0, limit);
@@ -247,7 +214,13 @@ export function threadHandlers() {
       }
       return {
         threads,
-        next: page.length > limit ? cursorOf(shown[shown.length - 1]!) : null,
+        next:
+          page.length > limit
+            ? keysetCursor('threads', {
+                at: shown[shown.length - 1]!.createdAt,
+                id: shown[shown.length - 1]!.id,
+              })
+            : null,
       };
     };
 
@@ -272,7 +245,7 @@ export function threadHandlers() {
       const { parts } = request.body as CommentBody;
       const answer = await addComment(trx, { thread: id, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
-      return viewOf(trx, id);
+      return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
     },
 
     editComment: async (
@@ -283,7 +256,7 @@ export function threadHandlers() {
       const { parts } = request.body as CommentBody;
       const answer = await editComment(trx, { thread: id, comment, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
-      return viewOf(trx, id);
+      return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
     },
 
     resolveThread: async (

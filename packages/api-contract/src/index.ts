@@ -302,3 +302,11 @@ export {
   ThreadSummaryView,
   ThreadView,
 } from './threads.js';
+export {
+  InboxPreferences,
+  InboxPreferencesBody,
+  InboxQuery,
+  InboxView,
+  NotificationParams,
+  NotificationView,
+} from './inbox.js';

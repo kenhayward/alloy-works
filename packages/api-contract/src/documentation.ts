@@ -29,6 +29,10 @@ export const documentationGroups = [
         description:
           'Discuss a span, a cell, a component or a section beside the content, and resolve it.',
       },
+      {
+        name: 'Inbox',
+        description: 'Read and clear your notifications, and choose how often you are told.',
+      },
     ],
   },
   {
@@ -193,6 +197,13 @@ const operationTags = {
     'editComment',
     'resolveThread',
   ],
+  Inbox: [
+    'listInbox',
+    'markNotificationRead',
+    'deleteNotification',
+    'getInboxPreferences',
+    'setInboxPreferences',
+  ],
   Previews: ['requestPreview'],
   Comparison: [
     'compareComponentVersions',
@@ -304,6 +315,15 @@ const descriptions: Readonly<Record<string, string>> = {
     'Gives the caller’s own comment a new text. Every earlier text is kept and read with the thread.',
   resolveThread:
     'Resolves an open thread, recording who and when. A thread is resolved once and never reopened.',
+  listInbox:
+    'Lists the caller’s notifications, newest first, and how many are unread. A notification names what happened, who did it, and the thread and what it is on by identifier, never the text; a title is shown only where the caller may read it now. A digest counts a day’s events.',
+  markNotificationRead: 'Marks one of the caller’s notifications read.',
+  deleteNotification:
+    'Deletes one of the caller’s notifications. Notifications are otherwise kept 90 days.',
+  getInboxPreferences:
+    'Reads how often the caller is told of mentions, replies and resolutions: at once, in a daily digest, or never.',
+  setInboxPreferences:
+    'Chooses how often the caller is told of each kind named. A daily digest is made after 07:00 UTC.',
   supersedeBaseline:
     'Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.',
   takeLock:

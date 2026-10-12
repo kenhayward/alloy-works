@@ -23,6 +23,7 @@ import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
 import { templateRoutes } from './templates.js';
 import { threadRoutes } from './threads.js';
+import { inboxRoutes } from './inbox.js';
 import { administeredTokenRoutes, tokenRoutes } from './tokens.js';
 import {
   AccessAnswers,
@@ -315,7 +316,8 @@ type Routes = typeof ownRoutes &
   typeof baselineRoutes &
   typeof comparisonRoutes &
   typeof changesRoutes &
-  typeof threadRoutes;
+  typeof threadRoutes &
+  typeof inboxRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -346,6 +348,7 @@ export const routes: Routes = {
   ...comparisonRoutes,
   ...changesRoutes,
   ...threadRoutes,
+  ...inboxRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);
