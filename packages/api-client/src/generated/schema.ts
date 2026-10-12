@@ -1271,6 +1271,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/rounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The review rounds on this document, newest first
+         * @description Lists a document’s review rounds, newest first, each with its reviewers by state and whether everybody has reviewed.
+         */
+        get: operations["listRounds"];
+        put?: never;
+        /**
+         * Open a review round on this document: its reviewers, its scope and its due date
+         * @description Opens a review round on a document: a title, the people who are to review it, its scope - the whole document or sections of it - and when the reviews are due; on the document as it is, or on one of its baselines, which its reviewers then read as a fixed text. Each reviewer must be a person who may comment on or suggest to the document and read all it covers, or the round is refused, saying how many may not. Each reviewer is told. Needs edit on the document.
+         */
+        post: operations["openRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/suggestions": {
         parameters: {
             query?: never;
@@ -1925,6 +1949,106 @@ export interface paths {
         get: operations["listRoles"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rounds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A review round, each reviewer by state, and whether everybody has reviewed
+         * @description Reads a review round: its reviewers, each not started, in progress or complete and how, with the threads and suggestions they made on the document since it opened, and whether everybody has reviewed. Answered from what each reviewer said alone, never from silence.
+         */
+        get: operations["getRound"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rounds/{id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a review round, for good
+         * @description Closes a review round for good: nobody may then start, complete or reopen a review in it. Closing applies and approves nothing. Needs edit on the document.
+         */
+        post: operations["closeRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rounds/{id}/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say you have finished your review, with comments or with nothing to say
+         * @description Says the caller has finished their review, with comments or with nothing to say. Refused where they have completed already: reopen first to change how.
+         */
+        post: operations["completeReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rounds/{id}/reopening": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take back your completion while the round is open
+         * @description Takes back the caller’s completion while the round is open, recording who and when; they are then in progress.
+         */
+        post: operations["reopenReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rounds/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say you have started your review in this round
+         * @description Says the caller has started their review in a round they are reviewing. Saying it again changes nothing.
+         */
+        post: operations["startReview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -33635,6 +33759,425 @@ export interface operations {
             };
         };
     };
+    listRounds: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every round */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "rounds": []
+                     *     }
+                     */
+                    "application/json": {
+                        rounds: {
+                            id: string & (unknown & unknown);
+                            document: string & (unknown & unknown);
+                            title: string;
+                            /** @description Outline nodes; empty for the whole document */
+                            scope: string[];
+                            /** Format: date-time */
+                            dueAt: string;
+                            baseline: (string & (unknown & unknown)) | null;
+                            /** @description The document version it opened on, or the baseline’s */
+                            madeAgainst: string & (unknown & unknown);
+                            openedBy: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            openedAt: string;
+                            closed: {
+                                by: {
+                                    id: string & (unknown & unknown);
+                                    name: string | null;
+                                };
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            reviewers: {
+                                person: {
+                                    id: string & (unknown & unknown);
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                state: "not_started" | "in_progress" | "complete";
+                                /**
+                                 * @description A completion’s
+                                 * @enum {string}
+                                 */
+                                outcome?: "commented" | "nothing_to_say";
+                                /**
+                                 * Format: date-time
+                                 * @description When they completed
+                                 */
+                                at?: string;
+                                /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                                mayReview: boolean;
+                                /** @description Threads they started on the document since the round opened, that the caller may read */
+                                threads: number;
+                                /** @description Suggestions they made on it since the round opened, that the caller may read */
+                                suggestions: number;
+                            }[];
+                            complete: number;
+                            of: number;
+                            /** @description Whether every reviewer has said they are complete (COL-030) */
+                            everybody: boolean;
+                            /** @description Whether the caller may close it */
+                            mayClose: boolean;
+                            /** @description Whether the caller is one of its reviewers and may review */
+                            reviewing: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its rounds */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    openRound: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "example",
+                 *       "dueAt": "2026-01-01T00:00:00.000Z",
+                 *       "reviewers": [
+                 *         "00000000-0000-4000-8000-000000000001"
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description 1 to 200 characters */
+                    title: string;
+                    /** @description Outline nodes, each with what is beneath it; the whole document where omitted */
+                    scope?: string[];
+                    /**
+                     * Format: date-time
+                     * @description When the reviews are due, after now
+                     */
+                    dueAt: string;
+                    /** @description A baseline of the document, which the reviewers read in place of the document as it moves */
+                    baseline?: string & (unknown & unknown);
+                    /** @description 1 to 50 people, each able to comment or suggest on the document */
+                    reviewers: (string & (unknown & unknown))[];
+                };
+            };
+        };
+        responses: {
+            /** @description Opened, and each reviewer told */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description `round_scope_invalid`: a node the document does not have; `round_reviewers_invalid`: a reviewer who may not review it, counted; `round_due_invalid`: due before now; `round_baseline_missing`: no such baseline of this document */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description round_scope_invalid: the nodes it does not have */
+                        nodes?: string[];
+                        /** @description round_reviewers_invalid: how many named may not review it - not people, or unable to comment or suggest, or to read all it covers */
+                        count?: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listDocumentSuggestions: {
         parameters: {
             query?: {
@@ -36131,7 +36674,7 @@ export interface operations {
                         notifications: {
                             id: string & (unknown & unknown);
                             /** @enum {string} */
-                            kind: "mention" | "reply" | "resolution" | "digest";
+                            kind: "mention" | "reply" | "resolution" | "round" | "digest";
                             /** @description Who did it; null on a digest, or where the caller may no longer read what it is on */
                             actor: {
                                 id: string & (unknown & unknown);
@@ -36139,7 +36682,9 @@ export interface operations {
                             } | null;
                             /** @description The thread; null on a digest, or where the caller may no longer read what it is on */
                             thread: (string & (unknown & unknown)) | null;
-                            /** @description What the thread is on; null on a digest */
+                            /** @description The round a person was named a reviewer on (RR-H); null otherwise, or where the caller may no longer read its document */
+                            round: (string & (unknown & unknown)) | null;
+                            /** @description What the thread is on, or the round’s document; null on a digest */
                             on: {
                                 id: string & (unknown & unknown);
                                 /** @description Its title, to a reader of it now alone; null to anybody else */
@@ -36150,7 +36695,10 @@ export interface operations {
                                 mention: number;
                                 reply: number;
                                 resolution: number;
+                                /** @description Rounds you were named a reviewer on */
+                                round: number;
                                 threads: (string & (unknown & unknown))[];
+                                rounds: (string & (unknown & unknown))[];
                                 places: {
                                     id: string & (unknown & unknown);
                                     /** @description Its title, to a reader of it now alone; null to anybody else */
@@ -36484,7 +37032,8 @@ export interface operations {
                      * @example {
                      *       "mention": "at_once",
                      *       "reply": "at_once",
-                     *       "resolution": "at_once"
+                     *       "resolution": "at_once",
+                     *       "round": "at_once"
                      *     }
                      */
                     "application/json": {
@@ -36503,6 +37052,11 @@ export interface operations {
                          * @enum {string}
                          */
                         resolution: "at_once" | "daily" | "never";
+                        /**
+                         * @description Named a reviewer on a round; at once unless chosen
+                         * @enum {string}
+                         */
+                        round: "at_once" | "daily" | "never";
                     };
                 };
             };
@@ -36597,6 +37151,11 @@ export interface operations {
                      * @enum {string}
                      */
                     resolution?: "at_once" | "daily" | "never";
+                    /**
+                     * @description Named a reviewer on a round; at once unless chosen
+                     * @enum {string}
+                     */
+                    round?: "at_once" | "daily" | "never";
                 };
             };
         };
@@ -36613,7 +37172,8 @@ export interface operations {
                      * @example {
                      *       "mention": "at_once",
                      *       "reply": "at_once",
-                     *       "resolution": "at_once"
+                     *       "resolution": "at_once",
+                     *       "round": "at_once"
                      *     }
                      */
                     "application/json": {
@@ -36632,6 +37192,11 @@ export interface operations {
                          * @enum {string}
                          */
                         resolution: "at_once" | "daily" | "never";
+                        /**
+                         * @description Named a reviewer on a round; at once unless chosen
+                         * @enum {string}
+                         */
+                        round: "at_once" | "daily" | "never";
                     };
                 };
             };
@@ -40982,6 +41547,1062 @@ export interface operations {
             };
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRound: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The round */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its rounds */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such round in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    closeRound: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed, or closed already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such round in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    completeReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "outcome": "commented"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * @description Finished with comments, or with nothing to say (COL-032)
+                     * @enum {string}
+                     */
+                    outcome: "commented" | "nothing_to_say";
+                };
+            };
+        };
+        responses: {
+            /** @description Complete */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: one not reviewing is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such round, none the caller may read, or one they are not reviewing or may no longer review */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `round_closed`: closed; `review_complete`: the caller has completed already - reopen to change how */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    reopenReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description In progress again */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: one not reviewing is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such round, none the caller may read, or one they are not reviewing or may no longer review */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `round_closed`: closed; `review_not_complete`: the caller has not completed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    startReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Started, or started already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "document": "00000000-0000-4000-8000-000000000001",
+                     *       "title": "example",
+                     *       "scope": [],
+                     *       "dueAt": "2026-01-01T00:00:00.000Z",
+                     *       "baseline": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "openedBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "openedAt": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "reviewers": [],
+                     *       "complete": -9007199254740991,
+                     *       "of": -9007199254740991,
+                     *       "everybody": false,
+                     *       "mayClose": false,
+                     *       "reviewing": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        document: string & (unknown & unknown);
+                        title: string;
+                        /** @description Outline nodes; empty for the whole document */
+                        scope: string[];
+                        /** Format: date-time */
+                        dueAt: string;
+                        baseline: (string & (unknown & unknown)) | null;
+                        /** @description The document version it opened on, or the baseline’s */
+                        madeAgainst: string & (unknown & unknown);
+                        openedBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        openedAt: string;
+                        closed: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        reviewers: {
+                            person: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** @enum {string} */
+                            state: "not_started" | "in_progress" | "complete";
+                            /**
+                             * @description A completion’s
+                             * @enum {string}
+                             */
+                            outcome?: "commented" | "nothing_to_say";
+                            /**
+                             * Format: date-time
+                             * @description When they completed
+                             */
+                            at?: string;
+                            /** @description Whether they may still comment or suggest on the document: one who may not stays as they were */
+                            mayReview: boolean;
+                            /** @description Threads they started on the document since the round opened, that the caller may read */
+                            threads: number;
+                            /** @description Suggestions they made on it since the round opened, that the caller may read */
+                            suggestions: number;
+                        }[];
+                        complete: number;
+                        of: number;
+                        /** @description Whether every reviewer has said they are complete (COL-030) */
+                        everybody: boolean;
+                        /** @description Whether the caller may close it */
+                        mayClose: boolean;
+                        /** @description Whether the caller is one of its reviewers and may review */
+                        reviewing: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: one not reviewing is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such round, none the caller may read, or one they are not reviewing or may no longer review */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `round_closed`: the round is closed, and takes nothing more */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

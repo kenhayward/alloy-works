@@ -861,7 +861,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1079);
+    expect(model.citations).toHaveLength(1090);
   });
 
   it('cites no identifier the corpus does not hold', () => {

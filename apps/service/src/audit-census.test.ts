@@ -28,6 +28,8 @@ const REASONS = {
   presence: 'Where a window is, which is presence, not an act: unlogged, and gone in a minute',
   inbox:
     "A person's own inbox: what they were told, read, cleared or chose, none of the tenant's content",
+  started:
+    "A reviewer saying they have started (RR-A): kept on the round's own rows, which its readers read, and no change to the tenant's content",
 } as const;
 
 type Entry = { readonly writes: readonly AuditKind[] } | { readonly none: keyof typeof REASONS };
@@ -123,6 +125,13 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   rejectSuggestion: writes('suggestion.rejected'),
   withdrawSuggestion: writes('suggestion.withdrawn'),
   resolveSuggestions: writes('suggestion.accepted', 'suggestion.rejected', 'content.version_cut'),
+  openRound: writes('round.opened'),
+  listRounds: read,
+  getRound: read,
+  closeRound: writes('round.closed'),
+  startReview: { none: 'started' },
+  completeReview: writes('review.completed'),
+  reopenReview: writes('review.reopened'),
   listInbox: read,
   markNotificationRead: { none: 'inbox' },
   deleteNotification: { none: 'inbox' },

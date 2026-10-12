@@ -83,6 +83,7 @@ import {
 import { baselineHandlers } from './baselines.js';
 import { threadHandlers } from './threads.js';
 import { inboxHandlers } from './inbox.js';
+import { roundHandlers } from './rounds.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
@@ -497,6 +498,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...threadHandlers(),
     ...inboxHandlers(db, tenantOf, principalOf),
     ...suggestionHandlers(),
+    ...roundHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

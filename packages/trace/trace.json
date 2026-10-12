@@ -18997,13 +18997,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 549,
+      "line": 563,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 499,
+      "line": 513,
       "kind": "title"
     },
     {
@@ -19117,7 +19117,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 304,
+      "line": 313,
       "kind": "title"
     },
     {
@@ -19363,7 +19363,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1068,
+      "line": 1107,
       "kind": "title"
     },
     {
@@ -19856,6 +19856,48 @@
       "id": "DAT-063",
       "file": "apps/service/src/revisions-routes.test.ts",
       "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "COL-028",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 217,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 276,
+      "kind": "title"
+    },
+    {
+      "id": "COL-030",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 217,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 276,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 307,
+      "kind": "rule"
+    },
+    {
+      "id": "COL-057",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 276,
+      "kind": "title"
+    },
+    {
+      "id": "COL-058",
+      "file": "apps/service/src/rounds-routes.test.ts",
+      "line": 276,
       "kind": "title"
     },
     {
@@ -22393,13 +22435,13 @@
     {
       "id": "COL-034",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 227,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "COL-035",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 249,
+      "line": 250,
       "kind": "title"
     },
     {
@@ -22411,13 +22453,13 @@
     {
       "id": "COL-053",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 249,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "COL-062",
       "file": "packages/db/src/inbox.test.ts",
-      "line": 306,
+      "line": 307,
       "kind": "title"
     },
     {
@@ -22544,6 +22586,30 @@
       "id": "IAM-021",
       "file": "packages/db/src/roles.test.ts",
       "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "COL-028",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 109,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 147,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "packages/db/src/rounds.test.ts",
+      "line": 147,
       "kind": "title"
     },
     {
@@ -22897,7 +22963,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 179,
+      "line": 183,
       "kind": "title"
     },
     {

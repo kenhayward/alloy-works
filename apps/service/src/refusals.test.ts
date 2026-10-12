@@ -37,6 +37,7 @@ describe('the rule behind a refusal', () => {
       ['suggestion.stale', 'suggestion_stale', 'COL-052'],
       ['suggestion.not_yours', 'suggestion_not_yours', 'COL-048'],
       ['revision.decision_required', 'revision_decision_required', 'DAT-060'],
+      ['round.closed', 'round_closed', 'COL-057'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -153,6 +154,15 @@ describe('the rule behind a refusal', () => {
       'value.invalid',
       'value.empty',
       'key.required',
+      // The RR plan's (RR-B, RR-F): a round opened due before now, on a baseline or a section the
+      // document lacks, or naming one who may not review it; a completion twice, or a reopening of
+      // none. Guards of the design's own.
+      'round.due_invalid',
+      'round.baseline_missing',
+      'round.scope_invalid',
+      'round.reviewers_invalid',
+      'review.complete',
+      'review.not_complete',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

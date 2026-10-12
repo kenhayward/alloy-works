@@ -38,6 +38,11 @@ export const documentationGroups = [
         description:
           'Suggest a change to a component beside it, and accept, reject or withdraw one.',
       },
+      {
+        name: 'Review rounds',
+        description:
+          'Ask named people to review a document by a date, and see who has reviewed it.',
+      },
     ],
   },
   {
@@ -220,6 +225,15 @@ const operationTags = {
     'withdrawSuggestion',
     'resolveSuggestions',
   ],
+  'Review rounds': [
+    'openRound',
+    'listRounds',
+    'getRound',
+    'closeRound',
+    'startReview',
+    'completeReview',
+    'reopenReview',
+  ],
   Previews: ['requestPreview'],
   Comparison: [
     'compareComponentVersions',
@@ -351,6 +365,20 @@ const descriptions: Readonly<Record<string, string>> = {
   acceptSuggestion:
     'Accepts a suggestion: applies it to the component as it is now, block by block, and records the result as a version by the caller. Refused while somebody else holds the component, or while the caller holds it with saved work, and where it no longer fits, saying where.',
   rejectSuggestion: 'Rejects a suggestion. Refused while somebody else holds the component.',
+  openRound:
+    'Opens a review round on a document: a title, the people who are to review it, its scope - the whole document or sections of it - and when the reviews are due; on the document as it is, or on one of its baselines, which its reviewers then read as a fixed text. Each reviewer must be a person who may comment on or suggest to the document and read all it covers, or the round is refused, saying how many may not. Each reviewer is told. Needs edit on the document.',
+  listRounds:
+    'Lists a document’s review rounds, newest first, each with its reviewers by state and whether everybody has reviewed.',
+  getRound:
+    'Reads a review round: its reviewers, each not started, in progress or complete and how, with the threads and suggestions they made on the document since it opened, and whether everybody has reviewed. Answered from what each reviewer said alone, never from silence.',
+  closeRound:
+    'Closes a review round for good: nobody may then start, complete or reopen a review in it. Closing applies and approves nothing. Needs edit on the document.',
+  startReview:
+    'Says the caller has started their review in a round they are reviewing. Saying it again changes nothing.',
+  completeReview:
+    'Says the caller has finished their review, with comments or with nothing to say. Refused where they have completed already: reopen first to change how.',
+  reopenReview:
+    'Takes back the caller’s completion while the round is open, recording who and when; they are then in progress.',
   withdrawSuggestion:
     'Withdraws the caller’s own pending suggestion. It is kept, saying who withdrew it and when.',
   resolveSuggestions:

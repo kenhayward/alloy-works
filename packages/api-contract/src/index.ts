@@ -325,3 +325,12 @@ export {
   SuggestionSummaryView,
   SuggestionView,
 } from './suggestions.js';
+export {
+  CompleteReviewBody,
+  OpenRoundBody,
+  RoundList,
+  RoundParams,
+  RoundRefusal,
+  roundRoutes,
+  RoundView,
+} from './rounds.js';

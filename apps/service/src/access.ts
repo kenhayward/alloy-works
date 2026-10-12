@@ -136,6 +136,18 @@ async function targetOf(
       .executeTakeFirst();
     return baseline ? parseLevel(`artifact:${baseline.document_id}`) : undefined;
   }
+  if ('round' in declared) {
+    // A round is decided on its document (the RR plan, RR-C): one this tenant does not hold is no
+    // level at all, and so not found.
+    const id = params[declared.round];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const row = await trx
+      .selectFrom('review_round')
+      .select('document_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return row ? parseLevel(`artifact:${row.document_id}`) : undefined;
+  }
   if ('suggestion' in declared) {
     // A suggestion is decided on its component (the SG plan): one this tenant does not hold is no
     // level at all, and so not found.

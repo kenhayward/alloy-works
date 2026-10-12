@@ -71,6 +71,21 @@ export function inboxHandlers(
           const on = await threadOn(trx, thread);
           if (on !== undefined && readable.has(on)) onReadable.add(thread);
         }
+        // A digest's rounds, by their documents, as its threads are by what they are on (RR-H).
+        const roundsAsked = [...new Set(shown.flatMap((each) => each.counts?.rounds ?? []))];
+        const roundOnReadable = new Set(
+          roundsAsked.length === 0
+            ? []
+            : (
+                await trx
+                  .selectFrom('review_round')
+                  .select(['id', 'document_id'])
+                  .where('id', 'in', roundsAsked)
+                  .execute()
+              )
+                .filter((row) => readable.has(row.document_id))
+                .map((row) => row.id),
+        );
         const last = shown[shown.length - 1];
         return {
           notifications: shown.map((each) => ({
@@ -78,6 +93,7 @@ export function inboxHandlers(
             kind: each.kind,
             actor: each.artifact !== null && !readable.has(each.artifact) ? null : each.actor,
             thread: each.artifact !== null && !readable.has(each.artifact) ? null : each.thread,
+            round: each.artifact !== null && !readable.has(each.artifact) ? null : each.round,
             on: each.artifact === null ? null : place(each.artifact),
             counts:
               each.counts === null
@@ -86,7 +102,11 @@ export function inboxHandlers(
                     mention: each.counts.mention,
                     reply: each.counts.reply,
                     resolution: each.counts.resolution,
+                    round: each.counts.round ?? 0,
                     threads: each.counts.threads.filter((thread) => onReadable.has(thread)),
+                    rounds: (each.counts.rounds ?? []).filter((round) =>
+                      roundOnReadable.has(round),
+                    ),
                     places: each.counts.artifacts
                       .filter((artifact) => readable.has(artifact))
                       .map(place),

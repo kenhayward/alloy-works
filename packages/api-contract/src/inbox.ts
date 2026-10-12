@@ -22,7 +22,7 @@ const Place = z.object({
 /** One notification (COL-063): what happened, by whom, where - never the text (COL-036). */
 export const NotificationView = z.object({
   id: LowercaseUuid,
-  kind: z.enum(['mention', 'reply', 'resolution', 'digest']),
+  kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest']),
   actor: z
     .object({ id: LowercaseUuid, name: z.string().nullable() })
     .nullable()
@@ -30,13 +30,18 @@ export const NotificationView = z.object({
   thread: LowercaseUuid.nullable().describe(
     'The thread; null on a digest, or where the caller may no longer read what it is on',
   ),
-  on: Place.nullable().describe('What the thread is on; null on a digest'),
+  round: LowercaseUuid.nullable().describe(
+    'The round a person was named a reviewer on (RR-H); null otherwise, or where the caller may no longer read its document',
+  ),
+  on: Place.nullable().describe('What the thread is on, or the round’s document; null on a digest'),
   counts: z
     .object({
       mention: z.int().nonnegative(),
       reply: z.int().nonnegative(),
       resolution: z.int().nonnegative(),
+      round: z.int().nonnegative().describe('Rounds you were named a reviewer on'),
       threads: z.array(LowercaseUuid),
+      rounds: z.array(LowercaseUuid),
       places: z.array(Place),
     })
     .nullable()
@@ -62,6 +67,7 @@ export const InboxPreferences = z.strictObject({
   mention: Cadence.describe('When a comment names you; at once unless chosen'),
   reply: Cadence.describe('A reply on a thread you have commented on; at once unless chosen'),
   resolution: Cadence.describe('A thread you have commented on resolved; daily unless chosen'),
+  round: Cadence.describe('Named a reviewer on a round; at once unless chosen'),
 });
 export type InboxPreferences = z.infer<typeof InboxPreferences>;
 
