@@ -141,6 +141,8 @@ describe('the domain package', () => {
         'commentPartsSchema',
         'mentionsIn',
         'threadAnchorSchema',
+        // Suggestions (the SG plan): applied to the component as it is now.
+        'applySuggestion',
         'createMeter',
         'outlineTexts',
         'unitTexts',

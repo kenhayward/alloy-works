@@ -49,13 +49,28 @@ next hold the lock. A take is never instant and never silent.
 | **COL-053** | The digest holds counts and identifiers alone, on the same terms |
 | **COL-062** | Kept 90 days, then swept; deleted by its recipient alone; a second copy of tenant content, in the tenant's schema and read only by its recipient (IAM-066). A deprovisioned principal's inbox is deleted with them - no act deprovisions anybody yet, so the rule is stated and waits for that act |
 | **CNT-155** | The document view offers **Review** beside Reading and Authoring |
-| **CNT-157** | Review shows threads and lets the reader start and answer them; it offers no editing surface. Suggestions join it in phase 6 |
+| **CNT-157** | Review shows threads and suggestions and lets the reader start and answer them, and suggest in a draft of their own; it never edits the content |
 | **IAM-081** | Review is offered to whoever holds `comment` or `suggest` on the document, as Authoring is to whoever holds `edit` (IAM-080) |
+| **COL-020** | A reviewer suggests by editing a private draft of a component; the suggestion is that draft beside the content, drawn as a redline over the current version by the comparison's renderer, and the content is unchanged until it is accepted |
+| **COL-021** | A suggestion records its author and when it was made, and the version it was made against |
+| **COL-022** | Accepted or rejected one at a time, or in bulk: every pending suggestion on a component or across a document, optionally of one author |
+| **COL-023** | One suggestion is one act: accepting applies every change it holds, or none of them |
+| **COL-024** | Accepting records a version authored by whoever accepts, `suggestion.accepted` naming the suggestion and its author; rejecting and withdrawing are audited too |
+| **COL-025** | Suggestions are made, listed and drawn with no lock, while the component is held |
+| **COL-041** | Accepting or rejecting serialises on the component and holds it for its transaction where it is free, the automatic claim, ending with the act; where the caller holds the lock, refused `edits_pending` while they have saved work after the current version |
+| **COL-042** | Accepting or rejecting is refused `lock_held` while another holds the component's lock, naming the holder and when it is expected to release (COL-007); the suggestion stays pending |
+| **COL-043** | Nothing applies a suggestion but a person's accepting it, one or in bulk: no release, timeout or round applies one |
+| **COL-048** | Its author withdraws a pending suggestion; the withdrawal records who and when, and the suggestion is kept |
+| **COL-052** | A suggestion that no longer applies to the component as it is now is listed **stale**, with each place it no longer fits and why; it stays pending, never rejected on its author's behalf |
 
 **COL-045's two edges**, named rather than hidden: a holder **offline** through the grace has saved
 nothing since they lost the network, so what they typed is in their window's storage alone, kept there
 and offered when it next opens, not an iteration; and what they did save is recoverable **within the
 tenant's retention** after the taker's next cut (VER-003), not for ever.
+
+**COL-027 named as a gap:** unresolved suggestions are reportable (a document's and a component's
+pending, counted and listed); the lifecycle gate that requires none is T9's LIF, and the claim waits
+for it.
 
 **Not claimed:** COL-056. Nothing deletes a component or moves it between spaces yet (T7, T9); a lock
 whose component leaves a viewer's readable set already degrades to absence on the stream
@@ -162,5 +177,35 @@ one digest notification of counts and places. Kept 90 days.
 
 Review is the document view's third mode (CNT-155): the text as Reading shows it, with every thread on
 it marked where it stands and a panel listing them, and a way to start one on a selection, a component,
-a cell or a node. It never opens an editor (CNT-157). It is offered to whoever holds `comment` or
+a cell or a node. It never edits the content (CNT-157): a suggestion is made in a draft of the reader's own. It is offered to whoever holds `comment` or
 `suggest` (IAM-081).
+
+## Suggestions
+
+A suggestion is a reviewer's draft of one component, kept **beside** it ([ADR-0058](../decisions/0058-suggestions-are-proposals-beside-the-content.md)):
+the proposed content, the version it was made against, who and when. It is made with `suggest` and no
+lock, so review never waits for an author (COL-025). What it changes is the comparison of the draft
+with that version (VER-024), drawn by the comparison's redline.
+
+**Accepting applies it to the component as it is now**, a three-way merge by block identifier over the
+component's top-level blocks:
+
+| The suggestion                           | Applies when, in the current version                      | Otherwise stale, saying      |
+| ---------------------------------------- | --------------------------------------------------------- | ---------------------------- |
+| Changes a block                          | That block is as it was in the version made against       | The block changed since      |
+| Removes a block                          | That block is as it was                                   | The block changed since      |
+| Adds a block after another               | That other block is there (or it was at the start)        | The block it follows is gone |
+| Moves a block                            | The block and the one it now follows are there, unchanged | Either changed or gone       |
+| Changes the title, language or direction | It is as it was                                           | The title changed since      |
+
+The merge is [ADR-0059](../decisions/0059-a-suggestion-merges-by-whole-block.md)'s. A block counts as changed when anything in it differs - text, marks, attributes, a list item or a
+cell within it - so a suggestion never merges inside a block somebody else has changed. Applied, the
+result is recorded as a version by whoever accepts (COL-024), with every kept block's identifier
+(CNT-009). Stale is computed when listed, never stored: a suggestion stale today applies again if the
+block is put back.
+
+Who may: read a suggestion with `read` on its component; make one with `suggest`; accept and reject
+with `edit`, never while another holds the lock (COL-042); withdraw as its author. Nothing deletes
+one. In Review, a component's card offers **Suggest changes**, which opens a draft editor of its own -
+the component editor in a draft mode: no lock, no iterations, nothing saved until **Send suggestion** - and the panel lists suggestions with
+threads, each drawn as a redline over the current version.

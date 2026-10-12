@@ -52,6 +52,7 @@ exist.
 | [0056](0056-the-editing-canvas-is-a-page-on-a-desk.md)                            | The editing canvas is a page on a desk                                        | Accepted           |
 | [0057](0057-t3s-order-and-template-moves-leave-for-t9.md)                         | T3's order, and template moves leave for T9                                   | Accepted           |
 | [0058](0058-suggestions-are-proposals-beside-the-content.md)                      | Suggestions are proposals beside the content                                  | Accepted           |
+| [0059](0059-a-suggestion-merges-by-whole-block.md)                                | A suggestion merges by whole block                                            | Proposed           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |
