@@ -16109,11 +16109,55 @@
         },
         {
           "id": "CNT-157",
-          "howItIsMet": "Review shows threads and lets the reader start and answer them; it offers no editing surface. Suggestions join it in phase 6"
+          "howItIsMet": "Review shows threads and suggestions and lets the reader start and answer them, and suggest in a draft of their own; it never edits the content"
         },
         {
           "id": "IAM-081",
           "howItIsMet": "Review is offered to whoever holds `comment` or `suggest` on the document, as Authoring is to whoever holds `edit` (IAM-080)"
+        },
+        {
+          "id": "COL-020",
+          "howItIsMet": "A reviewer suggests by editing a private draft of a component; the suggestion is that draft beside the content, drawn as a redline over the current version by the comparison's renderer, and the content is unchanged until it is accepted"
+        },
+        {
+          "id": "COL-021",
+          "howItIsMet": "A suggestion records its author and when it was made, and the version it was made against"
+        },
+        {
+          "id": "COL-022",
+          "howItIsMet": "Accepted or rejected one at a time, or in bulk: every pending suggestion on a component or across a document, optionally of one author"
+        },
+        {
+          "id": "COL-023",
+          "howItIsMet": "One suggestion is one act: accepting applies every change it holds, or none of them"
+        },
+        {
+          "id": "COL-024",
+          "howItIsMet": "Accepting records a version authored by whoever accepts, `suggestion.accepted` naming the suggestion and its author; rejecting and withdrawing are audited too"
+        },
+        {
+          "id": "COL-025",
+          "howItIsMet": "Suggestions are made, listed and drawn with no lock, while the component is held"
+        },
+        {
+          "id": "COL-041",
+          "howItIsMet": "Accepting or rejecting serialises on the component and holds it for its transaction where it is free, the automatic claim, ending with the act; where the caller holds the lock, refused `edits_pending` while they have saved work after the current version"
+        },
+        {
+          "id": "COL-042",
+          "howItIsMet": "Accepting or rejecting is refused `lock_held` while another holds the component's lock, naming the holder and when it is expected to release (COL-007); the suggestion stays pending"
+        },
+        {
+          "id": "COL-043",
+          "howItIsMet": "Nothing applies a suggestion but a person's accepting it, one or in bulk: no release, timeout or round applies one"
+        },
+        {
+          "id": "COL-048",
+          "howItIsMet": "Its author withdraws a pending suggestion; the withdrawal records who and when, and the suggestion is kept"
+        },
+        {
+          "id": "COL-052",
+          "howItIsMet": "A suggestion that no longer applies to the component as it is now is listed **stale**, with each place it no longer fits and why; it stays pending, never rejected on its author's behalf"
         }
       ]
     },
@@ -23299,7 +23343,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 649,
+      "line": 651,
       "kind": "title"
     },
     {
@@ -23834,6 +23878,24 @@
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/widths.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-009",
+      "file": "packages/domain/src/review/suggestions.test.ts",
+      "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "COL-023",
+      "file": "packages/domain/src/review/suggestions.test.ts",
+      "line": 102,
+      "kind": "title"
+    },
+    {
+      "id": "COL-052",
+      "file": "packages/domain/src/review/suggestions.test.ts",
+      "line": 102,
       "kind": "title"
     },
     {
