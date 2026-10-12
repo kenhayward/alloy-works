@@ -47,3 +47,22 @@ LIF-057).
 - The final review hunts an ordinary listing still showing archived content, and a hold changed
   without a record. `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the version
   (0.161.0) and the baseline.
+
+## Changed while building
+
+| Where | Planned                             | Built, and why                                                                                                                                                                                                                                                                   |
+| ----- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs   | Two                                 | Two, #587 and #588                                                                                                                                                                                                                                                               |
+| AH-A  | Administrator gains `retire`        | Matched by name: a role renamed from Administrator does not gain it                                                                                                                                                                                                              |
+| AH-H  | The menus gated by `GET /v1/access` | The component and document views carry `mayRetire`, `mayHold` and `onHold`: asking the access route from a page broke the editor's pinned requests. Archive and Place a hold are buttons on the page, which has no menu; documents have no row menu                              |
+| AH-F  | Holds on what AH-G's pages offer    | Components, documents, publications and assets, or a space; the web offers components, documents and spaces. A held publication is named by its document's title at the version it published, an asset by its alternative text. A baseline is held through its document or space |
+| AH-G  | Legal holds' titles                 | Each named by its current title to a tenant administrator, whether or not they may read it, as the audit log names it (audit.md's stance)                                                                                                                                        |
+
+## Final review
+
+Fixed: holds on a publication or an asset with no title or space (2); access.md silent on `retire`
+(3); Legal holds' titles and `/v1/changes` unsaid in lifecycle.md (4, 5); Administrator's `retire` on
+an existing tenant untested (6); a LIF-020 title claiming a reference it never made (7); another
+tenant's target and an external administrator untested (8); a capitalised fallback, a positive tone
+for a restriction and a released row unchecked by axe (9). Left: access.md still says `use_connection`
+and `write_sql` are not built.
