@@ -25,6 +25,7 @@ import {
   type PublishFailure,
   type PublishingAsset,
   type StandingRevision,
+  revisionCellKey,
   type PublishingFormat,
   type ResolvedTheme,
   type BlockNode,
@@ -1071,6 +1072,8 @@ export interface PublishedBinding {
   readonly datasetVersion: string;
   /** The definition version that dataset version ran, from its provenance. */
   readonly definitionVersion: string;
+  /** What it printed revised by hand (RV-H): each cell, `''` for the value, with its value. */
+  readonly revised: ReadonlyMap<string, string | boolean>;
 }
 
 /**
@@ -1095,13 +1098,24 @@ export async function publishedBindings(
     digest: string;
     dataset_version: string;
     definition_version: string;
+    revisions: string[] | null;
   }>`
     select b.node, b.binding, r.binding_digest as digest, b.dataset_version,
-           v.content->'queryDefinition'->>'version' as definition_version
+           v.content->'queryDefinition'->>'version' as definition_version,
+           (select array_agg(e) from jsonb_array_elements_text(to_jsonb(b) -> 'revisions') e)
+             as revisions
       from publication_binding b
       join binding_resolution r on r.id = b.resolution
       join artifact_version v on v.id = b.dataset_version
      where b.publication_id = ${publication}`.execute(trx);
+  const named = new Map(
+    (
+      await revisionsNamed(
+        trx,
+        rows.flatMap((row) => row.revisions ?? []),
+      )
+    ).map((each) => [each.id, each]),
+  );
   return new Map(
     rows.map((row) => [
       `${row.node} ${row.binding}`,
@@ -1111,6 +1125,14 @@ export async function publishedBindings(
         digest: row.digest,
         datasetVersion: row.dataset_version,
         definitionVersion: row.definition_version,
+        revised: new Map(
+          (row.revisions ?? []).flatMap((id) => {
+            const each = named.get(id);
+            return each === undefined || each.value === null
+              ? []
+              : [[revisionCellKey(each.cell), each.value] as const];
+          }),
+        ),
       },
     ]),
   );

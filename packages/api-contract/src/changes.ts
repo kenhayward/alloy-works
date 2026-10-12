@@ -62,7 +62,9 @@ export const ChangesView = z.object({
         at: z.string(),
       }),
     )
-    .describe('Each value a document in scope resolved or accepted since'),
+    .describe(
+      'Each value a document in scope resolved, accepted or kept since (`resolve`, `accept`, `confirm`), or revised by hand or its revision withdrawn (`revise`, `withdraw`)',
+    ),
 });
 export type ChangesView = z.infer<typeof ChangesView>;
 

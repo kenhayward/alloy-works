@@ -35,6 +35,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createQueryDefinition, type StoredQueryDefinition } from './queryDefinitions.js';
 import { publicationInputs } from './publishing.js';
+import { recordRevision } from './revisions.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
@@ -506,6 +507,99 @@ describe('baselines', () => {
       );
     expect(await seen(ada)).toEqual([node.id]);
     expect(await seen(grace)).toEqual([node.id, hidden.id].sort());
+  });
+
+  it('DAT-062 pins the values revised by hand standing when a baseline is made, its digest over them, and publishes them, never one made since', async () => {
+    const binding = {
+      type: 'binding',
+      id: 'k1',
+      query: query.id,
+      parameters: {},
+      mode: 'checked',
+      take: { key: { id: '1' }, column: 'depth' },
+    } as Binding;
+    const holder = await component(general, ada, 'Revised depths');
+    const bound = await revise(holder, [
+      { type: 'paragraph', id: 'p1', style: 'body', content: [binding] },
+    ] as ContentDocument['content']);
+    const node = reference(bound.artifactId);
+    const document = await documentWith([node]);
+    const resolution = await tenant(async (trx) => {
+      const result = await recordDatasetVersion(trx, {
+        provenance: {
+          schemaVersion: 1,
+          queryDefinition: { artifact: query.id, version: query.version.id },
+          connection: { artifact: connection.id, version: connection.version.id },
+          parameters: {},
+          ran: { sql: 'select id, depth from sample.reading order by id' },
+          identity: { kind: 'service' },
+          at: '2026-10-12T09:15:00.000Z',
+          durationMs: 12,
+          rowCount: 1,
+          columns: [
+            { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+            { name: 'depth', from: { column: 'depth' }, type: { base: 'text' } },
+          ],
+          canonical: 1,
+          checksum: 'b'.repeat(64),
+          images: {},
+        },
+        author: ada,
+      });
+      return recordResolution(trx, {
+        document: document.artifactId,
+        node: node.id,
+        binding: 'k1',
+        digest: sha256Hex(bindingDigestInput(binding)),
+        version: result.version.id,
+        replaces: null,
+        act: 'resolve',
+        by: ada,
+      });
+    });
+    const revisedTo = (value: string, replaces: string | null) =>
+      tenant((trx) =>
+        recordRevision(trx, {
+          document: document.artifactId,
+          node: node.id,
+          binding: 'k1',
+          cell: '',
+          resolution: resolution.id,
+          act: 'revise',
+          value,
+          reason: 'Measured again.',
+          replaces,
+          by: ada,
+        }),
+      );
+    const first = await revisedTo('12 m', null);
+    const id = made(await make(document, 'Revised'));
+    await revisedTo('13 m', first.id);
+
+    const whole = await tenant((trx) => readBaseline(trx, id, ada));
+    expect(whole!.pins.bindings).toEqual([
+      expect.objectContaining({ binding: 'k1', revisions: [{ id: first.id, value: '12 m' }] }),
+    ]);
+    expect(sha256Hex(baselineDigestInput(whole!.pins))).toBe(whole!.digest);
+    const inputs = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return publicationInputs(trx, asked.request.id);
+    });
+    expect(inputs!.bindings.get(node.id)!.get('k1')!.revisions).toEqual([
+      expect.objectContaining({ id: first.id, value: '12 m', reason: 'Measured again.' }),
+    ]);
+
+    // A revision is a change since, for whoever may read its node (SCH-025).
+    const since = new Date(Date.now() - 60_000);
+    const changes = await tenant((trx) =>
+      changesSince(trx, { since, reader: ada, artifacts: [document.artifactId] }),
+    );
+    expect(changes.values.map((each) => each.act)).toEqual(['revise', 'revise', 'resolve']);
   });
 
   it('PUB-046 publishes a baseline from its pins, at its own time, whatever its components became', async () => {

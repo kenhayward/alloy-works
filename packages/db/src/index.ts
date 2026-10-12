@@ -606,6 +606,7 @@ export {
 export {
   latestRevisions,
   recordRevision,
+  revisionsNamed,
   revisionsStanding,
   type StoredRevision,
 } from './revisions.js';

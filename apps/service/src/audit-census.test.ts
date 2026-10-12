@@ -178,16 +178,23 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getQueryDefinitionUses: read,
   getDocumentBindings: read,
   // A dataset version, and what each binding takes from it (dataset_take, derived), and its event.
-  resolveBindings: writes('content.version_cut', 'binding.resolved'),
+  // Each also decides the values revised by hand standing on what it replaces (the RV plan, RV-D).
+  resolveBindings: writes('content.version_cut', 'binding.resolved', 'binding.revised'),
   checkBindings: writes('content.version_cut', 'binding.checked'),
-  acceptBinding: writes('binding.accepted'),
-  confirmBinding: writes('binding.confirmed'),
+  acceptBinding: writes('binding.accepted', 'binding.revised'),
+  confirmBinding: writes('binding.confirmed', 'binding.revised'),
+  reviseBinding: writes('binding.revised'),
   getBindingHolders: read,
   getDocumentDataset: read,
   getBoundTableRows: read,
   nameDataset: writes('dataset.named'),
   // A GET that writes: it finishes a pending result as the act that ran it would have.
-  getPendingResult: writes('content.version_cut', 'binding.resolved', 'binding.checked'),
+  getPendingResult: writes(
+    'content.version_cut',
+    'binding.resolved',
+    'binding.checked',
+    'binding.revised',
+  ),
   listDefinitions: read,
   createDefinition: writes('content.version_cut'),
   getDefinition: read,

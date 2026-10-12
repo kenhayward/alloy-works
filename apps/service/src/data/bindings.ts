@@ -53,6 +53,7 @@ import {
   publishedBindings,
   resolutionsOf,
   resolveOccurrences,
+  revisionsNamed,
   revisionsStanding,
   sessionContent,
   takeDigest,
@@ -421,12 +422,37 @@ export async function pinnedBindingStates(
       held: pinnedAt.get(key(each.node, each.binding.id))?.held,
     })),
   );
+  // The revisions it pinned, never the document's latest (RV-E).
+  const named = new Map(
+    (
+      await revisionsNamed(
+        trx,
+        input.pinned.flatMap((each) => each.revisions),
+      )
+    ).map((each) => [each.id, each]),
+  );
   // Nothing here is the document's now (the BL final review, finding 4): what has moved on since,
   // and what the caller may do now, are the live document's to say, never a baseline's.
   return states.map((state) => {
     const pin = pinnedAt.get(key(state.node, state.binding.id));
     return {
       ...state,
+      revisions: (pin?.revisions ?? []).flatMap((id) => {
+        const each = named.get(id);
+        return each === undefined || each.value === null
+          ? []
+          : [
+              {
+                id,
+                cell: each.cell,
+                value: each.value,
+                reason: each.reason,
+                by: { id: each.by, displayName: each.byName },
+                at: each.at.toISOString(),
+                stands: true,
+              },
+            ];
+      }),
       definitionChanged: false,
       sincePublished: null,
       mayCheck: false,
@@ -1459,7 +1485,12 @@ function viewer(
    * The facts the Data tab reads beside the rest (B4-C, B4-D): whether a floating binding's definition
    * has moved on, how it differs from the latest publication, and what the caller may do with it.
    */
-  async function dataFacts(placed: Placed, held: HeldResolution | undefined) {
+  async function dataFacts(
+    placed: Placed,
+    held: HeldResolution | undefined,
+    /** The values revised by hand standing, by cell (RV-H). */
+    standing: ReadonlyMap<string, string | boolean>,
+  ) {
     const latest = await latestOf(placed.binding.query);
     const asked = placed.binding.version ?? latest?.version.id;
     const ran = held?.held.provenance;
@@ -1480,6 +1511,7 @@ function viewer(
           ...(was.definitionVersion !== ran?.queryDefinition.version
             ? (['definition'] as const)
             : []),
+          ...(sameRevised(was.revised, standing) ? [] : (['revision'] as const)),
         ];
         sincePublished = differ.length > 0 ? differ : null;
       }
@@ -1637,7 +1669,7 @@ function viewer(
       const shown = {
         definition: await definitionOf(placed, held),
         connection: await connectionOf(held),
-        ...(await dataFacts(placed, held)),
+        ...(await dataFacts(placed, held, standingValues(held, revisionsAt(placed)))),
         revisions: await revisionsOf(placed, held, revisionsAt(placed), taken),
       };
       if (!held) {
@@ -1661,6 +1693,7 @@ function viewer(
         node: placed.node,
         binding: placed.binding,
         held: {
+          resolution: held.id,
           dataset: held.held.dataset,
           version: held.held.version,
           number: `${held.held.number.revision}.${held.held.number.version}`,
@@ -1822,6 +1855,25 @@ async function recordLoggedResolution(
  * The type of the column a revision stands in, in a result (RV-D): a cell's own column, or the column
  * an inline binding takes.
  */
+/** The values revised by hand standing in front of what a binding holds, by cell (RV-H). */
+const standingValues = (
+  held: HeldResolution | undefined,
+  revisions: readonly StoredRevision[],
+): Map<string, string | boolean> =>
+  new Map(
+    revisions.flatMap((each) =>
+      held !== undefined && each.resolution === held.id && each.value !== null
+        ? [[revisionCellKey(each.cell), each.value] as const]
+        : [],
+    ),
+  );
+
+/** Whether two sets of revised values, by cell, are the same. */
+const sameRevised = (
+  a: ReadonlyMap<string, string | boolean>,
+  b: ReadonlyMap<string, string | boolean>,
+) => a.size === b.size && [...a].every(([cell, value]) => b.get(cell) === value);
+
 /** A control character, which neither a revised value nor its reason holds. */
 const CONTROL = /\p{Cc}/u;
 
@@ -2658,8 +2710,7 @@ export function bindingHandlers(
       if (outcome === undefined || !('value' in outcome)) {
         throw notPossible('Its result gives no value here to revise.');
       }
-      const value =
-        typeof body.value === 'string' ? body.value!.normalize('NFC') : (body.value as boolean);
+      const value = typeof body.value === 'string' ? body.value.normalize('NFC') : body.value!;
       if (typeof value === 'string' && value.trim() === '') {
         throw named(refused(400, 'value.empty', 'A value revised by hand is never blank.'), naming);
       }

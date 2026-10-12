@@ -192,6 +192,11 @@ export type TakeOutcomeView = z.infer<typeof TakeOutcomeView>;
 
 /** What a binding holds in a document: a dataset version, from the latest resolution for it. */
 const HeldView = z.object({
+  resolution: z
+    .string()
+    .describe(
+      'The resolution it holds by, which a revision by hand names as what it stands in front of',
+    ),
   dataset: z.string(),
   version: z.string().describe('The dataset version it holds'),
   number: z.string().describe('`revision.version`, as `0.2`'),
@@ -321,10 +326,13 @@ export const BindingStateView = z.object({
       "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran",
     ),
   sincePublished: z
-    .union([z.literal('new'), z.array(z.enum(['digest', 'dataset', 'definition'])).min(1)])
+    .union([
+      z.literal('new'),
+      z.array(z.enum(['digest', 'dataset', 'definition', 'revision'])).min(1),
+    ])
     .nullable()
     .describe(
-      "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published",
+      "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran; `revision`, the values revised by hand in front of it. Null where nothing differs or the document has never been published",
     ),
   mayCheck: z
     .boolean()
@@ -527,10 +535,8 @@ export const ReviseBindingBody = z
     act: z.enum(['revise', 'withdraw']),
     value: z
       .union([z.string().max(10000), z.boolean()])
-      .optional()
-      .describe(
-        "The value, canonical in its column's type; required to revise, absent to withdraw",
-      ),
+      .nullable()
+      .describe("The value, canonical in its column's type; null to withdraw"),
     reason: z.string().min(1).max(1000).describe('Why, 1 to 1,000 characters'),
     resolution: z.string().describe('The resolution the binding holds, as the caller saw it'),
     replaces: z
@@ -538,7 +544,7 @@ export const ReviseBindingBody = z
       .nullable()
       .describe('The revision standing for this value or cell, as the caller saw it, or null'),
   })
-  .refine((body) => (body.act === 'revise') === (body.value !== undefined), {
+  .refine((body) => (body.act === 'revise') === (body.value !== null), {
     message: 'A revision carries a value, and a withdrawal none',
     path: ['value'],
   });
@@ -673,6 +679,11 @@ export const BindingRefusal = DataProblemsRefusal.extend({
     'resolution_precondition, revision_precondition, revision_decision_required: the binding as it now stands',
   ),
   revision: z.string().optional().describe('The revision a refusal concerns'),
+  revisions: z
+    .array(z.string())
+    .optional()
+    .describe('revision_decision_required: the revisions standing, to withdraw or keep'),
+  cell: RevisionCellView.optional().describe('The cell a refusal of a revision concerns'),
 });
 
 const unauthenticated = {

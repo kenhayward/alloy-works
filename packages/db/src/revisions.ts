@@ -57,7 +57,7 @@ const stored = (row: RevisionRow): StoredRevision => ({
  * Whether this schema keeps revisions (0078): the publish path reads them, and the migration tests run
  * it against schemas migrated only part way.
  */
-async function revisionsKept(trx: TenantTransaction): Promise<boolean> {
+export async function revisionsKept(trx: TenantTransaction): Promise<boolean> {
   const { rows } = await sql<{ kept: boolean }>`
     select to_regclass(current_schema() || '.binding_revision') is not null as kept`.execute(trx);
   return rows[0]!.kept;
