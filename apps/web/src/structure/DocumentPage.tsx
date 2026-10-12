@@ -505,9 +505,9 @@ const DOCK_PANELS = [
   { key: 'part', label: 'Part' },
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
-  { key: 'publishing', label: 'Publishing' },
-  // A document's versions and their restore (the RS plan, RS-H).
+  // A document's versions and their restore (the RS plan, RS-H); before Publishing, which End reaches.
   { key: 'versions', label: 'Versions' },
+  { key: 'publishing', label: 'Publishing' },
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
   { key: 'threads', label: 'Threads' },
   { key: 'suggestions', label: 'Suggestions' },
