@@ -145,10 +145,11 @@ people learn to double-check.
 
 ### Home
 
-| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Tranche | Status    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **SCH-068** | Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document that cannot publish, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032) | T3      | Specified |
-| **SCH-069** | Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read                                                                                                                                                                                                                                    | T7      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **SCH-068** | Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document that cannot publish, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032)                                 | T3      | Superseded by SCH-070 |
+| **SCH-070** | Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document whose latest attempt of theirs to publish it failed, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032) | T3      | Specified             |
+| **SCH-069** | Home must list the components, documents, query definitions and publications the person signed in most recently opened, newest first, each with its kind, the version opened and when, and must leave out anything they may no longer read                                                                                                                                                                                                                                                                    | T7      | Specified             |
 
 **Home is two personal listings, not a search.** SCH-068 is what is waiting on a person and SCH-069
 where they left off; both are filtered as any listing is (SCH-032). Neither is the inbox (**COL-063**),
@@ -365,3 +366,16 @@ keeps its identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 69, of which 9 superseded | 69, of which 9 superseded |
+
+### Ken's amendment of Home's first item (the HM plan), 2026-10-12
+
+Not a review. Building Home found that "a document that cannot publish" is known only by resolving
+it as a publish would, too costly on every Home; a failed attempt is stored with its reasons.
+
+| What was found                                                          | Change                                                                                            |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| SCH-068's first item needs a full publish resolve per document per Home | **SCH-068 superseded by SCH-070**: a document whose latest attempt of theirs to publish it failed |
+
+| Counts       | Before                    | After                      |
+| ------------ | ------------------------- | -------------------------- |
+| Requirements | 69, of which 9 superseded | 70, of which 10 superseded |

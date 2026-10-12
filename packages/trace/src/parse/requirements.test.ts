@@ -195,7 +195,8 @@ describe('the real corpus', () => {
     // 1550 (2026-10-08): ADM-050, a tenant administrator refusing plain http (ADR-0048).
     // 1551 (2026-10-09): DAT-119, Match case in a built filter.
     // 1552 (2026-10-11): TAB-054, superseding TAB-042 (TG1).
-    expect(total((document) => document.requirements)).toBe(1552);
+    // 1553 (2026-10-12): SCH-070, superseding SCH-068 (HM).
+    expect(total((document) => document.requirements)).toBe(1553);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

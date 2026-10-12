@@ -147,6 +147,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -171,6 +172,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
 
     expect(await queryRoles(development)).toEqual([

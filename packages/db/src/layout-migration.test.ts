@@ -294,6 +294,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -724,6 +725,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -880,6 +882,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1018,6 +1021,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1098,6 +1102,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -1259,6 +1264,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1332,6 +1338,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1471,6 +1478,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1567,6 +1575,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1708,6 +1717,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1791,6 +1801,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0077_suggestions',
       '0078_binding_revisions',
       '0079_review_rounds',
+      '0080_attention',
     ]);
     const version = (trx: TenantTransaction, number: number) =>
       trx

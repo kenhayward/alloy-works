@@ -10796,9 +10796,18 @@
       "area": "SCH",
       "statement": "Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document that cannot publish, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032)",
       "tranche": "T3",
-      "status": "Specified",
+      "status": "Superseded by SCH-070",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 150
+    },
+    {
+      "id": "SCH-070",
+      "area": "SCH",
+      "statement": "Home must list, for the person signed in, what is waiting on them that their permissions let them resolve - a document whose latest attempt of theirs to publish it failed, with the reason; a component holding changes of theirs not yet in a version; a publication made from an earlier version of its document than the current one; a connection not tested since its credential was set - each with the one action that would resolve it. Nothing they may not read may be listed or counted (SCH-032)",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 151
     },
     {
       "id": "SCH-069",
@@ -10807,7 +10816,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "SCH-023",
@@ -10816,7 +10825,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "SCH-024",
@@ -10825,7 +10834,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "SCH-025",
@@ -10834,7 +10843,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "SCH-026",
@@ -10843,7 +10852,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "SCH-043",
@@ -10852,7 +10861,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "SCH-048",
@@ -10861,7 +10870,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "SCH-027",
@@ -10870,7 +10879,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-050",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "SCH-028",
@@ -10879,7 +10888,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "SCH-029",
@@ -10888,7 +10897,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "SCH-030",
@@ -10897,7 +10906,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "SCH-031",
@@ -10906,7 +10915,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "SCH-050",
@@ -10915,7 +10924,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-066",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "SCH-066",
@@ -10924,7 +10933,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "SCH-067",
@@ -10933,7 +10942,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "SCH-049",
@@ -10942,7 +10951,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "STR-001",
@@ -14526,25 +14535,25 @@
       "id": "SCH-N01",
       "statement": "**No search across tenants**, for any purpose including support",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "SCH-N02",
       "statement": "**No index-time permission baking.** Permissions change; an index cannot be re-written every time they do (SCH-005)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "SCH-N03",
       "statement": "**No relevance tuning per user.** Two users with the same permissions must see the same results in the same order",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "SCH-N04",
       "statement": "**Not an analytics surface.** Counting what exists is a report, not a search (**ADM**)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "STR-N01",
@@ -15434,42 +15443,42 @@
       "question": "**Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice",
       "settledBy": "**Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "SCH-Q02",
       "question": "**How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale",
       "settledBy": "**Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../spikes/Search_Spike_Findings.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "SCH-Q03",
       "question": "**Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed",
       "settledBy": "Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "SCH-Q04",
       "question": "**Does semantic search need its own permission story?**",
       "settledBy": "**Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "SCH-Q05",
       "question": "**Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "settledBy": "Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "SCH-Q06",
       "question": "**How much fuzzy matching (SCH-041), and where does it stop?** An edit distance that finds a typo also finds a different word, and in a regulated corpus a near miss presented as a match is worse than nothing",
       "settledBy": "Real queries against real content. The requirement is that approximation is stated where it happens; the distance itself is a number to tune",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "STR-Q01",
@@ -17076,6 +17085,15 @@
         {
           "id": "CNT-180",
           "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) opens a document of 400 components in 500 nodes, a fifth of whose texts hold cross-references, ten times from the documents list and ten times cold - its address loaded into a fresh page - to its outline named and its first component's text on the screen, against p90 1 s and a maximum of 2 s; and jumps from the outline to ten nodes drawn from a seeded sequence, to the node's heading on the screen and still there once the page has settled, against p90 250 ms and a maximum of 500 ms. Each is the whole time, timed by the page, with the configuration recorded beside it; run and bound only off CI, on a named machine"
+        }
+      ]
+    },
+    {
+      "document": "home.md",
+      "owns": [
+        {
+          "id": "SCH-070",
+          "howItIsMet": "Needs your attention, below; the HM plan, HM-A to HM-H"
         }
       ]
     },
@@ -19115,9 +19133,21 @@
       "kind": "title"
     },
     {
+      "id": "SCH-032",
+      "file": "apps/service/src/attention-routes.test.ts",
+      "line": 382,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-070",
+      "file": "apps/service/src/attention-routes.test.ts",
+      "line": 296,
+      "kind": "title"
+    },
+    {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 314,
+      "line": 315,
       "kind": "title"
     },
     {
@@ -22058,6 +22088,18 @@
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
       "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-032",
+      "file": "packages/db/src/attention.test.ts",
+      "line": 406,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-070",
+      "file": "packages/db/src/attention.test.ts",
+      "line": 306,
       "kind": "title"
     },
     {

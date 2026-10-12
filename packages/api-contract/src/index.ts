@@ -307,6 +307,8 @@ export {
   ThreadView,
 } from './threads.js';
 export {
+  AttentionItemView,
+  AttentionView,
   InboxPreferences,
   InboxPreferencesBody,
   InboxQuery,

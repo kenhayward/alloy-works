@@ -31,7 +31,8 @@ export const documentationGroups = [
       },
       {
         name: 'Inbox',
-        description: 'Read and clear your notifications, and choose how often you are told.',
+        description:
+          'Read and clear your notifications, choose how often you are told, and see what waits on you.',
       },
       {
         name: 'Suggestions',
@@ -209,6 +210,7 @@ const operationTags = {
     'resolveThread',
   ],
   Inbox: [
+    'getAttention',
     'listInbox',
     'markNotificationRead',
     'deleteNotification',
@@ -346,6 +348,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Gives the caller’s own comment a new text. Every earlier text is kept and read with the thread.',
   resolveThread:
     'Resolves an open thread, recording who and when. A thread is resolved once and never reopened.',
+  getAttention:
+    'Lists what waits on the caller that they may resolve, one item per document, component or connection: a document whose latest publish the caller asked for failed, with its first failure’s code; a component holding changes of theirs not in a version; a document last published from an earlier version than its latest; a connection not tested since its credential was set. Each is listed only where the caller may read it and do what resolves it, and goes once that is done. Computed when asked; at most 20, with the total.',
   listInbox:
     'Lists the caller’s notifications, newest first, and how many are unread. A notification names what happened, who did it, and the thread and what it is on by identifier, never the text; a title is shown only where the caller may read it now. A digest counts a day’s events.',
   markNotificationRead: 'Marks one of the caller’s notifications read.',
