@@ -25,7 +25,7 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is [tables.md](tables.md)'s; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 to B4 and B6 built; B5 is [the RV slice](../plans/2026-10-12-rv-revised-values.md), being built.** D3 built the binding's stored shape, datasets, resolutions
+> **B1 to B6 built: B5 is [the RV slice](../plans/2026-10-12-rv-revised-values.md).** D3 built the binding's stored shape, datasets, resolutions
 > and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md) built the
 > editor's node - a component holding a binding opens for editing - `takeValue`, `formatValue` and the
 > value catalogue, `dataset_take`, the bindings view's values, and each value, its failure and its
@@ -371,7 +371,7 @@ shows it, its definition, its mode and its state, filtered by state:
 | **Failed**                  | Its value cannot be taken (BI-E), or the check made on this page's opening failed for it - its failure in the product's words, attributed (DAT-049) | **Resolve**, **Check now**                                   |
 | **Revision waiting**        | A newer result of its question, shown beside the held value (DAT-082)                                                                               | **Accept**                                                   |
 | **Definition changed**      | Floating, and its definition has a version newer than the one its result ran (DAT-070)                                                              | **Check now**, then **Accept**                               |
-| **Revised by hand**         | A person's revision stands in front of the result (DAT-115, BI-O)                                                                                   | **Withdraw**, **Revise**                                     |
+| **Revised by hand**         | A person's revision stands in front of the result (DAT-115, BI-O)                                                                                   | **Go to**: the value's panel revises and withdraws           |
 | **Changed since published** | Its question, definition version, dataset version or revision differs from the document's latest publication's `publication_binding`, or it is new  | Nothing; it says what differs                                |
 | **Holding**                 | None of the above                                                                                                                                   | **Revise**                                                   |
 
@@ -480,7 +480,8 @@ binding_revision (
   `replaces` the revision standing for that cell, or null, else `revision_precondition`; a stale binding
   `binding_stale`. The value canonical in the column's type (`value_invalid`); text NFC, without
   control characters, 1 to 10,000 characters and never blank (`value_empty`). A binding holding
-  nothing, an image or a failing take, or a cell on its table's key, a group's column or subtotal, the
+  nothing, an image or a failing take - so a null the source gave is not filled by hand, a later
+  decision - or a cell on its table's key, a group's column or subtotal, the
   column it is turned by or a column not shown, is `revision_not_possible`. A reason required. It
   queries nothing and needs no `use_connection`: it is the person's own value, not the source's.
   **Withdraw** is the same route with `act: 'withdraw'` and a reason. Audited `binding.revised` with
@@ -492,8 +493,10 @@ binding_revision (
   the revisions standing on the one held, refused `revision_decision_required` without it and
   `revision_precondition` where `over` is not what stands. A resolve keeps the decision with its
   pending result and checks it again when it records. Keep records each revision again in front of
-  the new resolution, its value checked against the new version's column and a cell's row there, in
-  the act's transaction; withdraw records a `withdraw`. Neither is ever silent.
+  the new resolution, its value checked against the new version's column - a cell whose row is gone
+  there stands and is said, as DAT-063 asks - in the act's transaction, named by who entered it and
+  when; withdraw records a `withdraw`. Keep across a changed binding keeps an inline revision only
+  where its mode alone changed. Neither is ever silent.
 - **Marked as a person's** (DAT-115): in the editor and the read text, a marker always shown -
   _revised by hand_ - and its accessible name; in the Data tab, its own state; in `provenance.json`,
   both halves. **Not in print**: the PDF and Word set it as any value, Ken's answer to question 2.

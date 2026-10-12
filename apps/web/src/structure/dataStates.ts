@@ -37,7 +37,9 @@ export function dataState(
   if (checkFailed || !holds) return 'failed';
   // A person's value on a row the result no longer has fails the publish (DAT-063).
   const standing = (view.revisions ?? []).filter((each) => each.stands);
-  if (standing.some((each) => each.rowMissing === true)) return 'failed';
+  if (standing.some((each) => each.rowMissing === true || each.columnUnavailable === true)) {
+    return 'failed';
+  }
   if (view.waiting !== null) return 'waiting';
   if (view.definitionChanged) return 'definition';
   if (standing.length > 0) return 'revised';

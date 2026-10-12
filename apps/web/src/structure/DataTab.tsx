@@ -66,7 +66,10 @@ function revisionWords(each: RevisionShown): string {
   const what = `${String(each.value)}${where}, by ${each.by.displayName ?? 'somebody'}: ${each.reason}`;
   if (!each.stands) return `Revised by hand before this result, so not shown: ${what}`;
   if (each.rowMissing === true) {
-    return `Revised by hand on a row the result no longer has: ${what}. Withdraw it, or resolve again.`;
+    return `Revised by hand on a row the result no longer has: ${what}. Withdraw it from the table's Value panel, or resolve again.`;
+  }
+  if (each.columnUnavailable === true) {
+    return `Revised by hand in a column the table no longer shows, or now groups, totals or turns by: ${what}. Withdraw it from the table's Value panel.`;
   }
   return `Revised by hand: ${what}`;
 }

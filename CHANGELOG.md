@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.157.0 - 2026-10-12 (PR #581)
+
+### Added
+
+- **Values revised by hand.** An author corrects a value a query returned, or a bound table's cell by its row, with a reason, from the value's panel. The query's value is kept behind it, and the revision is marked as revised by hand in the editor and the text, listed on the Data tab, counted there in Review, and given beside the query's value in its provenance. Accepting, keeping or resolving a value over a revision asks whether to withdraw or keep it. A publication prints the revisions standing when it was asked for, unmarked, and its `provenance.json` gives both halves. Through the API at `/v1/documents/{id}/bindings/revisions`.
+
+### Changed
+
+- **`provenance.json` at schema 4.** A revised value or cell carries its revision beside what the query returned.
+
 ## 0.156.0 - 2026-10-12 (PR #578)
 
 ### Added

@@ -54,6 +54,47 @@ const stored = (row: RevisionRow): StoredRevision => ({
 });
 
 /**
+ * **Who entered each revision, and when** (DAT-058; the RV final review, H1): a revision kept in front
+ * of a new resolution (RV-D) is recorded by whoever decided, with the same value, so its person and time
+ * are the first of its chain's - each row replacing one of the same value in front of another
+ * resolution - never the act's. By identifier.
+ */
+async function enteredBy(
+  trx: TenantTransaction,
+  ids: readonly string[],
+): Promise<Map<string, { readonly by: string; readonly at: Date }>> {
+  if (ids.length === 0) return new Map();
+  const { rows } = await sql<{ id: string; revised_by: string; revised_at: Date }>`
+    with recursive chain (id, origin) as (
+      select id, id from binding_revision where id = any(${[...ids]}::bigint[])
+      union all
+      select c.id, p.id
+        from chain c
+        join binding_revision r on r.id = c.origin
+        join binding_revision p on p.id = r.replaces
+       where p.act = 'revise' and p.resolution <> r.resolution and p.value = r.value
+    )
+    select distinct on (c.id) c.id::text as id, o.revised_by, o.revised_at
+      from chain c join binding_revision o on o.id = c.origin
+     order by c.id, o.id`.execute(trx);
+  return new Map(rows.map((row) => [String(row.id), { by: row.revised_by, at: row.revised_at }]));
+}
+
+/** Rows as stored revisions, each named by who entered it and when (H1). */
+async function storedAll(trx: TenantTransaction, rows: readonly RevisionRow[]) {
+  const entered = await enteredBy(
+    trx,
+    rows.filter((row) => row.act === 'revise').map((row) => String(row.id)),
+  );
+  return rows.map((row) => {
+    const origin = entered.get(String(row.id));
+    return origin === undefined
+      ? stored(row)
+      : { ...stored(row), by: origin.by, at: new Date(origin.at) };
+  });
+}
+
+/**
  * Whether this schema keeps revisions (0078): the publish path reads them, and the migration tests run
  * it against schemas migrated only part way.
  */
@@ -72,14 +113,22 @@ export async function revisionsNamed(
   ids: readonly string[],
 ): Promise<(StoredRevision & { readonly byName: string | null })[]> {
   if (ids.length === 0) return [];
-  const { rows } = await sql<RevisionRow & { display_name: string | null }>`
-    select v.*, p.display_name
-      from binding_revision v join principal p on p.id = v.revised_by
-     where v.id = any(${[...ids]}::bigint[])`.execute(trx);
-  const byId = new Map(rows.map((row) => [String(row.id), row]));
+  const { rows } = await sql<RevisionRow>`
+    select * from binding_revision where id = any(${[...ids]}::bigint[])`.execute(trx);
+  const all = await storedAll(trx, rows);
+  const names = new Map(
+    (
+      await trx
+        .selectFrom('principal')
+        .select(['id', 'display_name'])
+        .where('id', 'in', [...new Set(all.map((each) => each.by)), ''].filter(Boolean))
+        .execute()
+    ).map((row) => [row.id, row.display_name]),
+  );
+  const byId = new Map(all.map((each) => [each.id, each]));
   return ids.flatMap((id) => {
-    const row = byId.get(id);
-    return row === undefined ? [] : [{ ...stored(row), byName: row.display_name }];
+    const each = byId.get(id);
+    return each === undefined ? [] : [{ ...each, byName: names.get(each.by) ?? null }];
   });
 }
 
@@ -125,9 +174,9 @@ export async function recordRevision(
 
 /**
  * **The revisions standing in front of each resolution** (RV-B, RV-E): for each, the latest row per
- * cell among those in front of it, where that is a `revise`, by resolution and in ascending order. A
- * set that never changes once its resolution is replaced - nothing is recorded in front of one no
- * longer held - so a request reading it reads what an act on that resolution left.
+ * cell among those in front of it, where that is a `revise`, by resolution and in ascending order. An
+ * act replacing a resolution withdraws in front of the old one, so whoever reads this with what a
+ * binding holds takes `lockBindings` first (the RV final review, M4).
  */
 export async function revisionsStanding(
   trx: TenantTransaction,
@@ -144,7 +193,7 @@ export async function revisionsStanding(
     ) latest
      where act = 'revise'
      order by id`.execute(trx);
-  for (const row of rows) standing.get(String(row.resolution))?.push(stored(row));
+  for (const each of await storedAll(trx, rows)) standing.get(each.resolution)?.push(each);
   return standing;
 }
 
@@ -167,9 +216,9 @@ export async function latestRevisions(
      where act = 'revise'
      order by id`.execute(trx);
   const latest = new Map<string, StoredRevision[]>();
-  for (const row of rows) {
-    const at = `${row.node_id} ${row.binding_id}`;
-    latest.set(at, [...(latest.get(at) ?? []), stored(row)]);
+  for (const each of await storedAll(trx, rows)) {
+    const at = `${each.node} ${each.binding}`;
+    latest.set(at, [...(latest.get(at) ?? []), each]);
   }
   return latest;
 }

@@ -268,6 +268,12 @@ export const RevisionView = z.object({
     .describe(
       "A standing cell's: whether the result held no longer has its row (`revision_row_missing`)",
     ),
+  columnUnavailable: z
+    .boolean()
+    .optional()
+    .describe(
+      "A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`)",
+    ),
 });
 export type RevisionView = z.infer<typeof RevisionView>;
 

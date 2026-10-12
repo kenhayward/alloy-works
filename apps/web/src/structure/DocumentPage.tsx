@@ -10,6 +10,7 @@ import {
   resolve,
   sectionNumbers,
   walkOutline,
+  cellRevisable,
   formatsFor,
   type BoundTableNode,
   type ColumnType,
@@ -863,13 +864,6 @@ export function DocumentPage({
     const state = bindingStates?.find((each) => each.node === node && each.binding.id === binding);
     if (state?.held == null) return;
     const table = boundTables.get(tableKey(node, binding));
-    const fixed = new Set([
-      ...(state.held.key ?? []),
-      ...(table?.groups ?? []).flatMap((group) =>
-        group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
-      ),
-      ...(table?.transpose === undefined ? [] : [table.transpose.header]),
-    ]);
     const columns =
       table === undefined
         ? []
@@ -878,7 +872,7 @@ export function DocumentPage({
               (each) => each.name === shown.column,
             );
             return declared === undefined ||
-              fixed.has(shown.column) ||
+              !cellRevisable(table, state.held!.key ?? [], shown.column) ||
               (declared.type as { base?: string }).base === 'image'
               ? []
               : [{ name: shown.column, type: declared.type as ColumnType }];
@@ -1706,9 +1700,10 @@ export function DocumentPage({
   }
   // In Review, the Data tab counts the values revised by hand, for a reviewer to look at (DAT-061's
   // half, RV-K).
-  const revisedCount = (bindingStates ?? []).filter((each) =>
-    (each.revisions ?? []).some((revision) => revision.stands),
-  ).length;
+  const revisedCount = (bindingStates ?? []).reduce(
+    (count, each) => count + (each.revisions ?? []).filter((revision) => revision.stands).length,
+    0,
+  );
   const tabs = offeredTabs(holdsBindings).map((each) =>
     each.key === 'data' && reviewing && revisedCount > 0
       ? { ...each, label: `Data, ${revisedCount} revised by hand` }

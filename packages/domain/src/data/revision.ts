@@ -48,3 +48,29 @@ export const revisionRecord = (revision: StandingRevision): RevisionRecord => ({
   at: revision.at,
   reason: revision.reason,
 });
+
+/**
+ * **Whether a bound table's column may hold a value revised by hand** (the RV plan, RV-C, RV-F): a
+ * column it shows that orders and heads nothing - never the definition's key, a group's column or its
+ * subtotal, nor the column it is turned by. The one rule revise, the rows route, the page and the
+ * publish's stage hold a cell to (the RV final review, M5).
+ */
+export function cellRevisable(
+  table: {
+    readonly columns: readonly { readonly column: string }[];
+    readonly groups?:
+      readonly { readonly column: string; readonly subtotal?: string | undefined }[] | undefined;
+    readonly transpose?: { readonly header: string } | undefined;
+  },
+  key: readonly string[],
+  column: string,
+): boolean {
+  const fixed = new Set([
+    ...key,
+    ...(table.groups ?? []).flatMap((group) =>
+      group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
+    ),
+    ...(table.transpose === undefined ? [] : [table.transpose.header]),
+  ]);
+  return table.columns.some((shown) => shown.column === column) && !fixed.has(column);
+}

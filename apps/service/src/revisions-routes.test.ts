@@ -198,16 +198,22 @@ describe('values revised by hand through the service', () => {
 
   it('DAT-060 refuses an accept over a revision unless it says withdraw or keep over exactly what stands, and keeps or withdraws it in front of the new result', async () => {
     const { document, node, state } = await resolvedValue('34');
-    const revised = await revise(document.id, {
-      node,
-      binding: 'v1',
-      act: 'revise',
-      value: 'Atlas Quay',
-      reason: 'The site was renamed.',
-      resolution: state.held!.resolution,
-      replaces: null,
-    });
+    // Grace revises; Ada accepts. The value kept stays Grace's, entered when she entered it (H1).
+    const revised = await revise(
+      document.id,
+      {
+        node,
+        binding: 'v1',
+        act: 'revise',
+        value: 'Atlas Quay',
+        reason: 'The site was renamed.',
+        resolution: state.held!.resolution,
+        replaces: null,
+      },
+      'grace',
+    );
     const revision = revised.json<State>().revisions[0]!.id;
+    const enteredAt = revised.json<{ revisions: { at: string }[] }>().revisions[0]!.at;
     h.connector.run = ranOk([['34', 'Atlas North']]);
     await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/check`, {});
     const waiting = (await stateOf(document.id, 'v1')).waiting!.version;
@@ -241,6 +247,8 @@ describe('values revised by hand through the service', () => {
         value: 'Atlas Quay',
         reason: 'The site was renamed.',
         stands: true,
+        by: expect.objectContaining({ id: h.ids.grace }),
+        at: enteredAt,
       }),
     ]);
     expect(kept.revisions[0]!.id).not.toBe(revision);
@@ -303,6 +311,13 @@ describe('values revised by hand through the service', () => {
       document.id,
       cellBody({ key: { id: '36' }, column: 'name' }, 'Dunes'),
     );
+    // A second naming the same row by another spelling of its key is the same cell (H2): it must
+    // name the first as what it replaces.
+    expect(
+      (
+        await revise(document.id, cellBody({ key: { id: '036' }, column: 'name' }, 'Dune Ridge'))
+      ).json(),
+    ).toMatchObject({ code: 'revision_precondition' });
     expect(answer.statusCode, answer.body).toBe(200);
     const [revision] = answer.json<State>().revisions;
     expect(revision).toMatchObject({

@@ -287,8 +287,8 @@ built by [the RV plan](../plans/2026-10-12-rv-revised-values.md) (RV-F, RV-J), o
   recomputed** (ADR-0045): the panel says so.
 - **A row gone is `revision_row_missing`** (DAT-063, as DAT-048), naming the revision, the key and the
   definition: in the page, on the Data tab and failing the publish at stage `bind`.
-- **On the page**: the Bound table panel's **Revisions**, as its Notes, adds one by key and column and
-  lists each with **Edit** and **Withdraw**; the cell is marked, its accessible text gaining _revised by
+- **On the page**: the table's Value panel's **Revise a cell by hand** adds one by key and column, and
+  **Withdraw the revision** takes one away; the Data tab lists each; the cell is marked, its accessible text gaining _revised by
   hand_ (DAT-115). `provenance.json` records each revised cell by its printed row with both halves.
 
 ## Wide tables

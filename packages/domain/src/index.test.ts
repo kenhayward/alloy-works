@@ -628,6 +628,7 @@ describe('the domain package', () => {
         // TB3.3: a key's value typed for a note, canonical by its column's type.
         'canonicalKeyValue',
         'placeTableNotes',
+        'cellRevisable',
         'revisionCellKey',
         'revisionRecord',
         'tableNoteLetter',

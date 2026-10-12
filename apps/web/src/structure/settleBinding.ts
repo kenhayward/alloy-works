@@ -74,7 +74,7 @@ export interface SettleOptions {
 
 /** Said where a binding is left as it is because a value revised by hand stands and nobody decided. */
 export const REVISION_UNDECIDED =
-  'A value revised by hand stands here. Decide whether to keep it in the Data tab.';
+  'A value revised by hand stands here, so nothing was changed. Resolve or keep it from the Data tab, which asks whether to keep the revision.';
 
 /**
  * The binding as a `revision_decision_required` refusal says it stands, or undefined for any other.
@@ -162,22 +162,25 @@ async function settleNow(
     });
   const send = () => (replaces !== null ? confirm(replaces) : resolve());
   let { data, error, response } = await send();
-  // A value revised by hand stands on what it holds (DAT-060): never replaced until somebody says.
-  const undecided = undecidedIn(error);
-  if (undecided !== undefined) {
-    const answer =
-      options.decide === undefined
-        ? null
-        : await options.decide(undecided, replaces !== null ? 'Keep' : 'Resolve');
-    if (answer === null) return REVISION_UNDECIDED;
-    revisions = answer;
+  // Each asked at most once, in whichever order the service refuses them (the RV final review, M6):
+  // a value revised by hand standing on what it holds is never replaced until somebody says
+  // (DAT-060), and one's own view is held only once they agree to share it (D7-H).
+  for (let asked = 0; asked < 2; asked += 1) {
+    const undecided = revisions === undefined ? undecidedIn(error) : undefined;
+    if (undecided !== undefined) {
+      const answer =
+        options.decide === undefined
+          ? null
+          : await options.decide(undecided, replaces !== null ? 'Keep' : 'Resolve');
+      if (answer === null) return REVISION_UNDECIDED;
+      revisions = answer;
+    } else if (replaces === null && !shares && codeOf(error) === 'acknowledgement_required') {
+      if (options.ask === undefined || !(await options.ask())) return NOT_HELD;
+      shares = true;
+    } else {
+      break;
+    }
     ({ data, error, response } = await send());
-  }
-  // It runs as the person asking: their own view is held only once they agree to share it (D7-H).
-  if (replaces === null && codeOf(error) === 'acknowledgement_required') {
-    if (options.ask === undefined || !(await options.ask())) return NOT_HELD;
-    shares = true;
-    ({ data, error, response } = await resolve());
   }
   const refused = identityRefusal(error);
   if (refused !== null) return refused;

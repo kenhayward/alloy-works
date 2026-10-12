@@ -105,6 +105,8 @@ export interface RevisionShown {
   readonly at: string;
   readonly stands: boolean;
   readonly rowMissing?: true;
+  /** A standing cell's column no longer revisable in its table (the RV final review, M5). */
+  readonly columnUnavailable?: true;
 }
 
 export interface BindingState {
@@ -200,6 +202,7 @@ function revisionsIn(value: unknown): readonly RevisionShown[] {
         at,
         stands,
         ...(each.rowMissing === true ? { rowMissing: true as const } : {}),
+        ...(each.columnUnavailable === true ? { columnUnavailable: true as const } : {}),
       },
     ];
   });

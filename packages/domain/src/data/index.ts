@@ -258,5 +258,5 @@ export {
 export type { BoundObjectKey, ObjectKey, S3KeyPair } from './s3.js';
 export { checkFileCondition, fileConditionSchema, fileFilter, sortRows } from './file-filter.js';
 export type { FileCondition, FileOperand } from './file-filter.js';
-export { revisionCellKey, revisionRecord } from './revision.js';
+export { cellRevisable, revisionCellKey, revisionRecord } from './revision.js';
 export type { RevisionCell, RevisionRecord, StandingRevision } from './revision.js';
