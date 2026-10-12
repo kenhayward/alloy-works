@@ -91,6 +91,8 @@ const PATHS: Record<string, readonly string[]> = {
     'M2 3.5h4.5A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5H2z',
     'M14 3.5H9.5A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5H14z',
   ],
+  // Review's: a speech bubble (the TH plan, Task 3).
+  Review: ['M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z'],
   Authoring: ['M3 13l.6-2.6 6.9-6.9 2 2-6.9 6.9z', 'M9.5 4.5l2 2'],
   Preview: [
     'M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z',

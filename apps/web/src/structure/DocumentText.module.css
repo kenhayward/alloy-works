@@ -277,3 +277,20 @@
   color: var(--muted);
   font-size: var(--size-12);
 }
+
+/* Review (the TH plan, Task 3): where each thread stands, and how many stand on a card or a section. */
+.text mark[data-thread] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: inherit;
+}
+
+.text td[data-thread],
+.text th[data-thread] {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: -2px;
+}
+
+.threads {
+  color: var(--accent);
+  font-size: var(--size-12);
+}

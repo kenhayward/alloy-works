@@ -200,6 +200,9 @@ export function service(
   options: {
     mayEdit?: boolean;
     mayPublish?: boolean;
+    /** Whether the caller may comment on the document, and whether Review is theirs (IAM-081). */
+    mayComment?: boolean;
+    mayReview?: boolean;
     /** What a publish asked for from this page is answered with, once the job has run: it failed. */
     publishFailures?: unknown[];
     components?: unknown;
@@ -273,6 +276,8 @@ export function service(
     outline: withholdComponents(version.outline, options.mayRead ?? (() => true)),
     mayEdit: options.mayEdit ?? true,
     mayPublish: options.mayPublish ?? false,
+    mayComment: options.mayComment ?? false,
+    mayReview: options.mayReview ?? false,
     layout: options.layout ?? layoutView(defaultLayout.scheme),
     ...(options.parameters === undefined
       ? {}

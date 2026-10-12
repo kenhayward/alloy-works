@@ -15952,6 +15952,8 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
                      *         "version": {
@@ -16051,6 +16053,10 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
@@ -27948,6 +27954,8 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
                      *         "version": {
@@ -28047,6 +28055,10 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
@@ -28173,6 +28185,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -28395,6 +28411,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -28762,6 +28782,8 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
                      *         "version": {
@@ -28861,6 +28883,10 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
@@ -28987,6 +29013,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -29209,6 +29239,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -30275,6 +30309,8 @@ export interface operations {
                             version: string | null;
                             /** @description Whether the caller may edit the component: false where they may not read it */
                             mayEdit: boolean;
+                            /** @description Whether the caller may start and answer threads on the component: false where they may not read it */
+                            mayComment: boolean;
                             /** @description Who holds the component now and until when: null where nobody does, or where the caller may not read it */
                             lock: {
                                 holder: {
@@ -30866,6 +30902,8 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
                      *         "version": {
@@ -30965,6 +31003,10 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;
@@ -31091,6 +31133,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -31313,6 +31359,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                             layout: {
                                 id: string;
@@ -40761,6 +40811,8 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayPublish": false,
+                     *       "mayComment": false,
+                     *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
                      *         "version": {
@@ -40860,6 +40912,10 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
+                        /** @description Whether the caller may start and answer threads on the document */
+                        mayComment: boolean;
+                        /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                        mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
                         layout: {
                             id: string;

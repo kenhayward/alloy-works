@@ -221,6 +221,14 @@ export const DocumentView = z.object({
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
   mayPublish: z.boolean().describe('Whether the caller may publish the document'),
+  mayComment: z
+    .boolean()
+    .describe('Whether the caller may start and answer threads on the document'),
+  mayReview: z
+    .boolean()
+    .describe(
+      'Whether Review is offered the caller: they may comment on or suggest to the document',
+    ),
   layout: z
     .object({
       id: z.string(),
@@ -337,6 +345,11 @@ export const DocumentTextsView = z.object({
         mayEdit: z
           .boolean()
           .describe('Whether the caller may edit the component: false where they may not read it'),
+        mayComment: z
+          .boolean()
+          .describe(
+            'Whether the caller may start and answer threads on the component: false where they may not read it',
+          ),
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
         ),

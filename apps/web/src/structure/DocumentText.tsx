@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import {
   conditions,
   number,
+  parseContentDocument,
   resolve,
   sectionNumbers,
   type BoundTableNode,
@@ -46,6 +47,7 @@ import { useTableRows, type TableRows } from './tableRows.js';
 import type { SettleAct } from './settleBinding.js';
 import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
+import { markAnchors, type Placed } from '../review/anchoring.js';
 
 import { Lozenge } from '../states/Lozenge.js';
 import styles from './DocumentText.module.css';
@@ -181,6 +183,8 @@ function offsetOfClick(root: HTMLElement, x: number, y: number): number | null {
 /** Whether the reader may edit an occurrence's component now, and who holds it (CNT-074). */
 export interface Editable {
   readonly mayEdit: boolean;
+  /** Whether they may start and answer threads on it (the TH plan, Task 3). */
+  readonly mayComment?: boolean;
   readonly lock: {
     readonly holder: { readonly name: string | null };
     readonly expectedRelease: string;
@@ -219,6 +223,16 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
   return null;
 }
 
+/** How many threads stand on a component or a section as a whole, said in Review. */
+function ThreadsSaid({ count }: { count: number | undefined }) {
+  if (count === undefined || count === 0) return null;
+  return (
+    <span className={styles['threads']} data-threads={count}>
+      {count === 1 ? '1 thread' : `${count} threads`}
+    </span>
+  );
+}
+
 /**
  * A component's text, rendered once for its content and set into the card: markup, not a view.
  * Given `onOpen`, the text is the way into the component's editor (interface slice 13): a click
@@ -233,6 +247,7 @@ function RenderedText({
   onOpen,
   onProvenance,
   onBroken,
+  marks,
 }: {
   content: unknown;
   /** What its references print from, where it stands in a document (ruling R12). */
@@ -247,6 +262,8 @@ function RenderedText({
   onProvenance?: (binding: string, opener: HTMLElement) => void;
   /** How many of its references are broken, once drawn (STR-038). */
   onBroken?: (count: number) => void;
+  /** Where each thread on it stands, marked in Review (the TH plan, Task 3). */
+  marks?: readonly Placed[] | undefined;
 }) {
   const place = useRef<HTMLDivElement>(null);
   const onBrokenRef = useRef(onBroken);
@@ -279,6 +296,13 @@ function RenderedText({
     const host = place.current;
     if (!host || rendered === null) return;
     host.replaceChildren(rendered.cloneNode(true));
+    if (marks !== undefined && marks.length > 0) {
+      try {
+        markAnchors(host, parseContentDocument(content), marks);
+      } catch {
+        // Content that does not read marks nothing: it drew nothing either.
+      }
+    }
     onBrokenRef.current?.(host.querySelectorAll(`.${BROKEN_CLASS}`).length);
     // Its tables as wide as what they hold, where their style says so, as the editor and the PDF
     // set them (TG3): measured once they stand in the page, and again when a face loads.
@@ -287,7 +311,7 @@ function RenderedText({
     const again = () => widthDrawnTables(host);
     fonts?.addEventListener?.('loadingdone', again);
     return () => fonts?.removeEventListener?.('loadingdone', again);
-  }, [rendered]);
+  }, [rendered, marks, content]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;
   if (!onOpen) {
@@ -410,6 +434,8 @@ export function DocumentText({
   onBoundTables,
   onSaved,
   onTableRows,
+  threadMarks,
+  threadCounts,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -472,6 +498,10 @@ export function DocumentText({
   onSaved?: (session: string, sequence: number) => void;
   /** Told the rows read for its bound tables, by `tableKey`, as they arrive (TB3.3). */
   onTableRows?: (rows: ReadonlyMap<string, TableRows>) => void;
+  /** In Review, where each thread stands in each occurrence's text, by node (the TH plan, Task 3). */
+  threadMarks?: ReadonlyMap<string, readonly Placed[]>;
+  /** In Review, how many threads stand on each node as a whole: a component or a section. */
+  threadCounts?: ReadonlyMap<string, number>;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072): a
   // sheet on the desk its parent is (ADR-0056).
@@ -563,6 +593,7 @@ export function DocumentText({
           data-marked={marked === node.id ? 'true' : undefined}
         >
           {titled(node, depth)}
+          <ThreadsSaid count={threadCounts?.get(node.id)} />
           {render(node.children, depth + 1)}
         </div>
       ) : (
@@ -616,6 +647,7 @@ export function DocumentText({
                     >
                       Open
                     </a>
+                    <ThreadsSaid count={threadCounts?.get(node.id)} />
                   </>
                 )}
               </div>
@@ -665,6 +697,7 @@ export function DocumentText({
                       content={texts.get(node.id)}
                       context={contexts.get(node.id) ?? null}
                       bindings={bindingContextsByNode?.get(node.id) ?? null}
+                      marks={threadMarks?.get(node.id)}
                       {...(onBroken
                         ? { onBroken: (count: number) => onBroken(node.id, count) }
                         : {})}
