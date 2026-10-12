@@ -9,16 +9,21 @@
  */
 
 const DOCUMENTS =
-  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/compare\/(now|[0-9a-f-]{36}))?)?)?$/;
+  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/(publishing)(?:\/requests\/([0-9a-f-]{36}))?|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/compare\/(now|[0-9a-f-]{36}))?)?)?$/;
 
 /**
- * What a `#/documents...` address names: the list, one document, one node of one document, or the
- * access page of one document.
+ * What a `#/documents...` address names: the list, one document, one node of one document, one
+ * document at its Publishing panel, or the access page of one document.
  */
 export type DocumentAddress =
   | { readonly kind: 'documents' }
   | { readonly kind: 'document'; readonly document: string; readonly node: string | null }
   | { readonly kind: 'access'; readonly document: string }
+  /**
+   * The document opened at its Publishing panel (home.md; the HM plan, HM-G), and a failed request of
+   * the reader's shown there.
+   */
+  | { readonly kind: 'publishing'; readonly document: string; readonly request: string | null }
   /** The document as one of its baselines holds it, and a node in it (STR-047; the BL plan). */
   | {
       readonly kind: 'baseline';
@@ -37,9 +42,10 @@ export type DocumentAddress =
 export function documentAddress(hash: string): DocumentAddress | null {
   const matched = DOCUMENTS.exec(hash);
   if (!matched) return null;
-  const [, document, node, access, baseline, pinned, against] = matched;
+  const [, document, node, access, publishing, request, baseline, pinned, against] = matched;
   if (document === undefined) return { kind: 'documents' };
   if (access !== undefined) return { kind: 'access', document };
+  if (publishing !== undefined) return { kind: 'publishing', document, request: request ?? null };
   if (baseline !== undefined && against !== undefined) {
     return { kind: 'comparison', document, baseline, against };
   }
@@ -83,6 +89,11 @@ export function baselineLink(document: string, baseline: string, node?: string):
 /** The address of a baseline compared with a later one, or with the document `now`. */
 export function comparisonLink(document: string, baseline: string, against: string): string {
   return `#/documents/${document}/baselines/${baseline}/compare/${against}`;
+}
+
+/** The address of a document opened at its Publishing panel, showing a failed request there. */
+export function publishingLink(document: string, request?: string): string {
+  return `#/documents/${document}/publishing${request === undefined ? '' : `/requests/${request}`}`;
 }
 
 /** The address of one node of one document. */

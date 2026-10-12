@@ -15,11 +15,133 @@
   font-size: var(--size-14);
 }
 
+/* Needs your attention beside the modules, as the handoff draws them; one column when narrow. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  align-items: start;
+  gap: var(--space-24);
+}
+
+@media (max-width: 960px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  align-items: start;
   gap: var(--space-16);
+}
+
+.attention {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  background: var(--surface);
+}
+
+.attentionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.attentionHeading {
+  flex: 1;
+  margin: 0;
+  font-size: var(--size-16);
+  font-weight: 600;
+}
+
+.attentionCount,
+.attentionMore {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.attentionSaid,
+.attentionMore {
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+}
+
+.attentionSaid {
+  color: var(--muted);
+  font-size: var(--size-14);
+}
+
+.attentionItems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attentionItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+}
+
+.attentionItem + .attentionItem,
+.attentionItems + .attentionMore {
+  border-top: 1px solid var(--border);
+}
+
+.attentionMark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-8);
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.attentionMark[data-kind='published_earlier'] {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.attentionMark[data-kind='connection_untested'] {
+  background: var(--sunken);
+  color: var(--muted);
+}
+
+.attentionWords {
+  display: grid;
+  flex: 1;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.attentionHeadline {
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.attentionDetail {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+.attentionAction {
+  flex: none;
+  padding: var(--space-4) var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: var(--size-14);
+  text-decoration: none;
+}
+
+.attentionAction:hover {
+  background: var(--sunken);
+  text-decoration: none;
 }
 
 .group {

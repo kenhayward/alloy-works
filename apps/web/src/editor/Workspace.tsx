@@ -456,7 +456,8 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         </>
       );
     }
-    if (documents?.kind === 'document') {
+    if (documents?.kind === 'document' || documents?.kind === 'publishing') {
+      const node = documents.kind === 'document' ? documents.node : null;
       return (
         <>
           {/* Back to the documents is the arrow in the outline pane's tab strip (interface slice 15). */}
@@ -465,7 +466,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             client={client}
             principalId={me}
             id={documents.document}
-            linked={documents.node === null ? null : { node: documents.node, arrival: arrivals }}
+            linked={node === null ? null : { node, arrival: arrivals }}
+            atPanel={
+              documents.kind === 'publishing'
+                ? { panel: 'publishing', arrival: arrivals, request: documents.request }
+                : null
+            }
             onArriveAgain={again}
           />
         </>

@@ -38062,6 +38062,8 @@ export interface operations {
                             };
                             /** @description A failed publish’s: the code of its first failure, as the publication request names it */
                             reason?: string;
+                            /** @description A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}` */
+                            request?: string & (unknown & unknown);
                         }[];
                         /** @description How many wait, of all of them */
                         total: number;

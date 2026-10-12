@@ -92,6 +92,9 @@ export const AttentionItemView = z.object({
     .describe(
       'A failed publish’s: the code of its first failure, as the publication request names it',
     ),
+  request: LowercaseUuid.optional().describe(
+    'A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}`',
+  ),
 });
 export type AttentionItemView = z.infer<typeof AttentionItemView>;
 

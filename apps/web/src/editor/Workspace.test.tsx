@@ -5,6 +5,14 @@ import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DOCK_KEY } from '../structure/DocumentPage.js';
+import {
+  DOCUMENT as PAGE_DOCUMENT,
+  INTRODUCTION,
+  outline,
+  PUBLISH_REQUEST,
+  section,
+  service as documentService,
+} from '../structure/test/documentPage.js';
 import { Workspace } from './Workspace.js';
 
 /** The environment's layout, as every `DocumentView` carries it: what the page numbers with. */
@@ -838,6 +846,45 @@ describe('the workspace', () => {
     );
     expect(
       await screen.findByText('There is nothing here, or nothing you may read.'),
+    ).toBeInTheDocument();
+  });
+
+  it('opens a document at its Publishing panel at its address', async () => {
+    window.localStorage.setItem(DOCK_KEY, 'lists');
+    const fake = documentService(outline([section(INTRODUCTION, 'Introduction')]), {
+      mayPublish: true,
+    });
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      return new URL(request.url).pathname === '/v1/me' ? json(200, me) : fake.fetch(input, init);
+    }) as unknown as typeof fetch;
+    window.location.hash = `#/documents/${PAGE_DOCUMENT}/publishing`;
+    render(<Workspace fetch={fetching} />);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    expect(screen.getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(window.localStorage.getItem(DOCK_KEY)).toBe('lists');
+  });
+
+  it('shows the failed publish a Publishing address names', async () => {
+    const fake = documentService(outline([section(INTRODUCTION, 'Introduction')]), {
+      mayPublish: true,
+      publishFailures: [
+        { stage: 'engine', code: 'engine_failed', node: null, block: null, detail: null },
+      ],
+    });
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      return new URL(request.url).pathname === '/v1/me' ? json(200, me) : fake.fetch(input, init);
+    }) as unknown as typeof fetch;
+    window.location.hash = `#/documents/${PAGE_DOCUMENT}/publishing/requests/${PUBLISH_REQUEST}`;
+    render(<Workspace fetch={fetching} />);
+    expect(
+      await screen.findByText(
+        'The publication could not be made, and nothing in the document caused it. Publish again later.',
+      ),
     ).toBeInTheDocument();
   });
 

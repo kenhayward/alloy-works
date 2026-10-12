@@ -16,7 +16,8 @@ export interface Pane {
   readonly collapsed: boolean;
   readonly bounds: PaneBounds;
   readonly setWidth: (width: number) => void;
-  readonly setCollapsed: (collapsed: boolean) => void;
+  /** Remembered unless `remember` is false: an address that shows the pane is not the reader's choice. */
+  readonly setCollapsed: (collapsed: boolean, remember?: boolean) => void;
 }
 
 /** A value this browser kept, or nothing: a store that will not answer is one that remembers nothing. */
@@ -60,9 +61,9 @@ export function usePaneWidth(bounds: PaneBounds): Pane {
     [bounds],
   );
   const setCollapsed = useCallback(
-    (next: boolean) => {
+    (next: boolean, remember = true) => {
       setStoredCollapsed(next);
-      keep(`${bounds.storageKey}.collapsed`, String(next));
+      if (remember) keep(`${bounds.storageKey}.collapsed`, String(next));
     },
     [bounds.storageKey],
   );

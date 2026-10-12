@@ -44,6 +44,7 @@ import {
   SPACES,
   item,
   json,
+  PUBLISH_REQUEST,
   previewLinks,
   settled,
   SOMEBODY_ELSE,
@@ -1844,6 +1845,71 @@ describe('the address of every node', () => {
     await user.click(show);
     expect(screen.getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
     expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('false');
+  });
+
+  it('opens at the Publishing panel an address names, the pane shown though it was hidden, and remembers neither', async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(DOCK_KEY, 'lists');
+    window.localStorage.setItem('aw.document.panels.collapsed', 'true');
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]), { mayPublish: true });
+    const page = (arrival: number) => (
+      <StrictMode>
+        <DocumentPage
+          client={client(fake.fetch)}
+          id={DOCUMENT}
+          atPanel={{ panel: 'publishing', arrival }}
+        />
+      </StrictMode>
+    );
+    const { rerender } = render(page(0));
+    await screen.findByRole('tree');
+    const pane = screen.getByRole('complementary', { name: 'Panels beside the text' });
+    expect(pane).toBeVisible();
+    expect(within(pane).getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(within(pane).getByRole('button', { name: 'Publish as PDF' })).toBeVisible();
+    expect(window.localStorage.getItem(DOCK_KEY)).toBe('lists');
+    expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('true');
+
+    // Another panel chosen, the same address followed again opens Publishing again.
+    await user.click(within(pane).getByRole('tab', { name: 'Part' }));
+    rerender(page(1));
+    expect(within(pane).getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(window.localStorage.getItem(DOCK_KEY)).toBe('part');
+    window.localStorage.removeItem('aw.document.panels.collapsed');
+  });
+
+  it('shows the failed publish the address names in the Publishing panel, each failure by its place', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
+      mayPublish: true,
+      publishFailures: [
+        {
+          stage: 'compose',
+          code: 'glyph_missing',
+          node: INTRODUCTION,
+          block: 'b1',
+          detail: 'U+0627',
+        },
+      ],
+    });
+    render(
+      <DocumentPage
+        client={client(fake.fetch)}
+        id={DOCUMENT}
+        atPanel={{ panel: 'publishing', arrival: 0, request: PUBLISH_REQUEST }}
+      />,
+    );
+    const pane = await screen.findByRole('complementary', { name: 'Panels beside the text' });
+    const why = await within(pane).findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'The character U+0627 is in no typeface this publication can use.',
+    );
+    expect(why).toHaveTextContent('Introduction');
   });
 
   it("copies the chosen node's address, and says it did", async () => {
