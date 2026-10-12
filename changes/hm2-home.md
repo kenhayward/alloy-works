@@ -1,0 +1,4 @@
+### Added
+
+- **Needs your attention, on Home.** Home lists what waits on you that you may resolve, each with its reason and one link: a document that cannot publish, with the reason in the Publishing panel's words; a component holding changes of yours not in a version; a document published from an earlier version; a connection not tested since its credential was set. When nothing waits, it says so. A publication of a baseline is not counted as published from an earlier version.
+- **A document opened at its Publishing panel.** `#/documents/{id}/publishing` opens the document with its Publishing panel showing, the panels shown if they were hidden, without changing the panel the document opens at next.

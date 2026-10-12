@@ -368,6 +368,36 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
     expect(await attention('ada')).toEqual({ items: [], total: 0 });
   });
 
+  it('SCH-070 neither lists nor clears a document as published from an earlier version by a publication of a baseline', async () => {
+    const space = await fresh();
+    const baseline = async (document: { id: string }, version: string, name: string) =>
+      (await ok('POST', `/v1/documents/${document.id}/baselines`, 'ada', { version, name }))
+        .id as string;
+    const ofBaseline = async (id: string) =>
+      made(
+        (await ok('POST', `/v1/baselines/${id}/publications`, 'ada', { formats: ['pdf'] }))
+          .id as string,
+      );
+    // A baseline of the first version, published once the second exists, lists nothing.
+    const pinned = await documentIn(space, 'The audit');
+    const issued = await baseline(pinned, pinned.version, 'Issued');
+    await moveOn(pinned);
+    await ofBaseline(issued);
+    expect(await attention('ada')).toEqual({ items: [], total: 0 });
+
+    // Published from an earlier version, a baseline of the latest clears nothing; published from the
+    // latest, a baseline of the first lists nothing again.
+    const behind = await documentIn(space, 'The summary');
+    const first = await baseline(behind, behind.version, 'First issue');
+    await made(await publish('ada', behind, behind.version));
+    const latest = await moveOn(behind);
+    await ofBaseline(await baseline(behind, latest, 'Second issue'));
+    expect(await listed('ada')).toEqual([['published_earlier', behind.id]]);
+    await made(await publish('ada', behind, latest));
+    await ofBaseline(first);
+    expect(await attention('ada')).toEqual({ items: [], total: 0 });
+  });
+
   it('SCH-070 lists a document once, at its most pressing', async () => {
     const space = await fresh();
     const document = await documentIn(space, 'The dosing report');

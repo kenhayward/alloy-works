@@ -105,7 +105,10 @@ async function withIterations(trx: TenantTransaction, me: string, readable: Read
   return rows.map((row) => row.id);
 }
 
-/** HM-D: the latest publication they read or made is of a version older than the document's latest. */
+/**
+ * HM-D: the latest publication they read or made is of a version older than the document's latest. A
+ * baseline pins an older version on purpose (0073), so a publication of one neither lists nor clears.
+ */
 async function publishedEarlier(trx: TenantTransaction, me: string, readable: ReadableSet) {
   const { rows } = await sql<{ id: string; at: Date }>`
     select a.id, lv.created_at as at
@@ -119,7 +122,7 @@ async function publishedEarlier(trx: TenantTransaction, me: string, readable: Re
       select pv.revision_no, pv.version_no from publication p
       join artifact pa on pa.id = p.id
       join artifact_version pv on pv.id = p.document_version_id
-      where p.document_id = a.id
+      where p.document_id = a.id and p.baseline_id is null
         and (p.publisher = ${me} or ${readableArtifactsAs('pa', readable)})
       order by p.published_at desc, pa.created_at desc limit 1
     ) lp on true

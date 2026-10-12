@@ -19135,7 +19135,7 @@
     {
       "id": "SCH-032",
       "file": "apps/service/src/attention-routes.test.ts",
-      "line": 382,
+      "line": 412,
       "kind": "title"
     },
     {
@@ -20891,6 +20891,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-070",
+      "file": "apps/web/src/home/Home.test.tsx",
+      "line": 120,
+      "kind": "title"
+    },
+    {
       "id": "SCH-064",
       "file": "apps/web/src/listing/views.test.tsx",
       "line": 117,
@@ -21109,7 +21115,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2399,
+      "line": 2436,
       "kind": "title"
     },
     {
@@ -21139,7 +21145,7 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1915,
+      "line": 1952,
       "kind": "title"
     },
     {
@@ -21157,13 +21163,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2120,
+      "line": 2157,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1955,
+      "line": 1992,
       "kind": "title"
     },
     {
@@ -21343,13 +21349,13 @@
     {
       "id": "STR-047",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 35,
+      "line": 36,
       "kind": "title"
     },
     {
       "id": "VER-025",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 18,
+      "line": 19,
       "kind": "title"
     },
     {
@@ -22093,13 +22099,13 @@
     {
       "id": "SCH-032",
       "file": "packages/db/src/attention.test.ts",
-      "line": 406,
+      "line": 457,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "packages/db/src/attention.test.ts",
-      "line": 306,
+      "line": 308,
       "kind": "title"
     },
     {
@@ -25201,13 +25207,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 581,
+      "line": 635,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 270,
+      "line": 324,
       "kind": "title"
     },
     {

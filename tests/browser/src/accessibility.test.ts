@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Locator, Page } from 'playwright-core';
 import { describe, expect, it, vi, type TaskMeta } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
@@ -106,6 +107,50 @@ async function everyBlockComponent(client: Client, name: string, { withFields = 
   );
 }
 
+/**
+ * A component holding a save of Ada's not in a version, in a session the page has not seen: what Home
+ * lists under Needs your attention (the HM plan, HM-C).
+ */
+async function heldChanges(client: Client, name: string) {
+  const made = await makeComponent(client, name, [
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Words.', marks: [] }],
+    },
+  ]);
+  const { data: read } = await client.GET('/v1/components/{id}', {
+    params: { path: { id: made.id } },
+  });
+  if (!read) throw new Error(`reading ${made.id} answered nothing`);
+  const session = randomUUID();
+  const claimed = await client.POST('/v1/components/{id}/lock', {
+    params: { path: { id: made.id } },
+    body: { session },
+  });
+  if (!claimed.data) throw new Error(`claiming answered ${claimed.response.status}`);
+  const saved = await client.PUT('/v1/components/{id}/iterations/{session}/{sequence}', {
+    params: { path: { id: made.id, session, sequence: '1' } },
+    body: {
+      openedFrom: read.version.id,
+      content: {
+        ...read.content,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [{ type: 'text', value: 'Words, changed.', marks: [] }],
+          },
+        ],
+      },
+    },
+  });
+  if (!saved.data) throw new Error(`saving answered ${saved.response.status}`);
+  return made;
+}
+
 /** The component's page, opened by its address, its surface drawn and its save chip saying Saved. */
 async function openComponent(page: Page, id: string): Promise<Locator> {
   await page.goto(`${SERVICE}/#/components/${id}`);
@@ -135,6 +180,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
   it('passes axe on the screens every way into the editor passes: home, the lists, search, API tokens, Sessions and Administration', async ({
     task,
   }) => {
+    const held = await heldChanges(api(), 'Changes held');
     await withPage(async (page) => {
       const check = async (state: string, arrival: Arrival) => {
         await arrive(arrival);
@@ -144,12 +190,20 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         page.getByRole('heading', { name, level, exact: true });
 
       await page.goto(`${SERVICE}/#/`);
+      // Needs your attention (the HM plan, HM-G), holding at least the changes held above.
+      const attention = page.getByRole('region', { name: 'Needs your attention' });
+      const waiting = attention.getByRole('listitem').filter({ hasText: held.title });
       await check('home', {
         shows: [
           page.locator('#home-heading'),
           page.getByRole('link', { name: /Components/ }).first(),
+          waiting,
         ],
       });
+      // Its one link followed: the component, whose Recover resumes the changes.
+      await waiting.getByRole('link', { name: 'Open' }).click();
+      await page.waitForURL((url) => url.hash === `#/components/${held.id}`);
+      await arrive({ shows: surfaceOf(page) });
 
       // Each list, by the module rail's links, as a person moves between them: its heading, and a
       // table of what it lists or its words for none.
@@ -612,6 +666,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         tree.getByRole('treeitem', { name }).first().locator('[data-row]').first();
       const node = (name: RegExp) => tree.getByRole('treeitem', { name, selected: true }).first();
 
+      // Opened at its Publishing panel by its address (the HM plan, HM-G), then at its root.
+      await page.goto(`${SERVICE}/#/documents/${document.id}/publishing`);
+      await arrive({
+        shows: [...drawn, page.getByRole('button', { name: /^Publish as/ }).first()],
+      });
       await page.goto(`${SERVICE}/#/documents/${document.id}`);
       await check('the document view as opened', { shows: drawn });
 

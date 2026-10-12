@@ -7,6 +7,7 @@ import {
   documentAddress,
   documentLink,
   nodeLink,
+  publishingLink,
   templateAccessAddress,
   templateAccessLink,
 } from './links.js';
@@ -92,6 +93,15 @@ describe('the addresses of a document and its nodes', () => {
       document: DOCUMENT,
       node: NODE,
     });
+  });
+
+  it('addresses a document opened at its Publishing panel, and reads it back', () => {
+    expect(publishingLink(DOCUMENT)).toBe(`#/documents/${DOCUMENT}/publishing`);
+    expect(documentAddress(publishingLink(DOCUMENT))).toEqual({
+      kind: 'publishing',
+      document: DOCUMENT,
+    });
+    expect(documentAddress(`#/documents/${DOCUMENT}/publishing/more`)).toBeNull();
   });
 });
 

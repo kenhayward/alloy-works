@@ -26,6 +26,7 @@ import { createTenant, type Tenant } from './provision.js';
 import { failPublicationRequest, recordPublication, requestPublication } from './publishing.js';
 import { discardUnsaved } from './recovery.js';
 import { findRole } from './roles.js';
+import { makeBaseline, requestBaselinePublication } from './baselines.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -169,29 +170,30 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
 
   /** A publication made of the document at this version, as a worker records one. */
   const published = (version: StoredVersion, requester: string) =>
-    requested(version, requester).then((requestId) =>
-      as(async (trx) => {
-        const id = await recordPublication(trx, {
-          requestId,
-          pipelineVersion: '2',
-          fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
-          dataSha256: 'b'.repeat(64),
-          numbering: { scheme: defaultNumberingScheme.id, entries: [] },
-          outputs: [
-            {
-              format: 'pdf',
-              engineVersion: '0.15.1',
-              templateVersion: 2,
-              key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
-              sha256: 'c'.repeat(64),
-              bytes: 1000,
-            },
-          ],
-        });
-        if (!id) throw new Error(`The request ${requestId} was already finished`);
-        return id;
-      }),
-    );
+    requested(version, requester).then((requestId) => recorded(requestId));
+
+  const recorded = (requestId: string) =>
+    as(async (trx) => {
+      const id = await recordPublication(trx, {
+        requestId,
+        pipelineVersion: '2',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        dataSha256: 'b'.repeat(64),
+        numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+        outputs: [
+          {
+            format: 'pdf',
+            engineVersion: '0.15.1',
+            templateVersion: 2,
+            key: `${tenant.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1000,
+          },
+        ],
+      });
+      if (!id) throw new Error(`The request ${requestId} was already finished`);
+      return id;
+    });
 
   /** A component, and an editing session on it whose saves are iterations not in a version. */
   const componentIn = async (space: string, author: string, title: string) => {
@@ -355,6 +357,55 @@ describe('what waits on a person (home.md, Needs your attention)', () => {
     expect(answer.total).toBe(1);
     expect(answer.items.map((item) => [item.kind, item.artifact.id])).toEqual([
       ['publish_failed', version.artifactId],
+    ]);
+  });
+
+  it('SCH-070 neither lists nor clears a document as published from an earlier version by a publication of a baseline', async () => {
+    const { space, ada } = await fresh();
+    /** A baseline of this version, the document's latest, by Ada. */
+    const baselineOf = (version: StoredVersion, name: string) =>
+      as(async (trx) => {
+        const made = await makeBaseline(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          name,
+          maker: ada,
+        });
+        if (made.answer !== 'made') throw new Error(made.answer);
+        return made.baseline;
+      });
+    /** A publication of the baseline, as a worker records one. */
+    const ofBaseline = (baseline: string) =>
+      as(async (trx) => {
+        const asked = await requestBaselinePublication(trx, {
+          baseline,
+          formats: ['pdf'],
+          requester: ada,
+        });
+        if (asked.answer !== 'requested') throw new Error(asked.answer);
+        return asked.request.id;
+      }).then((requestId) => recorded(requestId));
+
+    // A baseline of the first version, published once the second exists, lists nothing.
+    const pinned = await documentIn(space, ada, 'The audit');
+    const issued = await baselineOf(pinned, 'Issued');
+    await retitled(pinned, ada, 'The audit, revised');
+    await ofBaseline(issued);
+    // Published from its latest version, then from a baseline of its first: still nothing waits.
+    const current = await documentIn(space, ada, 'The dosing report');
+    const first = await baselineOf(current, 'First issue');
+    await published(await retitled(current, ada, 'The dosing report, revised'), ada);
+    await ofBaseline(first);
+    expect(await waiting(ada)).toEqual({ items: [], total: 0 });
+
+    // Published from an earlier version, a baseline of the latest clears nothing.
+    const behind = await documentIn(space, ada, 'The summary');
+    await published(behind, ada);
+    await ofBaseline(
+      await baselineOf(await retitled(behind, ada, 'The summary, revised'), 'Second issue'),
+    );
+    expect((await waiting(ada)).items.map((item) => [item.kind, item.artifact.id])).toEqual([
+      ['published_earlier', behind.artifactId],
     ]);
   });
 

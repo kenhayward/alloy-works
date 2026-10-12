@@ -459,6 +459,11 @@ export interface DocumentPageProps {
   readonly linked?: { readonly node: string; readonly arrival: number } | null;
   /** A link to the address already shown was followed, which no `hashchange` announces. */
   readonly onArriveAgain?: () => void;
+  /**
+   * The panel the address names (`#/documents/{id}/publishing`; the HM plan, HM-G), and which arrival
+   * of it this is: each opens the pane at it, without remembering either as the reader's choice.
+   */
+  readonly atPanel?: { readonly panel: 'publishing'; readonly arrival: number } | null;
   /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
   readonly followMs?: number;
   /** The reader, for a component edited in place; without one, the text is read only. */
@@ -556,6 +561,7 @@ export function DocumentPage({
   id,
   linked = null,
   onArriveAgain,
+  atPanel = null,
   followMs = FOLLOW_MS,
   principalId,
   follow,
@@ -1434,6 +1440,17 @@ export function DocumentPage({
   useEffect(() => {
     if (heldTable.entered > 0) setDockState('table');
   }, [heldTable.entered]);
+  // The panel an address names, opened once for each arrival of it (HM-G).
+  const openedAt = useRef<number | null>(null);
+  const { setCollapsed: setDockCollapsed } = dockPane;
+  const panelNamed = atPanel?.panel ?? null;
+  const panelArrival = atPanel?.arrival ?? null;
+  useEffect(() => {
+    if (panelNamed === null || openedAt.current === panelArrival) return;
+    openedAt.current = panelArrival;
+    setDockState(panelNamed);
+    setDockCollapsed(false, false);
+  }, [panelNamed, panelArrival, setDockCollapsed]);
   // Where the reader is in the text, and the node a link took them to (document-view.md, "Navigation";
   // STR-035, STR-045): the one the outline marks as the current location, and the one the text marks
   // until another is chosen.
