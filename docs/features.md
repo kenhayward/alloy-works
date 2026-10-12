@@ -940,6 +940,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Restore an earlier version.** A component's Versions panel offers **Restore** on each earlier
+  version to whoever may edit it: what it would change, any values not carried forward to the fields
+  defined now, and why it cannot, if it cannot - somebody editing it, nothing changed - then **Restore
+  this version**. It makes a new version, audited, and the history says "Restored from version N".
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing
