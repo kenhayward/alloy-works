@@ -324,7 +324,7 @@ export const auditKindSpecs = {
     z.strictObject({ kind: AuditName, from: Id }),
     'packages/db/src/restore.ts',
   ),
-  'reference.repointed': kind(['CNT-161'], empty, LATER),
+  'reference.repointed': kind(['CNT-182', 'CNT-183'], empty, LATER),
   // A lock taken from an idle holder after their grace (COL-009; collaboration.md): whom from, and
   // the session it was taken from; the taker is the actor.
   'lock.taken': kind(
