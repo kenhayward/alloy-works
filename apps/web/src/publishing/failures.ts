@@ -450,13 +450,26 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // `detail` the note, its key as canonical JSON, the definition and, where the key names other
     // columns than the definition's, the definition's key.
     case 'key_required':
-      return 'This table has a note on a row, but its query definition declares no key to find the row by. Give the query definition a key, or put the note on a column.';
+      return 'This table has a note or a value revised by hand on a row, but its query definition declares no key to find the row by. Give the query definition a key, put the note on a column, or withdraw the revision.';
     case 'note_row_missing': {
       const [, key, , because] = (failure.detail ?? '').split(': ');
       const own = because?.startsWith('the key is ')
         ? ` Its query definition's key is ${because.slice('the key is '.length)}.`
         : '';
       return `A note on this table names the row with the key ${key ?? ''}, which its result no longer has.${own} Change or remove the note, or resolve the table again.`;
+    }
+    // RV (RV-F; DAT-063): a revised cell whose row is gone, `detail` as `note_row_missing`'s.
+    case 'revision_row_missing': {
+      const [, key, , because] = (failure.detail ?? '').split(': ');
+      const own = because?.startsWith('the key is ')
+        ? ` Its query definition's key is ${because.slice('the key is '.length)}.`
+        : '';
+      return `A value revised by hand in this table is on the row with the key ${key ?? ''}, which its result no longer has.${own} Withdraw the revision, or resolve the table again.`;
+    }
+    // RV (RV-F): a revised cell on a column the table no longer shows, or now keys, groups or turns by.
+    case 'revision_column_unavailable': {
+      const [, column] = (failure.detail ?? '').split(': ');
+      return `A value revised by hand in this table is in the column ${column ?? ''}, which the table no longer shows, or now groups, totals or turns by. Withdraw the revision, or show the column again.`;
     }
     // TB3 (TB3-H): a table too wide for its measure that cannot be set whole, `detail` why.
     case 'table_too_wide':

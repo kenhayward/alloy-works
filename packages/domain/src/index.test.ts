@@ -622,11 +622,14 @@ describe('the domain package', () => {
         // TB3.3: every row's index in a table's order, which the page letters notes by.
         'tableOrder',
         // TB3: a table's notes matched to their rows and lettered (TB3-C).
+        'keyedRow',
         'keyNamesTheKey',
         'matchNoteRows',
         // TB3.3: a key's value typed for a note, canonical by its column's type.
         'canonicalKeyValue',
         'placeTableNotes',
+        'revisionCellKey',
+        'revisionRecord',
         'tableNoteLetter',
         // TB1: the types a table style formats by, the default theme's 0.6 frozen as 0.7 replaces it,
         // and the default layout's 0.7 frozen as 0.8 does (task 5).

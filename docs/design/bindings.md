@@ -25,7 +25,7 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is [tables.md](tables.md)'s; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 to B4 and B6 built; B5 not built.** D3 built the binding's stored shape, datasets, resolutions
+> **B1 to B4 and B6 built; B5 is [the RV slice](../plans/2026-10-12-rv-revised-values.md), being built.** D3 built the binding's stored shape, datasets, resolutions
 > and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md) built the
 > editor's node - a component holding a binding opens for editing - `takeValue`, `formatValue` and the
 > value catalogue, `dataset_take`, the bindings view's values, and each value, its failure and its
@@ -104,32 +104,32 @@ it was made.
 | **PUB-108** | The binding stage, `bind`, runs after conditions and before contributions (BI-L): `contributionsOf` and the reference resolver take `Bound` content alone, so `order.test.ts` fails with the stage moved after references or generation, and `pnpm typecheck` fails with it moved after contributions or numbering. The types refuse the swap as `number` refuses an unconditioned outline; neither stops a caller choosing another function, and `unbound` is the one named way round, for the document page's numbering, which counts no value                |
 | **DAT-042** | A publication records every binding it printed, `publication_binding`, held whole to its request, and is accompanied by `provenance.json`, an output beside the PDF and Word: for each value, where it stood, what was printed, what the query returned, any revision, and the dataset version's provenance; `GET /v1/publications/{id}/bindings` answers the same                                                                                                                                                                                              |
 | **PUB-049** | As DAT-042, which it restates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **DAT-058** | A revision is a row of its own, `binding_revision`, beside the resolution and never in place of it: the value entered, the dataset version it stands in front of, who, when and the reason; insert-only, each naming the revision it replaces, so the rows are its audit with what it was and what it became                                                                                                                                                                                                                                                    |
-| **DAT-060** | A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and accepting it must say `withdraw` or `keep`, refused `revision_decision_required` otherwise; keeping records the revision again against the newer version in the same transaction                                                                                                                                                                                                        |
+| **DAT-058** | A revision is a row of its own, `binding_revision`, in front of a resolution and never in place of it: the value entered, the resolution it stands in front of, who, when and the reason; insert-only, each naming the revision it replaces, and audited with the value it was and the value it became                                                                                                                                                                                                                                                          |
+| **DAT-060** | A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and every act recording a resolution over a standing revision (accept, confirm, resolve) must say `withdraw` or `keep`, naming the revisions it decides over, refused `revision_decision_required` or `revision_precondition` otherwise; keeping records each again in front of the new resolution in the same transaction                                                                  |
 | **DAT-116** | Accepting and revising are the document's acts, on the document's routes, writing the document's rows, never the component (BI-O): accept is refused `resolution_precondition` unless `replaces` names the resolution held (D3-K), and revise and withdraw `revision_precondition` unless it names the revision standing. Changing a binding, its mode included, is an edit to the component's content, saved as every edit is, under the component's lock (COL-005) and carrying the version it was opened from (API-037); no binding route writes a component |
 | **STY-082** | The theme's value catalogue (BI-F) declares a number's decimal and group separators and its minus, a date's order and separator, a time's separator and a boolean's words, with `byLanguage` overrides; `formatValue`, the domain's own code with no `Intl` and no locale data, is the one function the editor, the read text, Typst and Word print from; a decimal prints at its declared scale, an instant in UTC; LOC-038's data arrives as a source of these declarations                                                                                   |
 | **DAT-062** | The provenance panel, the Data tab and `provenance.json` give a revised value both halves: the revision - value, who, when, why - and the dataset version's provenance with the value the query returned                                                                                                                                                                                                                                                                                                                                                        |
+| **DAT-057** | An author revises a value in place, inline or a bound table's cell (by key, [tables.md](tables.md#revised-cells)), without editing the definition or the binding: `POST .../bindings/revisions`, the document's act ([A value revised by hand](#a-value-revised-by-hand)). A bound image is an image, not a value revised by hand                                                                                                                                                                                                                               |
+| **DAT-115** | A revised value is marked as a person's wherever the product shows it: a marker always shown, _revised by hand_, in the editor and the read text in either mode, Review among them; its own state in the Data tab; both halves in the provenance panel and `provenance.json`. Print is unmarked, as DAT-115 allows                                                                                                                                                                                                                                              |
 | **DAT-097** | A bound image, after D8, takes its description from the column its definition names, or is decorative; a row whose description is null or empty fails the publish by name, `image_description_missing`, naming the binding, the row and the column ([Bound images](#bound-images))                                                                                                                                                                                                                                                                              |
 | **DAT-098** | A bound image stands wherever an image can: an inline binding taking an image column in a line or a table's cell, set as an inline image, and a figure's `binding` member in place of its `asset` (the B6 plan, B6-A), set as the figure's image; each printed from the asset version its dataset version's provenance names ([Bound images](#bound-images))                                                                                                                                                                                                    |
 
 ## What this document does not own
 
-| Left unclaimed                     | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| DAT-033                            | An inline value is formatted by the theme's value formats and the binding holds none (BI-F); a table's formatting is its table style's over the same formats. Claimed by [tables.md](tables.md), which answers both halves                                                                                                                                                                                                                                   |
-| DAT-057                            | **A named gap.** Revising an inline value in place is designed here; revising a cell of a bound table in place is `tables.md`'s presentation, over the same `binding_revision` with its `cell` member                                                                                                                                                                                                                                                        |
-| DAT-061                            | A reviewer's queue is T3's COL; a lifecycle gate, T9's LIF. The Data tab's list of revised values is what they will read                                                                                                                                                                                                                                                                                                                                     |
-| DAT-012, CNT-039, DAT-048, DAT-063 | Anchoring to a row of generated content is the bound table's; `tables.md`'s (challenged above). `takeValue`'s key lookup and `row_missing` are what they share with an inline binding                                                                                                                                                                                                                                                                        |
-| DAT-028, DAT-069                   | A block binding's table and an empty result's statement are `tables.md`'s, as data.md has them                                                                                                                                                                                                                                                                                                                                                               |
-| DAT-115                            | **A named gap.** A revised value is marked as a person's in the editor and the read text (a marker always shown, _revised by hand_, in its accessible name too), as a state of its own in the Data tab, and beside what the query returned in the provenance panel and `provenance.json`; print is unmarked, as DAT-115 allows. DAT-115 also names review, whose mode (CNT-155, T3) is not designed, so the claim waits for review's design to draw the mark |
-| PUB-002, PUB-109 to PUB-111        | PUB-002 names transclusion, conditions and variables beside bindings, and PUB-109 to PUB-111 the order test's place for each: REU's, T4. publishing.md owns the order                                                                                                                                                                                                                                                                                        |
-| PUB-072                            | Publishing failing on a failed binding is one clause of publishing.md's list; this design supplies that clause's failures                                                                                                                                                                                                                                                                                                                                    |
-| DAT-038, VER-019                   | A baseline pinning every binding's dataset version is storage-and-versioning.md's; a publication's `publication_binding` rows are what a baseline made from it will pin                                                                                                                                                                                                                                                                                      |
-| DAT-030                            | data.md's. The dialog's half - **From the document** offering a document's parameters - is built by TP2 ([templates.md](templates.md#feeding-the-bindings))                                                                                                                                                                                                                                                                                                  |
-| TPL-019, TPL-022, TPL-063, TPL-065 | The `templates.md` additions', which call resolve for every binding a document is made with                                                                                                                                                                                                                                                                                                                                                                  |
-| LIF-004, LIF-026                   | T3's: a transition gate on failed bindings; the binding events are audit.md's. STR-038, the contents marking them, is structure.md's                                                                                                                                                                                                                                                                                                                         |
-| LOC-043                            | A bound value inert through translation is LOC's, T6; a value is never in a component's text to translate                                                                                                                                                                                                                                                                                                                                                    |
-| API-049                            | A connector removed is T5's; a binding whose definition's connection is retired still holds and publishes what it holds (data.md)                                                                                                                                                                                                                                                                                                                            |
+| Left unclaimed                     | Why                                                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DAT-033                            | An inline value is formatted by the theme's value formats and the binding holds none (BI-F); a table's formatting is its table style's over the same formats. Claimed by [tables.md](tables.md), which answers both halves |
+| DAT-061                            | A reviewer's queue is T3's COL; a lifecycle gate, T9's LIF. The Data tab's list of revised values is what they will read                                                                                                   |
+| DAT-012, CNT-039, DAT-048, DAT-063 | Anchoring to a row of generated content is the bound table's; `tables.md`'s (challenged above). `takeValue`'s key lookup and `row_missing` are what they share with an inline binding                                      |
+| DAT-028, DAT-069                   | A block binding's table and an empty result's statement are `tables.md`'s, as data.md has them                                                                                                                             |
+| PUB-002, PUB-109 to PUB-111        | PUB-002 names transclusion, conditions and variables beside bindings, and PUB-109 to PUB-111 the order test's place for each: REU's, T4. publishing.md owns the order                                                      |
+| PUB-072                            | Publishing failing on a failed binding is one clause of publishing.md's list; this design supplies that clause's failures                                                                                                  |
+| DAT-038, VER-019                   | A baseline pinning every binding's dataset version is storage-and-versioning.md's; a publication's `publication_binding` rows are what a baseline made from it will pin                                                    |
+| DAT-030                            | data.md's. The dialog's half - **From the document** offering a document's parameters - is built by TP2 ([templates.md](templates.md#feeding-the-bindings))                                                                |
+| TPL-019, TPL-022, TPL-063, TPL-065 | The `templates.md` additions', which call resolve for every binding a document is made with                                                                                                                                |
+| LIF-004, LIF-026                   | T3's: a transition gate on failed bindings; the binding events are audit.md's. STR-038, the contents marking them, is structure.md's                                                                                       |
+| LOC-043                            | A bound value inert through translation is LOC's, T6; a value is never in a component's text to translate                                                                                                                  |
+| API-049                            | A connector removed is T5's; a binding whose definition's connection is retired still holds and publishes what it holds (data.md)                                                                                          |
 
 ## What is built, and what this design changes in it
 
@@ -447,9 +447,9 @@ the read text, opens the provenance panel, a modal with two tabs, **Provenance**
 
 ## A value revised by hand
 
-Designed whole here, and T3's: Ken moved it there with DAT-061 on 2026-10-04, answering question 1
-([ADR-0036](../decisions/0036-revising-a-bound-value-by-hand-moves-to-t3.md)). It is built in B5,
-only once T3 begins.
+T3's ([ADR-0036](../decisions/0036-revising-a-bound-value-by-hand-moves-to-t3.md)), built by
+[the RV plan](../plans/2026-10-12-rv-revised-values.md), whose pre-flight review reshaped what follows:
+a revision stands in front of a resolution, and a request records each revision it read.
 
 **A revision is the document's** (BI-O), as a value is: one component serves many documents, and a
 person correcting a number in one must not change it in another. It stands **in front of** a
@@ -457,45 +457,57 @@ resolution, never in place of it (DAT-058):
 
 ```sql
 binding_revision (
-  id             bigint generated always as identity,
-  document_id    uuid not null,          -- a document, by (id, kind)
-  node_id        text not null,
-  binding_id     text not null,
-  cell           jsonb,                  -- null for an inline binding; { key, column } for a bound table's cell (tables.md)
-  binding_digest text not null,          -- holds only while the binding is unchanged, as a resolution does
-  dataset_version uuid not null,         -- the result it stands in front of, by (id, artifact_id, kind)
-  act            text not null check (act in ('revise', 'withdraw')),
-  value          jsonb,                  -- canonical in the column's type; null exactly for withdraw
-  reason         text not null,          -- 1 to 1,000 characters, NFC, no control
-  replaces       bigint references binding_revision,   -- the revision it replaces, or null
-  revised_by     uuid not null references principal,
-  revised_at     timestamptz not null
+  id           bigint generated always as identity,
+  document_id  uuid not null,            -- a document, by (id, kind)
+  node_id      text not null,
+  binding_id   text not null,
+  cell         text not null,            -- '' for an inline binding; a bound table's cell, canonical JSON of { key, column }
+  resolution   bigint not null,          -- the binding_resolution it stands in front of: same document, node and binding
+  act          text not null check (act in ('revise', 'withdraw')),
+  value        jsonb,                    -- canonical in the column's type; null exactly for withdraw
+  reason       text not null,            -- 1 to 1,000 characters, NFC, no control
+  replaces     bigint references binding_revision,   -- of the same document, node, binding and cell
+  revised_by   uuid not null references principal,
+  revised_at   timestamptz not null
 )                                        -- insert-only: UPDATE, DELETE and TRUNCATE revoked
 ```
 
-- **Which stands**: the latest row for a document, node, binding and cell, where it is a `revise`, its
-  digest is the binding's and its dataset version is the one the binding holds. A revision against a
-  version the binding no longer holds stands for nothing, and is shown as such.
-- **Revise** (`POST .../bindings/revisions`): `edit` on the document; the value checked canonical in
-  the column's type (`value_invalid` otherwise) and formatted to show the author before it is saved;
-  a reason required; `replaces` the revision standing, or null, refused `revision_precondition` where
-  that is not what stands. It queries nothing, and needs no `use_connection`: it is the person's own
-  value, not the source's. **Withdraw** is the same route with `act: 'withdraw'` and a reason.
+- **Which stands**: the latest row for a document, node, binding and cell, where it is a `revise` in
+  front of the resolution the binding holds; shown and printed only while the binding is not stale, as
+  its value is. A latest `revise` in front of an older resolution is **lapsed**: listed with its value,
+  standing for nothing.
+- **Revise** (`POST .../bindings/revisions`): `edit` on the document; `resolution` the one held and
+  `replaces` the revision standing for that cell, or null, else `revision_precondition`; a stale binding
+  `binding_stale`. The value canonical in the column's type (`value_invalid`); text NFC, without
+  control characters, 1 to 10,000 characters and never blank (`value_empty`). A binding holding
+  nothing, an image or a failing take, or a cell on its table's key, a group's column or subtotal, the
+  column it is turned by or a column not shown, is `revision_not_possible`. A reason required. It
+  queries nothing and needs no `use_connection`: it is the person's own value, not the source's.
+  **Withdraw** is the same route with `act: 'withdraw'` and a reason. Audited `binding.revised` with
+  the value it was - the query's, or the revision replaced - and the value it became.
 - **A source revision meeting one** (DAT-060): the Data tab and the panel show three values - what the
-  query returned, the revision, and the source's new result - and **Accept** asks **Withdraw my
-  revision** or **Keep my revision**; the route refuses an accept over a standing revision without
-  `revision: 'withdraw' | 'keep'`, `revision_decision_required`. Keep records the revision again,
-  against the accepted version, with the same value and reason, in the accept's transaction; withdraw
-  records a `withdraw`. Neither is ever silent.
+  query returned, the revision, and the source's new result where it is offered - and **Accept**
+  asks **Withdraw my revision** or **Keep my revision**. **Every act recording a resolution** - accept,
+  confirm, and resolve, each binding's in its own body - carries `revisions: { decision, over }` over
+  the revisions standing on the one held, refused `revision_decision_required` without it and
+  `revision_precondition` where `over` is not what stands. A resolve keeps the decision with its
+  pending result and checks it again when it records. Keep records each revision again in front of
+  the new resolution, its value checked against the new version's column and a cell's row there, in
+  the act's transaction; withdraw records a `withdraw`. Neither is ever silent.
 - **Marked as a person's** (DAT-115): in the editor and the read text, a marker always shown -
   _revised by hand_ - and its accessible name; in the Data tab, its own state; in `provenance.json`,
   both halves. **Not in print**: the PDF and Word set it as any value, Ken's answer to question 2.
+- **What a request reads**: `publication_request_revision` names each revision standing when it is
+  made, held to the latest for its cell in front of the resolution its binding row records;
+  `publication_revision` and `baseline_revision` keep the same, compared whole, and a baseline's digest
+  includes them. A revision made after a request never reaches it.
 - **Concurrency**: revise, withdraw, accept, confirm and a resolve's and a check's recording take
   `lockBindings`' lock on the document, node and binding before reading what stands, as D3's accept
   does, so two acts on one binding take turns and the second is refused by its precondition. All of
   these are the document's (DAT-116): none writes the component. Changing the binding itself is an
   edit to the component, saved as an iteration under its lock (COL-005) and carrying the version it
-  was opened from (API-037), as every edit is.
+  was opened from (API-037), as every edit is; it makes the binding stale, and its revisions with it,
+  until a resolve or Keep decides them.
 
 ## The publish's binding stage
 

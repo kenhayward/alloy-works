@@ -6,9 +6,10 @@ import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
 import type { Column } from '../data/definition.js';
 import type { FieldFormat } from '../data/field-format.js';
+import { revisionRecord, type RevisionRecord, type StandingRevision } from '../data/revision.js';
 import { formatValue } from '../data/format.js';
 import { layoutTable, type TablePresentation } from '../data/table.js';
-import { keyNamesTheKey, matchNoteRows, placeTableNotes } from '../data/table-notes.js';
+import { keyedRow, keyNamesTheKey, matchNoteRows, placeTableNotes } from '../data/table-notes.js';
 import { takeValue, type TakeOutcome } from '../data/take.js';
 import { canonicalJson } from '../stored/canonical.js';
 import type { ValueFormats } from '../theme/schema.js';
@@ -49,6 +50,11 @@ export type Held =
       readonly images: Readonly<Record<string, string>>;
       /** The key of the definition version the dataset version ran (TB3-B): what a keyed note names. */
       readonly key: readonly string[];
+      /**
+       * The revisions standing in front of it (the RV plan, RV-F), by `revisionCellKey`: `''` for an
+       * inline binding's, a cell's by its key and column. Absent where none stands.
+       */
+      readonly revisions?: ReadonlyMap<string, StandingRevision>;
     }
   | 'unreadable';
 
@@ -75,7 +81,10 @@ export interface PrintedTable {
   }[];
   readonly rows: readonly (readonly {
     readonly printed: string;
+    /** What the query returned for the cell, revised or not (DAT-062). */
     readonly value: CanonicalValue;
+    /** The revision printed in its place, where one stands (the RV plan, RV-F). */
+    readonly revision?: RevisionRecord;
   }[])[];
   /**
    * Each note printed beneath it, by its letter, the row it marks - its index among the rows printed,
@@ -120,8 +129,11 @@ export interface PrintedTable {
 export type PrintedValue =
   | (Placed & {
       readonly printed: string;
+      /** What the query returned, though a revision was printed in its place (DAT-062). */
       readonly value: string | boolean;
       readonly column: { readonly name: string; readonly type: ValueType };
+      /** The revision printed, where one stands (the RV plan, RV-F). */
+      readonly revision?: RevisionRecord;
     })
   | (Placed & {
       readonly image: { readonly hash: string; readonly assetVersion: string };
@@ -147,6 +159,13 @@ export interface BoundTables {
   /** Each table laid out once per dataset version and presentation, across the occurrences. */
   readonly laidOut?: Map<string, ReturnType<typeof layoutTable>>;
 }
+
+/** A cell of a result by its row's index and its column, as one string. */
+const cellAt = (row: number, column: string) => `${row}:${column}`;
+
+/** What the query returned for one cell. */
+const queried = (result: CanonicalResult, row: number, column: string): CanonicalValue =>
+  result.rows[row]![result.columns.findIndex(([name]) => name === column)] ?? null;
 
 /** An image a take gave, with the asset version its result's provenance admitted it as. */
 type TakenImage = Extract<TakeOutcome, { image: string }> & { readonly assetVersion: string };
@@ -284,10 +303,18 @@ export function bind(
       return table;
     }
     const style = tables.style(table.style) ?? {};
-    const key = canonicalJson({ version: result.datasetVersion, table, style, formats });
+    const revised = reviseCells(table, result);
+    if (revised.gone) return table;
+    const key = canonicalJson({
+      version: result.datasetVersion,
+      table,
+      style,
+      formats,
+      revisions: [...revised.at.values()].map((each) => each.id),
+    });
     let laid = tables.laidOut?.get(key);
     if (laid === undefined) {
-      laid = layoutTable(table, result.result, result.columns, style, formats, {
+      laid = layoutTable(table, revised.result, result.columns, style, formats, {
         noRows,
         notAvailable,
       });
@@ -347,7 +374,17 @@ export function bind(
           format: column.format,
         })),
         rows: record.rows.map((row) =>
-          row.cells.map((cell) => ({ printed: cell.text, value: cell.value })),
+          row.cells.map((cell, place) => {
+            const column = record.columns[place]!.name;
+            const revision = revised.at.get(cellAt(row.index, column));
+            return revision === undefined
+              ? { printed: cell.text, value: cell.value }
+              : {
+                  printed: cell.text,
+                  value: queried(result.result, row.index, column),
+                  revision: revisionRecord(revision),
+                };
+          }),
         ),
         notes: recorded.map(({ note, letter, row }) => ({
           note: note.id,
@@ -388,6 +425,63 @@ export function bind(
     return laidOutTable(table, printed, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR, placed);
   };
 
+  /**
+   * **A bound table's revised cells** (the RV plan, RV-F; DAT-063): each revision standing on a cell
+   * set in the result in place of what the query returned, its row found by its key, so the table is
+   * sorted by what it prints. A definition declaring no key is `key_required`; a revision whose row the
+   * result no longer has, `revision_row_missing`, naming the revision, its key and the definition, as a
+   * note's is (DAT-048); one on a column the table does not show, or on its key, a group's column or
+   * subtotal or the column it is turned by, `revision_column_unavailable`. Each leaves the table.
+   */
+  const reviseCells = (
+    table: Extract<BlockNode, { type: 'boundTable' }>,
+    from: Exclude<Held, 'unreadable'>,
+  ) => {
+    const at = new Map<string, StandingRevision>();
+    const cells = [...(from.revisions?.values() ?? [])].filter((each) => each.cell !== null);
+    if (cells.length === 0) return { result: from.result, at, gone: false };
+    if (from.key.length === 0) {
+      fail('key_required', table.id, table.binding.query);
+      return { result: from.result, at, gone: true };
+    }
+    const index = new Map(from.result.columns.map(([name], place) => [name, place]));
+    const shown = new Set(table.columns.map((column) => column.column));
+    // What orders and heads the table stays the query's: its key, its groups and their subtotals, and
+    // the column it is turned by (RV-F).
+    const fixed = new Set([
+      ...from.key,
+      ...(table.groups ?? []).flatMap((group) =>
+        group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
+      ),
+      ...(table.transpose === undefined ? [] : [table.transpose.header]),
+    ]);
+    const rows = from.result.rows.map((row) => [...row]);
+    let gone = false;
+    for (const revision of cells) {
+      const cell = revision.cell!;
+      const row = keyedRow(cell.key, from.result, from.key, from.columns);
+      if (row === null) {
+        gone = true;
+        const why = keyNamesTheKey(cell.key, from.key) ? '' : `: the key is ${from.key.join(', ')}`;
+        fail(
+          'revision_row_missing',
+          table.id,
+          `${revision.id}: ${canonicalJson(cell.key)}: ${table.binding.query}${why}`,
+        );
+        continue;
+      }
+      const place = index.get(cell.column);
+      if (place === undefined || !shown.has(cell.column) || fixed.has(cell.column)) {
+        gone = true;
+        fail('revision_column_unavailable', table.id, `${revision.id}: ${cell.column}`);
+        continue;
+      }
+      rows[row]![place] = revision.value;
+      at.set(cellAt(row, cell.column), revision);
+    }
+    return { result: { columns: from.result.columns, rows }, at, gone };
+  };
+
   const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
     sequence.map((inline): InlineNode => {
       if (inline.type === 'footnote') {
@@ -412,8 +506,18 @@ export function bind(
           alternative: describedBy(taken),
         };
       }
-      const printed = formatValue(taken.value, taken.column.type, formats);
-      values.push({ ...placed, printed, value: taken.value, column: taken.column });
+      // A revision stands in front of the value (the RV plan, RV-F): printed in its place, unmarked
+      // (DAT-115), the query's value recorded beside it (DAT-062).
+      const from = held.get(inline.id);
+      const revision = from === 'unreadable' ? undefined : from?.revisions?.get('');
+      const printed = formatValue(revision?.value ?? taken.value, taken.column.type, formats);
+      values.push({
+        ...placed,
+        printed,
+        value: taken.value,
+        column: taken.column,
+        ...(revision === undefined ? {} : { revision: revisionRecord(revision) }),
+      });
       return { type: 'text', value: printed, marks: [] };
     });
 

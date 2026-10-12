@@ -17,7 +17,7 @@ and the value catalogue - [themes.md](themes.md)'s and bindings.md's BI-F; and t
 grouping, transposition, emphasis rules and column widths by the table style, designed for T3 in
 [Groups, transposition and widths](#t3-groups-transposition-and-widths). Totals are never computed
 here (ADR-0045): a total is the query's (TAB-020). Revising a bound cell by hand is T3's with the rest
-of revision (ADR-0036, DAT-063).
+of revision (ADR-0036, DAT-063): [Revised cells](#revised-cells).
 
 > **Built: TB1, TB2 and TB3.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
 > built the `boundTable` block and its walks, `formatCell` and `layoutTable`, the table style's formats
@@ -85,6 +85,7 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **DAT-028** | A block binding produces a table whose presentation is this block's and the table style's, never the binding's                                                                                                                  |
 | **DAT-033** | A table's values are formatted by its table style over the value catalogue, the same declaration bindings.md formats an inline value by; neither is stored in the binding                                                       |
 | **DAT-048** | A note whose row the result no longer has is `note_row_missing`, naming the note, the key and the definition, in the page and at the stage                                                                                      |
+| **DAT-063** | A revision to a cell names its row by key and its column; its row gone is `revision_row_missing`, naming the revision, the key and the definition, in the page and at the stage ([Revised cells](#revised-cells))               |
 | **DAT-069** | An empty result where the definition declares one valid prints headers and the statement; declared invalid, the run already failed (DAT-068)                                                                                    |
 | **CNT-039** | A note into generated content names its row by key value, never by position                                                                                                                                                     |
 | **TAB-008** | `groups` names a column; each group opens with a heading row ([Groups](#groups))                                                                                                                                                |
@@ -270,6 +271,25 @@ anchor: … | { kind: 'keyed', key: Record<string, CanonicalValue>, column: stri
   as before. Nothing stored changes; publications printed before keep their numbers.
 - **In Word**, notes are paragraphs beneath the table with superscript letters, not Word footnotes,
   matching the PDF.
+
+## Revised cells
+
+The cell's half of [bindings.md's "A value revised by hand"](bindings.md#a-value-revised-by-hand),
+built by [the RV plan](../plans/2026-10-12-rv-revised-values.md) (RV-F, RV-J), over the same
+`binding_revision`, its `cell` the canonical JSON of `{ key, column }`.
+
+- **By key, never position** (DAT-063), as a keyed note: the key names every key column with its
+  canonical value. No key on the definition is `key_required`.
+- **Only a value column**: never the key, a group's column or its subtotal, nor the column the table is
+  turned by, and only a column shown (`revision_not_possible` when revised, and
+  `revision_column_unavailable` at the stage where the table changed since). The table is sorted by
+  what it prints; its groups, subtotals and key stay the query's, and **a subtotal is never
+  recomputed** (ADR-0045): the panel says so.
+- **A row gone is `revision_row_missing`** (DAT-063, as DAT-048), naming the revision, the key and the
+  definition: in the page, on the Data tab and failing the publish at stage `bind`.
+- **On the page**: the Bound table panel's **Revisions**, as its Notes, adds one by key and column and
+  lists each with **Edit** and **Withdraw**; the cell is marked, its accessible text gaining _revised by
+  hand_ (DAT-115). `provenance.json` records each revised cell by its printed row with both halves.
 
 ## Wide tables
 

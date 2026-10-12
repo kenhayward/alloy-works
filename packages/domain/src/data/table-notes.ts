@@ -86,26 +86,37 @@ export function matchNoteRows(
   key: readonly string[],
   columns: readonly TableColumn[],
 ): Map<string, number | null> {
-  const at = new Map(result.columns.map(([name], index) => [name, index]));
-  const types = new Map(columns.map((column) => [column.name, column.type]));
   const rows = new Map<string, number | null>();
   for (const note of notes) {
-    const { anchor } = note;
-    if (anchor.kind !== 'keyed') continue;
-    const readable =
-      key.length > 0 &&
-      keyNamesTheKey(anchor.key, key) &&
-      key.every((name) => at.has(name) && types.has(name));
-    const found = readable
-      ? result.rows.findIndex((row) =>
-          key.every((name) =>
-            sameValue(types.get(name)!, row[at.get(name)!] ?? null, anchor.key[name]!),
-          ),
-        )
-      : -1;
-    rows.set(note.id, found < 0 ? null : found);
+    if (note.anchor.kind !== 'keyed') continue;
+    rows.set(note.id, keyedRow(note.anchor.key, result, key, columns));
   }
   return rows;
+}
+
+/**
+ * **The row a key names** (CNT-039; a keyed note's, and a revised cell's, DAT-063): its index into
+ * `result`'s rows, the first whose every key column holds the key's value canonicalised by the column's
+ * declared type, or null where none does - and null where the key names other columns than `key`.
+ */
+export function keyedRow(
+  named: Readonly<Record<string, CanonicalValue>>,
+  result: CanonicalResult,
+  key: readonly string[],
+  columns: readonly TableColumn[],
+): number | null {
+  const at = new Map(result.columns.map(([name], index) => [name, index]));
+  const types = new Map(columns.map((column) => [column.name, column.type]));
+  const readable =
+    key.length > 0 &&
+    keyNamesTheKey(named, key) &&
+    key.every((name) => at.has(name) && types.has(name));
+  const found = readable
+    ? result.rows.findIndex((row) =>
+        key.every((name) => sameValue(types.get(name)!, row[at.get(name)!] ?? null, named[name]!)),
+      )
+    : -1;
+  return found < 0 ? null : found;
 }
 
 /**

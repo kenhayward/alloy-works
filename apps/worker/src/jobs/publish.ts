@@ -66,8 +66,9 @@ import type { JobHandler } from '../worker.js';
  * the first to letter a table's notes beneath it and place a bound table's (TB3-K), 20 the first
  * to query the template before it compiles, scaling or turning a table too wide (TB3-H, TB3-I), 21
  * the first to set a bound table's groups under their headings and record them (TG1), 22 the first
- * to set a transposed table (TG2), and 23 the first to measure a table's columns by what they hold
- * (TG3).
+ * to set a transposed table (TG2), 23 the first to measure a table's columns by what they hold
+ * (TG3), and 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
+ * (the RV plan, RV-F).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -79,7 +80,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '23',
+  [PUBLISHING_SCHEMA_CURRENT]: '24',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
