@@ -32,8 +32,13 @@ export type {
   SectionViewNode,
 } from './outline.js';
 
-export { applyOutlineOperation, outlineOperationSchema } from './operations.js';
-export type { OutlineApplied, OutlineOperation, OutlineRules } from './operations.js';
+export {
+  applyOutlineOperation,
+  outlineChangesRefused,
+  outlineOperationSchema,
+  repointsBetween,
+} from './operations.js';
+export type { OutlineApplied, OutlineOperation, OutlineRules, Repoint } from './operations.js';
 
 export { contributionsOf, inlineContributions } from './contributions.js';
 export type { Contribution } from './contributions.js';

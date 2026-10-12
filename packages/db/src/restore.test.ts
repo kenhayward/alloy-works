@@ -278,7 +278,7 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
   it('VER-035 previews what a restore would make, inserting nothing, as the write then makes it', async () => {
     const { first, second } = await component();
     const preview = await work((trx) =>
-      previewRestore(trx, { artifactId: first.artifactId, version: first.id }),
+      previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
     );
     expect(preview).toMatchObject({
       source: { id: first.id },
@@ -304,7 +304,7 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     const other = await component();
     expect(
       await work((trx) =>
-        previewRestore(trx, { artifactId: first.artifactId, version: other.first.id }),
+        previewRestore(trx, { artifactId: first.artifactId, version: other.first.id, by: ada }),
       ),
     ).toBeUndefined();
     expect(
@@ -354,7 +354,9 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     });
     // And 0.1 again is what 0.3 already holds.
     expect(
-      await work((trx) => previewRestore(trx, { artifactId: first.artifactId, version: first.id })),
+      await work((trx) =>
+        previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
+      ),
     ).toMatchObject({ refusals: [{ answer: 'restore.unchanged' }] });
   });
 
@@ -422,12 +424,43 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     ).toEqual({ answer: 'restore.unreadable' });
   });
 
+  it('VER-035 previews each value the restore would change from the latest, as carried forward', async () => {
+    const { first } = await component();
+    const preview = await work((trx) =>
+      previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
+    );
+    expect(preview!.changed).toEqual([
+      { field: audience, latest: 'Nurses', restored: 'Engineers' },
+    ]);
+  });
+
+  it("refuses what the caller's content checks refuse, in the preview and the write, as a save's (the RS final review)", async () => {
+    const { first, second } = await component();
+    const seen: [ContentDocument, string][] = [];
+    const check = async (checked: ContentDocument, latest: { readonly id: string }) => {
+      seen.push([checked, latest.id]);
+      return { answer: 'definition.unreadable' } as const;
+    };
+    const asked = { artifactId: first.artifactId, version: first.id, by: grace, check };
+    expect(await work((trx) => previewRestore(trx, asked))).toMatchObject({
+      refusals: [{ answer: 'definition.unreadable' }],
+    });
+    expect(await work((trx) => restoreVersion(trx, { ...asked, latest: second.id }))).toEqual({
+      answer: 'definition.unreadable',
+    });
+    expect(seen).toEqual([
+      [first.content, second.id],
+      [first.content, second.id],
+    ]);
+    expect(await countOf(first.artifactId)).toBe(2);
+  });
+
   // Last: each changes the definitions every component here is cut against.
   it('MET-018 carries the earlier values forward over the definitions current now, naming what is not carried', async () => {
     const { first, second } = await component();
     await reschema([{ field: audience, required: false, fixed: false }]);
     const preview = await work((trx) =>
-      previewRestore(trx, { artifactId: first.artifactId, version: first.id }),
+      previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
     );
     expect(preview).toMatchObject({ notCarried: [{ field: region, value: 'EU' }], refusals: [] });
     const answer = await work((trx) =>
@@ -459,7 +492,9 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
       failures: [{ field: audience, rule: 'fixed' }],
     });
     expect(
-      await work((trx) => previewRestore(trx, { artifactId: first.artifactId, version: first.id })),
+      await work((trx) =>
+        previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
+      ),
     ).toMatchObject({ refusals: [{ answer: 'values.invalid' }] });
     expect(await countOf(first.artifactId)).toBe(2);
   });

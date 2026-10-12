@@ -808,6 +808,25 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('the Publishing panel', {
         shows: page.getByRole('button', { name: /^Publish as/ }).first(),
       });
+      // The document's versions, and Restore on an earlier one (the RS plan, RS-H).
+      await documentPanels.getByRole('tab', { name: 'Versions' }).click();
+      const documentVersions = page.getByRole('tabpanel', { name: 'Versions' });
+      await check("the document's Versions panel", {
+        shows: documentVersions.getByRole('list', { name: 'Versions' }),
+      });
+      await documentVersions
+        .getByRole('button', { name: /^Restore \d/ })
+        .first()
+        .click();
+      const restoringDocument = documentVersions.getByRole('region', { name: /^Restore \d/ });
+      await restoringDocument
+        .getByText(/^A new version after|could not be read/)
+        .first()
+        .waitFor({ timeout: 15_000 });
+      await check("the document's Versions panel previewing a restore", {
+        shows: restoringDocument,
+      });
+      await documentPanels.getByRole('tab', { name: 'Publishing' }).click();
 
       // Published, and the publication's own page.
       await page

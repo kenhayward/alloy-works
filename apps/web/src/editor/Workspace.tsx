@@ -150,8 +150,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
   // What the open editor opened and shows now, read by the Versions panel's My changes (CNT-113).
   const mineOf = useRef<(() => Mine) | null>(null);
+  // Whether the open component may be edited, as the editor says once open: state, so the Versions
+  // panel offers Restore as soon as it is known (the RS final review).
+  const [mayEdit, setMayEdit] = useState(false);
   const onMine = useCallback((mine: (() => Mine) | null) => {
     mineOf.current = mine;
+    setMayEdit(mine?.().mayEdit === true);
   }, []);
   // How many versions have been restored from the Versions panel: the editor opens afresh at each.
   const [restored, setRestored] = useState(0);
@@ -311,6 +315,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             onTableHost={setTableHost}
             pane={dockPane}
             mine={() => mineOf.current?.() ?? null}
+            mayEdit={mayEdit}
             onRestored={() => setRestored((count) => count + 1)}
           />
         </div>

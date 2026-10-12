@@ -372,6 +372,7 @@ describe('the listings through the service', () => {
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
+      listDocumentVersions: `/v1/documents/${document}/versions`,
       listIterations: `/v1/components/${component}/iterations?session=${session}`,
       listSpaces: '/v1/spaces',
       listComponentTypes: `/v1/spaces/${general}/component-types`,

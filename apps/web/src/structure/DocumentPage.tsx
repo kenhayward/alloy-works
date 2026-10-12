@@ -31,6 +31,7 @@ import { everyPage } from '../paging.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
+import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
@@ -504,6 +505,8 @@ const DOCK_PANELS = [
   { key: 'part', label: 'Part' },
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
+  // A document's versions and their restore (the RS plan, RS-H); before Publishing, which End reaches.
+  { key: 'versions', label: 'Versions' },
   { key: 'publishing', label: 'Publishing' },
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
   { key: 'threads', label: 'Threads' },
@@ -2163,6 +2166,22 @@ export function DocumentPage({
                       formats={document.formats}
                       shown={atPanel?.request ?? null}
                     />
+                  </div>
+                  <div
+                    id={dockIds('versions').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('versions').tab}
+                    hidden={shownDock !== 'versions'}
+                  >
+                    {shownDock === 'versions' && (
+                      <DocumentVersions
+                        client={client}
+                        id={document.id}
+                        mayEdit={document.mayEdit}
+                        latest={document.version.id}
+                        onRestored={() => void readOutlineAgain()}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

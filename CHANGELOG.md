@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.160.0 - 2026-10-12 (PR #586)
+
+### Added
+
+- **Restore an earlier version of a component.** The Versions panel offers Restore on each earlier version to whoever may edit it: what it would change, the values that would change and any not carried forward, and why it cannot, if it cannot, then Restore this version. It makes a new version, audited, and the history says "Restored from version N". Through the API at `/v1/components/{id}/versions/{version}/restoration` and `/restore`.
+- **Restore an earlier version of a document.** The document's page has a Versions panel: each version, and Restore on each earlier one, showing what it would change in the outline and any reason it cannot, then Restore this version, under the same checks as changing the outline. Through the API at `/v1/documents/{id}/versions`.
+- **Changing which version a reference takes is audited**, from and to, whether by choosing it or by a restore.
+
 ## 0.159.0 - 2026-10-12 (PR #584)
 
 ### Added

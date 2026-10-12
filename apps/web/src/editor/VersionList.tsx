@@ -19,7 +19,7 @@ export interface ListedVersion {
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 /**
- * A component's versions, newest first: each number, who cut it and when, its note, and what it was
+ * A component's versions, or a document's, newest first: each number, who cut it and when, its note, and what it was
  * restored from. The latest `limit` of them, or as many as one page holds.
  */
 export function VersionList({
@@ -29,9 +29,12 @@ export function VersionList({
   onCompare,
   onRestore,
   read = 0,
+  of = 'component',
 }: {
   client: Client;
   id: string;
+  /** Whose versions: a component's, or a document's (the RS plan, RS-H). */
+  of?: 'component' | 'document';
   limit?: number;
   /** Offered on each version but the latest: compares it with the latest (CNT-111). */
   onCompare?: (version: ListedVersion, latest: ListedVersion) => void;
@@ -45,10 +48,13 @@ export function VersionList({
   useEffect(() => {
     let current = true;
     setVersions(undefined);
-    client
-      .GET('/v1/components/{id}/versions', {
-        params: { path: { id }, query: limit === undefined ? {} : { limit: String(limit) } },
-      })
+    const params = {
+      params: { path: { id }, query: limit === undefined ? {} : { limit: String(limit) } },
+    };
+    (of === 'document'
+      ? client.GET('/v1/documents/{id}/versions', params)
+      : client.GET('/v1/components/{id}/versions', params)
+    )
       .then(({ data }) => {
         if (!current) return;
         setVersions(
@@ -68,7 +74,7 @@ export function VersionList({
     return () => {
       current = false;
     };
-  }, [client, id, limit, read]);
+  }, [client, id, limit, read, of]);
 
   if (versions === undefined) return null;
   if (versions === null) return <p className={styles['muted']}>The versions could not be read.</p>;

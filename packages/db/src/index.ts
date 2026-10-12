@@ -386,8 +386,11 @@ export {
 export {
   previewRestore,
   restoreVersion,
+  type ContentRefusal,
   type Restoration,
   type RestoreAnswer,
+  type RestoreAsked,
+  type RestoredValue,
   type RestoreRefusal,
 } from './restore.js';
 export {

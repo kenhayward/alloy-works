@@ -2281,7 +2281,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     expect(mode.parentElement).toContainElement(screen.getByRole('button', { name: 'Preview' }));
   });
 
-  it('sets the panels beside the text, named in words: the part, the lists and publishing', async () => {
+  it('sets the panels beside the text, named in words: the part, the lists, versions and publishing', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), { mayPublish: true });
     render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
     await screen.findByRole('treeitem', { name: 'Method' });
@@ -2291,7 +2291,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
       within(tabs)
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
-    ).toEqual(['Part', 'Lists', 'Publishing']);
+    ).toEqual(['Part', 'Lists', 'Versions', 'Publishing']);
     expect(within(tabs).getByRole('tab', { name: 'Part' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -2306,6 +2306,24 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     expect(screen.getByRole('tabpanel', { name: 'Lists' })).toHaveTextContent(
       'This document has no figures, tables or equations.',
     );
+  });
+
+  it('restores an earlier version from the Versions panel, and the page then shows the new latest', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    fake.change(outline([section(METHOD, 'Results')]));
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
+    await screen.findByRole('treeitem', { name: 'Results' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Versions' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Versions' });
+    const list = await within(panel).findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.1' }));
+    const preview = await within(panel).findByRole('region', { name: 'Restore 0.1' });
+    await userEvent.click(
+      await within(preview).findByRole('button', { name: 'Restore this version' }),
+    );
+    expect(await within(panel).findByText('Restored as version 0.3.')).toBeInTheDocument();
+    expect(await screen.findByRole('treeitem', { name: 'Method' })).toBeInTheDocument();
+    expect(await within(panel).findByText('Restored from version 0.1')).toBeInTheDocument();
   });
 });
 

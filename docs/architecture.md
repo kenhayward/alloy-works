@@ -2089,6 +2089,21 @@ What waits on the person signed in, computed when Home asks and stored nowhere, 
 | `service: src/attention.ts`                                                           | `GET /v1/me/attention`, a session's alone                                                                                                     |
 | `web: src/home/Home.tsx`, `publishing/failures.ts`, `structure/links.ts`              | Home's list, a failure's summary per code, and the Publishing address                                                                         |
 
+## Restore
+
+An earlier version brought back as a new one, built by
+[the RS plan](plans/2026-10-12-rs-restore-and-repoint.md) under
+[ADR-0060](decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md) and designed in
+[storage-and-versioning.md](design/storage-and-versioning.md): VER-006's one version not promoted from
+an iteration.
+
+| Where                                                                 | Holds                                                                                                                                                                   |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0082_restored_from`, `db: src/restore.ts`          | `restored_from`; one resolver for the preview and the write, under the artifact's lock; content as read now, values carried forward or written as every values write is |
+| `db: src/documents.ts`, `domain: src/structure/operations.ts`         | `restoredOutline` under editOutline's guards; `reference.repointed` from the outline's `set` and a restore                                                              |
+| `service: src/restore.ts`                                             | The routes for components and documents, the save's checks on a component's                                                                                             |
+| `web: src/editor/VersionsPanel.tsx`, `structure/DocumentVersions.tsx` | Restore in each Versions panel                                                                                                                                          |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

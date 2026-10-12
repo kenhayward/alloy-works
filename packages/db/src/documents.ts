@@ -6,9 +6,11 @@ import {
   checkWrittenValues,
   decide,
   materialiseTemplate,
+  outlineChangesRefused,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
   readOutline,
+  repointsBetween,
   resolveTemplate,
   seededValues,
   walkOutline,
@@ -26,6 +28,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
+import { artifactPlace, recordEvent } from './audit.js';
 import { readableArtifacts, readableArtifactsAs } from './readable-artifacts.js';
 import {
   checkedLimit,
@@ -599,7 +602,7 @@ export async function editOutline(
       ? { answer: 'values.invalid', failures: applied.failures }
       : { answer: 'outline.invalid', reason: applied.reason };
   }
-  return recordVersion(trx, {
+  const recorded = await recordVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
@@ -612,6 +615,129 @@ export async function editOutline(
       parameters: opened.parameters,
     },
   });
+  if (recorded.answer === 'recorded') {
+    await recordRepoints(trx, recorded.version, read.outline, applied.outline);
+  }
+  return recorded;
+}
+
+/**
+ * `reference.repointed` (CNT-182; the RS plan, RS-G) for each reference whose mode `after` changes
+ * from `before`, about the version recording it, in its transaction: the outline's `set`, and a
+ * document's restore.
+ */
+export async function recordRepoints(
+  trx: TenantTransaction,
+  version: StoredVersion,
+  before: OutlineDocument,
+  after: OutlineDocument,
+): Promise<void> {
+  const repoints = repointsBetween(before, after);
+  if (repoints.length === 0) return;
+  const place = await artifactPlace(trx, version.artifactId, version.id);
+  for (const { node, component, from, to } of repoints) {
+    await recordEvent(
+      trx,
+      {
+        kind: 'reference.repointed',
+        subject: { kind: 'document', id: version.artifactId, version: version.id },
+        space: place.space,
+        detail: { node, component, from: { ...from }, to: { ...to } },
+      },
+      place.labels,
+    );
+  }
+}
+
+/** Why a document's restore would be refused by `editOutline`'s own guards (the RS plan, RS-F). */
+export type RestoredOutlineRefusal =
+  { readonly answer: 'outline.invalid'; readonly reason: string } | ValuesRefused;
+
+/** A whole outline and the document's values as a restore would store them, and what refuses it. */
+export interface RestoredOutline {
+  readonly refusals: readonly RestoredOutlineRefusal[];
+  readonly outline: OutlineDocument;
+  readonly values: MetadataValues;
+}
+
+/**
+ * `editOutline`'s guards over a whole outline replacing the latest, as a restore makes it (the RS
+ * plan, RS-F): `mayReference` for each reference new or re-pointed against the latest; the template's
+ * changes over the whole outline; and `checkWrittenValues` for each section's values, and the
+ * document's, that differ from the latest's. Each refusal, in an outline act's words. Those values
+ * are stored as an outline act and `recordDocumentValues` store them: `writtenValues`, each field
+ * left without a member given its default, a fixed one included (the RS final review).
+ */
+export async function restoredOutline(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly author: string;
+    readonly latest: { readonly outline: OutlineDocument; readonly values: MetadataValues };
+    readonly restored: { readonly outline: OutlineDocument; readonly values: MetadataValues };
+  },
+): Promise<RestoredOutline> {
+  const { latest, restored } = input;
+  const before = new Map<string, OutlineNode>();
+  walkOutline(latest.outline.nodes, (node) => before.set(node.id, node));
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const targets: { component: string; version: string | null }[] = [];
+  const written = new Map<string, MetadataValues>();
+  walkOutline(restored.outline.nodes, (node) => {
+    const was = before.get(node.id);
+    if (node.type === 'reference') {
+      if (
+        was?.type === 'reference' &&
+        was.component === node.component &&
+        same(was.mode, node.mode)
+      ) {
+        return;
+      }
+      const version = node.mode.kind === 'pinned' ? node.mode.version : null;
+      targets.push({ component: node.component, version });
+    } else if (was === undefined || !same(was.values, node.values)) {
+      written.set(node.id, node.values);
+    }
+  });
+  const refusals: RestoredOutlineRefusal[] = [];
+  for (const target of targets) {
+    if (!(await mayReference(trx, input.author, target))) {
+      refusals.push({ answer: 'outline.invalid', reason: REFERENCE_REFUSED });
+      break;
+    }
+  }
+  const rules = await documentRules(trx, input.documentId);
+  if (rules.bound) {
+    for (const reason of outlineChangesRefused(latest.outline, restored.outline, rules.changes)) {
+      refusals.push({ answer: 'outline.invalid', reason });
+    }
+  }
+  const valuesWritten = !same(latest.values, restored.values);
+  const asRead = { refusals, ...restored };
+  if (written.size === 0 && !valuesWritten) return asRead;
+  if (rules.bound && !rules.resolved.ok) {
+    refusals.push({ answer: 'template.unresolved', unresolved: rules.resolved.unresolved });
+    return asRead;
+  }
+  const fields = rules.bound && rules.resolved.ok ? rules.resolved : { section: [], document: [] };
+  const failures = [
+    ...[...written.values()].flatMap((values) => checkWrittenValues(fields.section, values)),
+    ...(valuesWritten ? checkWrittenValues(fields.document, restored.values) : []),
+  ];
+  if (failures.length > 0) refusals.push({ answer: 'values.invalid', failures });
+  const rewrite = (nodes: readonly OutlineNode[]): OutlineNode[] =>
+    nodes.map((node) => {
+      const children = rewrite(node.children);
+      const values = written.get(node.id);
+      return node.type === 'section' && values !== undefined
+        ? { ...node, values: writtenValues(fields.section, values), children }
+        : ({ ...node, children } as OutlineNode);
+    });
+  return {
+    refusals,
+    outline: { ...restored.outline, nodes: rewrite(restored.outline.nodes) },
+    values: valuesWritten ? writtenValues(fields.document, restored.values) : restored.values,
+  };
 }
 
 /**

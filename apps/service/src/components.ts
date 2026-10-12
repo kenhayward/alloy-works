@@ -70,6 +70,39 @@ export function versionView(version: VersionHeading) {
   };
 }
 
+/**
+ * A page of an artifact's versions as the API lists them, a component's or a document's: each with
+ * what it was restored from (VER-033). The caller has decided the artifact may be read.
+ */
+export async function versionsPage(
+  trx: TenantTransaction,
+  id: string,
+  limit: string | undefined,
+  after: VersionPosition | undefined,
+) {
+  const page = await listVersions(trx, id, {
+    limit: pageLimit(limit),
+    ...(after === undefined ? {} : { after }),
+  });
+  return {
+    items: page.items.map((each) => ({
+      id: each.id,
+      number: `${each.revision}.${each.version}`,
+      createdAt: each.createdAt.toISOString(),
+      author: each.author,
+      note: each.note,
+      restoredFrom:
+        each.restoredFrom === null
+          ? null
+          : {
+              id: each.restoredFrom.id,
+              number: `${each.restoredFrom.revision}.${each.restoredFrom.version}`,
+            },
+    })),
+    next: versionCursor(page.next),
+  };
+}
+
 /** A listing's cursor is the last id it gave, spelled so nobody is tempted to read it as one. */
 export function afterCursor(cursor: string | undefined): string | undefined {
   if (cursor === undefined) return undefined;
@@ -318,27 +351,7 @@ export function componentHandlers(
         .where('id', '=', id)
         .executeTakeFirst();
       if (artifact?.kind !== 'component') throw notFound();
-      const page = await listVersions(trx, id, {
-        limit: pageLimit(query.limit),
-        ...(after === undefined ? {} : { after }),
-      });
-      return {
-        items: page.items.map((each) => ({
-          id: each.id,
-          number: `${each.revision}.${each.version}`,
-          createdAt: each.createdAt.toISOString(),
-          author: each.author,
-          note: each.note,
-          restoredFrom:
-            each.restoredFrom === null
-              ? null
-              : {
-                  id: each.restoredFrom.id,
-                  number: `${each.restoredFrom.revision}.${each.restoredFrom.version}`,
-                },
-        })),
-        next: versionCursor(page.next),
-      };
+      return versionsPage(trx, id, query.limit, after);
     },
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {

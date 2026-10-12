@@ -8,6 +8,7 @@ import {
   outlineOperationSchema,
   parseLayout,
   withholdComponents,
+  compareOutlines,
   type Layout,
   type OutlineDocument,
   type OutlineNode,
@@ -240,9 +241,12 @@ export function service(
   let contributionsAnswered = 0;
   // How many contributions answers the page has read the body of, counted once the body resolves.
   let contributionsRead = 0;
-  const chain: { id: string; number: string; outline: OutlineDocument }[] = [
-    { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start },
-  ];
+  const chain: {
+    id: string;
+    number: string;
+    outline: OutlineDocument;
+    restoredFrom?: { id: string; number: string };
+  }[] = [{ id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start }];
   let allocated = 0;
   const newIdentifier = () => {
     allocated += 1;
@@ -290,14 +294,22 @@ export function service(
           },
         }),
   });
-  const record = (next: OutlineDocument) => {
+  const record = (next: OutlineDocument, restoredFrom?: { id: string; number: string }) => {
     const count = chain.length + 1;
     chain.push({
       id: `dddddddd-0000-4000-8000-${String(count).padStart(12, '0')}`,
       number: `0.${count}`,
       outline: next,
+      ...(restoredFrom === undefined ? {} : { restoredFrom }),
     });
   };
+  const summary = (version: { id: string; number: string }) => ({
+    id: version.id,
+    number: version.number,
+    author: ADA,
+    createdAt: '2026-09-18T09:00:00.000Z',
+    note: null,
+  });
 
   const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -361,6 +373,40 @@ export function service(
       return json(200, { ...previewRequest, state: 'done', preview: previewLinks });
     }
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
+    // A document's versions and their restore (the RS plan, RS-H), as the service answers them.
+    if (url === `/v1/documents/${DOCUMENT}/versions`) {
+      return json(200, {
+        items: [...chain].reverse().map((each) => ({
+          ...summary(each),
+          author: { id: ADA, name: 'Ada' },
+          restoredFrom: each.restoredFrom ?? null,
+        })),
+        next: null,
+      });
+    }
+    const restoring = /^\/v1\/documents\/[^/]+\/versions\/([^/]+)\/(restoration|restore)$/.exec(
+      url,
+    );
+    const source = chain.find((each) => each.id === restoring?.[1]);
+    if (restoring && source && restoring[2] === 'restoration') {
+      const mayRead = options.mayRead ?? (() => true);
+      const older = withholdComponents(latest().outline, mayRead);
+      const newer = withholdComponents(source.outline, mayRead);
+      return json(200, {
+        document: DOCUMENT,
+        from: summary(source),
+        latest: summary(latest()),
+        older,
+        newer,
+        structure: compareOutlines(older, newer).changes,
+        titles: { older: [], newer: [] },
+        refusals: [],
+      });
+    }
+    if (restoring && source) {
+      record(source.outline, { id: source.id, number: source.number });
+      return json(200, { version: summary(latest()) });
+    }
     if (url === `/v1/documents/${DOCUMENT}/parameters` && options.parameters !== undefined) {
       if (request.method === 'GET') {
         const history = [...changes].reverse().map((each) => ({
@@ -491,6 +537,8 @@ export function service(
     refuseRequest: (n: number, status: number) => numbered.set(n, status),
     /** A bare status for the next request to this path only. */
     refuseNext: (url: string, status: number) => refusals.set(url, { status, once: true }),
+    /** Another version, recorded as somebody else's act would be. */
+    change: (next: OutlineDocument) => record(next),
     /** What was recorded last, as the service would now answer it. */
     latest: () => view(),
     restore: (url: string) => refusals.delete(url),

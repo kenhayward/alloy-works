@@ -1086,6 +1086,16 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { session: MISSING, openedFrom: MISSING },
     }),
+    listDocumentVersions: () => ({ url: `/v1/documents/${report}/versions`, status: 404 }),
+    previewDocumentRestore: () => ({
+      url: `/v1/documents/${report}/versions/${MISSING}/restoration`,
+      status: 404,
+    }),
+    restoreDocumentVersion: () => ({
+      url: `/v1/documents/${report}/versions/${MISSING}/restore`,
+      status: 404,
+      payload: { latest: MISSING },
+    }),
     previewRestore: () => ({
       url: `/v1/components/${dosing}/versions/${MISSING}/restoration`,
       status: 404,

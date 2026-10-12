@@ -488,6 +488,43 @@ describe('the workspace', () => {
     );
   });
 
+  it('offers Restore in the Versions panel once the editor opens a component its reader may edit (the RS final review)', async () => {
+    window.location.hash = `#/components/${COMPONENT}`;
+    let open = () => {};
+    const opened = new Promise<void>((resolve) => (open = resolve));
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === '/v1/me') return json(200, me);
+      if (url.pathname === `/v1/components/${COMPONENT}`) {
+        // The editor opens only after the Versions panel is shown.
+        await opened;
+        return json(200, componentBody(COMPONENT, 'Install the printer', true));
+      }
+      if (url.pathname === `/v1/components/${COMPONENT}/versions`) {
+        const version = (id: string, number: string) => ({
+          id,
+          number,
+          createdAt: '2026-09-17T09:00:00.000Z',
+          author: { id: 'p1', name: 'Ada' },
+          note: null,
+          restoredFrom: null,
+        });
+        return json(200, { items: [version('v2', '0.2'), version('v1', '0.1')], next: null });
+      }
+      if (url.pathname === '/v1/access') return json(200, answers(false));
+      return json(404, { code: 'not_found', message: 'none', traceId: 't' });
+    }) as unknown as typeof fetch;
+    render(<Workspace fetch={fetching} />);
+    const tabs = await screen.findByRole('tablist', { name: 'Component panels' });
+    await userEvent.click(within(tabs).getByRole('tab', { name: 'Versions' }));
+    const versions = screen.getByRole('tabpanel', { name: 'Versions' });
+    const list = await within(versions).findByRole('list', { name: 'Versions' });
+    expect(within(list).queryByRole('button', { name: 'Restore 0.1' })).toBeNull();
+    open();
+    expect(await within(list).findByRole('button', { name: 'Restore 0.1' })).toBeInTheDocument();
+  });
+
   it('offers Manage access beside an open component only to someone who may administer it', async () => {
     window.location.hash = `#/components/${COMPONENT}`;
     const { unmount } = render(<Workspace fetch={serviceThat({ access: answers(true) })} />);

@@ -152,6 +152,9 @@ const operationTags = {
   ],
   Documents: [
     'listDocuments',
+    'listDocumentVersions',
+    'previewDocumentRestore',
+    'restoreDocumentVersion',
     'getDocument',
     'createDocument',
     'editOutline',
@@ -402,6 +405,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Finishes an editing session, cutting a version if its content changed, then releases the lock.',
   listComponentVersions:
     'Lists released component versions newest first using an opaque cursor. It does not include working iterations.',
+  listDocumentVersions:
+    'Lists a document’s versions newest first using an opaque cursor, each with the version it was restored from, if any.',
+  previewDocumentRestore:
+    'Answers what restoring an earlier version of a document would make, inserting nothing: its outline compared with the latest’s, a component the caller may not read withheld on both sides, and anything that would refuse it. The outline, its references and their modes and its values come back as they stood; its parameters stay as they are now. Refused by the outline’s own guards: a reference the caller may not read, a section change the template does not allow, or a value its field no longer takes.',
+  restoreDocumentVersion:
+    'Restores an earlier version of a document as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Each reference whose version it changes is audited as re-pointed, from and to.',
   previewRestore:
     'Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes.',
   restoreVersion:

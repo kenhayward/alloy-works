@@ -18163,7 +18163,11 @@
         },
         {
           "id": "CNT-160",
-          "howItIsMet": "A reference's `mode` - the latest version, or one pinned - is a switch an outline `set` changes, and every act on an outline is recorded as a new version of the document in the version chain, naming its author and when it was made, with the whole outline as it then stood: so which version a document referenced before a change and after it are both read back from the chain. The audited act is CNT-161's (T3)"
+          "howItIsMet": "A reference's `mode` - the latest version, or one pinned - is a switch an outline `set` changes, and every act on an outline is recorded as a new version of the document in the version chain, naming its author and when it was made, with the whole outline as it then stood: so which version a document referenced before a change and after it are both read back from the chain. The audited act is CNT-182's, below"
+        },
+        {
+          "id": "CNT-182",
+          "howItIsMet": "Changing which version a reference takes is audited `reference.repointed` `{ node, component, from, to }` (modes; `packages/db/src/documents.ts`, `recordRepoints`), in the transaction of the version recording it, so who and when are the event's own: the outline's `set` changing a reference's mode, and a document's restore for each reference it re-points. Insert, remove and move are not re-points, and a `latest` reference meeting a newer version is no act (the RS plan, RS-G)"
         },
         {
           "id": "IAM-073",
@@ -19169,7 +19173,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 317,
+      "line": 320,
       "kind": "title"
     },
     {
@@ -19415,7 +19419,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1119,
+      "line": 1130,
       "kind": "title"
     },
     {
@@ -19476,6 +19480,30 @@
       "id": "TPL-066",
       "file": "apps/service/src/document-arguments.test.ts",
       "line": 197,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-182",
+      "file": "apps/service/src/document-restore-routes.test.ts",
+      "line": 266,
+      "kind": "title"
+    },
+    {
+      "id": "VER-032",
+      "file": "apps/service/src/document-restore-routes.test.ts",
+      "line": 167,
+      "kind": "title"
+    },
+    {
+      "id": "VER-033",
+      "file": "apps/service/src/document-restore-routes.test.ts",
+      "line": 167,
+      "kind": "title"
+    },
+    {
+      "id": "VER-035",
+      "file": "apps/service/src/document-restore-routes.test.ts",
+      "line": 193,
       "kind": "title"
     },
     {
@@ -19883,31 +19911,31 @@
     {
       "id": "API-037",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 259,
+      "line": 301,
       "kind": "title"
     },
     {
       "id": "CNT-170",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 192,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 164,
+      "line": 171,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 179,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/service/src/restore-routes.test.ts",
-      "line": 213,
+      "line": 255,
       "kind": "title"
     },
     {
@@ -20885,7 +20913,7 @@
     {
       "id": "VER-035",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 183,
+      "line": 194,
       "kind": "title"
     },
     {
@@ -21173,7 +21201,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2465,
+      "line": 2483,
       "kind": "title"
     },
     {
@@ -21360,6 +21388,18 @@
       "id": "COL-025",
       "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
       "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "VER-033",
+      "file": "apps/web/src/structure/DocumentVersions.test.tsx",
+      "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "VER-035",
+      "file": "apps/web/src/structure/DocumentVersions.test.tsx",
+      "line": 124,
       "kind": "title"
     },
     {
@@ -22443,6 +22483,30 @@
       "kind": "title"
     },
     {
+      "id": "CNT-182",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 298,
+      "kind": "title"
+    },
+    {
+      "id": "VER-032",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 340,
+      "kind": "title"
+    },
+    {
+      "id": "VER-033",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 363,
+      "kind": "title"
+    },
+    {
+      "id": "VER-035",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 397,
+      "kind": "title"
+    },
+    {
       "id": "STY-025",
       "file": "packages/db/src/document-template.test.ts",
       "line": 358,
@@ -22715,7 +22779,7 @@
     {
       "id": "MET-018",
       "file": "packages/db/src/restore.test.ts",
-      "line": 426,
+      "line": 459,
       "kind": "title"
     },
     {
@@ -23135,7 +23199,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 184,
+      "line": 190,
       "kind": "title"
     },
     {
@@ -23873,7 +23937,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 657,
+      "line": 662,
       "kind": "title"
     },
     {

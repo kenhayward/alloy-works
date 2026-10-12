@@ -89,7 +89,14 @@ component, with `restored_from` naming its source (0082; the [RS plan](../plans/
 RS-B, RS-C). Its content is the earlier version's **as read now** - migrated to today's schema by
 `readContent` - so its digest may differ from its source's; its values are the earlier ones carried
 forward over the definitions current now, refused only on a `fixed` value, as a cut is. The preview
-and the write share one resolver (VER-035). A document's restore is RS2's.
+and the write share one resolver (VER-035). **A document's restore** (RS2; RS-F) brings back its
+outline, references and modes and its own values as they stood, its parameters as they stand now,
+under `editOutline`'s guards over the whole outline (`restoredOutlineRefused` in
+`packages/db/src/documents.ts`): `mayReference` for each reference new or re-pointed, the template's
+changes, and the values that differ from the latest's. A document has no editing lock (COL-N02), so
+none refuses it; the advisory lock every version takes serialises it. Its preview compares the outline
+with the latest's, withholding what the restorer may not read, and each reference it re-points is
+audited `reference.repointed` (CNT-182).
 
 **VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that

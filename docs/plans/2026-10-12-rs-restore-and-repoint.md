@@ -51,3 +51,25 @@ T9.
 - The final review hunts a restore that loses or invents content, that escapes a guard, and a
   re-point not audited. `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the version
   (0.160.0) and the baseline.
+
+## Changed while building
+
+| Where | Planned                                      | Built, and why                                                                                                                                                                   |
+| ----- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs   | Two                                          | Two, #585 and #586                                                                                                                                                               |
+| RS-A  | Read of the version decided                  | `authorise` decides read beside edit; the preview is decided on `edit`, as it previews a write                                                                                   |
+| RS-C  | A component's preview answers the comparison | The panel asks the existing comparison from the preview's latest; a document's preview carries its outline comparison, titles per side                                           |
+| RS-E  | Locks                                        | A document has no lock (COL-N02): each outline act is its own version under the artifact's advisory lock, so nothing is cut under an open session                                |
+| RS-E  | The save's checks                            | A component's restore runs them too (`storable`, `namesUnreadableColumn`) through the resolver's `check` hook, in the preview and the write (the final review, 1)                |
+| RS-F  | Parameters carried                           | Parameters carried as they stand; the document's own values and each changed section's restored through `writtenValues`, as every values write stores them (the final review, 2) |
+| RS-H  | The panels                                   | A document's Versions panel sits before Publishing, which End still reaches; both post the preview's latest (the final review, 3)                                                |
+
+## Final review
+
+Fixed: a component restore skipping the save's content checks, so a column of an unreadable query
+definition came back (1); a document's values stored raw, dropping a fixed value added since (2); both
+panels posting the list's head, looping on a refusal (3); carried values that change unshown (4);
+Restore missing until the editor mounted (5); a double click posting twice (6); one title per node
+across both sides (7); status lines not announced (8); titles citing beyond their tests, and untested
+branches (9). Left: `content_invalid` and the changed values' field names tested in the db suite
+only; a node on both sides shows the restored side's title, as the baseline comparison does.

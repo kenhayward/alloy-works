@@ -573,6 +573,28 @@ describe("a bound table's rows, for the page", () => {
       expect(renamed.statusCode, renamed.body).toBe(200);
     });
 
+    it('refuses a restore bringing back a column the latest does not name, definition_unreadable, in its preview and its write (the RS final review)', async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const columns = [
+        { column: 'name', header: 'Name' },
+        { column: 'id', header: 'Site' },
+      ];
+      const { component } = await placed([table(whole('b1', definition.id), { columns })]);
+      const named = component.version;
+      // Ada takes the Site column out again.
+      const latest = await h.placeBlocks(component, table(whole('b1', definition.id)));
+      const path = `/v1/components/${component.id}/versions/${named}`;
+      const preview = await h.call('grace', 'GET', `${path}/restoration`);
+      expect(preview.statusCode, preview.body).toBe(200);
+      expect(preview.json()).toMatchObject({ refusals: [{ code: 'definition_unreadable' }] });
+      const restored = await h.call('grace', 'POST', `${path}/restore`, { latest });
+      expect(restored.statusCode, restored.body).toBe(403);
+      expect(restored.json()).toMatchObject({ code: 'definition_unreadable' });
+      // Ada reads the definition, and restores it.
+      const hers = await h.call('ada', 'POST', `${path}/restore`, { latest });
+      expect(hers.statusCode, hers.body).toBe(200);
+    });
+
     it("ignores the session of a caller who may not read the definition, answering the version's table", async () => {
       const { document, node, version, session, save } = await hidden();
       expect((await save([{ column: 'name', header: 'Site name' }])).statusCode).toBe(200);

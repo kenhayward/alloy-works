@@ -153,6 +153,12 @@ describe('the audit kinds', () => {
       'settings.changed': { settings: ['maxRows', 'editing.lockMinutes'] },
       'content.version_cut': { kind: 'component', parent: null },
       'content.restored': { kind: 'component', from: ID },
+      'reference.repointed': {
+        node: 'n-1',
+        component: ID,
+        from: { kind: 'pinned', version: OTHER },
+        to: { kind: 'latest' },
+      },
       'connection.changed': { settings: ['host', 'database'] },
       'connection.tested': { outcome: 'ok', findings: ['account_not_read_only'] },
       'binding.resolved': { document: ID, node: 'n-1', binding: 'b_2', dataset: OTHER },
