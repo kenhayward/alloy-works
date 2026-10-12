@@ -245,7 +245,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(702); // 702 (2026-10-11): CP1 - comparison.md claims VER-024, VER-025, VER-027 to VER-031, VER-045, VER-050, VER-051, CNT-111 to CNT-113, COL-026, SCH-025 and SCH-048. 686 (2026-10-11): BL1 - baselines.md claims VER-043, VER-046, VER-049, DAT-038, PUB-045, PUB-046, PUB-075 and STR-047. 678 (2026-10-11): PL5 - structure.md claims STR-038 and STR-066. 676 (2026-10-11): PL1 - collaboration.md claims COL-009, COL-044 to COL-047 and takes COL-008 from component-editor.md; realtime.md claims COL-055 and API-015. 669 (2026-10-11): AU2d - service-foundations.md claims IAM-040. 668 (2026-10-11): TG1 - tables.md claims TAB-023 and TAB-054 for TAB-042. 667 (2026-10-11): TG - tables.md claims TAB-008, TAB-021, TAB-022, TAB-042, TAB-043, TAB-053. 661 (2026-10-09): MC - data.md claims DAT-119. 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(723); // 723 (2026-10-12): TH1 - collaboration.md claims COL-012 to COL-019, COL-034 to COL-036, COL-049 to COL-051, COL-053, COL-054, COL-062, COL-063, CNT-155, CNT-157 and IAM-081. 702 (2026-10-11): CP1 - comparison.md claims VER-024, VER-025, VER-027 to VER-031, VER-045, VER-050, VER-051, CNT-111 to CNT-113, COL-026, SCH-025 and SCH-048. 686 (2026-10-11): BL1 - baselines.md claims VER-043, VER-046, VER-049, DAT-038, PUB-045, PUB-046, PUB-075 and STR-047. 678 (2026-10-11): PL5 - structure.md claims STR-038 and STR-066. 676 (2026-10-11): PL1 - collaboration.md claims COL-009, COL-044 to COL-047 and takes COL-008 from component-editor.md; realtime.md claims COL-055 and API-015. 669 (2026-10-11): AU2d - service-foundations.md claims IAM-040. 668 (2026-10-11): TG1 - tables.md claims TAB-023 and TAB-054 for TAB-042. 667 (2026-10-11): TG - tables.md claims TAB-008, TAB-021, TAB-022, TAB-042, TAB-043, TAB-053. 661 (2026-10-09): MC - data.md claims DAT-119. 660 (2026-10-08): the AU1 review - assets.md claims AST-037. 659 (2026-10-08): audit.md claims 21. 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -843,6 +843,7 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 996 (2026-10-12): TH1's threads - the domain, the store and the routes.
     // 980 (2026-10-12): CP4's resolved comparison and what changed since.
     // 973 (2026-10-12): CP3's redline, Versions panel and comparison page.
     // 963 (2026-10-11): CP2's comparison routes.
@@ -854,7 +855,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(980);
+    expect(model.citations).toHaveLength(996);
   });
 
   it('cites no identifier the corpus does not hold', () => {

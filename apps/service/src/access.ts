@@ -136,6 +136,18 @@ async function targetOf(
       .executeTakeFirst();
     return baseline ? parseLevel(`artifact:${baseline.document_id}`) : undefined;
   }
+  if ('thread' in declared) {
+    // A thread is decided on what it is on (TH-J): one this tenant does not hold is no level at all,
+    // and so not found.
+    const id = params[declared.thread];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const thread = await trx
+      .selectFrom('thread')
+      .select('on_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return thread ? parseLevel(`artifact:${thread.on_id}`) : undefined;
+  }
   const [kind, name] =
     'space' in declared ? ['space', declared.space] : ['artifact', declared.artifact];
   const id = params[name];

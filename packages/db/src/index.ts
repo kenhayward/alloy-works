@@ -572,3 +572,17 @@ export {
   type ChangedValue,
   type ChangesSince,
 } from './changes.js';
+export {
+  addComment,
+  editComment,
+  listThreads,
+  readThread,
+  resolveThread,
+  startThread,
+  threadCommenters,
+  threadOn,
+  type StoredComment,
+  type StoredThread,
+  type ThreadAnswer,
+  type ThreadSummary,
+} from './threads.js';

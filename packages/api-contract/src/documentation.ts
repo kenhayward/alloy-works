@@ -24,6 +24,11 @@ export const documentationGroups = [
       { name: 'Definitions', description: 'Manage fields, metadata schemas and component types.' },
       { name: 'Templates', description: 'Create and version document templates.' },
       { name: 'Assets', description: 'Upload and retrieve image assets.' },
+      {
+        name: 'Threads',
+        description:
+          'Discuss a span, a cell, a component or a section beside the content, and resolve it.',
+      },
     ],
   },
   {
@@ -178,6 +183,16 @@ const operationTags = {
     'getAssetVersion',
     'getAssetVersionContent',
   ],
+  Threads: [
+    'startComponentThread',
+    'startDocumentThread',
+    'listComponentThreads',
+    'listDocumentThreads',
+    'getThread',
+    'addComment',
+    'editComment',
+    'resolveThread',
+  ],
   Previews: ['requestPreview'],
   Comparison: [
     'compareComponentVersions',
@@ -273,6 +288,22 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the document as a baseline holds it: its outline at the pinned version, numbered by the pinned layout, each component’s text at its pinned version, and each value from the dataset version it pinned. A component the caller may not read is withheld, as in the document itself.',
   publishBaseline:
     'Publishes a baseline from what it pins, never from the document as it is now: the same version of every component, image and value, under the same layout and theme, compiled at the baseline’s own time, so it is the same publication whenever it is asked for on the same engine. The caller must read everything it pins.',
+  startComponentThread:
+    'Starts a thread on a component, anchored to a span of a block’s text, a table’s cell, or the whole component, as it stands in the version named, with its first comment. The thread is beside the content, never in it: no version is made.',
+  startDocumentThread:
+    'Starts a thread on a document, anchored to a node of its outline as it stands in the version named, with its first comment. A thread on a component placed in it is started on the component.',
+  listComponentThreads:
+    'Lists the threads on a component, newest first, each saying whether its anchor still stands on the latest version. Filter by state, by who started it, or by whether anything was said since an instant.',
+  listDocumentThreads:
+    'Lists the threads on a document and on every component it places that the caller may read, newest first. A component’s thread says, for each occurrence, whether its anchor stands on the version that occurrence resolves to.',
+  getThread:
+    'Reads a thread: where it stands, who started and resolved it, and every comment with every text each has had, the latest last.',
+  addComment:
+    'Replies to an open thread. A resolved thread takes nothing more; start a new one instead.',
+  editComment:
+    'Gives the caller’s own comment a new text. Every earlier text is kept and read with the thread.',
+  resolveThread:
+    'Resolves an open thread, recording who and when. A thread is resolved once and never reopened.',
   supersedeBaseline:
     'Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.',
   takeLock:

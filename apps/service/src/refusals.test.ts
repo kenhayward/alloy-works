@@ -131,6 +131,10 @@ describe('the rule behind a refusal', () => {
       'baseline.unreadable',
       'superseder.invalid',
       'superseded.already',
+      'anchor.invalid',
+      'parts.invalid',
+      'thread.resolved',
+      'comment.not_yours',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

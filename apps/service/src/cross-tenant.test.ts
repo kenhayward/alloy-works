@@ -25,6 +25,7 @@ import {
   receiveAssetBytes,
   recordAsset,
   makeBaseline,
+  startThread,
   recordPublication,
   requestPublication,
   setGroupMembers,
@@ -179,6 +180,14 @@ const OTHER_TENANT_IDS: Readonly<
   compareBaselineResolved: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   publishBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
   supersedeBaseline: async (tenant, db) => ({ id: await baselineIn(tenant, db) }),
+  startComponentThread: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listComponentThreads: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  startDocumentThread: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  listDocumentThreads: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getThread: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
+  addComment: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
+  editComment: async (tenant, db) => ({ id: await threadIn(tenant, db), comment: SESSION }),
+  resolveThread: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   takeLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -327,6 +336,14 @@ const VALID_INPUT: Readonly<
   requestPreview: { payload: { version: SESSION } },
   makeBaseline: { payload: { version: SESSION, name: 'Elsewhere' } },
   supersedeBaseline: { payload: { by: SESSION } },
+  startComponentThread: {
+    payload: { version: SESSION, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
+  },
+  startDocumentThread: {
+    payload: { version: SESSION, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
+  },
+  addComment: { payload: { parts: [{ text: 'Hm' }] } },
+  editComment: { payload: { parts: [{ text: 'Hm' }] } },
   publishBaseline: { payload: { formats: ['pdf'] } },
   compareComponentVersions: { query: `from=${SESSION}&to=${SESSION}` },
   compareBaseline: { query: 'with=now' },
@@ -753,6 +770,28 @@ const baselineIn = async (tenant: Tenant, db: TenantDatabase) => {
     });
     if (made.answer !== 'made') throw new Error(`refused: ${made.answer}`);
     return made.baseline;
+  });
+};
+
+/** A thread in environment B, on its component, started by the component's author. */
+const threadIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const component = await componentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select(['id', 'author_id'])
+      .where('artifact_id', '=', component)
+      .orderBy('version_no', 'desc')
+      .executeTakeFirstOrThrow();
+    const started = await startThread(trx, {
+      on: component,
+      version: version.id,
+      anchor: { kind: 'component' },
+      parts: [{ text: 'Elsewhere' }],
+      author: version.author_id!,
+    });
+    if (started.answer !== 'done') throw new Error(`refused: ${started.answer}`);
+    return started.thread;
   });
 };
 

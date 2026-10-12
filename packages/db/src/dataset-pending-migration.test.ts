@@ -165,6 +165,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0073_baseline_publications',
       '0074_baseline_requests_whole',
       '0075_changes_since',
+      '0076_threads_and_inbox',
     ]);
     const kept = await queryAs(
       db.adminUrl,

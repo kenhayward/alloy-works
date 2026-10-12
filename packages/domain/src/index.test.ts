@@ -136,6 +136,11 @@ describe('the domain package', () => {
         'compareContent',
         'compareOutlines',
         'compareResolved',
+        // Threads (the TH plan): their anchors and comments.
+        'anchorStands',
+        'commentPartsSchema',
+        'mentionsIn',
+        'threadAnchorSchema',
         'createMeter',
         'outlineTexts',
         'unitTexts',

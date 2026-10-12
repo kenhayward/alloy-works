@@ -292,3 +292,13 @@ export {
   UnitChangeView,
 } from './comparison.js';
 export { ChangesQuery, ChangesView } from './changes.js';
+export {
+  CommentBody,
+  CommentParams,
+  StartThreadBody,
+  ThreadList,
+  ThreadListQuery,
+  ThreadParams,
+  ThreadSummaryView,
+  ThreadView,
+} from './threads.js';
