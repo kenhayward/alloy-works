@@ -1,7 +1,15 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { formatsFor, type AnyBinding, type ValueFormats } from '@alloy-works/domain';
 import { bindingFailureWords, CHANGED_SINCE_RESOLVED } from '@alloy-works/editor';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { Icon } from '../editor/Icon.js';
@@ -13,6 +21,7 @@ import {
   type BindingState,
   type ProvenanceShown,
   type Taken,
+  standingRevision,
 } from '../structure/bindingContexts.js';
 import { whoseView } from '../structure/ownView.js';
 import { usePresentation } from '../theme/presentation.js';
@@ -168,6 +177,8 @@ export function ProvenancePanel({
 
   if (held === null) return null;
   const { provenance } = held;
+  // The person's value standing in front of the query's, where one does (DAT-062).
+  const standing = standingRevision(state);
   const parameters = Object.entries(provenance.parameters);
 
   const showResult = async () => {
@@ -252,13 +263,38 @@ export function ProvenancePanel({
           >
             <dl className={styles['facts']}>
               <dt>Value</dt>
-              <dd>{said(held.taken, formats, binding, held.stale)}</dd>
+              <dd>
+                {said(
+                  standing !== undefined && held.taken !== null && 'value' in held.taken
+                    ? { ...held.taken, value: standing.value }
+                    : held.taken,
+                  formats,
+                  binding,
+                  held.stale,
+                )}
+              </dd>
               {returned(held.taken) !== null && (
                 <>
                   <dt>As the query returned it</dt>
                   <dd>{returned(held.taken)}</dd>
                 </>
               )}
+              {/* Both halves (DAT-062): each value a person revised by hand standing in front of the
+                  query's, who, when and why, the query's own value said beside it above. */}
+              {(state.revisions ?? [])
+                .filter((each) => each.stands)
+                .map((each) => (
+                  <Fragment key={each.id}>
+                    <dt>Revised by hand</dt>
+                    <dd data-revision={each.id}>
+                      {`${String(each.value)}${
+                        each.cell === null
+                          ? ''
+                          : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`
+                      }, by ${each.by.displayName ?? 'somebody'}, ${longDate(each.at)}: ${each.reason}`}
+                    </dd>
+                  </Fragment>
+                ))}
               {state.waiting !== null && (
                 <>
                   <dt>Waiting</dt>

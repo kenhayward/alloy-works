@@ -10,7 +10,9 @@ import {
   resolve,
   sectionNumbers,
   walkOutline,
+  formatsFor,
   type BoundTableNode,
+  type ColumnType,
   type Contribution,
   type NumberingScheme,
   type OutlineView,
@@ -36,7 +38,10 @@ import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
-import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
+import { bindingStatesIn, holdsBinding, tableKey, type BindingState } from './bindingContexts.js';
+import { useRevisionAsk } from './RevisionAsk.js';
+import { RevisionDialog, type Revising } from './RevisionDialog.js';
+import { said } from '../data/ProvenancePanel.js';
 import { boundTablesByKey, type TableRows } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
@@ -749,6 +754,9 @@ export function DocumentPage({
   } | null>(null);
   // DAT-091's warning, asked before a binding placed or resolved here holds one's own view (D7-H).
   const { ask: askOwnView, prompt: ownViewPrompt } = useOwnViewAsk();
+  const { ask: askRevision, prompt: revisionPrompt } = useRevisionAsk();
+  // A value being revised by hand, or its revision withdrawn, in the dialog over the page (RV-I).
+  const [revising, setRevising] = useState<Revising | null>(null);
   const [bindingsRead, setBindingsRead] = useState(0);
   // The bound tables the editor open in place holds, which no save may have reached (TB2-H), and every
   // bound table by its node and binding: the Data tab's to check, and the text's to lay out.
@@ -847,6 +855,37 @@ export function DocumentPage({
     if (bindingStates.some((each) => each.binding.mode === 'checked' && each.mayCheck)) checkNow();
   }, [bindingStates, checkNow]);
   /**
+   * Opens the revision dialog on a value, or a bound table's cells (RV-I, RV-J): a table's cells may be
+   * revised in a value column it shows - never its key, a group's column or subtotal, or the column it
+   * is turned by.
+   */
+  const openRevising = (node: string, binding: string, act: 'revise' | 'withdraw') => {
+    const state = bindingStates?.find((each) => each.node === node && each.binding.id === binding);
+    if (state?.held == null) return;
+    const table = boundTables.get(tableKey(node, binding));
+    const fixed = new Set([
+      ...(state.held.key ?? []),
+      ...(table?.groups ?? []).flatMap((group) =>
+        group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
+      ),
+      ...(table?.transpose === undefined ? [] : [table.transpose.header]),
+    ]);
+    const columns =
+      table === undefined
+        ? []
+        : table.columns.flatMap((shown) => {
+            const declared = state.held!.provenance.columns.find(
+              (each) => each.name === shown.column,
+            );
+            return declared === undefined ||
+              fixed.has(shown.column) ||
+              (declared.type as { base?: string }).base === 'image'
+              ? []
+              : [{ name: shown.column, type: declared.type as ColumnType }];
+          });
+    setRevising({ node, state, act, columns });
+  };
+  /**
    * A binding the editor in place placed, changed, or asked to keep or resolve (B2-C, B2-H): resolved
    * or kept from its session, said where it was left holding nothing, and the view read again.
    */
@@ -857,9 +896,21 @@ export function DocumentPage({
     act: SettleAct,
   ) => {
     if (session !== null) setBindingSession(session);
+    // The product's formats in the ask's words: the theme's are the presentation's, below the page.
+    const formats = formatsFor(
+      null,
+      loaded.state === 'open' ? loaded.document.outline.language : null,
+    );
     void settleBinding(client, id, node, binding, session, act, {
       onWaiting: setNotice,
       ask: askOwnView,
+      decide: (current, named) =>
+        askRevision({
+          standing: (current.revisions ?? []).filter((each) => each.stands),
+          queried: said(current.held?.taken ?? null, formats, current.binding),
+          next: null,
+          act: named,
+        }),
     })
       // What it says replaces the waiting it said meanwhile, which goes once nothing is to be said.
       .then((said) => setNotice((held) => said ?? (held === WAITING_ON_IMAGES ? null : held)))
@@ -1653,7 +1704,16 @@ export function DocumentPage({
       }
     }
   }
-  const tabs = offeredTabs(holdsBindings);
+  // In Review, the Data tab counts the values revised by hand, for a reviewer to look at (DAT-061's
+  // half, RV-K).
+  const revisedCount = (bindingStates ?? []).filter((each) =>
+    (each.revisions ?? []).some((revision) => revision.stands),
+  ).length;
+  const tabs = offeredTabs(holdsBindings).map((each) =>
+    each.key === 'data' && reviewing && revisedCount > 0
+      ? { ...each, label: `Data, ${revisedCount} revised by hand` }
+      : each,
+  );
   const shown = shownTab(tab, tabs);
   // What the Value dialog's From the document is offered (TP2-F): the declarations a reader of the
   // template is given; none held, why - values withheld with them, or no parameters at all.
@@ -2170,6 +2230,7 @@ export function DocumentPage({
                 onTableRows={setTableRows}
                 onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
                 onBindingSettle={onBindingSettle}
+                {...(document.mayEdit ? { onRevise: openRevising } : {})}
                 {...(principalId === undefined || !authoring
                   ? {}
                   : {
@@ -2206,6 +2267,21 @@ export function DocumentPage({
             />
           </div>
           {ownViewPrompt}
+          {revisionPrompt}
+          {revising !== null && (
+            <RevisionDialog
+              client={client}
+              document={document.id}
+              revising={revising}
+              formats={formatsFor(null, document.outline.language)}
+              onClose={() => setRevising(null)}
+              onDone={(words) => {
+                setRevising(null);
+                setNotice(words);
+                setBindingsRead((count) => count + 1);
+              }}
+            />
+          )}
           {/* The zoom in the status bar (ADR-0056): the shell's, or the page's own where it has none. */}
           {status === null ? (
             <StatusBar notice={notice} context={context} tools={<ZoomControl />} />

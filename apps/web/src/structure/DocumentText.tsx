@@ -437,6 +437,7 @@ export function DocumentText({
   bindingStates = null,
   onProvenance,
   onBindingSettle,
+  onRevise,
   boundTables,
   rowsFrom,
   onBoundTables,
@@ -491,6 +492,8 @@ export function DocumentText({
   onProvenance?: (node: string, binding: string, opener: HTMLElement | null) => void;
   /** Resolves or keeps a binding placed, changed, kept or resolved in the editor at a node (B2). */
   onBindingSettle?: (node: string, binding: string, session: string | null, act: SettleAct) => void;
+  /** Revises a value by hand, or withdraws a revision, at a node (the RV plan, RV-I). */
+  onRevise?: (node: string, binding: string, act: 'revise' | 'withdraw') => void;
   /** Each bound table by its node and binding (`tableKey`), from the texts and the editor (TB2-H). */
   boundTables?: ReadonlyMap<string, BoundTableNode>;
   /** Where its bound tables' rows are read from (TB2-A): none read without it. */
@@ -710,6 +713,12 @@ export function DocumentText({
                             pinned: node.mode.kind !== 'latest',
                             onSettle: (binding: string, session: string | null, act: SettleAct) =>
                               onBindingSettle(node.id, binding, session, act),
+                            ...(onRevise
+                              ? {
+                                  onRevise: (binding: string, act: 'revise' | 'withdraw') =>
+                                    onRevise(node.id, binding, act),
+                                }
+                              : {}),
                           },
                         }
                       : {}),

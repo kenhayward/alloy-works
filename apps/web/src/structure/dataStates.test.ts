@@ -68,3 +68,31 @@ describe("a binding's state in the Data tab (the B4 plan, B4-C)", () => {
     }
   });
 });
+
+describe('a value revised by hand in the Data tab (the RV plan, RV-I)', () => {
+  const revision = (over: Record<string, unknown> = {}) => ({
+    id: '7',
+    cell: null,
+    value: '5',
+    reason: 'Measured again.',
+    by: { id: 'p', displayName: 'Ada' },
+    at: '2026-10-12T09:00:00.000Z',
+    stands: true,
+    ...over,
+  });
+
+  it('DAT-115 gives a value a person revised its own state, after a revision waiting and before a publication, and a lapsed one none', () => {
+    const waiting = { version: 'v2', provenance: held().provenance, taken: value };
+    expect(dataState(view({ revisions: [revision()] }), false)).toBe('revised');
+    expect(dataState(view({ revisions: [revision()], waiting }), false)).toBe('waiting');
+    expect(dataState(view({ revisions: [revision()], sincePublished: 'new' }), false)).toBe(
+      'revised',
+    );
+    expect(dataState(view({ revisions: [revision({ stands: false })] }), false)).toBe('holding');
+  });
+
+  it('DAT-063 fails a table whose revised cell is on a row its result no longer has', () => {
+    const cell = revision({ cell: { key: { id: '9' }, column: 'depth' }, rowMissing: true });
+    expect(dataState(view({ revisions: [cell] }), false)).toBe('failed');
+  });
+});

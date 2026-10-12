@@ -510,3 +510,50 @@ describe("a person's own view in the Data tab (the D7 plan, D7.3)", () => {
     await waitFor(() => expect(onNotice).toHaveBeenCalledWith(ended));
   });
 });
+
+describe('a value revised by hand in the Data tab (the RV plan, RV-I)', () => {
+  const revision = {
+    id: '7',
+    cell: null,
+    value: 'Atlas Quay',
+    reason: 'The site was renamed.',
+    by: { id: 'p', displayName: 'Ada' },
+    at: '2026-10-12T09:00:00.000Z',
+    stands: true,
+  };
+
+  it('DAT-115 shows a revised value as the document shows it, in its own state, saying whose it is and why', () => {
+    drawn(states(view(FIRST, 'v1', 'Atlas', { revisions: [revision] })));
+    const row = rowOf('v1');
+    expect(within(row).getByText('Atlas Quay')).toBeInTheDocument();
+    expect(within(row).getByText('Revised by hand', { selector: '[data-state]' })).toBeVisible();
+    expect(row).toHaveTextContent('Revised by hand: Atlas Quay, by Ada: The site was renamed.');
+  });
+
+  it('DAT-060 asks before accepting over a revision, showing the three values, and sends the choice with the revisions it decided over', async () => {
+    const waiting = {
+      version: 'v2',
+      provenance,
+      taken: value('Atlas North'),
+    };
+    const { asked } = drawn(states(view(FIRST, 'v1', 'Atlas', { revisions: [revision], waiting })));
+    await userEvent.click(within(rowOf('v1')).getByRole('button', { name: 'Accept' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('The query returnedAtlas');
+    expect(dialog).toHaveTextContent('Revised by handAtlas Quay, by Ada: The site was renamed.');
+    expect(dialog).toHaveTextContent('The new resultAtlas North');
+    // Cancelled, nothing is sent.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(asked.filter((each) => each.path.endsWith('/accept'))).toEqual([]);
+    await userEvent.click(within(rowOf('v1')).getByRole('button', { name: 'Accept' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Keep my revision' }),
+    );
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/accept'))?.body).toMatchObject({
+        version: 'v2',
+        revisions: { decision: 'keep', over: ['7'] },
+      }),
+    );
+  });
+});

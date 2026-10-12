@@ -75,6 +75,20 @@ export interface TableRows {
   readonly presorted: boolean;
   /** Each keyed note's row among them, null where gone (TB3-C): the route's `notes`. */
   readonly notes: Readonly<Record<string, number | null>>;
+  /** Each cell a value revised by hand stands in, by its row among them and its column (RV-J). */
+  readonly revised: readonly { readonly row: number; readonly column: string }[];
+}
+
+/** The route's `revised`, each a row's index and a column; anything else left out. */
+function revisedIn(value: unknown): TableRows['revised'] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (each): each is { row: number; column: string } =>
+      typeof each === 'object' &&
+      each !== null &&
+      Number.isInteger((each as { row?: unknown }).row) &&
+      typeof (each as { column?: unknown }).column === 'string',
+  );
 }
 
 /** A table's keyed notes, by identifier and key: what the rows route matches rows for (TB3.3). */
@@ -193,6 +207,10 @@ export function useTableRows(
         const sorted = [...new Set((table.sort ?? []).map((each) => each.column))].sort();
         const notes = keyedNotes(table);
         const { version } = state.held;
+        // Its revised cells, so a revision made or withdrawn reads the rows again (RV-J).
+        const revised = (state.revisions ?? [])
+          .filter((each) => each.stands && each.cell !== null)
+          .map((each) => each.id);
         return [
           {
             key,
@@ -202,7 +220,7 @@ export function useTableRows(
             shown,
             sorted,
             notes: notes.map(([id]) => id),
-            ask: JSON.stringify([version, shown, sorted, table.sort ?? [], notes]),
+            ask: JSON.stringify([version, shown, sorted, table.sort ?? [], notes, revised]),
           },
         ];
       }),
@@ -232,6 +250,7 @@ export function useTableRows(
             result: parsed.data,
             presorted: data?.presorted === true,
             notes,
+            revised: revisedIn((data as { revised?: unknown } | undefined)?.revised),
           };
           // Short of a column it names: asked again after the next save, never kept.
           if (!answers(rows, each)) return;

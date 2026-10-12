@@ -2,7 +2,7 @@ import type { BindingState } from './bindingContexts.js';
 
 /** A binding's state in the Data tab, one of the design's (bindings.md, "The Data tab"). */
 export type DataState =
-  'never' | 'stale' | 'failed' | 'waiting' | 'definition' | 'published' | 'holding';
+  'never' | 'stale' | 'failed' | 'waiting' | 'definition' | 'revised' | 'published' | 'holding';
 
 /** Each state in words, in the design's order, which the filter offers them in. */
 export const DATA_STATE_WORDS = {
@@ -11,6 +11,7 @@ export const DATA_STATE_WORDS = {
   failed: 'Failed',
   waiting: 'Revision waiting',
   definition: 'Definition changed',
+  revised: 'Revised by hand',
   published: 'Changed since published',
   holding: 'Holding',
 } as const satisfies Record<DataState, string>;
@@ -34,8 +35,12 @@ export function dataState(
   // A bound table's binding holds the whole result, which it takes nothing from (TB1-C).
   const holds = held.taken !== null && ('value' in held.taken || 'table' in held.taken);
   if (checkFailed || !holds) return 'failed';
+  // A person's value on a row the result no longer has fails the publish (DAT-063).
+  const standing = (view.revisions ?? []).filter((each) => each.stands);
+  if (standing.some((each) => each.rowMissing === true)) return 'failed';
   if (view.waiting !== null) return 'waiting';
   if (view.definitionChanged) return 'definition';
+  if (standing.length > 0) return 'revised';
   if (view.sincePublished !== null) return 'published';
   return 'holding';
 }

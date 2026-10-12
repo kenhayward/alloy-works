@@ -3,9 +3,10 @@ import type { ParameterRule } from '@alloy-works/domain';
 
 import { PARAMETER_WORDS } from '../editor/ValueDialog.js';
 
-import { bindingStatesIn } from './bindingContexts.js';
+import { bindingStatesIn, type BindingState } from './bindingContexts.js';
 import { codeOf, identityRefusal, NOT_HELD } from './ownView.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
+import type { RevisionDecision } from './RevisionAsk.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -60,6 +61,28 @@ export interface SettleOptions {
    * see it (DAT-091); answers whether they agreed. Without it, one's own view is never held.
    */
   readonly ask?: () => Promise<boolean>;
+  /**
+   * Asks the person what to do with the values revised by hand standing on what the binding holds
+   * (DAT-060), given the binding as the refusal says it stands; null where they cancel. Without it,
+   * such a binding is left as it is, and said so.
+   */
+  readonly decide?: (
+    state: BindingState,
+    act: 'Resolve' | 'Keep',
+  ) => Promise<RevisionDecision | null>;
+}
+
+/** Said where a binding is left as it is because a value revised by hand stands and nobody decided. */
+export const REVISION_UNDECIDED =
+  'A value revised by hand stands here. Decide whether to keep it in the Data tab.';
+
+/**
+ * The binding as a `revision_decision_required` refusal says it stands, or undefined for any other.
+ */
+export function undecidedIn(error: unknown): BindingState | undefined {
+  if (codeOf(error) !== 'revision_decision_required') return undefined;
+  const current = (error as { current?: unknown }).current;
+  return bindingStatesIn({ bindings: [current] })?.[0];
 }
 
 /** The act settling each binding now, by document, node and binding, which the next one waits for. */
@@ -119,26 +142,42 @@ async function settleNow(
     )?.held;
     if (held?.keepable === true) replaces = held.version;
   }
-  const resolve = (sharesOwnView: boolean) =>
+  let revisions: RevisionDecision | undefined;
+  const decided = () =>
+    revisions === undefined ? {} : { revisions: { ...revisions, over: [...revisions.over] } };
+  let shares = false;
+  const resolve = () =>
     client.POST('/v1/documents/{id}/bindings/resolve', {
       params: { path: { id: document } },
       body: {
-        bindings: [{ node, binding, ...from }],
+        bindings: [{ node, binding, ...from, ...decided() }],
         ...named,
-        ...(sharesOwnView ? { sharesOwnView } : {}),
+        ...(shares ? { sharesOwnView: true } : {}),
       },
     });
-  let { data, error, response } =
-    replaces !== null
-      ? await client.POST('/v1/documents/{id}/bindings/confirm', {
-          params: { path: { id: document } },
-          body: { node, binding, replaces, ...from, ...named },
-        })
-      : await resolve(false);
+  const confirm = (kept: string) =>
+    client.POST('/v1/documents/{id}/bindings/confirm', {
+      params: { path: { id: document } },
+      body: { node, binding, replaces: kept, ...from, ...named, ...decided() },
+    });
+  const send = () => (replaces !== null ? confirm(replaces) : resolve());
+  let { data, error, response } = await send();
+  // A value revised by hand stands on what it holds (DAT-060): never replaced until somebody says.
+  const undecided = undecidedIn(error);
+  if (undecided !== undefined) {
+    const answer =
+      options.decide === undefined
+        ? null
+        : await options.decide(undecided, replaces !== null ? 'Keep' : 'Resolve');
+    if (answer === null) return REVISION_UNDECIDED;
+    revisions = answer;
+    ({ data, error, response } = await send());
+  }
   // It runs as the person asking: their own view is held only once they agree to share it (D7-H).
   if (replaces === null && codeOf(error) === 'acknowledgement_required') {
     if (options.ask === undefined || !(await options.ask())) return NOT_HELD;
-    ({ data, error, response } = await resolve(true));
+    shares = true;
+    ({ data, error, response } = await resolve());
   }
   const refused = identityRefusal(error);
   if (refused !== null) return refused;
