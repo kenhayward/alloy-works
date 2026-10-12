@@ -100,6 +100,12 @@ const Binding = z.strictObject({
   outcome: z.enum(['unchanged', 'revision']).optional(),
 });
 
+/** Which version a reference takes: a pinned one's version, or `latest` or `approved` (CNT-182). */
+const ReferenceMode = z.strictObject({
+  kind: z.enum(['pinned', 'latest', 'approved']),
+  version: Id.optional(),
+});
+
 /** A canonical value in a revision's detail: what it was and what it became (DAT-058). */
 const Canonical = z.union([z.string().max(10000), z.boolean(), z.null()]);
 
@@ -324,7 +330,13 @@ export const auditKindSpecs = {
     z.strictObject({ kind: AuditName, from: Id }),
     'packages/db/src/restore.ts',
   ),
-  'reference.repointed': kind(['CNT-182', 'CNT-183'], empty, LATER),
+  // A reference taking another version (the RS plan, RS-G): about the document version recording it;
+  // its node and component, and its mode before and after.
+  'reference.repointed': kind(
+    ['CNT-182', 'CNT-183'],
+    z.strictObject({ node: Identifier, component: Id, from: ReferenceMode, to: ReferenceMode }),
+    'packages/db/src/documents.ts',
+  ),
   // A lock taken from an idle holder after their grace (COL-009; collaboration.md): whom from, and
   // the session it was taken from; the taker is the actor.
   'lock.taken': kind(

@@ -1439,6 +1439,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A document's versions, newest first, a page at a time
+         * @description Lists a document’s versions newest first using an opaque cursor, each with the version it was restored from, if any.
+         */
+        get: operations["listDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/versions/{version}/restoration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What restoring a document's earlier version would make, and anything refusing it
+         * @description Answers what restoring an earlier version of a document would make, inserting nothing: its outline compared with the latest’s, a component the caller may not read withheld on both sides, and anything that would refuse it. The outline, its references and their modes and its values come back as they stood; its parameters stay as they are now. Refused by the outline’s own guards: a reference the caller may not read, a section change the template does not allow, or a value its field no longer takes.
+         */
+        get: operations["previewDocumentRestore"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/versions/{version}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore a document's earlier version as a new version naming it
+         * @description Restores an earlier version of a document as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Each reference whose version it changes is audited as re-pointed, from and to.
+         */
+        post: operations["restoreDocumentVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grants": {
         parameters: {
             query?: never;
@@ -36214,6 +36274,650 @@ export interface operations {
                             /** @description The field it seeds, where the rule is that field's and not the parameter's */
                             field?: string;
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDocumentVersions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of its versions, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            createdAt: string;
+                            /** @description Who made it; null for a version nobody authored */
+                            author: {
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            note: string | null;
+                            /** @description The earlier version it was restored from (VER-033); null for any other */
+                            restoredFrom: {
+                                id: string;
+                                number: string;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one whose versions they may read */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewDocumentRestore: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What a restore would make, inserting nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "document": "example",
+                     *       "from": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "latest": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "older": {},
+                     *       "newer": {},
+                     *       "structure": [],
+                     *       "titles": [],
+                     *       "refusals": []
+                     *     }
+                     */
+                    "application/json": {
+                        document: string;
+                        /** @description The version restored from */
+                        from: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version, which a restore must name */
+                        latest: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        /** @description The latest version's outline, withheld */
+                        older: {
+                            [key: string]: unknown;
+                        };
+                        /** @description The outline the restore would make, withheld */
+                        newer: {
+                            [key: string]: unknown;
+                        };
+                        /** @description What the restore would change from the latest */
+                        structure: ({
+                            /** @constant */
+                            change: "inserted";
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /** @description The unit it stands after under its parent, or null first */
+                            after: string | null;
+                        } | {
+                            /** @constant */
+                            change: "deleted";
+                            older: string;
+                            type: string;
+                            parent: string;
+                        } | {
+                            /** @constant */
+                            change: "matched";
+                            older: string;
+                            newer: string;
+                            type: string;
+                            parent: string;
+                            /**
+                             * @description How the two were found to be one
+                             * @enum {string}
+                             */
+                            matched: "identity" | "similarity";
+                            moved: {
+                                after: string | null;
+                            } | null;
+                            /** @description Its text compared word by word, `whole` past the bound a block is compared within */
+                            edited: ({
+                                ops: {
+                                    /** @enum {string} */
+                                    op: "keep" | "insert" | "delete";
+                                    /** @description The text, an inline node that is not text standing as U+FFFC */
+                                    text: string;
+                                }[];
+                            } | {
+                                /** @constant */
+                                whole: true;
+                            }) | null;
+                            /** @description Each attribute that differs */
+                            changed: string[];
+                            split: string | null;
+                            joined: string | null;
+                        })[];
+                        /** @description Each reference the caller may read, by the title of the component it places */
+                        titles: {
+                            node: string;
+                            title: string;
+                        }[];
+                        /** @description Empty where it may be restored */
+                        refusals: {
+                            /**
+                             * @description restore_unreadable: the version no longer reads. restore_unchanged: it would make what the latest already is. outline_invalid: the outline's own guards refuse it, `reason` saying which. values_invalid: a value its field no longer takes. values_unresolved: the template no longer resolves to check its values
+                             * @enum {string}
+                             */
+                            code: "restore_unreadable" | "restore_unchanged" | "outline_invalid" | "values_invalid" | "values_unresolved";
+                            /** @description outline_invalid: why, in words */
+                            reason?: string;
+                            /** @description values_invalid: each value refused */
+                            failures?: {
+                                code: string;
+                                field: string;
+                                rule: string;
+                                schemas: string[];
+                                detail: string;
+                            }[];
+                            /** @description values_unresolved: what the template names that no longer resolves */
+                            unresolved?: unknown[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a version that is not one of its versions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    restoreDocumentVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "latest": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The latest version the restore was previewed against, which must still be the latest */
+                    latest: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Restored, as a new version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The new version, restored from the one asked */
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description outline_invalid (with its reason), values_invalid or values_unresolved: the outline's own guards */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description outline_invalid: why, in words */
+                        reason?: string;
+                        /** @description values_unresolved: what the template names that no longer resolves */
+                        unresolved?: unknown[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a version that is not one of its versions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description restore_unchanged, restore_unreadable, or version_precondition (naming the latest) */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description lock_active: when it may be asked for */
+                        takeableAt?: string;
+                        /** @description lock_taking: who has asked already */
+                        taking?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        current?: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        latest?: number;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description outline_invalid: why, in words */
+                        reason?: string;
+                        /** @description values_unresolved: what the template names that no longer resolves */
+                        unresolved?: unknown[];
                     };
                 };
             };

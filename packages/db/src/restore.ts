@@ -2,18 +2,26 @@ import {
   carryForward,
   definitionsFor,
   readContent,
+  readOutline,
   validate,
   type MetadataFailure,
   type NotCarried,
+  type OutlineDocument,
   type VersionSubstance,
 } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { componentFieldsNow } from './component-values.js';
+import {
+  recordRepoints,
+  restoredOutlineRefused,
+  type RestoredOutlineRefusal,
+} from './documents.js';
 import { isComponent, readLock, serialise, type LockState } from './editing.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
 import {
   latestVersion,
+  lockArtifact,
   readVersion,
   recordRestoredVersion,
   type StoredVersion,
@@ -28,7 +36,9 @@ export type RestoreRefusal =
   /** A value a field now fixes at another (MET-033), as a cut refuses it. */
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   /** What it would make is what the latest already is. */
-  | { readonly answer: 'restore.unchanged' };
+  | { readonly answer: 'restore.unchanged' }
+  /** A document's: `editOutline`'s guards over the whole outline (RS-F). */
+  | RestoredOutlineRefusal;
 
 /** What restoring a version would make (VER-035): read by the preview and the write alike. */
 export interface Restoration {
@@ -38,13 +48,17 @@ export interface Restoration {
   readonly notCarried: readonly NotCarried[];
   readonly refusals: readonly RestoreRefusal[];
   /** What the new version would hold; undefined where the source does not read. */
-  readonly substance: Extract<VersionSubstance, { kind: 'component' }> | undefined;
+  readonly substance: Extract<VersionSubstance, { kind: 'component' | 'document' }> | undefined;
+  /** A document's outline now and as the restore would make it, for comparing them; else undefined. */
+  readonly outlines?: { readonly latest: OutlineDocument; readonly restored: OutlineDocument };
 }
 
 export interface RestoreAsked {
   readonly artifactId: string;
   /** The earlier version to restore, by id. */
   readonly version: string;
+  /** Who restores: a document's references are checked as theirs (RS-F). */
+  readonly by: string;
 }
 
 /**
@@ -57,7 +71,7 @@ async function resolve(
   trx: TenantTransaction,
   asked: RestoreAsked,
 ): Promise<Restoration | undefined> {
-  if (!(await isComponent(trx, asked.artifactId))) return undefined;
+  if (!(await isComponent(trx, asked.artifactId))) return resolveDocument(trx, asked);
   await serialise(trx, asked.artifactId);
   const source = await readVersion(trx, asked.version);
   if (!source || source.artifactId !== asked.artifactId) return undefined;
@@ -89,6 +103,48 @@ async function resolve(
   return { source, latest, notCarried: carried.notCarried, refusals, substance };
 }
 
+/**
+ * A document's restore (the RS plan, RS-F): its outline as read now, references and modes as they
+ * stood, and its own values, under `editOutline`'s guards over the whole outline; its parameters as
+ * they stand now (TP1-E). Under the document's advisory lock, as a version is recorded: a document has
+ * no editing lock (COL-N02), so nothing else refuses it.
+ */
+async function resolveDocument(
+  trx: TenantTransaction,
+  asked: RestoreAsked,
+): Promise<Restoration | undefined> {
+  if ((await latestVersion(trx, asked.artifactId))?.kind !== 'document') return undefined;
+  await lockArtifact(trx, asked.artifactId);
+  const source = await readVersion(trx, asked.version);
+  if (!source || source.artifactId !== asked.artifactId) return undefined;
+  const latest = (await latestVersion(trx, asked.artifactId))!;
+  const now = readOutline(latest.content, { artifact: latest.artifactId, version: latest.id });
+  // The latest not reading is a broken store, thrown as `editOutline` throws it.
+  if (!now.ok) throw new Error(`The document ${latest.artifactId} at ${latest.id} does not read`);
+  const read = readOutline(source.content, { artifact: source.artifactId, version: source.id });
+  if (!read.ok) {
+    const refusals = [{ answer: 'restore.unreadable' } as const];
+    return { source, latest, notCarried: [], refusals, substance: undefined };
+  }
+  const refusals: RestoreRefusal[] = await restoredOutlineRefused(trx, {
+    documentId: asked.artifactId,
+    author: asked.by,
+    latest: { outline: now.outline, values: latest.values },
+    restored: { outline: read.outline, values: source.values },
+  });
+  const substance = {
+    kind: 'document',
+    content: read.outline,
+    values: source.values,
+    parameters: latest.parameters,
+  } as const;
+  if (versionDigests(substance).versionDigest === latest.versionDigest) {
+    refusals.push({ answer: 'restore.unchanged' });
+  }
+  const outlines = { latest: now.outline, restored: read.outline };
+  return { source, latest, notCarried: [], refusals, substance, outlines };
+}
+
 /** What a restore would make, inserting nothing (VER-035). The caller has decided `edit` and `read`. */
 export function previewRestore(
   trx: TenantTransaction,
@@ -111,7 +167,7 @@ export type RestoreAnswer =
  */
 export async function restoreVersion(
   trx: TenantTransaction,
-  input: RestoreAsked & { readonly latest: string; readonly by: string },
+  input: RestoreAsked & { readonly latest: string },
 ): Promise<RestoreAnswer> {
   const restoration = await resolve(trx, input);
   if (!restoration) return { answer: 'artifact.missing' };
@@ -132,11 +188,15 @@ export async function restoreVersion(
     trx,
     {
       kind: 'content.restored',
-      subject: { kind: 'component', id: input.artifactId, version: recorded.version.id },
+      subject: { kind: source.kind, id: input.artifactId, version: recorded.version.id },
       space: place.space,
-      detail: { kind: 'component', from: source.id },
+      detail: { kind: source.kind, from: source.id },
     },
     place.labels,
   );
+  if (restoration.outlines) {
+    const { latest: before, restored } = restoration.outlines;
+    await recordRepoints(trx, recorded.version, before, restored);
+  }
   return { answer: 'restored', version: recorded.version };
 }

@@ -435,3 +435,77 @@ export function applyOutlineOperation(
       return set(outline, operation, rules.sectionFields ?? []);
   }
 }
+
+type ReferenceMode = Extract<OutlineNode, { type: 'reference' }>['mode'];
+
+/** A reference taking another version (CNT-182): its node, its component, its mode before and after. */
+export interface Repoint {
+  readonly node: string;
+  readonly component: string;
+  readonly from: ReferenceMode;
+  readonly to: ReferenceMode;
+}
+
+const sameMode = (a: ReferenceMode, b: ReferenceMode) =>
+  a.kind === b.kind && (a.kind !== 'pinned' || a.version === (b as typeof a).version);
+
+/** Each node by its identifier, with its parent's, or null at the top. */
+function placed(
+  outline: OutlineDocument,
+): Map<string, { node: OutlineNode; parent: string | null }> {
+  const found = new Map<string, { node: OutlineNode; parent: string | null }>();
+  const walk = (nodes: readonly OutlineNode[], parent: string | null) => {
+    for (const node of nodes) {
+      found.set(node.id, { node, parent });
+      walk(node.children, node.id);
+    }
+  };
+  walk(outline.nodes, null);
+  return found;
+}
+
+/**
+ * Each reference in both outlines whose mode differs (the RS plan, RS-G): what the outline's `set`
+ * and a document's restore record as `reference.repointed`. A reference in only one of them, inserted
+ * or removed, is not a re-point, nor is one moved.
+ */
+export function repointsBetween(before: OutlineDocument, after: OutlineDocument): Repoint[] {
+  const was = placed(before);
+  const repoints: Repoint[] = [];
+  walkOutline(after.nodes, (node) => {
+    const old = was.get(node.id)?.node;
+    if (node.type !== 'reference' || old?.type !== 'reference') return;
+    if (old.component !== node.component || sameMode(old.mode, node.mode)) return;
+    repoints.push({ node: node.id, component: node.component, from: old.mode, to: node.mode });
+  });
+  return repoints;
+}
+
+/**
+ * TPL-015 over a whole outline replacing another, as a restore does (the RS plan, RS-F): each change
+ * to its sections the template's `changes` forbids, in `forbidden`'s words - a section only in the
+ * restored outline is added, one only in the latest removed, and one in both under another parent or
+ * in another order reordered. A component reference is never held.
+ */
+export function outlineChangesRefused(
+  latest: OutlineDocument,
+  restored: OutlineDocument,
+  changes: NonNullable<OutlineRules['changes']>,
+): string[] {
+  const sections = (outline: OutlineDocument) =>
+    [...placed(outline)].filter(([, { node }]) => node.type === 'section');
+  const before = new Map(sections(latest));
+  const after = new Map(sections(restored));
+  const both = [...after.keys()].filter((key) => before.has(key));
+  const reasons: string[] = [];
+  if (!changes.add && [...after.keys()].some((key) => !before.has(key))) reasons.push(NOT_ADDED);
+  if (!changes.remove && [...before.keys()].some((key) => !after.has(key))) {
+    reasons.push(NOT_REMOVED);
+  }
+  const order = [...before.keys()].filter((key) => after.has(key));
+  const reordered =
+    order.some((key, index) => key !== both[index]) ||
+    both.some((key) => before.get(key)!.parent !== after.get(key)!.parent);
+  if (!changes.reorder && reordered) reasons.push(NOT_REORDERED);
+  return reasons;
+}

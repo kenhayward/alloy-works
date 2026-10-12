@@ -40,3 +40,27 @@ describe("a component's restore in the contract (the RS plan, RS-D)", () => {
     expect(ComponentVersionList.parse({ items: [listed], next: null }).items[0]).toEqual(listed);
   });
 });
+
+describe("a document's versions and restore in the contract (the RS plan, RS-H)", () => {
+  it("lists a document's versions to a reader, and previews and restores them by edit", () => {
+    expect([routes.listDocumentVersions.method, routes.listDocumentVersions.path]).toEqual([
+      'GET',
+      '/v1/documents/{id}/versions',
+    ]);
+    expect(routes.listDocumentVersions.access).toMatchObject({ permission: 'read' });
+    const preview = routes.previewDocumentRestore;
+    const restore = routes.restoreDocumentVersion;
+    expect([preview.method, preview.path]).toEqual([
+      'GET',
+      '/v1/documents/{id}/versions/{version}/restoration',
+    ]);
+    expect([restore.method, restore.path]).toEqual([
+      'POST',
+      '/v1/documents/{id}/versions/{version}/restore',
+    ]);
+    for (const route of [preview, restore]) {
+      expect(route.access).toMatchObject({ permission: 'edit', target: { artifact: 'id' } });
+    }
+    expect(restore.body.safeParse({}).success).toBe(false);
+  });
+});

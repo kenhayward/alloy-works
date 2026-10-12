@@ -944,6 +944,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   version to whoever may edit it: what it would change, any values not carried forward to the fields
   defined now, and why it cannot, if it cannot - somebody editing it, nothing changed - then **Restore
   this version**. It makes a new version, audited, and the history says "Restored from version N".
+  A document's page has a **Versions** panel too: each version, and **Restore** on each earlier one,
+  showing what it would change in the outline and why it cannot, if it cannot - a component you may no
+  longer read, a section change its template does not allow, a value its field no longer takes. Its
+  parameters stay as they are now. Changing which version a reference takes, by its mode or by a
+  restore, is audited from and to. Through the API, `/v1/documents/{id}/versions` and its
+  `restoration` and `restore`.
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing

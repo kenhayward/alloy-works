@@ -222,6 +222,9 @@ const OTHER_TENANT_IDS: Readonly<
   listIterations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getIteration: async (tenant, db) => ({ id: await componentIdIn(tenant, db), iteration: SESSION }),
   previewRestore: async (tenant, db) => componentVersionIn(tenant, db),
+  listDocumentVersions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  previewDocumentRestore: async (tenant, db) => documentVersionIn(tenant, db),
+  restoreDocumentVersion: async (tenant, db) => documentVersionIn(tenant, db),
   restoreVersion: async (tenant, db) => componentVersionIn(tenant, db),
   removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
   createAssetUpload: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
@@ -401,6 +404,7 @@ const VALID_INPUT: Readonly<
   getBoundTableRows: { query: `version=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
   restoreVersion: { payload: { latest: SESSION } },
+  restoreDocumentVersion: { payload: { latest: SESSION } },
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
@@ -455,6 +459,13 @@ const spaceIdIn = async (tenant: Tenant, db: TenantDatabase) =>
       .executeTakeFirstOrThrow();
     return space.id;
   });
+
+/** A document of environment B's and its version, by id. */
+const documentVersionIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const id = await documentIdIn(tenant, db);
+  const version = await db.withTenant(tenant, (trx) => latestVersion(trx, id));
+  return { id, version: version!.id };
+};
 
 /** A component of environment B's and its version, by id. */
 const componentVersionIn = async (tenant: Tenant, db: TenantDatabase) => {

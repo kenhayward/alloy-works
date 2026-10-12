@@ -176,6 +176,8 @@ describe('the domain package', () => {
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',
+        'outlineChangesRefused',
+        'repointsBetween',
         // Front matter, promoted in the plan that adds it
         // (docs/plans/2026-09-19-publishing-02-the-layout.md).
         'outlineMatterSchema',

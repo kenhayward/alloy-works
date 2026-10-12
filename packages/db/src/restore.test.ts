@@ -278,7 +278,7 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
   it('VER-035 previews what a restore would make, inserting nothing, as the write then makes it', async () => {
     const { first, second } = await component();
     const preview = await work((trx) =>
-      previewRestore(trx, { artifactId: first.artifactId, version: first.id }),
+      previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
     );
     expect(preview).toMatchObject({
       source: { id: first.id },
@@ -304,7 +304,7 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     const other = await component();
     expect(
       await work((trx) =>
-        previewRestore(trx, { artifactId: first.artifactId, version: other.first.id }),
+        previewRestore(trx, { artifactId: first.artifactId, version: other.first.id, by: ada }),
       ),
     ).toBeUndefined();
     expect(
@@ -354,7 +354,9 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     });
     // And 0.1 again is what 0.3 already holds.
     expect(
-      await work((trx) => previewRestore(trx, { artifactId: first.artifactId, version: first.id })),
+      await work((trx) =>
+        previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
+      ),
     ).toMatchObject({ refusals: [{ answer: 'restore.unchanged' }] });
   });
 
@@ -427,7 +429,7 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
     const { first, second } = await component();
     await reschema([{ field: audience, required: false, fixed: false }]);
     const preview = await work((trx) =>
-      previewRestore(trx, { artifactId: first.artifactId, version: first.id }),
+      previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
     );
     expect(preview).toMatchObject({ notCarried: [{ field: region, value: 'EU' }], refusals: [] });
     const answer = await work((trx) =>
@@ -459,7 +461,9 @@ describe('restoring an earlier version of a component (storage-and-versioning.md
       failures: [{ field: audience, rule: 'fixed' }],
     });
     expect(
-      await work((trx) => previewRestore(trx, { artifactId: first.artifactId, version: first.id })),
+      await work((trx) =>
+        previewRestore(trx, { artifactId: first.artifactId, version: first.id, by: ada }),
+      ),
     ).toMatchObject({ refusals: [{ answer: 'values.invalid' }] });
     expect(await countOf(first.artifactId)).toBe(2);
   });

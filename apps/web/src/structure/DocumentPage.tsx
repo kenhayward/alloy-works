@@ -31,6 +31,7 @@ import { everyPage } from '../paging.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
+import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
@@ -505,6 +506,8 @@ const DOCK_PANELS = [
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
   { key: 'publishing', label: 'Publishing' },
+  // A document's versions and their restore (the RS plan, RS-H).
+  { key: 'versions', label: 'Versions' },
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
   { key: 'threads', label: 'Threads' },
   { key: 'suggestions', label: 'Suggestions' },
@@ -2163,6 +2166,21 @@ export function DocumentPage({
                       formats={document.formats}
                       shown={atPanel?.request ?? null}
                     />
+                  </div>
+                  <div
+                    id={dockIds('versions').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('versions').tab}
+                    hidden={shownDock !== 'versions'}
+                  >
+                    {shownDock === 'versions' && (
+                      <DocumentVersions
+                        client={client}
+                        id={document.id}
+                        mayEdit={document.mayEdit}
+                        onRestored={() => void readOutlineAgain()}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

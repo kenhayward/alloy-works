@@ -58,6 +58,7 @@ export {
   SavedIterationQuery,
 } from './editing.js';
 export {
+  DocumentRestorationView,
   RestorationView,
   RestoreAnswer,
   RestoreBody,
