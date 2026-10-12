@@ -788,6 +788,10 @@ describe('routes that check a permission', () => {
       url: `/v1/components/${dosing}/comparison?from=${MISSING}&to=${MISSING}`,
       status: 404,
     }),
+    compareBaselineResolved: () => ({
+      url: `/v1/baselines/${reportBaseline}/comparison/resolved?with=now`,
+      status: 404,
+    }),
     compareBaseline: () => ({
       url: `/v1/baselines/${reportBaseline}/comparison?with=now`,
       status: 404,

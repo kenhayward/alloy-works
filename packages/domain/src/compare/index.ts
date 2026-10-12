@@ -14,3 +14,12 @@ export type {
   UnitText,
   WordOp,
 } from './content.js';
+export { compareResolved } from './resolved.js';
+export type {
+  DocumentCause,
+  NodeCause,
+  ResolvedValue,
+  ResolvedComparison,
+  ResolvedNode,
+  ResolvedSide,
+} from './resolved.js';

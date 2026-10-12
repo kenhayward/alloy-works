@@ -147,6 +147,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0072_baselines',
       '0073_baseline_publications',
       '0074_baseline_requests_whole',
+      '0075_changes_since',
     ]);
 
     // The component and its version are as they were.
@@ -285,6 +286,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0072_baselines',
       '0073_baseline_publications',
       '0074_baseline_requests_whole',
+      '0075_changes_since',
     ]);
 
     const { rows } = await queryAs(

@@ -288,5 +288,7 @@ export {
   BaselineComparisonView,
   ComponentComparisonQuery,
   ComponentComparisonView,
+  ResolvedComparisonView,
   UnitChangeView,
 } from './comparison.js';
+export { ChangesQuery, ChangesView } from './changes.js';

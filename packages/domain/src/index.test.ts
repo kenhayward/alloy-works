@@ -135,6 +135,7 @@ describe('the domain package', () => {
         // The comparison (the CP plan): anchored changes, and what they cost.
         'compareContent',
         'compareOutlines',
+        'compareResolved',
         'createMeter',
         'outlineTexts',
         'unitTexts',

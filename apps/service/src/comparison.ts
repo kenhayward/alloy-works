@@ -3,32 +3,44 @@ import type {
   BaselineComparisonView,
   BaselineParams,
   ComponentComparisonQuery,
+  BindingStateView,
   ComponentComparisonView,
   ComponentParams,
+  ResolvedComparisonView,
 } from '@alloy-works/api-contract';
 import {
+  documentLayout,
+  documentTemplate,
+  documentTheme,
   latestVersion,
+  pinnedBindings,
   readBaseline,
   readableComponents,
   readVersion,
   resolveOccurrences,
   versionTitles,
   type StoredVersion,
+  type Tenant,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
   compareContent,
   compareOutlines,
+  compareResolved,
   readContent,
   readOutline,
   walkOutline,
   withholdComponents,
   type ContentDocument,
   type OutlineDocument,
+  type ResolvedSide,
+  type ResolvedValue,
   type UnitChange,
 } from '@alloy-works/domain';
+import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { callerOf, notFound, type Authorised } from './access.js';
+import { liveBindingStates, pinnedBindingStates } from './data/bindings.js';
 
 const numberOf = (version: StoredVersion) => `${version.revision}.${version.version}`;
 const sideOf = (version: StoredVersion) => ({ id: version.id, number: numberOf(version) });
@@ -62,7 +74,10 @@ interface DocumentSide {
  * component they may not read is its node alone, in an outline withheld as the document's own is:
  * where it stands, never whether it changed.
  */
-export function comparisonHandlers() {
+export function comparisonHandlers(
+  tenantOf: (request: FastifyRequest) => Tenant,
+  objects: ObjectStores | undefined,
+) {
   return {
     compareComponentVersions: async (
       request: FastifyRequest,
@@ -80,6 +95,149 @@ export function comparisonHandlers() {
         older: older.content as unknown as Record<string, unknown>,
         newer: newer.content as unknown as Record<string, unknown>,
         changes: changesView(compareContent(older.content, newer.content).changes),
+      };
+    },
+
+    /**
+     * What a publish of each side would print, compared (VER-024's third level, VER-031, VER-045;
+     * CP-G): each side's layout, theme, template and definitions, and each readable node's component
+     * version, definitions and printed values - a baseline's from its pins, the document now's from
+     * its latest resolutions - and `compareResolved` naming each difference's cause.
+     */
+    compareBaselineResolved: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ResolvedComparisonView> => {
+      const { id } = request.params as BaselineParams;
+      const { with: other } = request.query as BaselineComparisonQuery;
+      const caller = callerOf(request);
+      const tenant = tenantOf(request);
+      const definitionsOf = (version: StoredVersion) =>
+        version.definitions.map((each) => each.version);
+      /** Each readable node's resolution, its values taken from these bindings' states. */
+      const nodesOf = async (
+        occurrences: ReadonlyMap<string, string>,
+        states: (
+          contents: readonly { node: string; component: string; content: ContentDocument }[],
+        ) => Promise<readonly BindingStateView[]>,
+      ) => {
+        const read: {
+          node: string;
+          component: string;
+          content: ContentDocument;
+          stored: StoredVersion;
+        }[] = [];
+        for (const [node, version] of occurrences) {
+          const stored = await readVersion(trx, version);
+          if (!stored || stored.kind !== 'component') continue;
+          const content = readContent(stored.content, { artifact: stored.artifactId, version });
+          if (!content.ok) throw new Error(`The component version ${version} does not read`);
+          read.push({ node, component: stored.artifactId, content: content.document, stored });
+        }
+        const values = new Map<string, Map<string, ResolvedValue>>();
+        for (const state of await states(read)) {
+          const taken = state.held?.taken ?? null;
+          const printed =
+            taken === null
+              ? null
+              : 'value' in taken
+                ? String(taken.value)
+                : 'image' in taken
+                  ? `image ${taken.image}`
+                  : JSON.stringify(taken);
+          if (!values.has(state.node)) values.set(state.node, new Map());
+          values.get(state.node)!.set(state.binding.id, {
+            dataset: state.held?.version ?? null,
+            printed,
+          });
+        }
+        return new Map(
+          read.map((each) => [
+            each.node,
+            {
+              component: each.component,
+              version: each.stored.id,
+              definitions: definitionsOf(each.stored),
+              values: values.get(each.node) ?? new Map(),
+            },
+          ]),
+        );
+      };
+
+      const baselineSide = async (baseline: string) => {
+        const read = await readBaseline(trx, baseline, principalId);
+        if (!read) return undefined;
+        const document = await readVersion(trx, read.pins.document.version);
+        if (!document) throw new Error(`The version ${read.pins.document.version} is gone`);
+        const pinned = await pinnedBindings(trx, baseline);
+        const side: ResolvedSide = {
+          layout: read.pins.layout.version,
+          theme: read.pins.theme.version,
+          template: read.pins.template?.version ?? null,
+          definitions: definitionsOf(document),
+          nodes: await nodesOf(
+            new Map(read.pins.occurrences.map((each) => [each.node, each.version])),
+            (contents) =>
+              pinnedBindingStates(trx, caller, objects, tenant, {
+                documentId: read.documentId,
+                parameters: document.parameters,
+                occurrences: contents,
+                pinned: pinned.filter((each) => contents.some((one) => one.node === each.node)),
+              }),
+          ),
+        };
+        return { side, documentId: read.documentId };
+      };
+
+      const older = await baselineSide(id);
+      if (!older) throw notFound();
+      let newer: ResolvedSide;
+      if (other === 'now') {
+        const version = await latestVersion(trx, older.documentId);
+        if (!version) throw new Error(`The document ${older.documentId} is gone`);
+        const resolved = await resolveOccurrences(
+          trx,
+          outlineOf(version, older.documentId),
+          principalId,
+        );
+        const live =
+          (await liveBindingStates(trx, caller, objects, tenant, older.documentId)) ?? [];
+        newer = {
+          layout: (await documentLayout(trx, older.documentId)).versionId,
+          theme: (await documentTheme(trx, older.documentId)).versionId,
+          template: (await documentTemplate(trx, older.documentId))?.version ?? null,
+          definitions: definitionsOf(version),
+          nodes: await nodesOf(
+            new Map(
+              resolved.flatMap((each) =>
+                each.outcome === 'resolved' ? [[each.node, each.version] as const] : [],
+              ),
+            ),
+            async () => live,
+          ),
+        };
+      } else {
+        const found = await baselineSide(other);
+        if (!found || found.documentId !== older.documentId) throw notFound();
+        newer = found.side;
+      }
+
+      const compared = compareResolved(older.side, newer);
+      const titleOf = await versionTitles(
+        trx,
+        compared.nodes.flatMap((each) => {
+          const node = newer.nodes.get(each.node);
+          return node ? [node.version] : [];
+        }),
+      );
+      return {
+        document: [...compared.document],
+        nodes: compared.nodes.map((each) => ({
+          node: each.node,
+          title: titleOf.get(newer.nodes.get(each.node)!.version) ?? '',
+          causes: [...each.causes],
+          values: each.values.map((value) => ({ ...value })),
+        })),
       };
     },
 

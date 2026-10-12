@@ -185,6 +185,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0072_baselines',
       '0073_baseline_publications',
       '0074_baseline_requests_whole',
+      '0075_changes_since',
     ]);
     const kept = await queryAs(
       db.adminUrl,

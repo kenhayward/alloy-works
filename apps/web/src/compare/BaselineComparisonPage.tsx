@@ -15,6 +15,33 @@ import { Redline, redlineHtml, saveHtml } from './Redline.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
+/** What made a difference, in words (VER-031, VER-045). */
+const DOCUMENT_CAUSES = {
+  layout: 'the layout changed',
+  theme: 'the theme changed',
+  template: 'the template changed',
+  definition: 'the definitions it is checked against changed',
+} as const;
+const NODE_CAUSES = {
+  edited: 'Edited',
+  data: 'Its data changed, though nobody edited it',
+  definition: 'A definition it was written against changed',
+} as const;
+
+interface Printed {
+  readonly document: readonly (keyof typeof DOCUMENT_CAUSES)[];
+  readonly nodes: readonly {
+    readonly node: string;
+    readonly title: string;
+    readonly causes: readonly (keyof typeof NODE_CAUSES)[];
+    readonly values: readonly {
+      readonly binding: string;
+      readonly older: string | null;
+      readonly newer: string | null;
+    }[];
+  }[];
+}
+
 interface Shown {
   readonly title: string;
   readonly structure: readonly UnitChange[];
@@ -61,6 +88,21 @@ export function BaselineComparisonPage({
   against: string;
 }) {
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
+  // What each side would print, compared (VER-031): read beside the rest, and said apart.
+  const [printed, setPrinted] = useState<Printed | 'failed' | null>(null);
+
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/baselines/{id}/comparison/resolved', {
+        params: { path: { id: baseline }, query: { with: against } },
+      })
+      .then(({ data }) => current && setPrinted(data ?? 'failed'))
+      .catch(() => current && setPrinted('failed'));
+    return () => {
+      current = false;
+    };
+  }, [client, baseline, against]);
   const drawn = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,6 +199,48 @@ export function BaselineComparisonPage({
               />
             </section>
           ))}
+        </section>
+        <section aria-labelledby="comparison-printed">
+          <h2 id="comparison-printed" className={styles['section']}>
+            Published output
+          </h2>
+          {printed === null && <p className={styles['note']}>Comparing what each would print...</p>}
+          {printed === 'failed' && (
+            <p className={styles['note']}>What each would print could not be compared.</p>
+          )}
+          {printed !== null && printed !== 'failed' && (
+            <>
+              <p className={styles['note']}>
+                {printed.document.length === 0
+                  ? 'The layout, theme, template and definitions are the same on both sides.'
+                  : `For the whole document, ${printed.document.map((cause) => DOCUMENT_CAUSES[cause]).join(', and ')}.`}
+              </p>
+              {printed.nodes.length === 0 && (
+                <p className={styles['note']}>Every component you may read prints the same.</p>
+              )}
+              <ul className={styles['printed']} aria-label="What prints differently">
+                {printed.nodes.map((each) => (
+                  <li key={each.node}>
+                    <strong>{each.title || 'A component'}</strong>
+                    {': '}
+                    {each.causes.map((cause) => NODE_CAUSES[cause]).join('; ')}
+                    {each.values.length > 0 && (
+                      <ul>
+                        {each.values.map((value) => (
+                          <li key={value.binding}>
+                            {`${value.binding}: `}
+                            <del>{value.older ?? 'nothing'}</del>
+                            {' to '}
+                            <ins>{value.newer ?? 'nothing'}</ins>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       </div>
     </article>

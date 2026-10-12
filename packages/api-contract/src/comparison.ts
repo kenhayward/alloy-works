@@ -114,6 +114,38 @@ export const BaselineComparisonView = z.object({
 });
 export type BaselineComparisonView = z.infer<typeof BaselineComparisonView>;
 
+/** What a publish of each side would print, compared, each difference with its causes (VER-031, VER-045). */
+export const ResolvedComparisonView = z.object({
+  document: z
+    .array(z.enum(['layout', 'theme', 'template', 'definition']))
+    .describe(
+      "What differs for the whole document: its layout's, theme's or template's version, or the definitions it was validated against",
+    ),
+  nodes: z
+    .array(
+      z.object({
+        node: z.string(),
+        title: z.string().describe("The component's title"),
+        causes: z
+          .array(z.enum(['edited', 'data', 'definition']))
+          .describe(
+            'Why it prints differently: somebody edited it, its data changed, or a definition it was written against did',
+          ),
+        values: z.array(
+          z.object({
+            binding: z.string(),
+            older: z.string().nullable(),
+            newer: z.string().nullable(),
+          }),
+        ),
+      }),
+    )
+    .describe(
+      'Each component the caller may read that prints differently, or would for a cause it names',
+    ),
+});
+export type ResolvedComparisonView = z.infer<typeof ResolvedComparisonView>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -157,6 +189,33 @@ export const comparisonRoutes = {
       200: {
         description: 'The structure and content compared, as the caller may read them',
         schema: BaselineComparisonView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a reader of the document compares its baselines',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such baseline the caller may read, or `with` naming none of the same document',
+        schema: ErrorBody,
+      },
+    },
+  },
+  compareBaselineResolved: {
+    operationId: 'compareBaselineResolved',
+    method: 'GET',
+    path: '/v1/baselines/{id}/comparison/resolved',
+    summary:
+      'What a baseline and another, or the document now, would print, compared with the cause of each difference',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { baseline: 'id' } },
+    params: BaselineParams,
+    query: BaselineComparisonQuery,
+    responses: {
+      200: {
+        description: 'The resolved output compared, as the caller may read it',
+        schema: ResolvedComparisonView,
       },
       401: unauthenticated,
       403: {

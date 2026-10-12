@@ -339,6 +339,27 @@ async function bindingsPlaced(
 }
 
 /**
+ * A document's bindings as its Data tab shows them now (D3-J): each binding its occurrences hold, as
+ * the caller reads them, against its latest resolution - what a comparison with the document now
+ * takes its values from (the CP plan, CP-D). Undefined where there is no such document.
+ */
+export async function liveBindingStates(
+  trx: TenantTransaction,
+  caller: Caller,
+  objects: ObjectStores | undefined,
+  tenant: Tenant,
+  documentId: string,
+): Promise<BindingStateView[] | undefined> {
+  const placed = await bindingsPlaced(trx, documentId, caller.principalId);
+  if (!placed) return undefined;
+  const held = await heldBy(trx, documentId, placed);
+  const views = viewer(trx, caller, objects, tenant, documentId);
+  return views(
+    placed.map((each) => ({ placed: each, held: held.get(key(each.node, each.binding.id)) })),
+  );
+}
+
+/**
  * A baseline's bindings as its page shows them (the BL plan, BL-I): each binding its pinned
  * occurrences hold - those the caller may read, which the caller passes - against the resolution the
  * baseline pinned, never the document's latest, with nothing waiting; the dataset's name as pinned.

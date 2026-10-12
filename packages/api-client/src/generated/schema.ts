@@ -259,6 +259,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/baselines/{id}/comparison/resolved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a baseline and another, or the document now, would print, compared with the cause of each difference
+         * @description Compares what a publish of a baseline and of another baseline, or of the document now, would print: each component the caller may read whose values differ, or would for a cause, with why - somebody edited it, its data changed, or a definition did - and what differs for the whole document. A difference nobody typed is named as the data’s or the definitions’.
+         */
+        get: operations["compareBaselineResolved"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/baselines/{id}/publications": {
         parameters: {
             query?: never;
@@ -311,6 +331,26 @@ export interface paths {
          * @description Reads the document as a baseline holds it: its outline at the pinned version, numbered by the pinned layout, each component’s text at its pinned version, and each value from the dataset version it pinned. A component the caller may not read is withheld, as in the document itself.
          */
         get: operations["getBaselineView"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What changed since an instant, in a document, a space or a set of results
+         * @description Lists what changed since an instant in one scope - a document and the components it places, a space, or up to 200 artifacts a caller already holds - as the caller may read it: each artifact with versions cut since, and each value a document resolved or accepted since. Versions are never deleted, so the record begins at the first; a question reaching back before it is answered from there, and says so.
+         */
+        get: operations["listChangesSince"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6604,6 +6644,137 @@ export interface operations {
             };
         };
     };
+    compareBaselineResolved: {
+        parameters: {
+            query: {
+                with: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The resolved output compared, as the caller may read it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "document": [],
+                     *       "nodes": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description What differs for the whole document: its layout's, theme's or template's version, or the definitions it was validated against */
+                        document: ("layout" | "theme" | "template" | "definition")[];
+                        /** @description Each component the caller may read that prints differently, or would for a cause it names */
+                        nodes: {
+                            node: string;
+                            /** @description The component's title */
+                            title: string;
+                            /** @description Why it prints differently: somebody edited it, its data changed, or a definition it was written against did */
+                            causes: ("edited" | "data" | "definition")[];
+                            values: {
+                                binding: string;
+                                older: string | null;
+                                newer: string | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader of the document compares its baselines */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such baseline the caller may read, or `with` naming none of the same document */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     publishBaseline: {
         parameters: {
             query?: never;
@@ -7740,6 +7911,151 @@ export interface operations {
                 };
             };
             /** @description No such baseline in this environment, or one of a document the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listChangesSince: {
+        parameters: {
+            query: {
+                since: string;
+                document?: string & (unknown & unknown);
+                space?: string & (unknown & unknown);
+                ids?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every change the caller may read */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "since": "example",
+                     *       "recordBegins": "example",
+                     *       "fromRecordStart": false,
+                     *       "artifacts": [],
+                     *       "values": []
+                     *     }
+                     */
+                    "application/json": {
+                        since: string;
+                        /** @description Where the record of what was asked about begins: its first version's time */
+                        recordBegins: string | null;
+                        /** @description Whether `since` reached back before the record, so the answer is from where it begins */
+                        fromRecordStart: boolean;
+                        artifacts: {
+                            artifact: string & (unknown & unknown);
+                            kind: string;
+                            title: string;
+                            /** @description How many versions were cut since */
+                            versions: number;
+                            latest: {
+                                id: string & (unknown & unknown);
+                                number: string;
+                                at: string;
+                            };
+                        }[];
+                        /** @description Each value a document in scope resolved or accepted since */
+                        values: {
+                            document: string & (unknown & unknown);
+                            node: string;
+                            binding: string;
+                            act: string;
+                            at: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No scope, or more than one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document or space the caller may read */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
