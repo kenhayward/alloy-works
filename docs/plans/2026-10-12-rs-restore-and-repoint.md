@@ -9,7 +9,7 @@
 
 **Goal:** an author restores an earlier version of a component or a document, after seeing what it
 would produce, as a new version saying what it came from; and changing which version a document's
-reference takes is audited from and to (VER-032, VER-033, VER-035, CNT-170; CNT-161's version half).
+reference takes is audited from and to (VER-032, VER-033, VER-035, CNT-170, CNT-182).
 
 | PR  | Holds                                                                                                        |
 | --- | ------------------------------------------------------------------------------------------------------------ |
@@ -18,10 +18,9 @@ reference takes is audited from and to (VER-032, VER-033, VER-035, CNT-170; CNT-
 
 ## The challenge
 
-**CNT-161 asks for "version or revision", and choosing a revision is T9's** (CNT-159): nothing can
-designate a revision yet. **Recommended (default)**: split it, as CNT-108 was - **CNT-182**, which
-version a reference takes, T3, and **CNT-183**, which revision, T9. Until Ken agrees, the design
-names the gap and claims neither.
+**CNT-161 asked for "version or revision", and choosing a revision is T9's** (CNT-159). Ken agreed
+the split: **CNT-182**, which version a reference takes, T3, built here; **CNT-183**, which revision,
+T9.
 
 ## Decisions
 
@@ -33,7 +32,7 @@ names the gap and claims neither.
 | RS-D | **Preview and write share one resolver** (VER-035): `GET .../versions/{version}/restoration` answers what it would make - the comparison with the latest, the values not carried, the refusals - inserting nothing; `POST .../versions/{version}/restore` names the latest it was previewed against and answers `version.precondition` if that has moved. Unreadable components' titles withheld.                                                                                                                                                                    |
 | RS-E | **Refused**, said with why: `restore.unchanged` (the result equals the latest, which also covers restoring the latest); `restore.locked`, a component anybody holds the lock on, the restorer included ("Done editing first") (default: an open session is never broken by a version cut under it); `restore.unreadable`, a source that no longer reads; `fixed` values; for a document, `editOutline`'s guards over the whole result (RS-F).                                                                                                                        |
 | RS-F | **A document's restore** brings back its outline, references and their modes as they stood, under `editOutline`'s guards: `mayReference` for each reference new or re-pointed against the latest, the template's rules over the whole outline, `checkWrittenValues` for section values; parameters carried as they stand now (TP1-E) (default). A reinstated node returns with what is keyed to it (threads, binding revisions).                                                                                                                                     |
-| RS-G | **The re-point** (CNT-182 once split): the outline's `set` changing a reference's mode, and a document's restore, record `reference.repointed` `{ node, component, from, to }` (modes) in the version's transaction. Insert, remove and move are not re-points; a `latest` reference meeting a newer version is not an act.                                                                                                                                                                                                                                          |
+| RS-G | **The re-point** (CNT-182): the outline's `set` changing a reference's mode, and a document's restore, record `reference.repointed` `{ node, component, from, to }` (modes) in the version's transaction. Insert, remove and move are not re-points; a `latest` reference meeting a newer version is not an act.                                                                                                                                                                                                                                                     |
 | RS-H | **The UI**: the component's Versions panel offers **Restore** on each earlier version, with the existing comparison, the values not carried and any refusal, then **Restore this version**; a restored version reads "Restored from version N". RS2 adds a document's versions (`GET /v1/documents/{id}/versions`), an outline comparison of a version with the latest (`compareOutlines`, `withholdComponents`) and the same panel on its page.                                                                                                                     |
 | RS-I | **VER-044 waits for DL**: until something can be deleted, everything a restored version references still resolves. Recovery's restore of iterations and a space's Restore keep their names; undoing a tombstone (DL) takes another.                                                                                                                                                                                                                                                                                                                                  |
 

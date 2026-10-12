@@ -510,7 +510,9 @@ Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-1
 | **CNT-159** | An author must be able to choose which revision of a component a document references, from the document view, without leaving it                                                                                                               | T9      | Specified             |
 | **CNT-109** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T1      | Superseded by CNT-160 |
 | **CNT-160** | Changing which version a document references must be recorded as a new version of the document, naming who changed it and when, so that the reference before and after can be read back                                                        | T1      | Specified             |
-| **CNT-161** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T3      | Specified             |
+| **CNT-161** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T3      | Superseded by CNT-182 |
+| **CNT-182** | Changing which version a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                                   | T3      | Specified             |
+| **CNT-183** | Changing which revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                                  | T9      | Specified             |
 | **CNT-110** | The view must show which version or revision of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                           | T1      | Superseded by CNT-141 |
 | **CNT-141** | The view must show which version or revision of a component is referenced, and which of the three modes the reference takes: pinned, floating at latest, or tracking the latest approved revision (**REU-050**, **LIF-038**)                   | T1      | Superseded by CNT-162 |
 | **CNT-162** | The view must show which version of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                                       | T1      | Specified             |
@@ -1008,3 +1010,16 @@ keeps its identifier, and only its tranche changes.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 181, of which 34 superseded and 1 withdrawn | 181, of which 34 superseded and 1 withdrawn |
+
+### Ken's split of CNT-161 (the RS plan), 2026-10-12
+
+Not a review. Building restore found CNT-161 asks for a version and a revision, and choosing a
+revision is T9's (CNT-159). Split as CNT-108 was.
+
+| What was found                                                    | Change                                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| An audited re-point to a revision needs revisions, which are T9's | **CNT-161 superseded by CNT-182**, which version, T3, with **CNT-183**, which revision, T9 |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 181, of which 34 superseded and 1 withdrawn | 183, of which 35 superseded and 1 withdrawn |
