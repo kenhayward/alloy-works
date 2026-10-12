@@ -24,6 +24,7 @@ import {
   type OutputReport,
   type PublishFailure,
   type PublishingAsset,
+  type StandingRevision,
   type PublishingFormat,
   type ResolvedTheme,
   type BlockNode,
@@ -56,6 +57,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { bindingQuestion, documentLayout, documentRules, documentTheme } from './templates.js';
@@ -504,6 +506,8 @@ export interface HeldBinding {
   readonly resolution: string;
   readonly datasetVersion: string;
   readonly datasetId: string;
+  /** The revisions standing in front of its resolution, ascending (the RV plan, RV-E). */
+  readonly revisions: readonly string[];
 }
 
 /**
@@ -554,10 +558,23 @@ async function bindingsHeld(
         resolution: String(row.id),
         datasetVersion: row.dataset_version,
         datasetId: row.dataset_id,
+        revisions: [],
       });
     }
   }
-  return { held, unresolved };
+  // Each with the revisions standing in front of it, read as a set that no act changes once its
+  // resolution is replaced (RV-E).
+  const standing = await revisionsStanding(
+    trx,
+    held.map((each) => each.resolution),
+  );
+  return {
+    held: held.map((each) => ({
+      ...each,
+      revisions: (standing.get(each.resolution) ?? []).map((revision) => revision.id),
+    })),
+    unresolved,
+  };
 }
 
 /** What a document resolves to for a publish or a baseline, as one principal (BL-A). */
@@ -798,6 +815,8 @@ export async function requestPublication(
           resolution: each.resolution,
           dataset_version: each.datasetVersion,
           dataset_id: each.datasetId,
+          // Named only where one stands, so a schema before 0078 is never asked for the column.
+          ...(each.revisions.length === 0 ? {} : { revisions: [...each.revisions] }),
         })),
       )
       .execute();
@@ -925,6 +944,8 @@ export interface RecordedBinding {
   readonly dataset: HeldDataset;
   /** The key of the definition version that dataset version ran (TB3-B); empty where it declares none. */
   readonly key: readonly string[];
+  /** The revisions it read, standing in front of its resolution (the RV plan, RV-E), ascending. */
+  readonly revisions: readonly StandingRevision[];
 }
 
 /**
@@ -960,8 +981,12 @@ async function recordedBindings(
     content: unknown;
     name: string | null;
     key: string[] | null;
+    revisions: string[] | null;
   }>`
     select b.node, b.binding, b.resolution::text as resolution, b.dataset_version, b.dataset_id,
+           -- Through the row whole: a schema before 0078 has no such column (RV-E).
+           (select array_agg(e) from jsonb_array_elements_text(to_jsonb(b) -> 'revisions') e)
+             as revisions,
            v.revision_no, v.version_no, v.content,
            ${
              // The dataset's name as its baseline pinned it, where it is made from one (BL-F): a name
@@ -980,10 +1005,33 @@ async function recordedBindings(
         on d.id = (v.content->'queryDefinition'->>'version')::uuid and d.kind = 'queryDefinition'
      where ${'request' in on ? sql`b.request_id = ${on.request}` : sql`b.publication_id = ${on.publication}`}
      order by b.node collate "C", b.binding collate "C"`.execute(trx);
+  const named = new Map(
+    (
+      await revisionsNamed(
+        trx,
+        rows.flatMap((row) => row.revisions ?? []),
+      )
+    ).map((each) => [each.id, each]),
+  );
   return rows.map((row) => ({
     node: row.node,
     binding: row.binding,
     resolution: row.resolution,
+    revisions: (row.revisions ?? []).flatMap((id) => {
+      const each = named.get(id);
+      return each === undefined || each.value === null
+        ? []
+        : [
+            {
+              id: each.id,
+              cell: each.cell,
+              value: each.value,
+              by: { id: each.by, name: each.byName },
+              at: each.at.toISOString(),
+              reason: each.reason,
+            },
+          ];
+    }),
     datasetVersion: row.dataset_version,
     dataset: {
       id: row.dataset_id,
@@ -1537,10 +1585,25 @@ async function insertPublication(
     .execute();
   // Exactly the bindings the request recorded (B3-C), which 0050's check holds at commit.
   if (bound) {
-    await sql`insert into publication_binding
-                (publication_id, node, binding, resolution, dataset_version, dataset_id)
-              select ${artifact.id}, node, binding, resolution, dataset_version, dataset_id
-                from publication_request_binding where request_id = ${request.id}`.execute(trx);
+    // With the revisions each read, where any did (RV-E): named only then, so a schema before 0078
+    // is never asked for the column.
+    const { rows: revised } = await sql<{ any: boolean }>`
+      select exists (
+        select 1 from publication_request_binding q
+         where q.request_id = ${request.id}
+           and jsonb_array_length(coalesce(to_jsonb(q) -> 'revisions', '[]'::jsonb)) > 0
+      ) as any`.execute(trx);
+    await (
+      revised[0]!.any
+        ? sql`insert into publication_binding
+              (publication_id, node, binding, resolution, dataset_version, dataset_id, revisions)
+            select ${artifact.id}, node, binding, resolution, dataset_version, dataset_id, revisions
+              from publication_request_binding where request_id = ${request.id}`
+        : sql`insert into publication_binding
+              (publication_id, node, binding, resolution, dataset_version, dataset_id)
+            select ${artifact.id}, node, binding, resolution, dataset_version, dataset_id
+              from publication_request_binding where request_id = ${request.id}`
+    ).execute(trx);
   }
   await trx
     .updateTable('publication_request')

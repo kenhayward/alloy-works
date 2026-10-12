@@ -89,6 +89,12 @@ export const BaselineView = BaselineSummaryView.extend({
           digest: Digest.describe("The binding's own digest, as its result was taken under"),
           datasetVersion: LowercaseUuid,
           datasetDigest: Digest,
+          revisions: z
+            .array(z.object({ id: z.string(), value: z.union([z.string(), z.boolean()]) }))
+            .optional()
+            .describe(
+              'The values revised by hand it pinned, by identifier and value, ascending; absent where none stood',
+            ),
         }),
       ),
     })

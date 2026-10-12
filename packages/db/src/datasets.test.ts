@@ -33,6 +33,7 @@ import {
   resolutionsOf,
 } from './datasets.js';
 import { grant } from './grants.js';
+import { latestRevisions, recordRevision, revisionsStanding } from './revisions.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import {
@@ -1283,6 +1284,91 @@ describe('datasets and resolutions', () => {
         failure: { code: 'image_refused' },
       });
     });
+  });
+
+  it('DAT-058 keeps a revision in front of a resolution, never in place of it: the value, who, when and why, insert-only, replacing its own cell alone', async () => {
+    const version = await recorded({ parameters: { site: 'revised' } });
+    const component = await componentHolding(general, [binding()]);
+    const document = await documentReferencing(general, component.artifactId, node('r'));
+    const resolve = (by: string, replaces: string | null) =>
+      tenant((trx) =>
+        recordResolution(trx, {
+          document: document.artifactId,
+          node: node('r'),
+          binding: 'k1',
+          digest: 'd'.repeat(64),
+          version: version.version.id,
+          replaces,
+          act: replaces === null ? 'resolve' : 'accept',
+          by,
+        }),
+      );
+    const first = await resolve(ada, null);
+    const revise = (over: Partial<Parameters<typeof recordRevision>[1]> = {}) =>
+      tenant((trx) =>
+        recordRevision(trx, {
+          document: document.artifactId,
+          node: node('r'),
+          binding: 'k1',
+          cell: '',
+          resolution: first.id,
+          act: 'revise',
+          value: '12.5',
+          reason: 'The gauge was recalibrated.',
+          replaces: null,
+          by: grace,
+          ...over,
+        }),
+      );
+    const revised = await revise();
+    expect(revised).toMatchObject({
+      act: 'revise',
+      value: '12.5',
+      reason: 'The gauge was recalibrated.',
+      by: grace,
+      cell: null,
+      resolution: first.id,
+    });
+    // The resolution is untouched: the query's value is still what it holds.
+    expect(
+      (await tenant((trx) => resolutionsOf(trx, document.artifactId, new Map())))[0],
+    ).toMatchObject({ id: first.id, held: { version: version.version.id } });
+    expect(await tenant((trx) => revisionsStanding(trx, [first.id]))).toEqual(
+      new Map([[first.id, [revised]]]),
+    );
+    // A cell of its own, and a withdrawal of the first: only the cell stands.
+    const cell = await revise({ cell: '{"column":"depth","key":{"id":"2"}}', value: '3' });
+    expect(cell.cell).toEqual({ column: 'depth', key: { id: '2' } });
+    await revise({
+      act: 'withdraw',
+      value: null,
+      replaces: revised.id,
+      reason: 'Back to the source.',
+    });
+    expect((await tenant((trx) => revisionsStanding(trx, [first.id]))).get(first.id)).toEqual([
+      cell,
+    ]);
+    // Lapsed, not lost: a later resolution has nothing standing, and the latest lists the cell.
+    const second = await resolve(ada, version.version.id);
+    expect((await tenant((trx) => revisionsStanding(trx, [second.id]))).get(second.id)).toEqual([]);
+    expect(
+      (await tenant((trx) => latestRevisions(trx, document.artifactId))).get(`${node('r')} k1`),
+    ).toEqual([cell]);
+
+    // Its own binding's resolution, and its own cell's revision.
+    await expect(revise({ binding: 'k2' })).rejects.toThrow(/its own binding/);
+    await expect(revise({ replaces: cell.id })).rejects.toThrow(/its own binding/);
+    // A value never blank, a withdrawal never holding one, a reason given.
+    await expect(revise({ value: '  ' })).rejects.toThrow(/binding_revision_value/);
+    await expect(revise({ act: 'withdraw', value: '1' })).rejects.toThrow(/binding_revision_value/);
+    await expect(revise({ reason: '' })).rejects.toThrow(/binding_revision_reason/);
+    // Insert-only: the runtime role changes and removes none.
+    await expect(
+      tenant((trx) => sql`update binding_revision set reason = 'Other'`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+    await expect(tenant((trx) => sql`delete from binding_revision`.execute(trx))).rejects.toThrow(
+      /permission denied/,
+    );
   });
 
   it('keeps a dataset version in no search', async () => {

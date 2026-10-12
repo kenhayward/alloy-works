@@ -234,6 +234,53 @@ const HeldView = z.object({
   at: z.string().describe('When'),
 });
 
+/** A bound table's cell a revision names (DAT-063): its row by the definition's key, and its column. */
+export const RevisionCellView = z.object({
+  key: z
+    .record(z.string(), z.union([z.string(), z.boolean(), z.null()]))
+    .describe("Every key column of the definition with the row's canonical value"),
+  column: z.string(),
+});
+
+/** A value revised by hand, in front of a resolution (bindings.md, "A value revised by hand"). */
+export const RevisionView = z.object({
+  id: z.string(),
+  cell: RevisionCellView.nullable().describe("A bound table's cell, or null for an inline value"),
+  value: z
+    .union([z.string(), z.boolean()])
+    .describe("The value entered, canonical in its column's type"),
+  reason: z.string(),
+  by: z.object({ id: z.string(), displayName: z.string().nullable() }),
+  at: z.string().datetime(),
+  stands: z
+    .boolean()
+    .describe(
+      'Whether it stands in front of the result the binding holds. One that does not has lapsed: the binding holds another result since, and it is printed nowhere',
+    ),
+  rowMissing: z
+    .boolean()
+    .optional()
+    .describe(
+      "A standing cell's: whether the result held no longer has its row (`revision_row_missing`)",
+    ),
+});
+export type RevisionView = z.infer<typeof RevisionView>;
+
+/**
+ * What an act recording a resolution decides of the revisions standing on the one held (DAT-060):
+ * withdraw them, or keep each in front of the new result, naming the revisions it decides over.
+ */
+export const RevisionDecision = z.strictObject({
+  decision: z.enum(['withdraw', 'keep']),
+  over: z
+    .array(z.string())
+    .max(5000)
+    .describe(
+      'The revisions standing, as the caller saw them; any other set is refused `revision_precondition`',
+    ),
+});
+export type RevisionDecision = z.infer<typeof RevisionDecision>;
+
 /** One binding of a document, what it holds, and the newer result waiting for it (D3-J). */
 export const BindingStateView = z.object({
   node: z.string(),
@@ -289,6 +336,11 @@ export const BindingStateView = z.object({
     .describe(
       'Whether the caller may resolve it: they may edit the document and use the connection its definition runs on',
     ),
+  revisions: z
+    .array(RevisionView)
+    .describe(
+      "The latest revision by hand of its value, or of each of a bound table's cells, standing or lapsed; one withdrawn is not listed",
+    ),
 });
 export type BindingStateView = z.infer<typeof BindingStateView>;
 
@@ -315,7 +367,14 @@ export const BindingFailureView = DataFailureView.extend({
 export const ResolveBindingsBody = z
   .strictObject({
     bindings: z
-      .array(NodeBinding.extend({ from: BindingFrom }))
+      .array(
+        NodeBinding.extend({
+          from: BindingFrom,
+          revisions: RevisionDecision.optional().describe(
+            'Required where a revision stands on what it holds: what to do with them',
+          ),
+        }),
+      )
       .min(1)
       .max(50)
       .describe('The bindings to resolve, 1 to 50'),
@@ -454,8 +513,36 @@ export const AcceptBindingBody = z.strictObject({
     .describe(
       "Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. Without it such a result is refused `acknowledgement_required`",
     ),
+  revisions: RevisionDecision.optional().describe(
+    'Required where a revision stands on what it holds: what to do with them',
+  ),
 });
 export type AcceptBindingBody = z.infer<typeof AcceptBindingBody>;
+
+export const ReviseBindingBody = z
+  .strictObject({
+    node: NodeBinding.shape.node,
+    binding: NodeBinding.shape.binding,
+    cell: RevisionCellView.optional().describe("A bound table's cell; absent for an inline value"),
+    act: z.enum(['revise', 'withdraw']),
+    value: z
+      .union([z.string().max(10000), z.boolean()])
+      .optional()
+      .describe(
+        "The value, canonical in its column's type; required to revise, absent to withdraw",
+      ),
+    reason: z.string().min(1).max(1000).describe('Why, 1 to 1,000 characters'),
+    resolution: z.string().describe('The resolution the binding holds, as the caller saw it'),
+    replaces: z
+      .string()
+      .nullable()
+      .describe('The revision standing for this value or cell, as the caller saw it, or null'),
+  })
+  .refine((body) => (body.act === 'revise') === (body.value !== undefined), {
+    message: 'A revision carries a value, and a withdrawal none',
+    path: ['value'],
+  });
+export type ReviseBindingBody = z.infer<typeof ReviseBindingBody>;
 
 export const ConfirmBindingBody = z
   .strictObject({
@@ -466,6 +553,9 @@ export const ConfirmBindingBody = z
     ),
     from: BindingFrom,
     session: SessionNamed,
+    revisions: RevisionDecision.optional().describe(
+      'Required where a revision stands on what it holds: what to do with them',
+    ),
   })
   .refine((body) => body.from !== 'session' || body.session !== undefined, {
     message: 'A binding read from a session needs the session named',
@@ -580,8 +670,9 @@ export const BindingRefusal = DataProblemsRefusal.extend({
     .enum(['untested', 'not_read_only', 'asserted', 'signed_out', 'token_revoked'])
     .optional(),
   current: BindingStateView.optional().describe(
-    'resolution_precondition: the binding as it now stands',
+    'resolution_precondition, revision_precondition, revision_decision_required: the binding as it now stands',
   ),
+  revision: z.string().optional().describe('The revision a refusal concerns'),
 });
 
 const unauthenticated = {
@@ -657,7 +748,7 @@ export const bindingRoutes = {
       404: documentNotFound,
       409: {
         description:
-          "`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded",
+          "`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered; `revision_decision_required`: a revision stands on what a binding holds and its item's `revisions` says nothing of it; `revision_precondition`: its `revisions.over` is not what stands, or is no longer when the result is recorded; `value_invalid`: a revision kept is not a value of its column in the new result. Nothing is recorded",
         schema: BindingRefusal,
       },
       503: unavailable,
@@ -722,7 +813,36 @@ export const bindingRoutes = {
       404: documentNotFound,
       409: {
         description:
-          "`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands; `acknowledgement_required`: the result is the caller's own view and `sharesOwnView` was not sent",
+          "`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands; `acknowledgement_required`: the result is the caller's own view and `sharesOwnView` was not sent; `revision_decision_required`: a revision stands on what it holds and `revisions` says nothing of it; `revision_precondition`: `revisions.over` is not what stands; `value_invalid`: a revision kept is not a value of its column in the new result. Each answered with the binding as it stands",
+        schema: BindingRefusal,
+      },
+    },
+  },
+  reviseBinding: {
+    operationId: 'reviseBinding',
+    method: 'POST',
+    path: '/v1/documents/{id}/bindings/revisions',
+    summary: 'Revise a bound value by hand in this document, or withdraw a revision',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: documentTarget },
+    params: DocumentBindingParams,
+    body: ReviseBindingBody,
+    responses: {
+      200: { description: 'The binding as it now stands', schema: BindingStateView },
+      400: {
+        description:
+          "`binding_missing`: no such binding in the component the node places; `value_invalid`: not a value of the column's type; `value_empty`: a blank value; `key_required`: a cell's key does not name every key column",
+        schema: BindingRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it. Nothing is recorded',
+        schema: ErrorBody,
+      },
+      404: documentNotFound,
+      409: {
+        description:
+          '`revision_precondition`: the binding no longer holds `resolution`, or `replaces` is not the revision standing, answered with the binding as it stands; `binding_stale`: the binding changed since its result was taken; `revision_not_possible`: it holds nothing, takes an image or a value that cannot be taken, or the cell is not a value column the table shows; `revision_row_missing`: the result held has no row by that key; `revision_not_standing`: nothing stands to withdraw',
         schema: BindingRefusal,
       },
     },
@@ -751,7 +871,7 @@ export const bindingRoutes = {
       404: documentNotFound,
       409: {
         description:
-          '`resolution_precondition`: the binding no longer holds what `replaces` names, answered with the binding as it stands; `confirm_not_possible`: its definition, parameters or version changed, so it must be resolved',
+          '`resolution_precondition`: the binding no longer holds what `replaces` names, answered with the binding as it stands; `confirm_not_possible`: its definition, parameters or version changed, so it must be resolved; `revision_decision_required` and `revision_precondition`: as for an accept',
         schema: BindingRefusal,
       },
     },

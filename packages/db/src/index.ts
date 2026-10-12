@@ -603,6 +603,12 @@ export {
   type StoredSuggestion,
 } from './suggestions.js';
 export {
+  latestRevisions,
+  recordRevision,
+  revisionsStanding,
+  type StoredRevision,
+} from './revisions.js';
+export {
   cadencesOf,
   DEFAULT_CADENCES,
   deleteNotification,

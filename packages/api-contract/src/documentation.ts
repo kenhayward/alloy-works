@@ -179,6 +179,7 @@ const operationTags = {
     'checkBindings',
     'acceptBinding',
     'confirmBinding',
+    'reviseBinding',
     'getBindingHolders',
     'getDocumentDataset',
     'getBoundTableRows',
@@ -434,6 +435,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document, and what running the query would: read on the query definition the accepted result ran and use of the connection it ran on. A definition the caller may not read is refused as a binding naming none, and a connection they may not use as forbidden; either records nothing. An acceptance from a version the binding no longer holds is refused with the binding as it stands.',
   confirmBinding:
     "Keeps the result a binding already holds in this document after the binding changed, where its question is unchanged - the same query definition, parameters and version - so only the value it takes or its mode changed. It queries nothing, and records a resolution naming the version it keeps as the one it replaces. It needs edit on the document and read on the query definition. The binding is read from its component version, or from the caller's own editing session as a resolve's session item is; a changed question is refused, and the binding must be resolved instead. A confirmation from a version the binding no longer holds is refused with the binding as it stands.",
+  reviseBinding:
+    "Revises a bound value by hand in this document, or a cell of a bound table by its row's key and its column, with a reason: the value stands in front of the result the binding holds, which is kept, and is shown and printed in its place; or withdraws a revision, so the result's own value is shown again. It queries nothing, and needs edit on the document alone. The value must be canonical in its column's type and never blank; a cell must be a value column the table shows - never its key, a group's column or subtotal, or the column it is turned by - in a row the result has. `resolution` names what the binding holds and `replaces` the revision standing, or null, as the caller saw them; anything else is refused with the binding as it stands. Every act that later replaces what the binding holds - resolve, accept, Keep - must say whether to withdraw or keep the revisions standing.",
   getBindingHolders:
     'Lists the documents whose latest outline places the component at a node holding a value for the named binding, whatever the binding was when it was resolved: those the caller may read by title, and a count of the rest. Ask before changing a binding, to see which documents will hold no value until they resolve it again. It needs read on the component.',
   getDocumentDataset:

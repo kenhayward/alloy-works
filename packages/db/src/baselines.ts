@@ -12,6 +12,7 @@ import {
   type BaselinePins,
   type PublishFailure,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import type { HeldResolution } from './datasets.js';
@@ -24,8 +25,25 @@ import {
 } from './publishing.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import { revisionsNamed } from './revisions.js';
 import type { TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
+
+/** The value each revision holds, by identifier (RV-E): what a baseline's digest pins of it. */
+async function revisionValues(
+  trx: TenantTransaction,
+  ids: readonly string[],
+): Promise<Map<string, string | boolean>> {
+  return new Map(
+    (await revisionsNamed(trx, ids)).flatMap((each) =>
+      each.value === null ? [] : [[each.id, each.value] as const],
+    ),
+  );
+}
+
+/** A binding pin's revisions, by identifier and value, ascending; none where it pinned none. */
+const pinnedRevisions = (ids: readonly string[], values: ReadonlyMap<string, string | boolean>) =>
+  ids.length === 0 ? {} : { revisions: ids.map((id) => ({ id, value: values.get(id)! })) };
 
 /** What making a baseline answers (docs/design/baselines.md; the BL plan, Task 1). */
 export type MakeBaselineAnswer =
@@ -96,6 +114,10 @@ export async function makeBaseline(
     ).map((row) => [row.id, row.version_digest]),
   );
   const pinned = (version: string) => ({ version, digest: digests.get(version)! });
+  const values = await revisionValues(
+    trx,
+    found.bindings.flatMap((each) => each.revisions),
+  );
   const pins: BaselinePins = {
     document: pinned(found.latest.id),
     layout: pinned(found.layout.versionId),
@@ -109,6 +131,7 @@ export async function makeBaseline(
       digest: each.digest,
       datasetVersion: each.datasetVersion,
       datasetDigest: digests.get(each.datasetVersion)!,
+      ...pinnedRevisions(each.revisions, values),
     })),
   };
 
@@ -166,6 +189,7 @@ export async function makeBaseline(
           dataset_version: each.datasetVersion,
           dataset_id: each.datasetId,
           dataset_name: names.get(each.datasetId) ?? null,
+          ...(each.revisions.length === 0 ? {} : { revisions: [...each.revisions] }),
         })),
       )
       .execute();
@@ -355,8 +379,20 @@ export async function readBaseline(
     .selectFrom('baseline_binding as b')
     .innerJoin('artifact_version as v', 'v.id', 'b.dataset_version')
     .select(['b.node', 'b.binding', 'b.digest', 'b.dataset_version', 'v.version_digest'])
+    // Through the row whole: a schema before 0078 has no such column (RV-E).
+    .select(
+      sql<
+        string[] | null
+      >`(select array_agg(e) from jsonb_array_elements_text(to_jsonb(b) -> 'revisions') e)`.as(
+        'revisions',
+      ),
+    )
     .where('b.baseline_id', '=', baselineId)
     .execute();
+  const values = await revisionValues(
+    trx,
+    bindings.flatMap((each) => each.revisions ?? []),
+  );
   const occurrences = pins.filter((each) => each.kind === 'component');
   const shown = new Set(
     occurrences.filter((each) => readable.has(each.artifact_id)).map((each) => each.node!),
@@ -390,6 +426,7 @@ export async function readBaseline(
           digest: each.digest,
           datasetVersion: each.dataset_version,
           datasetDigest: each.version_digest,
+          ...pinnedRevisions(each.revisions ?? [], values),
         })),
     },
     withheld: {
@@ -645,6 +682,8 @@ export async function requestBaselinePublication(
           resolution: each.resolution,
           dataset_version: each.dataset_version,
           dataset_id: each.dataset_id,
+          // What the baseline pinned (RV-E), named only where it pinned any.
+          ...((each.revisions ?? []).length === 0 ? {} : { revisions: each.revisions }),
         })),
       )
       .execute();
@@ -669,6 +708,8 @@ export interface PinnedBinding {
   readonly datasetName: string | null;
   /** The resolution it pinned, as a document holds one, with nothing waiting: a baseline moves on to nothing. */
   readonly held: HeldResolution;
+  /** The revisions it pinned, standing in front of that resolution, ascending (RV-E). */
+  readonly revisions: readonly string[];
 }
 
 /**
@@ -701,6 +742,13 @@ export async function pinnedBindings(
       'v.version_no',
       'v.content',
     ])
+    .select(
+      sql<
+        string[] | null
+      >`(select array_agg(e) from jsonb_array_elements_text(to_jsonb(k) -> 'revisions') e)`.as(
+        'revisions',
+      ),
+    )
     .where('k.baseline_id', '=', baselineId)
     .orderBy('k.node')
     .orderBy('k.binding')
@@ -710,6 +758,7 @@ export async function pinnedBindings(
     binding: row.binding,
     digest: row.digest,
     datasetName: row.dataset_name,
+    revisions: row.revisions ?? [],
     held: {
       id: String(row.id),
       document: row.document_id,
