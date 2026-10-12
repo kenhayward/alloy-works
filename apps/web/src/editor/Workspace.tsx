@@ -153,6 +153,8 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   const onMine = useCallback((mine: (() => Mine) | null) => {
     mineOf.current = mine;
   }, []);
+  // How many versions have been restored from the Versions panel: the editor opens afresh at each.
+  const [restored, setRestored] = useState(0);
   // The panes beside an open component, sized and hidden as the document page's are.
   const spacePane = usePaneWidth(SPACE_PANE);
   const dockPane = usePaneWidth(COMPONENT_DOCK_PANE);
@@ -270,7 +272,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
                 <ZoomControl />
               </StatusTools>
               <ComponentEditor
-                key={opened}
+                key={`${opened}:${restored}`}
                 componentId={opened}
                 client={client}
                 principalId={me}
@@ -309,6 +311,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             onTableHost={setTableHost}
             pane={dockPane}
             mine={() => mineOf.current?.() ?? null}
+            onRestored={() => setRestored((count) => count + 1)}
           />
         </div>
       );

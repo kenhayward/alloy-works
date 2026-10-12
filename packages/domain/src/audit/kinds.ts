@@ -318,8 +318,13 @@ export const auditKindSpecs = {
     z.strictObject({ baseline: Id, by: Id }),
     'packages/db/src/baselines.ts',
   ),
-  'content.restored': kind(['LIF-026', 'CNT-170'], empty, LATER),
-  'reference.repointed': kind(['CNT-161'], empty, LATER),
+  // A restore (the RS plan, RS-C): about the new version, the subject; the earlier one it came from.
+  'content.restored': kind(
+    ['LIF-026', 'CNT-170'],
+    z.strictObject({ kind: AuditName, from: Id }),
+    'packages/db/src/restore.ts',
+  ),
+  'reference.repointed': kind(['CNT-182', 'CNT-183'], empty, LATER),
   // A lock taken from an idle holder after their grace (COL-009; collaboration.md): whom from, and
   // the session it was taken from; the taker is the actor.
   'lock.taken': kind(

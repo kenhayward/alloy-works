@@ -26,6 +26,7 @@ import {
   recordAsset,
   makeBaseline,
   makeSuggestion,
+  latestVersion,
   openRound,
   startThread,
   recordPublication,
@@ -220,6 +221,8 @@ const OTHER_TENANT_IDS: Readonly<
   }),
   listIterations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getIteration: async (tenant, db) => ({ id: await componentIdIn(tenant, db), iteration: SESSION }),
+  previewRestore: async (tenant, db) => componentVersionIn(tenant, db),
+  restoreVersion: async (tenant, db) => componentVersionIn(tenant, db),
   removeGrant: async (tenant, db) => ({ id: await grantIdIn(tenant, db) }),
   createAssetUpload: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   putAssetUploadBytes: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
@@ -397,6 +400,7 @@ const VALID_INPUT: Readonly<
   getIteration: { query: `session=${SESSION}` },
   getBoundTableRows: { query: `version=${SESSION}` },
   cutVersion: { payload: { session: SESSION, openedFrom: SESSION } },
+  restoreVersion: { payload: { latest: SESSION } },
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
   createGroup: { payload: { name: 'Elsewhere' } },
@@ -451,6 +455,13 @@ const spaceIdIn = async (tenant: Tenant, db: TenantDatabase) =>
       .executeTakeFirstOrThrow();
     return space.id;
   });
+
+/** A component of environment B's and its version, by id. */
+const componentVersionIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const id = await componentIdIn(tenant, db);
+  const version = await db.withTenant(tenant, (trx) => latestVersion(trx, id));
+  return { id, version: version!.id };
+};
 
 /** A component in environment B's General space, complete with a version, so a route that opens
  * one has something to actually find - never a bare artifact row a missing-version 404 would

@@ -37,6 +37,7 @@ export function ComponentDock({
   onTableHost = () => {},
   pane,
   mine,
+  onRestored,
 }: {
   client: Client;
   id: string;
@@ -48,6 +49,8 @@ export function ComponentDock({
   pane?: Pane;
   /** What the editor opened and shows now, for My changes (CNT-113). */
   mine?: () => Mine | null;
+  /** Told once an earlier version is restored, so the editor opens the new latest. */
+  onRestored?: () => void;
 }) {
   const [chosen, setChosen] = useState<PanelKey>('attributes');
   useEffect(() => {
@@ -102,7 +105,12 @@ export function ComponentDock({
           hidden={shown !== 'versions'}
         >
           {shown === 'versions' && (
-            <VersionsPanel client={client} id={id} {...(mine ? { mine } : {})} />
+            <VersionsPanel
+              client={client}
+              id={id}
+              {...(mine ? { mine } : {})}
+              {...(onRestored ? { onRestored } : {})}
+            />
           )}
         </div>
         <div

@@ -87,6 +87,8 @@ export interface StoredVersion {
   /** Sorted by kind, identifier and version, as the version digest serialises them. */
   readonly definitions: readonly DefinitionRef[];
   readonly versionDigest: string;
+  /** The earlier version a restore made this from (VER-033), or null. Authorship, in neither digest. */
+  readonly restoredFrom: string | null;
 }
 
 /** Who cut a version and why. Outside both digests (ADR-0024). */
@@ -251,6 +253,7 @@ async function insertVersion(
   substance: VersionSubstance,
   parent: string | null,
   digests = versionDigests(substance),
+  restoredFrom: string | null = null,
 ): Promise<StoredVersion> {
   const component = substance.kind === 'component' ? substance : undefined;
   const values =
@@ -275,6 +278,9 @@ async function insertVersion(
       not_carried: JSON.stringify(component?.notCarried ?? []),
       component_type_version_id: component ? componentTypeOf(component.definitions) : null,
       version_digest: digests.versionDigest,
+      // Named only when set, as parameters are, so a write to a schema before 0082 names no column it
+      // lacks.
+      ...(restoredFrom === null ? {} : { restored_from: restoredFrom }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -482,6 +488,8 @@ export async function readVersion(
         (a, b) => compare(a.kind, b.kind) || compare(a.id, b.id) || compare(a.version, b.version),
       ),
     versionDigest: row.version_digest,
+    // A version read from a schema before 0082 has no such column, and was restored from nothing.
+    restoredFrom: row.restored_from ?? null,
   };
 }
 
@@ -525,6 +533,12 @@ export interface ListedVersion {
   readonly createdAt: Date;
   readonly note: string | null;
   readonly author: { readonly id: string; readonly name: string | null } | null;
+  /** The version it was restored from (VER-033), by id and number, or null. */
+  readonly restoredFrom: {
+    readonly id: string;
+    readonly revision: number;
+    readonly version: number;
+  } | null;
 }
 
 /** Where a page of an artifact's versions ended: the last version's number. */
@@ -553,6 +567,7 @@ export async function listVersions(
   const rows = await trx
     .selectFrom('artifact_version as v')
     .leftJoin('principal as p', 'p.id', 'v.author_id')
+    .leftJoin('artifact_version as r', 'r.id', 'v.restored_from')
     .select([
       'v.id',
       'v.revision_no',
@@ -562,6 +577,9 @@ export async function listVersions(
       'v.author_id',
       'p.display_name',
       'p.email',
+      'r.id as restored_id',
+      'r.revision_no as restored_revision',
+      'r.version_no as restored_version',
     ])
     .where('v.artifact_id', '=', artifactId)
     .$if(after !== undefined, (query) =>
@@ -586,6 +604,10 @@ export async function listVersions(
         row.author_id === null
           ? null
           : { id: row.author_id, name: row.display_name ?? row.email ?? null },
+      restoredFrom:
+        row.restored_id === null || row.restored_revision === null || row.restored_version === null
+          ? null
+          : { id: row.restored_id, revision: row.restored_revision, version: row.restored_version },
     })),
     next:
       rows.length > limit && last !== undefined
@@ -722,10 +744,22 @@ export function recordReadVersion(
   return record(trx, input, input.latestAsRead);
 }
 
+/**
+ * `recordVersion` for a restore (restore.ts, and nowhere else: the package does not export it), naming
+ * the earlier version it was restored from (VER-033).
+ */
+export function recordRestoredVersion(
+  trx: TenantTransaction,
+  input: NextVersion & { readonly restoredFrom: string },
+): Promise<RecordAnswer> {
+  return record(trx, input, undefined, input.restoredFrom);
+}
+
 async function record(
   trx: TenantTransaction,
   input: NextVersion,
   latestAsRead?: { readonly versionId: string; readonly versionDigest: string },
+  restoredFrom: string | null = null,
 ): Promise<RecordAnswer> {
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
   checkAuthorship(input);
@@ -781,6 +815,7 @@ async function record(
     substance,
     current.id,
     digests,
+    restoredFrom,
   );
   // And a definition renamed holds its new name, the old one freed.
   if (isDefinition(substance)) {

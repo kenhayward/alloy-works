@@ -163,6 +163,11 @@ describe('the rule behind a refusal', () => {
       'round.reviewers_invalid',
       'review.complete',
       'review.not_complete',
+      // The RS plan's (RS-E): a restore that would change nothing, of a component somebody holds, or
+      // of a version that no longer reads. Guards of the design's own; VER-044 is not claimed.
+      'restore.unchanged',
+      'restore.locked',
+      'restore.unreadable',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

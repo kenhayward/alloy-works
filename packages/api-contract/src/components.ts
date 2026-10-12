@@ -162,6 +162,10 @@ export const ComponentVersionList = z.object({
         .nullable()
         .describe('Who made it; null for a version nobody authored'),
       note: z.string().nullable(),
+      restoredFrom: z
+        .object({ id: z.string(), number: z.string() })
+        .nullable()
+        .describe('The earlier version it was restored from (VER-033); null for any other'),
     }),
   ),
   next: nextCursor,

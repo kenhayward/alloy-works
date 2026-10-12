@@ -9,7 +9,7 @@
 
 .version {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 48px 1fr auto auto;
   gap: var(--space-8);
   font-size: var(--size-13);
 }
@@ -34,8 +34,15 @@
   font-size: var(--size-13);
 }
 
-.compare {
+.compare,
+.restore {
   align-self: start;
+}
+
+.carried {
+  margin: 0;
+  padding-inline-start: var(--space-16);
+  font-size: var(--size-13);
 }
 
 .panel {

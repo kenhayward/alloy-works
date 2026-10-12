@@ -384,6 +384,13 @@ export {
   type ReleaseAnswer,
 } from './promotion.js';
 export {
+  previewRestore,
+  restoreVersion,
+  type Restoration,
+  type RestoreAnswer,
+  type RestoreRefusal,
+} from './restore.js';
+export {
   carryStandInPeople,
   seedDevelopmentConnectionUse,
   seedDevelopmentContent,

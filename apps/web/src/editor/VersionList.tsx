@@ -12,25 +12,33 @@ export interface ListedVersion {
   readonly createdAt: string;
   readonly author: string | null;
   readonly note: string | null;
+  /** The version's number it was restored from (VER-033), or null. */
+  readonly restoredFrom: string | null;
 }
 
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 /**
- * A component's versions, newest first: each number, who cut it and when, and its note. The latest
- * `limit` of them, or as many as one page holds.
+ * A component's versions, newest first: each number, who cut it and when, its note, and what it was
+ * restored from. The latest `limit` of them, or as many as one page holds.
  */
 export function VersionList({
   client,
   id,
   limit,
   onCompare,
+  onRestore,
+  read = 0,
 }: {
   client: Client;
   id: string;
   limit?: number;
   /** Offered on each version but the latest: compares it with the latest (CNT-111). */
   onCompare?: (version: ListedVersion, latest: ListedVersion) => void;
+  /** Offered on each version but the latest: previews restoring it (the RS plan, RS-H). */
+  onRestore?: (version: ListedVersion, latest: ListedVersion) => void;
+  /** Read again each time this changes, as after a restore. */
+  read?: number;
 }) {
   const [versions, setVersions] = useState<readonly ListedVersion[] | null | undefined>(undefined);
 
@@ -51,6 +59,7 @@ export function VersionList({
                 createdAt: each.createdAt,
                 author: each.author?.name ?? null,
                 note: each.note,
+                restoredFrom: each.restoredFrom?.number ?? null,
               }))
             : null,
         );
@@ -59,7 +68,7 @@ export function VersionList({
     return () => {
       current = false;
     };
-  }, [client, id, limit]);
+  }, [client, id, limit, read]);
 
   if (versions === undefined) return null;
   if (versions === null) return <p className={styles['muted']}>The versions could not be read.</p>;
@@ -73,6 +82,11 @@ export function VersionList({
           <span className={styles['who']}>
             {`${version.author ?? 'Unknown'}, ${day.format(new Date(version.createdAt))}`}
             {version.note !== null && <span className={styles['note']}>{version.note}</span>}
+            {version.restoredFrom !== null && (
+              <span
+                className={styles['note']}
+              >{`Restored from version ${version.restoredFrom}`}</span>
+            )}
           </span>
           {onCompare && version !== versions[0] && (
             <button
@@ -82,6 +96,16 @@ export function VersionList({
               onClick={() => onCompare(version, versions[0]!)}
             >
               Compare
+            </button>
+          )}
+          {onRestore && version !== versions[0] && (
+            <button
+              type="button"
+              className={styles['restore']}
+              aria-label={`Restore ${version.number}`}
+              onClick={() => onRestore(version, versions[0]!)}
+            >
+              Restore
             </button>
           )}
         </li>

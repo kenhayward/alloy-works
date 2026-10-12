@@ -117,6 +117,9 @@ const WIRE_CODES = {
   'round.reviewers_invalid': 'round_reviewers_invalid',
   'review.complete': 'review_complete',
   'review.not_complete': 'review_not_complete',
+  'restore.unchanged': 'restore_unchanged',
+  'restore.locked': 'restore_locked',
+  'restore.unreadable': 'restore_unreadable',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
