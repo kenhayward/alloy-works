@@ -33,6 +33,8 @@ export type RouteTarget =
   | { readonly baseline: string }
   /** The path parameter holding a thread's id: decided on what it is on (TH-J). */
   | { readonly thread: string }
+  /** The path parameter holding a suggestion's id: decided on its component (the SG plan). */
+  | { readonly suggestion: string }
   | { readonly query: string }
   | { readonly body: string }
   | { readonly grant: string };

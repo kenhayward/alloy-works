@@ -843,6 +843,7 @@ describe('the citations in the committed model', () => {
   // 839 (2026-10-09): MC - DAT-119 in six files: the domain's builder, generate and file-filter, the
   // connector's builder, and the web's query-definitions and fileDraft.
   it('cites exactly as many times as the corpus currently does', () => {
+    // 1043 (2026-10-12): SG2's suggestions - the store and the routes.
     // 1025 (2026-10-12): SG1's applySuggestion.
     // 1022 (2026-10-12): TH4's inbox dialog, the final review's tests and the close.
     // 1017 (2026-10-12): TH3's Review - the panel, the page, anchoring and the axe walk.
@@ -859,7 +860,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1025);
+    expect(model.citations).toHaveLength(1043);
   });
 
   it('cites no identifier the corpus does not hold', () => {

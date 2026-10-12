@@ -34,6 +34,8 @@ describe('the rule behind a refusal', () => {
       ['parameter.fixed', 'parameter_fixed', 'TPL-021'],
       ['acknowledgement.required', 'acknowledgement_required', 'DAT-091'],
       ['name.taken', 'name_taken', 'VER-046'],
+      ['suggestion.stale', 'suggestion_stale', 'COL-052'],
+      ['suggestion.not_yours', 'suggestion_not_yours', 'COL-048'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -135,6 +137,11 @@ describe('the rule behind a refusal', () => {
       'parts.invalid',
       'thread.resolved',
       'comment.not_yours',
+      'suggestion.empty',
+      'suggestion.limit',
+      'suggestion.resolved',
+      'suggestion.scope',
+      'edits.pending',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

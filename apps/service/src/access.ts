@@ -136,6 +136,18 @@ async function targetOf(
       .executeTakeFirst();
     return baseline ? parseLevel(`artifact:${baseline.document_id}`) : undefined;
   }
+  if ('suggestion' in declared) {
+    // A suggestion is decided on its component (the SG plan): one this tenant does not hold is no
+    // level at all, and so not found.
+    const id = params[declared.suggestion];
+    if (typeof id !== 'string' || !UUID.test(id)) return undefined;
+    const row = await trx
+      .selectFrom('suggestion')
+      .select('component_id')
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return row ? parseLevel(`artifact:${row.component_id}`) : undefined;
+  }
   if ('thread' in declared) {
     // A thread is decided on what it is on (TH-J): one this tenant does not hold is no level at all,
     // and so not found.

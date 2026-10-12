@@ -310,3 +310,14 @@ export {
   NotificationParams,
   NotificationView,
 } from './inbox.js';
+export {
+  MakeSuggestionBody,
+  ResolvedSuggestions,
+  ResolveSuggestionsBody,
+  SuggestionList,
+  SuggestionListQuery,
+  SuggestionParams,
+  SuggestionRefusal,
+  SuggestionSummaryView,
+  SuggestionView,
+} from './suggestions.js';

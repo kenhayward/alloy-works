@@ -224,6 +224,9 @@ export const DocumentView = z.object({
   mayComment: z
     .boolean()
     .describe('Whether the caller may start and answer threads on the document'),
+  maySuggest: z
+    .boolean()
+    .describe('Whether the caller may suggest changes to the document’s components where they may'),
   mayReview: z
     .boolean()
     .describe(
@@ -349,6 +352,17 @@ export const DocumentTextsView = z.object({
           .boolean()
           .describe(
             'Whether the caller may start and answer threads on the component: false where they may not read it',
+          ),
+        maySuggest: z
+          .boolean()
+          .describe(
+            'Whether the caller may suggest a change to the component: false where they may not read it',
+          ),
+        pendingSuggestions: z
+          .int()
+          .nonnegative()
+          .describe(
+            'How many suggestions wait on the component: 0 where the caller may not read it',
           ),
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',

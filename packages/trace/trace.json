@@ -18957,13 +18957,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 532,
+      "line": 549,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 482,
+      "line": 499,
       "kind": "title"
     },
     {
@@ -19077,7 +19077,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 289,
+      "line": 297,
       "kind": "title"
     },
     {
@@ -19323,7 +19323,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1024,
+      "line": 1056,
       "kind": "title"
     },
     {
@@ -19864,6 +19864,60 @@
       "id": "IAM-040",
       "file": "apps/service/src/stream.test.ts",
       "line": 487,
+      "kind": "title"
+    },
+    {
+      "id": "COL-020",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "COL-021",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "COL-022",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "COL-024",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 256,
+      "kind": "title"
+    },
+    {
+      "id": "COL-025",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "COL-041",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 256,
+      "kind": "title"
+    },
+    {
+      "id": "COL-042",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 242,
+      "kind": "title"
+    },
+    {
+      "id": "COL-048",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 310,
+      "kind": "title"
+    },
+    {
+      "id": "COL-052",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 273,
       "kind": "title"
     },
     {
@@ -22381,6 +22435,60 @@
       "kind": "title"
     },
     {
+      "id": "COL-020",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 134,
+      "kind": "title"
+    },
+    {
+      "id": "COL-021",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 134,
+      "kind": "title"
+    },
+    {
+      "id": "COL-024",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "COL-025",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 134,
+      "kind": "title"
+    },
+    {
+      "id": "COL-041",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "COL-042",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "COL-043",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "COL-048",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "COL-052",
+      "file": "packages/db/src/suggestions.test.ts",
+      "line": 221,
+      "kind": "title"
+    },
+    {
       "id": "DAT-097",
       "file": "packages/db/src/takes.test.ts",
       "line": 332,
@@ -22605,7 +22713,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 177,
+      "line": 179,
       "kind": "title"
     },
     {

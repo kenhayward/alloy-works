@@ -33,6 +33,11 @@ export const documentationGroups = [
         name: 'Inbox',
         description: 'Read and clear your notifications, and choose how often you are told.',
       },
+      {
+        name: 'Suggestions',
+        description:
+          'Suggest a change to a component beside it, and accept, reject or withdraw one.',
+      },
     ],
   },
   {
@@ -204,6 +209,16 @@ const operationTags = {
     'getInboxPreferences',
     'setInboxPreferences',
   ],
+  Suggestions: [
+    'makeSuggestion',
+    'listComponentSuggestions',
+    'listDocumentSuggestions',
+    'getSuggestion',
+    'acceptSuggestion',
+    'rejectSuggestion',
+    'withdrawSuggestion',
+    'resolveSuggestions',
+  ],
   Previews: ['requestPreview'],
   Comparison: [
     'compareComponentVersions',
@@ -324,6 +339,21 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads how often the caller is told of mentions, replies and resolutions: at once, in a daily digest, or never.',
   setInboxPreferences:
     'Chooses how often the caller is told of each kind named. A daily digest is made after 07:00 UTC.',
+  makeSuggestion:
+    'Suggests a change to a component: a draft of it, made from one of its versions, kept beside it and never in its content. It needs no lock, so it can be made while the component is being edited. Sending the same draft again answers the suggestion it made.',
+  listComponentSuggestions:
+    'Lists the suggestions on a component, newest first, each pending one saying where, if anywhere, it no longer fits the component as it is now.',
+  listDocumentSuggestions:
+    'Lists the suggestions on every component a document places that the caller may read, newest first, as the component’s own list does.',
+  getSuggestion:
+    'Reads a suggestion and what its redline is drawn from: for a pending one that applies, the component as it is now and what accepting would make; otherwise the version it was made against and the draft.',
+  acceptSuggestion:
+    'Accepts a suggestion: applies it to the component as it is now, block by block, and records the result as a version by the caller. Refused while somebody else holds the component, or while the caller holds it with saved work, and where it no longer fits, saying where.',
+  rejectSuggestion: 'Rejects a suggestion. Refused while somebody else holds the component.',
+  withdrawSuggestion:
+    'Withdraws the caller’s own pending suggestion. It is kept, saying who withdrew it and when.',
+  resolveSuggestions:
+    'Accepts or rejects every pending suggestion on a component or across a document, or one person’s, oldest first: each accepted is its own version. One that no longer fits, is on a component somebody else holds, or that the caller may not edit, is left pending and said so.',
   supersedeBaseline:
     'Marks a baseline superseded by a later baseline of the same document, once. The baseline is kept, read, listed and published as before.',
   takeLock:

@@ -543,6 +543,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The suggestions on this component, newest first
+         * @description Lists the suggestions on a component, newest first, each pending one saying where, if anywhere, it no longer fits the component as it is now.
+         */
+        get: operations["listComponentSuggestions"];
+        put?: never;
+        /**
+         * Suggest a change to this component: a draft of it, kept beside it
+         * @description Suggests a change to a component: a draft of it, made from one of its versions, kept beside it and never in its content. It needs no lock, so it can be made while the component is being edited. Sending the same draft again answers the suggestion it made.
+         */
+        post: operations["makeSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/threads": {
         parameters: {
             query?: never;
@@ -1221,6 +1245,26 @@ export interface paths {
          * @description Queues publication of a named document version in the requested output formats. A worker produces the outputs asynchronously.
          */
         post: operations["requestPublication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The suggestions on every component this document places that the caller may read
+         * @description Lists the suggestions on every component a document places that the caller may read, newest first, as the component’s own list does.
+         */
+        get: operations["listDocumentSuggestions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2337,6 +2381,106 @@ export interface paths {
         get: operations["openStream"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suggestions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A suggestion, and what its redline is drawn from
+         * @description Reads a suggestion and what its redline is drawn from: for a pending one that applies, the component as it is now and what accepting would make; otherwise the version it was made against and the draft.
+         */
+        get: operations["getSuggestion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suggestions/{id}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a suggestion: apply it to the component as it is now, as your version
+         * @description Accepts a suggestion: applies it to the component as it is now, block by block, and records the result as a version by the caller. Refused while somebody else holds the component, or while the caller holds it with saved work, and where it no longer fits, saying where.
+         */
+        post: operations["acceptSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suggestions/{id}/rejection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a suggestion
+         * @description Rejects a suggestion. Refused while somebody else holds the component.
+         */
+        post: operations["rejectSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suggestions/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw your own suggestion
+         * @description Withdraws the caller’s own pending suggestion. It is kept, saying who withdrew it and when.
+         */
+        post: operations["withdrawSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suggestions/resolutions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept or reject every pending suggestion on a component or a document, or one person’s
+         * @description Accepts or rejects every pending suggestion on a component or across a document, or one person’s, oldest first: each accepted is its own version. One that no longer fits, is on a component somebody else holds, or that the caller may not edit, is left pending and said so.
+         */
+        post: operations["resolveSuggestions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10405,6 +10549,406 @@ export interface operations {
             };
         };
     };
+    listComponentSuggestions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                state?: "pending" | "resolved";
+                author?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of them */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "suggestions": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        suggestions: {
+                            id: string & (unknown & unknown);
+                            component: string & (unknown & unknown);
+                            /** @description The version it was made against */
+                            madeAgainst: string & (unknown & unknown);
+                            madeBy: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            madeAt: string;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "rejected" | "withdrawn";
+                            /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                            stale: {
+                                /** @description The top-level block, or null for the document’s own members */
+                                block: string | null;
+                                /** @enum {string} */
+                                member?: "title" | "language" | "direction";
+                                /**
+                                 * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                                 * @enum {string}
+                                 */
+                                why: "changed" | "gone" | "anchor_gone" | "invalid";
+                                problem?: string;
+                            }[] | null;
+                            /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                            resolution: {
+                                by: {
+                                    id: string & (unknown & unknown);
+                                    name: string | null;
+                                };
+                                /** Format: date-time */
+                                at: string;
+                                version: (string & (unknown & unknown)) | null;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description `invalid_request`: a cursor this listing did not give out */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its suggestions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    makeSuggestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "content": {}
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The version the draft was opened from, one of this component’s */
+                    version: string & (unknown & unknown);
+                    /** @description The draft whole: a content document, as a save of the component would send it */
+                    content: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, or the same draft made before */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "state": "pending",
+                     *       "stale": [],
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "drawnOver": {
+                     *         "version": "00000000-0000-4000-8000-000000000001",
+                     *         "content": {}
+                     *       },
+                     *       "drawn": {}
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        component: string & (unknown & unknown);
+                        /** @description The version it was made against */
+                        madeAgainst: string & (unknown & unknown);
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @enum {string} */
+                        state: "pending" | "accepted" | "rejected" | "withdrawn";
+                        /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                        stale: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[] | null;
+                        /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            version: (string & (unknown & unknown)) | null;
+                        } | null;
+                        /** @description What it is drawn over: the current version where a pending one applies, else the version it was made against */
+                        drawnOver: {
+                            version: string & (unknown & unknown);
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description What it would make: the merge where a pending one applies, else the draft as sent */
+                        drawn: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description `content_invalid`: the draft is not a document this product can store; `version_not_held`: the version is not one of this component’s; `suggestion_empty`: the draft is that version; `suggestion_limit`: the caller has 20 pending here */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not suggest to it; `definition_unreadable`: a bound table names a column of a query definition the caller may not read */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listComponentThreads: {
         parameters: {
             query?: {
@@ -15953,6 +16497,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
+                     *       "maySuggest": false,
                      *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
@@ -16055,6 +16600,8 @@ export interface operations {
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
                         mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
                         /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                         mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -27955,6 +28502,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
+                     *       "maySuggest": false,
                      *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
@@ -28057,6 +28605,8 @@ export interface operations {
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
                         mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
                         /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                         mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -28187,6 +28737,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -28413,6 +28965,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -28783,6 +29337,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
+                     *       "maySuggest": false,
                      *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
@@ -28885,6 +29440,8 @@ export interface operations {
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
                         mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
                         /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                         mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -29015,6 +29572,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -29241,6 +29800,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -30264,6 +30825,184 @@ export interface operations {
             };
         };
     };
+    listDocumentSuggestions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                state?: "pending" | "resolved";
+                author?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of them */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "suggestions": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        suggestions: {
+                            id: string & (unknown & unknown);
+                            component: string & (unknown & unknown);
+                            /** @description The version it was made against */
+                            madeAgainst: string & (unknown & unknown);
+                            madeBy: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            madeAt: string;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "rejected" | "withdrawn";
+                            /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                            stale: {
+                                /** @description The top-level block, or null for the document’s own members */
+                                block: string | null;
+                                /** @enum {string} */
+                                member?: "title" | "language" | "direction";
+                                /**
+                                 * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                                 * @enum {string}
+                                 */
+                                why: "changed" | "gone" | "anchor_gone" | "invalid";
+                                problem?: string;
+                            }[] | null;
+                            /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                            resolution: {
+                                by: {
+                                    id: string & (unknown & unknown);
+                                    name: string | null;
+                                };
+                                /** Format: date-time */
+                                at: string;
+                                version: (string & (unknown & unknown)) | null;
+                            } | null;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description `invalid_request`: a cursor this listing did not give out */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its suggestions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getDocumentTexts: {
         parameters: {
             query?: never;
@@ -30311,6 +31050,10 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may start and answer threads on the component: false where they may not read it */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest a change to the component: false where they may not read it */
+                            maySuggest: boolean;
+                            /** @description How many suggestions wait on the component: 0 where the caller may not read it */
+                            pendingSuggestions: number;
                             /** @description Who holds the component now and until when: null where nobody does, or where the caller may not read it */
                             lock: {
                                 holder: {
@@ -30903,6 +31646,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
+                     *       "maySuggest": false,
                      *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
@@ -31005,6 +31749,8 @@ export interface operations {
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
                         mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
                         /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                         mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -31135,6 +31881,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -31361,6 +32109,8 @@ export interface operations {
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
                             mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
                             /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                             mayReview: boolean;
                             /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -40912,6 +41662,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
+                     *       "maySuggest": false,
                      *       "mayReview": false,
                      *       "layout": {
                      *         "id": "example",
@@ -41014,6 +41765,8 @@ export interface operations {
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
                         mayComment: boolean;
+                        /** @description Whether the caller may suggest changes to the document’s components where they may */
+                        maySuggest: boolean;
                         /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
                         mayReview: boolean;
                         /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
@@ -42872,6 +43625,1084 @@ export interface operations {
             };
             /** @description This environment cannot stream yet */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getSuggestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The suggestion */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "state": "pending",
+                     *       "stale": [],
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "drawnOver": {
+                     *         "version": "00000000-0000-4000-8000-000000000001",
+                     *         "content": {}
+                     *       },
+                     *       "drawn": {}
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        component: string & (unknown & unknown);
+                        /** @description The version it was made against */
+                        madeAgainst: string & (unknown & unknown);
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @enum {string} */
+                        state: "pending" | "accepted" | "rejected" | "withdrawn";
+                        /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                        stale: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[] | null;
+                        /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            version: (string & (unknown & unknown)) | null;
+                        } | null;
+                        /** @description What it is drawn over: the current version where a pending one applies, else the version it was made against */
+                        drawnOver: {
+                            version: string & (unknown & unknown);
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description What it would make: the merge where a pending one applies, else the draft as sent */
+                        drawn: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a reader reads its suggestions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such suggestion in this environment, or one on a component the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptSuggestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "state": "pending",
+                     *       "stale": [],
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "drawnOver": {
+                     *         "version": "00000000-0000-4000-8000-000000000001",
+                     *         "content": {}
+                     *       },
+                     *       "drawn": {}
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        component: string & (unknown & unknown);
+                        /** @description The version it was made against */
+                        madeAgainst: string & (unknown & unknown);
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @enum {string} */
+                        state: "pending" | "accepted" | "rejected" | "withdrawn";
+                        /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                        stale: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[] | null;
+                        /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            version: (string & (unknown & unknown)) | null;
+                        } | null;
+                        /** @description What it is drawn over: the current version where a pending one applies, else the version it was made against */
+                        drawnOver: {
+                            version: string & (unknown & unknown);
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description What it would make: the merge where a pending one applies, else the draft as sent */
+                        drawn: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description `values_invalid`: a fixed value differs from its default now */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description suggestion_stale: each place it no longer fits */
+                        stale?: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it; `definition_unreadable`: the merge names a column of a query definition the caller may not read */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such suggestion in this environment, or one on a component the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `lock_held`: somebody else holds the component, named with when it is expected to release; `edits_pending`: the caller holds it with saved work after the current version; `suggestion_stale`: it no longer fits, each place in `stale`; `suggestion_resolved`: resolved already */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description suggestion_stale: each place it no longer fits */
+                        stale?: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    rejectSuggestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rejected */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "state": "pending",
+                     *       "stale": [],
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "drawnOver": {
+                     *         "version": "00000000-0000-4000-8000-000000000001",
+                     *         "content": {}
+                     *       },
+                     *       "drawn": {}
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        component: string & (unknown & unknown);
+                        /** @description The version it was made against */
+                        madeAgainst: string & (unknown & unknown);
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @enum {string} */
+                        state: "pending" | "accepted" | "rejected" | "withdrawn";
+                        /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                        stale: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[] | null;
+                        /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            version: (string & (unknown & unknown)) | null;
+                        } | null;
+                        /** @description What it is drawn over: the current version where a pending one applies, else the version it was made against */
+                        drawnOver: {
+                            version: string & (unknown & unknown);
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description What it would make: the merge where a pending one applies, else the draft as sent */
+                        drawn: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such suggestion in this environment, or one on a component the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `lock_held`: somebody else holds the component, named with when it is expected to release; `suggestion_resolved`: resolved already */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        holder?: {
+                            id: string;
+                            name: string | null;
+                        };
+                        expectedRelease?: string;
+                        /** @description values_invalid: each value that cannot be stored with the component, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description suggestion_stale: each place it no longer fits */
+                        stale?: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    withdrawSuggestion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Withdrawn, and kept */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "component": "00000000-0000-4000-8000-000000000001",
+                     *       "madeAgainst": "00000000-0000-4000-8000-000000000001",
+                     *       "madeBy": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "madeAt": "2026-01-01T00:00:00.000Z",
+                     *       "state": "pending",
+                     *       "stale": [],
+                     *       "resolution": {
+                     *         "by": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "drawnOver": {
+                     *         "version": "00000000-0000-4000-8000-000000000001",
+                     *         "content": {}
+                     *       },
+                     *       "drawn": {}
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        component: string & (unknown & unknown);
+                        /** @description The version it was made against */
+                        madeAgainst: string & (unknown & unknown);
+                        madeBy: {
+                            id: string & (unknown & unknown);
+                            name: string | null;
+                        };
+                        /** Format: date-time */
+                        madeAt: string;
+                        /** @enum {string} */
+                        state: "pending" | "accepted" | "rejected" | "withdrawn";
+                        /** @description A pending one’s places where it no longer fits the current version, computed now; empty where it applies, null once resolved */
+                        stale: {
+                            /** @description The top-level block, or null for the document’s own members */
+                            block: string | null;
+                            /** @enum {string} */
+                            member?: "title" | "language" | "direction";
+                            /**
+                             * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                             * @enum {string}
+                             */
+                            why: "changed" | "gone" | "anchor_gone" | "invalid";
+                            problem?: string;
+                        }[] | null;
+                        /** @description Who resolved it and when; for an acceptance, the version it stands in */
+                        resolution: {
+                            by: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            version: (string & (unknown & unknown)) | null;
+                        } | null;
+                        /** @description What it is drawn over: the current version where a pending one applies, else the version it was made against */
+                        drawnOver: {
+                            version: string & (unknown & unknown);
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description What it would make: the merge where a pending one applies, else the draft as sent */
+                        drawn: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suggestion_not_yours`: somebody else made it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such suggestion in this environment, or one on a component the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `suggestion_resolved`: it is accepted, rejected or withdrawn already */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    resolveSuggestions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "act": "accept",
+                 *       "scope": "artifact:00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    act: "accept" | "reject";
+                    /** @description `artifact:<id>`: a component, or a document and every component it places */
+                    scope: string;
+                    /** @description Only those this person made */
+                    author?: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Each resolved, and each left pending with why */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "resolved": [],
+                     *       "left": []
+                     *     }
+                     */
+                    "application/json": {
+                        resolved: {
+                            suggestion: string & (unknown & unknown);
+                            /** @description For an acceptance, the version it stands in */
+                            version: (string & (unknown & unknown)) | null;
+                        }[];
+                        /** @description Each it left pending, and why (SG-H) */
+                        left: {
+                            suggestion: string & (unknown & unknown);
+                            /**
+                             * @description Why it stays pending
+                             * @enum {string}
+                             */
+                            why: "stale" | "lock_held" | "edits_pending" | "not_permitted" | "values_invalid";
+                            stale?: {
+                                /** @description The top-level block, or null for the document’s own members */
+                                block: string | null;
+                                /** @enum {string} */
+                                member?: "title" | "language" | "direction";
+                                /**
+                                 * @description `changed`: somebody changed it since; `gone`: it is no longer there; `anchor_gone`: the block a suggested block follows is gone; `invalid`: the whole would not be a content document
+                                 * @enum {string}
+                                 */
+                                why: "changed" | "gone" | "anchor_gone" | "invalid";
+                                problem?: string;
+                            }[];
+                            /** @description lock_held: who holds the component */
+                            holder?: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description `suggestion_scope`: more than 200 pending in scope, or the scope is not a component or a document */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: each is decided by its component */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component or document in this environment, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

@@ -25,6 +25,7 @@ import {
   receiveAssetBytes,
   recordAsset,
   makeBaseline,
+  makeSuggestion,
   startThread,
   recordPublication,
   requestPublication,
@@ -46,6 +47,7 @@ import {
   definitionsFor,
   tokenScopes,
   type ComponentTypeDefinition,
+  type ContentDocument,
 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -188,6 +190,13 @@ const OTHER_TENANT_IDS: Readonly<
   addComment: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
   editComment: async (tenant, db) => ({ id: await threadIn(tenant, db), comment: SESSION }),
   resolveThread: async (tenant, db) => ({ id: await threadIn(tenant, db) }),
+  makeSuggestion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listComponentSuggestions: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  listDocumentSuggestions: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
+  acceptSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
+  rejectSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
+  withdrawSuggestion: async (tenant, db) => ({ id: await suggestionIn(tenant, db) }),
   markNotificationRead: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
   deleteNotification: async (tenant, db) => ({ id: await notificationIn(tenant, db) }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -345,6 +354,8 @@ const VALID_INPUT: Readonly<
     payload: { version: SESSION, anchor: { kind: 'component' }, parts: [{ text: 'Hm' }] },
   },
   addComment: { payload: { parts: [{ text: 'Hm' }] } },
+  makeSuggestion: { payload: { version: SESSION, content: { title: 'Elsewhere' } } },
+  resolveSuggestions: { payload: { act: 'reject', scope: `artifact:${SESSION}` } },
   editComment: { payload: { parts: [{ text: 'Hm' }] } },
   setInboxPreferences: { payload: { mention: 'daily' } },
   publishBaseline: { payload: { formats: ['pdf'] } },
@@ -777,6 +788,27 @@ const baselineIn = async (tenant: Tenant, db: TenantDatabase) => {
 };
 
 /** A thread in environment B, on its component, started by the component's author. */
+/** A suggestion in environment B, on its component, by the component's author. */
+const suggestionIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const component = await componentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const version = await trx
+      .selectFrom('artifact_version')
+      .select(['id', 'author_id', 'content'])
+      .where('artifact_id', '=', component)
+      .orderBy('version_no', 'desc')
+      .executeTakeFirstOrThrow();
+    const made = await makeSuggestion(trx, {
+      component,
+      version: version.id,
+      proposed: { ...(version.content as ContentDocument), title: `Elsewhere ${randomUUID()}` },
+      by: version.author_id!,
+    });
+    if (made.answer !== 'made') throw new Error(`refused: ${made.answer}`);
+    return made.suggestion;
+  });
+};
+
 const threadIn = async (tenant: Tenant, db: TenantDatabase) => {
   const component = await componentIdIn(tenant, db);
   return db.withTenant(tenant, async (trx) => {

@@ -24,6 +24,7 @@ import { publishingRoutes } from './publishing.js';
 import { templateRoutes } from './templates.js';
 import { threadRoutes } from './threads.js';
 import { inboxRoutes } from './inbox.js';
+import { suggestionRoutes } from './suggestions.js';
 import { administeredTokenRoutes, tokenRoutes } from './tokens.js';
 import {
   AccessAnswers,
@@ -317,7 +318,8 @@ type Routes = typeof ownRoutes &
   typeof comparisonRoutes &
   typeof changesRoutes &
   typeof threadRoutes &
-  typeof inboxRoutes;
+  typeof inboxRoutes &
+  typeof suggestionRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -349,6 +351,7 @@ export const routes: Routes = {
   ...changesRoutes,
   ...threadRoutes,
   ...inboxRoutes,
+  ...suggestionRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

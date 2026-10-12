@@ -24,6 +24,7 @@ import {
   recordAsset,
   recordPublication,
   makeBaseline,
+  makeSuggestion,
   startThread,
   requestPublication,
   STARTER_COMPONENT_TYPE_ID,
@@ -42,6 +43,7 @@ import {
   TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
   type ComponentTypeDefinition,
+  type ContentDocument,
 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -128,6 +130,7 @@ describe('routes that check a permission', () => {
   let reportPublication: string;
   let reportBaseline: string;
   let reportThread: string;
+  let dosingSuggestion: string;
   let plan: string;
   let readings: string;
   let dailyReadings: string;
@@ -295,6 +298,20 @@ describe('routes that check a permission', () => {
       });
       if (thread.answer !== 'done') throw new Error(`refused: ${thread.answer}`);
       reportThread = thread.thread;
+      // And a suggestion on Dosing, which a route on a suggestion must refuse as it refuses Dosing.
+      const dosingRead = await trx
+        .selectFrom('artifact_version')
+        .select('content')
+        .where('id', '=', dosingVersion.id)
+        .executeTakeFirstOrThrow();
+      const suggested = await makeSuggestion(trx, {
+        component: dosing,
+        version: dosingVersion.id,
+        proposed: { ...(dosingRead.content as ContentDocument), title: 'Dosing, revised' },
+        by: ids.ada!,
+      });
+      if (suggested.answer !== 'made') throw new Error(`refused: ${suggested.answer}`);
+      dosingSuggestion = suggested.suggestion;
       // And a template in Clinical, which a route reading or changing it must refuse to name.
       const template = await createTemplate(trx, {
         spaceId: clinical,
@@ -836,6 +853,28 @@ describe('routes that check a permission', () => {
     }),
     listComponentThreads: () => ({ url: `/v1/components/${dosing}/threads`, status: 404 }),
     getThread: () => ({ url: `/v1/threads/${reportThread}`, status: 404 }),
+    makeSuggestion: () => ({
+      url: `/v1/components/${dosing}/suggestions`,
+      status: 404,
+      payload: { version: MISSING, content: { title: 'x' } },
+    }),
+    listComponentSuggestions: () => ({ url: `/v1/components/${dosing}/suggestions`, status: 404 }),
+    listDocumentSuggestions: () => ({ url: `/v1/documents/${report}/suggestions`, status: 404 }),
+    getSuggestion: () => ({ url: `/v1/suggestions/${dosingSuggestion}`, status: 404 }),
+    acceptSuggestion: () => ({
+      url: `/v1/suggestions/${dosingSuggestion}/acceptance`,
+      status: 404,
+    }),
+    rejectSuggestion: () => ({ url: `/v1/suggestions/${dosingSuggestion}/rejection`, status: 404 }),
+    withdrawSuggestion: () => ({
+      url: `/v1/suggestions/${dosingSuggestion}/withdrawal`,
+      status: 404,
+    }),
+    resolveSuggestions: () => ({
+      url: '/v1/suggestions/resolutions',
+      status: 404,
+      payload: { act: 'reject', scope: `artifact:${dosing}` },
+    }),
     addComment: () => ({
       url: `/v1/threads/${reportThread}/comments`,
       status: 404,
