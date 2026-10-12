@@ -3,7 +3,7 @@
 Who may hold a component's lock, for how long, and how it passes from an idle holder to somebody who
 needs it - the lock rules [realtime.md](realtime.md) leaves to "collaboration's design", on the row
 [component-editor.md](component-editor.md) claims and saves under. Threads, suggestions and review
-rounds (COL's later phases, ADR-0057) will join this document as their turns come.
+rounds (COL's later phases, ADR-0057) joined this document as their turns came.
 
 > **Built** by [the PL plan](../plans/2026-10-11-pl-presence-and-locks.md): the settings and `active_at`
 > (PL3), and taking (PL4). **Threads, the inbox and review mode** are being built by
@@ -62,6 +62,13 @@ next hold the lock. A take is never instant and never silent.
 | **COL-043** | Nothing applies a suggestion but a person's accepting it, one or in bulk: no release, timeout or round applies one |
 | **COL-048** | Its author withdraws a pending suggestion; the withdrawal records who and when, and the suggestion is kept |
 | **COL-052** | A suggestion that no longer applies to the component as it is now is listed **stale**, with each place it no longer fits and why; it stays pending, never rejected on its author's behalf |
+| **COL-028** | A round names its reviewers, its scope - the document or nodes of it - and its due date ([Review rounds](#review-rounds)) |
+| **COL-029** | Each reviewer is not started, in progress (**Start**, or a completion reopened) or complete, derived from their own acts |
+| **COL-030** | The round's summary: every reviewer by state and the count complete of all, to anybody who may read the round |
+| **COL-031** | A round may name a baseline: its reviewers read and comment on the baseline's fixed page in Review mode, threads judged against the pins |
+| **COL-032** | A completion says **with comments** or **nothing to say**, each apart from not started |
+| **COL-057** | A reviewer reopens their completion while the round is open, recorded with who and when |
+| **COL-058** | Complete only from an explicit completion; nothing is read from silence or activity elsewhere |
 
 **COL-045's two edges**, named rather than hidden: a holder **offline** through the grace has saved
 nothing since they lost the network, so what they typed is in their window's storage alone, kept there
@@ -209,3 +216,20 @@ with `edit`, never while another holds the lock (COL-042); withdraw as its autho
 one. In Review, a component's card offers **Suggest changes**, which opens a draft editor of its own -
 the component editor in a draft mode: no lock, no iterations, nothing saved until **Send suggestion** - and the panel lists suggestions with
 threads, each drawn as a redline over the current version.
+
+## Review rounds
+
+Designed with [the RR plan](../plans/2026-10-12-rr-review-rounds.md), whose decisions are the detail.
+A round asks named people to review a document by a date: the document as it moves, or one of its
+baselines, so they read a fixed text (COL-031). It is **a report, not a gate** (COL-058): each
+reviewer's state comes from their own acts alone - **Start**, **Done, with comments**, **Done,
+nothing to say**, **Reopen** - and "has everybody reviewed" is the count of those complete. Closing
+applies and approves nothing; a gate requiring a round is T9's LIF.
+
+- **The rows**: a round, its reviewers and its events, kept against the document version it opened on
+  (COL-050); nothing deleted, state derived.
+- **Who**: opened and closed with `edit` on the document; read with `read`; acted on by a named
+  person holding `comment` or `suggest` now. External reviewers (COL-059) are T4's.
+- **On a baseline**: Review mode on the baseline's page, threads started on the pinned versions and
+  judged against them; a suggestion is drafted on the document as it is.
+- **Told**: each reviewer named, a notification of its own kind, carrying no text.

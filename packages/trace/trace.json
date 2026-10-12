@@ -16166,6 +16166,34 @@
         {
           "id": "COL-052",
           "howItIsMet": "A suggestion that no longer applies to the component as it is now is listed **stale**, with each place it no longer fits and why; it stays pending, never rejected on its author's behalf"
+        },
+        {
+          "id": "COL-028",
+          "howItIsMet": "A round names its reviewers, its scope - the document or nodes of it - and its due date ([Review rounds](#review-rounds))"
+        },
+        {
+          "id": "COL-029",
+          "howItIsMet": "Each reviewer is not started, in progress (**Start**, or a completion reopened) or complete, derived from their own acts"
+        },
+        {
+          "id": "COL-030",
+          "howItIsMet": "The round's summary: every reviewer by state and the count complete of all, to anybody who may read the round"
+        },
+        {
+          "id": "COL-031",
+          "howItIsMet": "A round may name a baseline: its reviewers read and comment on the baseline's fixed page in Review mode, threads judged against the pins"
+        },
+        {
+          "id": "COL-032",
+          "howItIsMet": "A completion says **with comments** or **nothing to say**, each apart from not started"
+        },
+        {
+          "id": "COL-057",
+          "howItIsMet": "A reviewer reopens their completion while the round is open, recorded with who and when"
+        },
+        {
+          "id": "COL-058",
+          "howItIsMet": "Complete only from an explicit completion; nothing is read from silence or activity elsewhere"
         }
       ]
     },
@@ -23607,7 +23635,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 655,
+      "line": 657,
       "kind": "title"
     },
     {
@@ -24172,6 +24200,36 @@
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/widths.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "COL-029",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "COL-030",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 50,
+      "kind": "title"
+    },
+    {
+      "id": "COL-032",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 31,
+      "kind": "title"
+    },
+    {
+      "id": "COL-057",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "COL-058",
+      "file": "packages/domain/src/review/rounds.test.ts",
+      "line": 21,
       "kind": "title"
     },
     {
