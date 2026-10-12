@@ -18,6 +18,7 @@ import {
   documentTemplate,
   editOutline,
   isArchived,
+  isHeld,
   listReadableDocuments,
   loadFacts,
   loadFactsFor,
@@ -55,7 +56,7 @@ import {
   type Contribution,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { administersTenant, notFound, type Authorised } from './access.js';
 import { afterVersion, fieldViews, lockView, versionCursor, versionView } from './components.js';
 import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -70,6 +71,8 @@ interface Viewer {
   readonly mayPublish: boolean;
   /** Whether they may archive and unarchive it (lifecycle.md). */
   readonly mayRetire: boolean;
+  /** Whether they administer the environment, and so may place a legal hold (lifecycle.md). */
+  readonly mayHold: boolean;
   /** Whether they may start and answer threads on it (COL-012). */
   readonly mayComment: boolean;
   /** Whether Review is offered them: `comment` or `suggest` (IAM-081). */
@@ -184,6 +187,9 @@ async function documentView(
     mayEdit: viewer.mayEdit,
     archived: await isArchived(viewer.trx, document.id),
     mayRetire: viewer.mayRetire,
+    // Told only to whoever may retire it or administer the environment (AH-G).
+    onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
+    mayHold: viewer.mayHold,
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
@@ -409,6 +415,7 @@ export function documentHandlers(
           mayEdit: decide('edit', facts).allowed,
           mayPublish: decide('publish', facts).allowed,
           mayRetire: decide('retire', facts).allowed,
+          mayHold: administersTenant(facts),
           mayComment: decide('comment', facts).allowed,
           mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
           maySuggest: decide('suggest', facts).allowed,
@@ -430,6 +437,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -622,6 +630,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -665,6 +674,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -750,6 +760,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,

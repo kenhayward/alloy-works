@@ -66,6 +66,7 @@ export {
   restoreRoutes,
 } from './restore.js';
 export { ArchivalParams, ArchivalView, archivalRoutes } from './archival.js';
+export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
 export {
   GrantBody,
   GrantList,

@@ -1,4 +1,5 @@
 import { archivalRoutes } from './archival.js';
+import { holdRoutes } from './holds.js';
 import { assetRoutes } from './assets.js';
 import { auditRoutes } from './audit.js';
 import { bindingRoutes } from './bindings.js';
@@ -325,7 +326,8 @@ type Routes = typeof ownRoutes &
   typeof suggestionRoutes &
   typeof roundRoutes &
   typeof restoreRoutes &
-  typeof archivalRoutes;
+  typeof archivalRoutes &
+  typeof holdRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -361,6 +363,7 @@ export const routes: Routes = {
   ...roundRoutes,
   ...restoreRoutes,
   ...archivalRoutes,
+  ...holdRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

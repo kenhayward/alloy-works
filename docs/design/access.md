@@ -131,10 +131,14 @@ service's checks are code and a permission no check reads would be a promise wit
 | `design`             | Create or change a template                                                                    | The template, or the space for creating one |
 | `manage_definitions` | Create or change a field, a metadata schema or a component type                                | The tenant                                  |
 | `administer`         | Change grants at this level and below; at the tenant, also spaces, roles and groups            | The level                                   |
+| `retire`             | Archive or unarchive a component or a document                                                 | The artifact                                |
 
 **Two more arrive with T2's data** ([data.md](data.md)), each decided at a connection: `use_connection`,
 to run anything against it, and `write_sql`, to save a query definition whose fetch is SQL against it.
 They are not built; adding them migrates `role_permissions_closed` and `api_token_scopes_closed`.
+
+**`retire`** arrived with archival (0083, ADR-0060), in both closed sets, so a token may be scoped to
+it; Administrator holds it. [lifecycle.md](lifecycle.md) is the detail.
 
 **`design` is `edit` for templates, and separate from it on purpose.** TPL-006 says designing a
 template and writing a document are different jobs, and MET-024 names designing templates as
@@ -180,7 +184,7 @@ tenant starts with eleven, which are ordinary rows it may rename, change or remo
 | Approver            | `read`, `comment`, `approve`                   |
 | Designer            | `read`, `design`                               |
 | Definitions manager | `read`, `manage_definitions`                   |
-| Administrator       | `read`, `administer`                           |
+| Administrator       | `read`, `administer`, `retire`                 |
 | Editing             | `edit` - for denials; it cannot be allowed     |
 | Publisher           | `read`, `publish`                              |
 | Query builder       | `read`, `use_connection`                       |
@@ -364,6 +368,7 @@ and a grant made before its rule existed is a grant nobody re-checks.
 | `create`                       | **This design's choice.** Creating a component is writing content, which IAM-047 withholds in intent though it names only editing |
 | `design`, `manage_definitions` | **This design's choice.** Each changes what everybody inside the tenant must write                                                |
 | `administer`                   | **This design's choice.** An external administrator could grant themselves past every other line here                             |
+| `retire`                       | **lifecycle.md's choice.** Archiving takes content out of everybody's listings and search                                         |
 
 **Where a grant is made**, these refusals and the default expiry apply to an allow only: an allow to an
 external principal is refused if it holds a capped permission, if it is at the tenant (IAM-071), or if its

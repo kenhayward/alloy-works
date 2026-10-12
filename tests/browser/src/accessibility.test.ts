@@ -342,6 +342,19 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       }
       await page.getByRole('button', { name: 'New group' }).click();
       await check('Administration, a new group', { shows: heading('New group', 2) });
+      await page.keyboard.press('Escape');
+      await leave(page.getByRole('dialog'));
+      await sections.getByRole('link', { name: /^Legal holds/ }).click();
+      await check('Administration, Legal holds', {
+        shows: [
+          heading('Legal holds', 1),
+          administration
+            .getByRole('table', { name: 'Legal holds' })
+            .getByRole('row')
+            .first()
+            .or(administration.getByText('Nothing is on hold.')),
+        ],
+      });
     });
   });
 

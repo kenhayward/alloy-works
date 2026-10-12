@@ -603,6 +603,31 @@ describe('the outline panel', () => {
     expect(fake.sent.map((each) => each.url)).toContain(`/v1/documents/${DOCUMENT}/unarchive`);
   });
 
+  it('shows On hold where the view says so, and places a hold, asking why, for an environment administrator', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), { onHold: true, mayHold: true });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    expect(screen.getByText('On hold')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Place a hold' }));
+    const placing = await screen.findByRole('dialog', { name: /^Place a hold on / });
+    await userEvent.type(within(placing).getByRole('textbox', { name: 'Reason' }), 'Matter 7');
+    await userEvent.click(within(placing).getByRole('button', { name: 'Place hold' }));
+    await waitFor(() =>
+      expect(fake.sent).toContainEqual({
+        url: '/v1/holds',
+        body: { target: { artifact: DOCUMENT }, reason: 'Matter 7' },
+      }),
+    );
+  });
+
+  it('offers no hold, nor On hold, where the view says neither', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    expect(screen.queryByRole('button', { name: 'Place a hold' })).toBeNull();
+    expect(screen.queryByText('On hold')).toBeNull();
+  });
+
   it('offers Manage access on a document only to someone who may administer it', async () => {
     const administering = service(outline([section(METHOD, 'Method')]), { administers: true });
     const { unmount } = open(administering.fetch);

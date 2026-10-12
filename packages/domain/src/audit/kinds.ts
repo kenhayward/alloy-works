@@ -307,8 +307,6 @@ export const auditKindSpecs = {
   'approval.given': kind(['LIF-026'], empty, LATER),
   'approval.rejected': kind(['LIF-026', 'LIF-053'], empty, LATER),
   'gate.rejected': kind(['LIF-053', 'LIF-057'], empty, LATER),
-  'hold.applied': kind(['LIF-057'], empty, LATER),
-  'hold.removed': kind(['LIF-057'], empty, LATER),
   'artifact.deleted': kind(['LIF-057'], empty, LATER),
   'revision.designated': kind(['LIF-026'], empty, LATER),
   // A baseline made, and one superseded by a later one (the BL plan): about the document version it
@@ -326,6 +324,10 @@ export const auditKindSpecs = {
   // A component or a document archived and unarchived (the AH plan, AH-E): about the artifact.
   'artifact.archived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
   'artifact.unarchived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
+  // A legal hold placed and released (the AH plan, AH-E): about the artifact or the space it holds;
+  // its reason is Administration's alone, never the log's (LIF-030).
+  'hold.applied': kind(['LIF-057'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),
+  'hold.removed': kind(['LIF-057'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),
   // A restore (the RS plan, RS-C): about the new version, the subject; the earlier one it came from.
   'content.restored': kind(
     ['LIF-026', 'CNT-170'],

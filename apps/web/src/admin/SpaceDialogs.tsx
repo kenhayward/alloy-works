@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { PlaceHoldDialog } from '../lifecycle/Hold.js';
 import styles from './Administration.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -18,7 +19,7 @@ export interface SpaceRow {
 /** What is being done to a space, while its dialog is open. */
 export type SpaceAct =
   | { readonly kind: 'new' }
-  | { readonly kind: 'rename' | 'archive' | 'restore'; readonly space: SpaceRow };
+  | { readonly kind: 'rename' | 'archive' | 'restore' | 'hold'; readonly space: SpaceRow };
 
 /**
  * Making or renaming a space (the SP1 plan, SP-G): a name, which the service normalises, trims and
@@ -184,6 +185,17 @@ export function SpaceDialog({
 }) {
   if (act.kind === 'new') {
     return <Naming client={client} space={null} onDone={onDone} onClose={onClose} />;
+  }
+  if (act.kind === 'hold') {
+    return (
+      <PlaceHoldDialog
+        client={client}
+        target={{ space: act.space.id }}
+        title={act.space.name}
+        onDone={onDone}
+        onClose={onClose}
+      />
+    );
   }
   if (act.kind === 'rename') {
     return <Naming client={client} space={act.space} onDone={onDone} onClose={onClose} />;

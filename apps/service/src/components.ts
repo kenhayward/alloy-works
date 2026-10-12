@@ -13,6 +13,7 @@ import {
   componentFieldsNow,
   createComponent,
   isArchived,
+  isHeld,
   latestSequence,
   latestVersion,
   listPeople,
@@ -32,7 +33,7 @@ import {
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, scopesOf, type Authorised } from './access.js';
+import { administersTenant, notFound, scopesOf, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -288,6 +289,11 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: false,
         mayRetire: decide('retire', facts).allowed,
+        // Nothing holds what was made a moment ago but its space's hold, told as a page would.
+        onHold:
+          (decide('retire', facts).allowed || administersTenant(facts)) &&
+          (await isHeld(trx, answer.version.artifactId)),
+        mayHold: administersTenant(facts),
         lock: null,
         // Nothing has been saved of a component made a moment ago.
         unsaved: null,
@@ -388,6 +394,11 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
         mayRetire: decide('retire', facts).allowed,
+        // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
+        // confidential.
+        onHold:
+          (decide('retire', facts).allowed || administersTenant(facts)) && (await isHeld(trx, id)),
+        mayHold: administersTenant(facts),
         lock: lock ? lockView(lock, principalId) : null,
         unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
         sequence,

@@ -260,6 +260,8 @@ describe('finding and opening components through the service', () => {
         mayEdit: true,
         archived: false,
         mayRetire: false,
+        onHold: false,
+        mayHold: false,
         lock: null,
         // Nothing saved and never made a version, by anybody.
         unsaved: null,

@@ -958,6 +958,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Archived** filter lists the archived alone. A space's archive archives nothing in it. Archiving
   and unarchiving are audited. Through the API, `POST /v1/components/{id}/archive` and `unarchive`,
   the same for documents, and `archived=only` on either listing.
+- **Legal holds.** An administrator of the environment places a hold on a component or a document
+  from its page, or on a space, which holds everything in it, from its row in Administration >
+  Spaces, each asking why. Administration > **Legal holds** lists every hold with what it holds, who
+  placed it, when and why, and its release, and **Release** asks a reason too; a hold is released
+  once, and never changed. A component's or a document's page says **On hold** only to whoever may
+  retire it or administer the environment. Nothing deletes yet, so a hold is recorded and shown;
+  deletion, when it comes, will refuse what is held. Placing and releasing are audited, without the
+  reason, which only Legal holds shows. Through the API, `POST /v1/holds`,
+  `POST /v1/holds/{id}/release` and `GET /v1/holds`, which also hold a publication or an asset.
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing

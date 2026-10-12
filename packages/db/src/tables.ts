@@ -469,6 +469,25 @@ export interface ArtifactArchivalTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** A legal hold on an artifact or a space, inserted and never changed (0084; AH-F). */
+export interface LegalHoldTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string | null;
+  kind: 'component' | 'document' | 'publication' | 'asset' | null;
+  space_id: string | null;
+  reason: string;
+  applied_by: string;
+  applied_at: ColumnType<Date, never, never>;
+}
+
+/** A hold's release, once, with its own reason (0084; AH-F). */
+export interface LegalHoldReleaseTable {
+  hold_id: string;
+  reason: string;
+  released_by: string;
+  released_at: ColumnType<Date, never, never>;
+}
+
 /** One place in a search entry and its words; `vector` is generated from them (0031). */
 export interface SearchTextTable {
   entry_id: string;
@@ -704,6 +723,8 @@ export interface TenantTables {
   asset_upload: AssetUploadTable;
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;
+  legal_hold: LegalHoldTable;
+  legal_hold_release: LegalHoldReleaseTable;
   search_text: SearchTextTable;
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;

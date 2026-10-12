@@ -343,6 +343,16 @@ describe('the listings through the service', () => {
     const components = (await get('/v1/components?limit=100')).json<Page>();
     const component = components.items[0]?.id;
     expect(component, 'a component to list the versions of').toBeDefined();
+    // Two holds, so the holds listing has pages to turn.
+    for (const target of [{ artifact: component }, { space: general }]) {
+      const placed = await app.inject({
+        method: 'POST',
+        url: '/v1/holds',
+        headers: { host: HOST, cookie },
+        payload: { target, reason: 'Paged' },
+      });
+      expect(placed.statusCode, placed.body).toBe(200);
+    }
     // Two iterations of Grace's, saved from a session that holds the component, so the Recovery
     // listing has pages to turn: it answers only the caller's own, and only under the lock.
     const session = '22222222-2222-4222-8222-222222222222';
@@ -384,6 +394,7 @@ describe('the listings through the service', () => {
       listPrincipals: '/v1/principals?level=tenant',
       listInvitations: '/v1/invitations',
       listGroups: '/v1/groups',
+      listHolds: '/v1/holds',
       listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',

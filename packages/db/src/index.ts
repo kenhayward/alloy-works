@@ -407,6 +407,20 @@ export {
 } from './components.js';
 export { archiveArtifact, isArchived, unarchiveArtifact, type ArchivalAnswer } from './archival.js';
 export {
+  countHolds,
+  HELD_KINDS,
+  isHeld,
+  listHolds,
+  placeHold,
+  readHold,
+  releaseHold,
+  type HeldKind,
+  type HoldTarget,
+  type ListedHold,
+  type HoldPlaceAnswer,
+  type HoldReleaseAnswer,
+} from './holds.js';
+export {
   createDocument,
   editOutline,
   recordDocumentValues,

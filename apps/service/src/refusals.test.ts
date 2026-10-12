@@ -168,6 +168,8 @@ describe('the rule behind a refusal', () => {
       'restore.unchanged',
       'restore.locked',
       'restore.unreadable',
+      // The AH plan's (AH-F): a release of a hold released already. A guard of the design's own.
+      'hold.released',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

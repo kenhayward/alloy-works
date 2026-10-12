@@ -216,6 +216,14 @@ export function administerOrAbove(facts: AccessFacts): Decision {
 }
 
 /**
+ * Whether the principal administers the tenant itself, its own walk (the AH plan, AH-G): a space's
+ * administrator does not, whatever they hold below it.
+ */
+export function administersTenant(facts: AccessFacts): boolean {
+  return decide('administer', { ...facts, chain: facts.chain.slice(-1) }).allowed;
+}
+
+/**
  * `authorise`, for a level a handler found for itself - an upload's space - rather than one its path
  * names: decided in the handler's transaction under the access epoch's shared lock, a level the
  * principal may not read refused as not found, one they may read refused as forbidden.

@@ -3,6 +3,13 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.161.0 - 2026-10-12 (PR #588)
+
+### Added
+
+- **Archive a component or a document.** Whoever may retire it, Administrator by default, archives it from its page or a component's row menu: it leaves the listings, their counts, Needs your attention and search, still opens, is referenced and publishes, and shows Archived. Each listing's Archived filter lists the archived alone, to unarchive. Archiving and unarchiving are audited. `retire` is a new permission, which an external person never holds.
+- **Legal holds.** An environment administrator places a hold on a component or a document from its page, or on a space and everything in it from its row in Spaces, saying why. Administration > Legal holds lists each hold with who placed it, when and why, and releases one, again saying why. A page shows On hold only to whoever may retire it or administer the environment. Placing and releasing are audited, without the reason. Through the API at `/v1/holds`, which also holds a publication or an asset.
+
 ## 0.160.0 - 2026-10-12 (PR #586)
 
 ### Added

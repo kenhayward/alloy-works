@@ -120,6 +120,7 @@ const WIRE_CODES = {
   'restore.unchanged': 'restore_unchanged',
   'restore.locked': 'restore_locked',
   'restore.unreadable': 'restore_unreadable',
+  'hold.released': 'hold_released',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

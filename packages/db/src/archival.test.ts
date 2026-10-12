@@ -1,5 +1,9 @@
-import { randomUUID } from 'node:crypto';
-import type { ContentDocument } from '@alloy-works/domain';
+import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  blockIdentifierFrom,
+  type ContentDocument,
+  type OutlineDocument,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { archiveArtifact, isArchived, unarchiveArtifact } from './archival.js';
@@ -275,23 +279,59 @@ describe('archiving a component or a document (lifecycle.md; the AH plan, AH-B t
     expect((await components(ada, space)).total).toBe(2);
   });
 
-  it('LIF-020 keeps it retrievable: a reference to it and its reading are unchanged', async () => {
+  it('LIF-020 keeps it retrievable: a reference to it resolves, and it reads as before', async () => {
     const { space, ada } = await fresh();
     const shelved = await component(space, ada, 'Referenced procedure');
-    await archive(shelved, ada);
-    expect(await as((trx) => readableComponents(trx, ada, [shelved]))).toEqual(new Set([shelved]));
-    expect((await as((trx) => latestVersion(trx, shelved)))?.artifactId).toBe(shelved);
     const manual = await document(space, ada, 'Archived manual');
+    // The manual places the component, by reference to its latest version.
+    const node = blockIdentifierFrom(randomBytes(16));
+    const placed = await as(async (trx) => {
+      const opened = (await latestVersion(trx, manual))!;
+      const outline: OutlineDocument = {
+        ...(opened.content as OutlineDocument),
+        nodes: [
+          {
+            type: 'reference',
+            id: node,
+            component: shelved,
+            mode: { kind: 'latest' },
+            numbered: true,
+            matter: 'body',
+            pageBreak: 'none',
+            values: {},
+            children: [],
+          },
+        ],
+      };
+      const recorded = await recordVersion(trx, {
+        artifactId: manual,
+        openedFrom: opened.id,
+        author: ada,
+        substance: { kind: 'document', content: outline },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version.id;
+    });
+    await archive(shelved, ada);
     await archive(manual, ada);
-    const asked = await as(async (trx) =>
-      requestPublication(trx, {
+    expect(await as((trx) => readableComponents(trx, ada, [shelved]))).toEqual(new Set([shelved]));
+    const latest = (await as((trx) => latestVersion(trx, shelved)))!;
+    expect(latest.artifactId).toBe(shelved);
+    const occurrences = await as(async (trx) => {
+      const asked = await requestPublication(trx, {
         documentId: manual,
-        version: (await latestVersion(trx, manual))!.id,
+        version: placed,
         formats: ['pdf'],
         requester: ada,
-      }),
-    );
-    expect(asked.answer).toBe('requested');
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return trx
+        .selectFrom('publication_request_occurrence')
+        .select(['node', 'version_id'])
+        .where('request_id', '=', asked.request.id)
+        .execute();
+    });
+    expect(occurrences).toEqual([{ node, version_id: latest.id }]);
   });
 
   it('LIF-057 records artifact.archived and artifact.unarchived about it, and archiving the archived changes nothing', async () => {
