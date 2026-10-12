@@ -45150,6 +45150,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
                     },
+                    "mayComment": {
+                      "type": "boolean",
+                      "description": "Whether the caller may start and answer threads on the document"
+                    },
+                    "mayReview": {
+                      "type": "boolean",
+                      "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                    },
                     "layout": {
                       "type": "object",
                       "properties": {
@@ -45221,6 +45229,8 @@
                     "template",
                     "mayEdit",
                     "mayPublish",
+                    "mayComment",
+                    "mayReview",
                     "layout"
                   ]
                 },
@@ -45255,6 +45265,8 @@
                   },
                   "mayEdit": false,
                   "mayPublish": false,
+                  "mayComment": false,
+                  "mayReview": false,
                   "layout": {
                     "id": "example",
                     "version": {
@@ -94405,6 +94417,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
                     },
+                    "mayComment": {
+                      "type": "boolean",
+                      "description": "Whether the caller may start and answer threads on the document"
+                    },
+                    "mayReview": {
+                      "type": "boolean",
+                      "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                    },
                     "layout": {
                       "type": "object",
                       "properties": {
@@ -94476,6 +94496,8 @@
                     "template",
                     "mayEdit",
                     "mayPublish",
+                    "mayComment",
+                    "mayReview",
                     "layout"
                   ]
                 },
@@ -94510,6 +94532,8 @@
                   },
                   "mayEdit": false,
                   "mayPublish": false,
+                  "mayComment": false,
+                  "mayReview": false,
                   "layout": {
                     "id": "example",
                     "version": {
@@ -94862,6 +94886,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -94933,6 +94965,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -95527,6 +95561,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -95598,6 +95640,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -96858,6 +96902,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
                     },
+                    "mayComment": {
+                      "type": "boolean",
+                      "description": "Whether the caller may start and answer threads on the document"
+                    },
+                    "mayReview": {
+                      "type": "boolean",
+                      "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                    },
                     "layout": {
                       "type": "object",
                       "properties": {
@@ -96929,6 +96981,8 @@
                     "template",
                     "mayEdit",
                     "mayPublish",
+                    "mayComment",
+                    "mayReview",
                     "layout"
                   ]
                 },
@@ -96963,6 +97017,8 @@
                   },
                   "mayEdit": false,
                   "mayPublish": false,
+                  "mayComment": false,
+                  "mayReview": false,
                   "layout": {
                     "id": "example",
                     "version": {
@@ -97315,6 +97371,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -97386,6 +97450,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -97980,6 +98046,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -98051,6 +98125,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -100892,6 +100968,10 @@
                             "type": "boolean",
                             "description": "Whether the caller may edit the component: false where they may not read it"
                           },
+                          "mayComment": {
+                            "type": "boolean",
+                            "description": "Whether the caller may start and answer threads on the component: false where they may not read it"
+                          },
                           "lock": {
                             "anyOf": [
                               {
@@ -100994,6 +101074,7 @@
                           "node",
                           "version",
                           "mayEdit",
+                          "mayComment",
                           "lock"
                         ]
                       },
@@ -102736,6 +102817,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
                     },
+                    "mayComment": {
+                      "type": "boolean",
+                      "description": "Whether the caller may start and answer threads on the document"
+                    },
+                    "mayReview": {
+                      "type": "boolean",
+                      "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                    },
                     "layout": {
                       "type": "object",
                       "properties": {
@@ -102807,6 +102896,8 @@
                     "template",
                     "mayEdit",
                     "mayPublish",
+                    "mayComment",
+                    "mayReview",
                     "layout"
                   ]
                 },
@@ -102841,6 +102932,8 @@
                   },
                   "mayEdit": false,
                   "mayPublish": false,
+                  "mayComment": false,
+                  "mayReview": false,
                   "layout": {
                     "id": "example",
                     "version": {
@@ -103193,6 +103286,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -103264,6 +103365,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -103858,6 +103961,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
                         },
+                        "mayComment": {
+                          "type": "boolean",
+                          "description": "Whether the caller may start and answer threads on the document"
+                        },
+                        "mayReview": {
+                          "type": "boolean",
+                          "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                        },
                         "layout": {
                           "type": "object",
                           "properties": {
@@ -103929,6 +104040,8 @@
                         "template",
                         "mayEdit",
                         "mayPublish",
+                        "mayComment",
+                        "mayReview",
                         "layout"
                       ]
                     },
@@ -130114,6 +130227,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
                     },
+                    "mayComment": {
+                      "type": "boolean",
+                      "description": "Whether the caller may start and answer threads on the document"
+                    },
+                    "mayReview": {
+                      "type": "boolean",
+                      "description": "Whether Review is offered the caller: they may comment on or suggest to the document"
+                    },
                     "layout": {
                       "type": "object",
                       "properties": {
@@ -130185,6 +130306,8 @@
                     "template",
                     "mayEdit",
                     "mayPublish",
+                    "mayComment",
+                    "mayReview",
                     "layout"
                   ]
                 },
@@ -130219,6 +130342,8 @@
                   },
                   "mayEdit": false,
                   "mayPublish": false,
+                  "mayComment": false,
+                  "mayReview": false,
                   "layout": {
                     "id": "example",
                     "version": {

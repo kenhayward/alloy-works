@@ -14,6 +14,8 @@
 
 .toggle {
   display: inline-grid;
+  /* Never squeezed by a strip of tabs beside it (axe's target size; the TH plan, Task 3). */
+  flex: 0 0 auto;
   place-items: center;
   width: 30px;
   min-height: 26px;

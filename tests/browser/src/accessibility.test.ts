@@ -578,7 +578,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('CNT-176 the document view passes axe in Reading and Authoring, with its outline, versions, lists, preview and publishing', async ({
+  it('CNT-176 CNT-155 the document view passes axe in Reading, Review and Authoring, with its outline, versions, lists, preview and publishing', async ({
     task,
   }) => {
     const client = api();
@@ -618,6 +618,15 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.getByRole('radio', { name: 'Reading' }).check();
       await check('the document view in Reading', {
         shows: [...drawn, page.getByRole('article', { name: /in Reading$/ })],
+      });
+      // Review (the TH plan, Task 3): the text as Reading shows it, and the threads beside it.
+      await page.getByRole('radio', { name: 'Review' }).check();
+      await check('the document view in Review', {
+        shows: [
+          ...drawn,
+          page.getByRole('article', { name: /in Review$/ }),
+          page.getByRole('tabpanel', { name: 'Threads' }).getByText('No threads here.'),
+        ],
       });
       await page.getByRole('radio', { name: 'Authoring' }).check();
       await check('the document view in Authoring', {

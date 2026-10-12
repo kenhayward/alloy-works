@@ -1,0 +1,122 @@
+/*
+ * The threads panel in Review (the TH plan, Task 3): a new thread at its head, then the filter and
+ * the list, or one thread opened with its comments and its reply.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: 0 var(--space-12) var(--space-12);
+  font-size: var(--size-13);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.new,
+.thread,
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.new {
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.composer textarea {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+.actions,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.controls > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.named {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.named li,
+.mention {
+  color: var(--accent);
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.note:empty {
+  display: none;
+}
+
+.refused {
+  margin: 0;
+  color: var(--danger);
+}
+
+.rows,
+.comments {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row,
+.comment {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.open,
+.back {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.who {
+  color: var(--muted);
+}
+
+.said {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.state {
+  color: var(--muted);
+  font-style: italic;
+}

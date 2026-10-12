@@ -5,6 +5,7 @@ import {
   layoutWordsSchema,
   number,
   numberingSchemeSchema,
+  parseContentDocument,
   readOutlineView,
   resolve,
   sectionNumbers,
@@ -16,7 +17,9 @@ import {
   type OutlineViewNode,
   type OutlineOperation,
   type TemplateParameter,
+  type ThreadAnchor,
 } from '@alloy-works/domain';
+import { TEXT_CLASS } from '@alloy-works/editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -47,6 +50,13 @@ import type { FollowOptions } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
 import { BaselinesTab } from './BaselinesTab.js';
+import { anchorFromSelection, type Placed } from '../review/anchoring.js';
+import {
+  anchorWords,
+  ThreadsPanel,
+  type ReviewTarget,
+  type ThreadSummary,
+} from '../review/ThreadsPanel.js';
 import { DataTab } from './DataTab.js';
 import {
   OutlineRail,
@@ -99,6 +109,10 @@ interface Opened {
   readonly outline: OutlineView;
   readonly mayEdit: boolean;
   readonly mayPublish: boolean;
+  /** Whether the reader may start and answer threads on the document itself (COL-012). */
+  readonly mayComment: boolean;
+  /** Whether Review is offered on the document: `comment` or `suggest` on it (IAM-081). */
+  readonly mayReview: boolean;
   /**
    * The scheme of the layout version this document would be published under, parsed once per view:
    * what the page numbers with (STR-036), so nothing it shows is a number a publish could not print.
@@ -157,6 +171,8 @@ function documentIn(data: unknown): Read {
     outline,
     mayEdit,
     mayPublish,
+    mayComment,
+    mayReview,
     layout,
     fields,
     schemas,
@@ -194,6 +210,9 @@ function documentIn(data: unknown): Read {
     outline: read.outline,
     mayEdit,
     mayPublish,
+    // Absent from a view before Review, which offered none (the TH plan, Task 3).
+    mayComment: mayComment === true,
+    mayReview: mayReview === true,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
     formats:
@@ -457,8 +476,8 @@ export interface DocumentPageProps {
  */
 const BOUNDARIES_KEY = 'alloy-works.boundaries';
 
-/** The document view's two modes (document-view.md, "Modes"); review is T3's. */
-type Mode = 'reading' | 'authoring';
+/** The document view's three modes (document-view.md, "Modes"; CNT-155). */
+type Mode = 'reading' | 'review' | 'authoring';
 
 /** The panels beside the text, named in words (ADR-0046, decision 6; the LG plan, LG6c). */
 const DOCK_PANELS = [
@@ -468,6 +487,8 @@ const DOCK_PANELS = [
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
   { key: 'publishing', label: 'Publishing' },
+  // In Review (the TH plan, Task 3).
+  { key: 'threads', label: 'Threads' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -482,6 +503,7 @@ const keptDock = (): DockPanel =>
 
 const MODES: readonly { readonly mode: Mode; readonly name: string }[] = [
   { mode: 'reading', name: 'Reading' },
+  { mode: 'review', name: 'Review' },
   { mode: 'authoring', name: 'Authoring' },
 ];
 
@@ -490,7 +512,8 @@ const MODE_KEY = 'alloy-works.mode';
 /** The mode this reader last chose; Authoring, where it is offered, the first time (DV-E). */
 function keptMode(): Mode {
   try {
-    return window.localStorage.getItem(MODE_KEY) === 'reading' ? 'reading' : 'authoring';
+    const kept = window.localStorage.getItem(MODE_KEY);
+    return kept === 'reading' || kept === 'review' ? kept : 'authoring';
   } catch {
     return 'authoring';
   }
@@ -546,6 +569,20 @@ export function DocumentPage({
   const [textsRead, setTextsRead] = useState<string | null>(null);
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
+  // Reading, Review or Authoring (document-view.md, "Modes"; CNT-154, CNT-155): the reader's choice,
+  // kept in the browser, Authoring the first time; which of them is on offer is decided below, from
+  // what they may do.
+  const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
+  // In Review: the threads the panel lists, and what the reader's selection offers a thread on.
+  const [threadList, setThreadList] = useState<readonly ThreadSummary[]>([]);
+  const [proposed, setProposed] = useState<{
+    readonly node: string;
+    readonly anchor: ThreadAnchor;
+  } | null>(null);
+  // The version each occurrence resolves to, by node: what a thread on its text is started against.
+  const [occurrenceVersions, setOccurrenceVersions] = useState<ReadonlyMap<string, string>>(
+    new Map(),
+  );
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
@@ -564,7 +601,7 @@ export function DocumentPage({
     document: loaded.state === 'open' ? loaded.document.id : null,
     principalId,
     component: editing === null ? null : (componentOfNode.get(editing) ?? null),
-    mode: editing === null ? 'read' : 'author',
+    mode: editing !== null ? 'author' : chosenMode === 'review' ? 'review' : 'read',
     ...(follow === undefined ? {} : { follow }),
   });
   // What the page read of each component's lock, overtaken by what the stream has said since.
@@ -626,7 +663,11 @@ export function DocumentPage({
           new Map(
             data.occurrences.map((occurrence) => [
               occurrence.node,
-              { mayEdit: occurrence.mayEdit, lock: occurrence.lock },
+              {
+                mayEdit: occurrence.mayEdit,
+                mayComment: occurrence.mayComment === true,
+                lock: occurrence.lock,
+              },
             ]),
           ),
         );
@@ -638,6 +679,13 @@ export function DocumentPage({
           if (number !== undefined) numberOf.set(occurrence.node, number);
         }
         setTexts(byNode);
+        setOccurrenceVersions(
+          new Map(
+            data.occurrences.flatMap((occurrence) =>
+              occurrence.version === null ? [] : [[occurrence.node, occurrence.version] as const],
+            ),
+          ),
+        );
         setResolved(numberOf);
         setTextsRead(shownVersion);
       })
@@ -993,7 +1041,10 @@ export function DocumentPage({
   const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   const wantsPeople =
     opened !== null &&
-    [...opened.fields.document, ...opened.fields.section].some((each) => each.dataType === 'user');
+    ([...opened.fields.document, ...opened.fields.section].some(
+      (each) => each.dataType === 'user',
+    ) ||
+      chosenMode === 'review');
   useEffect(() => {
     if (!wantsPeople) return;
     let current = true;
@@ -1327,9 +1378,6 @@ export function DocumentPage({
   useEffect(() => {
     if (heldTable.entered > 0) setDockState('table');
   }, [heldTable.entered]);
-  // Reading or Authoring (document-view.md, "Modes"; CNT-154): the reader's choice, kept in the browser,
-  // Authoring the first time; which of them is on offer is decided below, from what they may do.
-  const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
   // Where the reader is in the text, and the node a link took them to (document-view.md, "Navigation";
   // STR-035, STR-045): the one the outline marks as the current location, and the one the text marks
   // until another is chosen.
@@ -1410,14 +1458,48 @@ export function DocumentPage({
   });
   const chooseMode = (mode: Mode) => {
     setChosenMode(mode);
-    // Reading offers no editor, so one open in place closes as the page drops to it.
-    if (mode === 'reading') setEditing(null);
+    // Reading and Review offer no editor, so one open in place closes as the page drops to either.
+    if (mode !== 'authoring') setEditing(null);
+    // Review's panel is the threads (CNT-157).
+    if (mode === 'review') setDock('threads');
     try {
       window.localStorage.setItem(MODE_KEY, mode);
     } catch {
       // Storage refused: the choice holds for this page and is not kept.
     }
   };
+  // In Review, what the reader selects in a component's text offers a thread on it (COL-012): a
+  // span of one block, or a caret in a table's cell. A selection elsewhere - in the panel, typing the
+  // comment - leaves what was offered as it was.
+  useEffect(() => {
+    if (chosenMode !== 'review') {
+      setProposed(null);
+      return undefined;
+    }
+    const page = textColumn.current?.ownerDocument;
+    if (!page) return undefined;
+    const choose = () => {
+      const selection = page.getSelection();
+      const column = textColumn.current;
+      if (!selection || selection.rangeCount === 0 || !column) return;
+      const start = selection.getRangeAt(0).startContainer;
+      if (!column.contains(start)) return;
+      const element = start instanceof Element ? start : start.parentElement;
+      const host = element?.closest<HTMLElement>(`.${TEXT_CLASS}`);
+      const node = host?.closest<HTMLElement>('[data-node]')?.dataset.node;
+      const content = node === undefined ? undefined : texts.get(node);
+      if (!host || node === undefined || content === undefined) return setProposed(null);
+      let anchor: ThreadAnchor | null;
+      try {
+        anchor = anchorFromSelection(selection, host, parseContentDocument(content));
+      } catch {
+        anchor = null;
+      }
+      setProposed(anchor === null ? null : { node, anchor });
+    };
+    page.addEventListener('selectionchange', choose);
+    return () => page.removeEventListener('selectionchange', choose);
+  }, [chosenMode, texts]);
   const showBoundaries = (shown: boolean) => {
     setBoundaries(shown);
     try {
@@ -1482,6 +1564,86 @@ export function DocumentPage({
   // (CNT-105): derived from the decisions the page is told, so a mode they cannot have is never shown.
   const mayAuthor = document.mayEdit || [...editable.values()].some((each) => each.mayEdit);
   const authoring = mayAuthor && chosenMode === 'authoring';
+  // Review is offered where the reader may comment on or suggest to the document, or comment on any
+  // component it places (IAM-081): the text as Reading shows it, and the threads beside it (CNT-157).
+  const mayReview =
+    document.mayReview || [...editable.values()].some((each) => each.mayComment === true);
+  const reviewing = mayReview && chosenMode === 'review';
+  const modeNow: Mode = authoring ? 'authoring' : reviewing ? 'review' : 'reading';
+  const offered = MODES.filter(
+    ({ mode }) =>
+      mode === 'reading' || (mode === 'review' && mayReview) || (mode === 'authoring' && mayAuthor),
+  );
+  // What a thread may be started on here (COL-012): the selection's span or cell, each component the
+  // reader may comment on as a whole, and each section where they may comment on the document.
+  const place = (node: string) => placeInOutline(document.outline, node, names, document.scheme);
+  const targets: ReviewTarget[] = [];
+  if (reviewing) {
+    const proposedComponent = proposed === null ? undefined : componentOfNode.get(proposed.node);
+    const proposedVersion = proposed === null ? undefined : occurrenceVersions.get(proposed.node);
+    if (
+      proposed !== null &&
+      proposedComponent !== undefined &&
+      proposedVersion !== undefined &&
+      editable.get(proposed.node)?.mayComment === true
+    ) {
+      targets.push({
+        key: 'selection',
+        label:
+          proposed.anchor.kind === 'cell'
+            ? `The table cell in ${place(proposed.node)}`
+            : `The selected text ${anchorWords(proposed.anchor)}`,
+        on: { kind: 'component', id: proposedComponent },
+        version: proposedVersion,
+        anchor: proposed.anchor,
+      });
+    }
+    walkOutline(document.outline.nodes, (node) => {
+      if (node.type === 'reference') {
+        const version = occurrenceVersions.get(node.id);
+        if (node.component === null || version === undefined) return;
+        if (editable.get(node.id)?.mayComment !== true) return;
+        targets.push({
+          key: `component:${node.id}`,
+          label: `The whole of ${place(node.id)}`,
+          on: { kind: 'component', id: node.component },
+          version,
+          anchor: { kind: 'component' },
+        });
+      } else if (document.mayComment) {
+        targets.push({
+          key: `node:${node.id}`,
+          label: `The section ${place(node.id)}`,
+          on: { kind: 'document', id: document.id },
+          version: document.version.id,
+          anchor: { kind: 'node', node: node.id },
+        });
+      }
+    });
+  }
+  // Where each thread stands in the text, and how many stand on a card or a section as a whole.
+  const threadMarks = new Map<string, Placed[]>();
+  const threadCounts = new Map<string, number>();
+  if (reviewing) {
+    for (const thread of threadList) {
+      const nodes =
+        thread.on.kind === 'document'
+          ? thread.anchor.kind === 'node'
+            ? [thread.anchor.node]
+            : []
+          : (thread.places ?? []).filter((each) => !each.orphaned).map((each) => each.node);
+      for (const node of nodes) {
+        if (thread.anchor.kind === 'span' || thread.anchor.kind === 'cell') {
+          threadMarks.set(node, [
+            ...(threadMarks.get(node) ?? []),
+            { thread: thread.id, anchor: thread.anchor },
+          ]);
+        } else {
+          threadCounts.set(node, (threadCounts.get(node) ?? 0) + 1);
+        }
+      }
+    }
+  }
   const tabs = offeredTabs(holdsBindings);
   const shown = shownTab(tab, tabs);
   // What the Value dialog's From the document is offered (TP2-F): the declarations a reader of the
@@ -1497,7 +1659,10 @@ export function DocumentPage({
   // holds fields or parameters.
   const holdsOwn = document.fields.document.length > 0 || document.templated || holdsValues;
   const dockTabs = DOCK_PANELS.filter(
-    (each) => (each.key !== 'document' || holdsOwn) && (each.key !== 'table' || heldTable.holds),
+    (each) =>
+      (each.key !== 'document' || holdsOwn) &&
+      (each.key !== 'table' || heldTable.holds) &&
+      (each.key !== 'threads' || reviewing),
   );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
@@ -1514,7 +1679,7 @@ export function DocumentPage({
           data-desk-page=""
         >
           <span id="document-mode" hidden>
-            {authoring ? 'in Authoring' : 'in Reading'}
+            {`in ${MODES.find(({ mode }) => mode === modeNow)!.name}`}
           </span>
           {!document.mayEdit && !withdrawn && <p>You may read this document but not change it.</p>}
           {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
@@ -1525,14 +1690,14 @@ export function DocumentPage({
               <span>{` / ${document.space.name}`}</span>
             </nav>
             <span className={styles['rule']} aria-hidden="true" />
-            {mayAuthor ? (
+            {offered.length > 1 ? (
               <div role="radiogroup" aria-label="Mode" className={styles['mode']}>
-                {MODES.map(({ mode, name }) => (
+                {offered.map(({ mode, name }) => (
                   <label key={mode}>
                     <input
                       type="radio"
                       name={`mode-${document.id}`}
-                      checked={(authoring ? 'authoring' : 'reading') === mode}
+                      checked={modeNow === mode}
                       onChange={() => chooseMode(mode)}
                     />
                     <Icon name={name} size={14} />
@@ -1795,6 +1960,49 @@ export function DocumentPage({
                       onArriveAgain={onArriveAgain}
                     />
                   </div>
+                  {reviewing && (
+                    <div
+                      id={dockIds('threads').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('threads').tab}
+                      hidden={shownDock !== 'threads'}
+                    >
+                      <ThreadsPanel
+                        client={client}
+                        document={document.id}
+                        targets={targets}
+                        people={people}
+                        principalId={principalId}
+                        mayAnswer={(on) =>
+                          on.kind === 'document'
+                            ? document.mayComment
+                            : [...componentOfNode].some(
+                                ([node, component]) =>
+                                  component === on.id && editable.get(node)?.mayComment === true,
+                              )
+                        }
+                        placeOf={(thread) => {
+                          const node =
+                            thread.anchor.kind === 'node'
+                              ? thread.anchor.node
+                              : thread.places?.[0]?.node;
+                          return node === undefined ? 'This document' : place(node);
+                        }}
+                        onThreads={setThreadList}
+                        onGoTo={(thread) => {
+                          const node =
+                            thread.anchor.kind === 'node'
+                              ? thread.anchor.node
+                              : thread.places?.find((each) => !each.orphaned)?.node;
+                          if (node === undefined) return;
+                          setMarked(node);
+                          textColumn.current
+                            ?.querySelector(`[data-node="${node}"]`)
+                            ?.scrollIntoView?.({ block: 'start' });
+                        }}
+                      />
+                    </div>
+                  )}
                   <div
                     id={dockIds('publishing').panel}
                     role="tabpanel"
@@ -1864,6 +2072,7 @@ export function DocumentPage({
                 {...(document.mayEdit && authoring ? { choosing } : {})}
                 bindingStates={bindingStates}
                 boundTables={boundTables}
+                {...(reviewing ? { threadMarks, threadCounts } : {})}
                 rowsFrom={{
                   client,
                   document: document.id,

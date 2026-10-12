@@ -66,6 +66,10 @@ interface Viewer {
   readonly principalId: string;
   readonly mayEdit: boolean;
   readonly mayPublish: boolean;
+  /** Whether they may start and answer threads on it (COL-012). */
+  readonly mayComment: boolean;
+  /** Whether Review is offered them: `comment` or `suggest` (IAM-081). */
+  readonly mayReview: boolean;
 }
 
 /**
@@ -173,6 +177,8 @@ async function documentView(
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
     mayPublish: viewer.mayPublish,
+    mayComment: viewer.mayComment,
+    mayReview: viewer.mayReview,
     layout: {
       id: layout.artifactId,
       version: { id: layout.versionId, number: layout.number },
@@ -392,6 +398,8 @@ export function documentHandlers(
           principalId,
           mayEdit: decide('edit', facts).allowed,
           mayPublish: decide('publish', facts).allowed,
+          mayComment: decide('comment', facts).allowed,
+          mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         },
         { id: answer.version.artifactId, space: held },
         answer.version,
@@ -409,6 +417,8 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
       };
       return documentView(viewer, document, document.version);
     },
@@ -491,6 +501,10 @@ export function documentHandlers(
               // Masked by the request's token, as the document's own flags are (TK-A).
               mayEdit: decide('edit', { ...facts.get(component)!, scopes: onDocument.scopes })
                 .allowed,
+              mayComment: decide('comment', {
+                ...facts.get(component)!,
+                scopes: onDocument.scopes,
+              }).allowed,
               lock: lock ? lockView(lock, principalId) : null,
             },
           ] as const;
@@ -502,7 +516,12 @@ export function documentHandlers(
         occurrences: inputs.occurrences.map((occurrence) => {
           const component = componentOf.get(occurrence.node);
           const known = component === undefined ? undefined : editing.get(component);
-          return { ...occurrence, mayEdit: known?.mayEdit ?? false, lock: known?.lock ?? null };
+          return {
+            ...occurrence,
+            mayEdit: known?.mayEdit ?? false,
+            mayComment: known?.mayComment ?? false,
+            lock: known?.lock ?? null,
+          };
         }),
         versions: resolved.flatMap((version) => {
           const held = contents.get(version);
@@ -579,6 +598,8 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
@@ -618,6 +639,8 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();
@@ -699,6 +722,8 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
       };
       const document = await readDocument(trx, id);
       if (!document) throw notFound();

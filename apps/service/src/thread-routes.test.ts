@@ -343,6 +343,24 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     expect(read.json<ThreadView>().comments[0]!.texts).toHaveLength(2);
   });
 
+  it('IAM-081 offers Review to whoever may comment or suggest on a document, and says of each component it places whether they may comment', async () => {
+    const placed = await component([para('p1', 'Set the tray.')]);
+    const node = 'r'.repeat(26);
+    const document = await documentWith([reference(node, placed.artifactId, { kind: 'latest' })]);
+    const decided = async (who: string) => {
+      const view = (await call('GET', `/v1/documents/${document.artifactId}`, who)).json<{
+        mayComment: boolean;
+        mayReview: boolean;
+      }>();
+      const texts = (await call('GET', `/v1/documents/${document.artifactId}/texts`, who)).json<{
+        occurrences: { node: string; mayComment: boolean }[];
+      }>();
+      return [view.mayReview, view.mayComment, texts.occurrences[0]!.mayComment];
+    };
+    expect(await decided('grace')).toEqual([true, true, true]);
+    expect(await decided('ivy')).toEqual([false, false, false]);
+  });
+
   it('answers a thread on a component the caller may not read as not found', async () => {
     const hidden = await component([para('p1', 'Calibrate.')], quality, 'grace');
     const { id } = (await start(hidden, { kind: 'component' }, 'grace')).json<ThreadView>();
