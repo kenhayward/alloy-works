@@ -21,6 +21,9 @@ export const permissions = [
   // Saving or running SQL against a connection, decided at the connection as using one is (data.md,
   // "Permissions"; DAT-101). Query writer alone holds it.
   'write_sql',
+  // Archiving a component or a document, decided at the artifact (ADR-0060; lifecycle.md).
+  // Administrator holds it.
+  'retire',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -41,8 +44,8 @@ export function isPermission(value: string): value is Permission {
 
 /**
  * What an external principal is refused whatever the grants say. `edit`, `approve` and `publish` are
- * IAM-047's; `create`, `design`, `manage_definitions` and `administer` are access.md's own choice, and
- * `use_connection` and `write_sql` data.md's.
+ * IAM-047's; `create`, `design`, `manage_definitions` and `administer` are access.md's own choice,
+ * `use_connection` and `write_sql` data.md's, and `retire` lifecycle.md's.
  */
 export const externalCap: readonly Permission[] = [
   'create',
@@ -54,6 +57,7 @@ export const externalCap: readonly Permission[] = [
   'administer',
   'use_connection',
   'write_sql',
+  'retire',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

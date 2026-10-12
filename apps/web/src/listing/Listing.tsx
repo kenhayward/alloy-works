@@ -91,6 +91,32 @@ export function Facet({
   );
 }
 
+/**
+ * Archived content, listed alone when chosen: the one way to list it (lifecycle.md). Uncounted: the
+ * listing counts only what it shows.
+ */
+export function ArchivedFilter({
+  chosen,
+  onChoose,
+}: {
+  readonly chosen: boolean;
+  readonly onChoose: (chosen: boolean) => void;
+}) {
+  return (
+    <fieldset className={styles['facet']}>
+      <legend className={styles['overline']}>Status</legend>
+      <label className={styles['option']}>
+        <input
+          type="checkbox"
+          checked={chosen}
+          onChange={(event) => onChoose(event.target.checked)}
+        />
+        <span className={styles['optionName']}>Archived</span>
+      </label>
+    </fieldset>
+  );
+}
+
 /** A filter's values with one added, or taken away where it was already there. */
 export const toggled = <T,>(held: readonly T[], value: T): readonly T[] =>
   held.includes(value) ? held.filter((one) => one !== value) : [...held, value];

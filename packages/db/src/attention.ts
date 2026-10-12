@@ -7,6 +7,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFactsFor, loadReadableSet } from './access-facts.js';
+import { notArchivedAs } from './archival.js';
 import { CREDENTIAL_CURRENT, credentialSetFor } from './connections.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
 import { newestUncutIteration } from './recovery.js';
@@ -15,7 +16,7 @@ import type { TenantTransaction } from './tables.js';
 
 /**
  * **What waits on a person** (home.md, Needs your attention; the HM plan, HM-A to HM-F): computed when
- * asked, stored nowhere. Each condition is found in SQL over their readable set, the act it asks is
+ * asked, stored nowhere; nothing archived (lifecycle.md). Each condition is found in SQL over their readable set, the act it asks is
  * decided on what was found alone, then one item per artifact, the most pressing kind first.
  */
 
@@ -85,7 +86,7 @@ async function publishFailed(trx: TenantTransaction, me: string, readable: Reada
       order by document_id, requested_at desc, made_tx desc, id desc
     ) r
     join artifact a on a.id = r.document_id
-    where r.state = 'failed' and ${readableArtifactsAs('a', readable)}
+    where r.state = 'failed' and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
       and not exists (
         select 1 from publication p
         join publication_request pr on pr.id = p.request_id
@@ -116,7 +117,7 @@ async function withIterations(trx: TenantTransaction, me: string, readable: Read
     join artifact a on a.id = i.artifact_id
     left join unsaved_discarded d on d.artifact_id = i.artifact_id and d.principal_id = ${me}
     where i.principal_id = ${me} and ${iterationRetained('i')}
-      and ${readableArtifactsAs('a', readable)}
+      and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
     group by i.artifact_id, d.up_to
     having d.up_to is null or max(i.created_at) > d.up_to
     order by max(i.created_at) desc, i.artifact_id
@@ -146,7 +147,7 @@ async function publishedEarlier(trx: TenantTransaction, me: string, readable: Re
         and (p.publisher = ${me} or ${readableArtifactsAs('pa', readable)})
       order by p.published_at desc, pa.created_at desc, p.id desc limit 1
     ) lp on true
-    where a.kind = 'document' and ${readableArtifactsAs('a', readable)}
+    where a.kind = 'document' and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
       and (lp.revision_no, lp.version_no) < (lv.revision_no, lv.version_no)
   `.execute(trx);
   return rows.map((row): Found => ({ kind: 'published_earlier', id: row.id, at: row.at }));

@@ -400,13 +400,12 @@ export {
   type SeededContent,
 } from './dev-content.js';
 export {
-  countReadableComponents,
   listReadableComponents,
   type ComponentFilter,
   type ComponentPage,
   type ComponentSummary,
-  type SpaceCount,
 } from './components.js';
+export { archiveArtifact, isArchived, unarchiveArtifact, type ArchivalAnswer } from './archival.js';
 export {
   createDocument,
   editOutline,

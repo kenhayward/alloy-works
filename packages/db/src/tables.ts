@@ -454,6 +454,19 @@ export interface SearchEntryTable {
   configuration: SearchConfiguration;
   body: string;
   vector: ColumnType<string, never, never>;
+  /** Its artifact archived (0083): left out of search, and set by the acts and by indexing. */
+  archived: Generated<boolean>;
+}
+
+/** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
+export interface ArtifactArchivalTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  act: 'archived' | 'unarchived';
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
 }
 
 /** One place in a search entry and its words; `vector` is generated from them (0031). */
@@ -690,6 +703,7 @@ export interface TenantTables {
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
   search_entry: SearchEntryTable;
+  artifact_archival: ArtifactArchivalTable;
   search_text: SearchTextTable;
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;

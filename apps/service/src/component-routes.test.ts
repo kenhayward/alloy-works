@@ -258,6 +258,8 @@ describe('finding and opening components through the service', () => {
         },
         content: paragraphs('Unbox the printer.'),
         mayEdit: true,
+        archived: false,
+        mayRetire: false,
         lock: null,
         // Nothing saved and never made a version, by anybody.
         unsaved: null,

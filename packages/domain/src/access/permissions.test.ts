@@ -25,7 +25,7 @@ describe('the permission set', () => {
     }
   });
 
-  it('is closed: designing templates, managing definitions, using a connection and writing SQL against one beside those, and nothing else', () => {
+  it('is closed: designing templates, managing definitions, using a connection, writing SQL against one and retiring beside those, and nothing else', () => {
     expect([...permissions].sort()).toEqual(
       [
         'administer',
@@ -37,6 +37,7 @@ describe('the permission set', () => {
         'manage_definitions',
         'publish',
         'read',
+        'retire',
         'suggest',
         'use_connection',
         'write_sql',
@@ -92,6 +93,15 @@ describe('the permission set', () => {
       reason: 'capped',
     });
     expect(decide('read', facts('external')).allowed).toBe(true);
+  });
+
+  it('gives retire to Administrator alone of the starter roles', () => {
+    expect(
+      starterRoles
+        .filter((role) => (role.permissions as readonly string[]).includes('retire'))
+        .map((role) => role.name),
+    ).toEqual(['Administrator']);
+    expect(externalCap).toContain('retire');
   });
 
   it('caps an external principal at reading, commenting and suggesting', () => {

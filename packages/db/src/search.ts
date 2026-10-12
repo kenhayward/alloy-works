@@ -17,6 +17,7 @@ import {
   type SearchSource,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { archivalStored, isArchived } from './archival.js';
 import type { TenantTransaction } from './tables.js';
 import { readVersion, type StoredVersion } from './versions.js';
 
@@ -206,6 +207,8 @@ interface Placing {
   readonly owner: string | null;
   readonly changedAt: Date;
   readonly componentType: string | null;
+  /** Its artifact archived; undefined before 0083 stores archival. */
+  readonly archived?: boolean;
 }
 
 async function write(
@@ -233,6 +236,7 @@ async function write(
         field_values: JSON.stringify(draft.values),
         configuration: draft.configuration,
         body: draft.texts.map((each) => each.text).join(' '),
+        ...(placing.archived === undefined ? {} : { archived: placing.archived }),
       })),
     )
     .execute();
@@ -287,6 +291,10 @@ export async function indexVersion(trx: TenantTransaction, version: StoredVersio
       owner: first.author_id,
       changedAt: version.createdAt,
       componentType: version.definitions.find((each) => each.kind === 'componentType')?.id ?? null,
+      // As the acts left it, so an edit of an archived artifact does not bring it back (AH-D).
+      ...((await archivalStored(trx))
+        ? { archived: await isArchived(trx, version.artifactId) }
+        : {}),
     },
     source ? entriesOf(source, await contextFor(trx, source)) : [],
   );

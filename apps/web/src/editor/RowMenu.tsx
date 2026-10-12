@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useRef, useState } from 'react';
 
 import { isAccessAnswers } from '../access/describe.js';
+import { archivalSaid, setArchived } from '../lifecycle/Archive.js';
 import styles from './RowMenu.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -10,22 +11,30 @@ const NOT_COPIED = 'The link could not be copied. Select it and copy it instead.
 
 /**
  * What can be done to one component from the list: open it, copy its link and - only for somebody
- * the service says may administer it - manage its access. The last is asked about when the menu
- * opens, not for every row on the page; the access page enforces permission again either way.
+ * the service says may administer it - manage its access, and for somebody who may retire it, archive
+ * or unarchive it. The last two are asked about when the menu opens, not for every row on the page;
+ * the routes enforce permission again either way.
  */
 export function RowMenu({
   client,
   id,
   title,
+  archived = false,
   onNotice,
+  onArchived = () => {},
 }: {
   client: Client;
   id: string;
   title: string;
+  /** Whether it is archived, so the menu offers Unarchive rather than Archive. */
+  archived?: boolean;
   onNotice: (message: string) => void;
+  /** Told once it is archived or unarchived, so the list can be read again. */
+  onArchived?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [administers, setAdministers] = useState(false);
+  const [retires, setRetires] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -35,8 +44,10 @@ export function RowMenu({
       .GET('/v1/access', { params: { query: { target: `artifact:${id}` } } })
       .then(({ data }) => {
         if (!current || !isAccessAnswers(data)) return;
-        const answer = data.permissions.find((each) => each.permission === 'administer');
-        setAdministers(answer?.allowed === true);
+        const allowed = (permission: string) =>
+          data.permissions.find((each) => each.permission === permission)?.allowed === true;
+        setAdministers(allowed('administer'));
+        setRetires(allowed('retire'));
       })
       .catch(() => undefined);
     return () => {
@@ -47,6 +58,14 @@ export function RowMenu({
   const close = () => {
     setOpen(false);
     setAdministers(false);
+    setRetires(false);
+  };
+
+  const archive = async () => {
+    close();
+    const now = await setArchived(client, 'component', id, !archived);
+    onNotice(archivalSaid(title, now, !archived));
+    if (now !== undefined) onArchived();
   };
 
   const copy = () => {
@@ -105,6 +124,13 @@ export function RowMenu({
               <a className={styles['item']} href={`#/components/${id}/access`}>
                 Manage access
               </a>
+            </li>
+          )}
+          {retires && (
+            <li>
+              <button type="button" className={styles['item']} onClick={() => void archive()}>
+                {archived ? 'Unarchive' : 'Archive'}
+              </button>
             </li>
           )}
         </ul>

@@ -128,10 +128,11 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `publication.requested`, `.produced`, `.failed`                         | publishing                                                         | LIF-026          |
 | `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                       | LIF-026          |
 | `audit.label_erased`                                                    | erasure of a person's labels                                       | VER-038          |
+| `artifact.archived`, `.unarchived`                                      | archival ([lifecycle.md](lifecycle.md))                            | LIF-057          |
 
 **Declared now, emitted by the design that builds the act:** `workflow.transitioned`,
 `approval.given`, `approval.rejected`, `gate.rejected` (LIF-053: never `access.refused`),
-`hold.applied`, `hold.removed`, `artifact.archived`, `artifact.deleted`, `revision.designated`,
+`hold.applied`, `hold.removed`, `artifact.deleted`, `revision.designated`,
 `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`
 (TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`, and those the AU1 review

@@ -27,7 +27,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
+import { ArchiveButton } from '../lifecycle/Archive.js';
 import { everyPage } from '../paging.js';
+import { Chip } from '../parts/Chip.js';
 import { PanelTabs } from '../parts/PanelTabs.js';
 import { PreviewButton, PreviewPane, PreviewSaid, usePreview } from '../publishing/Preview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
@@ -122,6 +124,10 @@ interface Opened {
   readonly mayComment: boolean;
   /** Whether Review is offered on the document: `comment` or `suggest` on it (IAM-081). */
   readonly mayReview: boolean;
+  /** Archived: out of ordinary listings and search, still read and published (lifecycle.md). */
+  readonly archived: boolean;
+  /** Whether the reader may archive and unarchive it. */
+  readonly mayRetire: boolean;
   /**
    * The scheme of the layout version this document would be published under, parsed once per view:
    * what the page numbers with (STR-036), so nothing it shows is a number a publish could not print.
@@ -182,6 +188,8 @@ function documentIn(data: unknown): Read {
     mayPublish,
     mayComment,
     mayReview,
+    archived,
+    mayRetire,
     layout,
     fields,
     schemas,
@@ -222,6 +230,8 @@ function documentIn(data: unknown): Read {
     // Absent from a view before Review, which offered none (the TH plan, Task 3).
     mayComment: mayComment === true,
     mayReview: mayReview === true,
+    archived: archived === true,
+    mayRetire: mayRetire === true,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
     formats:
@@ -1812,8 +1822,23 @@ export function DocumentPage({
               Show boundaries
             </button>
             <PeopleHere people={live.people} connected={live.connected} />
-            {/* Access to the document, offered to whoever may administer it (access.md, GP-E). */}
+            {document.archived && <Chip>Archived</Chip>}
+            {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
+              Archive or Unarchive to whoever may retire it (lifecycle.md). */}
             <span className={styles['access']}>
+              <ArchiveButton
+                client={client}
+                kind="document"
+                id={document.id}
+                title={document.outline.title}
+                archived={document.archived}
+                mayRetire={document.mayRetire}
+                className={styles['toggle']}
+                onChanged={(archived, said) => {
+                  if (latest.current?.id === document.id) show({ ...latest.current, archived });
+                  setNotice(said);
+                }}
+              />
               <ManageAccessLink
                 client={client}
                 target={`artifact:${document.id}`}

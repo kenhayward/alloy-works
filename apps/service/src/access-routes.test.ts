@@ -1096,6 +1096,10 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { latest: MISSING },
     }),
+    archiveComponent: () => ({ url: `/v1/components/${dosing}/archive`, status: 404 }),
+    unarchiveComponent: () => ({ url: `/v1/components/${dosing}/unarchive`, status: 404 }),
+    archiveDocument: () => ({ url: `/v1/documents/${report}/archive`, status: 404 }),
+    unarchiveDocument: () => ({ url: `/v1/documents/${report}/unarchive`, status: 404 }),
     previewRestore: () => ({
       url: `/v1/components/${dosing}/versions/${MISSING}/restoration`,
       status: 404,

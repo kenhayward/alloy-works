@@ -213,6 +213,9 @@ export function service(
     layout?: unknown;
     /** Whether the caller may administer the document, as `GET /v1/access` answers it. */
     administers?: boolean;
+    /** Whether the caller may retire it, answered beside `administers`; and whether it is archived. */
+    retires?: boolean;
+    archived?: boolean;
     /** What each component's head contributes, by component; nothing where it is not named. */
     holds?: Record<
       string,
@@ -248,6 +251,7 @@ export function service(
     restoredFrom?: { id: string; number: string };
   }[] = [{ id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start }];
   let allocated = 0;
+  let archived = options.archived ?? false;
   const newIdentifier = () => {
     allocated += 1;
     return `nnnnnnnnnnnnnnnnnnnnnnnn${BASE32[Math.floor(allocated / 32)]}${BASE32[allocated % 32]}`;
@@ -282,6 +286,8 @@ export function service(
     mayPublish: options.mayPublish ?? false,
     mayComment: options.mayComment ?? false,
     mayReview: options.mayReview ?? false,
+    archived,
+    mayRetire: options.retires ?? false,
     layout: options.layout ?? layoutView(defaultLayout.scheme),
     ...(options.parameters === undefined
       ? {}
@@ -314,7 +320,9 @@ export function service(
   const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url).pathname;
-    const body = request.method === 'GET' ? undefined : await request.clone().json();
+    // An archive or unarchive carries no body.
+    const text = request.method === 'GET' ? '' : await request.clone().text();
+    const body = text === '' ? undefined : (JSON.parse(text) as unknown);
     sent.push({ url, body });
     // An outline answer waits on the gate first, whatever it is going to be.
     if (url.endsWith('/outline')) {
@@ -343,6 +351,13 @@ export function service(
           { permission: 'administer', allowed: options.administers },
         ],
       });
+    }
+    if (
+      url === `/v1/documents/${DOCUMENT}/archive` ||
+      url === `/v1/documents/${DOCUMENT}/unarchive`
+    ) {
+      archived = url.endsWith('/archive');
+      return json(200, { archived });
     }
     // The document's baselines (the BL plan): one, made by Ada.
     if (url === `/v1/documents/${DOCUMENT}/baselines` && request.method === 'GET') {

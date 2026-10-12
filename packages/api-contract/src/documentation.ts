@@ -149,12 +149,16 @@ const operationTags = {
     'cutVersion',
     'previewRestore',
     'restoreVersion',
+    'archiveComponent',
+    'unarchiveComponent',
   ],
   Documents: [
     'listDocuments',
     'listDocumentVersions',
     'previewDocumentRestore',
     'restoreDocumentVersion',
+    'archiveDocument',
+    'unarchiveDocument',
     'getDocument',
     'createDocument',
     'editOutline',
@@ -308,7 +312,7 @@ const descriptions: Readonly<Record<string, string>> = {
   explainAccess:
     'For an administrator, explain each permission a named principal has on a target and the grants and levels behind the answer.',
   listComponents:
-    'Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing.',
+    'Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.',
   getComponent:
     'Opens the latest component version with the caller’s editing permissions and current lock. Use its version when submitting a change.',
   listIterations:
@@ -420,7 +424,15 @@ const descriptions: Readonly<Record<string, string>> = {
   createComponent:
     'Creates a component in the named space at its first version. The caller needs permission to create there.',
   listDocuments:
-    'Lists documents the caller can read with stable cursor paging, filters and facets.',
+    'Lists documents the caller can read with stable cursor paging, filters and facets. Archived documents are left out unless archived=only asks for them alone.',
+  archiveComponent:
+    'Archives a component: it leaves ordinary listings, their counts and search, and still opens by its id, resolves where a document references it and can be edited. Needs retire on the component. Archiving one already archived changes nothing. Audited.',
+  unarchiveComponent:
+    'Unarchives a component, so it is listed and found again. Needs retire on the component. Unarchiving one not archived changes nothing. Audited.',
+  archiveDocument:
+    'Archives a document: it leaves ordinary listings, their counts and search, and still opens by its id and publishes. Its publications are not archived with it. Needs retire on the document. Archiving one already archived changes nothing. Audited.',
+  unarchiveDocument:
+    'Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.',
   getDocument:
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:

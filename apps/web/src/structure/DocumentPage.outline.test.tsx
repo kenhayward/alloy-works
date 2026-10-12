@@ -589,6 +589,20 @@ describe('the outline panel', () => {
     expect(fake.edits()).toHaveLength(1);
   });
 
+  it('LIF-020 shows Archived on an archived document, and Unarchive to whoever may retire it', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), {
+      retires: true,
+      archived: true,
+    });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Unarchive' }));
+    expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument();
+    expect(screen.queryByText('Archived')).toBeNull();
+    expect(fake.sent.map((each) => each.url)).toContain(`/v1/documents/${DOCUMENT}/unarchive`);
+  });
+
   it('offers Manage access on a document only to someone who may administer it', async () => {
     const administering = service(outline([section(METHOD, 'Method')]), { administers: true });
     const { unmount } = open(administering.fetch);

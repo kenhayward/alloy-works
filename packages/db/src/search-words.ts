@@ -351,6 +351,8 @@ export async function searchWords(
             and not e.artifact_id = any(${[...readable.excluded]}::uuid[]))
           or e.artifact_id = any(${[...readable.included]}::uuid[])
         )
+        -- Archived content is no result, facet or count (LIF-020; lifecycle.md).
+        and not e.archived
         and ${words}
         and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}
     ),

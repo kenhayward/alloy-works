@@ -28,6 +28,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
+import { archivedAs, notArchivedAs } from './archival.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { readableArtifacts, readableArtifactsAs } from './readable-artifacts.js';
 import {
@@ -320,6 +321,8 @@ export async function readDocument(
 export interface DocumentFilter {
   readonly spaces?: readonly string[];
   readonly publishing?: readonly PublishingState[];
+  /** `only`: the archived alone, the one way to list them; absent, they are left out (LIF-020). */
+  readonly archived?: 'only';
 }
 
 /**
@@ -414,6 +417,7 @@ export async function listReadableDocuments(
       .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
       .where('a.kind', '=', 'document')
       .where((eb) => readableArtifacts(eb, readable))
+      .where(filter.archived === 'only' ? archivedAs('a', snapshot) : notArchivedAs('a', snapshot))
       .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
         filter.spaces!.length === 0
           ? query.where(sql<boolean>`false`)

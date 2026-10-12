@@ -235,6 +235,30 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: page.getByRole('list', { name: 'Versions' }),
       });
 
+      // A row's menu, offering Archive to whoever may retire it, and the archived listed alone
+      // (lifecycle.md). Nothing is archived: the suites share the stack.
+      // The chosen component's panel closed first: it lies over the rows' menus.
+      const chosen = page
+        .getByRole('complementary')
+        .filter({ has: page.getByRole('list', { name: 'Versions' }) });
+      await chosen.getByRole('button', { name: 'Close' }).click();
+      await leave(chosen);
+      await page
+        .getByRole('button', { name: /^Actions for / })
+        .first()
+        .click();
+      await check("a component row's menu", {
+        shows: page.getByRole('button', { name: 'Archive', exact: true }),
+      });
+      await page.keyboard.press('Escape');
+      await leave(page.getByRole('button', { name: 'Archive', exact: true }));
+      const archivedOnly = page.getByRole('checkbox', { name: 'Archived', exact: true });
+      await archivedOnly.check();
+      await check('the archived components', {
+        shows: page.getByText(/^\d+ archived components? you may read\./),
+      });
+      await archivedOnly.uncheck();
+
       // Search, from search and commands in the header (ADR-0046).
       await page
         .getByRole('button', { name: 'Search components, documents, or run a command' })

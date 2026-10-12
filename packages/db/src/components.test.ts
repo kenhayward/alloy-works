@@ -3,7 +3,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import type { Keyset } from './listing.js';
-import { countReadableComponents, listReadableComponents } from './components.js';
+import { listReadableComponents } from './components.js';
 import { seedDevelopmentContent } from './dev-content.js';
 import { grant } from './grants.js';
 import { addToGroup, createGroup } from './groups.js';
@@ -198,19 +198,6 @@ describe('listing the components a principal may read', () => {
       listReadableComponents(trx, grace, { limit: 50 }, { spaces: [quality.space_id!] }),
     );
     expect(inQuality?.items).toEqual([]);
-  });
-
-  it('counts what a principal may read in each space, leaving out what is refused it', async () => {
-    const forAda = await service.withTenant(production, (trx) => countReadableComponents(trx, ada));
-    const forGrace = await service.withTenant(production, (trx) =>
-      countReadableComponents(trx, grace),
-    );
-    expect(forAda?.find((space) => space.name === 'General')?.count).toBe(5);
-    expect(forGrace).toEqual([{ id: expect.any(String), name: 'General', count: 4 }]);
-    const nobody = await service.withTenant(production, (trx) =>
-      countReadableComponents(trx, '00000000-0000-4000-8000-000000000000'),
-    );
-    expect(nobody).toBeUndefined();
   });
 
   it('leaves out what a grant on the component itself refuses, and every space not granted', async () => {
