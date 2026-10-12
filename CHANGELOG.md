@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.154.0 - 2026-10-12 (PR #571)
+
+### Added
+
+- **Comparison, underneath.** Two versions of a component, or two outlines, compare as changes a reader can trust: a paragraph moved and reworded is one change, and each says whether it was matched by identity or by similar wording. Nothing shows it yet.
+- **Comparison through the API.** Two versions of a component, or a baseline with a later one or with the document now, compare as changes: the outline's, and each component's word by word. A component you may not read shows only where it stands. Through `/v1/components/{id}/comparison` and `/v1/baselines/{id}/comparison`.
+- **Comparison you can see.** In a component's Versions panel, **Compare** shows what changed between an earlier version and the latest as a redline, and **My changes** shows what you have changed since you opened it. A baseline can be compared with a later one, or with the document now, on a page of its own, and the redline exported as one HTML file.
+- **Why a published document differs.** Comparing two baselines, or one with the document now, also says what would print differently and why: somebody edited it, its data changed, or a definition, the layout or the theme did.
+- **What changed since.** Through the API, `/v1/changes` lists what changed in a document, a space or a set of results since a given time, and says where the record begins when asked about earlier.
+
 ## 0.153.0 - 2026-10-11 (PR #566)
 
 ### Added

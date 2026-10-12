@@ -566,3 +566,9 @@ export {
   type PinnedBinding,
   type SupersedeAnswer,
 } from './baselines.js';
+export {
+  changesSince,
+  type ChangedArtifact,
+  type ChangedValue,
+  type ChangesSince,
+} from './changes.js';

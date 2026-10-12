@@ -931,6 +931,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   moved or removed - appears in the contents as it happens, without a reload. Each row says what
   matters to an author: who else holds its component, how many broken references its text holds, and
   how many values failed to arrive.
+- **Comparison.** A component's Versions panel lists each version, who cut it and when, and
+  **Compare** shows what changed since an earlier one as a redline: text added underlined, removed
+  struck through, a paragraph moved and reworded shown as one change, and anything matched only by
+  similar wording marked so. **My changes** shows what you have changed since you opened it. A
+  baseline compares with a later one, or with the document now, on a page of its own - the outline,
+  each changed component, and what would print differently and why: somebody edited it, its data
+  changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
+  What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
+  `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
 - **Baselines.** A document's outline pane has a **Baselines** tab. Whoever may publish the document
   makes one of the version shown, under a name unique in the document that never changes: it pins the
   version of every component, image and value the document uses, and the layout and theme it is
@@ -1449,8 +1458,8 @@ Named explicitly so nobody has to read the source to find out:
   default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search by meaning, no taxonomy, no workflow, no revisions and no comparison: versions are cut
-  and kept, and baselines pin them, and nothing yet compares or approves one. A publication of a
+- No search by meaning, no taxonomy, no workflow, no revisions and no suggestions: versions are cut,
+  kept, pinned and compared, and nothing yet approves one. A publication of a
   baseline still says it is not approved, until a workflow can approve one. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No signed or published release - the installer builds locally and is unsigned.

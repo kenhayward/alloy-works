@@ -101,6 +101,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getBaselineView: read,
   compareComponentVersions: read,
   compareBaseline: read,
+  compareBaselineResolved: read,
+  listChangesSince: read,
   publishBaseline: writes('publication.requested'),
   supersedeBaseline: writes('baseline.superseded'),
   claimLock: { none: 'lock' },

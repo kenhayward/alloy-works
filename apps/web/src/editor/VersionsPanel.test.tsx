@@ -93,4 +93,13 @@ describe('the Versions panel', () => {
     // Compared in the browser: nothing asked of the service for it.
     expect(asked.some((each) => each.includes('/comparison'))).toBe(false);
   });
+
+  it('CNT-113 says so where nothing is open for editing to compare', async () => {
+    const { client, asked } = service();
+    render(<VersionsPanel client={client} id={COMPONENT} mine={() => null} />);
+    await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(screen.getByRole('button', { name: 'My changes' }));
+    expect(screen.getByText('Nothing is open for editing to compare yet.')).toBeInTheDocument();
+    expect(asked.some((each) => each.includes('/comparison'))).toBe(false);
+  });
 });

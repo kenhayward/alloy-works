@@ -1,9 +1,11 @@
 import {
+  addThemeVersion,
   bootstrapCluster,
   createComponent,
   createDocument,
   createSpace,
   createTenant,
+  defaultTheme,
   findRole,
   grant,
   migrate,
@@ -504,6 +506,96 @@ describe('baselines over HTTP (baselines.md)', () => {
     expect(body.components).toEqual([]);
     const withheld = body.structure.find((each) => each.newer === 'd'.repeat(26))!;
     expect(withheld).toMatchObject({ change: 'matched', edited: null, changed: [] });
+    // What each would print, compared, holds nothing of it either.
+    const printed = await call(
+      'GET',
+      `/v1/baselines/${first}/comparison/resolved?with=${second}`,
+      'ada',
+    );
+    expect(printed.statusCode, printed.body).toBe(200);
+    expect(printed.body).not.toContain(secret.artifactId);
+    expect(printed.body).not.toContain('Secret');
+    expect(printed.json()).toEqual({ document: [], nodes: [] });
+  });
+
+  it('VER-024 compares what two baselines, or one and the document now, would print, naming an edit and a new theme as the causes', async () => {
+    const printer = await componentSaying(clinical, ids.ada!, 'Printed', 'Set the tray.');
+    const one = await outlineTo(await documentWith(), ids.ada!, [
+      referenceTo('e'.repeat(26), printer.artifactId),
+    ]);
+    const first = (await make(one, 'Printed 1')).json<{ id: string }>().id;
+    await reviseTo(printer, ids.ada!, 'Set the tray firmly.');
+    const second = (await make(one, 'Printed 2')).json<{ id: string }>().id;
+
+    const compared = await call(
+      'GET',
+      `/v1/baselines/${first}/comparison/resolved?with=${second}`,
+      'grace',
+    );
+    expect(compared.statusCode, compared.body).toBe(200);
+    expect(compared.json()).toEqual({
+      document: [],
+      nodes: [{ node: 'e'.repeat(26), title: 'Printed', causes: ['edited'], values: [] }],
+    });
+
+    // The environment's theme moves on: the document now is set differently, though nobody edited it.
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const theme = await defaultTheme(trx);
+      const next = await addThemeVersion(trx, {
+        artifactId: theme.artifactId,
+        openedFrom: theme.versionId,
+        author: ids.ada!,
+        theme: { ...theme.content, paper: '#fafafa' },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+    });
+    const now = await call('GET', `/v1/baselines/${second}/comparison/resolved?with=now`, 'grace');
+    expect(now.statusCode, now.body).toBe(200);
+    expect(now.json()).toEqual({ document: ['theme'], nodes: [] });
+  });
+
+  it('SCH-025 SCH-048 says what changed since an instant in a document, a space or a set of results, as the caller may read it', async () => {
+    const since = new Date(Date.now() - 1000).toISOString();
+    const printer = await componentSaying(clinical, ids.ada!, 'Lately', 'Changed lately.');
+    const secret = await componentSaying(quality, ids.grace!, 'Hidden lately', 'Not for Ada.');
+    const document = await outlineTo(await documentWith(), ids.ada!, [
+      referenceTo('f'.repeat(26), printer.artifactId),
+      referenceTo('g'.repeat(26), secret.artifactId),
+    ]);
+    const answer = await call(
+      'GET',
+      `/v1/changes?since=${encodeURIComponent(since)}&document=${document.artifactId}`,
+      'ada',
+    );
+    expect(answer.statusCode, answer.body).toBe(200);
+    const body = answer.json<{ artifacts: { artifact: string }[]; fromRecordStart: boolean }>();
+    expect(body.artifacts.map((each) => each.artifact)).toEqual(
+      expect.arrayContaining([printer.artifactId, document.artifactId]),
+    );
+    expect(answer.body).not.toContain(secret.artifactId);
+
+    const results = await call(
+      'GET',
+      `/v1/changes?since=2000-01-01T00:00:00Z&ids=${printer.artifactId},${secret.artifactId}`,
+      'ada',
+    );
+    expect(results.json()).toMatchObject({
+      fromRecordStart: true,
+      artifacts: [{ artifact: printer.artifactId }],
+    });
+    expect(
+      (await call('GET', `/v1/changes?since=${encodeURIComponent(since)}&space=${quality}`, 'ada'))
+        .statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await call(
+          'GET',
+          `/v1/changes?since=${encodeURIComponent(since)}&space=${clinical}&document=${document.artifactId}`,
+          'ada',
+        )
+      ).statusCode,
+    ).toBe(400);
   });
 
   it('VER-049 marks a baseline superseded by a later one, keeps it readable, and lists by state', async () => {

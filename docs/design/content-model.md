@@ -430,6 +430,11 @@ Thirteen marks, closed by CNT-006, and every one carries an identifier.
 | Reference  | hyperlink (an absolute target with an allowlisted scheme, and an optional title)              |
 | Linguistic | language (a BCP 47 tag)                                                                       |
 
+**Suggestions are not stored as marks** ([ADR-0058](../decisions/0058-suggestions-are-proposals-beside-the-content.md)):
+a suggestion is a proposal beside the component, made by comparison. The `suggestion` mark stays in
+the schema, refused on entry, for a review copy exported with tracked changes; CNT-005's and CNT-033's
+claims move to collaboration.md when phase 6 designs the proposal.
+
 **Why the annotation marks are here in T1.** CNT-116 requires the schema to carry, in the first
 version ever stored, the types neighbouring areas depend on "even where the features that use them
 land in a later tranche". Conditions are T4; suggestions and comments are T3. Retrofitting any of

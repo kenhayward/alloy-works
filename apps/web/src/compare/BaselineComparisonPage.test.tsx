@@ -89,7 +89,7 @@ afterEach(() => {
 });
 
 describe('two baselines compared, at their own address', () => {
-  it('VER-024 VER-030 shows the structure and each component changed as redlines, and exports them as one HTML file holding nothing withheld', async () => {
+  it('VER-024 VER-030 VER-031 shows the structure and each component changed as redlines, and exports them as one HTML file holding nothing withheld', async () => {
     const saved: Blob[] = [];
     URL.createObjectURL = vi.fn((blob: Blob) => {
       saved.push(blob);
@@ -101,7 +101,20 @@ describe('two baselines compared, at their own address', () => {
       <BaselineComparisonPage
         client={createApiClient({
           baseUrl: 'http://acme.test',
-          fetch: (async () => json(200, view)) as unknown as typeof fetch,
+          fetch: (async (input: Request) =>
+            new URL(input.url).pathname.endsWith('/resolved')
+              ? json(200, {
+                  document: ['theme'],
+                  nodes: [
+                    {
+                      node: A,
+                      title: 'Install the printer',
+                      causes: ['data'],
+                      values: [{ binding: 'depth', older: '3.5', newer: '3.75' }],
+                    },
+                  ],
+                })
+              : json(200, view)) as unknown as typeof fetch,
         })}
         document={DOCUMENT}
         baseline={BASELINE}
@@ -119,6 +132,12 @@ describe('two baselines compared, at their own address', () => {
     expect(structure.querySelector('ins')).toHaveTextContent('Load the tray');
     const printer = screen.getByRole('list', { name: 'Changes to Install the printer' });
     expect(printer.querySelector('ins')).toHaveTextContent('firmly');
+
+    // What prints differently, and why: here, data nobody typed, and the theme for the whole.
+    const printed = await screen.findByRole('list', { name: 'What prints differently' });
+    expect(printed).toHaveTextContent('Install the printer: Its data changed');
+    expect(printed).toHaveTextContent('depth: Was: 3.5 to Now: 3.75');
+    expect(screen.getByText('For the whole document, the theme changed.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Export' }));
     const html = await saved[0]!.text();

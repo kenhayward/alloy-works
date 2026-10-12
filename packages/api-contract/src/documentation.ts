@@ -179,7 +179,12 @@ const operationTags = {
     'getAssetVersionContent',
   ],
   Previews: ['requestPreview'],
-  Comparison: ['compareComponentVersions', 'compareBaseline'],
+  Comparison: [
+    'compareComponentVersions',
+    'compareBaseline',
+    'compareBaselineResolved',
+    'listChangesSince',
+  ],
   Baselines: [
     'makeBaseline',
     'listBaselines',
@@ -258,6 +263,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads a baseline and everything it pins that the caller may read, with each version’s digest. An occurrence the caller may not read is named by its node alone, and images by their count.',
   compareComponentVersions:
     'Compares two versions of a component: each block, list item, table cell and footnote matched by identity or by similar wording, saying which, then placed, its text compared word by word. Both versions’ content comes with the changes, for a redline.',
+  listChangesSince:
+    'Lists what changed since an instant in one scope - a document and the components it places, a space, or up to 200 artifacts a caller already holds - as the caller may read it: each artifact with versions cut since, and each value a document resolved or accepted since. Versions are never deleted, so the record begins at the first; a question reaching back before it is answered from there, and says so.',
+  compareBaselineResolved:
+    'Compares what a publish of a baseline and of another baseline, or of the document now, would print: each component the caller may read whose values differ, or would for a cause, with why - somebody edited it, its data changed, or a definition did - and what differs for the whole document. A difference nobody typed is named as the data’s or the definitions’.',
   compareBaseline:
     'Compares a baseline with a later one of the same document, or with the document as it resolves now: its outline’s changes, and each component whose version differs, compared. A component the caller may not read appears in the outline where it stands and is never compared.',
   getBaselineView:

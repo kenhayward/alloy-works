@@ -24,6 +24,7 @@ import {
   type MakeBaselineAnswer,
 } from './baselines.js';
 import { bootstrapCluster } from './bootstrap.js';
+import { changesSince } from './changes.js';
 import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { nameDataset, recordDatasetVersion, recordResolution } from './datasets.js';
@@ -478,6 +479,33 @@ describe('baselines', () => {
     });
     expect(inputs!.bindings.get(node.id)!.get('k1')!.dataset.name).toBe('Depths at north');
     expect(inputs!.request.baseline).toBe(id);
+
+    // What changed since names a value resolved at a node only to a reader of its component (SCH-025).
+    const secret = await component(quality, grace, 'Hidden depths');
+    const hidden = reference(secret.artifactId);
+    const mixed = await documentWith([node, hidden]);
+    const since = new Date(Date.now() - 60_000);
+    await tenant(async (trx) => {
+      const result = await recordDatasetVersion(trx, { provenance, author: ada });
+      for (const at of [node.id, hidden.id]) {
+        await recordResolution(trx, {
+          document: mixed.artifactId,
+          node: at,
+          binding: 'k1',
+          digest: sha256Hex(bindingDigestInput(binding('k1'))),
+          version: result.version.id,
+          replaces: null,
+          act: 'resolve',
+          by: ada,
+        });
+      }
+    });
+    const seen = (reader: string) =>
+      tenant((trx) => changesSince(trx, { since, reader, artifacts: [mixed.artifactId] })).then(
+        (answer) => answer.values.map((each) => each.node).sort(),
+      );
+    expect(await seen(ada)).toEqual([node.id]);
+    expect(await seen(grace)).toEqual([node.id, hidden.id].sort());
   });
 
   it('PUB-046 publishes a baseline from its pins, at its own time, whatever its components became', async () => {
@@ -685,6 +713,53 @@ describe('baselines', () => {
     expect(await names()).toEqual(['Issue 2', 'Issue 1']);
     expect(await names('current')).toEqual(['Issue 2']);
     expect(await names('superseded')).toEqual(['Issue 1']);
+  });
+
+  /** The database's own now, which every version's time is. */
+  const now = () =>
+    tenant(
+      async (trx) =>
+        (await sql<{ at: Date }>`select clock_timestamp() as at`.execute(trx)).rows[0]!.at,
+    );
+
+  it('SCH-025 says what changed since an instant in a space, among a set of results, and in a document, as the caller may read it', async () => {
+    const printer = await component(general, ada, 'Changes printer');
+    const secret = await component(quality, grace, 'Changes secret');
+    const since = await now();
+    await revise(printer, [{ type: 'paragraph', id: 'p9', style: 'body', content: [] }]);
+    await revise(secret, [{ type: 'paragraph', id: 'p9', style: 'body', content: [] }]);
+
+    const inSpace = await tenant((trx) =>
+      changesSince(trx, { since, reader: ada, space: general }),
+    );
+    expect(inSpace.artifacts.map((each) => each.artifact)).toContain(printer.artifactId);
+    expect(inSpace.artifacts.find((each) => each.artifact === printer.artifactId)).toMatchObject({
+      kind: 'component',
+      title: 'Changes printer',
+      versions: 1,
+    });
+    const among = await tenant((trx) =>
+      changesSince(trx, { since, reader: ada, artifacts: [printer.artifactId, secret.artifactId] }),
+    );
+    expect(among.artifacts.map((each) => each.artifact)).toEqual([printer.artifactId]);
+    expect(JSON.stringify(among)).not.toContain(secret.artifactId);
+    expect(among.fromRecordStart).toBe(false);
+  });
+
+  it('SCH-048 answers a question reaching back before the record from where the record begins, and says so', async () => {
+    const printer = await component(general, ada, 'Changes earliest');
+    const answer = await tenant((trx) =>
+      changesSince(trx, {
+        since: new Date('2000-01-01T00:00:00Z'),
+        reader: ada,
+        artifacts: [printer.artifactId],
+      }),
+    );
+    expect(answer.fromRecordStart).toBe(true);
+    expect(answer.recordBegins!.getTime()).toBeGreaterThan(
+      new Date('2000-01-01T00:00:00Z').getTime(),
+    );
+    expect(answer.artifacts.map((each) => each.artifact)).toEqual([printer.artifactId]);
   });
 
   it('VER-023 refuses deleting a version only a baseline pins, in the database itself', async () => {
