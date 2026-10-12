@@ -48,7 +48,9 @@ export type MakeAnswer =
   /** The draft is the version it was made against (SG-B). */
   | { readonly answer: 'suggestion.empty' }
   /** The maker has too many pending on this component (SG-A). */
-  | { readonly answer: 'suggestion.limit' };
+  | { readonly answer: 'suggestion.limit' }
+  /** The same draft was sent before and is resolved: it is not made again (the SG final review). */
+  | { readonly answer: 'suggestion.resolved' };
 
 export type ResolveAnswer =
   | { readonly answer: 'accepted'; readonly version: StoredVersion }
@@ -142,14 +144,19 @@ export async function makeSuggestion(
   }
   await serialise(trx, input.component);
   const again = await trx
-    .selectFrom('suggestion')
-    .select('id')
-    .where('component_id', '=', input.component)
-    .where('made_by', '=', input.by)
-    .where('made_against', '=', input.version)
-    .where('proposed_digest', '=', digest)
+    .selectFrom('suggestion as g')
+    .leftJoin('suggestion_resolution as r', 'r.suggestion_id', 'g.id')
+    .select(['g.id', 'r.act'])
+    .where('g.component_id', '=', input.component)
+    .where('g.made_by', '=', input.by)
+    .where('g.made_against', '=', input.version)
+    .where('g.proposed_digest', '=', digest)
     .executeTakeFirst();
-  if (again) return { answer: 'made', suggestion: again.id };
+  if (again) {
+    return again.act === null
+      ? { answer: 'made', suggestion: again.id }
+      : { answer: 'suggestion.resolved' };
+  }
   const pending = await trx
     .selectFrom('suggestion as g')
     .leftJoin('suggestion_resolution as r', 'r.suggestion_id', 'g.id')

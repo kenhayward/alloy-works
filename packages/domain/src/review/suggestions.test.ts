@@ -202,4 +202,48 @@ describe('a suggestion applied to the component as it is now', () => {
       ['n', 'New.'],
     ]);
   });
+
+  it('takes a title changed by hand to the drafted one as done', () => {
+    const proposed = { ...base, title: 'Printing' };
+    const applied = applySuggestion(base, proposed, { ...base, title: 'Printing' }, fresh);
+    expect(applied.applies && applied.content.title).toBe('Printing');
+  });
+
+  it('CNT-009 renames a cross-reference along with the added block it names', () => {
+    const referring: BlockNode = {
+      type: 'paragraph',
+      id: 'r',
+      style: 'body',
+      content: [
+        text('See '),
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 'd' },
+          display: 'number',
+        },
+      ],
+    } as unknown as BlockNode;
+    const proposed = doc(
+      para('a', 'Unbox it.'),
+      para('d', 'Mine.'),
+      referring,
+      para('b', 'Set the tray.'),
+      para('c', 'Wait.'),
+    );
+    const current = doc(
+      para('a', 'Unbox it.'),
+      para('b', 'Set the tray.'),
+      para('c', 'Wait.'),
+      para('d', 'Theirs.'),
+    );
+    let n = 0;
+    const applied = applySuggestion(base, proposed, current, () => `new${(n += 1)}`);
+    if (!applied.applies) throw new Error(JSON.stringify(applied.stale));
+    const mine = applied.content.content.find((block) => JSON.stringify(block).includes('Mine.'))!;
+    expect(mine.id).toBe('new1');
+    expect(JSON.stringify(applied.content.content.find((block) => block.id === 'r'))).toContain(
+      '"block":"new1"',
+    );
+  });
 });

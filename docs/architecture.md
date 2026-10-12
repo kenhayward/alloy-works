@@ -2035,6 +2035,21 @@ made and suggestions (ADR-0058) will stand on the same anchors.
 | `web: src/review/`, `structure/DocumentPage.tsx`, `editor: src/render.ts` | Review: the Threads panel; anchors from a selection by the drawn block's `data-block`; marks in the text                                                                                                                  |
 | `web: src/account/Inbox.tsx`, `shell/Header.tsx`                          | The inbox from the account chip, its unread count and preferences                                                                                                                                                         |
 
+## Suggestions
+
+A reviewer's draft of a component kept beside it, built by [the SG plan](plans/2026-10-12-sg-suggestions.md)
+under [ADR-0058](decisions/0058-suggestions-are-proposals-beside-the-content.md) and
+[ADR-0059](decisions/0059-a-suggestion-merges-by-whole-block.md): never in the content, made with no
+lock, applied when accepted to the component as it is then.
+
+| Where                                                                | Holds                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/review/suggestions.ts`                                  | `applySuggestion`: the three-way merge over top-level blocks by identifier, in the current order; stale places, or the merged content parsed whole                                                                          |
+| `migrations/tenant/0077_suggestions`, `db: src/suggestions.ts`       | `suggestion` and `suggestion_resolution`, insert-only; make, list, accept (a version by the accepter, values carried as a cut carries them), reject, withdraw; serialised on the component and refused under another's lock |
+| `service: src/suggestions.ts`, `src/editing.ts`                      | The routes, decided on the component (`{ suggestion }`); the save's checks shared (`storableContent`, `mayNameColumns`); bulk acts per component                                                                            |
+| `web: src/editor/draft.ts`, `ComponentEditor.tsx`                    | The editor's draft mode: a session service that grants every claim and keeps every save in the tab                                                                                                                          |
+| `web: src/review/SuggestionsPanel.tsx`, `structure/DocumentPage.tsx` | Review's **Suggest changes**, the draft in place, the Suggestions panel and its redline                                                                                                                                     |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

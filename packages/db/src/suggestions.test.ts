@@ -188,7 +188,7 @@ describe('suggestions', () => {
     expect((await tenant((trx) => readSuggestion(trx, id)))!.resolution).toBeNull();
   });
 
-  it('COL-024 COL-043 accepts as a version by whoever accepts, applied over a version edited since, and audits it as theirs', async () => {
+  it('COL-024 accepts as a version by whoever accepts, applied over a version edited since, and audits it as theirs', async () => {
     const version = await component();
     const id = await suggest(version);
     // Ada adds d meanwhile.
@@ -258,6 +258,22 @@ describe('suggestions', () => {
     expect(await tenant((trx) => withdrawSuggestion(trx, { suggestion: id, by: grace }))).toEqual({
       answer: 'suggestion.resolved',
     });
+    // The same draft sent again is not made again, nor answered as if it were pending.
+    expect(
+      await tenant((trx) =>
+        makeSuggestion(trx, {
+          component: version.artifactId,
+          version: version.id,
+          proposed: withBlocks(
+            version,
+            para('a', 'Unbox it carefully.'),
+            para('b', 'Set the tray.'),
+            para('c', 'Wait.'),
+          ),
+          by: grace,
+        }),
+      ),
+    ).toEqual({ answer: 'suggestion.resolved' });
     expect((await tenant((trx) => readSuggestion(trx, id)))!.resolution).toMatchObject({
       act: 'withdrawn',
       by: { id: grace },

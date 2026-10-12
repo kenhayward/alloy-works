@@ -70,6 +70,19 @@ keeping every block's identifier, or says where and why it no longer applies.
   lock, and a suggestion leaking what its reader may not read. `features.md`, `README.md`,
   `architecture.md`, the CHANGELOG, the version (0.156.0) and the baseline.
 
+## Final review
+
+Fixed in SG3: a resolved suggestion drawn against the version it was made against; a bulk act leaving
+one the save's checks refuse, or one resolved meanwhile, rather than undoing the rest; the same draft
+sent again after it was resolved refused, not answered as pending; a title, language or direction
+changed by hand to the draft's taken as done; a draft never written after sign-out, kept against the
+version it was made from rather than dropped when a newer one is cut, its values left the
+component's; a cross-reference renamed with the added block it names; the version checked before
+anything is read against it. Known: a reviewer who refines a draft and sends it again has two
+suggestions, both adding the block; accepting both adds it twice (withdraw the first). COL-041 is
+answered by the act holding the component for its transaction; COL-043 is designed and not yet shown
+by a test, so the baseline leaves it out.
+
 ## Risks
 
 - **Coarse merges** (ADR-0059): a suggestion on a block its author also edited is stale there.

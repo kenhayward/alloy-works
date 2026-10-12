@@ -628,6 +628,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           page.getByRole('tabpanel', { name: 'Threads' }).getByText('No threads here.'),
         ],
       });
+      // And its suggestions beside the threads (the SG plan, Task 3).
+      await page
+        .getByRole('tablist', { name: 'Document panels' })
+        .getByRole('tab', { name: 'Suggestions' })
+        .click();
+      await check('the Suggestions panel in Review', {
+        shows: page
+          .getByRole('tabpanel', { name: 'Suggestions' })
+          .getByText('No suggestions here.'),
+      });
       await page.getByRole('radio', { name: 'Authoring' }).check();
       await check('the document view in Authoring', {
         shows: [

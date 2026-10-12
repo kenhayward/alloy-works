@@ -185,6 +185,9 @@ export interface Editable {
   readonly mayEdit: boolean;
   /** Whether they may start and answer threads on it (the TH plan, Task 3). */
   readonly mayComment?: boolean;
+  /** Whether they may suggest a change to it, and how many suggestions wait on it (the SG plan). */
+  readonly maySuggest?: boolean;
+  readonly pendingSuggestions?: number;
   readonly lock: {
     readonly holder: { readonly name: string | null };
     readonly expectedRelease: string;
@@ -441,6 +444,7 @@ export function DocumentText({
   onTableRows,
   threadMarks,
   threadCounts,
+  onSuggest,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -507,6 +511,8 @@ export function DocumentText({
   threadMarks?: ReadonlyMap<string, readonly Placed[]>;
   /** In Review, how many threads stand on each node as a whole: a component or a section. */
   threadCounts?: ReadonlyMap<string, number>;
+  /** In Review, opens a draft of a component to suggest a change to it (the SG plan, SG-J). */
+  onSuggest?: (node: string) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072): a
   // sheet on the desk its parent is (ADR-0056).
@@ -653,6 +659,25 @@ export function DocumentText({
                       Open
                     </a>
                     <ThreadsSaid count={threadCounts?.get(node.id)} />
+                    {(editable?.get(node.id)?.pendingSuggestions ?? 0) > 0 && (
+                      <span className={styles['threads']}>
+                        {editable!.get(node.id)!.pendingSuggestions === 1
+                          ? '1 suggestion'
+                          : `${editable!.get(node.id)!.pendingSuggestions} suggestions`}
+                      </span>
+                    )}
+                    {onSuggest &&
+                      editable?.get(node.id)?.maySuggest === true &&
+                      editing !== node.id && (
+                        <button
+                          type="button"
+                          className={styles['open']}
+                          onClick={() => onSuggest(node.id)}
+                          aria-label={`Suggest changes to ${nodeName(node, names)}`}
+                        >
+                          Suggest changes
+                        </button>
+                      )}
                   </>
                 )}
               </div>

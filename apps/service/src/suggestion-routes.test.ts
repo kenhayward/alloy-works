@@ -253,7 +253,7 @@ describe('suggestions over HTTP (collaboration.md, Suggestions)', () => {
     }
   });
 
-  it('COL-024 COL-041 accepts as a version by whoever accepts, and refuses a reviewer who may not edit', async () => {
+  it('COL-024 accepts as a version by whoever accepts, and refuses a reviewer who may not edit', async () => {
     const version = await component([para('p1', 'Set the tray.')]);
     const { id } = (await suggest(version)).json<SuggestionView>();
     expect((await call('POST', `/v1/suggestions/${id}/acceptance`, 'grace')).statusCode).toBe(403);
@@ -266,6 +266,9 @@ describe('suggestions over HTTP (collaboration.md, Suggestions)', () => {
       id: view.resolution!.version,
       author: ids.alice,
     });
+    // Resolved, it is still drawn: what it was made against, and the draft.
+    expect(view.drawnOver.version).toBe(version.id);
+    expect(view.drawnOver.content).not.toEqual(view.drawn);
     const again = await call('POST', `/v1/suggestions/${id}/rejection`, 'alice');
     expect([again.statusCode, code(again)]).toEqual([409, 'suggestion_resolved']);
   });

@@ -940,6 +940,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Suggestions.** In Review, a component's label offers **Suggest changes** to whoever may suggest
+  to it: a draft of it opens in place, in the component editor with every command, but no lock and
+  nothing saved to the component - the author can go on editing meanwhile - until **Send
+  suggestion**. The **Suggestions** panel beside the text lists every suggestion on the document's
+  components, pending or resolved, each drawn as a redline over the component as it is now. Whoever
+  may edit the component **Accept**s one - applied to the component as it is then, block by block,
+  and recorded as their version - or **Reject**s it; its author may **Withdraw** it. A suggestion on a
+  block somebody has changed since is said to no longer fit, where and why, and stays pending;
+  nothing is applied in part. **Accept all** and **Reject all** act on every pending suggestion in the
+  document, or one person's, leaving any that cannot be. Nothing is ever deleted. Through the API at
+  `/v1/components/{id}/suggestions`, `/v1/documents/{id}/suggestions` and `/v1/suggestions`.
 - **Threads and Review.** A document has a third mode, **Review**, for whoever may comment on it or
   on a component it places: the text as Reading shows it, with each thread marked where it stands -
   words underlaid, a cell outlined, and a count on a component's label or a section's heading - and a
@@ -1474,8 +1485,8 @@ Named explicitly so nobody has to read the source to find out:
   default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search by meaning, no taxonomy, no workflow, no revisions and no suggestions: versions are cut,
-  kept, pinned and compared, and nothing yet approves one. A publication of a
+- No search by meaning, no taxonomy, no workflow, no revisions: versions are cut,
+  kept, pinned, compared and suggested to, and nothing yet approves one. A publication of a
   baseline still says it is not approved, until a workflow can approve one. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread

@@ -51,6 +51,7 @@ import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
 import { BaselinesTab } from './BaselinesTab.js';
 import { anchorFromSelection, type Placed } from '../review/anchoring.js';
+import { SuggestionsPanel } from '../review/SuggestionsPanel.js';
 import {
   anchorWords,
   ThreadsPanel,
@@ -487,8 +488,9 @@ const DOCK_PANELS = [
   { key: 'document', label: 'Document' },
   { key: 'lists', label: 'Lists' },
   { key: 'publishing', label: 'Publishing' },
-  // In Review (the TH plan, Task 3).
+  // In Review (the TH plan, Task 3; the SG plan, Task 3).
   { key: 'threads', label: 'Threads' },
+  { key: 'suggestions', label: 'Suggestions' },
 ] as const;
 
 type DockPanel = (typeof DOCK_PANELS)[number]['key'];
@@ -573,6 +575,10 @@ export function DocumentPage({
   // kept in the browser, Authoring the first time; which of them is on offer is decided below, from
   // what they may do.
   const [chosenMode, setChosenMode] = useState<Mode>(keptMode);
+  // In Review: the occurrence a suggestion is being drafted in (the SG plan, SG-J), one at a time,
+  // and how often the suggestions panel has been asked to read again.
+  const [drafting, setDrafting] = useState<string | null>(null);
+  const [suggestionsRead, setSuggestionsRead] = useState(0);
   // In Review: the threads the panel lists, and what the reader's selection offers a thread on.
   const [threadList, setThreadList] = useState<readonly ThreadSummary[]>([]);
   const [proposed, setProposed] = useState<{
@@ -666,6 +672,8 @@ export function DocumentPage({
               {
                 mayEdit: occurrence.mayEdit,
                 mayComment: occurrence.mayComment === true,
+                maySuggest: occurrence.maySuggest === true,
+                pendingSuggestions: occurrence.pendingSuggestions ?? 0,
                 lock: occurrence.lock,
               },
             ]),
@@ -1462,6 +1470,7 @@ export function DocumentPage({
     if (mode !== 'authoring') setEditing(null);
     // Review's panel is the threads (CNT-157).
     if (mode === 'review') setDock('threads');
+    else setDrafting(null);
     try {
       window.localStorage.setItem(MODE_KEY, mode);
     } catch {
@@ -1662,7 +1671,7 @@ export function DocumentPage({
     (each) =>
       (each.key !== 'document' || holdsOwn) &&
       (each.key !== 'table' || heldTable.holds) &&
-      (each.key !== 'threads' || reviewing),
+      ((each.key !== 'threads' && each.key !== 'suggestions') || reviewing),
   );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
@@ -1962,6 +1971,32 @@ export function DocumentPage({
                   </div>
                   {reviewing && (
                     <div
+                      id={dockIds('suggestions').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('suggestions').tab}
+                      hidden={shownDock !== 'suggestions'}
+                    >
+                      <SuggestionsPanel
+                        client={client}
+                        document={document.id}
+                        principalId={principalId}
+                        refresh={suggestionsRead}
+                        mayResolve={(component) =>
+                          [...componentOfNode].some(
+                            ([node, of]) =>
+                              of === component && editable.get(node)?.mayEdit === true,
+                          )
+                        }
+                        placeOf={(component) => {
+                          const node = [...componentOfNode].find(([, of]) => of === component)?.[0];
+                          return node === undefined ? 'a component' : place(node);
+                        }}
+                        onChanged={() => setTextsAttempt((count) => count + 1)}
+                      />
+                    </div>
+                  )}
+                  {reviewing && (
+                    <div
                       id={dockIds('threads').panel}
                       role="tabpanel"
                       aria-labelledby={dockIds('threads').tab}
@@ -2063,7 +2098,7 @@ export function DocumentPage({
                 // text, and in the editor opened in place, is numbered from (cross-references 1). The
                 // editor takes its context through its place, and is told again as this is read again.
                 {...(known.state === 'loaded' ? { contributions: known.contributions } : {})}
-                editing={editing}
+                editing={reviewing ? drafting : editing}
                 boundaries={boundaries}
                 marked={marked}
                 resolved={resolved}
@@ -2073,6 +2108,57 @@ export function DocumentPage({
                 bindingStates={bindingStates}
                 boundTables={boundTables}
                 {...(reviewing ? { threadMarks, threadCounts } : {})}
+                {...(reviewing && principalId !== undefined
+                  ? {
+                      onSuggest: (node: string) => {
+                        setDrafting(node);
+                        setDock('suggestions');
+                      },
+                      editor: (component: string, place: Place) => (
+                        <ComponentEditor
+                          key={`draft:${component}`}
+                          componentId={component}
+                          client={client}
+                          principalId={principalId}
+                          {...(place.number === undefined ? {} : { number: place.number })}
+                          referenceContext={place.referenceContext ?? null}
+                          {...(place.bindingContext === undefined
+                            ? {}
+                            : { bindingContext: place.bindingContext })}
+                          tableHost={tableHost}
+                          onTable={setHeldTable}
+                          draft={{
+                            // An image is added to the component's space by whoever may add one
+                            // there, which an author of the component may (SG-J).
+                            mayUpload:
+                              drafting !== null && editable.get(drafting)?.mayEdit === true,
+                            onDiscard: () => setDrafting(null),
+                            onSend: async (content, version) => {
+                              const answer = await client.POST('/v1/components/{id}/suggestions', {
+                                params: { path: { id: component } },
+                                body: {
+                                  version,
+                                  content: content as unknown as Record<string, unknown>,
+                                },
+                              });
+                              if (!answer.data) {
+                                setNotice(
+                                  (answer.error as { message?: string } | undefined)?.message ??
+                                    'The suggestion could not be sent.',
+                                );
+                                return false;
+                              }
+                              setNotice('Suggestion sent.');
+                              setDrafting(null);
+                              setSuggestionsRead((count) => count + 1);
+                              setTextsAttempt((count) => count + 1);
+                              return true;
+                            },
+                          }}
+                        />
+                      ),
+                    }
+                  : {})}
                 rowsFrom={{
                   client,
                   document: document.id,
