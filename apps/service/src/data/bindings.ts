@@ -82,6 +82,9 @@ import {
   effectiveLimits,
   identityKey,
   literalValues,
+  canonicalKeyValue,
+  cellRevisable,
+  keyedRow,
   keyNamesTheKey,
   matchNoteRows,
   parametersDigestInput,
@@ -95,7 +98,7 @@ import {
   takeOutcomeSchema,
   takes,
   takeValue,
-  sortResult,
+  tableOrder,
   TABLE_ROWS_MAX,
   valueProblem,
   type AnyBinding,
@@ -105,6 +108,7 @@ import {
   type BindingPlace,
   type CanonicalResult,
   type Column,
+  type CanonicalValue,
   type ColumnType,
   type DocumentParameters,
   type DraftDefinition,
@@ -137,7 +141,7 @@ import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
 import { actingKey, ownViewOf, provenanceIdentity, runIdentity, type Acting } from './acting.js';
 import { failureViewFor, type FailureIn } from './failure-words.js';
-import { carryRevisions, recordRevisionEvent, revisionsDecided } from './revisions.js';
+import { carryRevisions, keptProblem, recordRevisionEvent, revisionsDecided } from './revisions.js';
 import { connectionFacts, requireSqlPermitted } from './sql-access.js';
 
 /**
@@ -1647,6 +1651,17 @@ function viewer(
               rowMissing: 'failure' in cellTaken && cellTaken.failure === 'row_missing',
             }
           : {}),
+        // Its column one the table no longer shows, or now orders or heads by (M5): the publish
+        // fails `revision_column_unavailable`.
+        ...(fresh && each.cell !== null && placed.table !== undefined
+          ? {
+              columnUnavailable: !cellRevisable(
+                placed.table,
+                await keyOf(held.held.provenance.queryDefinition.version),
+                each.cell.column,
+              ),
+            }
+          : {}),
       });
     }
     return out;
@@ -1986,19 +2001,25 @@ export async function resolveAct(
           );
           const seesSource = await seeingSourceNow(record, caller, prepared);
           const held = await heldBy(record, id, placed);
-          // Decided again under the bindings' locks: a revision made while the source answered
-          // refuses the act, and nothing is recorded (RV-D).
+          // Decided again under the bindings' locks: a revision made or withdrawn while the source
+          // answered fails that binding alone, and records nothing for it (RV-D).
           const standing = new Map<string, readonly StoredRevision[]>();
+          const undecided = new Map<string, AppError>();
           const views = viewer(record, caller, objects, tenant, id);
           for (const each of succeeded) {
             const at = key(each.placed.node, each.placed.binding.id);
             const holding = held.get(at);
-            standing.set(
-              at,
-              await revisionsDecided(record, holding?.id, decisions.get(at), async () => ({
-                current: await stateView(views, each.placed, holding),
-              })),
-            );
+            try {
+              standing.set(
+                at,
+                await revisionsDecided(record, holding?.id, decisions.get(at), async () => ({
+                  current: await stateView(views, each.placed, holding),
+                })),
+              );
+            } catch (error) {
+              if (!(error instanceof AppError)) throw error;
+              undecided.set(at, error);
+            }
           }
           // Every question this records, in turn, before the first: after the bindings' locks, as every
           // act takes them, so two acts recording the same questions never wait on each other.
@@ -2022,6 +2043,17 @@ export async function resolveAct(
               });
             if (!outcome.ok) {
               failed(outcome.failure);
+              continue;
+            }
+            const naming = {
+              definition: each.definition.id,
+              binding: binding.id,
+              node,
+              document: id,
+            };
+            const refusal = undecided.get(key(node, binding.id));
+            if (refusal !== undefined) {
+              results.push({ node, binding: binding.id, failure: bindingFailure(refusal, naming) });
               continue;
             }
             const admission = admitted.get(each.question)!;
@@ -2060,6 +2092,16 @@ export async function resolveAct(
               versions.set(each.question, recorded);
             }
             await recordTaken(record, recorded.version.id, each, outcome);
+            // A revision kept must stand in front of the new result: else this binding fails (M2).
+            const kept = keptProblem(
+              standing.get(key(node, binding.id)) ?? [],
+              decisions.get(key(node, binding.id))?.decision,
+              columnTypeIn(admission.provenance, each.placed),
+            );
+            if (kept !== null) {
+              results.push({ node, binding: binding.id, failure: bindingFailure(kept, naming) });
+              continue;
+            }
             const before = held.get(key(node, binding.id));
             const resolved = await recordLoggedResolution(record, {
               document: id,
@@ -2527,6 +2569,25 @@ export function bindingHandlers(
       const standing = await revisionsDecided(trx, held.id, body.revisions, async () => ({
         current: await stateView(views, found, held),
       }));
+      // A value kept stands in front of the same take only (the RV final review, M1): Keep holds a
+      // result across a changed take too, which a person's value for another column or row must not
+      // follow. Only a binding whose mode alone changed keeps its value.
+      const modeAlone = (['checked', 'pinned'] as const).some(
+        (mode) =>
+          sha256(bindingDigestInput({ ...found.question, mode } as AnyBinding)) === held.digest,
+      );
+      if (
+        body.revisions?.decision === 'keep' &&
+        !modeAlone &&
+        standing.some((each) => each.cell === null)
+      ) {
+        throw refused(
+          409,
+          'revision.not_possible',
+          'The binding now takes another value than the one revised by hand: withdraw the revision.',
+          { ...naming, current: await stateView(views, found, held) },
+        );
+      }
       const confirmed = await recordLoggedResolution(trx, {
         document: id,
         node: found.node,
@@ -2596,7 +2657,32 @@ export function bindingHandlers(
           naming,
         );
       }
-      const cell = body.cell ?? null;
+      // A cell's key, every key column's value made canonical by its column's type, so one cell is
+      // one revision whatever spelling names it (the RV final review, H2).
+      let cell: RevisionCell | null = null;
+      let keyColumns: readonly string[] = [];
+      if (body.cell !== undefined) {
+        keyColumns = await definitionKey(trx, held.held.provenance.queryDefinition.version);
+        const refusedKey = (why: string) => named(refused(400, 'key.required', why), naming);
+        if (keyColumns.length === 0) {
+          throw refusedKey('Its query definition declares no key to find a row by.');
+        }
+        if (!keyNamesTheKey(body.cell.key, keyColumns)) {
+          throw refusedKey(`A cell's key names every key column: ${keyColumns.join(', ')}.`);
+        }
+        const key: Record<string, CanonicalValue> = {};
+        for (const name of keyColumns) {
+          const type = held.held.provenance.columns.find((each) => each.name === name)?.type;
+          const given = body.cell.key[name];
+          const value =
+            type === undefined || given === null || given === undefined
+              ? null
+              : canonicalKeyValue(type, String(given));
+          if (value === null) throw refusedKey(`The key's ${name} is not a value of its column.`);
+          key[name] = value;
+        }
+        cell = { key, column: body.cell.column };
+      }
       const at = revisionCellKey(cell);
       const standing = ((await revisionsStanding(trx, [held.id])).get(held.id) ?? []).find(
         (each) => revisionCellKey(each.cell) === at,
@@ -2610,7 +2696,8 @@ export function bindingHandlers(
         );
       }
       const reason = body.reason.normalize('NFC');
-      if (reason.trim() === '' || CONTROL.test(reason)) {
+      // Counted as stored, after NFC (the RV final review, L8).
+      if (reason.trim() === '' || CONTROL.test(reason) || [...reason].length > 1000) {
         throw named(
           refused(400, 'value.invalid', 'A reason is words, with no control characters.'),
           naming,
@@ -2660,30 +2747,7 @@ export function bindingHandlers(
         if (found.place !== 'table' || table === undefined) {
           throw notPossible('Only a bound table has cells to revise.');
         }
-        const definitionKeyColumns = await definitionKey(trx, provenance.queryDefinition.version);
-        if (definitionKeyColumns.length === 0 || !keyNamesTheKey(cell.key, definitionKeyColumns)) {
-          throw named(
-            refused(
-              400,
-              'key.required',
-              definitionKeyColumns.length === 0
-                ? 'Its query definition declares no key to find a row by.'
-                : `A cell's key names every key column: ${definitionKeyColumns.join(', ')}.`,
-            ),
-            naming,
-          );
-        }
-        const fixed = new Set([
-          ...definitionKeyColumns,
-          ...(table.groups ?? []).flatMap((group) =>
-            group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
-          ),
-          ...(table.transpose === undefined ? [] : [table.transpose.header]),
-        ]);
-        if (
-          !table.columns.some((shown) => shown.column === cell.column) ||
-          fixed.has(cell.column)
-        ) {
+        if (!cellRevisable(table, keyColumns, cell.column)) {
           throw notPossible(
             `The column ${cell.column} is not a value column the table shows: never its key, a group's column or subtotal, or the column it is turned by.`,
           );
@@ -2711,6 +2775,12 @@ export function bindingHandlers(
         throw notPossible('Its result gives no value here to revise.');
       }
       const value = typeof body.value === 'string' ? body.value.normalize('NFC') : body.value!;
+      if (typeof value === 'string' && [...value].length > 10000) {
+        throw named(
+          refused(400, 'value.invalid', 'A value revised by hand is at most 10,000 characters.'),
+          naming,
+        );
+      }
       if (typeof value === 'string' && value.trim() === '') {
         throw named(refused(400, 'value.empty', 'A value revised by hand is never blank.'), naming);
       }
@@ -2917,7 +2987,14 @@ export function bindingHandlers(
       const anchors = (found.table.notes ?? []).flatMap((each) =>
         each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key]] : [],
       );
-      const etag = `"${sha256(JSON.stringify([version, sent, order, anchors]))}"`;
+      // The values revised by hand standing in its cells (RV-J), so one made or withdrawn is answered
+      // anew, never a 304.
+      const cellRevisions = ((await revisionsStanding(trx, [held.id])).get(held.id) ?? []).filter(
+        (each) => each.cell !== null,
+      );
+      const etag = `"${sha256(
+        JSON.stringify([version, sent, order, anchors, cellRevisions.map((each) => each.id)]),
+      )}"`;
       if (tagMatches(request.headers['if-none-match'], etag)) {
         return new Revalidated<never>(etag, undefined);
       }
@@ -2936,7 +3013,35 @@ export function bindingHandlers(
           "The table's stored result cannot be read now. Try again later.",
         );
       }
-      const ordered = own ? result : sortResult(found.table, result, provenance.columns);
+      // Each revised cell set in the result before it is sorted, as the publish's stage sets it
+      // (RV-F), found by its key over the whole result.
+      const revisedRows = new Map<number, Set<string>>();
+      let stored = result;
+      if (cellRevisions.length > 0) {
+        const keyColumns = await definitionKey(trx, provenance.queryDefinition.version);
+        const index = new Map(result.columns.map(([name], at) => [name, at]));
+        const rows = result.rows.map((row) => [...row]);
+        for (const each of cellRevisions) {
+          const row = keyedRow(each.cell!.key, result, keyColumns, provenance.columns);
+          const column = index.get(each.cell!.column);
+          // Only where the publish's stage sets it (M5): a column no longer revisable is said on the
+          // Data tab, and the cell shows the query's value.
+          if (
+            row === null ||
+            column === undefined ||
+            !cellRevisable(found.table, keyColumns, each.cell!.column)
+          ) {
+            continue;
+          }
+          rows[row]![column] = each.value;
+          revisedRows.set(row, new Set([...(revisedRows.get(row) ?? []), each.cell!.column]));
+        }
+        stored = { columns: result.columns, rows };
+      }
+      const sequence = own
+        ? stored.rows.map((_, at) => at)
+        : tableOrder(found.table, stored, provenance.columns);
+      const ordered = { columns: stored.columns, rows: sequence.map((at) => stored.rows[at]!) };
       const kept = ordered.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
       // Each keyed note's row matched over the whole result, before it is trimmed, so a key column
       // the table does not show finds its row and is never sent (TB3-C).
@@ -2957,6 +3062,9 @@ export function bindingHandlers(
           rows: ordered.rows.map((row) => kept.map((index) => row[index] ?? null)),
         },
         notes: Object.fromEntries(notes),
+        revised: sequence.flatMap((from, row) =>
+          [...(revisedRows.get(from) ?? [])].map((column) => ({ row, column })),
+        ),
       });
     },
 
@@ -3223,6 +3331,13 @@ export function pendingHandlers(
                   : { decision: pending.revisions.decision, over: [...pending.revisions.over] },
                 async () => naming,
               );
+              // A value kept must stand in front of this result (the RV final review, M2).
+              const kept = keptProblem(
+                standing,
+                pending.revisions?.decision,
+                columnTypeIn({ ...pending.provenance }, found),
+              );
+              if (kept !== null) throw kept;
             }
           } catch (error) {
             if (!(error instanceof AppError)) throw error;

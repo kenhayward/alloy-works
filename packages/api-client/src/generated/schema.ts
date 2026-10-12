@@ -8315,6 +8315,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         }[];
                     };
@@ -17860,6 +17862,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         }[];
                     };
@@ -17982,7 +17986,8 @@ export interface operations {
                      *         "columns": [],
                      *         "rows": []
                      *       },
-                     *       "notes": {}
+                     *       "notes": {},
+                     *       "revised": []
                      *     }
                      */
                     "application/json": {
@@ -18002,6 +18007,11 @@ export interface operations {
                         notes: {
                             [key: string]: number | null;
                         };
+                        /** @description Each cell a value revised by hand stands in, by the index of its row among the rows sent and its column: its value in `rows` is the revision, never what the query returned */
+                        revised: {
+                            row: number;
+                            column: string;
+                        }[];
                     };
                 };
             };
@@ -18605,6 +18615,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -19271,6 +19283,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -20061,6 +20075,8 @@ export interface operations {
                             stands: boolean;
                             /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                             rowMissing?: boolean;
+                            /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                            columnUnavailable?: boolean;
                         }[];
                     };
                 };
@@ -20654,6 +20670,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -21280,6 +21298,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -21906,6 +21926,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -22775,6 +22797,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -23381,6 +23405,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -24153,6 +24179,8 @@ export interface operations {
                             stands: boolean;
                             /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                             rowMissing?: boolean;
+                            /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                            columnUnavailable?: boolean;
                         }[];
                     };
                 };
@@ -24746,6 +24774,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -25412,6 +25442,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -26220,6 +26252,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -26848,6 +26882,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -27474,6 +27510,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -28080,6 +28118,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -28858,6 +28898,8 @@ export interface operations {
                             stands: boolean;
                             /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                             rowMissing?: boolean;
+                            /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                            columnUnavailable?: boolean;
                         }[];
                     };
                 };
@@ -29451,6 +29493,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */
@@ -30117,6 +30161,8 @@ export interface operations {
                                 stands: boolean;
                                 /** @description A standing cell's: whether the result held no longer has its row (`revision_row_missing`) */
                                 rowMissing?: boolean;
+                                /** @description A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`) */
+                                columnUnavailable?: boolean;
                             }[];
                         };
                         /** @description The revision a refusal concerns */

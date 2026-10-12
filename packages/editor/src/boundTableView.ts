@@ -86,6 +86,20 @@ export function fillBoundTable(
       if (each.align !== undefined) cell.dataset.align = each.align;
       if (each.wrap !== undefined) cell.classList.toggle('aw-bound-table-nowrap', !each.wrap);
       cell.textContent = each.text;
+      if (each.revised === true) {
+        // A person's value (DAT-115): a pencil shown always, and the words a screen reader is told.
+        cell.classList.add('aw-bound-table-revised');
+        const marker = document.createElement('span');
+        marker.className = 'aw-bound-table-revised-marker';
+        const icon = document.createElement('span');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = String.fromCodePoint(0x270e);
+        const words = document.createElement('span');
+        words.className = 'aw-binding-hidden';
+        words.textContent = ', revised by hand';
+        marker.append(icon, words);
+        cell.append(marker);
+      }
       marked(cell, each.marks);
       row.append(cell);
     });

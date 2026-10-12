@@ -222,6 +222,7 @@ describe('a bound table over the whole system', () => {
         ],
       },
       notes: {},
+      revised: [],
     });
     const again = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, {
       headers: { cookie, 'if-none-match': rows.headers.get('etag')! },
@@ -288,7 +289,7 @@ describe('a bound table over the whole system', () => {
       schemaVersion: number;
       values: Json[];
     };
-    expect(provenance.schemaVersion).toBe(3);
+    expect(provenance.schemaVersion).toBe(4);
     expect(provenance.values).toMatchObject([
       {
         node,

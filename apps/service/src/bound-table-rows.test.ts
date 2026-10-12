@@ -176,6 +176,7 @@ describe("a bound table's rows, for the page", () => {
       presorted: true,
       result: { columns: [['name', 'text']], rows: [['South'], ['North']] },
       notes: {},
+      revised: [],
     });
     expect(answer.headers['cache-control']).toBe('private, no-cache');
 
@@ -188,6 +189,7 @@ describe("a bound table's rows, for the page", () => {
       presorted: true,
       result: { columns: [['name', 'text']], rows: [['North']] },
       notes: {},
+      revised: [],
     });
   });
 
@@ -282,6 +284,7 @@ describe("a bound table's rows, for the page", () => {
       presorted: true,
       result: { columns: [['name', 'text']], rows: [['South'], ['North']] },
       notes: { n1: 1, n2: null },
+      revised: [],
     });
   });
 

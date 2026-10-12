@@ -43,6 +43,11 @@ export interface ValuePanelProps {
   readonly onKeep?: (() => void) | undefined;
   /** Resolves it, in a document where nothing may be kept (B2-G). */
   readonly onResolve?: (() => void) | undefined;
+  /**
+   * Revises its value by hand, or a bound table's cell (the RV plan, RV-I, RV-J), or withdraws a
+   * revision standing; absent where the reader may not.
+   */
+  readonly onRevise?: ((act: 'revise' | 'withdraw') => void) | undefined;
   /** The panel's own element: a region `F6` moves between while a binding is selected (CNT-077). */
   readonly ref?: Ref<HTMLElement>;
   /** In the Table tab: two lines, what it is and its acts, then what it shows (ADR-0052). */
@@ -67,6 +72,7 @@ export function ValuePanel({
   onChange,
   onKeep,
   onResolve,
+  onRevise,
   ref,
   stacked = false,
 }: ValuePanelProps) {
@@ -81,6 +87,15 @@ export function ValuePanel({
   const version = state?.definition?.version;
   const held = state?.held ?? null;
   const [mode, means] = MODES[binding.mode];
+  // A value it takes, or a table's cells, held and not changed since: what a person may revise.
+  const revisable =
+    onRevise !== undefined &&
+    held !== null &&
+    !held.stale &&
+    held.taken !== null &&
+    ('value' in held.taken || 'table' in held.taken);
+  const standing = (state?.revisions ?? []).some((each) => each.stands);
+  const table = held?.taken !== null && held?.taken !== undefined && 'table' in held.taken;
   return (
     <section
       ref={ref}
@@ -127,6 +142,19 @@ export function ValuePanel({
         {held?.keepable !== true && onResolve && (
           <IconButton label="Resolve" onClick={onResolve}>
             <Icon name="Resolve" />
+          </IconButton>
+        )}
+        {revisable && (
+          <IconButton
+            label={table ? 'Revise a cell by hand' : 'Revise by hand'}
+            onClick={() => onRevise('revise')}
+          >
+            <Icon name="Edit" />
+          </IconButton>
+        )}
+        {revisable && standing && (
+          <IconButton label="Withdraw the revision" onClick={() => onRevise('withdraw')}>
+            <Icon name="Undo" />
           </IconButton>
         )}
       </span>

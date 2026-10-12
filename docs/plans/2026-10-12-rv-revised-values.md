@@ -72,6 +72,32 @@ with no detail and no emitter. Nothing stores or reads a revision.
   that the request did not read, and one shown to a reader who may not read the value.
   `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the version (0.157.0) and the baseline.
 
+## Changed while building
+
+| Where | Planned                                                                 | Built, and why                                                                                                                                                                                                                                                                                          |
+| ----- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RV-E  | Separate request, publication and baseline revision tables              | A `revisions bigint[]` on each binding row, checked by trigger and compared whole: no bigger, one table fewer. The trigger holds each to its binding and resolution, not to being the latest for its cell, since a baseline publishes what it pinned; the request reads the latest under `lockBindings` |
+| RV-C  | `value` absent to withdraw                                              | `value` null to withdraw: a route body is one object, and an example of it must be drawable                                                                                                                                                                                                             |
+| RV-D  | Keep checks a cell's row in the new result                              | A kept cell whose row is gone stands, and is said in place, on the Data tab and by the publish (`revision_row_missing`): DAT-063's diagnostic, which a refusal would hide                                                                                                                               |
+| RV-I  | The Data tab's **Revise** and **Withdraw**                              | The value's own Value panel revises and withdraws; the Data tab lists each, and asks on Accept, Keep and Resolve                                                                                                                                                                                        |
+| RV-J  | The Bound table panel's **Revisions**, key fields offered from the rows | The table's Value panel's **Revise a cell by hand** and **Withdraw the revision**, the key typed in each key column's type                                                                                                                                                                              |
+| RV-K  | The Data tab's label counts values revised by hand                      | As planned, in Review                                                                                                                                                                                                                                                                                   |
+
+## Final review
+
+Fixed in RV3: a kept revision named the person who kept it, not who entered it (H1); one cell named by
+two spellings of its key could hold two revisions (H2); Keep carried an inline revision across a
+changed take (M1, now only across a changed mode); a kept value not of its new column failed a whole
+resolve and wedged a pending result (M2, now that binding's failure); a request could read a
+resolution and the revisions in front of it across another act's commit (M4, now under
+`lockBindings`); the rows route and the stage disagreed on which cells a revision applies to (M5, one
+`cellRevisable`, and the Data tab says a column no longer revisable); an own view with a revision
+could not be resolved from the page (M6); a carried withdrawal reused the revision's reason (L6);
+lengths counted before NFC (L8); the Review count counted bindings (L2). Left: the decision and the
+dialog format by the product's formats, not the theme's (L3); the Provenance panel shows a revised
+cell's revision without the query's value for it, which `provenance.json` gives (L5); confirm and the
+pending finish deciding are not tested beside accept and resolve.
+
 ## Risks
 
 - **A lapsed revision** (RV-B) is the one way a revision stops standing without a decision: an edit
@@ -80,3 +106,5 @@ with no detail and no emitter. Nothing stores or reads a revision.
   query's (ADR-0045).
 - **Not claimed**: DAT-061 (its gate, T9). DAT-057 is claimed but for an image: a bound image is not
   revised by hand, a gap named beside the claims.
+- **A value the source does not give** - a null, an empty text - cannot be revised: a revision stands
+  in front of a value. Filling one by hand is a later decision, named in bindings.md.

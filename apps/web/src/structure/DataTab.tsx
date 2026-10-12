@@ -13,12 +13,18 @@ import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { failureWords } from '../publishing/failures.js';
 import { usePresentation } from '../theme/presentation.js';
-import type { BindingState, SinceDiffers } from './bindingContexts.js';
+import {
+  standingRevision,
+  type BindingState,
+  type RevisionShown,
+  type SinceDiffers,
+} from './bindingContexts.js';
 import { DATA_STATE_WORDS, dataState, type DataState } from './dataStates.js';
 import styles from './DataTab.module.css';
 import { codeOf, identityRefusal, NOT_HELD, whoseView } from './ownView.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
-import { settleBinding } from './settleBinding.js';
+import { useRevisionAsk, type RevisionDecision } from './RevisionAsk.js';
+import { settleBinding, undecidedIn } from './settleBinding.js';
 import { noteFailures, tableFailures, type TableRows } from './tableRows.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -29,6 +35,7 @@ const DIFFERS = {
   digest: 'the binding',
   dataset: 'its result',
   definition: 'its definition version',
+  revision: 'its values revised by hand',
 } as const satisfies Record<SinceDiffers, string>;
 
 /** What an accept the service refused is said as, by its status. */
@@ -40,6 +47,32 @@ const REFUSED = {
 /** `a`, `a and b`, `a, b and c`. */
 const listed = (words: readonly string[]) =>
   words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+
+/** What a value shows: the query's, or the person's standing in front of it (DAT-115). */
+function revisedTaken(state: BindingState): NonNullable<BindingState['held']>['taken'] {
+  const taken = state.held?.taken ?? null;
+  const revision = standingRevision(state);
+  return revision !== undefined && taken !== null && 'value' in taken
+    ? { ...taken, value: revision.value }
+    : taken;
+}
+
+/** A value revised by hand, in words: its value, a cell's place, who and why, and how it stands. */
+function revisionWords(each: RevisionShown): string {
+  const where =
+    each.cell === null
+      ? ''
+      : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`;
+  const what = `${String(each.value)}${where}, by ${each.by.displayName ?? 'somebody'}: ${each.reason}`;
+  if (!each.stands) return `Revised by hand before this result, so not shown: ${what}`;
+  if (each.rowMissing === true) {
+    return `Revised by hand on a row the result no longer has: ${what}. Withdraw it from the table's Value panel, or resolve again.`;
+  }
+  if (each.columnUnavailable === true) {
+    return `Revised by hand in a column the table no longer shows, or now groups, totals or turns by: ${what}. Withdraw it from the table's Value panel.`;
+  }
+  return `Revised by hand: ${what}`;
+}
 
 /** How a binding differs from the latest publication, in words, or null. */
 function sinceWords(since: BindingState['sincePublished']): string | null {
@@ -136,6 +169,15 @@ export function DataTab({
   const [filter, setFilter] = useState<DataState | 'all'>('all');
   const [acting, setActing] = useState(false);
   const { ask, prompt } = useOwnViewAsk();
+  const { ask: askRevision, prompt: revisionPrompt } = useRevisionAsk();
+  /** What to do with the values revised by hand standing, asked with the three values (DAT-060). */
+  const decide = (current: BindingState, act: string) =>
+    askRevision({
+      standing: (current.revisions ?? []).filter((each) => each.stands),
+      queried: said(current.held?.taken ?? null, formats, current.binding),
+      next: current.waiting === null ? null : said(current.waiting.taken, formats, current.binding),
+      act,
+    });
   const presentation = usePresentation();
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
@@ -184,6 +226,7 @@ export function DataTab({
       let waited = false;
       const said = await settleBinding(client, document, state.node, state.binding.id, null, how, {
         ask,
+        decide,
         onWaiting: (words) => {
           waited = true;
           onNotice(words);
@@ -198,6 +241,7 @@ export function DataTab({
    */
   const accept = (state: BindingState) =>
     act(async () => {
+      let revisions: RevisionDecision | null = null;
       const send = (sharesOwnView: boolean) =>
         client.POST('/v1/documents/{id}/bindings/accept', {
           params: { path: { id: document } },
@@ -207,11 +251,26 @@ export function DataTab({
             version: state.waiting!.version,
             replaces: state.held!.version,
             ...(sharesOwnView ? { sharesOwnView } : {}),
+            ...(revisions === null
+              ? {}
+              : { revisions: { decision: revisions.decision, over: [...revisions.over] } }),
           },
         });
       const own = state.waiting!.provenance.identity === 'endUser';
       if (own && !(await ask())) return NOT_HELD;
+      // Asked before it is sent where the view says a revision stands, and again where the service
+      // finds one the view did not show (DAT-060).
+      if ((state.revisions ?? []).some((each) => each.stands)) {
+        revisions = await decide(state, 'Accept');
+        if (revisions === null) return null;
+      }
       let { error, response } = await send(own);
+      const undecided = undecidedIn(error);
+      if (undecided !== undefined) {
+        revisions = await decide(undecided, 'Accept');
+        if (revisions === null) return null;
+        ({ error, response } = await send(own));
+      }
       if (!own && codeOf(error) === 'acknowledgement_required') {
         if (!(await ask())) return NOT_HELD;
         ({ error, response } = await send(true));
@@ -260,6 +319,7 @@ export function DataTab({
       </div>
       {!mayCheck && <p className={styles['note']}>Values were not checked for you.</p>}
       {prompt}
+      {revisionPrompt}
       {groups.map((group) => (
         <section key={group.node} className={styles['group']}>
           <div className={styles['groupHead']}>
@@ -277,7 +337,7 @@ export function DataTab({
                         held.provenance.rowCount,
                         tables.get(key(state.node, state.binding.id)),
                       )
-                    : said(held.taken, formats, state.binding, held.stale);
+                    : said(revisedTaken(state), formats, state.binding, held.stale);
               const since = sinceWords(state.sincePublished);
               const whose = held === null ? null : whoseView(held.provenance, held.by);
               const resolvable =
@@ -298,6 +358,8 @@ export function DataTab({
                   ? [DATA_STATE_WORDS.definition]
                   : []),
                 ...(since !== null ? [since] : []),
+                // A person's values (DAT-115), standing or lapsed, and a cell's row gone (DAT-063).
+                ...(state.revisions ?? []).map((each) => revisionWords(each)),
               ];
               const acts = [
                 ...(state.waiting !== null && state.mayResolve

@@ -354,3 +354,90 @@ describe('a binding that runs as the person resolving it (the D7 plan, D7.3)', (
     }
   });
 });
+
+describe('a resolve over a value revised by hand (the RV plan, RV-D, RV-I)', () => {
+  const revision = {
+    id: '7',
+    cell: null,
+    value: 'Atlas Quay',
+    reason: 'Renamed.',
+    by: { id: 'p', displayName: 'Ada' },
+    at: '2026-10-12T09:00:00.000Z',
+    stands: true,
+  };
+  /** A service refusing the first resolve until a decision over the revision standing is sent. */
+  const refusing = () => {
+    const sent: unknown[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const body = request.method === 'GET' ? null : JSON.parse(await request.text());
+      if (request.method === 'POST') sent.push(body);
+      if (request.method === 'POST' && sent.length === 1) {
+        return json(409, {
+          code: 'revision_decision_required',
+          message: 'A value revised by hand stands.',
+          revisions: ['7'],
+          current: { ...state(false), revisions: [revision] },
+        });
+      }
+      return json(200, { results: [] });
+    }) as unknown as typeof fetch;
+    return { client: createApiClient({ baseUrl: 'http://settle.test', fetch: fetching }), sent };
+  };
+
+  it('DAT-060 asks what to do with a revision standing before a resolve replaces it, and sends the choice', async () => {
+    const { client, sent } = refusing();
+    const decide = vi.fn(async () => ({ decision: 'withdraw' as const, over: ['7'] }));
+    expect(
+      await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve', { decide }),
+    ).toBeNull();
+    expect(decide).toHaveBeenCalledWith(
+      expect.objectContaining({ revisions: [expect.objectContaining({ id: '7' })] }),
+      'Resolve',
+    );
+    expect(sent.at(-1)).toEqual({
+      bindings: [{ node: NODE, binding: 'b1', revisions: { decision: 'withdraw', over: ['7'] } }],
+    });
+  });
+
+  it("asks both, once each, where the service asks for the person's agreement to share their own view first", async () => {
+    const sent: { sharesOwnView?: boolean; bindings: { revisions?: unknown }[] }[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const body = JSON.parse(await request.text());
+      sent.push(body);
+      if (body.sharesOwnView !== true) {
+        return json(409, { code: 'acknowledgement_required', message: 'Share?' });
+      }
+      if (body.bindings[0].revisions === undefined) {
+        return json(409, {
+          code: 'revision_decision_required',
+          message: 'A value revised by hand stands.',
+          revisions: ['7'],
+          current: { ...state(false), revisions: [revision] },
+        });
+      }
+      return json(200, { results: [] });
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://settle.test', fetch: fetching });
+    const ask = vi.fn(async () => true);
+    const decide = vi.fn(async () => ({ decision: 'keep' as const, over: ['7'] }));
+    expect(
+      await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve', { ask, decide }),
+    ).toBeNull();
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(decide).toHaveBeenCalledTimes(1);
+    expect(sent.at(-1)).toMatchObject({
+      sharesOwnView: true,
+      bindings: [{ revisions: { decision: 'keep', over: ['7'] } }],
+    });
+  });
+
+  it('leaves the binding as it is, and says so, where nobody decides', async () => {
+    const { client, sent } = refusing();
+    expect(await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve')).toBe(
+      'A value revised by hand stands here, so nothing was changed. Resolve or keep it from the Data tab, which asks whether to keep the revision.',
+    );
+    expect(sent).toHaveLength(1);
+  });
+});

@@ -100,6 +100,32 @@ const precondition = async (current: () => Promise<Record<string, unknown>>): Pr
   );
 
 /**
+ * **Why a revision kept would not stand in front of the new result** (RV-D; the RV final review, M2):
+ * its value is not one of the column it now stands in, named by the revision; null where every one
+ * kept may stand, or none is kept. Asked before anything is recorded, so a resolve fails that binding
+ * alone, and a pending result is refused rather than left pending.
+ */
+export function keptProblem(
+  standing: readonly StoredRevision[],
+  decision: RevisionDecision['decision'] | undefined,
+  typeOf: (cell: RevisionCell | null) => ColumnType | undefined,
+): AppError | null {
+  if (decision !== 'keep') return null;
+  for (const each of standing) {
+    const type = typeOf(each.cell);
+    if (type === undefined || type.base === 'image' || valueProblem(type, each.value) !== null) {
+      return refused(
+        409,
+        'value.invalid',
+        `The value revised by hand, ${String(each.value)}, is not a value of its column in the new result: withdraw it instead.`,
+        { revision: each.id },
+      );
+    }
+  }
+  return null;
+}
+
+/**
  * **Carries the revisions decided over to the resolution just recorded** (RV-D), in the act's
  * transaction: kept, each recorded again in front of it with the same value and reason, replacing the
  * old, its value checked against the column it now stands in (`value_invalid`, naming the revision);
@@ -116,6 +142,8 @@ export async function carryRevisions(
     readonly typeOf: (cell: RevisionCell | null) => ColumnType | undefined;
   },
 ): Promise<void> {
+  const problem = keptProblem(input.standing, input.decision, input.typeOf);
+  if (problem !== null) throw problem;
   for (const each of input.standing) {
     if (input.decision === 'withdraw') {
       const withdrawn = await recordRevision(trx, {
@@ -126,21 +154,13 @@ export async function carryRevisions(
         resolution: each.resolution,
         act: 'withdraw',
         value: null,
-        reason: each.reason,
+        // The act's own words, never the revision's reason (the RV final review, L6).
+        reason: 'Withdrawn as the binding took a new result.',
         replaces: each.id,
         by: input.by,
       });
       await recordRevisionEvent(trx, withdrawn, 'withdraw', each.value);
       continue;
-    }
-    const type = input.typeOf(each.cell);
-    if (type === undefined || type.base === 'image' || valueProblem(type, each.value) !== null) {
-      throw refused(
-        409,
-        'value.invalid',
-        `The value revised by hand, ${String(each.value)}, is not a value of its column in the new result: withdraw it instead.`,
-        { revision: each.id },
-      );
     }
     const kept = await recordRevision(trx, {
       document: each.document,

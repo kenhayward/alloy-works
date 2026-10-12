@@ -70,6 +70,11 @@ export interface BindingHeld {
         readonly value: string;
         readonly waiting: boolean;
         /**
+         * Whether `value` is a person's revision standing in front of what the query returned (the RV
+         * plan, RV-I; DAT-115): marked so, always.
+         */
+        readonly revised?: boolean;
+        /**
          * Where the value is an image (the B6 plan, B6-G): the asset version its bytes are read from,
          * and its `alt` - the description, or empty where it is decorative. `value` is then its words,
          * which a copy's plain text writes.
@@ -105,6 +110,11 @@ export interface TableHeld {
    * where the result has none (`note_row_missing`). A note it has not answered for is being read.
    */
   readonly notes?: Readonly<Record<string, number | null>>;
+  /**
+   * Each cell a value revised by hand stands in (the RV plan, RV-J), by its row among `rows` and its
+   * column, as the rows route answered: its value in `rows` is already the revision.
+   */
+  readonly revised?: readonly { readonly row: number; readonly column: string }[];
 }
 
 /**
@@ -202,6 +212,9 @@ export const CHANGED_SINCE_RESOLVED = 'No value - the binding changed since it w
 
 /** A held value with a newer result waiting: shown always, beside the value. */
 export const REVISION_WAITING = 'revision waiting';
+
+/** A value a person revised by hand (DAT-115): shown always, beside the value, never by colour alone. */
+export const REVISED_BY_HAND = 'revised by hand';
 
 /** On its own, where the definition's title cannot be shown. */
 export const A_BOUND_VALUE = 'a bound value';
@@ -325,11 +338,15 @@ function shownFor(
           src: assetContentPath(held.shown.image.asset),
           alt: held.shown.image.alt,
         };
-  return held.shown.waiting
+  const markers = [
+    ...(held.shown.revised === true ? [REVISED_BY_HAND] : []),
+    ...(held.shown.waiting ? [REVISION_WAITING] : []),
+  ];
+  return markers.length > 0
     ? {
         text: held.shown.value,
         hidden: `${KIND},`,
-        marker: REVISION_WAITING,
+        marker: markers.join(', '),
         failed: false,
         resolved: true,
         image,
@@ -475,6 +492,8 @@ export interface BoundTableCellShown {
   readonly wrap?: boolean;
   /** The letters of the notes on the cell (TB3.3), where it has any. */
   readonly marks?: readonly string[];
+  /** Whether its value is a person's, revised by hand (DAT-115): marked, and said so. */
+  readonly revised?: true;
 }
 
 /**
@@ -734,7 +753,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   const shownHeld = held.shown.table;
   return memoised(
     [rows, node.attrs, style, setting],
-    `${empty} ${notesKey(notes, shownHeld)}`,
+    `${empty} ${notesKey(notes, shownHeld)} ${JSON.stringify(shownHeld.revised ?? [])}`,
     () => {
       const laid = layoutTable(table, rows, columns, style, setting.formats, setting.words, {
         limit: PAGE_ROWS,
@@ -769,6 +788,19 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
         const found = marks.get(at);
         return found === undefined ? {} : { marks: found };
       };
+      // Each revised cell by its row among the rows held and its column (RV-J); a transposed table's
+      // body row is a column and each value column a row (TG2).
+      const revised = new Set(
+        (shownHeld.revised ?? []).map((each) => `${each.row} ${each.column}`),
+      );
+      const revisedAt = (row: number, x: number) => {
+        const at = laid.transposed
+          ? x === 0
+            ? null
+            : `${laid.transposed.rows[x - 1]} ${laid.transposed.columns[row]}`
+          : `${laid.rows[row]!.index} ${laid.columns[x]!.name}`;
+        return at !== null && revised.has(at) ? { revised: true as const } : {};
+      };
       return {
         columns: laid.columns.map((column, at) => ({
           text: column.header,
@@ -784,6 +816,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
             ...(cell.align === undefined ? {} : { align: cell.align }),
             ...(cell.wrap === undefined ? {} : { wrap: cell.wrap }),
             ...marked(`${y} ${x}`),
+            ...revisedAt(y, x),
           })),
         ),
         // The result's rows, which a transposed table lays out as its columns (TG2).

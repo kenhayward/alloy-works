@@ -940,6 +940,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   changed, or a definition, the layout or the theme did - and **Export** saves it as one HTML file.
   What you may not read shows only where it stands. Through the API, `/v1/components/{id}/comparison`,
   `/v1/baselines/{id}/comparison` and `/v1/changes`, which lists what changed since a given time.
+- **Values revised by hand.** In a document, a value's panel offers **Revise by hand** - and a bound
+  table's, **Revise a cell by hand**, by its row's key and a value column - to whoever may edit the
+  document: the value, typed in its column's type and shown as it will print, and why. It stands in
+  front of what the query returned, which is kept; the editor and the text mark it _revised by hand_,
+  the Data tab lists it (and in Review counts them), and its provenance gives both halves.
+  **Withdraw the revision** shows the query's value again. Accepting a newer result, Keep and Resolve
+  each ask first whether to withdraw it or keep it in front of the new result. A publication prints
+  the revisions standing when it was asked for, unmarked, and `provenance.json` gives both halves.
+  Through the API at `/v1/documents/{id}/bindings/revisions`. A null the source gave is not filled by
+  hand.
 - **Suggestions.** In Review, a component's label offers **Suggest changes** to whoever may suggest
   to it: a draft of it opens in place, in the component editor with every command, but no lock and
   nothing saved to the component - the author can go on editing meanwhile - until **Send

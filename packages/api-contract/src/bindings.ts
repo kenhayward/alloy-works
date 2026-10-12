@@ -268,6 +268,12 @@ export const RevisionView = z.object({
     .describe(
       "A standing cell's: whether the result held no longer has its row (`revision_row_missing`)",
     ),
+  columnUnavailable: z
+    .boolean()
+    .optional()
+    .describe(
+      "A standing cell's: whether its column is no longer one the table shows, or is now its key, a group's or the column it is turned by (`revision_column_unavailable`)",
+    ),
 });
 export type RevisionView = z.infer<typeof RevisionView>;
 
@@ -635,6 +641,11 @@ export const BoundTableRowsView = z.object({
     .record(z.string(), z.number().int().min(0).nullable())
     .describe(
       'Each note the table anchors by key, by its identifier: the index of its row among the rows sent, or null where the result has no row its key names (`note_row_missing`). A key column the table does not show is never sent',
+    ),
+  revised: z
+    .array(z.object({ row: z.number().int().min(0), column: z.string() }))
+    .describe(
+      'Each cell a value revised by hand stands in, by the index of its row among the rows sent and its column: its value in `rows` is the revision, never what the query returned',
     ),
 });
 export type BoundTableRowsView = z.infer<typeof BoundTableRowsView>;

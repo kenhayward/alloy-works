@@ -261,3 +261,50 @@ describe('values in a document, in Chromium (the B1 plan, task 6)', () => {
     });
   });
 });
+
+describe('a value revised by hand, in Chromium (the RV plan, RV-I)', () => {
+  let placed: Placed;
+  beforeAll(async () => {
+    const client = api();
+    placed = await placeValues(client);
+    const view = await client.GET('/v1/documents/{id}/bindings', {
+      params: { path: { id: placed.document } },
+    });
+    const weir = view.data!.bindings.find((each) => each.binding.id === 'weir')!;
+    const revised = await client.POST('/v1/documents/{id}/bindings/revisions', {
+      params: { path: { id: placed.document } },
+      body: {
+        node: placed.node,
+        binding: 'weir',
+        act: 'revise',
+        value: '13.5',
+        reason: 'The gauge was recalibrated.',
+        resolution: weir.held!.resolution,
+        replaces: null,
+      },
+    });
+    if (!revised.data) throw new Error(`revising answered ${revised.response.status}`);
+  });
+
+  const text = (page: Page) => page.getByRole('region', { name: "The document's text" });
+
+  it('passes axe with a value revised by hand marked in the text, listed in the Data tab and given both halves in its provenance', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/documents/${placed.document}`);
+      const value = text(page).getByRole('button', { name: /revised by hand/ });
+      await value.waitFor();
+      expect(await value.textContent()).toMatch(/^13\.50/);
+      await checkAxe(page, 'a value revised by hand', task.meta, { shows: value });
+      await page.getByRole('tab', { name: 'Data' }).click();
+      const row = page.locator('li[data-binding="weir"]');
+      await row.getByText('Revised by hand: 13.5, by').waitFor();
+      await checkAxe(page, 'a value revised by hand in the Data tab', task.meta, { shows: row });
+      await value.click();
+      const provenance = page.getByRole('dialog', { name: 'Provenance' });
+      await provenance.getByText('Revised by hand', { exact: true }).waitFor();
+      await checkAxe(page, "a revised value's provenance", task.meta, { shows: provenance });
+    });
+  });
+});

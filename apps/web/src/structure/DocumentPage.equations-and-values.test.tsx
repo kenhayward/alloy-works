@@ -1192,6 +1192,33 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     expect(panel).toHaveTextContent('A newer result is waiting: 1,240.5');
   });
 
+  it("DAT-115 shows a value revised by hand in the document's text in place of the query's, marked always as revised by hand", async () => {
+    const { checked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [
+        state(bound('b1'), value, {
+          facts: {
+            revisions: [
+              {
+                id: '7',
+                cell: null,
+                value: '1300',
+                reason: 'Measured again.',
+                by: { id: 'p', displayName: 'Ada' },
+                at: '2026-10-12T09:00:00.000Z',
+                stands: true,
+              },
+            ],
+          },
+        }),
+      ],
+    });
+    const text = await textRegion();
+    await checked();
+    const button = await within(text).findByRole('button', { name: /^1,300.0, bound value,/ });
+    expect(seen(button)).toContain('revised by hand');
+  });
+
   it("shows a reader who may not read the definition its value, and none of the definition's SQL or connection", async () => {
     const user = userEvent.setup();
     const { checked } = openWithValues({

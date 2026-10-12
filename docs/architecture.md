@@ -2050,6 +2050,21 @@ lock, applied when accepted to the component as it is then.
 | `web: src/editor/draft.ts`, `ComponentEditor.tsx`                    | The editor's draft mode: a session service that grants every claim and keeps every save in the tab                                                                                                                          |
 | `web: src/review/SuggestionsPanel.tsx`, `structure/DocumentPage.tsx` | Review's **Suggest changes**, the draft in place, the Suggestions panel and its redline                                                                                                                                     |
 
+## Values revised by hand
+
+A person's value in front of a resolution, never in place of it, built by
+[the RV plan](plans/2026-10-12-rv-revised-values.md) under
+[ADR-0036](decisions/0036-revising-a-bound-value-by-hand-moves-to-t3.md) and
+[bindings.md](design/bindings.md#a-value-revised-by-hand).
+
+| Where                                                                     | Holds                                                                                                                                                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0078_binding_revisions`, `db: src/revisions.ts`        | `binding_revision`, insert-only, in front of a resolution; the revisions each request, publication and baseline read (`revisions bigint[]`); a resolve's decision kept on `dataset_pending` |
+| `service: src/data/bindings.ts`, `src/data/revisions.ts`                  | Revise and withdraw; every act recording a resolution decides the revisions standing (`revisionsDecided`, `carryRevisions`); the view's `revisions`; the rows route setting revised cells   |
+| `domain: src/data/revision.ts`, `src/publishing/bind.ts`                  | `cellRevisable`; the stage printing a revision in front of a value or a cell, found by key; `provenance.json` schema 4                                                                      |
+| `web: src/structure/RevisionDialog.tsx`, `RevisionAsk.tsx`, `DataTab.tsx` | Revise and withdraw; the decision asked with the three values; the Data tab's state                                                                                                         |
+| `editor: src/bindings.ts`, `src/boundTableView.ts`                        | The marker _revised by hand_, on a value and a cell                                                                                                                                         |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

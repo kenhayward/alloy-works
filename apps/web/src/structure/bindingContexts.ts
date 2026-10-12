@@ -14,6 +14,7 @@ import {
   type TakeOutcome,
   type ValueFormats,
   type ValueType,
+  type CanonicalValue,
 } from '@alloy-works/domain';
 import {
   DEFAULT_TABLE_SETTING,
@@ -87,11 +88,34 @@ function columnsIn(value: unknown): readonly TableColumn[] {
   });
 }
 
+/**
+ * **A value revised by hand** as the bindings view lists it (the RV plan, RV-H): its value or a bound
+ * table's cell by key and column, who, when and why; standing in front of what the binding holds, or
+ * lapsed; a standing cell's row gone said.
+ */
+export interface RevisionShown {
+  readonly id: string;
+  readonly cell: {
+    readonly key: Readonly<Record<string, CanonicalValue>>;
+    readonly column: string;
+  } | null;
+  readonly value: string | boolean;
+  readonly reason: string;
+  readonly by: { readonly id: string; readonly displayName: string | null };
+  readonly at: string;
+  readonly stands: boolean;
+  readonly rowMissing?: true;
+  /** A standing cell's column no longer revisable in its table (the RV final review, M5). */
+  readonly columnUnavailable?: true;
+}
+
 export interface BindingState {
   readonly node: string;
   /** A binding taking a value, or a bound table's, taking the whole result (TB1-C). */
   readonly binding: AnyBinding;
   readonly held: {
+    /** The resolution it holds by, which a revision names (RV-C); empty where the view did not say. */
+    readonly resolution?: string;
     readonly dataset: string;
     readonly version: string;
     readonly number: string;
@@ -130,6 +154,8 @@ export interface BindingState {
   readonly mayCheck: boolean;
   /** Whether this reader may resolve it. */
   readonly mayResolve: boolean;
+  /** Its latest revisions by hand, standing or lapsed (the RV plan, RV-H); none withdrawn. */
+  readonly revisions?: readonly RevisionShown[];
   /**
    * Where what the view answered of what it holds, or of what waits, does not read: it is shown
    * unavailable, with no provenance to open, never as one never resolved.
@@ -137,10 +163,68 @@ export interface BindingState {
   readonly unread?: true;
 }
 
-/** What may differ from the latest publication: the binding itself, the result, the definition. */
-export type SinceDiffers = 'digest' | 'dataset' | 'definition';
+/**
+ * What may differ from the latest publication: the binding itself, the result, the definition, and
+ * the values revised by hand (RV-H).
+ */
+export type SinceDiffers = 'digest' | 'dataset' | 'definition' | 'revision';
 
-const SINCE: readonly string[] = ['digest', 'dataset', 'definition'];
+const SINCE: readonly string[] = ['digest', 'dataset', 'definition', 'revision'];
+
+/** The view's `revisions`, each read member by member; one that does not read is left out. */
+function revisionsIn(value: unknown): readonly RevisionShown[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((each): RevisionShown[] => {
+    if (!isRecord(each) || !isRecord(each.by)) return [];
+    const [id, reason, at, by] = [
+      text(each.id),
+      text(each.reason),
+      text(each.at),
+      text(each.by.id),
+    ];
+    const { value: entered, stands } = each;
+    if (!id || reason === undefined || !at || !by || typeof stands !== 'boolean') return [];
+    if (typeof entered !== 'string' && typeof entered !== 'boolean') return [];
+    const cell =
+      each.cell === null
+        ? null
+        : isRecord(each.cell) && isRecord(each.cell.key) && typeof each.cell.column === 'string'
+          ? { key: each.cell.key as Record<string, CanonicalValue>, column: each.cell.column }
+          : undefined;
+    if (cell === undefined) return [];
+    return [
+      {
+        id,
+        cell,
+        value: entered,
+        reason,
+        by: { id: by, displayName: text(each.by.displayName) ?? null },
+        at,
+        stands,
+        ...(each.rowMissing === true ? { rowMissing: true as const } : {}),
+        ...(each.columnUnavailable === true ? { columnUnavailable: true as const } : {}),
+      },
+    ];
+  });
+}
+
+/** The revision standing in front of a binding's value, its cell's where `cell` names one. */
+export function standingRevision(
+  state: BindingState,
+  cell: RevisionShown['cell'] = null,
+): RevisionShown | undefined {
+  const at = cell === null ? null : JSON.stringify([cell.column, sortedKey(cell.key)]);
+  return (state.revisions ?? []).find(
+    (each) =>
+      each.stands &&
+      (each.cell === null
+        ? at === null
+        : at === JSON.stringify([each.cell.column, sortedKey(each.cell.key)])),
+  );
+}
+
+const sortedKey = (key: Readonly<Record<string, CanonicalValue>>) =>
+  Object.entries(key).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 
 function sinceIn(value: unknown): BindingState['sincePublished'] {
   if (value === 'new') return 'new';
@@ -228,6 +312,7 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
       ? { parameters: value.parameters as string[] }
       : {};
   return {
+    ...(text(value.resolution) === undefined ? {} : { resolution: text(value.resolution)! }),
     dataset,
     version,
     number,
@@ -282,6 +367,7 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
       sincePublished: sinceIn(each.sincePublished),
       mayCheck: each.mayCheck === true,
       mayResolve: each.mayResolve === true,
+      revisions: revisionsIn(each.revisions),
     };
     if (held === undefined || waiting === undefined) {
       return [
@@ -391,7 +477,7 @@ function heldOf(
           rows: read?.result ?? null,
           presorted: read?.presorted === true,
           ...(held.key === undefined ? {} : { key: held.key }),
-          ...(read === undefined ? {} : { notes: read.notes }),
+          ...(read === undefined ? {} : { notes: read.notes, revised: read.revised }),
         },
       },
     };
@@ -400,9 +486,18 @@ function heldOf(
     return { binding, shown: { failure: 'unavailable' } };
   }
   if ('value' in taken) {
+    // A person's value stands in front of the query's (RV-I; DAT-115): shown in its place, marked.
+    const revision = standingRevision(state);
     return {
       binding,
-      shown: { value: shownValue(taken, formats), waiting: state.waiting !== null },
+      shown:
+        revision === undefined
+          ? { value: shownValue(taken, formats), waiting: state.waiting !== null }
+          : {
+              value: shownValue({ ...taken, value: revision.value }, formats),
+              waiting: state.waiting !== null,
+              revised: true,
+            },
     };
   }
   if ('image' in taken) {

@@ -6,7 +6,12 @@ import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
 import type { Column } from '../data/definition.js';
 import type { FieldFormat } from '../data/field-format.js';
-import { revisionRecord, type RevisionRecord, type StandingRevision } from '../data/revision.js';
+import {
+  cellRevisable,
+  revisionRecord,
+  type RevisionRecord,
+  type StandingRevision,
+} from '../data/revision.js';
 import { formatValue } from '../data/format.js';
 import { layoutTable, type TablePresentation } from '../data/table.js';
 import { keyedRow, keyNamesTheKey, matchNoteRows, placeTableNotes } from '../data/table-notes.js';
@@ -445,16 +450,6 @@ export function bind(
       return { result: from.result, at, gone: true };
     }
     const index = new Map(from.result.columns.map(([name], place) => [name, place]));
-    const shown = new Set(table.columns.map((column) => column.column));
-    // What orders and heads the table stays the query's: its key, its groups and their subtotals, and
-    // the column it is turned by (RV-F).
-    const fixed = new Set([
-      ...from.key,
-      ...(table.groups ?? []).flatMap((group) =>
-        group.subtotal === undefined ? [group.column] : [group.column, group.subtotal],
-      ),
-      ...(table.transpose === undefined ? [] : [table.transpose.header]),
-    ]);
     const rows = from.result.rows.map((row) => [...row]);
     let gone = false;
     for (const revision of cells) {
@@ -471,7 +466,7 @@ export function bind(
         continue;
       }
       const place = index.get(cell.column);
-      if (place === undefined || !shown.has(cell.column) || fixed.has(cell.column)) {
+      if (place === undefined || !cellRevisable(table, from.key, cell.column)) {
         gone = true;
         fail('revision_column_unavailable', table.id, `${revision.id}: ${cell.column}`);
         continue;

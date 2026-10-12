@@ -58,6 +58,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { lockBindings } from './datasets.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -535,6 +536,13 @@ async function bindingsHeld(
     }
   }
   if (asked.length === 0) return { held: [], unresolved: [] };
+  // Under each binding's lock (the RV final review, M4): an accept, a resolve or a Keep deciding the
+  // revisions in front of what it held commits whole before this reads, or waits until it has.
+  await lockBindings(
+    trx,
+    documentId,
+    asked.map(({ node, binding }) => ({ node, binding })),
+  );
   const latest = await trx
     .selectFrom('binding_resolution')
     .distinctOn(['node_id', 'binding_id'])
@@ -563,8 +571,7 @@ async function bindingsHeld(
       });
     }
   }
-  // Each with the revisions standing in front of it, read as a set that no act changes once its
-  // resolution is replaced (RV-E).
+  // Each with the revisions standing in front of it, read under the same locks (RV-E).
   const standing = await revisionsStanding(
     trx,
     held.map((each) => each.resolution),

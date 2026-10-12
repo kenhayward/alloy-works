@@ -9,6 +9,7 @@ import {
   boundTablesShown,
   FAILED_CLASS,
   imageOfSpec,
+  REVISED_BY_HAND,
   type BindingContext,
   type BindingShown,
   type BoundImage,
@@ -198,7 +199,10 @@ export function fillBinding(
     marker.className = MARKER_CLASS;
     const icon = document.createElement('span');
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = String.fromCodePoint(0x21bb);
+    // A pencil for a person's value (DAT-115), the arrows for a newer result waiting.
+    icon.textContent = String.fromCodePoint(
+      shown.marker.startsWith(REVISED_BY_HAND) ? 0x270e : 0x21bb,
+    );
     marker.append(icon, ` ${shown.marker}`);
     element.append(marker);
   }

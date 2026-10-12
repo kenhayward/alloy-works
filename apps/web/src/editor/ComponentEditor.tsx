@@ -309,6 +309,8 @@ export interface BindingActs {
     session: string | null,
     act: 'placed' | 'changed' | 'keep' | 'resolve',
   ) => void;
+  /** Revises a value by hand, or withdraws a revision (the RV plan, RV-I); absent where it may not. */
+  readonly onRevise?: (binding: string, act: 'revise' | 'withdraw') => void;
 }
 
 type Loaded =
@@ -1998,6 +2000,12 @@ export function ComponentEditor({
                 resolved={tableResolved(surface.state, bound.binding)}
                 state={bindingStates?.get(bound.binding.id)}
                 {...(alone ? { title: titles.get(bound.binding.query) } : {})}
+                {...(bindingActs?.onRevise !== undefined
+                  ? {
+                      onRevise: (act: 'revise' | 'withdraw') =>
+                        bindingActs.onRevise!(bound.binding.id, act),
+                    }
+                  : {})}
                 {...(onProvenance
                   ? {
                       onProvenance: (opener: HTMLElement) => onProvenance(bound.binding.id, opener),
@@ -2046,6 +2054,11 @@ export function ComponentEditor({
         ? {
             onKeep: () => settle(valued.binding.id, 'keep'),
             onResolve: () => settle(valued.binding.id, 'resolve'),
+          }
+        : {})}
+      {...(bindingActs?.onRevise !== undefined
+        ? {
+            onRevise: (act: 'revise' | 'withdraw') => bindingActs.onRevise!(valued.binding.id, act),
           }
         : {})}
     />
