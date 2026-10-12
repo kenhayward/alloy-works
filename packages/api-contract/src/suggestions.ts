@@ -176,6 +176,11 @@ export const suggestionRoutes = {
         description: 'No such component in this environment, or none the caller may read',
         schema: ErrorBody,
       },
+      409: {
+        description:
+          '`suggestion_resolved`: the caller sent this very draft before, and it has been resolved',
+        schema: ErrorBody,
+      },
     },
   },
   listComponentSuggestions: {

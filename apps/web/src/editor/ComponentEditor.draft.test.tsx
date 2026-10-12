@@ -2,6 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { draftKey } from './draft.js';
+import { forgetEditing, keepEditingAgain } from './editing-storage.js';
 import { ADA, COMPONENT, json, open, opened } from './test/componentEditor.js';
 
 afterEach(() => {
@@ -46,11 +47,12 @@ describe('a suggestion’s draft, in the component editor', () => {
     await waitFor(() => expect(window.sessionStorage.getItem(draftKey(COMPONENT, ADA))).toBeNull());
   });
 
-  it('opens the draft this tab kept, made from the version that opens, and discards it', async () => {
+  it('opens the draft this tab kept, whatever version it was made from, sends it against that version, and discards it', async () => {
     window.sessionStorage.setItem(
       draftKey(COMPONENT, ADA),
       JSON.stringify({
-        version: 'v1',
+        // Made from an older version than the one that opens: kept, and sent against it.
+        version: { id: 'v0', number: '0.0' },
         content: {
           ...(opened().content as object),
           title: 'Install the printer',
@@ -65,11 +67,29 @@ describe('a suggestion’s draft, in the component editor', () => {
         },
       }),
     );
-    const { surface, onDiscard } = drafting();
+    const { surface, onDiscard, onSend } = drafting(vi.fn(async () => false));
     const view = await surface();
     expect(view.state.doc.textContent).toContain('Kept words.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send suggestion' }));
+    await waitFor(() => expect(onSend).toHaveBeenCalledOnce());
+    expect(onSend.mock.calls[0]![1]).toBe('v0');
     await userEvent.click(screen.getByRole('button', { name: 'Discard suggestion' }));
     expect(onDiscard).toHaveBeenCalledOnce();
     expect(window.sessionStorage.getItem(draftKey(COMPONENT, ADA))).toBeNull();
+  });
+
+  it('writes nothing of a draft once the tab is signed out of', async () => {
+    const { surface } = drafting();
+    const view = await surface();
+    forgetEditing();
+    try {
+      act(() => {
+        view.dispatch(view.state.tr.insertText(' Late.', view.state.doc.content.size - 1));
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(window.sessionStorage.getItem(draftKey(COMPONENT, ADA))).toBeNull();
+    } finally {
+      keepEditingAgain();
+    }
   });
 });

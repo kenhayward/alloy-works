@@ -3,6 +3,12 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.156.0 - 2026-10-12 (PR #578)
+
+### Added
+
+- **Suggestions.** In Review, **Suggest changes** on a component opens a draft of it in place: edit it as an author would, with no lock and while its author goes on working, then **Send suggestion**. The Suggestions panel lists every suggestion on the document, drawn as a redline over the component as it is now. Whoever may edit the component accepts one, applied to the component as it is then and recorded as their version, or rejects it; its author may withdraw it. One that no longer fits says where and why, and stays pending. Every pending suggestion on a document, or one person's, can be accepted or rejected at once. Through the API at `/v1/components/{id}/suggestions` and `/v1/suggestions`.
+
 ## 0.155.0 - 2026-10-12 (PR #575)
 
 ### Added

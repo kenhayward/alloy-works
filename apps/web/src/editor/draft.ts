@@ -1,5 +1,6 @@
 import type { ContentDocument } from '@alloy-works/domain';
 
+import { mayKeepEditing } from './editing-storage.js';
 import type { SessionService } from './session.js';
 
 /**
@@ -20,8 +21,9 @@ export interface DraftMode {
 export const draftKey = (component: string, principal: string) =>
   `alloy-works:editing-draft:${principal}:${component}`;
 
-interface Kept {
-  readonly version: string;
+/** A kept draft: the version it was made from, kept with it so it is sent against that version. */
+export interface KeptDraft {
+  readonly version: { readonly id: string; readonly number: string };
   readonly content: ContentDocument;
 }
 
@@ -33,17 +35,19 @@ function storage(): Storage | null {
   }
 }
 
-/** The draft this tab kept of a component, where it was made from the version that opens. */
-export function readDraft(
-  component: string,
-  principal: string,
-  version: string,
-): ContentDocument | null {
+/**
+ * The draft this tab kept of a component, whatever version it was made from: a newer version cut
+ * meanwhile never drops it, since a suggestion applies to the component as it is then (the SG final
+ * review).
+ */
+export function readDraft(component: string, principal: string): KeptDraft | null {
   try {
     const kept = storage()?.getItem(draftKey(component, principal));
     if (!kept) return null;
-    const parsed = JSON.parse(kept) as Kept;
-    return parsed.version === version ? parsed.content : null;
+    const parsed = JSON.parse(kept) as KeptDraft;
+    return typeof parsed.version?.id === 'string' && typeof parsed.version.number === 'string'
+      ? parsed
+      : null;
   } catch {
     return null;
   }
@@ -66,11 +70,14 @@ export function forgetDraft(component: string, principal: string): void {
 export function draftService(
   component: string,
   principal: string,
-  version: string,
+  version: { readonly id: string; readonly number: string },
 ): SessionService {
   return {
     claim: async () => ({ ok: true }),
     save: async (_sequence, _openedFrom, content) => {
+      // Nothing is written once the tab is signed out of (editing-storage.ts): a late save must not
+      // bring back what the sign-out forgot.
+      if (!mayKeepEditing()) return { ok: true };
       try {
         storage()?.setItem(draftKey(component, principal), JSON.stringify({ version, content }));
       } catch {
@@ -78,8 +85,8 @@ export function draftService(
       }
       return { ok: true };
     },
-    cut: async () => ({ ok: true, outcome: 'unchanged', version: { id: version, number: '' } }),
-    release: async () => ({ ok: true, outcome: 'unchanged', version: { id: version, number: '' } }),
+    cut: async () => ({ ok: true, outcome: 'unchanged', version }),
+    release: async () => ({ ok: true, outcome: 'unchanged', version }),
     iterations: async () => ({ ok: true, items: [], next: null }),
     iteration: async () => ({ ok: false, code: 'failed' }),
     take: async () => ({ ok: false, code: 'lock_free' }),

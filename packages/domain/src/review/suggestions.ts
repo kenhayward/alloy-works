@@ -42,16 +42,25 @@ function identifiersIn(value: unknown, into: Set<string>): Set<string> {
   return into;
 }
 
-/** A copy of a value with each identifier in `renamed` replaced by its new one. */
-function renaming<T>(value: T, renamed: ReadonlyMap<string, string>): T {
-  if (Array.isArray(value)) return value.map((each) => renaming(each, renamed)) as T;
+/**
+ * A copy of a value with each identifier in `renamed` replaced by its new one: its own (`id`), where
+ * `own`, and every reference to one (a cross-reference's `block`), so a reference follows a block
+ * renamed under it (the SG final review).
+ */
+function renaming<T>(value: T, renamed: ReadonlyMap<string, string>, own = true): T {
+  if (renamed.size === 0) return value;
+  if (Array.isArray(value)) return value.map((each) => renaming(each, renamed, own)) as T;
+  // A reference into another component names that component's blocks, never this one's.
+  if (typeof value === 'object' && value !== null && 'component' in value && 'block' in value) {
+    return value;
+  }
   if (typeof value === 'object' && value !== null) {
     return Object.fromEntries(
       Object.entries(value).map(([key, member]) => [
         key,
-        key === 'id' && typeof member === 'string'
+        ((key === 'id' && own) || key === 'block') && typeof member === 'string'
           ? (renamed.get(member) ?? member)
-          : renaming(member, renamed),
+          : renaming(member, renamed, own),
       ]),
     ) as T;
   }
@@ -152,6 +161,20 @@ export function applySuggestion(
     order.splice(at, 0, id);
   };
   const taken = identifiersIn(current.content, new Set());
+  // Every identifier an added block holds that the current version holds already, given a fresh one
+  // (CNT-009), across every added block at once, so a reference from one to another follows it.
+  const renamed = new Map<string, string>();
+  for (const block of proposed.content) {
+    if (was.has(block.id) || same(now.get(block.id), block)) continue;
+    for (const each of identifiersIn(block, new Set())) {
+      if (taken.has(each) && !renamed.has(each)) renamed.set(each, fresh());
+    }
+  }
+  // A block the suggestion changes refers to an added block by its new identifier too.
+  for (const [id, block] of taking) {
+    if (!now.has(id) || taking.get(id) !== now.get(id))
+      taking.set(id, renaming(block, renamed, false));
+  }
   // Each added block's identifier as placed, by its identifier in the draft.
   const placedAs = new Map<string, string>();
   // Moved and added blocks placed in the draft's order, so each one's predecessor is placed first.
@@ -179,12 +202,7 @@ export function applySuggestion(
     // are given fresh ones (CNT-009).
     const block = proposed.content[index]!;
     if (same(now.get(id), block)) continue;
-    const renamed = new Map<string, string>();
-    for (const each of identifiersIn(block, new Set())) {
-      if (taken.has(each)) renamed.set(each, fresh());
-    }
     const placed = renaming(block, renamed);
-    for (const each of identifiersIn(placed, new Set())) taken.add(each);
     placedAs.set(id, placed.id);
     taking.set(placed.id, placed);
     placeAfter(placed.id, after, before === null || !placedAs.has(before));
@@ -192,7 +210,8 @@ export function applySuggestion(
   // The document's own members.
   const members: Partial<Record<(typeof MEMBERS)[number], string>> = {};
   for (const member of MEMBERS) {
-    if (proposed[member] === base[member]) continue;
+    // Changed by hand to what was drafted, it is done.
+    if (proposed[member] === base[member] || current[member] === proposed[member]) continue;
     if (current[member] !== base[member]) stale.push({ block: null, member, why: 'changed' });
     else members[member] = proposed[member];
   }

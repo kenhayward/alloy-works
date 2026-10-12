@@ -1054,8 +1054,16 @@ export function ComponentEditor({
             mayEdit: true,
             lock: null,
             unsaved: null,
-            content: readDraft(data.id, principalId, data.version.id) ?? data.content,
           };
+          // What the tab kept of the draft, against the version it was made from.
+          const kept = readDraft(data.id, principalId);
+          if (kept !== null) {
+            data = {
+              ...data,
+              content: kept.content as unknown as typeof data.content,
+              version: { ...data.version, id: kept.version.id, number: kept.version.number },
+            };
+          }
         }
         let opened;
         try {
@@ -1314,7 +1322,10 @@ export function ComponentEditor({
     const editing = createSession({
       // A session claimed afresh is followed by what the window keeps, from which nothing is sent.
       service: drafting
-        ? draftService(component.id, principalId, component.version.id)
+        ? draftService(component.id, principalId, {
+            id: component.version.id,
+            number: component.version.number,
+          })
         : sessionService(client, component.id, initialSession, principalId, undefined, (id) =>
             keeping.rebind(id),
           ),
@@ -1322,7 +1333,10 @@ export function ComponentEditor({
       onSent: (sequence) => keeping.sent(sequence),
       onAccepted: (sequence) => {
         keeping.accepted(sequence);
-        if (sessionNow.current !== null) onSavedRef.current?.(sessionNow.current, sequence);
+        // A draft's saves stay in the tab: the page reads nothing for them.
+        if (sessionNow.current !== null && !drafting) {
+          onSavedRef.current?.(sessionNow.current, sequence);
+        }
       },
       onSaveRefused: (sequence) => keeping.refused(sequence),
       clock: clockRef.current,
@@ -2531,7 +2545,8 @@ export function ComponentEditor({
                       schemas={shown.schemas}
                       values={values}
                       people={people}
-                      readOnly={!mayFormat || loaded.state !== 'open'}
+                      // A draft suggests content alone: its values are the component's (SG-J).
+                      readOnly={!mayFormat || loaded.state !== 'open' || drafting}
                       onChange={(next) => {
                         heldValues.current = next;
                         setValues(next);

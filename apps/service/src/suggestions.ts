@@ -16,6 +16,7 @@ import {
   loadFactsFor,
   makeSuggestion,
   readSuggestion,
+  readVersion,
   rejectSuggestion,
   resolveOccurrences,
   withdrawSuggestion,
@@ -27,7 +28,7 @@ import { decide, readOutline, type ContentDocument } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { mayNameColumns, storableContent } from './editing.js';
-import type { AppError } from './errors.js';
+import { AppError } from './errors.js';
 import { keysetAfter, keysetCursor } from './keyset.js';
 import { refused } from './wire-codes.js';
 
@@ -85,7 +86,8 @@ async function viewOf(trx: TenantTransaction, id: string): Promise<SuggestionVie
       drawn: merged.applied.content as unknown as Record<string, unknown>,
     };
   }
-  const base = merged?.base;
+  // A resolved one, or one that no longer fits: the version it was made against and the draft.
+  const base = merged?.base ?? (await readVersion(trx, suggestion.madeAgainst));
   return {
     ...summary,
     drawnOver: {
@@ -197,6 +199,11 @@ export function suggestionHandlers() {
       if ((await kindOf(trx, id)) !== 'component') throw notFound();
       const body = request.body as MakeSuggestionBody;
       const proposed: ContentDocument = storableContent(body.content);
+      // The version is the component's before anything is read against it (the SG final review).
+      const opened = await readVersion(trx, body.version);
+      if (opened?.artifactId !== id) {
+        throw refused(400, 'version.not_held', 'That version is not one of this component’s.');
+      }
       await mayNameColumns(trx, request, proposed, body.version);
       const answer = await makeSuggestion(trx, {
         component: id,
@@ -211,6 +218,12 @@ export function suggestionHandlers() {
           throw refused(400, 'version.not_held', 'That version is not one of this component’s.');
         case 'suggestion.empty':
           throw refused(400, 'suggestion.empty', 'The draft is the version it was made from.');
+        case 'suggestion.resolved':
+          throw refused(
+            409,
+            'suggestion.resolved',
+            'You sent this draft before, and it has been resolved. Change it to suggest again.',
+          );
         case 'suggestion.limit':
           throw refused(
             400,
@@ -324,17 +337,26 @@ export function suggestionHandlers() {
           result.left.push({ suggestion: suggestion.id, why: 'not_permitted' });
           continue;
         }
-        const answer =
-          body.act === 'accept'
-            ? await acceptSuggestion(trx, {
-                suggestion: suggestion.id,
-                by: principalId,
-                check: async (content, current) => {
-                  storableContent(content);
-                  await mayNameColumns(trx, request, content, current.id);
-                },
-              })
-            : await rejectSuggestion(trx, { suggestion: suggestion.id, by: principalId });
+        let answer: ResolveAnswer;
+        try {
+          answer =
+            body.act === 'accept'
+              ? await acceptSuggestion(trx, {
+                  suggestion: suggestion.id,
+                  by: principalId,
+                  check: async (content, current) => {
+                    storableContent(content);
+                    await mayNameColumns(trx, request, content, current.id);
+                  },
+                })
+              : await rejectSuggestion(trx, { suggestion: suggestion.id, by: principalId });
+        } catch (error) {
+          // The save's checks refusing one, for this caller: it is left, and the rest go on. Only
+          // our own refusals are caught; a failed statement still ends the whole act.
+          if (!(error instanceof AppError)) throw error;
+          result.left.push({ suggestion: suggestion.id, why: 'not_permitted' });
+          continue;
+        }
         switch (answer.answer) {
           case 'accepted':
             result.resolved.push({ suggestion: suggestion.id, version: answer.version.id });
@@ -359,7 +381,8 @@ export function suggestionHandlers() {
             result.left.push({ suggestion: suggestion.id, why: 'values_invalid' });
             break;
           default:
-            throw refuse(answer as never);
+            // Withdrawn or resolved by somebody else since it was listed: nothing to do.
+            break;
         }
       }
       return result;

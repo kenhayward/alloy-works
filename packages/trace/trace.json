@@ -19881,7 +19881,7 @@
     {
       "id": "COL-022",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 288,
+      "line": 291,
       "kind": "title"
     },
     {
@@ -19897,12 +19897,6 @@
       "kind": "title"
     },
     {
-      "id": "COL-041",
-      "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 256,
-      "kind": "title"
-    },
-    {
       "id": "COL-042",
       "file": "apps/service/src/suggestion-routes.test.ts",
       "line": 242,
@@ -19911,13 +19905,13 @@
     {
       "id": "COL-048",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 310,
+      "line": 313,
       "kind": "title"
     },
     {
       "id": "COL-052",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 273,
+      "line": 276,
       "kind": "title"
     },
     {
@@ -20413,6 +20407,18 @@
       "kind": "title"
     },
     {
+      "id": "COL-020",
+      "file": "apps/web/src/editor/ComponentEditor.draft.test.tsx",
+      "line": 27,
+      "kind": "title"
+    },
+    {
+      "id": "COL-025",
+      "file": "apps/web/src/editor/ComponentEditor.draft.test.tsx",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
       "line": 478,
@@ -20755,6 +20761,30 @@
       "kind": "title"
     },
     {
+      "id": "COL-020",
+      "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "COL-022",
+      "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
+      "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "COL-048",
+      "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "COL-052",
+      "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
+      "line": 65,
+      "kind": "title"
+    },
+    {
       "id": "CNT-157",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
       "line": 160,
@@ -21046,6 +21076,18 @@
       "id": "IAM-081",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
       "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "COL-020",
+      "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
+      "line": 137,
+      "kind": "title"
+    },
+    {
+      "id": "COL-025",
+      "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
+      "line": 137,
       "kind": "title"
     },
     {
@@ -22468,12 +22510,6 @@
       "id": "COL-042",
       "file": "packages/db/src/suggestions.test.ts",
       "line": 163,
-      "kind": "title"
-    },
-    {
-      "id": "COL-043",
-      "file": "packages/db/src/suggestions.test.ts",
-      "line": 191,
       "kind": "title"
     },
     {
