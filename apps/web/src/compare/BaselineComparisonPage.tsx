@@ -21,10 +21,11 @@ const DOCUMENT_CAUSES = {
   theme: 'the theme changed',
   template: 'the template changed',
   definition: 'the definitions it is checked against changed',
+  parameters: 'its parameters changed',
 } as const;
 const NODE_CAUSES = {
   edited: 'Edited',
-  data: 'Its data changed, though nobody edited it',
+  data: 'Its data changed',
   definition: 'A definition it was written against changed',
 } as const;
 
@@ -229,9 +230,15 @@ export function BaselineComparisonPage({
                         {each.values.map((value) => (
                           <li key={value.binding}>
                             {`${value.binding}: `}
-                            <del>{value.older ?? 'nothing'}</del>
+                            <del>
+                              <span className={styles['hidden']}>Was: </span>
+                              {value.older ?? 'nothing'}
+                            </del>
                             {' to '}
-                            <ins>{value.newer ?? 'nothing'}</ins>
+                            <ins>
+                              <span className={styles['hidden']}>Now: </span>
+                              {value.newer ?? 'nothing'}
+                            </ins>
                           </li>
                         ))}
                       </ul>

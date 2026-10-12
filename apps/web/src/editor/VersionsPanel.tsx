@@ -37,13 +37,20 @@ export function VersionsPanel({
   /** The version the editor opened and what it shows now, or null where nothing is open to compare. */
   mine?: () => Mine | null;
 }) {
-  const [shown, setShown] = useState<Shown | 'failed' | null>(null);
+  const [shown, setShown] = useState<Shown | 'failed' | 'nothing' | null>(null);
   const drawn = useRef<HTMLDivElement>(null);
+  // The comparison last asked for: an answer to an earlier one, arriving later, is not shown.
+  const asked = useRef(0);
 
   const compare = async (version: ListedVersion, latest: ListedVersion) => {
-    const { data } = await client.GET('/v1/components/{id}/comparison', {
-      params: { path: { id }, query: { from: version.id, to: latest.id } },
-    });
+    const mine = (asked.current += 1);
+    const answer = await client
+      .GET('/v1/components/{id}/comparison', {
+        params: { path: { id }, query: { from: version.id, to: latest.id } },
+      })
+      .catch(() => undefined);
+    if (mine !== asked.current) return;
+    const data = answer?.data;
     if (!data) return setShown('failed');
     setShown({
       title: `Changes from ${data.from.number} to ${data.to.number}`,
@@ -54,8 +61,9 @@ export function VersionsPanel({
   };
 
   const myChanges = () => {
+    asked.current += 1;
     const pair = mine?.();
-    if (!pair) return;
+    if (!pair) return setShown('nothing');
     setShown({
       title: 'My changes',
       changes: compareContent(pair.older, pair.newer).changes,
@@ -77,7 +85,10 @@ export function VersionsPanel({
         onCompare={(version, latest) => void compare(version, latest)}
       />
       {shown === 'failed' && <p className={styles['muted']}>The comparison could not be read.</p>}
-      {shown !== null && shown !== 'failed' && (
+      {shown === 'nothing' && (
+        <p className={styles['muted']}>Nothing is open for editing to compare yet.</p>
+      )}
+      {shown !== null && shown !== 'failed' && shown !== 'nothing' && (
         <section aria-label={shown.title} className={styles['compared']}>
           <h3 className={styles['heading']}>{shown.title}</h3>
           <div ref={drawn}>

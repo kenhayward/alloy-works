@@ -29,10 +29,12 @@ export interface ResolvedSide {
   readonly template: string | null;
   /** The definition versions the document version was validated against (TPL-056). */
   readonly definitions: readonly string[];
+  /** The document version's parameters, canonical, which its bindings' arguments take (TP2-B). */
+  readonly parameters: string;
   readonly nodes: ReadonlyMap<string, ResolvedNode>;
 }
 
-export type DocumentCause = 'layout' | 'theme' | 'template' | 'definition';
+export type DocumentCause = 'layout' | 'theme' | 'template' | 'definition' | 'parameters';
 export type NodeCause = 'edited' | 'data' | 'definition';
 
 export interface ResolvedComparison {
@@ -60,16 +62,20 @@ export function compareResolved(older: ResolvedSide, newer: ResolvedSide): Resol
     ...(older.theme !== newer.theme ? (['theme'] as const) : []),
     ...(older.template !== newer.template ? (['template'] as const) : []),
     ...(!sameSet(older.definitions, newer.definitions) ? (['definition'] as const) : []),
+    ...(older.parameters !== newer.parameters ? (['parameters'] as const) : []),
   ];
   const nodes: ResolvedComparison['nodes'][number][] = [];
   for (const [node, now] of newer.nodes) {
     const was = older.nodes.get(node);
     if (!was || was.component !== now.component) continue;
     const bindings = [...new Set([...was.values.keys(), ...now.values.keys()])].sort();
-    const dataChanged = bindings.some(
-      (binding) =>
-        (was.values.get(binding)?.dataset ?? null) !== (now.values.get(binding)?.dataset ?? null),
-    );
+    // The data's only where one binding, on both sides, holds another result: a binding the edit
+    // added or removed is the edit's (the CP final review).
+    const dataChanged = bindings.some((binding) => {
+      const before = was.values.get(binding);
+      const after = now.values.get(binding);
+      return before !== undefined && after !== undefined && before.dataset !== after.dataset;
+    });
     const causes: NodeCause[] = [
       ...(was.version !== now.version ? (['edited'] as const) : []),
       ...(dataChanged ? (['data'] as const) : []),

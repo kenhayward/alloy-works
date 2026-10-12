@@ -174,9 +174,7 @@ describe('comparing two versions of a component', () => {
     ).changes;
     expect(matched(changes).find((each) => each.newer === 't1')!.changed).toEqual(['shape']);
     expect(matched(changes).find((each) => each.newer === 'c10')!.edited).not.toBeNull();
-    expect(changes.filter((each) => each.change === 'inserted').map(keyOf)).toContain(
-      'cell:t1:2:0',
-    );
+    expect(changes.filter((each) => each.change === 'inserted').map(keyOf)).toContain('cell:c20');
   });
 
   it('reports a footnote edited once, beneath the footnote, and its paragraph unchanged around it', () => {
@@ -295,5 +293,113 @@ describe('comparing two outlines', () => {
       .map((each) => each.newer);
     expect(moved).toHaveLength(1);
     expect(matched(changes).find((each) => each.newer === 's3')!.edited).not.toBeNull();
+  });
+});
+
+describe('where each change stands (the CP final review)', () => {
+  const order = (older: ContentDocument, newer: ContentDocument) =>
+    compareContent(older, newer).changes.map((each) =>
+      each.change === 'deleted'
+        ? `-${each.older}`
+        : each.change === 'inserted'
+          ? `+${each.newer}`
+          : each.newer,
+    );
+  const list = (id: string, firsts: string[][]): BlockNode => ({
+    type: 'list',
+    id,
+    kind: 'unordered',
+    items: firsts.map((blocks) => ({ content: blocks.map((each) => para(each, `Item ${each}`)) })),
+  });
+
+  it('puts deletions where they stood, in their order: two together, one first, and one after a list', () => {
+    expect(
+      order(
+        docOf(para('k', 'Keep'), para('d1', 'Gone one'), para('d2', 'Gone two'), para('z', 'Zed')),
+        docOf(para('k', 'Keep'), para('z', 'Zed')),
+      ),
+    ).toEqual(['k', '-d1', '-d2', 'z']);
+    expect(
+      order(docOf(para('d0', 'First gone'), para('k', 'Keep')), docOf(para('k', 'Keep'))),
+    ).toEqual(['-d0', 'k']);
+    expect(
+      order(
+        docOf(list('L', [['i1']]), para('g', 'After the list'), para('z', 'Zed')),
+        docOf(list('L', [['i1']]), para('z', 'Zed')),
+      ),
+    ).toEqual(['L', 'item:i1', 'i1', '-g', 'z']);
+  });
+
+  it('puts a deleted list’s items beneath it, not after the rest of the document', () => {
+    expect(
+      order(
+        docOf(para('k', 'Keep'), list('L', [['i1']]), para('z', 'Zed')),
+        docOf(para('k', 'Keep'), para('z', 'Zed')),
+      ),
+    ).toEqual(['k', '-L', '-item:i1', '-i1', 'z']);
+  });
+
+  it('keeps every cell in place when a row is added above them', () => {
+    const table = (rows: [string, string][]): BlockNode => ({
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Doses')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: rows.map((row) => ({
+        cells: row.map((id) => ({ content: [para(id, `Cell ${id}`)], colspan: 1, rowspan: 1 })),
+      })),
+    });
+    const changes = compareContent(
+      docOf(
+        table([
+          ['pa', 'pb'],
+          ['pc', 'pd'],
+        ]),
+      ),
+      docOf(
+        table([
+          ['px', 'py'],
+          ['pa', 'pb'],
+          ['pc', 'pd'],
+        ]),
+      ),
+    ).changes;
+    expect(matched(changes).filter((each) => each.moved !== null)).toEqual([]);
+    expect(changes.filter((each) => each.change === 'inserted').map(keyOf)).toEqual([
+      'cell:px',
+      'px',
+      'cell:py',
+      'py',
+    ]);
+  });
+
+  it('keeps an item when a paragraph is put before its first block', () => {
+    const changes = compareContent(
+      docOf(list('L', [['p1']])),
+      docOf({
+        type: 'list',
+        id: 'L',
+        kind: 'unordered',
+        items: [{ content: [para('p0', 'Before'), para('p1', 'Item p1')] }],
+      }),
+    ).changes;
+    expect(kinds(changes)).not.toContain('deleted');
+    expect(matched(changes).find((each) => each.newer === 'item:p0')).toMatchObject({
+      older: 'item:p1',
+      moved: null,
+    });
+  });
+
+  it('VER-051 scores no similarity past its bound, and says so, rather than block the service', () => {
+    const many = (prefix: string, count: number) =>
+      docOf(
+        ...Array.from({ length: count }, (_, index) => para(`${prefix}${index}`, `Line ${index}`)),
+      );
+    const meter = createMeter();
+    const compared = compareContent(many('o', 600), many('n', 600), meter);
+    expect(compared.similarityBounded).toBe(true);
+    expect(meter.similarityPairs).toBe(0);
   });
 });

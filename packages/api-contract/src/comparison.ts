@@ -117,7 +117,7 @@ export type BaselineComparisonView = z.infer<typeof BaselineComparisonView>;
 /** What a publish of each side would print, compared, each difference with its causes (VER-031, VER-045). */
 export const ResolvedComparisonView = z.object({
   document: z
-    .array(z.enum(['layout', 'theme', 'template', 'definition']))
+    .array(z.enum(['layout', 'theme', 'template', 'definition', 'parameters']))
     .describe(
       "What differs for the whole document: its layout's, theme's or template's version, or the definitions it was validated against",
     ),

@@ -40,6 +40,9 @@ export const ChangesView = z.object({
     .describe(
       'Whether `since` reached back before the record, so the answer is from where it begins',
     ),
+  more: z
+    .boolean()
+    .describe('Whether there was more than 500 of either list: the newest are answered'),
   artifacts: z.array(
     z.object({
       artifact: LowercaseUuid,

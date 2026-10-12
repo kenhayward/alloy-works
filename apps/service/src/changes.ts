@@ -51,6 +51,7 @@ export function changesHandlers(db: TenantDatabase, tenantOf: (request: FastifyR
         since: since.toISOString(),
         recordBegins: answer.recordBegins?.toISOString() ?? null,
         fromRecordStart: answer.fromRecordStart,
+        more: answer.more,
         artifacts: answer.artifacts.map((each) => ({
           ...each,
           latest: { ...each.latest, at: each.latest.at.toISOString() },

@@ -26,12 +26,14 @@ import {
 import {
   compareContent,
   compareOutlines,
+  canonicalJsonText,
   compareResolved,
   readContent,
   readOutline,
   walkOutline,
   withholdComponents,
   type ContentDocument,
+  type JsonValue,
   type OutlineDocument,
   type ResolvedSide,
   type ResolvedValue,
@@ -175,6 +177,7 @@ export function comparisonHandlers(
           theme: read.pins.theme.version,
           template: read.pins.template?.version ?? null,
           definitions: definitionsOf(document),
+          parameters: canonicalJsonText(document.parameters as JsonValue),
           nodes: await nodesOf(
             new Map(read.pins.occurrences.map((each) => [each.node, each.version])),
             (contents) =>
@@ -207,6 +210,7 @@ export function comparisonHandlers(
           theme: (await documentTheme(trx, older.documentId)).versionId,
           template: (await documentTemplate(trx, older.documentId))?.version ?? null,
           definitions: definitionsOf(version),
+          parameters: canonicalJsonText(version.parameters as JsonValue),
           nodes: await nodesOf(
             new Map(
               resolved.flatMap((each) =>

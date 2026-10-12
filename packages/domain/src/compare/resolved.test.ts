@@ -22,11 +22,23 @@ const side = (
   theme: 'theme-1',
   template: 'template-1',
   definitions: ['schema-1'],
+  parameters: '{}',
   nodes: new Map(Object.entries(nodes)),
   ...over,
 });
 
 describe('resolved output compared', () => {
+  it('VER-031 calls a binding the edit added the edit’s, never the data’s, and names a parameter changed', () => {
+    const compared = compareResolved(
+      side({ n1: node('v1') }),
+      side({ n1: node('v2', { depth: ['d1', '3.5'] }) }, { parameters: '{"site":"north"}' }),
+    );
+    expect(compared.document).toEqual(['parameters']);
+    expect(compared.nodes).toEqual([
+      { node: 'n1', causes: ['edited'], values: [{ binding: 'depth', older: null, newer: '3.5' }] },
+    ]);
+  });
+
   it('VER-031 names a difference nobody typed: the same component version printing a new value because its data changed', () => {
     const compared = compareResolved(
       side({ n1: node('v1', { depth: ['d1', '3.5'] }) }),

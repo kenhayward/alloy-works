@@ -506,6 +506,16 @@ describe('baselines over HTTP (baselines.md)', () => {
     expect(body.components).toEqual([]);
     const withheld = body.structure.find((each) => each.newer === 'd'.repeat(26))!;
     expect(withheld).toMatchObject({ change: 'matched', edited: null, changed: [] });
+    // What each would print, compared, holds nothing of it either.
+    const printed = await call(
+      'GET',
+      `/v1/baselines/${first}/comparison/resolved?with=${second}`,
+      'ada',
+    );
+    expect(printed.statusCode, printed.body).toBe(200);
+    expect(printed.body).not.toContain(secret.artifactId);
+    expect(printed.body).not.toContain('Secret');
+    expect(printed.json()).toEqual({ document: [], nodes: [] });
   });
 
   it('VER-024 compares what two baselines, or one and the document now, would print, naming an edit and a new theme as the causes', async () => {

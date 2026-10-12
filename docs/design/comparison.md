@@ -6,7 +6,7 @@ matched (VER-029), rendered as a redline (VER-030). [ADR-0058](../decisions/0058
 makes its result the ground suggestions stand on, so it is designed as **anchored changes** first and
 a rendering second.
 
-> **Being built** by [the CP plan](../plans/2026-10-11-cp-comparison.md), T3's fourth phase. It
+> **Built** by [the CP plan](../plans/2026-10-11-cp-comparison.md), T3's fourth phase. It
 > replaces the content model spike's `content/compare.ts`, keeping its tokenizer and threshold.
 
 ## The shape in one paragraph

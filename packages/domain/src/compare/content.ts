@@ -69,6 +69,11 @@ export type UnitChange =
 
 export interface ContentComparison {
   readonly changes: readonly UnitChange[];
+  /**
+   * Whether the units left over were too many to score for similarity (CP-C): those were deleted and
+   * inserted rather than matched, and a reader is told so.
+   */
+  readonly similarityBounded: boolean;
 }
 
 /** What a comparison cost, counted (VER-051): pairs scored for similarity, cells of word tables. */
@@ -81,6 +86,9 @@ export const createMeter = (): Meter => ({ similarityPairs: 0, wordCells: 0 });
 
 /** A block's words compared within this many cells; past it, the block is `whole` (CP-C). */
 const WORD_CELLS_MAX = 250_000;
+
+/** The most pairs scored for similarity in one comparison: past it, none are (CP-C). */
+const SIMILARITY_PAIRS_MAX = 250_000;
 
 /** The content model spike's threshold, tuned on one case (VER's open question Q05). */
 export const SIMILARITY_THRESHOLD = 0.4;
@@ -188,7 +196,8 @@ function unitsOf(document: ContentDocument): Unit[] {
           footnotes(note, id);
           rows.forEach((row, r) =>
             row.cells.forEach((cell, c) => {
-              const key = `cell:${id}:${r}:${c}`;
+              // By the block it holds, as an item is, so a row added above moves no cell.
+              const key = `cell:${cell.content[0]?.id ?? `${id}:${r}:${c}`}`;
               add(key, 'cell', id, null, {
                 colspan: `${cell.colspan}`,
                 rowspan: `${cell.rowspan}`,
@@ -418,13 +427,25 @@ function compareUnits(
     partner.set(from, { key: to, matched });
     partnered.add(to);
   };
+  const childrenOf = (units: readonly Unit[]) => {
+    const children = new Map<string, Unit[]>();
+    for (const unit of units) {
+      const list = children.get(unit.parent);
+      if (list) list.push(unit);
+      else children.set(unit.parent, [unit]);
+    }
+    return children;
+  };
+  const beforeChildren = childrenOf(before);
+  const afterChildren = childrenOf(after);
 
   // By key, where the type agrees.
   for (const unit of before) {
     const other = afterByKey.get(unit.key);
     if (other && other.type === unit.type) pair(unit.key, other.key, 'identity');
   }
-  // By similarity, among blocks of one type holding text, best first (VER-028).
+  // By similarity, among blocks of one type holding text, best first (VER-028), within a bound: past
+  // it, what is left over is deleted and inserted, and the comparison says so (CP-C).
   const containers = new Set(['item', 'cell', 'footnote']);
   const leftBefore = before.filter(
     (unit) => !partner.has(unit.key) && !containers.has(unit.type) && plain(unit.tokens) !== '',
@@ -432,50 +453,51 @@ function compareUnits(
   const leftAfter = after.filter(
     (unit) => !partnered.has(unit.key) && !containers.has(unit.type) && plain(unit.tokens) !== '',
   );
-  const words = new Map(
-    [...leftBefore, ...leftAfter].map((unit) => [unit, similarityWords(plain(unit.tokens))]),
-  );
-  const candidates: { from: Unit; to: Unit; score: number }[] = [];
-  for (const from of leftBefore) {
-    for (const to of leftAfter) {
-      if (from.type !== to.type) continue;
-      meter.similarityPairs += 1;
-      const score = dice(words.get(from)!, words.get(to)!);
-      if (score >= SIMILARITY_THRESHOLD) candidates.push({ from, to, score });
+  const similarityBounded = leftBefore.length * leftAfter.length > SIMILARITY_PAIRS_MAX;
+  if (!similarityBounded) {
+    const words = new Map(
+      [...leftBefore, ...leftAfter].map((unit) => [unit, similarityWords(plain(unit.tokens))]),
+    );
+    const candidates: { from: Unit; to: Unit; score: number }[] = [];
+    for (const from of leftBefore) {
+      for (const to of leftAfter) {
+        if (from.type !== to.type) continue;
+        meter.similarityPairs += 1;
+        const score = dice(words.get(from)!, words.get(to)!);
+        if (score >= SIMILARITY_THRESHOLD) candidates.push({ from, to, score });
+      }
+    }
+    candidates.sort((left, right) => right.score - left.score);
+    for (const { from, to } of candidates) {
+      if (partner.has(from.key) || partnered.has(to.key)) continue;
+      pair(from.key, to.key, 'similarity');
     }
   }
-  candidates.sort((left, right) => right.score - left.score);
-  for (const { from, to } of candidates) {
-    if (partner.has(from.key) || partnered.has(to.key)) continue;
-    pair(from.key, to.key, 'similarity');
-  }
-  // A container left over, through its first unit: an item whose first block matched one that
-  // begins a new item is that item.
+  // A container left over, through any unit beneath it that matched one beneath a container of its
+  // type also left over: an item whose first block moved down is still that item.
   for (const unit of before) {
-    if (partner.has(unit.key) || !containers.has(unit.type) || unit.firstChild === null) continue;
-    const through = partner.get(unit.firstChild);
-    if (!through) continue;
-    const candidate = after.find(
-      (other) =>
-        other.firstChild === through.key && other.type === unit.type && !partnered.has(other.key),
-    );
-    if (candidate) pair(unit.key, candidate.key, through.matched);
+    if (partner.has(unit.key) || !containers.has(unit.type)) continue;
+    for (const child of beforeChildren.get(unit.key) ?? []) {
+      const through = partner.get(child.key);
+      const candidate = through && afterByKey.get(afterByKey.get(through.key)!.parent);
+      if (candidate && candidate.type === unit.type && !partnered.has(candidate.key)) {
+        pair(unit.key, candidate.key, through.matched);
+        break;
+      }
+    }
   }
 
   const newerOf = (key: string) => (key === ROOT ? ROOT : partner.get(key)?.key);
+  const olderOf = new Map([...partner].map(([from, to]) => [to.key, from]));
   // What stood still under each parent: the longest run of older places in newer order.
   const moved = new Set<string>();
-  const byParent = new Map<string, Unit[]>();
-  for (const unit of after) {
-    if (!partnered.has(unit.key)) continue;
-    byParent.set(unit.parent, [...(byParent.get(unit.parent) ?? []), unit]);
-  }
-  const olderOf = new Map([...partner].map(([from, to]) => [to.key, from]));
-  for (const [parent, units] of byParent) {
-    const stays = units.filter(
+  for (const [parent, units] of afterChildren) {
+    const matched = units.filter((unit) => olderOf.has(unit.key));
+    const stays = matched.filter(
       (unit) => newerOf(beforeByKey.get(olderOf.get(unit.key)!)!.parent) === parent,
     );
-    for (const unit of units) if (!stays.includes(unit)) moved.add(unit.key);
+    const staying = new Set(stays);
+    for (const unit of matched) if (!staying.has(unit)) moved.add(unit.key);
     const kept = longestIncreasing(
       stays.map((unit) => beforeByKey.get(olderOf.get(unit.key)!)!.index),
     );
@@ -485,23 +507,17 @@ function compareUnits(
   }
 
   const previousSibling = new Map<string, string | null>();
-  const lastUnder = new Map<string, string>();
-  for (const unit of after) {
-    previousSibling.set(unit.key, lastUnder.get(unit.parent) ?? null);
-    lastUnder.set(unit.parent, unit.key);
+  for (const units of afterChildren.values()) {
+    units.forEach((unit, index) => previousSibling.set(unit.key, units[index - 1]?.key ?? null));
   }
-  const olderPrevious = new Map<string, string | null>();
-  const olderLast = new Map<string, string>();
-  for (const unit of before) {
-    olderPrevious.set(unit.key, olderLast.get(unit.parent) ?? null);
-    olderLast.set(unit.parent, unit.key);
-  }
+  const siblingAfter = (units: ReadonlyMap<string, Unit[]>, unit: Unit) =>
+    units.get(unit.parent)?.[unit.index + 1];
 
-  const changes: UnitChange[] = [];
+  const changeOf = new Map<string, UnitChange>();
   for (const unit of after) {
     const from = olderOf.get(unit.key);
     if (from === undefined) {
-      changes.push({
+      changeOf.set(unit.key, {
         change: 'inserted',
         newer: unit.key,
         type: unit.type,
@@ -517,7 +533,31 @@ function compareUnits(
         : (old.tokens ?? []).map((each) => each.key).join('\u0000') ===
           (unit.tokens ?? []).map((each) => each.key).join('\u0000');
     const names = [...new Set([...Object.keys(old.attrs), ...Object.keys(unit.attrs)])];
-    changes.push({
+    const edited = sameText ? null : diffTokens(old.tokens ?? [], unit.tokens ?? [], meter);
+    // Split and joined: a block that kept its key and lost its end, where the next is new and is
+    // that end; a block that took in the one after it, which is gone.
+    let split: string | null = null;
+    let joined: string | null = null;
+    if (edited !== null) {
+      const following = siblingAfter(afterChildren, unit);
+      const gone = siblingAfter(beforeChildren, old);
+      if (
+        following &&
+        !olderOf.has(following.key) &&
+        following.type === unit.type &&
+        collapse(plain(old.tokens)) === collapse(`${plain(unit.tokens)} ${plain(following.tokens)}`)
+      ) {
+        split = following.key;
+      } else if (
+        gone &&
+        !partner.has(gone.key) &&
+        gone.type === old.type &&
+        collapse(plain(unit.tokens)) === collapse(`${plain(old.tokens)} ${plain(gone.tokens)}`)
+      ) {
+        joined = gone.key;
+      }
+    }
+    changeOf.set(unit.key, {
       change: 'matched',
       older: old.key,
       newer: unit.key,
@@ -525,66 +565,60 @@ function compareUnits(
       parent: unit.parent,
       matched: partner.get(from)!.matched,
       moved: moved.has(unit.key) ? { after: previousSibling.get(unit.key) ?? null } : null,
-      edited: sameText ? null : diffTokens(old.tokens ?? [], unit.tokens ?? [], meter),
+      edited,
       changed: names.filter((name) => old.attrs[name] !== unit.attrs[name]),
-      split: null,
-      joined: null,
+      split,
+      joined,
     });
   }
 
-  // Split and joined: a block that kept its key and lost its end, where the next is new and is that
-  // end; a block that took in the one after it, which is gone.
-  const index = new Map(
-    changes.map((change, at) => [change.change === 'deleted' ? '' : change.newer, at]),
-  );
-  for (const [at, change] of changes.entries()) {
-    if (change.change !== 'matched' || change.edited === null) continue;
-    const old = beforeByKey.get(change.older)!;
-    const now = afterByKey.get(change.newer)!;
-    const following = after.find(
-      (unit) => unit.parent === now.parent && unit.index === now.index + 1,
-    );
-    if (
-      following &&
-      !olderOf.has(following.key) &&
-      following.type === now.type &&
-      collapse(plain(old.tokens)) === collapse(`${plain(now.tokens)} ${plain(following.tokens)}`)
-    ) {
-      changes[at] = { ...change, split: following.key };
-      continue;
-    }
-    const gone = before.find(
-      (unit) =>
-        unit.parent === old.parent && unit.index === old.index + 1 && !partner.has(unit.key),
-    );
-    if (
-      gone &&
-      gone.type === old.type &&
-      collapse(plain(now.tokens)) === collapse(`${plain(old.tokens)} ${plain(gone.tokens)}`)
-    ) {
-      changes[at] = { ...change, joined: gone.key };
-    }
-  }
-
-  // Each deletion where it stood: after the change of the nearest older unit before it that is
-  // still here, or first.
+  // One tree of both sides, in reading order: the newer side's units under their parents, and each
+  // deletion among its older siblings' places - after the nearest that is still under the same
+  // parent, after a deletion before it, or first - with a deleted container's units beneath it.
+  const NEW = (key: string) => `n ${key}`;
+  const OLD = (key: string) => `o ${key}`;
+  const tree = new Map<string, string[]>();
+  const childrenAt = (node: string) => {
+    let list = tree.get(node);
+    if (!list) tree.set(node, (list = []));
+    return list;
+  };
+  for (const unit of after)
+    childrenAt(unit.parent === ROOT ? NEW(ROOT) : NEW(unit.parent)).push(NEW(unit.key));
   for (const unit of before) {
     if (partner.has(unit.key)) continue;
-    const deletion: UnitChange = {
-      change: 'deleted',
-      older: unit.key,
-      type: unit.type,
-      parent: unit.parent,
-    };
-    let previous = olderPrevious.get(unit.key) ?? null;
-    while (previous !== null && !partner.has(previous))
-      previous = olderPrevious.get(previous) ?? null;
-    const anchor = previous === null ? undefined : index.get(partner.get(previous)!.key);
-    if (anchor === undefined) changes.push(deletion);
-    else {
-      changes.splice(anchor + 1, 0, deletion);
-      for (const [key, at] of index) if (at > anchor) index.set(key, at + 1);
+    const above =
+      unit.parent === ROOT
+        ? NEW(ROOT)
+        : partner.has(unit.parent)
+          ? NEW(partner.get(unit.parent)!.key)
+          : OLD(unit.parent);
+    const siblings = childrenAt(above);
+    let at = 0;
+    for (let index = unit.index - 1; index >= 0; index -= 1) {
+      const previous = beforeChildren.get(unit.parent)![index]!;
+      const here = siblings.indexOf(
+        partner.has(previous.key) ? NEW(partner.get(previous.key)!.key) : OLD(previous.key),
+      );
+      if (here !== -1) {
+        at = here + 1;
+        break;
+      }
     }
+    siblings.splice(at, 0, OLD(unit.key));
   }
-  return { changes };
+  const changes: UnitChange[] = [];
+  const emit = (node: string) => {
+    for (const child of tree.get(node) ?? []) {
+      const key = child.slice(2);
+      if (child.startsWith('n ')) changes.push(changeOf.get(key)!);
+      else {
+        const unit = beforeByKey.get(key)!;
+        changes.push({ change: 'deleted', older: key, type: unit.type, parent: unit.parent });
+      }
+      emit(child);
+    }
+  };
+  emit(NEW(ROOT));
+  return { changes, similarityBounded };
 }

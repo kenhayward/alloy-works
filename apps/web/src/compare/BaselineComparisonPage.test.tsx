@@ -135,10 +135,8 @@ describe('two baselines compared, at their own address', () => {
 
     // What prints differently, and why: here, data nobody typed, and the theme for the whole.
     const printed = await screen.findByRole('list', { name: 'What prints differently' });
-    expect(printed).toHaveTextContent(
-      'Install the printer: Its data changed, though nobody edited it',
-    );
-    expect(printed).toHaveTextContent('depth: 3.5 to 3.75');
+    expect(printed).toHaveTextContent('Install the printer: Its data changed');
+    expect(printed).toHaveTextContent('depth: Was: 3.5 to Now: 3.75');
     expect(screen.getByText('For the whole document, the theme changed.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Export' }));

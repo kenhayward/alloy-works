@@ -6676,7 +6676,7 @@ export interface operations {
                      */
                     "application/json": {
                         /** @description What differs for the whole document: its layout's, theme's or template's version, or the definitions it was validated against */
-                        document: ("layout" | "theme" | "template" | "definition")[];
+                        document: ("layout" | "theme" | "template" | "definition" | "parameters")[];
                         /** @description Each component the caller may read that prints differently, or would for a cause it names */
                         nodes: {
                             node: string;
@@ -7982,6 +7982,7 @@ export interface operations {
                      *       "since": "example",
                      *       "recordBegins": "example",
                      *       "fromRecordStart": false,
+                     *       "more": false,
                      *       "artifacts": [],
                      *       "values": []
                      *     }
@@ -7992,6 +7993,8 @@ export interface operations {
                         recordBegins: string | null;
                         /** @description Whether `since` reached back before the record, so the answer is from where it begins */
                         fromRecordStart: boolean;
+                        /** @description Whether there was more than 500 of either list: the newest are answered */
+                        more: boolean;
                         artifacts: {
                             artifact: string & (unknown & unknown);
                             kind: string;

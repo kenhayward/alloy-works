@@ -479,6 +479,33 @@ describe('baselines', () => {
     });
     expect(inputs!.bindings.get(node.id)!.get('k1')!.dataset.name).toBe('Depths at north');
     expect(inputs!.request.baseline).toBe(id);
+
+    // What changed since names a value resolved at a node only to a reader of its component (SCH-025).
+    const secret = await component(quality, grace, 'Hidden depths');
+    const hidden = reference(secret.artifactId);
+    const mixed = await documentWith([node, hidden]);
+    const since = new Date(Date.now() - 60_000);
+    await tenant(async (trx) => {
+      const result = await recordDatasetVersion(trx, { provenance, author: ada });
+      for (const at of [node.id, hidden.id]) {
+        await recordResolution(trx, {
+          document: mixed.artifactId,
+          node: at,
+          binding: 'k1',
+          digest: sha256Hex(bindingDigestInput(binding('k1'))),
+          version: result.version.id,
+          replaces: null,
+          act: 'resolve',
+          by: ada,
+        });
+      }
+    });
+    const seen = (reader: string) =>
+      tenant((trx) => changesSince(trx, { since, reader, artifacts: [mixed.artifactId] })).then(
+        (answer) => answer.values.map((each) => each.node).sort(),
+      );
+    expect(await seen(ada)).toEqual([node.id]);
+    expect(await seen(grace)).toEqual([node.id, hidden.id].sort());
   });
 
   it('PUB-046 publishes a baseline from its pins, at its own time, whatever its components became', async () => {
