@@ -636,6 +636,11 @@ export const BoundTableRowsView = z.object({
     .describe(
       'Each note the table anchors by key, by its identifier: the index of its row among the rows sent, or null where the result has no row its key names (`note_row_missing`). A key column the table does not show is never sent',
     ),
+  revised: z
+    .array(z.object({ row: z.number().int().min(0), column: z.string() }))
+    .describe(
+      'Each cell a value revised by hand stands in, by the index of its row among the rows sent and its column: its value in `rows` is the revision, never what the query returned',
+    ),
 });
 export type BoundTableRowsView = z.infer<typeof BoundTableRowsView>;
 

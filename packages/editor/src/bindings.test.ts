@@ -102,6 +102,22 @@ describe('bindingsShown, in a document (B1-J)', () => {
     ]);
   });
 
+  it('DAT-115 marks a value revised by hand as revised by a person, always shown and in its words, beside a revision waiting where one does', () => {
+    const context = inDocument([
+      ['k1', held(stored('k1'), { value: '1,300', waiting: false, revised: true })],
+      ['k2', held(stored('k2'), { value: 'No', waiting: true, revised: true })],
+    ]);
+    expect(words(docOf(), context).slice(0, 2)).toEqual([
+      { text: '1,300', hidden: ', bound value,', marker: 'revised by hand', failed: false },
+      {
+        text: 'No',
+        hidden: ', bound value,',
+        marker: 'revised by hand, revision waiting',
+        failed: false,
+      },
+    ]);
+  });
+
   it('says in place why a binding has none, in words by the failure, naming the count, the key and the column', () => {
     const failing = (failure: BindingHeld['shown']) =>
       words(docOf(), inDocument([['k3', held(stored('k3', KEYED), failure)]]))[2]!;

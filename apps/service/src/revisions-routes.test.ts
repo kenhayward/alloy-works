@@ -312,6 +312,23 @@ describe('values revised by hand through the service', () => {
       rowMissing: false,
     });
 
+    // The page's rows carry it in its cell, named as revised.
+    const rows = await h.call(
+      'ada',
+      'GET',
+      `/v1/documents/${document.id}/bindings/${node}/t/rows?version=${state.held!.version}`,
+    );
+    expect(rows.statusCode, rows.body).toBe(200);
+    expect(rows.json()).toMatchObject({
+      result: {
+        rows: [
+          ['35', 'Cove'],
+          ['36', 'Dunes'],
+        ],
+      },
+      revised: [{ row: 1, column: 'name' }],
+    });
+
     // The source drops the row; kept, the revision stands with its row said gone.
     h.connector.run = ranOk([['35', 'Cove']]);
     const resolved = await resolve(document.id, [

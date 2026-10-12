@@ -82,6 +82,7 @@ import {
   effectiveLimits,
   identityKey,
   literalValues,
+  keyedRow,
   keyNamesTheKey,
   matchNoteRows,
   parametersDigestInput,
@@ -95,7 +96,7 @@ import {
   takeOutcomeSchema,
   takes,
   takeValue,
-  sortResult,
+  tableOrder,
   TABLE_ROWS_MAX,
   valueProblem,
   type AnyBinding,
@@ -2917,7 +2918,14 @@ export function bindingHandlers(
       const anchors = (found.table.notes ?? []).flatMap((each) =>
         each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key]] : [],
       );
-      const etag = `"${sha256(JSON.stringify([version, sent, order, anchors]))}"`;
+      // The values revised by hand standing in its cells (RV-J), so one made or withdrawn is answered
+      // anew, never a 304.
+      const cellRevisions = ((await revisionsStanding(trx, [held.id])).get(held.id) ?? []).filter(
+        (each) => each.cell !== null,
+      );
+      const etag = `"${sha256(
+        JSON.stringify([version, sent, order, anchors, cellRevisions.map((each) => each.id)]),
+      )}"`;
       if (tagMatches(request.headers['if-none-match'], etag)) {
         return new Revalidated<never>(etag, undefined);
       }
@@ -2936,7 +2944,27 @@ export function bindingHandlers(
           "The table's stored result cannot be read now. Try again later.",
         );
       }
-      const ordered = own ? result : sortResult(found.table, result, provenance.columns);
+      // Each revised cell set in the result before it is sorted, as the publish's stage sets it
+      // (RV-F), found by its key over the whole result.
+      const revisedRows = new Map<number, Set<string>>();
+      let stored = result;
+      if (cellRevisions.length > 0) {
+        const keyColumns = await definitionKey(trx, provenance.queryDefinition.version);
+        const index = new Map(result.columns.map(([name], at) => [name, at]));
+        const rows = result.rows.map((row) => [...row]);
+        for (const each of cellRevisions) {
+          const row = keyedRow(each.cell!.key, result, keyColumns, provenance.columns);
+          const column = index.get(each.cell!.column);
+          if (row === null || column === undefined || !named.has(each.cell!.column)) continue;
+          rows[row]![column] = each.value;
+          revisedRows.set(row, new Set([...(revisedRows.get(row) ?? []), each.cell!.column]));
+        }
+        stored = { columns: result.columns, rows };
+      }
+      const sequence = own
+        ? stored.rows.map((_, at) => at)
+        : tableOrder(found.table, stored, provenance.columns);
+      const ordered = { columns: stored.columns, rows: sequence.map((at) => stored.rows[at]!) };
       const kept = ordered.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
       // Each keyed note's row matched over the whole result, before it is trimmed, so a key column
       // the table does not show finds its row and is never sent (TB3-C).
@@ -2957,6 +2985,9 @@ export function bindingHandlers(
           rows: ordered.rows.map((row) => kept.map((index) => row[index] ?? null)),
         },
         notes: Object.fromEntries(notes),
+        revised: sequence.flatMap((from, row) =>
+          [...(revisedRows.get(from) ?? [])].map((column) => ({ row, column })),
+        ),
       });
     },
 

@@ -126,6 +126,7 @@ export {
   CHANGED_SINCE_RESOLVED,
   NEVER_RESOLVED,
   REVISION_WAITING,
+  REVISED_BY_HAND,
   storedBinding,
   type BindingContext,
   type BindingFailureHeld,

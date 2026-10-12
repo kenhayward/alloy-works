@@ -479,6 +479,29 @@ describe('a transposed bound table on the page (the TG2 final review)', () => {
   });
 });
 
+describe('a bound table revised by hand on the page (the RV plan, RV-J)', () => {
+  it('DAT-115 marks each cell a value revised by hand stands in, as laid out and as turned', () => {
+    const rows = rowsOf(3);
+    const revised = [{ row: 1, column: 'depth' }];
+    const shown = shownIn(
+      documentOf(boundTable()),
+      inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows, revised })),
+    );
+    expect(shown.rows.map((row) => row.map((cell) => cell.revised === true))).toEqual([
+      [false, false],
+      [false, true],
+      [false, false],
+    ]);
+    // Turned, the depth row's value from the result's second row.
+    const turned = shownIn(
+      documentOf(boundTable({ transpose: { header: 'site' } })),
+      inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows, revised, key: ['site'] })),
+    );
+    const depth = turned.rows.find((row) => row[0]!.text.startsWith('Depth'))!;
+    expect(depth.map((cell) => cell.revised === true)).toEqual([false, false, true, false]);
+  });
+});
+
 describe("a bound table's notes on the page (TB3.3)", () => {
   const footnote = (id: string, anchor: object, words: string) => ({
     type: 'footnote' as const,

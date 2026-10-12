@@ -373,6 +373,11 @@
   color: var(--danger);
 }
 
+.aw-bound-table-body .aw-bound-table-revised-marker {
+  margin-inline-start: 0.25em;
+  font-size: 0.8em;
+}
+
 .aw-bound-table-body .aw-bound-table-mark {
   margin-inline-start: 0.15em;
   font-size: 0.75em;
