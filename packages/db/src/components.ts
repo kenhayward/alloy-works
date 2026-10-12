@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { archivedAs, notArchivedAs } from './archival.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import {
   checkedLimit,
@@ -39,13 +40,8 @@ export interface ComponentFilter {
   readonly spaces?: readonly string[];
   /** Components written against these component types, by the type's artifact (SCH-064). */
   readonly types?: readonly string[];
-}
-
-/** One space's share of what a principal may read: the facet a listing filters by. */
-export interface SpaceCount {
-  readonly id: string;
-  readonly name: string;
-  readonly count: number;
+  /** `only`: the archived alone, the one way to list them; absent, they are left out (LIF-020). */
+  readonly archived?: 'only';
 }
 
 /**
@@ -119,6 +115,7 @@ export async function listReadableComponents(
       .select(sortColumns([sort === 'title' ? sql`latest.title` : sql`latest.created_at`]))
       .where('a.kind', '=', 'component')
       .where((eb) => readableArtifacts(eb, readable))
+      .where(filter.archived === 'only' ? archivedAs('a', snapshot) : notArchivedAs('a', snapshot))
       .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
         // An empty list names no space, so it matches nothing - never "every space".
         filter.spaces!.length === 0
@@ -168,40 +165,4 @@ export async function listReadableComponents(
       types: await facetOf(trx, base('types'), 'type_id', 'type'),
     },
   };
-}
-
-/**
- * How many components a principal may read in each space it may read any in, by name: the space facet
- * a listing filters by, counted over the readable set exactly as the listing reads it, so a count never
- * promises a row the list would refuse. Undefined when the tenant holds no such principal.
- */
-export async function countReadableComponents(
-  trx: TenantTransaction,
-  principalId: string,
-  snapshot?: string,
-): Promise<readonly SpaceCount[] | undefined> {
-  const readable = await loadReadableSet(trx, principalId);
-  if (!readable) return undefined;
-  const rows = await trx
-    .selectFrom('artifact as a')
-    .innerJoin('space as s', 's.id', 'a.space_id')
-    .select(['s.id', 's.name', (eb) => eb.fn.countAll<string>().as('count')])
-    .where('a.kind', '=', 'component')
-    .where((eb) => readableArtifacts(eb, readable))
-    // As of a walk's snapshot where it counts for one, so the count is what its pages can show: a
-    // component with no version the snapshot could see is none of that walk's.
-    .$if(snapshot !== undefined, (query) =>
-      query.where(({ exists, selectFrom }) =>
-        exists(
-          selectFrom('artifact_version as v')
-            .select('v.id')
-            .whereRef('v.artifact_id', '=', 'a.id')
-            .where(visibleIn('v.written_by', snapshot!)),
-        ),
-      ),
-    )
-    .groupBy(['s.id', 's.name'])
-    .orderBy('s.name')
-    .execute();
-  return rows.map((row) => ({ id: row.id, name: row.name, count: Number(row.count) }));
 }

@@ -98,6 +98,8 @@ import { FigureDialog } from './FigureDialog.js';
 import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
+import { ArchiveButton } from '../lifecycle/Archive.js';
+import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
@@ -555,6 +557,8 @@ export function ComponentEditor({
     readonly text: string;
   } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Archived or unarchived on this page since it opened: what it shows over the GET's (lifecycle.md).
+  const [archivedNow, setArchivedNow] = useState<boolean | null>(null);
   // Said through the application's status bar, its one live region, where there is one (interface
   // slice 15); a component opened in place in a document shares it with the document's own notices.
   const status = useStatus();
@@ -1859,6 +1863,7 @@ export function ComponentEditor({
     );
   }
   const { component: shown } = loaded;
+  const archived = archivedNow ?? shown.archived === true;
   const title = (shown.content as { title?: unknown }).title;
   // Once this session has claimed or released the lock itself, the GET-time snapshot no longer
   // reflects who holds it (fix round 1, minor) - so it is never consulted again, rather than
@@ -2209,6 +2214,20 @@ export function ComponentEditor({
             >
               {session?.version.number ?? shown.version.number} · {shown.space.name}
             </span>
+            {archived && <Chip>Archived</Chip>}
+            <ArchiveButton
+              client={client}
+              kind="component"
+              id={componentId}
+              title={header.title}
+              archived={archived}
+              mayRetire={shown.mayRetire === true}
+              className={styles['archive']}
+              onChanged={(now, said) => {
+                setArchivedNow(now);
+                setNotice(said);
+              }}
+            />
           </ComponentHeader>
         ) : (
           <>

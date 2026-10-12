@@ -33,6 +33,8 @@ const SPACES = [
 /** The service: both components unfiltered, and only a space's own when the filter names it. */
 function service({ creatable = true } = {}) {
   const asked: string[] = [];
+  // What is archived, as the archive and unarchive routes leave it.
+  const archived = new Set<string>();
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
@@ -53,8 +55,15 @@ function service({ creatable = true } = {}) {
         permissions: [
           { permission: 'read', allowed: true },
           { permission: 'administer', allowed: target === `artifact:${PRINTER}` },
+          { permission: 'retire', allowed: target === `artifact:${PRINTER}` },
         ],
       });
+    }
+    const acted = /^\/v1\/components\/([^/]+)\/(archive|unarchive)$/.exec(url.pathname);
+    if (acted && request.method === 'POST') {
+      if (acted[2] === 'archive') archived.add(acted[1]!);
+      else archived.delete(acted[1]!);
+      return json(200, { archived: acted[2] === 'archive' });
     }
     if (url.pathname === `/v1/components/${PRINTER}/versions`) {
       return json(200, {
@@ -83,10 +92,13 @@ function service({ creatable = true } = {}) {
     if (url.pathname !== '/v1/components') return json(404, {});
     const spaces = url.searchParams.get('spaces');
     asked.push(spaces ?? 'all');
+    const only = url.searchParams.get('archived') === 'only';
     const items = [
       row(PRINTER, 'Install the printer', GENERAL, { id: 'p1', name: 'Ada' }),
       row(TONER, 'Replace the toner', TRAINING, { id: 'p2', name: 'Grace' }),
-    ].filter((item) => spaces === null || spaces.split(',').includes(item.space.id));
+    ]
+      .filter((item) => spaces === null || spaces.split(',').includes(item.space.id))
+      .filter((item) => archived.has(item.id) === only);
     return json(200, { items, next: null, total: items.length, spaces: SPACES });
   }) as unknown as typeof fetch;
   const client = createApiClient({ baseUrl: 'http://list.test', fetch: fetching });
@@ -228,6 +240,38 @@ describe('the components list', () => {
     expect(screen.getByRole('link', { name: 'Open' })).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole('link', { name: 'Manage access' })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('LIF-020 offers Archive to whoever may retire it, and lists the archived alone under Archived, each to unarchive', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Replace the toner' }));
+    expect(await screen.findByRole('link', { name: 'Open' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
+    );
+    await user.keyboard('{Escape}');
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
+    await user.click(await screen.findByRole('button', { name: 'Archive' }));
+    expect(await screen.findByText('Archived Install the printer.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('link', { name: 'Install the printer' })).not.toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Archived' }));
+    const link = await screen.findByRole('link', { name: 'Install the printer' });
+    expect(within(link.closest('td')!).getByText('Archived')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Replace the toner' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions for Install the printer' }));
+    await user.click(await screen.findByRole('button', { name: 'Unarchive' }));
+    expect(await screen.findByText('Unarchived Install the printer.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('link', { name: 'Install the printer' })).not.toBeInTheDocument(),
     );
   });
 

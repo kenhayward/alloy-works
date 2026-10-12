@@ -388,7 +388,7 @@ export interface paths {
         };
         /**
          * The components the caller may read, a page at a time
-         * @description Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing.
+         * @description Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.
          */
         get: operations["listComponents"];
         put?: never;
@@ -413,6 +413,26 @@ export interface paths {
         get: operations["getComponent"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a component
+         * @description Archives a component: it leaves ordinary listings, their counts and search, and still opens by its id, resolves where a document references it and can be edited. Needs retire on the component. Archiving one already archived changes nothing. Audited.
+         */
+        post: operations["archiveComponent"];
         delete?: never;
         options?: never;
         head?: never;
@@ -605,6 +625,26 @@ export interface paths {
          * @description Starts a thread on a component, anchored to a span of a block’s text, a table’s cell, or the whole component, as it stands in the version named, with its first comment. The thread is beside the content, never in it: no version is made.
          */
         post: operations["startComponentThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive a component
+         * @description Unarchives a component, so it is listed and found again. Needs retire on the component. Unarchiving one not archived changes nothing. Audited.
+         */
+        post: operations["unarchiveComponent"];
         delete?: never;
         options?: never;
         head?: never;
@@ -968,7 +1008,7 @@ export interface paths {
         };
         /**
          * The documents the caller may read, a page at a time
-         * @description Lists documents the caller can read with stable cursor paging, filters and facets.
+         * @description Lists documents the caller can read with stable cursor paging, filters and facets. Archived documents are left out unless archived=only asks for them alone.
          */
         get: operations["listDocuments"];
         put?: never;
@@ -993,6 +1033,26 @@ export interface paths {
         get: operations["getDocument"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a document
+         * @description Archives a document: it leaves ordinary listings, their counts and search, and still opens by its id and publishes. Its publications are not archived with it. Needs retire on the document. Archiving one already archived changes nothing. Audited.
+         */
+        post: operations["archiveDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1413,6 +1473,26 @@ export interface paths {
          * @description Starts a thread on a document, anchored to a node of its outline as it stands in the version named, with its first comment. A thread on a component placed in it is started on the component.
          */
         post: operations["startDocumentThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive a document
+         * @description Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.
+         */
+        post: operations["unarchiveDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5432,7 +5512,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire";
                             allowed: boolean;
                         }[];
                     };
@@ -5555,7 +5635,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire";
                             allowed: boolean;
                             /**
                              * @description capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -9008,6 +9088,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -9190,6 +9271,8 @@ export interface operations {
                      *       },
                      *       "content": {},
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "lock": {
                      *         "holder": {
                      *           "id": "example",
@@ -9241,6 +9324,10 @@ export interface operations {
                         };
                         /** @description Whether the caller may take the lock and write */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and edited */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         lock: {
                             holder: {
                                 id: string;
@@ -9349,6 +9436,125 @@ export interface operations {
                 };
             };
             /** @description Never answered: a component the caller may read is one they may open */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    archiveComponent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now: left out of ordinary listings and search, still readable */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not retire it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -11847,6 +12053,125 @@ export interface operations {
                 };
             };
             /** @description The caller may read what the thread is on but may not comment on it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    unarchiveComponent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unarchived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now: left out of ordinary listings and search, still readable */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not retire it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17311,6 +17636,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 spaces?: string;
                 publishing?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -17499,6 +17825,8 @@ export interface operations {
                      *         }
                      *       },
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -17600,6 +17928,10 @@ export interface operations {
                         } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -17651,6 +17983,125 @@ export interface operations {
                 };
             };
             /** @description Never answered: a document the caller may read is one they may open */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    archiveDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now: left out of ordinary listings and search, still readable */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not retire it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -32198,6 +32649,8 @@ export interface operations {
                      *         }
                      *       },
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -32299,6 +32752,10 @@ export interface operations {
                         } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -32431,6 +32888,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -32659,6 +33120,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -33033,6 +33498,8 @@ export interface operations {
                      *         }
                      *       },
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -33134,6 +33601,10 @@ export interface operations {
                         } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -33266,6 +33737,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -33494,6 +33969,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -35687,6 +36166,125 @@ export interface operations {
             };
         };
     };
+    unarchiveDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unarchived, or already so, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether it is archived now: left out of ordinary listings and search, still readable */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not retire it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     recordDocumentValues: {
         parameters: {
             query?: never;
@@ -35761,6 +36359,8 @@ export interface operations {
                      *         }
                      *       },
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -35862,6 +36462,10 @@ export interface operations {
                         } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -35994,6 +36598,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -36222,6 +36830,10 @@ export interface operations {
                             } | null;
                             /** @description Whether the caller may restructure the outline */
                             mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
                             /** @description Whether the caller may publish the document */
                             mayPublish: boolean;
                             /** @description Whether the caller may start and answer threads on the document */
@@ -36973,6 +37585,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -37484,6 +38097,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -38688,6 +39302,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -39772,6 +40387,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -39956,7 +40572,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -42980,6 +43596,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 types?: string;
                 spaces?: string;
+                archived?: "only";
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -43008,7 +43625,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -46617,6 +47234,8 @@ export interface operations {
                      *       },
                      *       "content": {},
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "lock": {
                      *         "holder": {
                      *           "id": "example",
@@ -46668,6 +47287,10 @@ export interface operations {
                         };
                         /** @description Whether the caller may take the lock and write */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and edited */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         lock: {
                             holder: {
                                 id: string;
@@ -47638,6 +48261,8 @@ export interface operations {
                      *         }
                      *       },
                      *       "mayEdit": false,
+                     *       "archived": false,
+                     *       "mayRetire": false,
                      *       "mayPublish": false,
                      *       "mayComment": false,
                      *       "maySuggest": false,
@@ -47739,6 +48364,10 @@ export interface operations {
                         } | null;
                         /** @description Whether the caller may restructure the outline */
                         mayEdit: boolean;
+                        /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                        archived: boolean;
+                        /** @description Whether the caller may archive and unarchive it */
+                        mayRetire: boolean;
                         /** @description Whether the caller may publish the document */
                         mayPublish: boolean;
                         /** @description Whether the caller may start and answer threads on the document */
@@ -52322,7 +52951,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -52439,7 +53068,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -52473,7 +53102,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;

@@ -123,6 +123,12 @@
   white-space: nowrap;
 }
 
+.archive {
+  margin-inline: var(--space-8);
+  font-size: var(--size-12);
+  white-space: nowrap;
+}
+
 .divider {
   width: 1px;
   height: 20px;

@@ -149,6 +149,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   cutVersion: writes('content.version_cut'),
   previewRestore: read,
   restoreVersion: writes('content.restored', 'content.version_cut'),
+  archiveComponent: writes('artifact.archived'),
+  unarchiveComponent: writes('artifact.unarchived'),
+  archiveDocument: writes('artifact.archived'),
+  unarchiveDocument: writes('artifact.unarchived'),
   listIterations: read,
   getIteration: read,
   // What is offered to the caller to recover, about their own iterations: no act of record (the R2 plan).

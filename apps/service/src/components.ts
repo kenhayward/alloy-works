@@ -12,6 +12,7 @@ import type {
 import {
   componentFieldsNow,
   createComponent,
+  isArchived,
   latestSequence,
   latestVersion,
   listPeople,
@@ -285,6 +286,8 @@ export function componentHandlers(
         // did not exist when the facts were loaded, so a denial of `edit` on the component itself
         // cannot exist yet; nothing has had a chance to make one.
         mayEdit: decide('edit', facts).allowed,
+        archived: false,
+        mayRetire: decide('retire', facts).allowed,
         lock: null,
         // Nothing has been saved of a component made a moment ago.
         unsaved: null,
@@ -303,6 +306,7 @@ export function componentHandlers(
         listReadableComponents(trx, principal, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(types === undefined ? {} : { types }),
+          ...(query.archived === undefined ? {} : { archived: query.archived }),
         }),
       );
       if (!page) throw new Error('A signed-in principal is not in its own tenant');
@@ -382,6 +386,8 @@ export function componentHandlers(
         content: version.content as Record<string, unknown>,
         // What the renderer offers from: the same decision a write would be refused by.
         mayEdit: decide('edit', facts).allowed,
+        archived: await isArchived(trx, id),
+        mayRetire: decide('retire', facts).allowed,
         lock: lock ? lockView(lock, principalId) : null,
         unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
         sequence,

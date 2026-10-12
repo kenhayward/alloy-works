@@ -17,6 +17,7 @@ import {
   documentRules,
   documentTemplate,
   editOutline,
+  isArchived,
   listReadableDocuments,
   loadFacts,
   loadFactsFor,
@@ -67,6 +68,8 @@ interface Viewer {
   readonly principalId: string;
   readonly mayEdit: boolean;
   readonly mayPublish: boolean;
+  /** Whether they may archive and unarchive it (lifecycle.md). */
+  readonly mayRetire: boolean;
   /** Whether they may start and answer threads on it (COL-012). */
   readonly mayComment: boolean;
   /** Whether Review is offered them: `comment` or `suggest` (IAM-081). */
@@ -179,6 +182,8 @@ async function documentView(
     ...(await documentFields(viewer, document.id)),
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
+    archived: await isArchived(viewer.trx, document.id),
+    mayRetire: viewer.mayRetire,
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
@@ -328,6 +333,7 @@ export function documentHandlers(
         listReadableDocuments(trx, principalOf(request).principalId, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(publishing === undefined ? {} : { publishing }),
+          ...(query.archived === undefined ? {} : { archived: query.archived }),
         }),
       );
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
@@ -402,6 +408,7 @@ export function documentHandlers(
           principalId,
           mayEdit: decide('edit', facts).allowed,
           mayPublish: decide('publish', facts).allowed,
+          mayRetire: decide('retire', facts).allowed,
           mayComment: decide('comment', facts).allowed,
           mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
           maySuggest: decide('suggest', facts).allowed,
@@ -422,6 +429,7 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -613,6 +621,7 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -655,6 +664,7 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -739,6 +749,7 @@ export function documentHandlers(
         principalId,
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,

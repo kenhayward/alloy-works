@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ListLayout } from '../layouts/ListLayout.js';
 import {
+  ArchivedFilter,
   Facet,
   SortChooser,
   toggled,
@@ -54,6 +55,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [typesChosen, setTypesChosen] = useState<readonly string[]>([]);
   const [typeFacet, setTypeFacet] = useState<readonly FacetValue[]>([]);
+  // The archived alone, the one way to list them (LIF-020).
+  const [archived, setArchived] = useState(false);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
@@ -83,6 +86,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
           ...(cursor === null ? {} : { cursor }),
           ...(chosen.length === 0 ? {} : { spaces: chosen.join(',') }),
           ...(typesChosen.length === 0 ? {} : { types: typesChosen.join(',') }),
+          ...(archived ? { archived: 'only' as const } : {}),
         };
         const { data } = await client.GET('/v1/components', { params: { query } });
         if (generation !== asking.current) return;
@@ -105,7 +109,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         }
       }
     },
-    [client, chosen, sort, typesChosen],
+    [client, chosen, sort, typesChosen, archived],
   );
 
   useEffect(() => {
@@ -148,6 +152,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
       name: type,
       remove: () => setTypesChosen((held) => toggled(held, type)),
     })),
+    ...(archived ? [{ key: 'archived', name: 'Archived', remove: () => setArchived(false) }] : []),
   ];
   const shownItem = items.find((item) => item.id === shown) ?? null;
   const closeShown = () => {
@@ -160,13 +165,14 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     <>
       <div className={styles['filterHead']}>
         <span className={styles['overline']}>Filter</span>
-        {(chosen.length > 0 || typesChosen.length > 0) && (
+        {(chosen.length > 0 || typesChosen.length > 0 || archived) && (
           <button
             type="button"
             className={styles['clear']}
             onClick={() => {
               setChosen([]);
               setTypesChosen([]);
+              setArchived(false);
             }}
           >
             Clear
@@ -193,6 +199,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         chosen={typesChosen}
         onToggle={(value) => setTypesChosen((held) => toggled(held, value))}
       />
+      <ArchivedFilter chosen={archived} onChoose={setArchived} />
     </>
   );
 
@@ -235,7 +242,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         )}
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
-          {`${total} ${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
+          {`${total} ${archived ? 'archived ' : ''}${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
         </p>
         {filters.length > 0 && (
           <ul className={styles['chosen']} aria-label="Filtered by">
@@ -260,7 +267,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         </p>
         {items.length === 0 ? (
           <Empty>
-            <p>There are no components you may read.</p>
+            <p>
+              {archived
+                ? 'There are no archived components you may read.'
+                : 'There are no components you may read.'}
+            </p>
           </Empty>
         ) : (
           <div className={styles['table']}>
@@ -282,6 +293,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       <a className={styles['title']} href={`#/components/${item.id}`}>
                         {item.title}
                       </a>
+                      {archived && <Chip>Archived</Chip>}
                       <span className={styles['where']}>
                         {`${item.space.name}, ${item.language}`}
                       </span>
@@ -314,7 +326,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                         client={client}
                         id={item.id}
                         title={item.title}
+                        archived={archived}
                         onNotice={setNotice}
+                        onArchived={() => void load(null)}
                       />
                     </td>
                   </tr>

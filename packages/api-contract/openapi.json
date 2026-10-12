@@ -13665,7 +13665,8 @@
                               "manage_definitions",
                               "administer",
                               "use_connection",
-                              "write_sql"
+                              "write_sql",
+                              "retire"
                             ]
                           },
                           "allowed": {
@@ -13949,7 +13950,8 @@
                               "manage_definitions",
                               "administer",
                               "use_connection",
-                              "write_sql"
+                              "write_sql",
+                              "retire"
                             ]
                           },
                           "allowed": {
@@ -24195,7 +24197,7 @@
       "get": {
         "operationId": "listComponents",
         "summary": "The components the caller may read, a page at a time",
-        "description": "Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing.",
+        "description": "Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.",
         "tags": [
           "Components"
         ],
@@ -24273,6 +24275,16 @@
               "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
               "type": "string",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
             }
           },
           {
@@ -24762,6 +24774,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may take the lock and write"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and edited"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "lock": {
                       "anyOf": [
                         {
@@ -25012,6 +25032,8 @@
                     "version",
                     "content",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "lock",
                     "unsaved",
                     "sequence",
@@ -25036,6 +25058,8 @@
                   },
                   "content": {},
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "lock": {
                     "holder": {
                       "id": "example",
@@ -25160,6 +25184,262 @@
           },
           "403": {
             "description": "Never answered: a component the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/archive": {
+      "post": {
+        "operationId": "archiveComponent",
+        "summary": "Archive a component",
+        "description": "Archives a component: it leaves ordinary listings, their counts and search, and still opens by its id, resolves where a document references it and can be edited. Needs retire on the component. Archiving one already archived changes nothing. Audited.",
+        "tags": [
+          "Components"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "retire",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived, or already so, which changes nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether it is archived now: left out of ordinary listings and search, still readable"
+                    }
+                  },
+                  "required": [
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the component but may not retire it",
             "content": {
               "application/json": {
                 "schema": {
@@ -31806,6 +32086,262 @@
           },
           "403": {
             "description": "The caller may read what the thread is on but may not comment on it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/unarchive": {
+      "post": {
+        "operationId": "unarchiveComponent",
+        "summary": "Unarchive a component",
+        "description": "Unarchives a component, so it is listed and found again. Needs retire on the component. Unarchiving one not archived changes nothing. Audited.",
+        "tags": [
+          "Components"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "retire",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unarchived, or already so, which changes nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether it is archived now: left out of ordinary listings and search, still readable"
+                    }
+                  },
+                  "required": [
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the component but may not retire it",
             "content": {
               "application/json": {
                 "schema": {
@@ -47676,7 +48212,7 @@
       "get": {
         "operationId": "listDocuments",
         "summary": "The documents the caller may read, a page at a time",
-        "description": "Lists documents the caller can read with stable cursor paging, filters and facets.",
+        "description": "Lists documents the caller can read with stable cursor paging, filters and facets. Archived documents are left out unless archived=only asks for them alone.",
         "tags": [
           "Documents"
         ],
@@ -47754,6 +48290,16 @@
               "description": "Only documents in these publishing states: published, changedSince, neverPublished",
               "type": "string",
               "pattern": "^(?:published|changedSince|neverPublished)(?:,(?:published|changedSince|neverPublished)){0,2}$"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived documents alone. Absent: archived documents are left out",
+              "type": "string",
+              "const": "only"
             }
           },
           {
@@ -48413,6 +48959,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -48499,6 +49053,8 @@
                     "schemas",
                     "template",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -48536,6 +49092,8 @@
                     }
                   },
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -48606,6 +49164,262 @@
           },
           "403": {
             "description": "Never answered: a document the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/archive": {
+      "post": {
+        "operationId": "archiveDocument",
+        "summary": "Archive a document",
+        "description": "Archives a document: it leaves ordinary listings, their counts and search, and still opens by its id and publishes. Its publications are not archived with it. Needs retire on the document. Archiving one already archived changes nothing. Audited.",
+        "tags": [
+          "Documents"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "retire",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived, or already so, which changes nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether it is archived now: left out of ordinary listings and search, still readable"
+                    }
+                  },
+                  "required": [
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not retire it",
             "content": {
               "application/json": {
                 "schema": {
@@ -108412,6 +109226,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -108498,6 +109320,8 @@
                     "schemas",
                     "template",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -108535,6 +109359,8 @@
                     }
                   },
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -108887,6 +109713,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -108973,6 +109807,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -109567,6 +110403,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -109653,6 +110497,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -110913,6 +111759,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -110999,6 +111853,8 @@
                     "schemas",
                     "template",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -111036,6 +111892,8 @@
                     }
                   },
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -111388,6 +112246,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -111474,6 +112340,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -112068,6 +112936,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -112154,6 +113030,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -118196,6 +119074,262 @@
         }
       }
     },
+    "/v1/documents/{id}/unarchive": {
+      "post": {
+        "operationId": "unarchiveDocument",
+        "summary": "Unarchive a document",
+        "description": "Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.",
+        "tags": [
+          "Documents"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "retire",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unarchived, or already so, which changes nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether it is archived now: left out of ordinary listings and search, still readable"
+                    }
+                  },
+                  "required": [
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not retire it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/values": {
       "put": {
         "operationId": "recordDocumentValues",
@@ -118589,6 +119723,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -118675,6 +119817,8 @@
                     "schemas",
                     "template",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -118712,6 +119856,8 @@
                     }
                   },
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -119064,6 +120210,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -119150,6 +120304,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -119744,6 +120900,14 @@
                           "type": "boolean",
                           "description": "Whether the caller may restructure the outline"
                         },
+                        "archived": {
+                          "type": "boolean",
+                          "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                        },
+                        "mayRetire": {
+                          "type": "boolean",
+                          "description": "Whether the caller may archive and unarchive it"
+                        },
                         "mayPublish": {
                           "type": "boolean",
                           "description": "Whether the caller may publish the document"
@@ -119830,6 +120994,8 @@
                         "schemas",
                         "template",
                         "mayEdit",
+                        "archived",
+                        "mayRetire",
                         "mayPublish",
                         "mayComment",
                         "maySuggest",
@@ -121868,6 +123034,16 @@
             }
           },
           {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -123149,6 +124325,16 @@
               "description": "Only the components in these spaces, by id, separated by commas; every space when absent",
               "type": "string",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,49}$"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
             }
           },
           {
@@ -125981,6 +127167,16 @@
             }
           },
           {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -128456,6 +129652,16 @@
             }
           },
           {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -128860,7 +130066,8 @@
                                 "manage_definitions",
                                 "administer",
                                 "use_connection",
-                                "write_sql"
+                                "write_sql",
+                                "retire"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -139236,6 +140443,16 @@
             }
           },
           {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "only: the archived components alone. Absent: archived components are left out",
+              "type": "string",
+              "const": "only"
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -139281,7 +140498,8 @@
                                 "manage_definitions",
                                 "administer",
                                 "use_connection",
-                                "write_sql"
+                                "write_sql",
+                                "retire"
                               ]
                             }
                           }
@@ -148009,6 +149227,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may take the lock and write"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and edited"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "lock": {
                       "anyOf": [
                         {
@@ -148259,6 +149485,8 @@
                     "version",
                     "content",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "lock",
                     "unsaved",
                     "sequence",
@@ -148283,6 +149511,8 @@
                   },
                   "content": {},
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "lock": {
                     "holder": {
                       "id": "example",
@@ -151217,6 +152447,14 @@
                       "type": "boolean",
                       "description": "Whether the caller may restructure the outline"
                     },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Archived: left out of ordinary listings and search, and still read, referenced and published"
+                    },
+                    "mayRetire": {
+                      "type": "boolean",
+                      "description": "Whether the caller may archive and unarchive it"
+                    },
                     "mayPublish": {
                       "type": "boolean",
                       "description": "Whether the caller may publish the document"
@@ -151303,6 +152541,8 @@
                     "schemas",
                     "template",
                     "mayEdit",
+                    "archived",
+                    "mayRetire",
                     "mayPublish",
                     "mayComment",
                     "maySuggest",
@@ -151340,6 +152580,8 @@
                     }
                   },
                   "mayEdit": false,
+                  "archived": false,
+                  "mayRetire": false,
                   "mayPublish": false,
                   "mayComment": false,
                   "maySuggest": false,
@@ -165460,7 +166702,8 @@
                                 "manage_definitions",
                                 "administer",
                                 "use_connection",
-                                "write_sql"
+                                "write_sql",
+                                "retire"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -165723,7 +166966,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 11,
+                    "maxItems": 12,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -165738,7 +166981,8 @@
                         "manage_definitions",
                         "administer",
                         "use_connection",
-                        "write_sql"
+                        "write_sql",
+                        "retire"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -165795,7 +167039,8 @@
                           "manage_definitions",
                           "administer",
                           "use_connection",
-                          "write_sql"
+                          "write_sql",
+                          "retire"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"

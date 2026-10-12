@@ -10,6 +10,7 @@ const TRAINING = '2b1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
 const MANUAL = '3c1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
 const WORKBOOK = '4d1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
 const PACK = '5e1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
+const HANDBOOK = '6f1d2c9f-7a4f-4e3b-8e47-3b5a2dae8c21';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -41,11 +42,14 @@ function listed() {
     // Filtered and counted as the service does: each facet with the other filter in force.
     const spaces = url.searchParams.get('spaces')?.split(',');
     const states = url.searchParams.get('publishing')?.split(',');
+    // The handbook is archived: listed, and counted, only when the archived alone are asked for.
+    const only = url.searchParams.get('archived') === 'only';
     const all = [
       row(MANUAL, 'Operator manual', GENERAL, 'changedSince'),
       row(WORKBOOK, 'Training workbook', TRAINING, 'neverPublished'),
       row(PACK, 'Commissioning pack', GENERAL, 'published'),
-    ];
+      row(HANDBOOK, 'Retired handbook', GENERAL, 'published'),
+    ].filter((each) => (each.id === HANDBOOK) === only);
     const inSpace = (each: (typeof all)[number]) => !spaces || spaces.includes(each.space.id);
     const inState = (each: (typeof all)[number]) => !states || states.includes(each.publishing);
     const count = <K extends string>(
@@ -117,6 +121,17 @@ describe('the documents list', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(screen.getByRole('link', { name: 'Training workbook' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /^General\s*2$/ })).not.toBeChecked();
+  });
+
+  it('LIF-020 lists the archived alone under Archived, each marked', async () => {
+    render(<DocumentList client={listed()} onOpen={() => {}} />);
+    await screen.findByRole('link', { name: 'Operator manual' });
+    expect(screen.queryByRole('link', { name: 'Retired handbook' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Archived' }));
+    const handbook = await screen.findByRole('link', { name: 'Retired handbook' });
+    expect(within(handbook.closest('td')!).getByText('Archived')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Operator manual' })).not.toBeInTheDocument();
   });
 
   it('offers New document as a dialog from the primary button', async () => {

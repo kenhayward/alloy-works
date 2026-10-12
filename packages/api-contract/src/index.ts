@@ -65,6 +65,7 @@ export {
   RestoreParams,
   restoreRoutes,
 } from './restore.js';
+export { ArchivalParams, ArchivalView, archivalRoutes } from './archival.js';
 export {
   GrantBody,
   GrantList,

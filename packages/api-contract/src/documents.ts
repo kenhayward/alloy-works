@@ -174,6 +174,10 @@ export const DocumentListQuery = z.object({
     )
     .optional()
     .describe('Only documents in these publishing states: published, changedSince, neverPublished'),
+  archived: z
+    .literal('only')
+    .optional()
+    .describe('only: the archived documents alone. Absent: archived documents are left out'),
 });
 export type DocumentListQuery = z.infer<typeof DocumentListQuery>;
 
@@ -220,6 +224,12 @@ export const DocumentView = z.object({
         'version names it. Null for a document made blank, or from a template the caller may not read',
     ),
   mayEdit: z.boolean().describe('Whether the caller may restructure the outline'),
+  archived: z
+    .boolean()
+    .describe(
+      'Archived: left out of ordinary listings and search, and still read, referenced and published',
+    ),
+  mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
   mayPublish: z.boolean().describe('Whether the caller may publish the document'),
   mayComment: z
     .boolean()

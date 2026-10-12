@@ -309,7 +309,6 @@ export const auditKindSpecs = {
   'gate.rejected': kind(['LIF-053', 'LIF-057'], empty, LATER),
   'hold.applied': kind(['LIF-057'], empty, LATER),
   'hold.removed': kind(['LIF-057'], empty, LATER),
-  'artifact.archived': kind(['LIF-057'], empty, LATER),
   'artifact.deleted': kind(['LIF-057'], empty, LATER),
   'revision.designated': kind(['LIF-026'], empty, LATER),
   // A baseline made, and one superseded by a later one (the BL plan): about the document version it
@@ -324,6 +323,9 @@ export const auditKindSpecs = {
     z.strictObject({ baseline: Id, by: Id }),
     'packages/db/src/baselines.ts',
   ),
+  // A component or a document archived and unarchived (the AH plan, AH-E): about the artifact.
+  'artifact.archived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
+  'artifact.unarchived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
   // A restore (the RS plan, RS-C): about the new version, the subject; the earlier one it came from.
   'content.restored': kind(
     ['LIF-026', 'CNT-170'],

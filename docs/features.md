@@ -950,6 +950,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   parameters stay as they are now. Changing which version a reference takes, by its mode or by a
   restore, is audited from and to. Through the API, `/v1/documents/{id}/versions` and its
   `restoration` and `restore`.
+- **Archive a component or a document.** Whoever may retire it, Administrator by default, archives
+  it from its page or, for a component, its row's menu, and unarchives it the same way. An archived
+  component or document leaves the component and document listings, their counts, Home's counts,
+  Needs your attention and search, and an edit does not bring it back; it still opens by its link,
+  is still referenced, edited and published, and its page says **Archived**. Each listing's
+  **Archived** filter lists the archived alone. A space's archive archives nothing in it. Archiving
+  and unarchiving are audited. Through the API, `POST /v1/components/{id}/archive` and `unarchive`,
+  the same for documents, and `archived=only` on either listing.
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing

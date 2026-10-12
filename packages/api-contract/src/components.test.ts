@@ -30,8 +30,14 @@ describe('the routes that find and open components', () => {
     ];
     // Each listing's filters (SCH-064): they narrow what is paged, never an offset into it.
     const filters = (...names: string[]) => names.map((name) => [name, 'query', false]);
-    expect(parameters('/v1/components')).toEqual([...paged, ...filters('types', 'spaces')]);
-    expect(parameters('/v1/documents')).toEqual([...paged, ...filters('spaces', 'publishing')]);
+    expect(parameters('/v1/components')).toEqual([
+      ...paged,
+      ...filters('types', 'spaces', 'archived'),
+    ]);
+    expect(parameters('/v1/documents')).toEqual([
+      ...paged,
+      ...filters('spaces', 'publishing', 'archived'),
+    ]);
     expect(parameters('/v1/publications')).toEqual([...paged, ...filters('spaces', 'documents')]);
     expect(parameters('/v1/templates')).toEqual([...paged, ...filters('spaces')]);
     expect(parameters('/v1/documents/{id}/publications')).toEqual([

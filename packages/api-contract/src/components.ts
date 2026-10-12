@@ -136,6 +136,10 @@ export const ComponentListQuery = z.object({
     .describe(
       'Only the components in these spaces, by id, separated by commas; every space when absent',
     ),
+  archived: z
+    .literal('only')
+    .optional()
+    .describe('only: the archived components alone. Absent: archived components are left out'),
 });
 export type ComponentListQuery = z.infer<typeof ComponentListQuery>;
 
@@ -251,6 +255,12 @@ export const ComponentView = z.object({
     .record(z.string(), z.unknown())
     .describe("The latest version's content document (content-model.md), exactly as stored"),
   mayEdit: z.boolean().describe('Whether the caller may take the lock and write'),
+  archived: z
+    .boolean()
+    .describe(
+      'Archived: left out of ordinary listings and search, and still read, referenced and edited',
+    ),
+  mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
   lock: Lock.nullable(),
   unsaved: z
     .object({ savedAt: z.string().describe('When the service accepted it') })

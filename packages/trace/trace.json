@@ -17120,6 +17120,15 @@
       ]
     },
     {
+      "document": "lifecycle.md",
+      "owns": [
+        {
+          "id": "LIF-020",
+          "howItIsMet": "Archival, below: out of ordinary listings and search, still retrievable; AH-B to AH-D"
+        }
+      ]
+    },
+    {
       "document": "metadata.md",
       "owns": [
         {
@@ -17947,10 +17956,6 @@
         {
           "id": "VER-036",
           "howItIsMet": "Versions, revisions and baselines have no expiry of their own; retention is a policy decision applied above this layer"
-        },
-        {
-          "id": "VER-037",
-          "howItIsMet": "Legal hold marks an artifact, and the mark is checked by the same constraint path that refuses a pinned deletion"
         },
         {
           "id": "VER-038",
@@ -19069,6 +19074,18 @@
       "kind": "title"
     },
     {
+      "id": "LIF-020",
+      "file": "apps/service/src/archival-routes.test.ts",
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "apps/service/src/archival-routes.test.ts",
+      "line": 303,
+      "kind": "title"
+    },
+    {
       "id": "DAT-024",
       "file": "apps/service/src/asserted-acts.test.ts",
       "line": 114,
@@ -19173,7 +19190,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 320,
+      "line": 324,
       "kind": "title"
     },
     {
@@ -19419,7 +19436,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1130,
+      "line": 1134,
       "kind": "title"
     },
     {
@@ -20533,6 +20550,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-020",
+      "file": "apps/web/src/editor/ComponentEditor.archival.test.tsx",
+      "line": 11,
+      "kind": "title"
+    },
+    {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
       "line": 1099,
@@ -20782,6 +20805,12 @@
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
       "line": 832,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-020",
+      "file": "apps/web/src/editor/ComponentList.test.tsx",
+      "line": 246,
       "kind": "title"
     },
     {
@@ -21169,6 +21198,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-020",
+      "file": "apps/web/src/structure/DocumentList.test.tsx",
+      "line": 126,
+      "kind": "title"
+    },
+    {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
       "line": 504,
@@ -21343,6 +21378,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-020",
+      "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
+      "line": 592,
+      "kind": "title"
+    },
+    {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
       "line": 33,
@@ -21357,7 +21398,7 @@
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 646,
+      "line": 660,
       "kind": "title"
     },
     {
@@ -22180,6 +22221,18 @@
       "id": "IAM-034",
       "file": "packages/db/src/api-token.test.ts",
       "line": 88,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-020",
+      "file": "packages/db/src/archival.test.ts",
+      "line": 136,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "packages/db/src/archival.test.ts",
+      "line": 297,
       "kind": "title"
     },
     {
@@ -23199,7 +23252,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 190,
+      "line": 191,
       "kind": "title"
     },
     {
@@ -25353,13 +25406,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 647,
+      "line": 665,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 324,
+      "line": 342,
       "kind": "title"
     },
     {

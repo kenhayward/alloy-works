@@ -1,7 +1,7 @@
 import { TEMPLATE_SCHEMA_VERSION, type ContentDocument } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { countReadableComponents, listReadableComponents } from './components.js';
+import { listReadableComponents } from './components.js';
 import { createComponent } from './creation.js';
 import { createDocument, listReadableDocuments } from './documents.js';
 import { grant } from './grants.js';
@@ -281,10 +281,10 @@ describe('listings, paged by keyset as of their first page', () => {
     const first = await page(listings.components!.list, { sort: 'title', limit: 1 });
     const counted = (snapshot?: string) =>
       service.withTenant(production, async (trx) =>
-        (await countReadableComponents(trx, ada, snapshot))!.reduce(
-          (sum, space) => sum + space.count,
-          0,
-        ),
+        (await listReadableComponents(trx, ada, {
+          limit: 1,
+          ...(snapshot ? { snapshot } : {}),
+        }))!.facets.spaces.reduce((sum, space) => sum + space.count, 0),
       );
     const before = await counted(first.snapshot);
     await service.withTenant(production, (trx) =>

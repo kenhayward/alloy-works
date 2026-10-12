@@ -7,6 +7,7 @@ import { Modal } from '../layouts/Modal.js';
 import { useCreatableSpaces } from '../spaces.js';
 import { Empty } from '../states/Empty.js';
 import {
+  ArchivedFilter,
   Facet,
   More,
   SortChooser,
@@ -15,6 +16,7 @@ import {
   type SortOption,
 } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
+import { Chip } from '../parts/Chip.js';
 import { Lozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
@@ -131,6 +133,8 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
   const [states, setStates] = useState<readonly Publishing[]>([]);
+  // The archived alone, the one way to list them (LIF-020).
+  const [archived, setArchived] = useState(false);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
@@ -143,6 +147,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             ...(cursor === null ? {} : { cursor }),
             ...(spaces.length === 0 ? {} : { spaces: spaces.join(',') }),
             ...(states.length === 0 ? {} : { publishing: states.join(',') }),
+            ...(archived ? { archived: 'only' as const } : {}),
           },
         },
       });
@@ -161,7 +166,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         },
       };
     },
-    [client, sort, spaces, states],
+    [client, sort, spaces, states, archived],
   );
   const listing = usePagedListing<Listed, Facets>(fetchPage);
 
@@ -191,7 +196,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   }
   const { items, total } = listing;
   const facets = listing.facets ?? NO_FACETS;
-  const filtered = spaces.length > 0 || states.length > 0;
+  const filtered = spaces.length > 0 || states.length > 0 || archived;
   // Offered only to somebody with somewhere to create, as the components list does; a read that
   // failed still offers it, so the form can say what went wrong.
   const mayCreate = creatable.problem !== null || (creatable.spaces ?? []).length > 0;
@@ -213,6 +218,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             onClick={() => {
               setSpaces([]);
               setStates([]);
+              setArchived(false);
             }}
           >
             Clear
@@ -234,6 +240,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         }
         onToggle={(value) => setStates((held) => toggled(held, value as Publishing))}
       />
+      <ArchivedFilter chosen={archived} onChoose={setArchived} />
     </>
   );
 
@@ -295,6 +302,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                       <a className={styles['title']} href={documentLink(item.id)}>
                         {item.title}
                       </a>
+                      {archived && <Chip>Archived</Chip>}
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>{item.version}</td>

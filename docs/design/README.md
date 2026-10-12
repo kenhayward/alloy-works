@@ -41,6 +41,7 @@ understand the storage layer, rather than something to be thrown away.
 | [audit.md](audit.md)                                   | The tenant's audit log: every act, sign-in and refusal recorded, kept beyond what it describes, read and exported by administrators |
 | [collaboration.md](collaboration.md)                   | Who holds a component's lock, for how long, and how it passes from an idle holder to somebody who needs it                          |
 | [home.md](home.md)                                     | What waits on the person signed in that they may resolve, each with its one action, and nothing they may not read                   |
+| [lifecycle.md](lifecycle.md)                           | Archival: a component or a document out of ordinary listings and search, still retrievable                                          |
 
 ## Why these are not one per requirement area
 
