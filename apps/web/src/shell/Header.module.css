@@ -208,3 +208,27 @@ a.chip {
     display: none;
   }
 }
+
+/* How many of the person's notifications are unread, on the account chip (the TH plan, Task 4). */
+.unread {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--size-12);
+  font-weight: 600;
+}
+
+/* Said to assistive technology, and not drawn: what the count counts. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

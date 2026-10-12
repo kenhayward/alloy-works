@@ -1,7 +1,8 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiTokens } from '../account/ApiTokens.js';
+import { Inbox } from '../account/Inbox.js';
 import { Sessions } from '../account/Sessions.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
@@ -137,7 +138,7 @@ function ThemeMenu() {
 /**
  * The band across the top of every screen, in the theme's chrome (ADR-0046): the mark, which goes
  * Home, and the environment; search and commands in the middle; then the Theme button and the
- * account chip, which holds API tokens, Sessions and Sign out. The module the page is in is the rail's to say.
+ * account chip, which holds the Inbox, API tokens, Sessions and Sign out, and says how many are unread. The module the page is in is the rail's to say.
  */
 export function Header({
   onSearch = () => undefined,
@@ -153,6 +154,16 @@ export function Header({
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
   const [managingTokens, setManagingTokens] = useState(false);
   const [seeingSessions, setSeeingSessions] = useState(false);
+  const [readingInbox, setReadingInbox] = useState(false);
+  // How many of the person's notifications are unread: read when the shell opens and when the inbox
+  // closes, never live (the TH plan, TH-L).
+  const [unread, setUnread] = useState(0);
+  const countUnread = useCallback(() => {
+    client
+      .GET('/v1/inbox', { params: { query: { limit: '1' } } })
+      .then(({ data }) => setUnread(data?.unread ?? 0))
+      .catch(() => undefined);
+  }, [client]);
 
   useEffect(() => {
     let current = true;
@@ -166,14 +177,16 @@ export function Header({
       .GET('/v1/me')
       .then(({ data, response }) => {
         if (!current) return;
-        if (data) setWho({ displayName: data.displayName ?? null, email: data.email ?? null });
-        else if (response.status === 401) setWho('nobody');
+        if (data) {
+          setWho({ displayName: data.displayName ?? null, email: data.email ?? null });
+          countUnread();
+        } else if (response.status === 401) setWho('nobody');
       })
       .catch(() => undefined);
     return () => {
       current = false;
     };
-  }, [client]);
+  }, [client, countUnread]);
 
   /** Whether the service says nobody is signed in: false where it says somebody is, or says nothing. */
   const nobodySignedIn = async () => {
@@ -272,11 +285,32 @@ export function Header({
                 {initialsOf(who)}
               </span>
               {who.displayName ?? who.email ?? 'Signed in'}
+              {unread > 0 && (
+                <>
+                  {' '}
+                  <span className={styles['unread']}>
+                    {unread}
+                    <span className={styles['hidden']}> unread</span>
+                  </span>
+                </>
+              )}
             </>
           }
         >
           {(close) => (
             <ul className={styles['items']}>
+              <li>
+                <button
+                  type="button"
+                  className={styles['item']}
+                  onClick={() => {
+                    close();
+                    setReadingInbox(true);
+                  }}
+                >
+                  {unread > 0 ? `Inbox (${unread} unread)` : 'Inbox'}
+                </button>
+              </li>
               <li>
                 <button
                   type="button"
@@ -319,6 +353,15 @@ export function Header({
       )}
       {managingTokens && <ApiTokens client={client} onClose={() => setManagingTokens(false)} />}
       {seeingSessions && <Sessions client={client} onClose={() => setSeeingSessions(false)} />}
+      {readingInbox && (
+        <Inbox
+          client={client}
+          onClose={() => {
+            setReadingInbox(false);
+            countUnread();
+          }}
+        />
+      )}
     </header>
   );
 }
