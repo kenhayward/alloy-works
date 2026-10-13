@@ -651,7 +651,7 @@
     {
       "id": "API-058",
       "area": "API",
-      "statement": "Anything any area requires to be listable must be paged, capped or budgeted wherever its size grows with the tenant, with a stable order (API-007). A listing that cannot be paged must state its cap and show itself as capped (**SCH-034**)",
+      "statement": "Anything any area requires to be listable must be paged, capped or budgeted wherever its size grows with the tenant, with a stable order (API-007). A listing that cannot be paged must state its cap and show itself as capped (**SCH-073**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
@@ -10985,9 +10985,18 @@
       "area": "SCH",
       "statement": "A count or facet total that stops at a stated cap must show itself as a lower bound, and the cap must be applied over what the user may see",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by SCH-073",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 144
+    },
+    {
+      "id": "SCH-073",
+      "area": "SCH",
+      "statement": "A count or facet total that stops at a stated cap must show itself as a lower bound, and the cap must be applied over what the user may see. Past the cap, facet totals may be counted over the most recently changed matches up to it alone, each then shown as a lower bound",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 145
     },
     {
       "id": "SCH-044",
@@ -10996,7 +11005,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "SCH-046",
@@ -11005,7 +11014,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "SCH-068",
@@ -11014,7 +11023,7 @@
       "tranche": "T3",
       "status": "Superseded by SCH-070",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "SCH-070",
@@ -11023,7 +11032,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "SCH-069",
@@ -11032,7 +11041,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "SCH-023",
@@ -11041,7 +11050,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "SCH-024",
@@ -11050,7 +11059,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "SCH-025",
@@ -11059,7 +11068,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "SCH-026",
@@ -11068,16 +11077,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "SCH-043",
       "area": "SCH",
-      "statement": "A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-034): \"used in 14 places\" must count only what the requesting user may see, and a large answer must page and cap like any other",
+      "statement": "A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-073): \"used in 14 places\" must count only what the requesting user may see, and a large answer must page and cap like any other",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "SCH-048",
@@ -11086,7 +11095,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "SCH-027",
@@ -11095,7 +11104,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-050",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "SCH-028",
@@ -11104,7 +11113,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "SCH-029",
@@ -11113,7 +11122,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "SCH-030",
@@ -11122,7 +11131,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "SCH-031",
@@ -11131,7 +11140,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "SCH-050",
@@ -11140,7 +11149,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-066",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "SCH-066",
@@ -11149,7 +11158,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "SCH-067",
@@ -11158,7 +11167,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "SCH-049",
@@ -11167,7 +11176,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "STR-001",
@@ -14787,25 +14796,25 @@
       "id": "SCH-N01",
       "statement": "**No search across tenants**, for any purpose including support",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "SCH-N02",
       "statement": "**No index-time permission baking.** Permissions change; an index cannot be re-written every time they do (SCH-005)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "SCH-N03",
       "statement": "**No relevance tuning per user.** Two users with the same permissions must see the same results in the same order",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "SCH-N04",
       "statement": "**Not an analytics surface.** Counting what exists is a report, not a search (**ADM**)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "STR-N01",
@@ -15695,42 +15704,42 @@
       "question": "**Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice",
       "settledBy": "**Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "SCH-Q02",
       "question": "**How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale",
       "settledBy": "**Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../spikes/Search_Spike_Findings.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "SCH-Q03",
       "question": "**Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed",
       "settledBy": "Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "SCH-Q04",
       "question": "**Does semantic search need its own permission story?**",
       "settledBy": "**Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "SCH-Q05",
       "question": "**Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "settledBy": "Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "SCH-Q06",
       "question": "**How much fuzzy matching (SCH-041), and where does it stop?** An edit distance that finds a typo also finds a different word, and in a regulated corpus a near miss presented as a match is worse than nothing",
       "settledBy": "Real queries against real content. The requirement is that approximation is stated where it happens; the distance itself is a number to tune",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "STR-Q01",
@@ -17975,11 +17984,11 @@
         },
         {
           "id": "SCH-033",
-          "howItIsMet": "The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user"
+          "howItIsMet": "The budget is measured against a generated tenant of a million components, for three kinds of user, by the load suite's search profile (`packages/db/src/load/search.load.ts`), run by hand: the words through their indexes, the definitions through theirs, ranking and facets bounded and the road chosen (SV3)"
         },
         {
-          "id": "SCH-034",
-          "howItIsMet": "Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound"
+          "id": "SCH-073",
+          "howItIsMet": "Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound; past the bound, facets count the 1,000 most recently changed visible matches, each shown as a lower bound ([Counts and facets](#counts-and-facets))"
         },
         {
           "id": "SCH-035",
@@ -23648,6 +23657,12 @@
       "kind": "title"
     },
     {
+      "id": "SCH-010",
+      "file": "packages/db/src/search-bounded.test.ts",
+      "line": 359,
+      "kind": "title"
+    },
+    {
       "id": "SCH-003",
       "file": "packages/db/src/search-earlier.test.ts",
       "line": 224,
@@ -23672,27 +23687,27 @@
       "kind": "title"
     },
     {
-      "id": "SCH-034",
-      "file": "packages/db/src/search-facets.test.ts",
-      "line": 387,
-      "kind": "title"
-    },
-    {
       "id": "SCH-046",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 311,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "SCH-059",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 275,
+      "line": 276,
       "kind": "title"
     },
     {
       "id": "SCH-062",
       "file": "packages/db/src/search-facets.test.ts",
-      "line": 350,
+      "line": 351,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-073",
+      "file": "packages/db/src/search-facets.test.ts",
+      "line": 388,
       "kind": "title"
     },
     {

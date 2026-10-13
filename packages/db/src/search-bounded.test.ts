@@ -1,0 +1,476 @@
+import { randomUUID } from 'node:crypto';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  OUTLINE_SCHEMA_VERSION,
+  type ContentDocument,
+} from '@alloy-works/domain';
+import { sql } from 'kysely';
+import pg from 'pg';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { bootstrapCluster } from './bootstrap.js';
+import { createComponent } from './creation.js';
+import { grant } from './grants.js';
+import { migrate } from './migrate.js';
+import { createTenant, type Tenant } from './provision.js';
+import { findRole } from './roles.js';
+import {
+  SEARCH_RANK_BOUND,
+  searchWords,
+  type SearchAnswer,
+  type SearchFilters,
+  type SearchOptions,
+  type SearchRoad,
+} from './search-words.js';
+import { createSpace } from './spaces.js';
+import type { TenantTransaction } from './tables.js';
+import type { TenantDatabase } from './tenant-database.js';
+import {
+  freshDatabase,
+  TEST_PASSWORDS,
+  type TestDatabase,
+  testTenantDatabase,
+} from './testing/database.js';
+import { createArtifact, recordVersion, substanceOf } from './versions.js';
+
+const ISSUER = 'https://idp.example';
+const text = (value: string) => [{ type: 'text', value, marks: [] }];
+
+type Results = Extract<SearchAnswer, { outcome: 'results' }>;
+
+function resultsOf(answer: SearchAnswer | undefined): Results {
+  if (answer?.outcome !== 'results') throw new Error(`Expected results, not ${answer?.outcome}`);
+  return answer;
+}
+
+/** Every index a JSON plan names, wherever in the plan. */
+function indexesIn(plan: unknown): string[] {
+  const names: string[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) node.forEach(walk);
+    else if (node !== null && typeof node === 'object') {
+      for (const [key, value] of Object.entries(node)) {
+        if (key === 'Index Name' && typeof value === 'string') names.push(value);
+        else walk(value);
+      }
+    }
+  };
+  walk(plan);
+  return names;
+}
+
+const ZERO_CHANGED = ['today', 'week', 'month', 'year', 'earlier'].map((value) => ({
+  value,
+  label: value,
+  count: 0,
+  capped: false,
+}));
+
+describe('search bounded at scale (SV3)', () => {
+  let db: TestDatabase;
+  let production: Tenant;
+  let service: TenantDatabase;
+  let ada: string;
+  let ivy: string;
+  let quality: string;
+  let archive: string;
+  let approved: string;
+  let status: string;
+  let general: string;
+  let oldYak: string;
+
+  const person = (trx: TenantTransaction, subject: string, name: string) =>
+    trx
+      .insertInto('principal')
+      .values({ issuer: ISSUER, subject, email: null, display_name: name })
+      .returning('id')
+      .executeTakeFirstOrThrow()
+      .then((row) => row.id);
+
+  const emptyDocument = (trx: TenantTransaction, spaceId: string, title: string) =>
+    createArtifact(trx, {
+      author: ada,
+      spaceId,
+      substance: {
+        kind: 'document',
+        content: {
+          schemaVersion: OUTLINE_SCHEMA_VERSION,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          nodes: [],
+        },
+      } as never,
+    });
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    await migrate(db.migratorUrl);
+    production = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Production' },
+      hostnames: ['acme.alloy.test'],
+    });
+    service = testTenantDatabase(db.serviceUrl);
+    await service.withTenant(production, async (trx) => {
+      ada = await person(trx, 'ada', 'Ada');
+      ivy = await person(trx, 'ivy', 'Ivy');
+      general = (
+        await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow()
+      ).id;
+      quality = (await createSpace(trx, 'Quality')).id;
+      archive = (await createSpace(trx, 'Archive')).id;
+      const author = await findRole(trx, 'Author');
+      const reader = await findRole(trx, 'Reader');
+      for (const space of [general, quality, archive]) {
+        await grant(trx, {
+          roleId: author!.id,
+          subject: { principal: ada },
+          level: { kind: 'space', id: space },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+      }
+      // Ada reads the tenant, and so its fields; Ivy reads General, where no yak is.
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: ada },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: ivy },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      approved = (
+        await createArtifact(trx, {
+          author: ada,
+          substance: {
+            kind: 'field',
+            content: {
+              schemaVersion: DEFINITION_SCHEMA_VERSION as typeof DEFINITION_SCHEMA_VERSION,
+              id: randomUUID(),
+              name: 'Approved',
+              dataType: 'boolean',
+              multiplicity: 'one',
+              validation: {},
+            },
+          },
+        })
+      ).artifactId;
+
+      // 1,100 yak sections in Quality, written to the projection directly: the 950th to the 1,050th
+      // changed at one instant, so the bound falls inside a tie; every other one Approved.
+      const herd = await emptyDocument(trx, quality, 'Yak herd');
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, field_values,
+           configuration, body, vector)
+        select ${herd.artifactId}::uuid, 'section', 'yak' || n, ${herd.id}::uuid, ${quality}::uuid,
+               'Yak ' || n, ${ada}::uuid,
+               date_trunc('hour', now()) - least(greatest(n, 950), 1050) * interval '1 s'
+                 + case when n > 1050 then (1050 - n) * interval '1 s' else interval '0' end,
+               jsonb_build_object(${approved}::text, n % 2 = 0), 'english', 'Yak herding ' || n,
+               to_tsvector('english', 'Yak herding ' || n)
+        from generate_series(1, 1100) n`.execute(trx);
+      // And one long ago in Archive, the best yak match of all.
+      const old = await emptyDocument(trx, archive, 'Yak annals');
+      oldYak = old.artifactId;
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, field_values,
+           configuration, body, vector)
+        values (${old.artifactId}::uuid, 'section', 'old', ${old.id}::uuid, ${archive}::uuid,
+                'Yak yak yak', ${ada}::uuid, now() - interval '3 years',
+                jsonb_build_object(${approved}::text, true), 'english',
+                'Yak yak yak yak yak', to_tsvector('english', 'Yak yak yak yak yak'))`.execute(trx);
+      await sql`
+        update search_entry set changed_at = now() - interval '3 years'
+        where artifact_id = ${old.artifactId}`.execute(trx);
+      await sql`
+        insert into search_text (entry_id, place, body, configuration)
+        select id, 'title', title, configuration from search_entry
+        where kind = 'section' and title ilike 'yak%'`.execute(trx);
+      // Gnu: thirty in General, long ago, where Ivy reads, and two hundred newer in Quality, where she
+      // may not; and a zebu whose Status is empty.
+      status = (
+        await createArtifact(trx, {
+          author: ada,
+          substance: {
+            kind: 'field',
+            content: {
+              schemaVersion: DEFINITION_SCHEMA_VERSION as typeof DEFINITION_SCHEMA_VERSION,
+              id: randomUUID(),
+              name: 'Status',
+              dataType: 'text',
+              multiplicity: 'one',
+              validation: {},
+            },
+          },
+        })
+      ).artifactId;
+      const herds = await emptyDocument(trx, general, 'Herds');
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, field_values,
+           configuration, body, vector)
+        select ${herds.artifactId}::uuid, 'section', 'gnu' || n, ${herds.id}::uuid,
+               case when n <= 30 then ${general}::uuid else ${quality}::uuid end, 'Gnu ' || n, ${ada}::uuid,
+               case when n <= 30 then now() - interval '2 days' else now() - n * interval '1 s' end,
+               '{}', 'english'::regconfig, 'Gnu grazing', to_tsvector('english', 'Gnu grazing')
+        from generate_series(1, 230) n
+        union all
+        select ${herds.artifactId}::uuid, 'section', 'zebu', ${herds.id}::uuid, ${quality}::uuid,
+               'Zebu', ${ada}::uuid, now(), jsonb_build_object(${status}::text, ''), 'english',
+               'Zebu', to_tsvector('english', 'Zebu')`.execute(trx);
+      // The same words in two configurations.
+      const kites = await emptyDocument(trx, quality, 'Kites');
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, configuration,
+           body, vector)
+        values (${kites.artifactId}::uuid, 'section', 'en', ${kites.id}::uuid, ${quality}::uuid,
+                'Kites', ${ada}::uuid, now(), 'english', 'Running kites',
+                to_tsvector('english', 'Running kites')),
+               (${kites.artifactId}::uuid, 'section', 'simple', ${kites.id}::uuid, ${quality}::uuid,
+                'Kites', ${ada}::uuid, now(), 'simple', 'Running kites',
+                to_tsvector('simple', 'Running kites'))`.execute(trx);
+    });
+    // Statistics, as any tenant past its first hour has them, so the planner weighs the indexes.
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      await admin.query(`analyze ${admin.escapeIdentifier(production.schema)}.search_entry`);
+    } finally {
+      await admin.end();
+    }
+  });
+
+  afterAll(async () => {
+    await service.close();
+    await db.drop();
+  });
+
+  const search = (
+    principal: string,
+    query: string,
+    options: SearchOptions & { readonly scope?: 'latest' | 'all' } = {},
+  ) =>
+    service
+      .withTenant(production, (trx) => searchWords(trx, principal, query, options))
+      .then(resultsOf);
+
+  /** The plans of a search's statements, by name, with sequential scans off and the road forced. */
+  const plans = (query: string, road: SearchRoad, filters: SearchFilters = {}) =>
+    service.withTenant(production, async (trx) => {
+      await sql`set local enable_seqscan = off`.execute(trx);
+      const seen: Record<string, string[]> = {};
+      await searchWords(trx, ada, query, {
+        filters,
+        probe: {
+          road,
+          explain: true,
+          seen: (event) => {
+            if (event.plan !== undefined) {
+              seen[event.statement] = [...(seen[event.statement] ?? []), ...indexesIn(event.plan)];
+            }
+          },
+        },
+      });
+      return seen;
+    });
+
+  it('finds words through their index on either road, and definitions through theirs', async () => {
+    // Beside an `or`, where no part of a word is looked for: a tiny table's trigram index costs more
+    // than reading every row, and the planner would weigh that rather than the words' index.
+    expect((await plans('running or kites', 'indexes')).results).toContain('search_entry_vector');
+    expect((await plans('yak', 'walk')).results).toContain('search_entry_changed');
+    expect((await plans('yak', 'indexes')).page).toContain('artifact_version_definitions');
+    // A filtered search's facets are a second scan, on the road forced.
+    const filtered = await plans('running or kites', 'indexes', { spaces: [quality] });
+    expect(filtered.facets).toContain('search_entry_vector');
+    // Scoped terms alone are found through their places' index.
+    expect((await plans('title:yak', 'indexes')).results).toContain('search_text_vector');
+  });
+
+  it('finds a word in each configuration it is written in', async () => {
+    const found = await search(ada, 'running');
+    expect(found.items.map((each) => each.node).sort()).toEqual(['en', 'simple']);
+  });
+
+  it('returns the same page, total and facets on either road, every page, filtered and not', async () => {
+    for (const filters of [
+      {},
+      { values: [{ field: approved, value: 'true' }] },
+      { kinds: ['section' as const], spaces: [quality, archive] },
+    ] satisfies SearchFilters[]) {
+      for (let offset = 0; offset <= 1000; offset += 50) {
+        const [walk, indexes] = await Promise.all(
+          (['walk', 'indexes'] as const).map((road) =>
+            search(ada, 'yak', { offset, limit: 50, filters, probe: { road } }),
+          ),
+        );
+        expect({ filters, offset, answer: walk }).toEqual({ filters, offset, answer: indexes });
+      }
+    }
+  });
+
+  const nothingFor = async (scope: 'latest' | 'all', road?: SearchRoad) => {
+    for (const filters of [
+      {},
+      { spaces: [quality, archive] },
+      { kinds: ['section' as const], values: [{ field: approved, value: 'true' }] },
+    ] satisfies SearchFilters[]) {
+      for (const query of ['yak', 'title:yak', 'yak -herding', 'yak or quagga']) {
+        const options = { scope, filters, ...(road === undefined ? {} : { probe: { road } }) };
+        // Not vacuous: Ada, who may read them, finds them.
+        expect((await search(ada, query, options)).count).toBeGreaterThan(0);
+        expect({ query, filters, answer: await search(ivy, query, options) }).toEqual({
+          query,
+          filters,
+          answer: {
+            outcome: 'results',
+            count: 0,
+            capped: false,
+            facetsBounded: false,
+            items: [],
+            facets: {
+              kinds: [],
+              spaces: [],
+              componentTypes: [],
+              owners: [],
+              changed: ZERO_CHANGED,
+              fields: [],
+            },
+          },
+        });
+      }
+    }
+  };
+
+  it('SCH-010 finds nothing, counts and facets included, a user may not read on the walk road', async () => {
+    await nothingFor('latest', 'walk');
+  });
+
+  it('SCH-010 finds nothing, counts and facets included, a user may not read on the indexes road', async () => {
+    await nothingFor('latest', 'indexes');
+  });
+
+  it('SCH-010 finds nothing, counts and facets included, a user may not read under every version', async () => {
+    await nothingFor('all');
+  });
+
+  it('finds, under a filter, a match older than the newest 1,000 (SV3-D)', async () => {
+    for (const road of ['walk', 'indexes'] as const) {
+      const unfiltered = await search(ada, 'yak', { probe: { road } });
+      expect(unfiltered.facetsBounded).toBe(true);
+      const filtered = await search(ada, 'yak', {
+        filters: { spaces: [archive], kinds: ['section'] },
+        probe: { road },
+      });
+      expect(filtered.items.map((each) => [each.artifactId, each.node])).toEqual([[oldYak, 'old']]);
+      expect([filtered.count, filtered.capped]).toEqual([1, false]);
+      // The facet the reader chose counts at least what the results do.
+      expect(filtered.facets.spaces.find((each) => each.value === archive)?.count).toBe(1);
+    }
+  });
+
+  it('ranks only the 1,000 changed most recently past 1,000 matches, so a better match changed earlier is not on the first page (SV3-C)', async () => {
+    for (const road of ['walk', 'indexes'] as const) {
+      const page = await search(ada, 'yak', { limit: 50, probe: { road } });
+      expect([page.count, page.capped]).toEqual([SEARCH_RANK_BOUND, true]);
+      expect(page.items.map((each) => each.node)).not.toContain('old');
+    }
+  });
+
+  it('plans every search for its own parameters', async () => {
+    const mode = await service.withTenant(production, async (trx) => {
+      await searchWords(trx, ada, 'yak');
+      return (
+        await sql<{ mode: string }>`select current_setting('plan_cache_mode') as mode`.execute(trx)
+      ).rows[0]!.mode;
+    });
+    expect(mode).toBe('force_custom_plan');
+  });
+
+  it('looks for a term under 3 characters as part of a word only beside a longer term', async () => {
+    const cart = await service.withTenant(production, async (trx) => {
+      const made = await createComponent(trx, {
+        spaceId: quality,
+        title: 'Ox cart',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const substance = substanceOf(made.version) as Extract<
+        ReturnType<typeof substanceOf>,
+        { kind: 'component' }
+      >;
+      const recorded = await recordVersion(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...(substance.content as ContentDocument),
+            content: [{ type: 'paragraph', id: 'b1', style: 'body', content: text('Wheelwright') }],
+          } as ContentDocument,
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return made.version.artifactId;
+    });
+    const found = async (query: string) =>
+      (await search(ada, query)).items.map((each) => each.artifactId);
+    expect(await found('ox')).toEqual([cart]);
+    expect(await found('car')).toEqual([cart]);
+    expect(await found('ca')).toEqual([]);
+    // Beside a longer term it narrows that term's part of a word, which the trigram index answers.
+    expect(await found('wheel ca')).toEqual([cart]);
+    expect(await found('wheel cx')).toEqual([]);
+  });
+
+  it('finds by scoped terms alone, on either road', async () => {
+    for (const road of ['walk', 'indexes'] as const) {
+      const found = await search(ada, 'title:yak', {
+        filters: { spaces: [archive], kinds: ['section'] },
+        probe: { road },
+      });
+      expect(found.items.map((each) => [each.artifactId, each.node])).toEqual([[oldYak, 'old']]);
+    }
+  });
+
+  it('falls back from a walk that finds too few among the newest rows it reads to the indexes road, with the same answer', async () => {
+    const roads: SearchRoad[] = [];
+    const walked = await search(ivy, 'gnu', {
+      probe: {
+        road: 'walk',
+        reads: 100,
+        seen: (event) => {
+          if (event.road !== undefined) roads.push(event.road);
+        },
+      },
+    });
+    // The newest hundred rows are Quality's, which Ivy may not read: the walk finds none of hers.
+    expect(roads).toEqual(['walk', 'indexes']);
+    expect(walked).toEqual(await search(ivy, 'gnu', { probe: { road: 'indexes' } }));
+    expect([walked.count, walked.capped]).toEqual([30, false]);
+  });
+
+  it('filters by no empty value of a field, which no facet offers', async () => {
+    const found = await search(ada, 'zebu', {
+      filters: { values: [{ field: status, value: '' }] },
+    });
+    expect(found.items).toEqual([]);
+  });
+});

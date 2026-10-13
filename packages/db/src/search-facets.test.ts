@@ -13,6 +13,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import {
+  SEARCH_RANK_BOUND,
   searchWords,
   type FacetValue,
   type SearchAnswer,
@@ -384,7 +385,7 @@ describe('narrowing a search, and counting what narrows it', () => {
     ).toEqual([]);
   });
 
-  it('SCH-034 shows a capped count as a lower bound, capped over what the user may see', async () => {
+  it('SCH-073 shows a capped count as a lower bound, and past the bound counts facets over the most recently changed matches the user may see', async () => {
     // Many entries at once, written to the projection directly: 900 in General, 1,200 in Quality.
     await service.withTenant(production, async (trx) => {
       const report = await trx
@@ -422,17 +423,24 @@ describe('narrowing a search, and counting what narrows it', () => {
       }
     });
 
-    // Ivy may read General's 900, and her count is exact.
+    // Ivy may read General's 900, and her count and every facet are exact.
     const ivys = await search(ivy, {}, 'yak');
-    expect([ivys.count, ivys.capped]).toEqual([900, false]);
+    expect([ivys.count, ivys.capped, ivys.facetsBounded]).toEqual([900, false, false]);
     expect(counted(ivys.facets.kinds)).toEqual([['section', 900, false]]);
-    // Ada may read all 2,100: she is told at least 1,000, and so is each facet past it.
+    expect(counted(ivys.facets.spaces)).toEqual([['General', 900, false]]);
+    // Ada may read all 2,100: she is told at least 1,000, and every facet is counted over the 1,000
+    // changed most recently that she may see, each a lower bound.
     const adas = await search(ada, {}, 'yak');
-    expect([adas.count, adas.capped]).toEqual([1000, true]);
-    expect(counted(adas.facets.kinds)).toEqual([['section', 1000, true]]);
-    expect(counted(adas.facets.spaces)).toEqual([
-      ['Quality', 1000, true],
-      ['General', 900, false],
-    ]);
+    expect([adas.count, adas.capped, adas.facetsBounded]).toEqual([1000, true, true]);
+    const sum = (values: readonly FacetValue[]) =>
+      values.reduce((all, each) => all + each.count, 0);
+    for (const facet of [adas.facets.kinds, adas.facets.spaces, adas.facets.owners]) {
+      expect(sum(facet)).toBe(SEARCH_RANK_BOUND);
+      expect(facet.every((each) => each.capped)).toBe(true);
+    }
+    expect(adas.facets.changed.find((each) => each.value === 'today')).toMatchObject({
+      count: SEARCH_RANK_BOUND,
+      capped: true,
+    });
   });
 });

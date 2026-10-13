@@ -674,7 +674,11 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
       });
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0088_search_earlier', '0089_search_threads']);
+      expect(report.tenants[id]).toEqual([
+        '0088_search_earlier',
+        '0089_search_threads',
+        '0090_search_at_scale',
+      ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx
           .selectFrom('search_earlier as e')

@@ -592,6 +592,7 @@ export { indexPublication, indexVersion, reindexSearch } from './search.js';
 export {
   changedRanges,
   SEARCH_COUNT_CAP,
+  SEARCH_RANK_BOUND,
   searchWords,
   type ChangedRange,
   type FacetValue,

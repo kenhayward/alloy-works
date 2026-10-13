@@ -34,8 +34,8 @@ are never in it.
 | **SCH-029** | The projection is rebuilt from current versions and the embedding store; nothing in it exists anywhere else                                                                                                                                                                                                              |
 | **SCH-031** | Without the embedding model, search returns the words half and says meaning is unavailable; without the database, it says so                                                                                                                                                                                             |
 | **SCH-032** | Ranking may use tenant-wide statistics; the predicate still applies before results, counts and facets are computed                                                                                                                                                                                                       |
-| **SCH-033** | The budget is measured by the conformance suite against a generated tenant of a million components, for three kinds of user                                                                                                                                                                                              |
-| **SCH-034** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound                                                                                                                                                                                                                   |
+| **SCH-033** | The budget is measured against a generated tenant of a million components, for three kinds of user, by the load suite's search profile (`packages/db/src/load/search.load.ts`), run by hand: the words through their indexes, the definitions through theirs, ranking and facets bounded and the road chosen (SV3)       |
+| **SCH-073** | Counting stops at the cap, over the visible rows, and the interface returns the count as a lower bound; past the bound, facets count the 1,000 most recently changed visible matches, each shown as a lower bound ([Counts and facets](#counts-and-facets))                                                              |
 | **SCH-035** | The vector strategy is chosen by the size of the visible set, and a test asserts a full page for a user who can see very little                                                                                                                                                                                          |
 | **SCH-054** | Every kind the product holds is a `search_entry` - a component, a document, each of its sections, a publication, a template, an asset, a field, a metadata schema and a component type - written with the version that makes it what it is ([Searching words, in T1](#searching-words-in-t1))                            |
 | **SCH-002** | Each entry's text is its content's every block - a caption and a figure's alternative text among them - its title, and its values rendered as words, each a `search_text` row of its own                                                                                                                                 |
@@ -97,8 +97,8 @@ A search starts by computing the user's permission set from IAM: the spaces they
 artifacts denied them there, plus the artifacts granted them outside those spaces ([access.md](access.md)'s
 `readableSet`). The query receives it as parameters, and two rules apply.
 
-**Each search is planned for its own parameters.** The service sets `plan_cache_mode` to
-`force_custom_plan` for search. A plan made once and reused cannot suit both a user who sees five
+**Each search is planned for its own parameters.** `searchWords` sets `plan_cache_mode` to
+`force_custom_plan` in its transaction before anything else (SV3-H). A plan made once and reused cannot suit both a user who sees five
 spaces and one who sees two thousand, and in the spike the reused plan was two to three times slower in the worst case. A test
 pins the setting, because its absence is invisible: results stay correct and only get slower.
 
@@ -116,8 +116,22 @@ of the tenant costs what scoring most of the tenant costs. Above a cap, the matc
 most recently changed up to the cap. They are found over what the user may see, so the bound leaks
 nothing, and a query matching most of a tenant is one whose ranking says little anyway.
 
+As built ([SV3](../plans/2026-10-13-sv3-search-at-scale.md); the latest only, every version from SV3b):
+the candidates are the 1,000 newest matches (`SEARCH_RANK_BOUND`), `changed_at desc, id desc`, a total
+order, read after every filter the reader set; 1,001 are read, so "more" is known. Only they are
+ranked, paged and faceted. The words are matched by a constant tsquery per configuration in use, so
+the word index serves them; the configurations in use are probed first, one btree probe each. The
+newest are found by one of two **roads**, chosen per scan from the planner's estimate M of the
+matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M > sqrt(1,000 x rows),
+reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else
+find the matches by the **indexes** and sort the newest out of them. Both return the same rows. A
+wanted term under three characters is looked for as a word alone, since no trigram holds it; scoped
+terms alone are found through `search_text`'s word index.
+
 **Ranking may use statistics from the whole tenant (SCH-032).** Postgres's own ranking uses none. This
-is permission for a better ranking later, not a description of today's.
+is permission for a better ranking later, not a description of today's. The road leaves a residual in
+time alone: a walk passes over the newest rows whatever their readers, so how long it takes can hint
+at how much newer content the reader may not see; no answer, count or facet changes with it.
 
 ## Meaning
 
@@ -154,8 +168,13 @@ labelled words, meaning or both (SCH-014). In the spike the merged list cost 7ms
 Counts and facet totals are aggregates over the same predicate as the results (SCH-007). **Counting
 stops at a cap** - 1,000 to begin with - and the interface returns the count with a flag saying
 whether it is a lower bound, so a large set reads "1,000+" rather than costing a full count of
-everything the user can see (SCH-034). The cap is applied after the permission predicate, never
+everything the user can see (SCH-073). The cap is applied after the permission predicate, never
 before, or the point at which counting stopped would itself be a signal.
+
+**Facets are bounded** with the ranking (SV3-D, SV3-F): they count the results' candidates and the
+1,000 newest matches failing at most one filter, together. Past 1,000, every facet count is a lower
+bound, shown "at least", and a value held only by older matches is missing; `facetsBounded` says so.
+The total stays exact to the cap.
 
 ## When something is unavailable
 
@@ -277,7 +296,7 @@ The search runs as one statement: the readable set as parameters, the predicate 
 (the listings' own `readableArtifacts`, and the tenant's `read` for a definition), the filters in force,
 the text matched on `search_text`, the best place per entry by `ts_rank`, bounded as above, and the
 passage made by `ts_headline` on that place's text only (SCH-016). Counts and each facet are aggregates
-in the same statement over the same predicate, capped at 1,000 with a flag (SCH-034), each facet with
+in the same statement over the same predicate, capped at 1,000 with a flag (SCH-073), each facet with
 every other filter in force and its own left out (SCH-046).
 
 ### Filters and facets
@@ -301,7 +320,7 @@ year began, in the database's zone; a range of days, from and to, is the filter'
 value's `value` is what its filter takes: a kind, an id, a range, or a field's value as its data type
 facets it - `true` or `false`, a person's id, a date's `YYYY-MM`, a text as written - and its `label`
 what a reader is shown. Every count, a facet's included, is exact over what the reader may see and
-shown past 1,000 as at least 1,000 (SCH-034).
+shown past 1,000 as at least 1,000; past the bound, over the 1,000 newest matches (SCH-073).
 
 ### The page
 
