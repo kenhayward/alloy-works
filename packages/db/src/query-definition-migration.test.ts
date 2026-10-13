@@ -173,6 +173,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0083_archival',
       '0084_legal_holds',
       '0085_deletion',
+      '0086_retention_keeps',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

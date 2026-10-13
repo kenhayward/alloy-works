@@ -630,7 +630,21 @@ describe("Administration's menu", () => {
       within(screen.getByRole('list', { name: 'System' }))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['#/admin/holds', '#/admin/audit', '#/admin/about']);
+    ).toEqual(['#/admin/holds', '#/admin/retention', '#/admin/audit', '#/admin/about']);
+  });
+
+  it('opens Retention, counted by the keeps in force', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/retention': () => json(200, { keeps: [] }),
+    });
+    render(<Administration client={client} about={null} />);
+    await waitFor(() => expect(section('Retention')).toHaveTextContent('Retention0'));
+    await userEvent.click(section('Retention'));
+    expect(await screen.findByRole('heading', { name: 'Retention', level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('No keep is set: anything nothing depends on may be deleted.'),
+    ).toBeInTheDocument();
   });
 
   it('opens Legal holds, counted from its listing', async () => {

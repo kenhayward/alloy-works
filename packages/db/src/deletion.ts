@@ -4,8 +4,21 @@ import { loadReadableSet } from './access-facts.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { readLock } from './editing.js';
 import { isHeld } from './holds.js';
-import { visibleIn } from './listing.js';
+import { keptNow } from './keeps.js';
+import {
+  checkedLimit,
+  countOf,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+} from './listing.js';
 import { mayReadArtifact } from './queryDefinitions.js';
+import { readableArtifactsAs } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 
@@ -118,6 +131,8 @@ export type DeletionRefusal =
     }
   /** A hold on it or its space: no reason given (LIF-030). */
   | { readonly reason: 'held' }
+  /** A retention keep, the longest reaching it, has yet to pass: until when (DL-G). */
+  | { readonly reason: 'kept'; readonly until: Date }
   /** Somebody is editing it. */
   | {
       readonly reason: 'locked';
@@ -251,6 +266,8 @@ async function dependants(
   }
 
   if (await isHeld(trx, id)) refusals.push({ reason: 'held' });
+  const until = await keptNow(trx, id);
+  if (until) refusals.push({ reason: 'kept', until });
 
   if (component) {
     const lock = await readLock(trx, id);
@@ -389,4 +406,78 @@ export async function undeleteArtifact(
   by: string,
 ): Promise<UndeleteAnswer | undefined> {
   return (await act(trx, artifactId, by, 'undeleted')) as UndeleteAnswer | undefined;
+}
+
+/** A deleted component or document as the Deleted listing shows it (DL-H). */
+export interface DeletedSummary {
+  readonly id: string;
+  readonly kind: 'component' | 'document';
+  /** Its title at its latest version. */
+  readonly title: string;
+  readonly space: { readonly id: string; readonly name: string };
+  readonly deletedBy: { readonly id: string; readonly name: string | null };
+  readonly deletedAt: Date;
+}
+
+/**
+ * The deleted components and documents `principalId` may read but for the tombstone, the latest
+ * deleted first, a page at a time by keyset as of the walk's first page (API-007): archived ones
+ * among them, which the Archived listing leaves out. Whether each may be undeleted is the caller's to
+ * decide. Undefined when the tenant holds no such principal.
+ */
+export async function listDeleted(
+  trx: TenantTransaction,
+  principalId: string,
+  request: ListingRequest<'deleted'>,
+  filter: { readonly kind?: 'component' | 'document' } = {},
+): Promise<(Listed<DeletedSummary> & { readonly total: number }) | undefined> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.deleted.deleted;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return undefined;
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const query = sql`
+    select a.id, a.kind, s.id as space_id, s.name as space_name, latest.title,
+           act.by, coalesce(p.display_name, p.email) as by_name, act.at,
+           ${sql.join(sortColumns([sql`act.at`]))}
+      from artifact a
+      join space s on s.id = a.space_id
+      join lateral (
+        select x.act, x.by, x.at from artifact_deletion x
+         where x.artifact_id = a.id and ${visibleIn('x.written_by', snapshot)}
+         order by x.id desc limit 1) act on act.act = 'deleted'
+      join lateral (
+        select v.content ->> 'title' as title from artifact_version v
+         where v.artifact_id = a.id and ${visibleIn('v.written_by', snapshot)}
+         order by v.revision_no desc, v.version_no desc limit 1) latest on true
+      left join principal p on p.id = act.by
+     where a.kind in ('component', 'document')
+       and ${filter.kind === undefined ? sql`true` : sql`a.kind = ${filter.kind}`}
+       and ${readableArtifactsAs('a', readable)}`;
+  const { rows, next } = await keysetPage<{
+    id: string;
+    kind: 'component' | 'document';
+    space_id: string;
+    space_name: string;
+    title: string | null;
+    by: string;
+    by_name: string | null;
+    at: Date;
+  }>(trx, query, types, request.order ?? order, limit, request.after);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title ?? '',
+      space: { id: row.space_id, name: row.space_name },
+      deletedBy: { id: row.by, name: row.by_name },
+      deletedAt: new Date(row.at),
+    })),
+    next,
+    snapshot,
+    total: await countOf(trx, query),
+  };
 }

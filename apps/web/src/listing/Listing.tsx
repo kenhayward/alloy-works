@@ -92,15 +92,19 @@ export function Facet({
 }
 
 /**
- * Archived content, listed alone when chosen: the one way to list it (lifecycle.md). Uncounted: the
- * listing counts only what it shows.
+ * Archived content, and deleted, each listed alone when chosen: the one way to list it (lifecycle.md),
+ * so choosing one leaves the other. Uncounted: the listing counts only what it shows.
  */
 export function ArchivedFilter({
   chosen,
   onChoose,
+  deleted,
+  onChooseDeleted,
 }: {
   readonly chosen: boolean;
   readonly onChoose: (chosen: boolean) => void;
+  readonly deleted: boolean;
+  readonly onChooseDeleted: (chosen: boolean) => void;
 }) {
   return (
     <fieldset className={styles['facet']}>
@@ -112,6 +116,14 @@ export function ArchivedFilter({
           onChange={(event) => onChoose(event.target.checked)}
         />
         <span className={styles['optionName']}>Archived</span>
+      </label>
+      <label className={styles['option']}>
+        <input
+          type="checkbox"
+          checked={deleted}
+          onChange={(event) => onChooseDeleted(event.target.checked)}
+        />
+        <span className={styles['optionName']}>Deleted</span>
       </label>
     </fieldset>
   );

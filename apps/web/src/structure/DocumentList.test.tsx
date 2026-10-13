@@ -38,6 +38,23 @@ function listed() {
     if (url.pathname === '/v1/spaces') {
       return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: true }], next: null });
     }
+    if (url.pathname === '/v1/deleted') {
+      return json(200, {
+        items: [
+          {
+            id: 'd1',
+            kind: 'document',
+            title: 'Withdrawn guide',
+            space: { id: GENERAL, name: 'General' },
+            deletedBy: { id: 'p1', name: 'Ada' },
+            deletedAt: new Date(2026, 9, 13, 9, 0).toISOString(),
+            mayUndelete: false,
+          },
+        ],
+        next: null,
+        total: 1,
+      });
+    }
     if (url.pathname !== '/v1/documents') return json(404, {});
     // Filtered and counted as the service does: each facet with the other filter in force.
     const spaces = url.searchParams.get('spaces')?.split(',');
@@ -132,6 +149,20 @@ describe('the documents list', () => {
     const handbook = await screen.findByRole('link', { name: 'Retired handbook' });
     expect(within(handbook.closest('td')!).getByText('Archived')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Operator manual' })).not.toBeInTheDocument();
+  });
+
+  it('lists the deleted documents alone under Deleted, Undelete only where the reader may', async () => {
+    render(<DocumentList client={listed()} onOpen={() => {}} />);
+    await screen.findByRole('link', { name: 'Operator manual' });
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Deleted' }));
+    const table = await screen.findByRole('table', { name: 'Deleted documents' });
+    expect(within(table).getByText('Withdrawn guide')).toBeInTheDocument();
+    expect(within(table).queryByRole('button', { name: /Undelete/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Operator manual' })).not.toBeInTheDocument();
+    // Archived and Deleted are each the one way to list theirs, so one is chosen at a time.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Archived' }));
+    expect(await screen.findByRole('link', { name: 'Retired handbook' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Deleted' })).not.toBeChecked();
   });
 
   it('offers New document as a dialog from the primary button', async () => {

@@ -87,8 +87,9 @@ import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
 import { restoreHandlers } from './restore.js';
 import { archivalHandlers } from './archival.js';
-import { deletionHandlers } from './deletion.js';
+import { deletedListingHandlers, deletionHandlers } from './deletion.js';
 import { holdHandlers } from './holds.js';
+import { retentionHandlers } from './retention.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
@@ -508,7 +509,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...restoreHandlers(),
     ...archivalHandlers(),
     ...deletionHandlers(),
+    ...deletedListingHandlers(db, tenantOf, principalOf),
     ...holdHandlers(),
+    ...retentionHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RouteContract } from './contract.js';
+import { DeletionRefusalView } from './deletion.js';
 import { routes } from './routes.js';
 
 describe('deletion in the contract (the DL plan, DL-B to DL-E)', () => {
@@ -44,5 +45,23 @@ describe('deletion in the contract (the DL plan, DL-B to DL-E)', () => {
     );
     expect(routes.deleteComponent.responses[409]).toBeDefined();
     expect(routes.deleteDocument.responses[409]).toBeDefined();
+  });
+});
+
+describe('the Deleted listing in the contract (the DL plan, DL-H)', () => {
+  it('lists the deleted by session, filtered by read inside it, a page at a time, of a kind or both', () => {
+    const route = routes.listDeleted;
+    expect(`${route.method} ${route.path}`).toBe('GET /v1/deleted');
+    expect(route.access).toEqual({ check: 'session' });
+    expect(Object.keys(route.query.shape).sort()).toEqual(['cursor', 'kind', 'limit']);
+    expect(route.query.safeParse({ kind: 'component' }).success).toBe(true);
+    expect(route.query.safeParse({ kind: 'publication' }).success).toBe(false);
+  });
+
+  it('lists a keep among the reasons a deletion is refused, with its date', () => {
+    expect(DeletionRefusalView.parse({ code: 'kept', until: '2027-10-13T07:00:00.000Z' })).toEqual({
+      code: 'kept',
+      until: '2027-10-13T07:00:00.000Z',
+    });
   });
 });

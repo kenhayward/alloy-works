@@ -14,6 +14,8 @@ export interface DeletionRefusal {
   readonly named?: readonly { readonly id: string; readonly title: string }[] | undefined;
   readonly unreadable?: boolean | undefined;
   readonly holder?: { readonly name: string | null } | undefined;
+  /** kept: when the longest retention keep passes. */
+  readonly until?: string | undefined;
 }
 
 /** What deleting it leaves, kept (LIF-024, VER-048). */
@@ -25,6 +27,8 @@ export interface Remains {
   readonly rounds: number;
   readonly events: number;
 }
+
+const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const counted = (count: number, one: string, many: string) =>
   `${count} ${count === 1 ? one : many}`;
@@ -76,6 +80,10 @@ export function deletionRefusalWords(refusal: DeletionRefusal): string {
       return of('A review round is open on it', 'Review rounds are open on it', 'is reviewing it');
     case 'held':
       return 'A legal hold is on it or its space.';
+    case 'kept':
+      return refusal.until === undefined
+        ? 'A retention keep holds it.'
+        : `A retention keep holds it until ${day.format(new Date(refusal.until))}.`;
     case 'locked':
       return `${refusal.holder?.name ?? 'Somebody'} is editing it.`;
     default:

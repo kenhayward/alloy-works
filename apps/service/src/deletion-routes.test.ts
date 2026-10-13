@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   ChangesView,
   ComponentList,
+  DeletedList,
   DeletionView,
   DocumentRestorationView,
 } from '@alloy-works/api-contract';
@@ -330,6 +331,64 @@ describe('deleting a component or a document over HTTP (the DL plan, Task 1)', (
     expect(
       (await call('POST', `/v1/components/${manual.artifactId}/delete`, 'ada')).statusCode,
     ).toBe(404);
+  });
+
+  it('lists the deleted by read, whether each reader may undelete it, a page at a time', async () => {
+    const procedure = await component('Listed deleted procedure');
+    const report = await document('Listed deleted report');
+    await call('POST', `/v1/components/${procedure}/delete`, 'ada');
+    await call('POST', `/v1/documents/${report.artifactId}/delete`, 'ada');
+    const list = async (who: string, query = '', headers?: Record<string, string>) => {
+      const answer = await call('GET', `/v1/deleted?limit=100${query}`, who, undefined, headers);
+      expect(answer.statusCode, answer.body).toBe(200);
+      return answer.json<DeletedList>();
+    };
+    // Ada may retire both; Grace reads them and may not; Alice reads neither.
+    const ada = await list('ada');
+    expect(ada.items.slice(0, 2)).toEqual([
+      {
+        id: report.artifactId,
+        kind: 'document',
+        title: 'Listed deleted report',
+        space: { id: clinical, name: 'Clinical' },
+        deletedBy: { id: ids.ada, name: 'Ada' },
+        deletedAt: expect.any(String),
+        mayUndelete: true,
+      },
+      expect.objectContaining({ id: procedure, kind: 'component', mayUndelete: true }),
+    ]);
+    expect(ada.total).toBe(ada.items.length);
+    const grace = await list('grace');
+    expect(grace.items.map((each) => each.id)).toEqual(ada.items.map((each) => each.id));
+    expect(grace.items.every((each) => !each.mayUndelete)).toBe(true);
+    expect((await list('alice')).items).toEqual([]);
+    expect((await list('ada', '&kind=component')).items.map((each) => each.kind)).not.toContain(
+      'document',
+    );
+    // Through a token, as the token may: one not scoped to retire may not undelete.
+    const token = (
+      await call('POST', '/v1/tokens', 'ada', {
+        name: 'Editing',
+        scopes: ['edit'],
+        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+      })
+    ).json<{ secret: string }>().secret;
+    const read = await list('ada', '', { authorization: `Bearer ${token}` });
+    expect(read.items.every((each) => !each.mayUndelete)).toBe(true);
+    // A page at a time, to the same rows.
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const page: DeletedList = (
+        await call('GET', `/v1/deleted?limit=1${cursor ? `&cursor=${cursor}` : ''}`, 'ada')
+      ).json<DeletedList>();
+      seen.push(...page.items.map((each) => each.id));
+      cursor = page.next;
+    } while (cursor !== null);
+    expect(seen).toEqual(ada.items.map((each) => each.id));
+    // Undeleted, it leaves the listing.
+    await call('POST', `/v1/components/${procedure}/undelete`, 'ada');
+    expect((await list('ada')).items.map((each) => each.id)).not.toContain(procedure);
   });
 
   it('LIF-057 records who deleted and undeleted it', async () => {

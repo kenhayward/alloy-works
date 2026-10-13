@@ -410,8 +410,10 @@ export {
   deleteArtifact,
   deletionOf,
   isDeleted,
+  listDeleted,
   undeleteArtifact,
   type DeleteAnswer,
+  type DeletedSummary,
   type DeletionRefusal,
   type DeletionState,
   type Remains,
@@ -431,6 +433,17 @@ export {
   type HoldPlaceAnswer,
   type HoldReleaseAnswer,
 } from './holds.js';
+export {
+  KEPT_KINDS,
+  keptUntil,
+  listKeeps,
+  MAX_KEEP_DAYS,
+  setKeep,
+  type Keep,
+  type KeepAnswer,
+  type KeepKey,
+  type KeptKind,
+} from './keeps.js';
 export {
   createDocument,
   editOutline,

@@ -109,6 +109,11 @@ export const documentationGroups = [
         name: 'Legal holds',
         description: 'Place a legal hold on an artifact or a space, list holds and release one.',
       },
+      {
+        name: 'Deletion and retention',
+        description:
+          'List deleted components and documents, and set how long content is kept before it may be deleted.',
+      },
       { name: 'Audit log', description: 'Read and export the environment’s audit log.' },
     ],
   },
@@ -302,6 +307,7 @@ const operationTags = {
   Search: ['search'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
+  'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
 
@@ -445,17 +451,17 @@ const descriptions: Readonly<Record<string, string>> = {
   unarchiveDocument:
     'Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.',
   getComponentDeletion:
-    'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
+    'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
   deleteComponent:
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
   undeleteComponent:
-    'Undeletes a component, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.',
+    'Undeletes a component, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.',
   getDocumentDeletion:
-    'States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.',
+    'States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, a retention keep yet to pass, saying until when, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.',
   deleteDocument:
     'Deletes a document: it leaves every listing and search and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed. Needs retire on the document. Audited.',
   undeleteDocument:
-    'Undeletes a document, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.',
+    'Undeletes a document, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.',
   getDocument:
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:
@@ -585,6 +591,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.',
   releaseHold:
     'Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.',
+  listDeleted:
+    'Lists the deleted components and documents the caller may read but for their deletion, the latest deleted first in cursor pages, each with who deleted it, when, and whether the caller may undelete it (retire on it). Archived ones deleted are listed here, not among the archived.',
+  getRetention:
+    'Returns the retention keeps in force: each a minimum in days, for a kind, a space, or a kind in a space. Every keep reaching a component or a document applies, the longest winning, and refuses deleting it until that many days have passed since its latest version. Needs administer at the environment.',
+  setRetention:
+    'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:
     'Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.',
   listAuditEvents:

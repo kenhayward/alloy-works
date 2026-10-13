@@ -67,10 +67,9 @@ designation applied to a row in that chain rather than a second history beside i
 | **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                                                                                  |
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                                                                                    |
 
-**VER-037, a legal hold checked where a pinned deletion is refused, is not claimed here**: deletion
-is a tombstone ([lifecycle.md](lifecycle.md)), so no row is removed and VER-023's key never fires
-for it; the tombstone's refusal of anything a baseline pins is checked in code, under a lock, and a
-hold refuses it there too. DL2 claims VER-037 in lifecycle.md once retention refuses it as well.
+**VER-037 is [lifecycle.md](lifecycle.md)'s claim**: deletion is a tombstone, so no row is removed
+and VER-023's key never fires for it; the tombstone's refusal of anything a baseline pins is checked
+in code, under a lock, and a hold and a retention keep each refuse it there too.
 
 **VER-057, query definitions, is met by the same mechanism** - one more `artifact_kind` beside those
 VER-056 names - and is claimed by [data.md](data.md), DAT's T2 design, which says what a query

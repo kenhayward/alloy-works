@@ -16,6 +16,7 @@ import {
   type SortOption,
 } from '../listing/Listing.js';
 import { usePagedListing } from '../listing/usePagedListing.js';
+import { DeletedList } from '../lifecycle/Deleted.js';
 import { Chip } from '../parts/Chip.js';
 import { Lozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
@@ -135,6 +136,8 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
   const [states, setStates] = useState<readonly Publishing[]>([]);
   // The archived alone, the one way to list them (LIF-020).
   const [archived, setArchived] = useState(false);
+  // The deleted alone, listed by their own route (the DL plan, DL-H).
+  const [deleted, setDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const fetchPage = useCallback(
@@ -169,6 +172,28 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
     [client, sort, spaces, states, archived],
   );
   const listing = usePagedListing<Listed, Facets>(fetchPage);
+
+  const status = (
+    <ArchivedFilter
+      chosen={archived}
+      onChoose={(chosen) => {
+        setArchived(chosen);
+        if (chosen) setDeleted(false);
+      }}
+      deleted={deleted}
+      onChooseDeleted={(chosen) => {
+        setDeleted(chosen);
+        if (chosen) setArchived(false);
+      }}
+    />
+  );
+  if (deleted) {
+    return (
+      <ListLayout filter={status}>
+        <DeletedList client={client} kind="document" />
+      </ListLayout>
+    );
+  }
 
   if (listing.items === null) {
     if (listing.failed === undefined) return null;
@@ -240,7 +265,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         }
         onToggle={(value) => setStates((held) => toggled(held, value as Publishing))}
       />
-      <ArchivedFilter chosen={archived} onChoose={setArchived} />
+      {status}
     </>
   );
 

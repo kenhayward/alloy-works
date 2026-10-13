@@ -67,6 +67,9 @@ export {
 } from './restore.js';
 export { ArchivalParams, ArchivalView, archivalRoutes } from './archival.js';
 export {
+  DeletedItem,
+  DeletedList,
+  DeletedListQuery,
   DeletedView,
   DeletionParams,
   DeletionRefusalView,
@@ -74,6 +77,7 @@ export {
   deletionRoutes,
 } from './deletion.js';
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
+export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
   GrantBody,
   GrantList,

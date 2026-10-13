@@ -132,6 +132,10 @@
       "description": "Place a legal hold on an artifact or a space, list holds and release one."
     },
     {
+      "name": "Deletion and retention",
+      "description": "List deleted components and documents, and set how long content is kept before it may be deleted."
+    },
+    {
       "name": "Audit log",
       "description": "Read and export the environment’s audit log."
     },
@@ -203,6 +207,7 @@
         "Search",
         "Settings",
         "Legal holds",
+        "Deletion and retention",
         "Audit log"
       ]
     },
@@ -26705,10 +26710,11 @@
                               "publishing",
                               "referenced",
                               "held",
+                              "kept",
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -26751,6 +26757,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "until": {
+                            "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -26865,7 +26875,7 @@
       "get": {
         "operationId": "getComponentDeletion",
         "summary": "What deleting a component leaves, and what refuses it",
-        "description": "States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.",
+        "description": "States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.",
         "tags": [
           "Components"
         ],
@@ -26978,10 +26988,11 @@
                               "publishing",
                               "referenced",
                               "held",
+                              "kept",
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -27024,6 +27035,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "until": {
+                            "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -33290,7 +33305,7 @@
       "post": {
         "operationId": "undeleteComponent",
         "summary": "Undelete a component",
-        "description": "Undeletes a component, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.",
+        "description": "Undeletes a component, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.",
         "tags": [
           "Components"
         ],
@@ -49221,6 +49236,310 @@
                         "version",
                         "definition"
                       ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deleted": {
+      "get": {
+        "operationId": "listDeleted",
+        "summary": "The deleted components and documents the caller may read, a page at a time",
+        "description": "Lists the deleted components and documents the caller may read but for their deletion, the latest deleted first in cursor pages, each with who deleted it, when, and whether the caller may undelete it (retire on it). Archived ones deleted are listed here, not among the archived.",
+        "tags": [
+          "Deletion and retention"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only deleted components, or only deleted documents; both when absent",
+              "type": "string",
+              "enum": [
+                "component",
+                "document"
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the deleted, the latest deleted first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "component",
+                              "document"
+                            ]
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Its title at its latest version"
+                          },
+                          "space": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "deletedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Their display name, or address; null where neither is known",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "deletedAt": {
+                            "type": "string"
+                          },
+                          "mayUndelete": {
+                            "type": "boolean",
+                            "description": "Whether the caller may undelete it: retire on it"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "space",
+                          "deletedBy",
+                          "deletedAt",
+                          "mayUndelete"
+                        ]
+                      }
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many the caller may read are deleted, of the kind asked"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next",
+                    "total"
+                  ]
+                },
+                "example": {
+                  "items": [],
+                  "next": "example",
+                  "total": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this listing did not give out, a limit outside 1 to 100, or a kind it does not know",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [
@@ -107765,10 +108084,11 @@
                               "publishing",
                               "referenced",
                               "held",
+                              "kept",
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -107811,6 +108131,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "until": {
+                            "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -107925,7 +108249,7 @@
       "get": {
         "operationId": "getDocumentDeletion",
         "summary": "What deleting a document leaves, and what refuses it",
-        "description": "States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.",
+        "description": "States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, a retention keep yet to pass, saying until when, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.",
         "tags": [
           "Documents"
         ],
@@ -108038,10 +108362,11 @@
                               "publishing",
                               "referenced",
                               "held",
+                              "kept",
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -108084,6 +108409,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "until": {
+                            "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -121261,7 +121590,7 @@
       "post": {
         "operationId": "undeleteDocument",
         "summary": "Undelete a document",
-        "description": "Undeletes a document, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.",
+        "description": "Undeletes a document, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.",
         "tags": [
           "Documents"
         ],
@@ -143884,6 +144213,706 @@
                         "mayRun",
                         "mayUse"
                       ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/retention": {
+      "get": {
+        "operationId": "getRetention",
+        "summary": "The retention keeps in force",
+        "description": "Returns the retention keeps in force: each a minimum in days, for a kind, a space, or a kind in a space. Every keep reaching a component or a document applies, the longest winning, and refuses deleting it until that many days have passed since its latest version. Needs administer at the environment.",
+        "tags": [
+          "Deletion and retention"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The keeps in force",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keeps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "component",
+                                  "document"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "null: every kind in the space"
+                          },
+                          "space": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "null: the kind in every space"
+                          },
+                          "days": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The minimum in days, from the latest version"
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Their display name, or address; null where neither is known",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "description": "When it was set"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "space",
+                          "days",
+                          "by",
+                          "at"
+                        ]
+                      },
+                      "description": "The keeps in force, each kind's first, then by space. Every one reaching an artifact applies and the longest wins"
+                    }
+                  },
+                  "required": [
+                    "keeps"
+                  ]
+                },
+                "example": {
+                  "keeps": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setRetention",
+        "summary": "Set or clear a retention keep for a kind, a space, or a kind in a space",
+        "description": "Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.",
+        "tags": [
+          "Deletion and retention"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "component",
+                          "document"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The kind it keeps; null for every kind in the space"
+                  },
+                  "space": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "allOf": [
+                          {
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The space whose content it keeps, by its id; null for the kind in every space"
+                  },
+                  "days": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 36500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The minimum in days, from the latest version, before deletion; null clears it"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "space",
+                  "days"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "kind": "component",
+                "space": "00000000-0000-4000-8000-000000000001",
+                "days": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set, or cleared; the keeps in force after it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keeps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "component",
+                                  "document"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "null: every kind in the space"
+                          },
+                          "space": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "null: the kind in every space"
+                          },
+                          "days": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The minimum in days, from the latest version"
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "description": "Their display name, or address; null where neither is known",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "description": "When it was set"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "space",
+                          "days",
+                          "by",
+                          "at"
+                        ]
+                      },
+                      "description": "The keeps in force, each kind's first, then by space. Every one reaching an artifact applies and the longest wins"
+                    }
+                  },
+                  "required": [
+                    "keeps"
+                  ]
+                },
+                "example": {
+                  "keeps": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither a kind nor a space, or days outside 1 to 36500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such space in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
                     }
                   },
                   "required": [

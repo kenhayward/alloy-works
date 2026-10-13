@@ -59,6 +59,24 @@ function service({ creatable = true } = {}) {
         ],
       });
     }
+    if (url.pathname === '/v1/deleted') {
+      asked.push(`deleted ${url.searchParams.get('kind')}`);
+      return json(200, {
+        items: [
+          {
+            id: 'd1',
+            kind: 'component',
+            title: 'Calibrate the scanner',
+            space: { id: GENERAL, name: 'General' },
+            deletedBy: { id: 'p1', name: 'Ada' },
+            deletedAt: new Date(2026, 9, 13, 9, 0).toISOString(),
+            mayUndelete: true,
+          },
+        ],
+        next: null,
+        total: 1,
+      });
+    }
     const acted = /^\/v1\/components\/([^/]+)\/(archive|unarchive)$/.exec(url.pathname);
     if (acted && request.method === 'POST') {
       if (acted[2] === 'archive') archived.add(acted[1]!);
@@ -273,6 +291,23 @@ describe('the components list', () => {
     await waitFor(() =>
       expect(screen.queryByRole('link', { name: 'Install the printer' })).not.toBeInTheDocument(),
     );
+  });
+
+  it('lists the deleted components alone under Deleted, each to undelete, and back again', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    await screen.findByRole('link', { name: 'Replace the toner' });
+    await user.click(screen.getByRole('checkbox', { name: 'Deleted' }));
+    const table = await screen.findByRole('table', { name: 'Deleted components' });
+    expect(within(table).getByText('Calibrate the scanner')).toBeInTheDocument();
+    expect(
+      within(table).getByRole('button', { name: 'Undelete Calibrate the scanner' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Replace the toner' })).not.toBeInTheDocument();
+    expect(asked).toContain('deleted component');
+    await user.click(screen.getByRole('checkbox', { name: 'Deleted' }));
+    expect(await screen.findByRole('link', { name: 'Replace the toner' })).toBeInTheDocument();
   });
 
   it("copies a component's link, and says so", async () => {

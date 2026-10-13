@@ -61,6 +61,26 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
     expect(asked.map((each) => each.route)).not.toContain('POST /v1/components/{id}/delete');
   });
 
+  it('LIF-019 says a retention keep refuses it, and until when', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
+      'GET /v1/components/{id}/deletion': () =>
+        json(200, {
+          kind: 'component',
+          deleted: false,
+          remains,
+          refusals: [{ code: 'kept', until: '2027-10-13T12:00:00.000Z' }],
+        }),
+    });
+    await surface();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    const deleting = await screen.findByRole('dialog', { name: 'Delete Install the printer' });
+    expect(
+      await within(deleting).findByText('A retention keep holds it until 13 Oct 2027.'),
+    ).toBeInTheDocument();
+    expect(within(deleting).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
   it('says a deleted component is deleted when it is opened', async () => {
     open({
       'GET /v1/components/{id}': () =>

@@ -7,6 +7,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { archiveArtifact } from './archival.js';
 import { whatWaits } from './attention.js';
 import { makeBaseline } from './baselines.js';
 import { bootstrapCluster } from './bootstrap.js';
@@ -17,6 +18,7 @@ import {
   deleteArtifact,
   deletionOf,
   isDeleted,
+  listDeleted,
   undeleteArtifact,
   type DeletionRefusal,
 } from './deletion.js';
@@ -398,6 +400,53 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     }));
     expect(back.components.items.map((each) => each.id)).toEqual([gone]);
     expect(back.found).toMatchObject({ outcome: 'results', count: 1 });
+  });
+
+  it('lists the deleted each reader may read, newest first, archived ones too, a page at a time as the walk began', async () => {
+    const { space, elsewhere, ada, grace } = await fresh();
+    const archived = await component(space, ada, 'Archived and deleted procedure');
+    const report = await document(space, ada, 'Deleted report');
+    await component(space, ada, 'Live procedure');
+    const unseen = await component(elsewhere, grace, 'Unseen procedure');
+    await as((trx) => archiveArtifact(trx, archived, ada));
+    await remove(archived, ada);
+    await remove(report.artifactId, ada);
+    await remove(unseen, grace);
+    const list = (by: string, limit = 50, kind?: 'component' | 'document') =>
+      as(async (trx) => (await listDeleted(trx, by, { limit }, kind ? { kind } : {}))!);
+
+    const first = await list(ada);
+    expect(first.items.map(({ id, kind, title }) => ({ id, kind, title }))).toEqual([
+      { id: report.artifactId, kind: 'document', title: 'Deleted report' },
+      { id: archived, kind: 'component', title: 'Archived and deleted procedure' },
+    ]);
+    expect(first.total).toBe(2);
+    expect(first.items[0]).toMatchObject({
+      space: { id: space },
+      deletedBy: { id: ada, name: 'Ada' },
+      deletedAt: expect.any(Date),
+    });
+    expect((await list(ada, 50, 'component')).items.map((each) => each.id)).toEqual([archived]);
+    expect((await list(grace)).items.map((each) => each.id)).toEqual([
+      unseen,
+      report.artifactId,
+      archived,
+    ]);
+
+    // A page at a time, as of the first page: an undelete and a delete since move nothing.
+    const page = await list(ada, 1);
+    expect(page.items.map((each) => each.id)).toEqual([report.artifactId]);
+    await bring(archived, ada);
+    const extra = await component(space, ada, 'Later procedure');
+    await remove(extra, ada);
+    const rest = await as(
+      async (trx) =>
+        (await listDeleted(trx, ada, { limit: 1, after: page.next!, snapshot: page.snapshot }))!,
+    );
+    expect(rest.items.map((each) => each.id)).toEqual([archived]);
+    expect(rest.next).toBeNull();
+    // Afresh, as things stand.
+    expect((await list(ada)).items.map((each) => each.id)).toEqual([extra, report.artifactId]);
   });
 
   it('leaves Needs your attention, and is reported by what changed since as deleted and undeleted', async () => {
