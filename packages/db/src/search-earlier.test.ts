@@ -402,7 +402,8 @@ describe('searching earlier versions and baselines', () => {
     const statement = async (scope: 'latest' | 'all') => {
       statements.length = 0;
       await tenant((trx) => searchWords(spied(trx), ada, 'gauge', { scope }));
-      return statements.find((each) => each.includes('search_entry')) ?? '';
+      // The search itself, not a check of the schema it runs on.
+      return statements.find((each) => each.includes('readable_fields')) ?? '';
     };
     expect(await statement('latest')).not.toMatch(/union|search_earlier/iu);
     expect(await statement('all')).toMatch(/union all/iu);
@@ -673,7 +674,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
       });
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0088_search_earlier']);
+      expect(report.tenants[id]).toEqual(['0088_search_earlier', '0089_search_threads']);
       const kept = await service.withTenant(tenant, (trx) =>
         trx
           .selectFrom('search_earlier as e')

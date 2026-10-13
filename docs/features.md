@@ -912,6 +912,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   page, read only, at the place it matched, naming who made it, when, and the latest; each Versions
   panel row opens its version the same way. `versions=all` and `baseline=<id>` on `GET /v1/search`,
   and `GET /v1/components/{id}/versions/{version}` and `GET /v1/documents/{id}/versions/{version}`.
+- **Threads in search.** Search finds a thread by the words of any of its messages, or by words spread
+  across several, or by the text it quotes, only for those who may read the component or document it
+  is on; a mention finds nothing, as it is a person, not a word. A resolved thread is found and said to
+  be Resolved; one on something archived or deleted is not found. A result opens the thread on a page
+  of its own, at the message that matched, with a link to what it is on. Threads are current, so found
+  under Versions: All, and never in a baseline. Kind `thread` on `GET /v1/search`, each result naming
+  its thread.
 
 - **Tokens for your own scripts, through the API.** Signed in, you can issue yourself an API token for a
   script: `POST /v1/tokens` with a name, the permissions it may use and when it expires, at most 365 days

@@ -7,6 +7,7 @@ import {
   searchAddress,
   searchLink,
   searchScope,
+  threadAddress,
   whereFound,
 } from './links.js';
 
@@ -29,6 +30,33 @@ describe("a search result's link and place", () => {
     for (const kind of ['template', 'asset', 'field', 'metadataSchema', 'componentType']) {
       expect(result(kind, 'title')).toBeNull();
     }
+  });
+
+  it('SCH-071 links a thread to its page, on a component or a document, at the message it matched', () => {
+    const thread = (on: 'component' | 'document', place: string | null) =>
+      resultLink({
+        kind: 'thread',
+        artifactId: ID,
+        node: on === 'document' ? NODE : null,
+        place,
+        thread: { id: BASELINE, on, resolved: false },
+      });
+    expect(thread('component', `message:${VERSION}`)).toBe(
+      `#/components/${ID}/threads/${BASELINE}/comments/${VERSION}`,
+    );
+    expect(thread('document', 'anchor')).toBe(`#/documents/${ID}/threads/${BASELINE}`);
+    expect(threadAddress(`#/components/${ID}/threads/${BASELINE}/comments/${VERSION}`)).toEqual({
+      on: { kind: 'component', id: ID },
+      thread: BASELINE,
+      comment: VERSION,
+    });
+    expect(threadAddress(`#/documents/${ID}/threads/${BASELINE}`)).toEqual({
+      on: { kind: 'document', id: ID },
+      thread: BASELINE,
+      comment: null,
+    });
+    expect(threadAddress(`#/documents/${ID}`)).toBeNull();
+    expect(componentAddress(`#/components/${ID}/threads/${BASELINE}`)).toBeNull();
   });
 
   it('reads a component address with a block, and without', () => {
@@ -107,6 +135,8 @@ describe("a search result's link and place", () => {
     expect(whereFound('fields', fields)).toBe('In the fields it groups');
     expect(whereFound('schemas', fields)).toBe('In the schemas it assigns');
     expect(whereFound('columns', fields)).toBe('In its column names');
+    expect(whereFound(`message:${VERSION}`, fields)).toBe('In a message');
+    expect(whereFound('anchor', fields)).toBe('In the text it is on');
     expect(whereFound('connection', fields)).toBeNull();
     expect(whereFound(null, fields)).toBeNull();
   });

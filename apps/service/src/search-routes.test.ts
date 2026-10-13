@@ -1,8 +1,11 @@
 import {
   bootstrapCluster,
   createTenant,
+  latestVersion,
   migrate,
   seedDevelopmentContent,
+  startThread,
+  type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
 import {
@@ -26,6 +29,7 @@ describe('searching through the service', () => {
   let idp: StandInProvider;
   let tenantDb: TenantDatabase;
   let app: FastifyInstance;
+  let tenant: Tenant;
   const cookies: Record<string, string> = {};
 
   const search = (as: string | undefined, query: string) =>
@@ -48,7 +52,7 @@ describe('searching through the service', () => {
         },
       ],
     });
-    const tenant = await createTenant(db.adminUrl, db.migratorUrl, {
+    tenant = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },
       tenant: { id: db.newTenantId(), name: 'Production' },
       hostnames: [HOST],
@@ -98,6 +102,42 @@ describe('searching through the service', () => {
       }),
     );
     expect(body.count).toBe(body.items.length);
+  });
+
+  it('SCH-071 answers a thread by its words, with what it is on and whether it is resolved', async () => {
+    const component = (await search('grace', '?q=scanner&kind=component')).json<{
+      items: { artifactId: string }[];
+    }>().items[0]!.artifactId;
+    const thread = await tenantDb.withTenant(tenant, async (trx) => {
+      const version = (await latestVersion(trx, component))!;
+      const grace = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow();
+      const started = await startThread(trx, {
+        on: component,
+        version: version.id,
+        anchor: { kind: 'component' },
+        parts: [{ text: 'Which flamingo target do we scan?' }],
+        author: grace.id,
+      });
+      if (started.answer !== 'done') throw new Error(started.answer);
+      return started.thread;
+    });
+    const response = await search('grace', '?q=flamingo&kind=thread');
+    expect(response.statusCode).toBe(200);
+    expect(response.json<{ items: unknown[] }>().items).toEqual([
+      expect.objectContaining({
+        kind: 'thread',
+        artifactId: component,
+        title: 'Which flamingo target do we scan?',
+        version: null,
+        thread: { id: thread, on: 'component', resolved: false },
+      }),
+    ]);
+    // Alice reads nothing it is on.
+    expect((await search('alice', '?q=flamingo')).json<{ count: number }>().count).toBe(0);
   });
 
   it('SCH-039 names an empty or malformed query rather than answering it', async () => {

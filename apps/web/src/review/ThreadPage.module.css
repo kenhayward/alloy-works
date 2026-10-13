@@ -1,0 +1,44 @@
+/* A thread at its own address (the SV plan, SV-M). */
+.threadPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+}
+
+.threadPage > p {
+  margin: 0;
+}
+
+.threadHeading {
+  margin: 0;
+  font-size: var(--size-20);
+}
+
+.threadMessages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.threadMessage {
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.threadMessage[data-matched='true'] {
+  border-color: var(--accent);
+}
+
+.threadMessage p {
+  margin: 0;
+}
+
+.threadWho {
+  color: var(--muted);
+  font-size: var(--size-13);
+}

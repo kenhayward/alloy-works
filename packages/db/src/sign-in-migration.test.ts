@@ -98,6 +98,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0086_retention_keeps',
       '0087_erasure',
       '0088_search_earlier',
+      '0089_search_threads',
     ]);
 
     const read = async () =>

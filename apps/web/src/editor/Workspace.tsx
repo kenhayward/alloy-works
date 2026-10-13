@@ -18,7 +18,14 @@ import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
 import { useAbout } from '../shell/about.js';
 import { hashOf, placeOf, type Place } from '../shell/places.js';
-import { componentAddress, searchAddress, searchLink, searchScope } from '../search/links.js';
+import {
+  componentAddress,
+  searchAddress,
+  searchLink,
+  searchScope,
+  threadAddress,
+} from '../search/links.js';
+import { ThreadPage } from '../review/ThreadPage.js';
 import { SearchPage } from '../search/SearchPage.js';
 import { ComponentVersionPage, DocumentVersionPage } from '../versions/VersionPages.js';
 import { DocumentList } from '../structure/DocumentList.js';
@@ -221,6 +228,19 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   function pageFor(hash: string, arrivals: number, me: string): React.JSX.Element {
     if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
     if (/^#\/admin(?:\/|$)/.test(hash)) return <AdministrationPage client={client} />;
+    // A thread at its own address, where a search result for it opens (the SV plan, SV-M).
+    const thread = threadAddress(hash);
+    if (thread) {
+      return (
+        <ThreadPage
+          key={`${thread.thread}:${thread.comment ?? ''}`}
+          client={client}
+          on={thread.on}
+          thread={thread.thread}
+          comment={thread.comment}
+        />
+      );
+    }
     const address = componentAddress(hash);
     if (address?.version) {
       return (

@@ -13,6 +13,7 @@ import { DEFAULT_LAYOUT_ID } from '../layouts.js';
 import { recordPublication, requestPublication } from '../publishing.js';
 import type { TenantTransaction } from '../tables.js';
 import { DEFAULT_THEME_ID } from '../themes.js';
+import { startThread } from '../threads.js';
 import { recordDatasetVersion } from '../datasets.js';
 import { createArtifact } from '../versions.js';
 
@@ -66,9 +67,10 @@ export async function publish(
  * One of every kind search finds, each holding `word` - for a test that must reach every kind, as the
  * leak suite does (SCH-010). The document's one section holds the word too, and so does the
  * publication, by its document's title; the query definition names a connection it makes. Answers each
- * kind's artifact, and the section's node. `before0046` leaves the query definition and its connection
- * out, for a tenant migrated only as far as a test of an earlier migration needs, and `before0047` the
- * dataset, which records one result of the query definition as a service account's run.
+ * kind's artifact, and the section's node; a thread on the component, by its id. `before0046` leaves the
+ * query definition and its connection out, for a tenant migrated only as far as a test of an earlier
+ * migration needs, and `before0047` the dataset, which records one result of the query definition as a
+ * service account's run; either leaves the thread out.
  */
 export async function everyKind(
   trx: TenantTransaction,
@@ -82,8 +84,9 @@ export async function everyKind(
     readonly before0047?: boolean;
   },
 ): Promise<
-  Readonly<Record<Exclude<SearchKind, 'queryDefinition'>, string>> & {
+  Readonly<Record<Exclude<SearchKind, 'queryDefinition' | 'thread'>, string>> & {
     readonly queryDefinition?: string;
+    readonly thread?: string;
     readonly dataset?: string;
     readonly node: string;
   }
@@ -191,6 +194,7 @@ export async function everyKind(
   const publication = await publish(trx, { document, author, role: input.role });
   let queryDefinition: string | undefined;
   let dataset: string | undefined;
+  let thread: string | undefined;
   if (!input.before0046) {
     // A query definition names a connection, which is in no search of its own.
     const connection = await createArtifact(trx, {
@@ -259,10 +263,20 @@ export async function everyKind(
           },
         })
       ).dataset.id;
+      const started = await startThread(trx, {
+        on: component.version.artifactId,
+        version: component.version.id,
+        anchor: { kind: 'component' },
+        parts: [{ text: `A ${word} thread` }],
+        author,
+      });
+      if (started.answer !== 'done') throw new Error(started.answer);
+      thread = started.thread;
     }
   }
   return {
     ...(queryDefinition === undefined ? {} : { queryDefinition }),
+    ...(thread === undefined ? {} : { thread }),
     ...(dataset === undefined ? {} : { dataset }),
     component: component.version.artifactId,
     document: document.artifactId,

@@ -150429,7 +150429,7 @@
             "schema": {
               "description": "Only these kinds, separated by commas",
               "type": "string",
-              "pattern": "^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)){0,9}$"
+              "pattern": "^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)){0,10}$"
             }
           },
           {
@@ -150658,14 +150658,15 @@
                                   "field",
                                   "metadataSchema",
                                   "componentType",
-                                  "queryDefinition"
+                                  "queryDefinition",
+                                  "thread"
                                 ]
                               },
                               "artifactId": {
                                 "type": "string"
                               },
                               "node": {
-                                "description": "A section's outline node; null for anything else",
+                                "description": "A section's outline node, or the node a thread on a document is on; else null",
                                 "type": [
                                   "string",
                                   "null"
@@ -150700,7 +150701,7 @@
                                 "type": "string"
                               },
                               "place": {
-                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns`",
+                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns`, a thread's `message:<comment id>`, or `anchor`, the text a thread quotes",
                                 "type": [
                                   "string",
                                   "null"
@@ -150789,6 +150790,39 @@
                                   }
                                 ],
                                 "description": "The baseline searched, when the search named one"
+                              },
+                              "thread": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "on": {
+                                        "type": "string",
+                                        "enum": [
+                                          "component",
+                                          "document"
+                                        ],
+                                        "description": "What `artifactId` is"
+                                      },
+                                      "resolved": {
+                                        "type": "boolean",
+                                        "description": "Whether it is resolved, as it is now"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "on",
+                                      "resolved"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The thread a thread result is; null for anything else"
                               }
                             },
                             "required": [
@@ -150801,7 +150835,8 @@
                               "place",
                               "passage",
                               "version",
-                              "baseline"
+                              "baseline",
+                              "thread"
                             ]
                           }
                         },

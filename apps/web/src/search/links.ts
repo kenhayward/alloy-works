@@ -33,6 +33,11 @@ export function resultLink(result: {
     readonly document: string;
     readonly node: string | null;
   } | null;
+  readonly thread?: {
+    readonly id: string;
+    readonly on: 'component' | 'document';
+    readonly resolved?: boolean;
+  } | null;
 }): string | null {
   const block = result.place?.startsWith('block:') ? result.place.slice('block:'.length) : null;
   if (result.baseline) {
@@ -68,9 +73,46 @@ export function resultLink(result: {
       return `#/publications/${result.artifactId}`;
     case 'queryDefinition':
       return `#/query-definitions/${result.artifactId}`;
+    case 'thread':
+      return result.thread
+        ? threadLink(
+            { kind: result.thread.on, id: result.artifactId },
+            result.thread.id,
+            result.place?.startsWith('message:') ? result.place.slice('message:'.length) : null,
+          )
+        : null;
     default:
       return null;
   }
+}
+
+/** What a thread is on, by its kind and id. */
+export interface ThreadOn {
+  readonly kind: 'component' | 'document';
+  readonly id: string;
+}
+
+/** The address of a thread, and a message in it (the SV plan, SV-M; SCH-071). */
+export function threadLink(on: ThreadOn, thread: string, comment: string | null = null): string {
+  return `#/${on.kind}s/${on.id}/threads/${thread}${comment === null ? '' : `/comments/${comment}`}`;
+}
+
+const THREAD =
+  /^#\/(component|document)s\/([0-9a-f-]{36})\/threads\/([0-9a-f-]{36})(?:\/comments\/([0-9a-f-]{36}))?$/;
+
+/** What a thread's address names: what it is on, the thread, and a message in it; or null. */
+export function threadAddress(hash: string): {
+  readonly on: ThreadOn;
+  readonly thread: string;
+  readonly comment: string | null;
+} | null {
+  const matched = THREAD.exec(hash);
+  if (!matched) return null;
+  return {
+    on: { kind: matched[1] as ThreadOn['kind'], id: matched[2]! },
+    thread: matched[3]!,
+    comment: matched[4] ?? null,
+  };
 }
 
 const SEARCH = /^#\/search(?:\?(.*))?$/;
@@ -146,5 +188,7 @@ export function whereFound(
   if (place === 'fields') return 'In the fields it groups';
   if (place === 'schemas') return 'In the schemas it assigns';
   if (place === 'columns') return 'In its column names';
+  if (place.startsWith('message:')) return 'In a message';
+  if (place === 'anchor') return 'In the text it is on';
   return null;
 }

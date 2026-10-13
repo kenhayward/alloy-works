@@ -111,6 +111,43 @@ describe('the search page', () => {
     expect(marked.closest('p')).toHaveTextContent('Hold the lever until it clicks.');
   });
 
+  it('SCH-071 shows a thread found by a message, resolved, linked to the message', async () => {
+    const THREAD = 'ffffffff-0000-4000-8000-000000000001';
+    const COMMENT = 'ffffffff-0000-4000-8000-000000000002';
+    const { client } = service(() =>
+      json(200, {
+        ...results,
+        count: 2,
+        message: '2 results.',
+        items: [
+          results.items[0],
+          {
+            kind: 'thread',
+            artifactId: GUIDE,
+            node: null,
+            title: 'Which lever?',
+            space: { id: SPACE, name: 'General' },
+            changedAt: '2026-09-27T09:00:00.000Z',
+            place: `message:${COMMENT}`,
+            passage: [{ text: 'lever', matched: true }],
+            version: null,
+            baseline: null,
+            thread: { id: THREAD, on: 'component', resolved: true },
+          },
+        ],
+      }),
+    );
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    const [, thread] = await screen.findAllByRole('article');
+    expect(thread).toHaveTextContent('Thread in General');
+    expect(thread).toHaveTextContent('Resolved');
+    expect(thread).toHaveTextContent('In a message');
+    expect(within(thread!).getByRole('link', { name: 'Which lever?' })).toHaveAttribute(
+      'href',
+      `#/components/${GUIDE}/threads/${THREAD}/comments/${COMMENT}`,
+    );
+  });
+
   it('says in a sentence why a query has nothing to show, and asks nothing for no query', async () => {
     const { client, asked } = service(() =>
       json(200, {

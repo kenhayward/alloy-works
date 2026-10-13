@@ -1,8 +1,10 @@
 export {
   configurationFor,
   entriesOf,
+  messageWords,
   SEARCH_CONFIGURATIONS,
   searchKinds,
+  threadTitle,
   wordsByBlock,
 } from './entries.js';
 export type {
