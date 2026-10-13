@@ -360,15 +360,20 @@ Built in SV2 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
   component or document it is on, so the predicate filters it by that and archival or deletion hides it;
   a thread on a section keeps the document's row with the section's node. Each message is the place
   `message:<comment>`, a span's quoted text the place `anchor`. Title: the first message's opening
-  words; owner: who started it. A mention is no words, so no name is indexed.
+  words; owner: who started it. A mention is no words, so no name is indexed. There is no `title`
+  place, so `title:` never reaches a thread.
+- **Bounded**: the whole holds a thread's messages in the order written up to 300,000 characters
+  (`THREAD_WORDS_MAX`), so its vector stays inside the 1 MB a tsvector holds; a message past it is kept as a place, its words no longer finding the thread, and is never refused.
 - **Incremental** (SCH-071): `vector` is a plain column from 0089. `addComment` inserts its message's
   place and appends to the entry (`body || text`, `vector || to_tsvector(...)`), reading no thread
-  table; `editComment` replaces its place and rebuilds body and vector from the entry's places, and the
-  title when it is the first message. Each in the comment's transaction (SCH-066).
+  table; `editComment` replaces its place and rebuilds body and vector from the entry's places, in the
+  order written (each message's first text id, the one thing it reads of the thread), and the title
+  when it is the first message. Each in the comment's transaction (SCH-066).
 - **Current**: `indexVersion` never moves or deletes a thread's row; a thread is found under
   `versions=all` and never in a baseline. Resolved is read from `thread_resolution` when searched;
   orphaned is the panel's. A result carries `thread { id, on, resolved }` and links to
-  `#/{components|documents}/{id}/threads/{thread}[/comments/{comment}]`, a read-only page.
+  `#/{components|documents}/{id}/threads/{thread}[/comments/{comment}]`, a read-only page saying
+  whether it is orphaned; a document's thread offers **Open in Review**, the threads panel at it.
 - **Not yet**: internal threads (SCH-072, COL-038) are T4's; there is no internal flag to index.
 
 ## Open questions

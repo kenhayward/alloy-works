@@ -23,7 +23,7 @@ import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { reindexSearch } from './search.js';
-import { indexMessage } from './search-threads.js';
+import { indexMessage, THREAD_WORDS_MAX } from './search-threads.js';
 import { searchWords, type SearchAnswer } from './search-words.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
@@ -341,6 +341,62 @@ describe('searching threads', () => {
     ]);
   });
 
+  it('keeps the order messages were written in when one is edited', async () => {
+    const on = await component(general, 'Mixer', 'Stir.');
+    const started = await start(on, { kind: 'component' }, 'alpha');
+    const ids = [started.comment];
+    for (const word of ['bravo', 'charlie', 'delta', 'echo']) {
+      ids.push((await reply(started.thread, said(word))).comment);
+    }
+    await tenant(async (trx) => {
+      const edited = await editComment(trx, {
+        thread: started.thread,
+        comment: ids[2]!,
+        parts: said('charlie2'),
+        author: ada,
+      });
+      if (edited.answer !== 'done') throw new Error(edited.answer);
+    });
+    const body = await tenant((trx) =>
+      trx
+        .selectFrom('search_entry')
+        .select('body')
+        .where('thread_id', '=', started.thread)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(body.body).toBe('alpha bravo charlie2 delta echo');
+  });
+
+  it('SCH-071 indexes a long thread whole up to a bound, never failing a message for its length', async () => {
+    const on = await component(general, 'Ledger', 'Count.');
+    const started = await start(on, { kind: 'component' }, 'The opening okapi.');
+    // Distinct words, so the thread's vector would pass the 1 MB a tsvector holds well before the end.
+    const many = (n: number) =>
+      Array.from({ length: 280 }, (_, i) => `wordy${n.toString(36)}x${i.toString(36)}qz`).join(' ');
+    await tenant(async (trx) => {
+      for (let n = 0; n < 260; n += 1) {
+        await indexMessage(trx, {
+          thread: started.thread,
+          comment: randomUUID(),
+          parts: said(many(n)),
+        });
+      }
+    });
+    const entry = await tenant((trx) =>
+      trx
+        .selectFrom('search_entry')
+        .select(sql<number>`length(body)`.as('length'))
+        .where('thread_id', '=', started.thread)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(entry.length).toBeLessThanOrEqual(THREAD_WORDS_MAX);
+    expect((await threadsFound(ada, 'okapi')).map((each) => each.thread?.id)).toEqual([
+      started.thread,
+    ]);
+    // And a reply after the bound is still taken.
+    await reply(started.thread, said('One more.'));
+  });
+
   it('indexes a mention as nothing, never a name', async () => {
     const on = await component(general, 'Filter', 'Swap the filter.');
     const started = await start(on, { kind: 'component' }, 'Ready to swap.');
@@ -391,7 +447,7 @@ describe('searching threads', () => {
     ]);
   });
 
-  it('SCH-071 hides a thread while what it is on is archived or deleted', async () => {
+  it('LIF-020 hides a thread while what it is on is archived, and while it is deleted', async () => {
     const on = await component(general, 'Crane', 'Check the hook.');
     const started = await start(on, { kind: 'component' }, 'The pelican latch sticks.');
     const ids = async () => (await threadsFound(ada, 'pelican')).map((each) => each.thread?.id);

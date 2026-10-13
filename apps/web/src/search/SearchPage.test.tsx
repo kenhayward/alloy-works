@@ -111,7 +111,7 @@ describe('the search page', () => {
     expect(marked.closest('p')).toHaveTextContent('Hold the lever until it clicks.');
   });
 
-  it('SCH-071 shows a thread found by a message, resolved, linked to the message', async () => {
+  it('shows a thread found by a message, resolved, linked to the message', async () => {
     const THREAD = 'ffffffff-0000-4000-8000-000000000001';
     const COMMENT = 'ffffffff-0000-4000-8000-000000000002';
     const { client } = service(() =>

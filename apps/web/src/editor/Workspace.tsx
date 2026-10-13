@@ -511,7 +511,11 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         </>
       );
     }
-    if (documents?.kind === 'document' || documents?.kind === 'publishing') {
+    if (
+      documents?.kind === 'document' ||
+      documents?.kind === 'publishing' ||
+      documents?.kind === 'review'
+    ) {
       const node = documents.kind === 'document' ? documents.node : null;
       return (
         <>
@@ -525,7 +529,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             atPanel={
               documents.kind === 'publishing'
                 ? { panel: 'publishing', arrival: arrivals, request: documents.request }
-                : null
+                : documents.kind === 'review'
+                  ? { panel: 'threads', arrival: arrivals, thread: documents.thread }
+                  : null
             }
             onArriveAgain={again}
           />

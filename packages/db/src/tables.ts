@@ -456,7 +456,7 @@ export interface SearchEntryTable {
   configuration: SearchConfiguration;
   body: string;
   /** Generated until 0089, which makes it plain and every writer set it (the SV plan, SV-L). */
-  vector: ColumnType<string, string | undefined, string>;
+  vector: ColumnType<string, string, string>;
   /** The thread a `thread` entry is (0089); null for every other kind, and none before 0089. */
   thread_id: ColumnType<string | null, string | null | undefined, never>;
   /** Its artifact archived (0083): left out of search, and set by the acts and by indexing. */

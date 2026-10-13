@@ -46,7 +46,11 @@ const thread = {
   ],
 };
 
-function client(answer: Response) {
+const DOCUMENT = 'aaaaaaaa-0000-4000-8000-000000000002';
+const NODE = 'abcdefghijklmnopqrstuvwxyz';
+
+/** The service: the thread as `answer`, and what it is on listing it, orphaned or not. */
+function client(answer: Response, orphaned = false) {
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
@@ -54,13 +58,22 @@ function client(answer: Response) {
       return json(200, { items: [ada, { id: GRACE, name: 'Grace' }], next: null });
     }
     if (url.pathname === `/v1/threads/${THREAD}`) return answer.clone();
+    if (
+      url.pathname === `/v1/components/${COMPONENT}/threads` ||
+      url.pathname === `/v1/documents/${DOCUMENT}/threads`
+    ) {
+      // Another thread on the first page, and this one on the second.
+      return url.searchParams.get('cursor') === null
+        ? json(200, { threads: [{ id: FIRST, orphaned: false }], next: 'page-2' })
+        : json(200, { threads: [{ id: THREAD, orphaned }], next: null });
+    }
     return json(404, {});
   }) as unknown as typeof fetch;
   return createApiClient({ baseUrl: 'http://threads.test', fetch: fetching });
 }
 
 describe('a thread at its own address', () => {
-  it('SCH-071 shows a thread found by search, each message at its latest text, the matched one focused', async () => {
+  it('shows a thread, each message at its latest text, the matched one focused', async () => {
     Element.prototype.scrollIntoView = vi.fn();
     render(
       <ThreadPage
@@ -83,10 +96,50 @@ describe('a thread at its own address', () => {
       'href',
       `#/components/${COMPONENT}`,
     );
+    // A component's thread is answered in the Review of a document placing it, which is not known.
+    expect(screen.queryByRole('link', { name: 'Open in Review' })).toBeNull();
+    expect(screen.queryByText('Its text is no longer there')).toBeNull();
   });
 
-  it('says so where there is no thread it may read', async () => {
+  it('COL-017 says a thread whose text is no longer there is orphaned', async () => {
     render(
+      <ThreadPage
+        client={client(json(200, thread), true)}
+        on={{ kind: 'component', id: COMPONENT }}
+        thread={THREAD}
+        comment={null}
+      />,
+    );
+    expect(await screen.findByText('Its text is no longer there')).toBeInTheDocument();
+  });
+
+  it("opens a document's thread in Review, at the thread", async () => {
+    render(
+      <ThreadPage
+        client={client(
+          json(200, {
+            ...thread,
+            on: { id: DOCUMENT, kind: 'document' },
+            anchor: { kind: 'node', node: NODE },
+          }),
+        )}
+        on={{ kind: 'document', id: DOCUMENT }}
+        thread={THREAD}
+        comment={null}
+      />,
+    );
+    expect(await screen.findByRole('link', { name: 'Open in Review' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}/review/threads/${THREAD}`,
+    );
+    expect(screen.getByRole('link', { name: 'Open the document' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+  });
+
+  it('says so where there is no thread it may read, or it is not on what the address names', async () => {
+    const { unmount } = render(
       <ThreadPage
         client={client(json(404, { code: 'not_found', message: 'No.' }))}
         on={{ kind: 'component', id: COMPONENT }}
@@ -97,5 +150,18 @@ describe('a thread at its own address', () => {
     expect(
       await screen.findByText('There is no such thread, or you may not read it.'),
     ).toBeInTheDocument();
+    unmount();
+    render(
+      <ThreadPage
+        client={client(json(200, thread))}
+        on={{ kind: 'document', id: DOCUMENT }}
+        thread={THREAD}
+        comment={null}
+      />,
+    );
+    expect(
+      await screen.findByText('There is no such thread, or you may not read it.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open the component' })).toBeNull();
   });
 });

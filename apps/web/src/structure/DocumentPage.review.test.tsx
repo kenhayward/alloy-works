@@ -49,6 +49,8 @@ async function openAs(may: {
   review?: boolean;
   component?: boolean;
   mode?: 'review';
+  /** A thread already on the component, which the address opens Review at. */
+  at?: boolean;
 }) {
   if (may.mode) window.localStorage.setItem('alloy-works.mode', may.mode);
   const fake = service(outline([reference(REFERENCE, 'latest')]), {
@@ -59,6 +61,24 @@ async function openAs(may: {
   const component = PRINTER;
   const started: unknown[] = [];
   const threads: unknown[] = [];
+  const held = {
+    id: THREAD,
+    on: { id: component, kind: 'component' },
+    anchor: { kind: 'component' },
+    madeAgainst: VERSION,
+    startedBy: { id: ADA, name: 'Ada' },
+    startedAt: '2026-10-12T10:00:00.000Z',
+  };
+  if (may.at) {
+    threads.push({
+      ...held,
+      resolvedAt: null,
+      comments: 1,
+      lastAt: '2026-10-12T10:00:00.000Z',
+      orphaned: false,
+      places: [{ node: REFERENCE, orphaned: false }],
+    });
+  }
   const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
@@ -111,9 +131,30 @@ async function openAs(may: {
       });
     }
     if (path === '/v1/people') return json(200, { items: [], next: null });
+    if (path === `/v1/threads/${THREAD}` && request.method === 'GET') {
+      return json(200, {
+        ...held,
+        resolution: null,
+        comments: [
+          {
+            id: 'cccccccc-0000-4000-8000-0000000000c2',
+            author: { id: ADA, name: 'Ada' },
+            at: '2026-10-12T10:00:00.000Z',
+            texts: [{ parts: [{ text: 'Which tray?' }], at: '2026-10-12T10:00:00.000Z' }],
+          },
+        ],
+      });
+    }
     return fake.fetch(request);
   }) as typeof globalThis.fetch;
-  const shown = render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
+  const shown = render(
+    <DocumentPage
+      client={client(fetching)}
+      id={DOCUMENT}
+      principalId={ADA}
+      atPanel={may.at ? { panel: 'threads', arrival: 0, thread: THREAD } : null}
+    />,
+  );
   const text = await screen.findByRole('region', { name: "The document's text" });
   await within(text).findByText('Unbox the printer.');
   return { text, shown, started };
@@ -201,6 +242,14 @@ describe('Review (collaboration.md, "Review mode")', () => {
       ).toBeInTheDocument(),
     );
     expect(window.getSelection()!.toString()).toBe('Unbox');
+  });
+
+  it('opens in Review at the thread an address names, and remembers neither', async () => {
+    await openAs({ review: true, component: true, at: true });
+    expect(within(modeOf()).getByRole('radio', { name: 'Review' })).toBeChecked();
+    const panel = await screen.findByRole('tabpanel', { name: 'Threads' });
+    expect(await within(panel).findByText('Which tray?')).toBeInTheDocument();
+    expect(window.localStorage.getItem('alloy-works.mode')).toBeNull();
   });
 
   it('keeps Review as the reader’s choice for the next document', async () => {

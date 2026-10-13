@@ -916,7 +916,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   across several, or by the text it quotes, only for those who may read the component or document it
   is on; a mention finds nothing, as it is a person, not a word. A resolved thread is found and said to
   be Resolved; one on something archived or deleted is not found. A result opens the thread on a page
-  of its own, at the message that matched, with a link to what it is on. Threads are current, so found
+  of its own, at the message that matched, saying whether its text is still there, with a link to what
+  it is on and, for a document's thread, Open in Review at that thread. Threads are current, so found
   under Versions: All, and never in a baseline. Kind `thread` on `GET /v1/search`, each result naming
   its thread.
 

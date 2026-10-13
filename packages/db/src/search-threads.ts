@@ -40,6 +40,24 @@ export async function vectorStored(trx: TenantTransaction): Promise<boolean> {
 
 const place = (comment: string) => `message:${comment}`;
 
+/**
+ * The most characters a thread's entry holds as a whole: a message past it is still a place of its own,
+ * but adds nothing to the whole, so the entry's vector stays well inside the 1 MB a tsvector holds
+ * (about three bytes of vector a character at worst) and no message is refused for the thread's length.
+ */
+export const THREAD_WORDS_MAX = 300_000;
+
+/** The texts, in order, whose words the whole holds: each whole, until the next would pass the bound. */
+function within(texts: readonly { readonly text: string }[]): string {
+  let body = '';
+  for (const each of texts) {
+    const next = body === '' ? each.text : `${body} ${each.text}`;
+    if (next.length > THREAD_WORDS_MAX) break;
+    body = next;
+  }
+  return body;
+}
+
 /** A thread's entry whole, from its row and these messages, the first first. */
 async function writeThread(
   trx: TenantTransaction,
@@ -71,7 +89,7 @@ async function writeThread(
       each.text === '' ? [] : [{ place: place(each.comment), text: each.text }],
     ),
   ];
-  const body = texts.map((each) => each.text).join(' ');
+  const body = within(texts);
   // As the acts left its artifact, read under its lock (startThread, reindexSearch).
   const archived = (await archivalStored(trx)) && (await isArchived(trx, row.on_id));
   const deleted = (await deletionStored(trx)) && (await isDeleted(trx, row.on_id));
@@ -133,10 +151,14 @@ export async function indexMessage(
 ): Promise<void> {
   if (!(await vectorStored(trx))) return;
   const text = messageWords(input.parts);
+  // Past the bound, the message is a place alone (THREAD_WORDS_MAX).
+  const fits = sql`length(body) + 1 + ${text.length}::int <= ${THREAD_WORDS_MAX}::int`;
   const { rows } = await sql<{ id: string; configuration: string }>`
     update search_entry
-       set body = concat_ws(' ', nullif(body, ''), nullif(${text}, '')),
-           vector = vector || to_tsvector(configuration, ${text}),
+       set body = case when ${fits} then concat_ws(' ', nullif(body, ''), nullif(${text}, ''))
+                       else body end,
+           vector = case when ${fits} then vector || to_tsvector(configuration, ${text})
+                         else vector end,
            changed_at = now()
      where thread_id = ${input.thread}
     returning id, configuration`.execute(trx);
@@ -155,7 +177,9 @@ export async function indexMessage(
 
 /**
  * A message's new text (SV-L): its place replaced, and the entry's body and vector made again from its
- * own places, never the thread's tables. The first message's edit titles the thread again.
+ * own places, never the thread's words. Their order is the one they were written in, each message by
+ * its first text's identity, as the start and the rebuild read it; that order is all it reads of the
+ * thread. The first message's edit titles the thread again.
  */
 export async function reindexMessage(
   trx: TenantTransaction,
@@ -190,15 +214,22 @@ export async function reindexMessage(
       })
       .execute();
   }
+  const { rows } = await sql<{ body: string }>`
+    select t.body
+      from search_text t
+      left join lateral (
+        select min(x.id) as first from thread_comment_text x
+         where t.place like 'message:%' and x.comment_id = substr(t.place, 9)::uuid
+      ) w on true
+     where t.entry_id = ${entry.id}
+     order by t.place = 'anchor' desc, w.first, t.place`.execute(trx);
+  const body = within(rows.map((row) => ({ text: row.body })));
   await sql`
     update search_entry e
-       set body = s.body,
-           vector = to_tsvector(e.configuration, s.body),
+       set body = ${body},
+           vector = to_tsvector(e.configuration, ${body}),
            title = ${input.first ? sql`${threadTitle(text)}` : sql`e.title`},
            changed_at = now()
-      from (select coalesce(string_agg(t.body, ' ' order by t.place = 'anchor' desc, t.place), '')
-                     as body
-              from search_text t where t.entry_id = ${entry.id}) s
      where e.id = ${entry.id}`.execute(trx);
 }
 

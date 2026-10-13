@@ -246,11 +246,10 @@ async function write(
     .insertInto('search_entry')
     .values(
       entries.map(({ id, draft }) => ({
-        ...(threads
-          ? {
-              vector: sql<string>`to_tsvector(${draft.configuration}::regconfig, ${bodyOf(draft)})`,
-            }
-          : {}),
+        // Before 0089 the column is generated, and only its default may be written.
+        vector: threads
+          ? sql<string>`to_tsvector(${draft.configuration}::regconfig, ${bodyOf(draft)})`
+          : sql<string>`default`,
         id,
         artifact_id: placing.artifactId,
         kind: draft.kind,

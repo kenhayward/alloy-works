@@ -489,9 +489,11 @@ export interface DocumentPageProps {
    * failed request of the reader's it names is shown there.
    */
   readonly atPanel?: {
-    readonly panel: 'publishing';
+    readonly panel: 'publishing' | 'threads';
     readonly arrival: number;
     readonly request?: string | null;
+    /** The thread the threads panel opens, in Review (`#/documents/{id}/review/threads/{thread}`). */
+    readonly thread?: string;
   } | null;
   /** How long a publish waits before it is first asked about: given in tests, which need not wait. */
   readonly followMs?: number;
@@ -1504,6 +1506,8 @@ export function DocumentPage({
   useEffect(() => {
     if (panelNamed === null || openedAt.current === panelArrival) return;
     openedAt.current = panelArrival;
+    // The threads are Review's (CNT-157): it is chosen for this page, not kept as the reader's choice.
+    if (panelNamed === 'threads') setChosenMode('review');
     setDockState(panelNamed);
     setDockCollapsed(false, false);
   }, [panelNamed, panelArrival, setDockCollapsed]);
@@ -2232,6 +2236,11 @@ export function DocumentPage({
                             : 'This document';
                         }}
                         onThreads={setThreadList}
+                        opening={
+                          atPanel?.panel === 'threads' && atPanel.thread !== undefined
+                            ? { thread: atPanel.thread, arrival: atPanel.arrival }
+                            : null
+                        }
                         onGoTo={(thread) => {
                           const node =
                             thread.anchor.kind === 'node'

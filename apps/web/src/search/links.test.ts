@@ -32,7 +32,7 @@ describe("a search result's link and place", () => {
     }
   });
 
-  it('SCH-071 links a thread to its page, on a component or a document, at the message it matched', () => {
+  it('SCH-057 links a thread to its page, on a component or a document, at the message it matched', () => {
     const thread = (on: 'component' | 'document', place: string | null) =>
       resultLink({
         kind: 'thread',
