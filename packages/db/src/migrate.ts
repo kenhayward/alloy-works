@@ -106,12 +106,10 @@ export async function migrate(
           owner: `${role}_owner`,
           runtime: role,
           after: async (applied) => {
-            const scopes = applied.flatMap((version) => REINDEXED_BY.get(version) ?? []);
-            if (scopes.length > 0) {
-              await reindexSearch(
-                transactionOver(client),
-                scopes.includes('whole') ? 'whole' : 'earlier',
-              );
+            // Each scope once, the current set first: neither rebuilds the other's table.
+            const scopes = new Set(applied.flatMap((version) => REINDEXED_BY.get(version) ?? []));
+            for (const scope of ['whole', 'earlier'] as const) {
+              if (scopes.has(scope)) await reindexSearch(transactionOver(client), scope);
             }
           },
         },

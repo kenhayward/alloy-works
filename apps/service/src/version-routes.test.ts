@@ -246,6 +246,11 @@ describe('earlier versions read and searched over HTTP (the SV plan, Task 1)', (
     const both = await get(`/v1/search?q=numbat&versions=all&baseline=${made.baseline}`, 'ada');
     expect(both.statusCode).toBe(400);
     expect(both.json()).toMatchObject({ code: 'invalid_request' });
+    // The latest named with a baseline is the baseline alone.
+    expect(
+      (await get(`/v1/search?q=numbat&versions=latest&baseline=${made.baseline}`, 'ada'))
+        .statusCode,
+    ).toBe(200);
     for (const [who, baseline] of [
       ['ivy', made.baseline],
       ['ada', 'not-a-baseline'],

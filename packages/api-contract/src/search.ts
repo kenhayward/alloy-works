@@ -63,7 +63,7 @@ export const SearchQuery = z.object({
     .max(100)
     .optional()
     .describe(
-      'Search only what this baseline pins, by id, at the versions it pins; not with `versions`',
+      'Search only what this baseline pins, by id, at the versions it pins; not with `versions=all`',
     ),
 });
 export type SearchQuery = z.infer<typeof SearchQuery>;

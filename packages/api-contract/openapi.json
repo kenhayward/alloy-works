@@ -150538,7 +150538,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "Search only what this baseline pins, by id, at the versions it pins; not with `versions`",
+              "description": "Search only what this baseline pins, by id, at the versions it pins; not with `versions=all`",
               "type": "string",
               "maxLength": 100
             }

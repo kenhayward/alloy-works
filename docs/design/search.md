@@ -338,7 +338,7 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
   collapses to one result per artifact and place at its newest matching version; counts and facets count
   those, each facet without its own filter. `baseline=<id>` reads only the versions the baseline pins,
   archived content included; one the reader may not read is `404 baseline_not_found`; both together
-  are 400. The one predicate applies on every branch, so a pin the reader may not read is neither found
+  are 400 (the latest with a baseline is the baseline). The one predicate applies on every branch, so a pin the reader may not read is neither found
   nor counted (SCH-010, SCH-032).
 - **The result** names its version (`number`, `latest`) and, in a baseline, the baseline and where in
   its document it stands. An earlier version links to its read-only page,
@@ -346,7 +346,10 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
   the baseline's page at its node. Each Versions panel row opens its version; a baseline offers
   **Search this baseline**.
 - **Derived**: 0088's run writes every earlier version's rows from the chain; erasure rewrites earlier
-  rows naming the person, as #594 rewrites current ones.
+  rows naming the person, as #594 rewrites current ones, each artifact under its lock.
+- **Known gap, #596**: that backfill runs inside the migration's transaction. Measured at 20,000
+  components (96,003 earlier versions) it took 678 s and wrote 3.8 GB, near 9 hours and 190 GB at a
+  million; #596 moves it to a resumable worker job.
 
 ## Open questions
 

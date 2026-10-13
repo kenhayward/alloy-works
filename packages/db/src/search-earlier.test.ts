@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,6 +20,7 @@ import { createDefinition } from './definitions.js';
 import { createDocument } from './documents.js';
 import { ERASED_NAME, erasePerson } from './erasure.js';
 import { grant } from './grants.js';
+import { invite } from './invitations.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -357,6 +358,7 @@ describe('searching earlier versions and baselines', () => {
     expect(none.count).toBe(0);
     expect(none.facets.kinds).toEqual([]);
     expect(none.facets.spaces).toEqual([]);
+    expect(none.facets.fields).toEqual([]);
     expect(none.facets.changed.every((each) => each.count === 0)).toBe(true);
 
     // A reader of nothing: every version holds nothing for them, and the baseline is none.
@@ -406,7 +408,7 @@ describe('searching earlier versions and baselines', () => {
     expect(await statement('all')).toMatch(/union all/iu);
   });
 
-  it("rebuilds every earlier version's rows, and the backfill writes them for a tenant that had none", async () => {
+  it("writes every earlier version's rows for a tenant that had none, and only when asked", async () => {
     const first = await component(general, ada, 'Rebuilt');
     const second = await revise(first, 'The potoroo');
     await revise(second, 'The pademelon');
@@ -422,10 +424,10 @@ describe('searching earlier versions and baselines', () => {
       );
     const before = await rows();
     expect(before).toHaveLength(2);
-    await tenant((trx) => reindexSearch(trx));
-    expect(await rows()).toEqual(before);
-    // As 0088's run finds an environment: no earlier rows at all.
+    // As 0088's run finds an environment: no earlier rows at all. Rebuilding the current set leaves
+    // them alone; only the earlier scope writes them (#596 moves it to a job).
     await tenant((trx) => trx.deleteFrom('search_earlier').execute());
+    await tenant((trx) => reindexSearch(trx));
     expect(await rows()).toEqual([]);
     await tenant((trx) => reindexSearch(trx, 'earlier'));
     expect(await rows()).toEqual(before);
@@ -434,32 +436,56 @@ describe('searching earlier versions and baselines', () => {
     ]);
   });
 
-  it("VER-038 erases a person's name from every earlier version's words", async () => {
-    const defined = (kind: 'field' | 'metadataSchema' | 'componentType', body: object) =>
-      tenant(async (trx) => {
-        const made = await createDefinition(trx, {
-          kind,
-          author: ada,
-          definition: { schemaVersion: DEFINITION_SCHEMA_VERSION, ...body },
+  /** A person-valued Steward on a Register type, made once, so a component names somebody. */
+  let stewardship: Promise<{ owner: string; type: string }> | undefined;
+  const steward = () =>
+    (stewardship ??= (async () => {
+      const defined = (kind: 'field' | 'metadataSchema' | 'componentType', body: object) =>
+        tenant(async (trx) => {
+          const made = await createDefinition(trx, {
+            kind,
+            author: ada,
+            definition: { schemaVersion: DEFINITION_SCHEMA_VERSION, ...body },
+          });
+          if (made.answer !== 'created') throw new Error(made.answer);
+          return made.definition.id;
         });
-        if (made.answer !== 'created') throw new Error(made.answer);
-        return made.definition.id;
+      const owner = await defined('field', {
+        name: 'Steward',
+        dataType: 'user',
+        multiplicity: 'one',
+        validation: {},
       });
-    const owner = await defined('field', {
-      name: 'Steward',
-      dataType: 'user',
-      multiplicity: 'one',
-      validation: {},
+      const schema = await defined('metadataSchema', {
+        name: 'Stewardship',
+        entries: [{ field: owner, required: false, fixed: false }],
+      });
+      const type = await defined('componentType', {
+        name: 'Register',
+        assignments: [{ schema, requires: [] }],
+      });
+      return { owner, type };
+    })());
+
+  /** A version of `version` holding these values, recorded in `trx`. */
+  const valuesIn = async (
+    trx: TenantTransaction,
+    version: StoredVersion,
+    values: Record<string, unknown>,
+  ) => {
+    const recorded = await recordVersion(trx, {
+      artifactId: version.artifactId,
+      openedFrom: version.id,
+      author: ada,
+      substance: { ...substanceOf(version), values } as never,
     });
-    const schema = await defined('metadataSchema', {
-      name: 'Stewardship',
-      entries: [{ field: owner, required: false, fixed: false }],
-    });
-    const type = await defined('componentType', {
-      name: 'Register',
-      assignments: [{ schema, requires: [] }],
-    });
-    const hedy = await tenant((trx) => person(trx, 'hedy', 'Hedy'));
+    if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+    return recorded.version;
+  };
+
+  /** A Register component whose second version names `named` as its Steward. */
+  const stewardedBy = async (named: string) => {
+    const { owner, type } = await steward();
     const made = await tenant((trx) =>
       createComponent(trx, {
         spaceId: general,
@@ -471,31 +497,95 @@ describe('searching earlier versions and baselines', () => {
       }),
     );
     if (made.answer !== 'created') throw new Error(made.answer);
-    const withValues = (version: StoredVersion, values: Record<string, unknown>) =>
-      tenant(async (trx) => {
-        const recorded = await recordVersion(trx, {
-          artifactId: version.artifactId,
-          openedFrom: version.id,
-          author: ada,
-          substance: { ...substanceOf(version), values } as never,
-        });
-        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
-        return recorded.version;
-      });
-    const named = await withValues(made.version, { [owner]: { user: hedy } });
-    await withValues(named, {});
+    return tenant((trx) => valuesIn(trx, made.version, { [owner]: { user: named } }));
+  };
+
+  /** Every earlier word search holds of an artifact. */
+  const earlierWords = (artifact: string) =>
+    tenant(async (trx) =>
+      (
+        await trx
+          .selectFrom('search_earlier')
+          .select('body')
+          .where('artifact_id', '=', artifact)
+          .execute()
+      )
+        .map((row) => row.body)
+        .join(' '),
+    );
+
+  it("VER-038 erases a person's name from every earlier version's words", async () => {
+    const hedy = await tenant((trx) => person(trx, 'hedy', 'Hedy'));
+    const named = await stewardedBy(hedy);
+    await tenant((trx) => valuesIn(trx, named, {}));
     expect(resultsOf(await search(ada, 'hedy', 'all')).items).toHaveLength(1);
 
     await tenant((trx) => erasePerson(trx, hedy, ada));
     expect(resultsOf(await search(ada, 'hedy', 'all')).items).toEqual([]);
-    const said = await tenant((trx) =>
+    const said = await earlierWords(named.artifactId);
+    expect(said).not.toContain('Hedy');
+    expect(said).toContain(ERASED_NAME);
+  });
+
+  it("VER-038 erases the name of somebody invited who never signed in from earlier versions' words", async () => {
+    const alan = await tenant(async (trx) => {
+      const invited = await invite(trx, {
+        email: `alan-${randomUUID()}@example.test`,
+        external: false,
+        invitedBy: ada,
+      });
+      if (!('invited' in invited)) throw new Error('not invited');
+      await trx
+        .updateTable('principal')
+        .set({ display_name: 'Alan' })
+        .where('id', '=', invited.invited.principalId)
+        .execute();
+      return invited.invited.principalId;
+    });
+    const named = await stewardedBy(alan);
+    await tenant((trx) => valuesIn(trx, named, {}));
+    expect(await earlierWords(named.artifactId)).toContain('Alan');
+    expect((await tenant((trx) => erasePerson(trx, alan, ada)))?.answer).toBe('erased');
+    expect(await earlierWords(named.artifactId)).not.toContain('Alan');
+  });
+
+  it('VER-038 erases a name that a save moves aside while the erasure runs', async () => {
+    const zelda = await tenant((trx) => person(trx, 'zelda', 'Zelda'));
+    const named = await stewardedBy(zelda);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let moved!: () => void;
+    const saved = new Promise<void>((resolve) => (moved = resolve));
+    // A save that stops naming her, its rows naming her moved aside and not yet committed.
+    const saving = tenant(async (trx) => {
+      await valuesIn(trx, named, {});
+      moved();
+      await held;
+    });
+    await saved;
+    const erasing = tenant((trx) => erasePerson(trx, zelda, ada));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await saving;
+    await erasing;
+    expect(await earlierWords(named.artifactId)).not.toContain('Zelda');
+  });
+
+  it('refuses to index a stale version over a newer one, moving nothing', async () => {
+    const first = await component(general, ada, 'Stale');
+    const second = await revise(first, 'The bettong');
+    const before = await earlierWords(first.artifactId);
+    await expect(tenant((trx) => indexVersion(trx, first))).rejects.toThrow(/newer/u);
+    const current = await tenant((trx) =>
       trx
-        .selectFrom('search_earlier')
-        .select('body')
-        .where('version_id', '=', named.id)
-        .executeTakeFirstOrThrow(),
+        .selectFrom('search_entry')
+        .select('version_id')
+        .distinct()
+        .where('artifact_id', '=', first.artifactId)
+        .execute(),
     );
-    expect(said.body).toContain(ERASED_NAME);
+    expect(current).toEqual([{ version_id: second.id }]);
+    expect(await earlierWords(first.artifactId)).toBe(before);
   });
 });
 

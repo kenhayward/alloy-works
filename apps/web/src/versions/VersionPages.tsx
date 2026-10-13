@@ -227,7 +227,7 @@ export function DocumentVersionPage({
   const nodes = ((read.outline as { nodes?: unknown }).nodes ?? []) as readonly OutlineNodeShown[];
   const list = (each: readonly OutlineNodeShown[]): ReactNode =>
     each.length === 0 ? null : (
-      <ol className={styles['versionOutline']}>
+      <ul className={styles['versionOutline']}>
         {each.map((item) => (
           <li
             key={item.id}
@@ -244,7 +244,7 @@ export function DocumentVersionPage({
             {list(item.children ?? [])}
           </li>
         ))}
-      </ol>
+      </ul>
     );
   return (
     <article className={styles['versionPage']} aria-labelledby="version-heading">

@@ -126,8 +126,8 @@ export function searchHandlers(
     // Anybody signed in may search, over what they may read (search.md, SE-H).
     search: async (request: FastifyRequest): Promise<SearchAnswerView> => {
       const query = request.query as SearchQuery;
-      // Every version or one baseline, never both (the SV plan, SV-C).
-      if (query.versions !== undefined && query.baseline !== undefined) {
+      // Every version or one baseline, never both (the SV plan, SV-C); the latest with one is the baseline.
+      if (query.versions === 'all' && query.baseline !== undefined) {
         throw new AppError(
           400,
           'invalid_request',

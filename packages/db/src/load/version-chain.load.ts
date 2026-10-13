@@ -9,9 +9,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from '../bootstrap.js';
 import { migrate } from '../migrate.js';
 import { createTenant, type Tenant } from '../provision.js';
+import { grant } from '../grants.js';
+import { findRole } from '../roles.js';
 import { reindexSearch } from '../search.js';
+import { searchWords } from '../search-words.js';
 import { createTenantDatabase, type TenantDatabase } from '../tenant-database.js';
-import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '../testing/database.js';
+import {
+  freshDatabase,
+  TEST_AUDIT_CONTEXT,
+  TEST_PASSWORDS,
+  type TestDatabase,
+} from '../testing/database.js';
 import { versionDigests } from '../version-digest.js';
 import { latestVersion, recordVersion } from '../versions.js';
 import {
@@ -422,6 +430,36 @@ describe('inline JSONB at authoring volume', () => {
       await admin.end();
     }
   }, 3_600_000);
+
+  it('searches every version for a common word, and says how long it takes', async () => {
+    // Measured, not budgeted (the SV final review, L6): Ada reads the tenant.
+    await service.withTenant(
+      tenant,
+      async (trx) => {
+        const reader = await findRole(trx, 'Reader');
+        await grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: author },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: author,
+        });
+      },
+      TEST_AUDIT_CONTEXT,
+    );
+    const samples: number[] = [];
+    let found = 0;
+    for (let round = 0; round < 6; round += 1) {
+      const started = performance.now();
+      const answer = await service.withTenant(tenant, (trx) =>
+        searchWords(trx, author, 'ka', { scope: 'all' }),
+      );
+      if (round >= 1) samples.push(performance.now() - started);
+      if (answer?.outcome === 'results') found = answer.count;
+    }
+    report.commonWordEveryVersion = { word: 'ka', count: found, ...summary(samples) };
+    expect(found).toBeGreaterThan(0);
+  }, 600_000);
 
   it('projects the chain for a tenant of a million components', () => {
     const storage = report.storage as { projectedGigabytesAtAMillionComponents: number };

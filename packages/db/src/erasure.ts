@@ -6,7 +6,7 @@ import { recordGrantsRevoked } from './grants.js';
 import { recordMembershipsRemoved } from './groups.js';
 import { withdrawInvitation } from './invitations.js';
 import { notifyTenant } from './realtime.js';
-import { reindexNaming, rewriteEarlierNaming } from './search.js';
+import { lockNaming, reindexNaming, rewriteEarlierNaming } from './search.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -158,6 +158,8 @@ export async function erasePerson(
 ): Promise<ErasureAnswer | undefined> {
   // Memberships change access, and a sign-in settling them takes the epoch before their row.
   await lockAccessForChange(trx);
+  // Every artifact naming them, before their row: a save holds its artifact, then their row (SV H1).
+  await lockNaming(trx, person);
   const state = await stateOf(trx, person, by, true);
   if (!state) return undefined;
   if (state.person.erased) {

@@ -179,6 +179,8 @@ describe('one earlier version, read only', () => {
     );
     expect(await screen.findByText('Dunnart findings')).toBeInTheDocument();
     expect(screen.getByText('A component you cannot open')).toBeInTheDocument();
+    // Unnumbered: the version's numbering is its layout's, not shown here.
+    expect(document.querySelector('ol')).toBeNull();
     expect(
       screen.getByText('An earlier version, 0.2, by Ada on 2 October 2026. The latest is 0.5.'),
     ).toBeInTheDocument();
