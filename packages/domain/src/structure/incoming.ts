@@ -53,6 +53,8 @@ export function incomingReferences(
       parent.set(node.id, above);
       order.push(node);
       byId.set(node.id, node);
+      // Withholding is per component (`withholdComponents` asks `mayRead` of the component), so a
+      // component is named at every placement or at none: one withheld is never another's placement.
       if (node.type === 'reference' && typeof node.component === 'string') {
         placements.set(node.component, [...(placements.get(node.component) ?? []), node.id]);
       }

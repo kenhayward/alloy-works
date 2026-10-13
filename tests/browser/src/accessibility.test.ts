@@ -991,6 +991,16 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('the removal asked about', {
         shows: [question, question.getByText(/^Referenced once elsewhere/)],
       });
+      // The warning is the Remove button's description, which is where the focus goes.
+      const described = await question
+        .getByRole('button', { name: 'Remove', exact: true })
+        .evaluate((button) =>
+          (button.getAttribute('aria-describedby') ?? '')
+            .split(' ')
+            .map((each) => button.ownerDocument.getElementById(each)?.textContent ?? '')
+            .join(' '),
+        );
+      expect(described).toMatch(/Referenced once elsewhere in this document\./);
       await question.getByRole('button', { name: 'Keep' }).click();
       await leave(question);
 

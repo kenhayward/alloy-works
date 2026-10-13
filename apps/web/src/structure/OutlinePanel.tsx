@@ -7,6 +7,7 @@ import {
   number,
   resolve,
   sectionNumbers,
+  walkOutline,
   type Contribution,
   type IncomingReference,
   type NumberingScheme,
@@ -277,9 +278,10 @@ export interface OutlinePanelProps {
   readonly marks?: ReadonlyMap<string, NodeMarks>;
   /**
    * What in this document refers to a node or to anything in it, from outside it (STR-074): listed in
-   * the Part panel, and named before the node is removed. Absent until the page knows.
+   * the Part panel, and named before the node is removed. `checking` until the page first knows, and
+   * `unknown` where it could not: neither is said to be nothing. Absent, nothing is said at all.
    */
-  readonly referencesTo?: (node: string) => readonly IncomingReference[];
+  readonly referencesTo?: ((node: string) => readonly IncomingReference[]) | 'checking' | 'unknown';
 }
 
 /**
@@ -673,10 +675,16 @@ export function OutlinePanel({
     onSelected(id);
     setFocusTarget(id);
   };
+  // Whether the outline holds an occurrence the reader may not read, whose text is never counted.
+  let withheld = false;
+  walkOutline(nodes, (node) => {
+    if (node.type === 'reference' && node.component === null) withheld = true;
+  });
   const referring = (id: string) =>
-    referencesTo && (
+    referencesTo !== undefined && (
       <ReferencedBy
-        references={referencesTo(id)}
+        references={typeof referencesTo === 'function' ? referencesTo(id) : referencesTo}
+        withheld={withheld}
         nameOf={(node) => {
           const found = placeOf(nodes, node)?.node;
           return found === undefined ? 'A component' : nodeName(found, names);
@@ -1189,9 +1197,13 @@ export function OutlinePanel({
                 node={placeOf(nodes, confirming)?.node}
                 names={names}
                 referencedBy={
-                  referencesTo !== undefined && referencesTo(confirming).length > 0
-                    ? { count: referencesTo(confirming).length, list: referring(confirming) }
-                    : null
+                  referencesTo === undefined
+                    ? null
+                    : typeof referencesTo === 'function'
+                      ? referencesTo(confirming).length > 0
+                        ? { count: referencesTo(confirming).length, list: referring(confirming) }
+                        : null
+                      : referencesTo
                 }
                 onRemove={() => void remove(confirming)}
                 onKeep={() => {
@@ -1359,25 +1371,38 @@ function ComponentChooser({
  */
 function ReferencedBy({
   references,
+  withheld,
   nameOf,
   linkOf,
   onGo,
 }: {
-  references: readonly IncomingReference[];
+  references: readonly IncomingReference[] | 'checking' | 'unknown';
+  /** The outline holds an occurrence the reader may not read, so "nothing" is only what they can read. */
+  withheld: boolean;
   nameOf: (node: string) => string;
   linkOf: ((node: string) => string) | undefined;
   onGo: (node: string) => void;
 }) {
   const label = useId();
   const counts = new Map<string, number>();
-  for (const each of references) counts.set(each.from, (counts.get(each.from) ?? 0) + 1);
+  if (typeof references !== 'string') {
+    for (const each of references) counts.set(each.from, (counts.get(each.from) ?? 0) + 1);
+  }
   return (
     <div className={styles['partRow']}>
       <span id={label} className={styles['rowLabel']}>
         Referenced by
       </span>
-      {counts.size === 0 ? (
-        <span>Nothing else in this document refers to it.</span>
+      {references === 'checking' ? (
+        <span>Checking.</span>
+      ) : references === 'unknown' ? (
+        <span>Could not be checked.</span>
+      ) : counts.size === 0 ? (
+        <span>
+          {withheld
+            ? 'Nothing you can read in this document refers to it.'
+            : 'Nothing else in this document refers to it.'}
+        </span>
       ) : (
         <ul aria-labelledby={label} className={styles['referring']}>
           {[...counts].map(([from, count]) => (
@@ -1411,11 +1436,17 @@ function ConfirmRemoval({
 }: {
   node: OutlineViewNode | undefined;
   names: Names;
-  /** What refers to the node from elsewhere (STR-074): warned of, never refused. */
-  referencedBy: { readonly count: number; readonly list: ReactNode } | null;
+  /**
+   * What refers to the node from elsewhere (STR-074): warned of, never refused; or not known yet, or
+   * not known at all, which is said rather than taken for nothing.
+   */
+  referencedBy:
+    { readonly count: number; readonly list: ReactNode } | 'checking' | 'unknown' | null;
   onRemove: () => void;
   onKeep: () => void;
 }) {
+  const question = useId();
+  const warning = useId();
   if (!node) return null;
   const name = nodeName(node, names);
   return (
@@ -1426,21 +1457,36 @@ function ConfirmRemoval({
         if (event.key === 'Escape') onKeep();
       }}
     >
-      <p>
+      <p id={question}>
         {node.children.length > 0
           ? `Remove ${name} and everything beneath it? ${IRREVERSIBLE}`
           : `Remove ${name}? ${IRREVERSIBLE}`}
       </p>
-      {referencedBy !== null && (
+      {referencedBy === 'checking' && (
+        <p id={warning}>
+          Whether anything else in this document refers to it is still being checked.
+        </p>
+      )}
+      {referencedBy === 'unknown' && (
+        <p id={warning}>
+          Whether anything else in this document refers to it could not be checked.
+        </p>
+      )}
+      {referencedBy !== null && typeof referencedBy !== 'string' && (
         <>
-          <p>
+          <p id={warning}>
             {`Referenced ${referencedBy.count === 1 ? 'once' : `${referencedBy.count} times`} elsewhere in this document. Removing it breaks each reference.`}
           </p>
           {referencedBy.list}
         </>
       )}
-      {/* Focus goes to the question the author has just asked to be put. */}
-      <button type="button" autoFocus onClick={onRemove}>
+      {/* Focus goes to the question the author has just asked to be put, which describes it. */}
+      <button
+        type="button"
+        autoFocus
+        aria-describedby={referencedBy === null ? question : `${question} ${warning}`}
+        onClick={onRemove}
+      >
         Remove
       </button>
       <button type="button" onClick={onKeep}>

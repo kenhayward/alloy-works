@@ -62,12 +62,24 @@ const introduction: OutlineNode = {
   ],
 } as OutlineNode;
 
-/** The page, the texts route answering the printer's text as given and every other occurrence withheld. */
-async function openWith(nodes: OutlineNode[], content: ContentDocument) {
+/**
+ * The page, the texts route answering the printer's text as given and every other occurrence withheld:
+ * every time, `once` and then never again, or `refused` with a 500.
+ */
+async function openWith(
+  nodes: OutlineNode[],
+  content: ContentDocument,
+  texts: 'always' | 'once' | 'refused' = 'always',
+) {
   const fake = service(outline(nodes), { mayRead: (component) => component !== SECRET });
+  let answered = 0;
   const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     if (new URL(request.url).pathname === `/v1/documents/${DOCUMENT}/texts`) {
+      if (texts === 'refused')
+        return json(500, { code: 'internal', message: 'Something went wrong.' });
+      answered += 1;
+      if (texts === 'once' && answered > 1) return new Promise<Response>(() => {});
       const occurrence = (node: string, version: string | null) => ({
         node,
         version,
@@ -88,6 +100,7 @@ async function openWith(nodes: OutlineNode[], content: ContentDocument) {
   }) as typeof globalThis.fetch;
   render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
   await screen.findByRole('treeitem', { name: /^Method/ });
+  if (texts === 'refused') return fake;
   await within(screen.getByRole('region', { name: "The document's text" })).findByText(
     /As set out in/,
   );
@@ -140,6 +153,12 @@ describe('what in its own document references a node (STR-074)', () => {
     expect(question).toHaveTextContent(
       'Referenced 2 times elsewhere in this document. Removing it breaks each reference.',
     );
+    // Said to whoever reaches Remove, which is where the focus goes.
+    const remove = within(question).getByRole('button', { name: 'Remove' });
+    expect(remove).toHaveFocus();
+    expect(remove).toHaveAccessibleDescription(
+      /^Remove Method and everything beneath it\?.*Referenced 2 times elsewhere in this document\./,
+    );
     expect(
       within(question)
         .getAllByRole('link')
@@ -160,9 +179,43 @@ describe('what in its own document references a node (STR-074)', () => {
     );
     const withheld = screen.getAllByRole('treeitem').at(-1)!;
     await userEvent.click(withheld);
-    expect(within(part()).getByText('Nothing else in this document refers to it.')).toBeVisible();
+    expect(
+      within(part()).getByText('Nothing you can read in this document refers to it.'),
+    ).toBeVisible();
     await userEvent.keyboard('{Delete}');
     const question = screen.getByRole('group', { name: 'Confirm removal' });
     expect(question).not.toHaveTextContent(/Referenced/);
+  });
+
+  it('STR-074 claims nothing where the texts could not be read, and says the removal could not be checked', async () => {
+    await openWith(
+      [introduction, section(METHOD, 'Method'), reference(SCOPE, 'latest')],
+      printer({ kind: 'node', node: METHOD }),
+      'refused',
+    );
+    await userEvent.click(item(/^Method/));
+    expect(await within(part()).findByText('Could not be checked.')).toBeVisible();
+    expect(within(part()).queryByText(/refers to it/)).toBeNull();
+    await userEvent.keyboard('{Delete}');
+    expect(screen.getByRole('group', { name: 'Confirm removal' })).toHaveTextContent(
+      'Whether anything else in this document refers to it could not be checked.',
+    );
+  });
+
+  it('STR-074 still warns of a removal straight after another act, before the texts are read again', async () => {
+    const fake = await openWith(
+      [section(METHOD, 'Method'), reference(SCOPE, 'latest'), section(RESULTS, 'Results')],
+      printer({ kind: 'node', node: METHOD }),
+      'once',
+    );
+    // Results moved above the printer: a new version, whose texts are asked for and never answered.
+    await userEvent.click(item(/^Results/));
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    await userEvent.click(item(/^Method/));
+    await userEvent.keyboard('{Delete}');
+    expect(screen.getByRole('group', { name: 'Confirm removal' })).toHaveTextContent(
+      'Referenced once elsewhere in this document.',
+    );
   });
 });

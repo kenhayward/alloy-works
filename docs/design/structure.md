@@ -120,6 +120,10 @@ resolution returning the named failure; failing the publish on it is STR-029's, 
 claims, since `assemble` both calls resolution and fails the publish (below). Both are cited by
 `assemble`'s tests, with STR-028, STR-031, STR-032 and STR-056.
 
+**STR-074 is claimed for nodes; one gap sits beside it**: deleting a referenced block inside the
+component editor is not warned of before it is done, and the referring text shows the reference
+broken afterwards (STR-038).
+
 **STR-023 was not claimed, because one case was unanswered**: a caption met in appendix matter
 before any numbered appendix has begun a chapter takes no number, since its rule wants a chapter
 prefix and there is none, and a bare number would repeat a body caption's label. Ken superseded it

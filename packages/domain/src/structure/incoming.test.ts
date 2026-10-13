@@ -114,6 +114,25 @@ describe('what in its own document references a node', () => {
     expect(incoming(id('intro'))).toEqual([]);
   });
 
+  it('STR-074 counts a reference nested inside a section that points out of it, and not one pointing within', () => {
+    // Method holds Scope, which holds Ada's occurrence; her text refers out to Results and in to Scope.
+    const outline = {
+      nodes: [
+        section('method', 'Method', [section('scope', 'Scope', [occurrence('ada', ADA)])]),
+        section('results', 'Results'),
+      ],
+    };
+    const occurrences = new Map<string, readonly BlockNode[]>([
+      [id('ada'), [paragraph('p1', xref('out', toNode('results')), xref('in', toNode('scope')))]],
+    ]);
+    const incoming = incomingReferences({ outline, occurrences });
+    expect(incoming(id('results'))).toEqual([
+      { from: id('ada'), reference: 'out', node: id('results'), block: null },
+    ]);
+    expect(incoming(id('method'))).toEqual([]);
+    expect(at(incoming(id('scope')))).toEqual([]);
+  });
+
   it('STR-074 counts no reference it cannot bind: a component placed twice, a block not there, a node not in the outline', () => {
     const outline = {
       nodes: [occurrence('ada', ADA), occurrence('again', ADA), occurrence('grace', GRACE)],

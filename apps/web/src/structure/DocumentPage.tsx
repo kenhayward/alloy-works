@@ -620,6 +620,9 @@ export function DocumentPage({
   // The version whose texts have been answered, or refused: until then the text is its headings alone,
   // and a node gone to now would be pushed down the page by every component above it as it fills in.
   const [textsRead, setTextsRead] = useState<string | null>(null);
+  // Whether the texts were ever answered, and whether the last read of them failed: what the page says
+  // refers to a node is known only from an answer (STR-074), never from a refusal or a wait given up.
+  const [textsKnown, setTextsKnown] = useState<'checking' | 'known' | 'unknown'>('checking');
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
   // Reading, Review or Authoring (document-view.md, "Modes"; CNT-154, CNT-155): the reader's choice,
@@ -710,6 +713,7 @@ export function DocumentPage({
         if (!current) return;
         if (!data) {
           setTextsRead(shownVersion);
+          setTextsKnown((was) => (was === 'known' ? was : 'unknown'));
           return;
         }
         const contents = new Map(data.versions.map((version) => [version.id, version.content]));
@@ -771,11 +775,14 @@ export function DocumentPage({
           ),
         );
         setTextsRead(shownVersion);
+        setTextsKnown('known');
       })
       // The text is the reading view beside the outline: where it cannot be read, the cards show
       // their titles alone, which is what they showed before it existed.
       .catch(() => {
-        if (current) setTextsRead(shownVersion);
+        if (!current) return;
+        setTextsRead(shownVersion);
+        setTextsKnown((was) => (was === 'known' ? was : 'unknown'));
       });
     return () => {
       current = false;
@@ -792,18 +799,29 @@ export function DocumentPage({
   // and again whenever they are read again - after an editor's Done, a version cut, an outline act -
   // and only where a text holds a binding. A failed read shows no values, and says nothing.
   const [bindingStates, setBindingStates] = useState<readonly BindingState[] | null>(null);
-  // What in this document refers to each node (STR-074), from the texts already read: unknown until
-  // they are, so nothing is said to refer to nothing before it is known. A text not given is never
-  // counted (SCH-032).
-  const referencesTo = useMemo(() => {
-    if (loaded.state !== 'open' || textsRead !== shownVersion) return undefined;
+  // Each text the page holds, read once whenever the texts are.
+  const parsedTexts = useMemo(() => {
     const occurrences = new Map<string, readonly BlockNode[]>();
     for (const [node, content] of texts) {
       const read = readContent(content, { artifact: node, version: '' });
       if (read.ok) occurrences.set(node, read.document.content);
     }
-    return incomingReferences({ outline: loaded.document.outline, occurrences });
-  }, [loaded, texts, textsRead, shownVersion]);
+    return occurrences;
+  }, [texts]);
+  // What in this document refers to each node (STR-074), from the last texts answered, against the
+  // outline as it stands: texts are keyed by node, and an outline act changes none, so a removal
+  // straight after one is still warned of. Never claimed from a refusal (`textsKnown`). A text not
+  // given is never counted (SCH-032).
+  const outlineShown = loaded.state === 'open' ? loaded.document.outline : null;
+  const referencesTo = useMemo(
+    () =>
+      textsKnown !== 'known'
+        ? textsKnown
+        : outlineShown === null
+          ? undefined
+          : incomingReferences({ outline: outlineShown, occurrences: parsedTexts }),
+    [outlineShown, parsedTexts, textsKnown],
+  );
   // What matters about each node to an author (STR-038): who else holds its component, as the stream
   // says; the broken references its text drew; the values its bindings failed to hold.
   const outlineMarks = useMemo(() => {
