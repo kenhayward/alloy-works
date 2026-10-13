@@ -6,6 +6,7 @@ import { recordGrantsRevoked } from './grants.js';
 import { recordMembershipsRemoved } from './groups.js';
 import { withdrawInvitation } from './invitations.js';
 import { notifyTenant } from './realtime.js';
+import { reindexNaming } from './search.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -143,7 +144,8 @@ export async function erasureOf(
 
 /**
  * Erases `person`, as `by` (ER-A): under the access epoch, then their invitation's row and theirs, so
- * a sign-in or a claim of them waits and then finds them erased (ER-D). Every event the act records -
+ * a sign-in or a claim of them waits and then finds them erased (ER-D), as does a version being
+ * indexed, whose words search rewrites. Every event the act records -
  * sessions ended, tokens revoked, memberships removed, an invitation withdrawn - comes before their
  * name is blanked, and `erase_labels` last, so no label it writes outlives it. Somebody invited who
  * never signed in is withdrawn, and so goes whole. Undefined for nobody this tenant holds. Erasing the
@@ -171,6 +173,7 @@ export async function erasePerson(
     if (!withdrawn || 'refused' in withdrawn) {
       throw new Error(`The invitation of ${person} could not be withdrawn`);
     }
+    await reindexNaming(trx, state.person.id);
     return { answer: 'erased', labels: await eraseLabels(trx, person) };
   }
 
@@ -189,6 +192,8 @@ export async function erasePerson(
     })
     .where('id', '=', person)
     .execute();
+  // Search said their name wherever a value named them; it says the fixed word now (#594).
+  await reindexNaming(trx, state.person.id);
   return { answer: 'erased', labels: await eraseLabels(trx, person) };
 }
 
