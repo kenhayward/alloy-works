@@ -35,6 +35,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
+import { createSpace } from './spaces.js';
 import { startThread } from './threads.js';
 import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
@@ -73,6 +74,32 @@ function seeded(seed: number) {
     return state % below;
   };
 }
+
+/** `trx`, every statement it runs pushed to `statements`. */
+const spiedOn = (trx: TenantTransaction, statements: string[]): TenantTransaction =>
+  new Proxy(trx, {
+    get(target, key) {
+      if (key === 'getExecutor') {
+        return () => {
+          const executor = target.getExecutor();
+          return new Proxy(executor, {
+            get(inner, name) {
+              const value = Reflect.get(inner, name) as unknown;
+              if (name === 'executeQuery') {
+                return (query: { sql: string }, ...rest: unknown[]) => {
+                  statements.push(query.sql);
+                  return (value as (...args: unknown[]) => unknown).call(inner, query, ...rest);
+                };
+              }
+              return typeof value === 'function' ? value.bind(inner) : value;
+            },
+          });
+        };
+      }
+      const value = Reflect.get(target, key) as unknown;
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
 
 const VOCABULARY = [
   'quokka',
@@ -488,6 +515,106 @@ describe('search over every version from one row a place (SV3b)', () => {
     const found = await search('tuatara', { scope: 'all' });
     expect(found.items).toMatchObject([{ kind: 'thread', thread: { id: started.thread } }]);
     expect(found.count).toBe(1);
+  });
+
+  it('SCH-010 SCH-032 finds, counts and facets under every version only what a reader may read, past a deny on an artifact and with a grant outside their spaces', async () => {
+    const { hal, kept, granted, quality } = await tenant(async (trx) => {
+      const quality = (await createSpace(trx, 'Okapi quality')).id;
+      const author = (await findRole(trx, 'Author'))!.id;
+      const reader = (await findRole(trx, 'Reader'))!.id;
+      await grant(trx, {
+        roleId: author,
+        subject: { principal: ada },
+        level: { kind: 'space', id: quality },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      // Four components, each its word only in an earlier version's title and text.
+      const made: string[] = [];
+      for (const [space, title] of [
+        [general, 'Okapi kept'],
+        [general, 'Okapi denied'],
+        [quality, 'Okapi granted'],
+        [quality, 'Okapi unseen'],
+      ] as const) {
+        const created = await createComponent(trx, {
+          spaceId: space,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (created.answer !== 'created') throw new Error(created.answer);
+        const first = await revisedIn(trx, created.version, { text: 'The okapi browses' });
+        await revisedIn(trx, first, { title: 'Tapir register', text: 'The tapir wallows' });
+        made.push(created.version.artifactId);
+      }
+      // Hal reads General but one artifact there, and one artifact in Quality.
+      const hal = await person(trx, 'hal', 'Hal');
+      await grant(trx, {
+        roleId: reader,
+        subject: { principal: hal },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      await grant(trx, {
+        roleId: reader,
+        subject: { principal: hal },
+        level: { kind: 'artifact', id: made[1]! },
+        effect: 'deny',
+        grantedBy: ada,
+      });
+      await grant(trx, {
+        roleId: reader,
+        subject: { principal: hal },
+        level: { kind: 'artifact', id: made[2]! },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      return { hal, kept: made[0]!, granted: made[2]!, quality, made };
+    });
+    for (const [query, filters] of [
+      ['okapi', {}],
+      ['title:okapi', {}],
+      ['tapir -walrus', {}],
+      ['okapi', { kinds: ['component' as const], spaces: [general, quality] }],
+    ] as const) {
+      // Not vacuous: Ada finds all four.
+      const all = await tenant((trx) => searchWords(trx, ada, query, { scope: 'all', filters }));
+      expect(resultsOf(all).items.filter((each) => each.title === 'Tapir register')).toHaveLength(
+        4,
+      );
+      const seen = resultsOf(
+        await tenant((trx) => searchWords(trx, hal, query, { scope: 'all', filters })),
+      );
+      expect({ query, found: seen.items.map((each) => each.artifactId).sort() }).toEqual({
+        query,
+        found: [kept, granted].sort(),
+      });
+      expect([seen.count, seen.capped, seen.facetsBounded]).toEqual([2, false, false]);
+      expect(seen.facets.kinds).toEqual([
+        { value: 'component', label: 'component', count: 2, capped: false },
+      ]);
+      expect(seen.facets.spaces.map((each) => [each.value, each.count]).sort()).toEqual(
+        [
+          [general, 1],
+          [quality, 1],
+        ].sort(),
+      );
+      expect(seen.facets.owners.map((each) => each.count)).toEqual([2]);
+      expect(seen.facets.changed.find((each) => each.value === 'today')?.count).toBe(2);
+    }
+  });
+
+  it("rebuilds an erased person's history once per artifact", async () => {
+    const { steward } = await register();
+    const who = await tenant((trx) => person(trx, 'wilhelmina', 'Wilhelmina'));
+    const made = await registered('Once rebuilt');
+    await revise(made, { values: { [steward]: { user: who } } });
+    const statements: string[] = [];
+    await tenant((trx) => erasePerson(spiedOn(trx, statements), who, ada));
+    expect(statements.filter((each) => /delete from search_history/u.test(each))).toHaveLength(1);
   });
 
   it('reads every version from history, with no collapse and no earlier rows but for the page', async () => {

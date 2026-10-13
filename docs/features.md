@@ -914,8 +914,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `GET /v1/search` answers the same search.
 - **Earlier versions and baselines in search.** Search reads the latest version of each thing; choose
   **Versions: All** to search every earlier version of components, documents and their sections too,
-  each found once, matched by its words across all its versions together, filtered by its current
-  values, and said to be "Version 0.2, earlier": the newest version matching the whole search, else the
+  each found once, matched by its words across all its versions together, filters reading each
+  place's newest values, and said to be "Version 0.2, earlier": the newest version matching the whole search, else the
   newest holding one of its words. A phrase only an earlier version held is not found once one of its
   words is back in the newest version. Past 1,000 matches, as for the latest. **Search
   this baseline** on a baseline's page searches only what it pins, archived content included, each

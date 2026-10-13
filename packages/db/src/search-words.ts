@@ -710,6 +710,9 @@ export async function searchWords(
               // Named, not excluded: the kind index then finds them, never the rows history holds.
               from: sql`(select *, true as current from search_entry where kind in ${NOT_IN_HISTORY})`,
               relation: 'search_entry',
+              // Always by the indexes: a walk of the table's (changed_at, id) index would read the
+              // current rows history stands for too, and a table's size says nothing of these kinds'.
+              indexesOnly: true,
             },
           ];
     const seen = options.probe?.seen;
@@ -741,8 +744,9 @@ export async function searchWords(
       candidates: RawBuilder<unknown>,
       rows: number,
       relation: string,
+      indexesOnly: boolean,
     ) => {
-      let road = options.probe?.road;
+      let road: SearchRoad | undefined = indexesOnly ? 'indexes' : options.probe?.road;
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
       // test sets how many.
       let reads: number = options.probe?.reads ?? Number.MAX_SAFE_INTEGER;
@@ -784,7 +788,16 @@ export async function searchWords(
     const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
       const found: { id: string; at: string }[] = [];
       for (const [index, scan] of scans.entries()) {
-        found.push(...(await newestOf(statement, where, scan.from, sizes[index]!, scan.relation)));
+        found.push(
+          ...(await newestOf(
+            statement,
+            where,
+            scan.from,
+            sizes[index]!,
+            scan.relation,
+            'indexesOnly' in scan,
+          )),
+        );
       }
       return found
         .sort((a, b) => {

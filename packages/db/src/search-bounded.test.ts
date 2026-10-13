@@ -389,6 +389,22 @@ describe('search bounded at scale (SV3)', () => {
     await nothingFor('all');
   });
 
+  it('finds the current rows of the kinds history does not hold by their indexes, never walking every current row', async () => {
+    for (const road of [undefined, 'walk', 'indexes'] as const) {
+      const scans: string[] = [];
+      await search(ada, 'yak', {
+        scope: 'all',
+        probe: {
+          ...(road === undefined ? {} : { road }),
+          seen: (event) => {
+            if (event.road !== undefined && event.scan === 'search_entry') scans.push(event.road);
+          },
+        },
+      });
+      expect({ road, scans }).toEqual({ road, scans: ['indexes'] });
+    }
+  });
+
   it('bounds every version as it bounds the latest, its facets past the bound lower bounds', async () => {
     for (const road of ['walk', 'indexes'] as const) {
       const all = await search(ada, 'yak', { scope: 'all', probe: { road } });

@@ -20,7 +20,7 @@ import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
 import { deletionStored, isDeleted } from './deletion.js';
 import { earlierStored } from './search-earlier.js';
-import { foldHistory, historyStored, rebuildHistory } from './search-history.js';
+import { foldHistory, rebuildHistory } from './search-history.js';
 import { indexEveryThread, vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
@@ -454,13 +454,20 @@ async function draftsOf(
  * called by `insertVersion` for every version the chain writes, in that version's transaction. A kept
  * kind's rows from earlier versions move to `search_earlier` first (SV-A).
  */
-export async function indexVersion(trx: TenantTransaction, version: StoredVersion): Promise<void> {
+export async function indexVersion(
+  trx: TenantTransaction,
+  version: StoredVersion,
+  options: {
+    /** False for a caller that makes history again itself, after: the erasure and the reindex. */
+    readonly fold?: boolean;
+  } = {},
+): Promise<void> {
   if (!versioned.has(version.kind) || !(await projected(trx))) return;
   const facts = await artifactFacts(trx, version.artifactId, version.kind);
   if (kept.has(version.kind) && (await earlierStored(trx))) await moveEarlier(trx, version);
   await write(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
   // Each place's words over every version, folded under the lock its writer holds (SV3-K).
-  if (version.kind === 'component' || version.kind === 'document') {
+  if (options.fold !== false && (version.kind === 'component' || version.kind === 'document')) {
     await foldHistory(trx, version.artifactId, version.id);
   }
 }
@@ -500,7 +507,8 @@ export async function reindexNaming(trx: TenantTransaction, person: string): Pro
   for (const each of named) {
     await lockArtifact(trx, each.artifact_id);
     const version = await latestVersion(trx, each.artifact_id);
-    if (version) await indexVersion(trx, version);
+    // Its history is made again by the erasure, after the earlier rows are rewritten.
+    if (version) await indexVersion(trx, version, { fold: false });
   }
   return named.map((each) => each.artifact_id);
 }
@@ -640,8 +648,6 @@ async function reindexOne(trx: TenantTransaction, scope: ReindexScope): Promise<
     await writeEveryEarlier(trx);
     return;
   }
-  // History is made again after, from what this writes; folding into the old would be wasted.
-  if (await historyStored(trx)) await trx.deleteFrom('search_history').execute();
   await trx.deleteFrom('search_entry').execute();
   const latest = await trx
     .selectFrom('artifact_version')
@@ -654,7 +660,8 @@ async function reindexOne(trx: TenantTransaction, scope: ReindexScope): Promise<
     .execute();
   for (const each of latest) {
     const version = await readVersion(trx, each.id);
-    if (version) await indexVersion(trx, version);
+    // History is made again after, from what this writes, once (`reindexScopes`).
+    if (version) await indexVersion(trx, version, { fold: false });
   }
   const publications = await trx.selectFrom('publication').select('id').execute();
   for (const each of publications) await indexPublication(trx, each.id);

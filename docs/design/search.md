@@ -199,7 +199,9 @@ The total stays exact to the cap.
   page from meaning search.
 - **The plan test**: search runs with custom plans, since a regression here is otherwise invisible.
 - **The budget** (SCH-033): the conformance suite generates a tenant of a million components, as the
-  spike did, and measures p95 for three kinds of user.
+  spike did, and measures p95 for three kinds of user. **Not yet met**: SV3b's run at a million missed
+  it on both the latest and every version for the medium reader, whose readable set alone takes about
+  200ms, and for a few broad cases.
 
 ## Searching words, in T1
 
@@ -380,7 +382,7 @@ SV3-I to SV3-N):
 - **`search_history`** (0091): one row per component, document and section that any version held.
   Its vector and body hold every version's words; everything else - title, owner, changed, component
   type, values, configuration, flags - is the newest version holding the place's, so filters and facets
-  read current values and a value only an earlier version held finds nothing. A place gone from the
+  read each place's newest values. A place gone from the
   newest version keeps its row as its last version left it, found under every version only. Assets,
   templates, definitions, publications and threads have none: every version reads them from
   `search_entry`.

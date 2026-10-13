@@ -860,6 +860,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1217 (2026-10-13): the SV3b final review; SCH-010 and SCH-032 past a deny and a grant.
     // 1215 (2026-10-13): SV3b's history - SCH-003, VER-038, LIF-020 and SCH-010 under every version.
     // 1212 (2026-10-13): SV3a's bounded search - SCH-010 on each road, SCH-073 for SCH-034.
     // 1211 (2026-10-13): TC4's incoming references - the domain and the Part panel.
@@ -888,7 +889,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1215);
+    expect(model.citations).toHaveLength(1217);
   });
 
   it('cites no identifier the corpus does not hold', () => {
