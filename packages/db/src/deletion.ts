@@ -59,15 +59,22 @@ export function notDeletedAs(alias: string, snapshot?: string): RawBuilder<SqlBo
   return sql<SqlBool>`not ${deletedAs(alias, snapshot)}`;
 }
 
+/** Each transaction's answer, asked once: `isDeleted` runs on every `authorise`. */
+const stored = new WeakMap<TenantTransaction, boolean>();
+
 /**
  * Whether this tenant stores deletion yet (0085): a migration's own test runs today's code on a schema
  * short of it, where nothing is deleted.
  */
 export async function deletionStored(trx: TenantTransaction): Promise<boolean> {
+  const known = stored.get(trx);
+  if (known !== undefined) return known;
   const { rows } = await sql<{
     present: boolean;
   }>`select to_regclass('artifact_deletion') is not null as present`.execute(trx);
-  return rows[0]?.present === true;
+  const present = rows[0]?.present === true;
+  stored.set(trx, present);
+  return present;
 }
 
 /** Whether the artifact is deleted now. */
@@ -118,7 +125,7 @@ export type DeletionRefusal =
       readonly unreadable: boolean;
     }
   | {
-      /** A queued request, a publish or a preview, places it; a document's own. */
+      /** A queued publish or preview, or an unexpired preview, places it; a document's own. */
       readonly reason: 'publishing';
       readonly named: readonly Named[];
       readonly unreadable: boolean;
@@ -133,10 +140,11 @@ export type DeletionRefusal =
   | { readonly reason: 'held' }
   /** A retention keep, the longest reaching it, has yet to pass: until when (DL-G). */
   | { readonly reason: 'kept'; readonly until: Date }
-  /** Somebody is editing it. */
+  /** Somebody is editing it: `yours` where the deleter is, from this window or another. */
   | {
       readonly reason: 'locked';
       readonly holder: { readonly id: string; readonly name: string | null };
+      readonly yours: boolean;
     }
   /** A review round open on it. */
   | {
@@ -229,17 +237,24 @@ async function dependants(
      order by p.published_at, p.id`.execute(trx);
   add('published', publications);
 
+  // A queued request, or a done preview yet to expire, which still serves what it placed. Each named
+  // by its document, never by somebody's request.
   const { rows: requests } = await sql<Row>`
-    select r.id, d.content ->> 'title' as title, a.id as subject, a.space_id
+    select r.document_id as id,
+           (array_agg(d.content ->> 'title' order by r.requested_at desc, r.id desc))[1] as title,
+           r.document_id as subject, a.space_id
       from publication_request r join artifact a on a.id = r.document_id
       join artifact_version d on d.id = r.document_version_id
-     where r.state = 'queued' and ${
-       component
-         ? sql`r.id in (select request_id from publication_request_occurrence
-             where component_id = ${id})`
-         : sql`r.document_id = ${id}`
-     }
-     order by r.requested_at, r.id`.execute(trx);
+     where (r.state = 'queued'
+            or (r.kind = 'preview' and r.state = 'done' and r.expires_at > now()))
+       and ${
+         component
+           ? sql`r.id in (select request_id from publication_request_occurrence
+               where component_id = ${id})`
+           : sql`r.document_id = ${id}`
+       }
+     group by r.document_id, a.space_id
+     order by min(r.requested_at), r.document_id`.execute(trx);
   add('publishing', requests);
 
   if (component) {
@@ -272,7 +287,11 @@ async function dependants(
   if (component) {
     const lock = await readLock(trx, id);
     if (lock)
-      refusals.push({ reason: 'locked', holder: { id: lock.holder, name: lock.holderName } });
+      refusals.push({
+        reason: 'locked',
+        holder: { id: lock.holder, name: lock.holderName },
+        yours: lock.holder === by,
+      });
   } else {
     const { rows: rounds } = await sql<Row>`
       select r.id, r.title, r.document_id as subject, a.space_id

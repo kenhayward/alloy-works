@@ -32,7 +32,7 @@ function refusalView(refusal: DeletionRefusal): DeletionRefusalView {
     case 'kept':
       return { code: 'kept', until: refusal.until.toISOString() };
     case 'locked':
-      return { code: 'locked', holder: { ...refusal.holder } };
+      return { code: 'locked', holder: { ...refusal.holder }, yours: refusal.yours };
     default:
       return {
         code: refusal.reason,

@@ -23,7 +23,7 @@ export const DeletionRefusalView = z.object({
       'in_review',
     ])
     .describe(
-      'baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it',
+      'baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it',
     ),
   named: z
     .array(Named)
@@ -39,6 +39,10 @@ export const DeletionRefusalView = z.object({
     .object({ id: z.string(), name: z.string().nullable() })
     .optional()
     .describe('locked: who holds the lock'),
+  yours: z
+    .boolean()
+    .optional()
+    .describe('locked: whether the caller holds it, from this window or another'),
   until: z
     .string()
     .optional()
@@ -55,14 +59,17 @@ export const DeletionView = z.object({
   remains: z
     .object({
       versions: z.int().nonnegative(),
-      iterations: z.int().nonnegative(),
+      iterations: z
+        .int()
+        .nonnegative()
+        .describe('Unsaved changes: these still expire by their window, deleted or not'),
       threads: z.int().nonnegative(),
       suggestions: z.int().nonnegative(),
       rounds: z.int().nonnegative(),
       events: z.int().nonnegative().describe('Audit events about it'),
     })
     .describe(
-      'What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed',
+      'What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual',
     ),
   refusals: z
     .array(DeletionRefusalView)

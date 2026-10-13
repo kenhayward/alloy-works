@@ -26714,7 +26714,7 @@
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -26757,6 +26757,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "yours": {
+                            "description": "locked: whether the caller holds it, from this window or another",
+                            "type": "boolean"
                           },
                           "until": {
                             "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
@@ -26941,7 +26945,8 @@
                         "iterations": {
                           "type": "integer",
                           "minimum": 0,
-                          "maximum": 9007199254740991
+                          "maximum": 9007199254740991,
+                          "description": "Unsaved changes: these still expire by their window, deleted or not"
                         },
                         "threads": {
                           "type": "integer",
@@ -26973,7 +26978,7 @@
                         "rounds",
                         "events"
                       ],
-                      "description": "What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed"
+                      "description": "What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual"
                     },
                     "refusals": {
                       "type": "array",
@@ -26992,7 +26997,7 @@
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -27035,6 +27040,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "yours": {
+                            "description": "locked: whether the caller holds it, from this window or another",
+                            "type": "boolean"
                           },
                           "until": {
                             "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
@@ -108088,7 +108097,7 @@
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -108131,6 +108140,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "yours": {
+                            "description": "locked: whether the caller holds it, from this window or another",
+                            "type": "boolean"
                           },
                           "until": {
                             "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",
@@ -108315,7 +108328,8 @@
                         "iterations": {
                           "type": "integer",
                           "minimum": 0,
-                          "maximum": 9007199254740991
+                          "maximum": 9007199254740991,
+                          "description": "Unsaved changes: these still expire by their window, deleted or not"
                         },
                         "threads": {
                           "type": "integer",
@@ -108347,7 +108361,7 @@
                         "rounds",
                         "events"
                       ],
-                      "description": "What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed"
+                      "description": "What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual"
                     },
                     "refusals": {
                       "type": "array",
@@ -108366,7 +108380,7 @@
                               "locked",
                               "in_review"
                             ],
-                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
+                            "description": "baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it"
                           },
                           "named": {
                             "description": "Each dependant the caller may read, by its title, or a baseline by its name",
@@ -108409,6 +108423,10 @@
                               "id",
                               "name"
                             ]
+                          },
+                          "yours": {
+                            "description": "locked: whether the caller holds it, from this window or another",
+                            "type": "boolean"
                           },
                           "until": {
                             "description": "kept: when the longest retention keep reaching it passes, counted from its latest version",

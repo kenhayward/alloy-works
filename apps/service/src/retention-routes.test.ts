@@ -173,7 +173,7 @@ describe('retention keeps over HTTP (the DL plan, Task 2)', () => {
     expect((await call('GET', '/v1/retention', 'ivy')).json<RetentionView>().keeps).toEqual([]);
   });
 
-  it('LIF-019 refuses deleting within a keep, 409 kept with the date it passes', async () => {
+  it('refuses deleting within a keep, 409 kept with the date it passes', async () => {
     const young = await component(clinical, 'Young procedure');
     await keep('component', clinical, 30);
     const until = new Date(young.at.getTime() + 30 * DAY).toISOString();

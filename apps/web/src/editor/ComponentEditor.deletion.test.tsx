@@ -61,7 +61,47 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
     expect(asked.map((each) => each.route)).not.toContain('POST /v1/components/{id}/delete');
   });
 
-  it('LIF-019 says a retention keep refuses it, and until when', async () => {
+  it('says its unsaved changes still expire as usual once deleted', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
+      'GET /v1/components/{id}/deletion': () =>
+        json(200, {
+          kind: 'component',
+          deleted: false,
+          remains: { ...remains, iterations: 2 },
+          refusals: [],
+        }),
+    });
+    await surface();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    const deleting = await screen.findByRole('dialog', { name: 'Delete Install the printer' });
+    expect(
+      await within(deleting).findByText(
+        'Nothing is removed: its 3 versions, 1 thread and 7 audit events are kept, out of reach, and come back if it is undeleted. Its 2 unsaved changes still expire as usual.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('says the deleter is editing it, and to choose Done editing first', async () => {
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
+      'GET /v1/components/{id}/deletion': () =>
+        json(200, {
+          kind: 'component',
+          deleted: false,
+          remains,
+          refusals: [{ code: 'locked', holder: { id: 'a', name: 'Ada' }, yours: true }],
+        }),
+    });
+    await surface();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    const deleting = await screen.findByRole('dialog', { name: 'Delete Install the printer' });
+    expect(
+      await within(deleting).findByText('You are editing it: choose Done editing first.'),
+    ).toBeInTheDocument();
+  });
+
+  it('says a retention keep refuses it, and until when', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
       'GET /v1/components/{id}/deletion': () =>

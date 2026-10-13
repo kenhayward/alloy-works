@@ -14,6 +14,8 @@ export interface DeletionRefusal {
   readonly named?: readonly { readonly id: string; readonly title: string }[] | undefined;
   readonly unreadable?: boolean | undefined;
   readonly holder?: { readonly name: string | null } | undefined;
+  /** locked: the caller holds it, from this window or another. */
+  readonly yours?: boolean | undefined;
   /** kept: when the longest retention keep passes. */
   readonly until?: string | undefined;
 }
@@ -37,19 +39,25 @@ const counted = (count: number, one: string, many: string) =>
 const listed = (parts: readonly string[]) =>
   parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
 
-/** What stays, in words: every count but an empty one, versions and events always. */
+/**
+ * What stays, in words: every count but an empty one, versions and events always. Unsaved changes
+ * still expire by their window (VER-003), deleted or not.
+ */
 export function remainsWords(remains: Remains): string {
   const parts = [
     counted(remains.versions, 'version', 'versions'),
-    ...(remains.iterations > 0
-      ? [counted(remains.iterations, 'unsaved change', 'unsaved changes')]
-      : []),
     ...(remains.threads > 0 ? [counted(remains.threads, 'thread', 'threads')] : []),
     ...(remains.suggestions > 0 ? [counted(remains.suggestions, 'suggestion', 'suggestions')] : []),
     ...(remains.rounds > 0 ? [counted(remains.rounds, 'review round', 'review rounds')] : []),
     counted(remains.events, 'audit event', 'audit events'),
   ];
-  return `Nothing is removed: its ${listed(parts)} are kept, out of reach, and come back if it is undeleted.`;
+  const kept = `Nothing is removed: its ${listed(parts)} are kept, out of reach, and come back if it is undeleted.`;
+  if (remains.iterations === 0) return kept;
+  const expiring =
+    remains.iterations === 1
+      ? 'Its 1 unsaved change still expires as usual.'
+      : `Its ${remains.iterations} unsaved changes still expire as usual.`;
+  return `${kept} ${expiring}`;
 }
 
 /**
@@ -85,7 +93,9 @@ export function deletionRefusalWords(refusal: DeletionRefusal): string {
         ? 'A retention keep holds it.'
         : `A retention keep holds it until ${day.format(new Date(refusal.until))}.`;
     case 'locked':
-      return `${refusal.holder?.name ?? 'Somebody'} is editing it.`;
+      return refusal.yours === true
+        ? 'You are editing it: choose Done editing first.'
+        : `${refusal.holder?.name ?? 'Somebody'} is editing it.`;
     default:
       return 'Something depends on it.';
   }

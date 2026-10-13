@@ -110,9 +110,11 @@ definitions and spaces do not, so a restore never meets a removed asset.
 act is `deleted`.
 
 **Refused** (DL-C), every reason listed, not the first: a baseline pinning any version, superseded
-or not; a publication that placed any version, or a publish or preview queued to; a document whose
+or not; a publication that placed any version, a publish or preview queued to, or a done preview
+yet to expire, which still serves it, named by its document, never by the request; a document whose
 latest version references it in any mode, a deleted document included, so undeleting one never
-revives a dangling reference; a hold on it or its space; a lock held, naming the holder; an open
+revives a dangling reference; a hold on it or its space; a lock held, naming the holder, or saying
+it is the deleter's own (`yours`: choose Done editing first); an open
 review round; a retention keep yet to pass, saying until when (Retention, below). A document's own
 baselines, publications and queued requests refuse it too. A
 dependant the deleter may not read is never named or counted: the refusal says only that
@@ -124,7 +126,8 @@ baselined or published is undeletable; archive it instead.
 **What remains** (LIF-024, VER-047, VER-048), stated by `GET .../deletion` and shown before
 **Delete**: its identity, every version and its content, iterations, threads, suggestions, rounds
 and every audit event, kept and unreachable, and all of it back on **undelete**, which nothing
-refuses, a hold or a keep included. Content goes only by erasure.
+refuses, a hold or a keep included. Content goes only by erasure. Iterations are the exception:
+they still expire by their window (VER-003), deleted or not, and the dialog says so.
 
 **Gone from every reader** (`notDeletedAs`, `search_entry.deleted`): the listings and their facets,
 `readableComponents` (so references, numbering, publishing, baselines and comparison), search, the
@@ -137,8 +140,13 @@ reader may not read; showing it as deleted is a gap.
 
 **Races** (DL-D): delete and undelete take the tenant's `alloy-works:deletion` advisory lock
 exclusive, then the artifact's; every writer of a dependant takes it shared first - `mayReference`,
-a document's restore, `makeBaseline` and `requestPublication` (by `resolvePublishable`), `placeHold`
-and `setKeep` - so either the dependant is seen or it sees the tombstone.
+a document's restore, `makeBaseline` and `requestPublication` (by `resolvePublishable`), `placeHold`,
+`setKeep`, `claimLock`, `takeLock` and `openRound` - so either the dependant is seen or it sees the
+tombstone. `saveIteration` needs no check: it needs a lock, which a delete refuses.
+
+**Cost**, to watch in the load suite: the reference check scans every document version that ever
+referenced the component, and `isDeleted` adds a lookup to every `authorise` (its `to_regclass`
+check asked once per transaction).
 
 **VER-044** (DL-F): `mayReference` answers a component the author may read but for its deletion as
 deleted, with its last title; a document's restore lists `reference_deleted` for each such node, the

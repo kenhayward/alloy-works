@@ -20766,12 +20766,6 @@
       "kind": "title"
     },
     {
-      "id": "LIF-019",
-      "file": "apps/web/src/editor/ComponentEditor.deletion.test.tsx",
-      "line": 64,
-      "kind": "title"
-    },
-    {
       "id": "LIF-023",
       "file": "apps/web/src/editor/ComponentEditor.deletion.test.tsx",
       "line": 33,
@@ -22670,7 +22664,7 @@
     {
       "id": "LIF-021",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 251,
+      "line": 258,
       "kind": "title"
     },
     {
@@ -22682,13 +22676,13 @@
     {
       "id": "LIF-057",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 537,
+      "line": 544,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 298,
+      "line": 305,
       "kind": "title"
     },
     {
@@ -22700,13 +22694,13 @@
     {
       "id": "VER-047",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 331,
+      "line": 338,
       "kind": "title"
     },
     {
       "id": "VER-048",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 331,
+      "line": 338,
       "kind": "title"
     },
     {

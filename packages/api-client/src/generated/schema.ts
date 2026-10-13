@@ -10271,7 +10271,7 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
                             code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
@@ -10287,6 +10287,8 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
                             /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
                             until?: string;
                         }[];
@@ -10377,9 +10379,10 @@ export interface operations {
                         kind: "component" | "document";
                         /** @description Whether it is deleted now */
                         deleted: boolean;
-                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed */
+                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual */
                         remains: {
                             versions: number;
+                            /** @description Unsaved changes: these still expire by their window, deleted or not */
                             iterations: number;
                             threads: number;
                             suggestions: number;
@@ -10390,7 +10393,7 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
                             code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
@@ -10406,6 +10409,8 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
                             /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
                             until?: string;
                         }[];
@@ -32919,7 +32924,7 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
                             code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
@@ -32935,6 +32940,8 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
                             /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
                             until?: string;
                         }[];
@@ -33025,9 +33032,10 @@ export interface operations {
                         kind: "component" | "document";
                         /** @description Whether it is deleted now */
                         deleted: boolean;
-                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed */
+                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual */
                         remains: {
                             versions: number;
+                            /** @description Unsaved changes: these still expire by their window, deleted or not */
                             iterations: number;
                             threads: number;
                             suggestions: number;
@@ -33038,7 +33046,7 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
                             code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
@@ -33054,6 +33062,8 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
                             /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
                             until?: string;
                         }[];
