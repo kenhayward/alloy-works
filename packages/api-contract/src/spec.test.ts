@@ -21,6 +21,13 @@ describe('the committed asyncapi.json', () => {
     expect(committed).toEqual(buildAsyncApi());
   });
 
+  it('API-017 states plainly that events are not replayed, and that every connection begins with a snapshot', () => {
+    const { info, components } = buildAsyncApi();
+    expect(info.description).toContain('Every connection begins with `snapshot`');
+    expect(info.description).toContain('events are not replayed, so a reconnect is a connect');
+    expect(Object.keys(components.messages)).toContain('snapshot');
+  });
+
   it('names a message for every event and a schema for each', () => {
     const document = buildAsyncApi();
     expect(Object.keys(document.components.messages).sort()).toEqual(

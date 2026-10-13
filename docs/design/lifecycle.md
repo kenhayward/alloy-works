@@ -23,7 +23,7 @@ detail.
 | **VER-037** | A keep and a hold each refuse deleting anything, a baseline's dependants among them   |
 | **VER-038** | Erasure, below: what is erased and what remains, stated and shown before erasing      |
 
-LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `artifact.deleted`,
+LIF-073's kinds, `artifact.archived`, `artifact.unarchived`, `artifact.deleted`,
 `artifact.undeleted`, `hold.applied`, `hold.removed` and `retention.changed`, are
 [audit.md](audit.md)'s claim. VER-036, versions kept as long as the tenant keeps its content, is
 [storage-and-versioning.md](storage-and-versioning.md)'s: a keep passing expires nothing.
@@ -66,7 +66,7 @@ edit of an archived artifact does not bring it back into search.
 still filtered by what the reader may read; the listings' **Archived** filter asks for it. One also
 deleted is listed among the deleted, not the archived.
 
-**Audited** (LIF-057): `artifact.archived` and `artifact.unarchived`, about the artifact, with its
+**Audited** (LIF-073): `artifact.archived` and `artifact.unarchived`, about the artifact, with its
 space.
 
 ## Legal holds
@@ -99,7 +99,7 @@ title at the version published, an asset by its alternative text - whether or no
 may read it, as [audit.md](audit.md) does: administrators may read everything, and the audit log
 shows the same labels.
 
-**Audited** (LIF-057): `hold.applied` and `hold.removed`, `{ hold }` its id, about the artifact or the
+**Audited** (LIF-073): `hold.applied` and `hold.removed`, `{ hold }` its id, about the artifact or the
 space it holds, with its space.
 
 ## Deletion
@@ -160,7 +160,7 @@ kind; each row says who deleted it, when, and `mayUndelete`, `retire` decided pe
 Status filter offers **Deleted** beside **Archived**, each the one way to list its own, with
 **Undelete** on each row for whoever may.
 
-**Audited** (LIF-057): `artifact.deleted` and `artifact.undeleted`, about the artifact, with its
+**Audited** (LIF-073): `artifact.deleted` and `artifact.undeleted`, about the artifact, with its
 space.
 
 ## Retention

@@ -9,7 +9,7 @@ import { deleteArtifact, deletionOf, undeleteArtifact } from './deletion.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { placeHold } from './holds.js';
-import { keptUntil, listKeeps, setKeep, type KeepKey } from './keeps.js';
+import { KEPT_KINDS, keptUntil, listKeeps, setKeep, type KeepKey } from './keeps.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -183,6 +183,32 @@ describe('retention keeps (lifecycle.md, "Retention"; the DL plan, DL-G)', () =>
     expect(await as((trx) => deleteArtifact(trx, procedure, ada))).toEqual({ answer: 'deleted' });
     // A keep passing expires nothing: the deleted one's version is still there.
     expect((await refusals(procedure, ada))?.remains.versions).toBe(1);
+  });
+
+  it('LIF-056 keeps the log under no keep and longer than anything it describes: a component deleted past its keep keeps every event about it', async () => {
+    const { space, ada } = await fresh();
+    const brief = await component(space, ada, 'Brief procedure');
+    await keep({ kind: 'component', space }, 10, ada);
+    const eventsAbout = () =>
+      as(async (trx) => {
+        const { rows } = await sql<{ sequence: string; kind: string }>`select sequence::text, kind
+          from audit_event where subject = ${brief} order by sequence`.execute(trx);
+        return rows;
+      });
+    const before = await eventsAbout();
+    expect(before.map((event) => event.kind)).toEqual(['content.version_cut']);
+    await aged(brief, 11);
+    expect(await as((trx) => deleteArtifact(trx, brief, ada))).toEqual({ answer: 'deleted' });
+    // Its keep let it go; the log keeps what it said of it, and the deletion besides.
+    const after = await eventsAbout();
+    expect(after.slice(0, before.length)).toEqual(before);
+    expect(after.map((event) => event.kind)).toEqual(['content.version_cut', 'artifact.deleted']);
+    // A keep names a component or a document, never the log, and nothing the tenant runs deletes it.
+    expect(KEPT_KINDS).toEqual(['component', 'document']);
+    await expect(
+      as((trx) => sql`delete from audit_event where subject = ${brief}`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+    expect(await eventsAbout()).toEqual(after);
   });
 
   it('LIF-021 refuses deleting what a hold holds once its keep has passed', async () => {

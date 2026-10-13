@@ -35,31 +35,32 @@ filtered by actor, kind, date and subject, and export it whole as a job.
 
 ## Requirements owned
 
-| Requirement | How                                                                                                                                                                              |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **LIF-026** | The closed list of [event types](#event-types) holds every kind LIF-026 names; each act's design emits its own                                                                   |
-| **LIF-027** | Every event has its actor, kind, instant, subject and the subject's version where it has one                                                                                     |
-| **LIF-028** | `GET /v1/audit` queries it; an export is complete as of a sequence, written by a job                                                                                             |
-| **LIF-032** | `sequence` is a per-tenant identity, monotonic in commit order of its assignment; order is read by sequence, never by time ([Order](#order))                                     |
-| **LIF-056** | The log is under no retention policy in T3: kept for ever, never shorter than anything it describes ([Retention](#retention))                                                    |
-| **LIF-057** | Hold applied and removed, archival, deletion and gate rejection are kinds of their own                                                                                           |
-| **LIF-064** | API and tool use on a governed artifact, generation, a bound value revised, relationships, assets, shared-publication access, support access and channels are kinds of their own |
-| **LIF-025** | Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))                                               |
-| **LIF-029** | An event and its labels read without the content they describe, which may be gone                                                                                                |
-| **LIF-030** | Detail holds identifiers, field names, codes and rules; never a secret, a credential, a bound value or content                                                                   |
-| **LIF-031** | One table in each tenant's schema; no event of one tenant is readable from another                                                                                               |
-| **LIF-062** | `at` is `timestamptz`, UTC; `detail.offset` keeps a local offset where local time is part of the act                                                                             |
-| **LIF-063** | Every kind names the requirement it answers, and each emitter's test asserts the event lands with actor, kind, instant and version ([Verification](#verification))               |
-| **IAM-013** | Every sign-in, failed sign-in and sign-out, and every refused authorisation of someone signed in, is an event                                                                    |
-| **IAM-037** | A token's issue and revocation are events, and its use is, once a minute per token                                                                                               |
-| **IAM-060** | Provisioning writes the vendor's naming of the first administrator into the tenant's own log, and the claim of it                                                                |
-| **IAM-077** | The log is the tenant's, read only through its own schema                                                                                                                        |
-| **ADM-002** | Every administrative act - spaces, grants, roles, groups, invitations, connections - is an event                                                                                 |
-| **ADM-038** | Administration's **Audit log** reads and searches it by actor, kind, date and subject                                                                                            |
-| **ADM-039** | An administrator exports it, complete and scoped to the tenant                                                                                                                   |
-| **DAT-007** | A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is                                       |
+| Requirement | How                                                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **LIF-067** | The closed list of [event types](#event-types) holds every kind LIF-067 names; each act's design emits its own                                                     |
+| **LIF-027** | Every event has its actor, kind, instant, subject and the subject's version where it has one                                                                       |
+| **LIF-028** | `GET /v1/audit` queries it; an export is complete as of a sequence, written by a job                                                                               |
+| **LIF-032** | `sequence` is a per-tenant identity, monotonic in commit order of its assignment; order is read by sequence, never by time ([Order](#order))                       |
+| **LIF-056** | The log is under no retention policy in T3: kept for ever, never shorter than anything it describes ([Retention](#retention))                                      |
+| **LIF-073** | Hold applied and removed, archival and deletion are kinds of their own; gate rejection (LIF-074) is declared                                                       |
+| **LIF-069** | A bound value revised and an asset ingested are kinds of their own                                                                                                 |
+| **LIF-025** | Insert-only by the schema's grants and a guard trigger; no route changes or deletes an event ([Kept as written](#kept-as-written))                                 |
+| **LIF-029** | An event and its labels read without the content they describe, which may be gone                                                                                  |
+| **LIF-030** | Detail holds identifiers, field names, codes and rules; never a secret, a credential, a bound value or content                                                     |
+| **LIF-031** | One table in each tenant's schema; no event of one tenant is readable from another                                                                                 |
+| **LIF-062** | `at` is `timestamptz`, UTC; `detail.offset` keeps a local offset where local time is part of the act                                                               |
+| **LIF-063** | Every kind names the requirement it answers, and each emitter's test asserts the event lands with actor, kind, instant and version ([Verification](#verification)) |
+| **IAM-013** | Every sign-in, failed sign-in and sign-out, and every refused authorisation of someone signed in, is an event                                                      |
+| **IAM-037** | A token's issue and revocation are events, and its use is, once a minute per token                                                                                 |
+| **IAM-060** | Provisioning writes the vendor's naming of the first administrator into the tenant's own log, and the claim of it                                                  |
+| **IAM-077** | The log is the tenant's, read only through its own schema                                                                                                          |
+| **ADM-002** | Every administrative act - spaces, grants, roles, groups, invitations, connections - is an event                                                                   |
+| **ADM-038** | Administration's **Audit log** reads and searches it by actor, kind, date and subject                                                                              |
+| **ADM-039** | An administrator exports it, complete and scoped to the tenant                                                                                                     |
+| **DAT-007** | A connection made, changed (naming the fields changed), its credential set, tested or retired is an event; the credential's value never is                         |
 
-**Not claimed:** DAT-013 (its review half is review.md's); LIF-055, LIF-034 and LIF-035 (T7, ADR-0045:
+**Not claimed:** DAT-121, a query definition's review (T9); LIF-068, LIF-070, LIF-071, LIF-072 and
+LIF-074 (the T3 audit), whose kinds are declared here and emitted by the designs that build their acts; LIF-055, LIF-034 and LIF-035 (T7, ADR-0045:
 the export leaves room for a signature over its sequence); IAM-070 (T7, an audit-reader permission);
 the workflow, approval, hold, deletion and generation events, whose kinds are listed here and whose
 emission is their own designs'.
@@ -114,8 +115,8 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | Kind                                                                    | Emitted by                                                                    | Requirement      |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------- |
 | `authentication.signed_in`, `.sign_in_failed`, `.signed_out`            | the sign-in routes, sign-out                                                  | IAM-013          |
-| `access.refused`                                                        | every refused authorisation of a signed-in principal                          | IAM-013, LIF-026 |
-| `access.granted`, `.revoked`                                            | grants made and removed                                                       | ADM-002, LIF-026 |
+| `access.refused`                                                        | every refused authorisation of a signed-in principal                          | IAM-013, LIF-067 |
+| `access.granted`, `.revoked`                                            | grants made and removed                                                       | ADM-002, LIF-067 |
 | `group.member_added`, `.member_removed`                                 | group membership                                                              | ADM-002          |
 | `invitation.sent`, `.accepted`, `.withdrawn`                            | invitations                                                                   | ADM-002          |
 | `tenant.administrator_named`, `.administrator_claimed`                  | provisioning, the first sign-in                                               | IAM-060          |
@@ -123,18 +124,18 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `space.made`, `.renamed`, `.archived`, `.restored`                      | SP1's acts                                                                    | ADM-002, ADM-049 |
 | `group.made`, `.deleted`; `settings.changed`                            | groups; the editing and data settings                                         | ADM-002          |
 | `tenant.invited`, `sign_in_route.configured`, `.closed`                 | the vendor's acts on an environment                                           | IAM-060, IAM-043 |
-| `content.version_cut`                                                   | every version of every artifact kind; never an iteration (VER-005)            | LIF-026          |
+| `content.version_cut`                                                   | every version of every artifact kind; never an iteration (VER-005)            | LIF-067          |
 | `connection.made`, `.changed`, `.credential_set`, `.tested`, `.retired` | connections                                                                   | DAT-007          |
-| `binding.resolved`, `.checked`, `.accepted`, `.confirmed`               | bindings                                                                      | LIF-026          |
-| `dataset.named`                                                         | a dataset's name                                                              | LIF-026          |
-| `asset.ingested`, `.refused`                                            | an image admitted by the worker; an upload refused, its file gone             | LIF-064, AST-037 |
-| `publication.requested`, `.produced`, `.failed`                         | publishing                                                                    | LIF-026          |
-| `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                                  | LIF-026          |
+| `binding.resolved`, `.checked`, `.accepted`, `.confirmed`               | bindings                                                                      | LIF-067          |
+| `dataset.named`                                                         | a dataset's name                                                              | LIF-067          |
+| `asset.ingested`, `.refused`                                            | an image admitted by the worker; an upload refused, its file gone             | LIF-069, AST-037 |
+| `publication.requested`, `.produced`, `.failed`                         | publishing                                                                    | LIF-067          |
+| `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                                  | LIF-067          |
 | `audit.label_erased`                                                    | erasure of a person's labels                                                  | VER-038          |
-| `artifact.archived`, `.unarchived`                                      | archival ([lifecycle.md](lifecycle.md))                                       | LIF-057          |
-| `artifact.deleted`, `.undeleted`                                        | deletion, a tombstone, refused within a keep ([lifecycle.md](lifecycle.md))   | LIF-057          |
-| `hold.applied`, `.removed`                                              | legal holds ([lifecycle.md](lifecycle.md)), `{ hold }`, no reason             | LIF-057          |
-| `retention.changed`                                                     | a keep set or cleared ([lifecycle.md](lifecycle.md)), `{ kind, space, days }` | LIF-019, LIF-026 |
+| `artifact.archived`, `.unarchived`                                      | archival ([lifecycle.md](lifecycle.md))                                       | LIF-073          |
+| `artifact.deleted`, `.undeleted`                                        | deletion, a tombstone, refused within a keep ([lifecycle.md](lifecycle.md))   | LIF-073          |
+| `hold.applied`, `.removed`                                              | legal holds ([lifecycle.md](lifecycle.md)), `{ hold }`, no reason             | LIF-073          |
+| `retention.changed`                                                     | a keep set or cleared ([lifecycle.md](lifecycle.md)), `{ kind, space, days }` | LIF-019, LIF-067 |
 
 **Declared now, emitted by the design that builds the act:** `workflow.transitioned`,
 `approval.given`, `approval.rejected`, `gate.rejected` (LIF-053: never `access.refused`),

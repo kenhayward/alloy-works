@@ -1757,8 +1757,8 @@ export function DocumentPage({
       }
     }
   }
-  // In Review, the Data tab counts the values revised by hand, for a reviewer to look at (DAT-061's
-  // half, RV-K).
+  // In Review, the Data tab counts the values revised by hand, for a reviewer to look at (DAT-122,
+  // RV-K).
   const revisedCount = (bindingStates ?? []).reduce(
     (count, each) => count + (each.revisions ?? []).filter((revision) => revision.stands).length,
     0,

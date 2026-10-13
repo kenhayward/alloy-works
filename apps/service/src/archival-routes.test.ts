@@ -300,7 +300,7 @@ describe('archiving a component or a document over HTTP (the AH plan, Task 1)', 
     expect(allowed.statusCode, allowed.body).toBe(200);
   });
 
-  it('LIF-057 records who archived and unarchived it', async () => {
+  it('LIF-073 records who archived and unarchived it', async () => {
     const shelved = await component('Audited procedure');
     await call('POST', `/v1/components/${shelved}/archive`, 'ada');
     await call('POST', `/v1/components/${shelved}/unarchive`, 'ada');

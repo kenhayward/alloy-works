@@ -933,6 +933,54 @@ describe('query definitions through the service', () => {
     expect((await create('alice', definition(first.id))).statusCode).toBe(404);
   });
 
+  it('DAT-120 grants a query definition as content - nothing without a grant, reading by read, changing by edit - and records every change on the log as who made it', async () => {
+    const source = await connection('Permissioned');
+    const made = (
+      await create('ada', definition(source.id, { title: 'Permissioned' }))
+    ).json<DefinitionBody>();
+    // Alice holds nothing here: the definition is not there for her.
+    expect((await call('alice', 'GET', `/v1/query-definitions/${made.id}`)).statusCode).toBe(404);
+    // Reader on it, as on a component: she reads it, and may not change it.
+    const reader = await tenantDb.withTenant(
+      tenant,
+      async (trx) => (await findRole(trx, 'Reader'))!.id,
+    );
+    const granted = await call('ada', 'POST', '/v1/grants', {
+      role: reader,
+      subject: { principal: ids.alice },
+      level: `artifact:${made.id}`,
+      effect: 'allow',
+    });
+    expect(granted.statusCode, granted.body).toBe(200);
+    const read = await call('alice', 'GET', `/v1/query-definitions/${made.id}`);
+    expect(read.statusCode).toBe(200);
+    expect(read.json<DefinitionBody>()).toMatchObject({ mayEdit: false });
+    const change = (who: string, from: string, title: string) =>
+      call(who, 'POST', `/v1/query-definitions/${made.id}/versions`, {
+        openedFrom: from,
+        definition: definition(source.id, { title }),
+      });
+    expect((await change('alice', made.version.id, 'Hers')).statusCode).toBe(403);
+    // Ada, who may edit it, changes it: a version, on the log as hers, as the first was.
+    const next = (
+      await change('ada', made.version.id, 'Permissioned, renamed')
+    ).json<DefinitionBody>();
+    const logged = await call('ada', 'GET', `/v1/audit?subject=${made.id}`);
+    expect(logged.statusCode, logged.body).toBe(200);
+    const cuts = logged
+      .json<{
+        items: { kind: string; actor: string; subject: { kind: string; version: string } }[];
+      }>()
+      .items.filter((event) => event.kind === 'content.version_cut')
+      .map((event) => [event.actor, event.subject.kind, event.subject.version]);
+    expect(cuts).toEqual([
+      [ids.ada, 'queryDefinition', next.version.id],
+      [ids.ada, 'queryDefinition', made.version.id],
+    ]);
+    const grant = granted.json<{ grant: { id: string } }>().grant.id;
+    expect((await call('ada', 'DELETE', `/v1/grants/${grant}`)).statusCode).toBe(200);
+  });
+
   it('lets a definition be retired whatever its connection last found, so that the connection can be retired after it', async () => {
     const source = await connection('Retiring');
     const made = (await create('ada', definition(source.id))).json<DefinitionBody>();

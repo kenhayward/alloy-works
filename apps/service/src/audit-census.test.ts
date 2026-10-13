@@ -354,6 +354,44 @@ describe('the census of the audit log', () => {
     expect(audited.filter((id) => !named.has(id) && !(id in NOT_AN_ACT))).toEqual([]);
   });
 
+  it('LIF-067 writes a kind for every act its list names, each from a route or writer the census holds', () => {
+    // LIF-067's list, each act by the kinds that record it; each emitter's own test shows it lands.
+    const acts: Readonly<Record<string, readonly AuditKind[]>> = {
+      authentication: [
+        'authentication.signed_in',
+        'authentication.sign_in_failed',
+        'authentication.signed_out',
+      ],
+      'refused authorisation': ['access.refused'],
+      'content change': ['content.version_cut', 'content.restored'],
+      'binding resolution and refresh': [
+        'binding.resolved',
+        'binding.checked',
+        'binding.accepted',
+        'binding.confirmed',
+      ],
+      publication: ['publication.requested', 'publication.produced', 'publication.failed'],
+      export: ['export.produced', 'export.downloaded'],
+      'permission change': ['access.granted', 'access.revoked'],
+      'administrative action': [
+        'space.made',
+        'group.made',
+        'group.member_added',
+        'invitation.sent',
+        'settings.changed',
+        'retention.changed',
+      ],
+    };
+    const written = new Set([...ON_ANY_ROUTE, ...everyEntry.flatMap(kindsOf)]);
+    for (const [act, kinds] of Object.entries(acts)) {
+      for (const kind of kinds) {
+        expect(auditKindSpecs[kind].requirements, `${act}: ${kind}`).toContain('LIF-067');
+        expect(auditKindSpecs[kind].emittedBy, `${act}: ${kind}`).not.toBeNull();
+        expect(written.has(kind), `${act}: ${kind}`).toBe(true);
+      }
+    }
+  });
+
   it('lists every operation the contract declares, GETs included, and nothing else', () => {
     expect(Object.keys(ROUTES).sort()).toEqual(allRoutes.map((route) => route.operationId).sort());
   });

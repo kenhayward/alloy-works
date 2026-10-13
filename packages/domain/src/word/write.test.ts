@@ -514,7 +514,7 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     expect(all(core, 'dcterms:created')).toEqual([]);
   });
 
-  it('makes the same bytes from the same inputs, whenever it is run', () => {
+  it('PUB-044 makes the same bytes from the same inputs, whenever it is run', () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date('2026-01-01T09:00:00Z'));

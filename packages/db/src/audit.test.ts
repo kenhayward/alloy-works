@@ -388,7 +388,7 @@ describe('the audit log as stored', () => {
     expect(seen).toEqual([lateSequence, prompt]);
   });
 
-  it("LIF-031 keeps a tenant's events out of every other tenant's reach", async () => {
+  it("LIF-031 IAM-077 keeps a tenant's events out of every other tenant's reach", async () => {
     await service.withTenant(production, renamed, ADA_ACTS);
     for (const statement of [
       sql`select count(*) from ${sql.id(production.schema, 'audit_event')}`,

@@ -118,6 +118,32 @@ describe('a document as it happens, on the page', () => {
     expect(screen.queryByText(/Grace Hopper/)).toBeNull();
   });
 
+  it('API-035 takes the snapshot on reconnecting as the whole picture, so a release missed while away leaves no lock held', async () => {
+    const stream = fakeStream();
+    const { client } = service();
+    let live: LiveDocument | undefined;
+    render(<Harness follow={stream.follow} client={client} seen={(each) => (live = each)} />);
+    stream.say('snapshot', {
+      locks: [
+        {
+          component: DOSING,
+          holder: { id: GRACE, name: 'Grace Hopper' },
+          expectedRelease: '2026-10-11T12:15:00.000Z',
+        },
+      ],
+      presence: [grace(new Date(AT).toISOString())],
+    });
+    expect(live!.locks.get(DOSING)?.holder?.id).toBe(GRACE);
+    // Away while Grace released it and left: neither event reaches this window.
+    stream.drop();
+    expect(live!.connected).toBe(false);
+    // Back: the snapshot holds no lock and nobody, and that is what the window now holds.
+    stream.say('snapshot', { locks: [], presence: [] });
+    expect(live!.connected).toBe(true);
+    expect(live!.locks.get(DOSING)).toBeUndefined();
+    expect(live!.people).toEqual([]);
+  });
+
   it("COL-007 holds each component's lock as the stream says it, claimed and released", async () => {
     const stream = fakeStream();
     const { client } = service();

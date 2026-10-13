@@ -363,7 +363,7 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
     expect(await document('grace')).toMatchObject({ onHold: false, mayHold: false });
   });
 
-  it('LIF-057 records hold.applied and hold.removed, and the reason nowhere but the holds routes', async () => {
+  it('LIF-073 records hold.applied and hold.removed, and the reason nowhere but the holds routes', async () => {
     const word = 'zebrafinch';
     const held = await made('component', 'Audited procedure');
     const hold = (await place({ artifact: held }, `Matter ${word}`)).json<HoldView>();

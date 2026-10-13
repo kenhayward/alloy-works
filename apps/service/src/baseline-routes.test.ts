@@ -146,7 +146,7 @@ describe('baselines over HTTP (baselines.md)', () => {
     await db?.drop();
   });
 
-  it('VER-017 makes a baseline by an explicit call, lists it, and reads what it pins', async () => {
+  it('VER-017 VER-058 makes a baseline by an explicit call, lists it, and reads what it pins', async () => {
     const document = await documentWith();
     const made = await make(document, 'As approved');
     expect(made.statusCode, made.body).toBe(200);

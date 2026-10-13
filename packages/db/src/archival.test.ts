@@ -334,7 +334,7 @@ describe('archiving a component or a document (lifecycle.md; the AH plan, AH-B t
     expect(occurrences).toEqual([{ node, version_id: latest.id }]);
   });
 
-  it('LIF-057 records artifact.archived and artifact.unarchived about it, and archiving the archived changes nothing', async () => {
+  it('LIF-073 records artifact.archived and artifact.unarchived about it, and archiving the archived changes nothing', async () => {
     const { space, ada } = await fresh();
     const shelved = await component(space, ada, 'Audited procedure');
     expect(await archive(shelved, ada)).toBe('changed');

@@ -154,7 +154,7 @@ describe('legal holds (lifecycle.md; the AH plan, AH-E to AH-H)', () => {
     expect(await place({ artifact: definition.id })).toEqual({ answer: 'target.missing' });
   });
 
-  it('LIF-057 records hold.applied and hold.removed about what it holds, without the reason', async () => {
+  it('LIF-073 records hold.applied and hold.removed about what it holds, without the reason', async () => {
     const { space, grace, component } = await fresh();
     const onComponent = await as((trx) =>
       placeHold(trx, { target: { artifact: component }, reason: 'Secret matter', by: grace }),
@@ -211,7 +211,7 @@ describe('legal holds (lifecycle.md; the AH plan, AH-E to AH-H)', () => {
     expect(logged).not.toMatch(/Secret/);
   });
 
-  it('LIF-057 names a held publication and asset by title and space, in the log and the listing', async () => {
+  it('LIF-073 names a held publication and asset by title and space, in the log and the listing', async () => {
     const { space, grace } = await fresh();
     const made = await as(async (trx) => {
       const input = { spaceId: space, language: 'en-GB', direction: 'ltr', author: grace } as const;

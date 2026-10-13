@@ -492,7 +492,7 @@ export async function nameDataset(
     .values({ dataset_id: input.dataset, name: input.name, named_by: input.by })
     .returning(['name', 'named_by', 'named_at'])
     .executeTakeFirstOrThrow();
-  // On the log by the name it was given, at the version it holds now (LIF-026; the AU1 plan, AU1-L).
+  // On the log by the name it was given, at the version it holds now (LIF-067; the AU1 plan, AU1-L).
   const latest = await latestVersion(trx, input.dataset);
   const space = await trx
     .selectFrom('artifact as a')

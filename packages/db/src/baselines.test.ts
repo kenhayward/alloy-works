@@ -871,7 +871,7 @@ describe('baselines', () => {
     ).rejects.toMatchObject({ constraint: expect.stringMatching(/^baseline_pin/) });
   });
 
-  it('records a baseline’s parts only in the transaction that made it, and no gate until LIF names one', async () => {
+  it('VER-058 records a baseline’s parts only in the transaction that made it, and no gate until LIF names one', async () => {
     const lone = await component(general, ada, 'Late');
     const document = await documentWith([]);
     const id = made(await make(document, 'Closed'));

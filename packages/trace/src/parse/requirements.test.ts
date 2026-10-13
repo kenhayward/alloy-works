@@ -197,7 +197,8 @@ describe('the real corpus', () => {
     // 1552 (2026-10-11): TAB-054, superseding TAB-042 (TG1).
     // 1553 (2026-10-12): SCH-070, superseding SCH-068 (HM).
     // 1555 (2026-10-12): CNT-182 and CNT-183, superseding CNT-161 (RS).
-    expect(total((document) => document.requirements)).toBe(1555);
+    // 1581 (2026-10-13): the T3 audit's 26, splitting twelve T3 rows by tranche.
+    expect(total((document) => document.requirements)).toBe(1581);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

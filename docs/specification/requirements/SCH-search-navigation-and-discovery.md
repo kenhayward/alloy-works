@@ -43,7 +43,9 @@ leaking through a count or a ranking.
 | **SCH-002** | Search must cover content, metadata, titles, captions and alternative text                                                                                                                                                                                   | T1      | Specified             |
 | **SCH-003** | Search must cover the current version by default, with earlier versions and baselines searchable on request                                                                                                                                                  | T3      | Specified             |
 | **SCH-004** | An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)                                                                                                                                                        | T7      | Specified             |
-| **SCH-038** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to and by whether it is internal (**COL-038**), and must re-index incrementally as messages accumulate rather than by re-reading the thread | T3      | Specified             |
+| **SCH-038** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to and by whether it is internal (**COL-038**), and must re-index incrementally as messages accumulate rather than by re-reading the thread | T3      | Superseded by SCH-071 |
+| **SCH-071** | A thread must be indexed by message as well as whole, must be filtered by the permissions of what it is anchored to, and must re-index incrementally as messages accumulate rather than by re-reading the thread                                             | T3      | Specified             |
+| **SCH-072** | A thread must be filtered from search by whether it is internal (**COL-038**)                                                                                                                                                                                | T4      | Specified             |
 | **SCH-053** | A section found by search must show the document it belongs to and the components it places, so that a section in an existing document is a route to reusing those components (**REU-054**)                                                                  | T4      | Specified             |
 
 **SCH-038 gives threads the treatment SCH-004 already gives assets.** A thread was named as
@@ -379,3 +381,19 @@ it as a publish would, too costly on every Home; a failed attempt is stored with
 | Counts       | Before                    | After                      |
 | ------------ | ------------------------- | -------------------------- |
 | Requirements | 69, of which 9 superseded | 70, of which 10 superseded |
+
+### From the T3 audit against the code (2026-10-13)
+
+[The T3 audit](<../../reviews/T3 - Audit against the code.md>) read every T3 requirement not yet
+`Covered` against the code at 0.163.0, as Ken chose on 2026-10-13
+([the TC plan](../../plans/2026-10-13-tc-t3-close.md)). A row moving tranche whole keeps its
+identifier, and only its tranche changes; a row split by tranche is superseded by its T3 half, and
+the rest becomes rows of their own.
+
+| What was found                                                          | Change                                                                                     |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| SCH-038 filters by whether a thread is internal, COL-038, which is T4's | **SCH-038 superseded by SCH-071**, in T3, with **SCH-072**, the internal filter, in **T4** |
+
+| Counts       | Before                     | After                      |
+| ------------ | -------------------------- | -------------------------- |
+| Requirements | 70, of which 10 superseded | 72, of which 11 superseded |

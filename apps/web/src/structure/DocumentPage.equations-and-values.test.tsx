@@ -49,7 +49,10 @@ import {
 shimRangeMeasurement();
 
 // The panel beside the text a test chose is not the next test's (LG6c).
-afterEach(() => window.localStorage.removeItem(DOCK_KEY));
+afterEach(() => {
+  window.localStorage.removeItem(DOCK_KEY);
+  window.localStorage.removeItem('alloy-works.mode');
+});
 
 describe("a section's title holding an equation (equations 3)", () => {
   const NS = 'http://www.w3.org/1998/Math/MathML';
@@ -811,7 +814,10 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     accepted?: () => void;
     /** What following a pending result answers (the D8 plan, D8-F). */
     pending?: unknown;
+    /** Opened in Review by a reader who may review it. */
+    review?: boolean;
   }) {
+    if (options.review) window.localStorage.setItem('alloy-works.mode', 'review');
     const fake = service(
       outline([
         section(INTRODUCTION, 'Introduction', [
@@ -819,6 +825,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
           ...(options.other ? [referenceTo(METHOD, OTHER)] : []),
         ]),
       ]),
+      options.review ? { mayComment: true, mayReview: true } : {},
     );
     const asked: string[] = [];
     // Whether the check on opening has answered and the values it reads again been answered after it.
@@ -859,6 +866,8 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
           ],
         });
       }
+      if (path === `/v1/documents/${DOCUMENT}/threads`)
+        return json(200, { threads: [], next: null });
       if (path === `/v1/documents/${DOCUMENT}/bindings/check`) {
         if (options.checkGate) await options.checkGate;
         options.check?.then?.();
@@ -1217,6 +1226,32 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     await checked();
     const button = await within(text).findByRole('button', { name: /^1,300.0, bound value,/ });
     expect(seen(button)).toContain('revised by hand');
+  });
+
+  it('DAT-122 counts in Review the values revised by hand that stand, on the Data tab, for a reviewer to look at', async () => {
+    const revision = (id: string, stands: boolean) => ({
+      id,
+      cell: null,
+      value: '1300',
+      reason: 'Measured again.',
+      by: { id: 'p', displayName: 'Ada' },
+      at: '2026-10-12T09:00:00.000Z',
+      stands,
+    });
+    const { checked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [
+        state(bound('b1'), value, {
+          facts: { revisions: [revision('7', true), revision('6', false)] },
+        }),
+      ],
+      review: true,
+    });
+    await checked();
+    expect(await screen.findByRole('tab', { name: 'Data, 1 revised by hand' })).toBeInTheDocument();
+    // Reading, the tab is the Data tab alone.
+    await userEvent.click(screen.getByRole('radio', { name: 'Reading' }));
+    expect(await screen.findByRole('tab', { name: 'Data' })).toBeInTheDocument();
   });
 
   it("shows a reader who may not read the definition its value, and none of the definition's SQL or connection", async () => {

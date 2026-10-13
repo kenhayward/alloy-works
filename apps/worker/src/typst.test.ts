@@ -4,9 +4,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
 import sharp from 'sharp';
+import { assemble, PUBLISHING_SCHEMA } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, FontsUnavailable, loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { JobRefused } from './refusal.js';
+import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
+import { componentId, documentOf, inSection, para, placing, text } from './testing/corpus.js';
+import { defaultTheme } from './testing/theme.js';
 import {
   createTypst,
   SAMPLE_TEMPLATE,
@@ -102,6 +106,56 @@ describe('the pinned Typst', () => {
     const again = await typst.compile(SAMPLE_TEMPLATE, data, at);
     expect(once.equals(again)).toBe(true);
   });
+
+  it("PUB-044 confines what the time it is made changes to the PDF's dates and the identifier made from them, never what is printed", async () => {
+    const assembled = assemble(
+      documentOf({
+        title: 'Calibration',
+        theme: defaultTheme,
+        covers: fonts.covers,
+        nodes: [
+          inSection('scope', 'Scope', [
+            placing({
+              name: 'tray',
+              component: componentId(1),
+              title: 'The tray',
+              content: [para('p1', text('Set the tray.'))],
+            }),
+          ]),
+        ],
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file;
+    const madeAt = (instant: string) =>
+      typst.compile(template, JSON.stringify(assembled.document), new Date(instant));
+    const once = await madeAt('2026-09-19T00:00:00Z');
+    const later = await madeAt('2031-03-07T13:45:21Z');
+    expect(once.equals(later)).toBe(false);
+    // The places a publication's time and identifier stand: the document information's dates, the
+    // metadata's dates and identifiers, and the trailer's identifier. Each is blanked to its length.
+    const places = [
+      /\/(?:ModDate|CreationDate)\(D:\d{14}Z\)/g,
+      /<xmp:(?:ModifyDate|CreateDate)>[^<]*</g,
+      /<xmpMM:(?:InstanceID|DocumentID)>[^<]*</g,
+      /\/ID\[\([^)]*\)\([^)]*\)\]/g,
+    ];
+    const blanked = (pdf: Buffer) => {
+      let found = 0;
+      let text = pdf.toString('latin1');
+      for (const place of places) {
+        text = text.replace(place, (match) => {
+          found += 1;
+          return '#'.repeat(match.length);
+        });
+      }
+      return { found, bytes: Buffer.from(text, 'latin1') };
+    };
+    const [first, second] = [blanked(once), blanked(later)];
+    expect([first.found, second.found]).toEqual([7, 7]);
+    // Nowhere else differs, so no page prints either: not a page, the structure or a bookmark.
+    expect(first.bytes.equals(second.bytes)).toBe(true);
+  }, 60_000);
 
   it('places each image it is handed in the compile root at its path, and no other file', async () => {
     // A template that reads one image, as a publication template reads a figure's.
