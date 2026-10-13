@@ -166,7 +166,7 @@ which holds what others sent.
 | **SCH-024** | "What does this use" must be answerable for any document or component                                                                                                                                                                  | T4         | Specified |
 | **SCH-025** | "What changed since" must be answerable for a document, a space or a set of results                                                                                                                                                    | T3         | Specified |
 | **SCH-026** | Structural queries must respect permissions on the same terms as text search (**REU-010**)                                                                                                                                             | Constraint | Specified |
-| **SCH-043** | A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-034): "used in 14 places" must count only what the requesting user may see, and a large answer must page and cap like any other | Constraint | Specified |
+| **SCH-043** | A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-073): "used in 14 places" must count only what the requesting user may see, and a large answer must page and cap like any other | Constraint | Specified |
 | **SCH-048** | "What changed since" (SCH-025) must be bounded by the versions still retained (**VER**, **LIF**), and a question reaching further back than the record goes must say so rather than answering from where the record happens to start   | T3         | Specified |
 
 **SCH-043 says out loud what SCH-026 borrowed by reference.** "Where is this used, in 14 places"
@@ -408,6 +408,7 @@ them, as Ken chose on 2026-10-13.
 | What was found                                                           | Change                                                                                                                        |
 | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | Counting every match for the facets costs seconds on a large tenant      | **SCH-034 superseded by SCH-073**: past the cap, facet totals may count the most recently changed matches alone, lower bounds |
+| SCH-043 and API-058 cite SCH-034                                         | Each cites SCH-073 instead: a clarifying edit, what they ask unchanged                                                        |
 | SCH-033's budget needs ranking bounded too, which search.md already says | No change: past 1,000 matches the latest ranks the 1,000 changed most recently (search.md, "Ranking is bounded")              |
 
 | Counts       | Before                     | After                      |

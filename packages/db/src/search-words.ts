@@ -29,9 +29,14 @@ export const SEARCH_RANK_BOUND = 1000;
 /** How the latest finds its newest matches: walking them in changed order, or by the word indexes. */
 export type SearchRoad = 'walk' | 'indexes';
 
-/** For tests and the load suite alone: a road forced, the plans explained, and each scan's road. */
+/**
+ * For tests and the load suite alone: a road forced, the plans explained, and each scan's roads in
+ * order, a walk that falls back seen before the indexes road that answers.
+ */
 export interface SearchProbe {
   readonly road?: SearchRoad;
+  /** How many of the newest rows a walk reads before it falls back; every row for a forced walk. */
+  readonly reads?: number;
   readonly explain?: boolean;
   readonly seen?: (event: {
     readonly statement: 'results' | 'facets' | 'page';
@@ -480,16 +485,23 @@ export async function searchWords(
   if (!lexemes[0]?.any) return { outcome: 'nothing_to_match', excluded: [] };
 
   // The words, as the entry's language reads them; or every term as a part of the entry's text, in
-  // any case, none excluded (UI6), which the trigram index answers - so never for a term under three
-  // characters, which no trigram holds (SV3-A). A typed `%` or `_` is a character, never a pattern.
+  // any case, none excluded (UI6), which the trigram index answers. A term under three characters,
+  // which no trigram holds, only narrows a longer one's, written so the index is never planned for it;
+  // with no longer term there is no part-of-a-word match (SV3-A). A typed `%` or `_` is a character,
+  // never a pattern.
   const whole = matches('e', parsed.words);
   const like = (term: string) => `%${term.replace(/[\\%_]/gu, (each) => `\\${each}`)}%`;
+  const short = (term: string) => [...term].length < 3;
   const contains =
-    parsed.contains === null || parsed.contains.all.some((term) => [...term].length < 3)
+    parsed.contains === null || parsed.contains.all.every(short)
       ? null
       : sql.join(
           [
-            ...parsed.contains.all.map((term) => sql<SqlBool>`e.body ilike ${like(term)}`),
+            ...parsed.contains.all.map((term) =>
+              short(term)
+                ? sql<SqlBool>`(e.body || '') ilike ${like(term)}`
+                : sql<SqlBool>`e.body ilike ${like(term)}`,
+            ),
             ...parsed.contains.none.map((term) => sql<SqlBool>`e.body not ilike ${like(term)}`),
           ],
           sql` and `,
@@ -554,7 +566,8 @@ export async function searchWords(
       select 1 from jsonb_array_elements(
         case when jsonb_typeof(${held}) = 'array' then ${held} else jsonb_build_array(${held}) end) el(x)
       where ${valueKey(sql`el.x`, sql`${known.data_type}::text`, sql`${known.multiplicity}::text`)}
-            = any(${[...values]}::text[]))`;
+            = any(${[...values]}::text[])
+        and ${valueKey(sql`el.x`, sql`${known.data_type}::text`, sql`${known.multiplicity}::text`)} <> '')`;
   };
   const flagsOver = (alias: string) =>
     [
@@ -611,16 +624,20 @@ export async function searchWords(
       }>`explain (format json) ${query}`.execute(trx);
       seen?.({ statement, plan: plan[0]?.['QUERY PLAN'] });
     };
+    // The rows as the planner reckons them: its last count, scaled to the table's size now.
     const { rows: sized } = await sql<{ rows: number }>`
-      select reltuples::float8 as rows from pg_class where oid = 'search_entry'::regclass`.execute(
-      trx,
-    );
+      select case when relpages > 0
+                  then reltuples / relpages
+                       * (pg_relation_size(oid) / current_setting('block_size')::int)
+                  else reltuples end::float8 as rows
+      from pg_class where oid = 'search_entry'::regclass`.execute(trx);
     const rows = Number(sized[0]?.rows ?? -1);
     const N = SEARCH_RANK_BOUND;
     const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
       let road = options.probe?.road;
-      // The rows a walk reads at most: every row for a road forced, so it answers alone.
-      let reads: number = Number.MAX_SAFE_INTEGER;
+      // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
+      // test sets how many.
+      let reads: number = options.probe?.reads ?? Number.MAX_SAFE_INTEGER;
       if (road === undefined) {
         const { rows: estimate } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
           explain (format json) select 1 from search_entry e where ${where}`.execute(trx);
@@ -644,6 +661,8 @@ export async function searchWords(
           seen?.({ statement, road });
           return walked.map((row) => row.id);
         }
+        // Too few among the rows read: the indexes road answers instead.
+        seen?.({ statement, road });
         road = 'indexes';
       }
       await explained(statement, indexes);

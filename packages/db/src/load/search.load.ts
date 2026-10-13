@@ -382,7 +382,11 @@ describe('search at scale', () => {
   const search = (
     reader: Reader,
     each: Case,
-    options: { scope?: SearchScope; road?: SearchRoad; seen?: (road: SearchRoad) => void } = {},
+    options: {
+      scope?: SearchScope;
+      road?: SearchRoad;
+      seen?: (statement: string, road: SearchRoad) => void;
+    } = {},
   ) =>
     service.withTenant(tenant, async (trx) => {
       const answer = await searchWords(trx, reader.principal, each.query, {
@@ -391,8 +395,7 @@ describe('search at scale', () => {
         probe: {
           ...(options.road === undefined ? {} : { road: options.road }),
           seen: (event) => {
-            if (event.road !== undefined && event.statement === 'results')
-              options.seen?.(event.road);
+            if (event.road !== undefined) options.seen?.(event.statement, event.road);
           },
         },
       });
@@ -496,6 +499,7 @@ describe('search at scale', () => {
 
   it('answers the latest within the budget at a million, every answer checked against ground truth', async () => {
     const timings: Record<string, unknown>[] = [];
+    const fallbacks = { scans: 0, fellBack: 0 };
     for (const each of [...cases, ...(await filtered())]) {
       const real = {
         ...each,
@@ -509,19 +513,36 @@ describe('search at scale', () => {
         ];
         expect(walk, `${reader.name} ${each.name}`).toEqual(indexes);
         const matches = await check(reader, real, indexes);
+        // The road chosen answers as the indexes road does, fallen back or not.
+        expect(await search(reader, real), `${reader.name} ${each.name}`).toEqual(indexes);
         const samples: number[] = [];
-        const roads = new Set<SearchRoad>();
-        await search(reader, real); // warm
-        for (let run = 0; run < RUNS; run += 1) {
+        // Each scan's roads in order, as `results:walk>indexes`: a walk that fell back.
+        const roads = new Set<string>();
+        let scans = 0;
+        let fellBack = 0;
+        for (let run = 0; run <= RUNS; run += 1) {
+          const taken = new Map<string, SearchRoad[]>();
           const started = performance.now();
-          await search(reader, real, { seen: (road) => roads.add(road) });
+          await search(reader, real, {
+            seen: (statement, road) =>
+              taken.set(statement, [...(taken.get(statement) ?? []), road]),
+          });
+          // The first run warms, and is not timed.
+          if (run === 0) continue;
           samples.push(performance.now() - started);
+          for (const [statement, sequence] of taken) {
+            roads.add(`${statement}:${sequence.join('>')}`);
+            scans += 1;
+            if (sequence.length > 1) fellBack += 1;
+          }
         }
+        fallbacks.scans += scans;
+        fallbacks.fellBack += fellBack;
         const row = {
           case: each.name,
           reader: reader.name,
           matches,
-          road: [...roads].join('+'),
+          road: [...roads].join(' '),
           p50: Number(percentile(samples, 50).toFixed(1)),
           p95: Number(percentile(samples, 95).toFixed(1)),
           max: Number(Math.max(...samples).toFixed(1)),
@@ -535,6 +556,11 @@ describe('search at scale', () => {
       }
     }
     report.latest = timings;
+    report.walkFallbacks = {
+      ...fallbacks,
+      rate: Number((fallbacks.fellBack / fallbacks.scans).toFixed(3)),
+    };
+    report.worstP95 = Math.max(...timings.map((row) => Number(row.p95)));
   }, 7_200_000);
 
   it('answers every version as it stands, unbounded until SV3b, timed', async () => {

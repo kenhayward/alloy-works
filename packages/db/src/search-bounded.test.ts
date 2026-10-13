@@ -74,6 +74,8 @@ describe('search bounded at scale (SV3)', () => {
   let quality: string;
   let archive: string;
   let approved: string;
+  let status: string;
+  let general: string;
   let oldYak: string;
 
   const person = (trx: TenantTransaction, subject: string, name: string) =>
@@ -113,7 +115,7 @@ describe('search bounded at scale (SV3)', () => {
     await service.withTenant(production, async (trx) => {
       ada = await person(trx, 'ada', 'Ada');
       ivy = await person(trx, 'ivy', 'Ivy');
-      const general = (
+      general = (
         await trx
           .selectFrom('space')
           .select('id')
@@ -165,8 +167,8 @@ describe('search bounded at scale (SV3)', () => {
         })
       ).artifactId;
 
-      // 1,100 yak sections in Quality, written to the projection directly: the first 300 changed at one
-      // instant, so the bound falls inside a tie; every other one Approved.
+      // 1,100 yak sections in Quality, written to the projection directly: the 950th to the 1,050th
+      // changed at one instant, so the bound falls inside a tie; every other one Approved.
       const herd = await emptyDocument(trx, quality, 'Yak herd');
       await sql`
         insert into search_entry
@@ -174,7 +176,8 @@ describe('search bounded at scale (SV3)', () => {
            configuration, body, vector)
         select ${herd.artifactId}::uuid, 'section', 'yak' || n, ${herd.id}::uuid, ${quality}::uuid,
                'Yak ' || n, ${ada}::uuid,
-               date_trunc('hour', now()) - case when n <= 300 then interval '0' else n * interval '1 s' end,
+               date_trunc('hour', now()) - least(greatest(n, 950), 1050) * interval '1 s'
+                 + case when n > 1050 then (1050 - n) * interval '1 s' else interval '0' end,
                jsonb_build_object(${approved}::text, n % 2 = 0), 'english', 'Yak herding ' || n,
                to_tsvector('english', 'Yak herding ' || n)
         from generate_series(1, 1100) n`.execute(trx);
@@ -196,6 +199,38 @@ describe('search bounded at scale (SV3)', () => {
         insert into search_text (entry_id, place, body, configuration)
         select id, 'title', title, configuration from search_entry
         where kind = 'section' and title ilike 'yak%'`.execute(trx);
+      // Gnu: thirty in General, long ago, where Ivy reads, and two hundred newer in Quality, where she
+      // may not; and a zebu whose Status is empty.
+      status = (
+        await createArtifact(trx, {
+          author: ada,
+          substance: {
+            kind: 'field',
+            content: {
+              schemaVersion: DEFINITION_SCHEMA_VERSION as typeof DEFINITION_SCHEMA_VERSION,
+              id: randomUUID(),
+              name: 'Status',
+              dataType: 'text',
+              multiplicity: 'one',
+              validation: {},
+            },
+          },
+        })
+      ).artifactId;
+      const herds = await emptyDocument(trx, general, 'Herds');
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, field_values,
+           configuration, body, vector)
+        select ${herds.artifactId}::uuid, 'section', 'gnu' || n, ${herds.id}::uuid,
+               case when n <= 30 then ${general}::uuid else ${quality}::uuid end, 'Gnu ' || n, ${ada}::uuid,
+               case when n <= 30 then now() - interval '2 days' else now() - n * interval '1 s' end,
+               '{}', 'english'::regconfig, 'Gnu grazing', to_tsvector('english', 'Gnu grazing')
+        from generate_series(1, 230) n
+        union all
+        select ${herds.artifactId}::uuid, 'section', 'zebu', ${herds.id}::uuid, ${quality}::uuid,
+               'Zebu', ${ada}::uuid, now(), jsonb_build_object(${status}::text, ''), 'english',
+               'Zebu', to_tsvector('english', 'Zebu')`.execute(trx);
       // The same words in two configurations.
       const kites = await emptyDocument(trx, quality, 'Kites');
       await sql`
@@ -366,7 +401,7 @@ describe('search bounded at scale (SV3)', () => {
     expect(mode).toBe('force_custom_plan');
   });
 
-  it('looks for a term under 3 characters as a word, never as part of one', async () => {
+  it('looks for a term under 3 characters as part of a word only beside a longer term', async () => {
     const cart = await service.withTenant(production, async (trx) => {
       const made = await createComponent(trx, {
         spaceId: quality,
@@ -400,7 +435,9 @@ describe('search bounded at scale (SV3)', () => {
     expect(await found('ox')).toEqual([cart]);
     expect(await found('car')).toEqual([cart]);
     expect(await found('ca')).toEqual([]);
-    expect(await found('wheel ca')).toEqual([]);
+    // Beside a longer term it narrows that term's part of a word, which the trigram index answers.
+    expect(await found('wheel ca')).toEqual([cart]);
+    expect(await found('wheel cx')).toEqual([]);
   });
 
   it('finds by scoped terms alone, on either road', async () => {
@@ -411,5 +448,29 @@ describe('search bounded at scale (SV3)', () => {
       });
       expect(found.items.map((each) => [each.artifactId, each.node])).toEqual([[oldYak, 'old']]);
     }
+  });
+
+  it('falls back from a walk that finds too few among the newest rows it reads to the indexes road, with the same answer', async () => {
+    const roads: SearchRoad[] = [];
+    const walked = await search(ivy, 'gnu', {
+      probe: {
+        road: 'walk',
+        reads: 100,
+        seen: (event) => {
+          if (event.road !== undefined) roads.push(event.road);
+        },
+      },
+    });
+    // The newest hundred rows are Quality's, which Ivy may not read: the walk finds none of hers.
+    expect(roads).toEqual(['walk', 'indexes']);
+    expect(walked).toEqual(await search(ivy, 'gnu', { probe: { road: 'indexes' } }));
+    expect([walked.count, walked.capped]).toEqual([30, false]);
+  });
+
+  it('filters by no empty value of a field, which no facet offers', async () => {
+    const found = await search(ada, 'zebu', {
+      filters: { values: [{ field: status, value: '' }] },
+    });
+    expect(found.items).toEqual([]);
   });
 });

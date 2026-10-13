@@ -651,7 +651,7 @@
     {
       "id": "API-058",
       "area": "API",
-      "statement": "Anything any area requires to be listable must be paged, capped or budgeted wherever its size grows with the tenant, with a stable order (API-007). A listing that cannot be paged must state its cap and show itself as capped (**SCH-034**)",
+      "statement": "Anything any area requires to be listable must be paged, capped or budgeted wherever its size grows with the tenant, with a stable order (API-007). A listing that cannot be paged must state its cap and show itself as capped (**SCH-073**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
@@ -11082,7 +11082,7 @@
     {
       "id": "SCH-043",
       "area": "SCH",
-      "statement": "A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-034): \"used in 14 places\" must count only what the requesting user may see, and a large answer must page and cap like any other",
+      "statement": "A structural query's counts, lists and paging must be filtered exactly as text search is (SCH-032, SCH-073): \"used in 14 places\" must count only what the requesting user may see, and a large answer must page and cap like any other",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
@@ -23659,7 +23659,7 @@
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-bounded.test.ts",
-      "line": 324,
+      "line": 359,
       "kind": "title"
     },
     {

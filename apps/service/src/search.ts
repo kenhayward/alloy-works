@@ -39,7 +39,7 @@ export function sentenceFor(answer: SearchAnswer): string {
       // the count is capped exactly when the ranking is bounded.
       if (answer.capped) {
         return answer.facetsBounded
-          ? `More than ${answer.count.toLocaleString('en-GB')} results. Showing the best of the ${SEARCH_RANK_BOUND.toLocaleString('en-GB')} changed most recently.`
+          ? `More than ${answer.count.toLocaleString('en-GB')} results. Showing the best matches among the ${SEARCH_RANK_BOUND.toLocaleString('en-GB')} changed most recently.`
           : `More than ${answer.count.toLocaleString('en-GB')} results.`;
       }
       return answer.count === 1 ? '1 result.' : `${answer.count.toLocaleString('en-GB')} results.`;

@@ -129,7 +129,9 @@ wanted term under three characters is looked for as a word alone, since no trigr
 terms alone are found through `search_text`'s word index.
 
 **Ranking may use statistics from the whole tenant (SCH-032).** Postgres's own ranking uses none. This
-is permission for a better ranking later, not a description of today's.
+is permission for a better ranking later, not a description of today's. The road leaves a residual in
+time alone: a walk passes over the newest rows whatever their readers, so how long it takes can hint
+at how much newer content the reader may not see; no answer, count or facet changes with it.
 
 ## Meaning
 

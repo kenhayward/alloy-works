@@ -120,7 +120,7 @@ const RANGES: Record<string, string> = {
   earlier: 'Before this year',
 };
 
-/** A count as a reader is told it: exact, or at least the cap where there are more (SCH-034). */
+/** A count as a reader is told it: exact, or at least the cap where there are more (SCH-073). */
 const countOf = (facet: { readonly count: number; readonly capped: boolean }) =>
   facet.capped
     ? `at least ${facet.count.toLocaleString('en-GB')}`
