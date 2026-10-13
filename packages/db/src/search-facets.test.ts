@@ -414,9 +414,10 @@ describe('narrowing a search, and counting what narrows it', () => {
         await sql`
           insert into search_entry
             (artifact_id, kind, node, version_id, space_id, title, owner, changed_at,
-             configuration, body)
+             configuration, body, vector)
           select ${artifact}::uuid, 'section', 'yak' || n, ${version}::uuid, ${space}::uuid,
-                 'Yak ' || n, ${ada}::uuid, now(), 'english', 'Yak herding'
+                 'Yak ' || n, ${ada}::uuid, now(), 'english', 'Yak herding',
+                 to_tsvector('english', 'Yak herding')
           from generate_series(1, ${many}) n`.execute(trx);
       }
     });

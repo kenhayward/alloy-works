@@ -98,6 +98,9 @@ describe('the domain package', () => {
         // Each block's own words, which the recovery dialog compares two texts by (the R1 plan).
         'wordsByBlock',
         'searchKinds',
+        // A thread's words and title, which the projection indexes a message at a time (the SV plan).
+        'messageWords',
+        'threadTitle',
         'canonicaliseVersion',
         'canonicaliseVersionContent',
         'componentTypeOf',

@@ -14,7 +14,9 @@ import {
 import {
   configurationFor,
   entriesOf,
+  messageWords,
   SEARCH_CONFIGURATIONS,
+  threadTitle,
   type SearchContext,
   type SearchEntryDraft,
 } from './entries.js';
@@ -390,5 +392,26 @@ describe('what search reads from a version', () => {
     expect(configurationFor('ja')).toBe('simple');
     expect(configurationFor(null)).toBe('simple');
     expect(SEARCH_CONFIGURATIONS).toContain('simple');
+  });
+});
+
+describe("a thread's words (the SV plan, SV-K)", () => {
+  it('reads a message as its words alone, a mention contributing none', () => {
+    expect(
+      messageWords([
+        { text: `Check  the${String.fromCharCode(10)}valve, ` },
+        { mention: ADA },
+        { text: ' please' },
+      ]),
+    ).toBe('Check the valve, please');
+    expect(messageWords([{ mention: ADA }])).toBe('');
+  });
+
+  it("titles a thread by its first message's opening words", () => {
+    expect(threadTitle('Is the torque right?')).toBe('Is the torque right?');
+    expect(
+      threadTitle('one two three four five six seven eight nine ten eleven twelve thirteen'),
+    ).toBe('one two three four five six seven eight nine ten eleven twelve...');
+    expect(threadTitle('')).toBe('A thread');
   });
 });

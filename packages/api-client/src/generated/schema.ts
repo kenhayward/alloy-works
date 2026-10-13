@@ -48039,9 +48039,9 @@ export interface operations {
                         capped: boolean;
                         items: {
                             /** @enum {string} */
-                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition";
+                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition" | "thread";
                             artifactId: string;
-                            /** @description A section's outline node; null for anything else */
+                            /** @description A section's outline node, or the node a thread on a document is on; else null */
                             node: string | null;
                             title: string;
                             space: {
@@ -48049,7 +48049,7 @@ export interface operations {
                                 name: string;
                             } | null;
                             changedAt: string;
-                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns` */
+                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns`, a thread's `message:<comment id>`, or `anchor`, the text a thread quotes */
                             place: string | null;
                             /** @description Words from that place, about thirty, each matched word a piece of its own */
                             passage: {
@@ -48072,6 +48072,17 @@ export interface operations {
                                 document: string;
                                 /** @description Where in the document it stands: a section, or where a component is first placed */
                                 node: string | null;
+                            } | null;
+                            /** @description The thread a thread result is; null for anything else */
+                            thread: {
+                                id: string;
+                                /**
+                                 * @description What `artifactId` is
+                                 * @enum {string}
+                                 */
+                                on: "component" | "document";
+                                /** @description Whether it is resolved, as it is now */
+                                resolved: boolean;
                             } | null;
                         }[];
                         /** @description Every declared dimension, each counted with the other filters in force and its own left out */

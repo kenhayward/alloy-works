@@ -50,6 +50,7 @@ are never in it.
 | **SCH-062** | Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it                                                                                                                                   |
 | **SCH-003** | The latest version by default; on request every version, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))                                                              |
 | **SCH-058** | A result from an earlier version names it and links to that version's read-only page at its place; one found in a baseline, to the baseline's page at its node                                                                                                                                                           |
+| **SCH-071** | A thread is one `search_entry` on the artifact it is anchored to, so the one predicate filters it; each message a `search_text` place, appended to the entry as it is written and an edit rebuilt from the entry's own places, never by re-reading the thread ([Threads](#threads))                                      |
 | **SCH-066** | An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction                                                                                                  |
 
 **IAM-075 is not claimed here.** It asks that search indexes, caches, secrets and publications each be
@@ -350,6 +351,30 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
 - **Known gap, #596**: that backfill runs inside the migration's transaction. Measured at 20,000
   components (96,003 earlier versions) it took 678 s and wrote 3.8 GB, near 9 hours and 190 GB at a
   million; #596 moves it to a resumable worker job.
+
+## Threads
+
+Built in SV2 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), SV-K to SV-M).
+
+- **One row per thread** (0089): `kind = 'thread'`, `thread_id`, its `artifact_id` and `space_id` the
+  component or document it is on, so the predicate filters it by that and archival or deletion hides it;
+  a thread on a section keeps the document's row with the section's node. Each message is the place
+  `message:<comment>`, a span's quoted text the place `anchor`. Title: the first message's opening
+  words; owner: who started it. A mention is no words, so no name is indexed. There is no `title`
+  place, so `title:` never reaches a thread.
+- **Bounded**: the whole holds a thread's messages in the order written up to 300,000 characters
+  (`THREAD_WORDS_MAX`), so its vector stays inside the 1 MB a tsvector holds; a message past it is kept as a place, its words no longer finding the thread, and is never refused.
+- **Incremental** (SCH-071): `vector` is a plain column from 0089. `addComment` inserts its message's
+  place and appends to the entry (`body || text`, `vector || to_tsvector(...)`), reading no thread
+  table; `editComment` replaces its place and rebuilds body and vector from the entry's places, in the
+  order written (each message's first text id, the one thing it reads of the thread), and the title
+  when it is the first message. Each in the comment's transaction (SCH-066).
+- **Current**: `indexVersion` never moves or deletes a thread's row; a thread is found under
+  `versions=all` and never in a baseline. Resolved is read from `thread_resolution` when searched;
+  orphaned is the panel's. A result carries `thread { id, on, resolved }` and links to
+  `#/{components|documents}/{id}/threads/{thread}[/comments/{comment}]`, a read-only page saying
+  whether it is orphaned; a document's thread offers **Open in Review**, the threads panel at it.
+- **Not yet**: internal threads (SCH-072, COL-038) are T4's; there is no internal flag to index.
 
 ## Open questions
 

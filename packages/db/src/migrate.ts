@@ -25,13 +25,15 @@ const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
 /**
  * The tenant migrations after which search's projection is made again from the chain, in the same
  * transaction, and how much of it: 0031, which makes it, the whole; 0088, which keeps earlier versions,
- * those alone. A later migration that changes what the projection holds, or how a version is read into
+ * those alone; 0089, which makes threads searchable, their rows alone. A later migration that changes what the projection holds, or how a version is read into
  * it, is added here, so every environment's is rebuilt by the run that applies it (search.md, "Written
  * with the version").
  */
-const REINDEXED_BY = new Map<string, 'whole' | 'earlier'>([
+const REINDEXED_BY = new Map<string, 'whole' | 'earlier' | 'threads'>([
   ['0031_search', 'whole'],
   ['0088_search_earlier', 'earlier'],
+  // Every thread's row, and nothing else's (the SV plan, SV-K).
+  ['0089_search_threads', 'threads'],
 ]);
 
 /**
@@ -106,9 +108,11 @@ export async function migrate(
           owner: `${role}_owner`,
           runtime: role,
           after: async (applied) => {
-            // Each scope once, the current set first: neither rebuilds the other's table.
+            // Each scope once, the current set first: none rebuilds another's rows, but the whole
+            // holds every thread's.
             const scopes = new Set(applied.flatMap((version) => REINDEXED_BY.get(version) ?? []));
-            for (const scope of ['whole', 'earlier'] as const) {
+            if (scopes.has('whole')) scopes.delete('threads');
+            for (const scope of ['whole', 'earlier', 'threads'] as const) {
               if (scopes.has(scope)) await reindexSearch(transactionOver(client), scope);
             }
           },

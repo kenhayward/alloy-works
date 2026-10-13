@@ -193,6 +193,35 @@ async function earlierWord(client: Client) {
   return { ...made, word };
 }
 
+/** A component with a thread on it whose message holds a word nothing else does (SCH-071). */
+async function threadWord(client: Client) {
+  const word = `tapir${Date.now()
+    .toString(36)
+    .replace(/\d/g, (digit) => 'abcdefghij'[Number(digit)]!)}`;
+  const made = await makeComponent(client, 'Kiln notes', [
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [{ type: 'text', value: 'Fire slowly.', marks: [] }],
+    },
+  ]);
+  const { data: read } = await client.GET('/v1/components/{id}', {
+    params: { path: { id: made.id } },
+  });
+  if (!read) throw new Error(`reading ${made.id} answered nothing`);
+  const started = await client.POST('/v1/components/{id}/threads', {
+    params: { path: { id: made.id } },
+    body: {
+      version: read.version.id,
+      anchor: { kind: 'component' },
+      parts: [{ text: `The ${word} cone slumped.` }],
+    } as never,
+  });
+  if (!started.data) throw new Error(`starting a thread answered ${started.response.status}`);
+  return { word, title: `The ${word} cone slumped.` };
+}
+
 /** The component's page, opened by its address, its surface drawn and its save chip saying Saved. */
 async function openComponent(page: Page, id: string): Promise<Locator> {
   await page.goto(`${SERVICE}/#/components/${id}`);
@@ -224,6 +253,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
   }) => {
     const held = await heldChanges(api(), 'Changes held');
     const earlier = await earlierWord(api());
+    const thread = await threadWord(api());
     await withPage(async (page) => {
       const check = async (state: string, arrival: Arrival) => {
         await arrive(arrival);
@@ -342,6 +372,23 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             .getByRole('article', { name: earlier.title })
             .getByText(`The ${earlier.word} burrow.`),
           page.getByRole('link', { name: 'Open the latest' }),
+        ],
+      });
+
+      // A thread found by its message (SCH-071), and its own page at that message.
+      await page.goto(`${SERVICE}/#/search?q=${thread.word}`);
+      const threadFound = page.getByRole('article').filter({ hasText: 'Thread in' });
+      await check('the search page with a thread', {
+        shows: [threadFound.getByText('In a message', { exact: true })],
+      });
+      await threadFound.getByRole('link', { name: thread.title }).click();
+      await check('a thread at its own address', {
+        shows: [
+          page.getByRole('heading', { name: 'A thread on the whole component', level: 1 }),
+          page
+            .getByRole('region', { name: 'A thread on the whole component' })
+            .getByText(thread.title, { exact: true }),
+          page.getByRole('link', { name: 'Open the component' }),
         ],
       });
 

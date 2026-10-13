@@ -35,6 +35,11 @@ interface Result {
     readonly document: string;
     readonly node: string | null;
   } | null;
+  readonly thread?: {
+    readonly id: string;
+    readonly on: 'component' | 'document';
+    readonly resolved: boolean;
+  } | null;
 }
 
 interface Facets {
@@ -74,13 +79,15 @@ interface Chosen {
 
 const LATEST: SearchScope = { versions: 'latest', baseline: null };
 
-/** Which version or baseline a result was found in, in words; null for the latest. */
+/** Which version or baseline a result was found in, or that a thread is resolved; else null. */
 const foundIn = (item: Result): string | null =>
-  item.baseline
-    ? `In baseline ${item.baseline.name}`
-    : item.version && !item.version.latest
-      ? `Version ${item.version.number}, earlier`
-      : null;
+  item.thread?.resolved
+    ? 'Resolved'
+    : item.baseline
+      ? `In baseline ${item.baseline.name}`
+      : item.version && !item.version.latest
+        ? `Version ${item.version.number}, earlier`
+        : null;
 
 const NOTHING_CHOSEN: Chosen = {
   kinds: [],
@@ -102,6 +109,7 @@ const KINDS: Record<string, string> = {
   metadataSchema: 'Metadata schema',
   componentType: 'Component type',
   queryDefinition: 'Query definition',
+  thread: 'Thread',
 };
 
 const RANGES: Record<string, string> = {
@@ -430,7 +438,7 @@ export function SearchPage({
               const where = whereFound(item.place, fields);
               const found = foundIn(item);
               return (
-                <li key={`${item.artifactId}:${item.node ?? ''}`}>
+                <li key={`${item.artifactId}:${item.node ?? ''}:${item.thread?.id ?? ''}`}>
                   <article className={styles['result']}>
                     <p className={styles['about']}>
                       {KINDS[item.kind] ?? item.kind}

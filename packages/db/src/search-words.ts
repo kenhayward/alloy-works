@@ -8,6 +8,7 @@ import {
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
+import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -40,7 +41,7 @@ export interface PassagePiece {
 export interface SearchResult {
   readonly kind: SearchKind;
   readonly artifactId: string;
-  /** A section's outline node; null for everything else. */
+  /** A section's outline node, or the node a thread on a document stands at; else null. */
   readonly node: string | null;
   readonly title: string;
   readonly spaceId: string | null;
@@ -65,6 +66,15 @@ export interface SearchResult {
     readonly name: string;
     readonly document: string;
     readonly node: string | null;
+  } | null;
+  /**
+   * The thread a `thread` result is, what it is on, and whether it is resolved, read when searched
+   * (the SV plan, SV-M); null for every other kind.
+   */
+  readonly thread: {
+    readonly id: string;
+    readonly on: 'component' | 'document';
+    readonly resolved: boolean;
   } | null;
 }
 
@@ -285,6 +295,9 @@ export async function searchWords(
   const readable = await loadReadableSet(trx, principal);
   if (!readable) return undefined;
   const scope = options.scope ?? 'latest';
+  // Threads have rows from 0089; before it, which only a test migrated to an earlier point reads, none.
+  const threaded = await vectorStored(trx);
+  const threadOf = threaded ? sql`thread_id` : sql`null::uuid as thread_id`;
   // A baseline is read as its document is (BL-H): one the reader may not read, or none, is not found.
   let baseline: { id: string; name: string; document: string; documentVersion: string } | undefined;
   if (typeof scope === 'object') {
@@ -317,16 +330,21 @@ export async function searchWords(
       or exists (select 1 from baseline_pin bp
                   where bp.baseline_id = ${at.id}
                     and bp.artifact_id = x.artifact_id and bp.version_id = x.version_id))`;
+  // A thread is current, so in every version's search, and pinned by no baseline (SV-C).
   const source =
     scope === 'latest'
-      ? sql`search_entry`
+      ? threaded
+        ? sql`search_entry`
+        : sql`(select *, null::uuid as thread_id from search_entry)`
       : baseline === undefined
-        ? sql`(select ${ENTRY_COLUMNS}, true as current from search_entry
+        ? sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry
                union all
-               select ${ENTRY_COLUMNS}, false as current from search_earlier where kind <> 'asset')`
-        : sql`(select ${ENTRY_COLUMNS}, true as current from search_entry x where ${pinnedBy(baseline)}
+               select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier
+                where kind <> 'asset')`
+        : sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry x
+                where ${pinnedBy(baseline)} ${threaded ? sql`and x.thread_id is null` : sql``}
                union all
-               select ${ENTRY_COLUMNS}, false as current from search_earlier x
+               select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier x
                 where ${pinnedBy(baseline)})`;
   const texts =
     scope === 'latest'
@@ -341,7 +359,9 @@ export async function searchWords(
       : sql<SqlBool>`not e.deleted`;
   // One result per artifact and place however many of its versions match, counted once (SV-C).
   const counted =
-    scope === 'latest' ? sql`count(*)` : sql`count(distinct (b.artifact_id, coalesce(b.node, '')))`;
+    scope === 'latest'
+      ? sql`count(*)`
+      : sql`count(distinct (b.artifact_id, coalesce(b.node, ''), coalesce(b.thread_id::text, '')))`;
   const parsed = parseQuery(query);
   if (parsed.outcome !== 'query') return parsed;
 
@@ -479,6 +499,9 @@ export async function searchWords(
       current: boolean;
       revision_no: number | null;
       version_no: number | null;
+      thread_id: string | null;
+      thread_on: 'component' | 'document' | null;
+      resolved: boolean;
     }[];
     kinds: FacetRow[];
     spaces: FacetRow[];
@@ -500,7 +523,7 @@ export async function searchWords(
     ),
     base as (
       select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-             e.component_type, e.field_values, e.version_id,
+             e.component_type, e.field_values, e.version_id, e.thread_id,
              ${scope === 'latest' ? sql`true` : sql`e.current`} as current,
              ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
       from ${source} e
@@ -542,9 +565,9 @@ export async function searchWords(
     results as (${
       scope === 'latest'
         ? sql`select * from matched`
-        : sql`select distinct on (m.artifact_id, m.node) m.*
+        : sql`select distinct on (m.artifact_id, m.node, m.thread_id) m.*
                from matched m join artifact_version v on v.id = m.version_id
-               order by m.artifact_id, m.node, v.revision_no desc, v.version_no desc`
+               order by m.artifact_id, m.node, m.thread_id, v.revision_no desc, v.version_no desc`
     })
     select
       (select count(*) from (select 1 from results limit ${SEARCH_COUNT_CAP + 1}) c) as total,
@@ -552,11 +575,21 @@ export async function searchWords(
        from (
          select p.id, p.rank, p.kind, p.artifact_id, p.node, p.title, p.space_id,
                 sp.name as space_name, p.changed_at, best.place, best.passage,
-                p.version_id, p.current, av.revision_no, av.version_no
+                p.version_id, p.current, av.revision_no, av.version_no,
+                p.thread_id, th.on_kind as thread_on, th.resolved
          from (select * from results order by rank desc, changed_at desc, id
                limit ${limit} offset ${offset}) p
          left join space sp on sp.id = p.space_id
          left join artifact_version av on av.id = p.version_id
+         -- Resolved as it is now, read when searched (SV-M).
+         left join lateral (${
+           threaded
+             ? sql`select t.on_kind,
+                          exists (select 1 from thread_resolution r where r.thread_id = t.id)
+                            as resolved
+                     from thread t where t.id = p.thread_id`
+             : sql`select null::text as on_kind, false as resolved`
+         }) th on true
          left join lateral (
            select t.place,
                   ts_headline(t.configuration, t.body,
@@ -673,6 +706,10 @@ export async function searchWords(
                     ? (placed.get(`${item.artifact_id}:${item.version_id}`) ?? null)
                     : null,
             },
+      thread:
+        item.thread_id === null || item.thread_on === null
+          ? null
+          : { id: item.thread_id, on: item.thread_on, resolved: item.resolved === true },
     })),
     facets: {
       kinds: capped(row.kinds),

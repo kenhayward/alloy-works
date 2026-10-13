@@ -12,8 +12,9 @@ import {
 import { sql } from 'kysely';
 import { tell } from './inbox.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
+import { indexMessage, indexThreadStarted, reindexMessage } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
-import { readVersion } from './versions.js';
+import { lockArtifact, readVersion } from './versions.js';
 
 /** A comment as a thread holds it: who, when, and every text it has had, the latest last. */
 export interface StoredComment {
@@ -145,6 +146,9 @@ export async function startThread(
     readonly author: string;
   },
 ): Promise<ThreadAnswer> {
+  // Under its artifact's lock, as an archival or a deletion takes it, so its search row is flagged as
+  // the acts leave it (the SV plan, SV-K).
+  await lockArtifact(trx, input.on);
   const version = await readVersion(trx, input.version);
   if (!version || version.artifactId !== input.on) return { answer: 'missing' };
   if (version.kind !== 'component' && version.kind !== 'document') return { answer: 'missing' };
@@ -181,6 +185,7 @@ export async function startThread(
     anchor: anchor.data.kind,
   });
   const comment = await insertComment(trx, thread.id, input.author, checked.parts);
+  await indexThreadStarted(trx, thread.id, { comment, parts: checked.parts });
   const mentioned = mentionsIn(checked.parts);
   const { untold } = await tell(trx, {
     kind: 'mention',
@@ -244,6 +249,7 @@ export async function addComment(
   if ('problem' in checked) return { answer: 'parts.invalid', problem: checked.problem };
   const earlier = await threadCommenters(trx, input.thread);
   const comment = await insertComment(trx, input.thread, input.author, checked.parts);
+  await indexMessage(trx, { thread: input.thread, comment, parts: checked.parts });
   const mentioned = mentionsIn(checked.parts);
   const on = (await threadOn(trx, input.thread))!;
   const { untold, told } = await tell(trx, {
@@ -304,6 +310,21 @@ export async function editComment(
   await recordThreadEvent(trx, 'comment.edited', input.thread, {
     thread: input.thread,
     comment: input.comment,
+  });
+  // The first message - the first text written - titles the thread, so its edit titles it again (SV-K).
+  const first = await trx
+    .selectFrom('thread_comment as m')
+    .innerJoin('thread_comment_text as x', 'x.comment_id', 'm.id')
+    .select('m.id')
+    .where('m.thread_id', '=', input.thread)
+    .orderBy('x.id')
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  await reindexMessage(trx, {
+    thread: input.thread,
+    comment: input.comment,
+    parts: checked.parts,
+    first: first.id === input.comment,
   });
   // A mention an edit adds tells its person; one already there tells nobody again (TH-E).
   const before = new Set(mentionsIn(last.parts as CommentParts));

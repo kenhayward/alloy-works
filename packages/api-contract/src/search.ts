@@ -32,7 +32,7 @@ export const SearchQuery = z.object({
   kind: z
     .string()
     .regex(
-      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)){0,9}$/,
+      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition|thread)){0,10}$/,
       'Expected kinds, separated by commas',
     )
     .optional()
@@ -79,12 +79,16 @@ export const SearchKind = z.enum([
   'metadataSchema',
   'componentType',
   'queryDefinition',
+  'thread',
 ]);
 
 export const SearchResultView = z.object({
   kind: SearchKind,
   artifactId: z.string(),
-  node: z.string().nullable().describe("A section's outline node; null for anything else"),
+  node: z
+    .string()
+    .nullable()
+    .describe("A section's outline node, or the node a thread on a document is on; else null"),
   title: z.string(),
   space: z.object({ id: z.string(), name: z.string() }).nullable(),
   changedAt: z.string(),
@@ -92,7 +96,7 @@ export const SearchResultView = z.object({
     .string()
     .nullable()
     .describe(
-      'Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns`',
+      "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns`, a thread's `message:<comment id>`, or `anchor`, the text a thread quotes",
     ),
   passage: z
     .array(z.object({ text: z.string(), matched: z.boolean() }))
@@ -121,6 +125,14 @@ export const SearchResultView = z.object({
     })
     .nullable()
     .describe('The baseline searched, when the search named one'),
+  thread: z
+    .object({
+      id: z.string(),
+      on: z.enum(['component', 'document']).describe('What `artifactId` is'),
+      resolved: z.boolean().describe('Whether it is resolved, as it is now'),
+    })
+    .nullable()
+    .describe('The thread a thread result is; null for anything else'),
 });
 export type SearchResultView = z.infer<typeof SearchResultView>;
 

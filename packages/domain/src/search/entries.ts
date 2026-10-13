@@ -27,6 +27,8 @@ export const searchKinds = [
   'componentType',
   // A query definition, by its title, description and columns (SCH-055; the D2 plan, D2-S).
   'queryDefinition',
+  // A thread, by its messages, as whoever may read what it is on (SCH-071; the SV plan, SV-K).
+  'thread',
 ] as const;
 
 export type SearchKind = (typeof searchKinds)[number];
@@ -436,4 +438,21 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
       ];
     }
   }
+}
+
+/** A thread's message as search reads it (the SV plan, SV-K): its words alone, a mention none. */
+export function messageWords(
+  parts: readonly ({ readonly text: string } | { readonly mention: string })[],
+): string {
+  return words(parts.map((part) => ('text' in part ? part.text : ' ')).join(''));
+}
+
+/** How many of its first message's words title a thread. */
+const TITLE_WORDS = 12;
+
+/** A thread's title: its first message's opening words, or a plain name where it has none. */
+export function threadTitle(first: string): string {
+  const all = words(first).split(' ').filter(Boolean);
+  if (all.length === 0) return 'A thread';
+  return all.length > TITLE_WORDS ? `${all.slice(0, TITLE_WORDS).join(' ')}...` : all.join(' ');
 }

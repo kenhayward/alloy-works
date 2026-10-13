@@ -1,6 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import type { ThreadAnchor } from '@alloy-works/domain';
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import styles from './ThreadsPanel.module.css';
 
@@ -213,6 +213,7 @@ export function ThreadsPanel({
   onThreads,
   onGoTo,
   baseline,
+  opening = null,
 }: {
   client: Client;
   document: string;
@@ -230,6 +231,8 @@ export function ThreadsPanel({
   placeOf: (thread: ThreadSummary) => string;
   onThreads?: (threads: readonly ThreadSummary[]) => void;
   onGoTo?: (thread: ThreadSummary) => void;
+  /** A thread to open, once for each arrival of the address naming it (the SV plan, SV-M). */
+  opening?: { readonly thread: string; readonly arrival: number } | null;
 }) {
   const ids = useId();
   const [show, setShow] = useState<Show>('open');
@@ -287,6 +290,15 @@ export function ThreadsPanel({
     // A thread on a component since deleted is listed and does not open (COL-067): say why.
     else setRefused(refusalOf(answer.error, 'The thread could not be opened.'));
   };
+
+  const openedFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (opening === null || openedFor.current === opening.arrival) return;
+    openedFor.current = opening.arrival;
+    void open(opening.thread);
+    // `open` is made afresh each render; the arrival is what asks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opening?.thread, opening?.arrival]);
 
   /**
    * Says whom a comment named who may not read what it is on, and so were told nothing (COL-015),

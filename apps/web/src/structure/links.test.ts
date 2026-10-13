@@ -9,6 +9,7 @@ import {
   documentVersionLink,
   nodeLink,
   publishingLink,
+  reviewThreadLink,
   templateAccessAddress,
   templateAccessLink,
 } from './links.js';
@@ -111,6 +112,19 @@ describe('the addresses of a document and its nodes', () => {
       document: DOCUMENT,
       node: NODE,
     });
+  });
+
+  it('addresses a document opened in Review at one thread, and reads it back', () => {
+    const THREAD = 'ffffffff-0000-4000-8000-000000000002';
+    expect(reviewThreadLink(DOCUMENT, THREAD)).toBe(
+      `#/documents/${DOCUMENT}/review/threads/${THREAD}`,
+    );
+    expect(documentAddress(reviewThreadLink(DOCUMENT, THREAD))).toEqual({
+      kind: 'review',
+      document: DOCUMENT,
+      thread: THREAD,
+    });
+    expect(documentAddress(`#/documents/${DOCUMENT}/review`)).toBeNull();
   });
 
   it('addresses a document opened at its Publishing panel, and at a failed request there, and reads them back', () => {

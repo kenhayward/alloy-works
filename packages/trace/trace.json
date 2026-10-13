@@ -18038,6 +18038,10 @@
           "howItIsMet": "A result from an earlier version names it and links to that version's read-only page at its place; one found in a baseline, to the baseline's page at its node"
         },
         {
+          "id": "SCH-071",
+          "howItIsMet": "A thread is one `search_entry` on the artifact it is anchored to, so the one predicate filters it; each message a `search_text` place, appended to the entry as it is written and an edit rebuilt from the entry's own places, never by re-reading the thread ([Threads](#threads))"
+        },
+        {
           "id": "SCH-066",
           "howItIsMet": "An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction"
         }
@@ -20456,7 +20460,13 @@
     {
       "id": "SCH-039",
       "file": "apps/service/src/search-routes.test.ts",
-      "line": 103,
+      "line": 143,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-071",
+      "file": "apps/service/src/search-routes.test.ts",
+      "line": 107,
       "kind": "title"
     },
     {
@@ -21588,6 +21598,12 @@
       "kind": "title"
     },
     {
+      "id": "COL-017",
+      "file": "apps/web/src/review/ThreadPage.test.tsx",
+      "line": 104,
+      "kind": "title"
+    },
+    {
       "id": "CNT-137",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
       "line": 183,
@@ -21614,19 +21630,25 @@
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 230,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 230,
+      "line": 267,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-057",
+      "file": "apps/web/src/search/links.test.ts",
+      "line": 35,
       "kind": "title"
     },
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/links.test.ts",
-      "line": 56,
+      "line": 84,
       "kind": "title"
     },
     {
@@ -21950,19 +21972,19 @@
     {
       "id": "CNT-155",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 124,
+      "line": 165,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 147,
+      "line": 188,
       "kind": "title"
     },
     {
       "id": "IAM-081",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 124,
+      "line": 165,
       "kind": "title"
     },
     {
@@ -22052,13 +22074,13 @@
     {
       "id": "STR-047",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 37,
+      "line": 38,
       "kind": "title"
     },
     {
       "id": "VER-025",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 20,
+      "line": 21,
       "kind": "title"
     },
     {
@@ -23630,7 +23652,7 @@
     {
       "id": "VER-038",
       "file": "packages/db/src/search-earlier.test.ts",
-      "line": 517,
+      "line": 518,
       "kind": "title"
     },
     {
@@ -23655,6 +23677,24 @@
       "id": "SCH-062",
       "file": "packages/db/src/search-facets.test.ts",
       "line": 350,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-020",
+      "file": "packages/db/src/search-threads.test.ts",
+      "line": 450,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-032",
+      "file": "packages/db/src/search-threads.test.ts",
+      "line": 410,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-071",
+      "file": "packages/db/src/search-threads.test.ts",
+      "line": 231,
       "kind": "title"
     },
     {
@@ -24722,7 +24762,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 662,
+      "line": 665,
       "kind": "title"
     },
     {
@@ -25352,7 +25392,7 @@
     {
       "id": "SCH-002",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 58,
+      "line": 60,
       "kind": "title"
     },
     {
@@ -26144,13 +26184,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 794,
+      "line": 841,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 460,
+      "line": 507,
       "kind": "title"
     },
     {

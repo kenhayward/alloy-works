@@ -75,6 +75,7 @@ function view(answer: SearchAnswer): SearchAnswerView {
       passage: each.passage.map((piece) => ({ ...piece })),
       version: each.version === null ? null : { ...each.version },
       baseline: each.baseline === null ? null : { ...each.baseline },
+      thread: each.thread === null ? null : { ...each.thread },
     })),
   };
 }

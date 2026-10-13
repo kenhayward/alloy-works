@@ -9,7 +9,7 @@
  */
 
 const DOCUMENTS =
-  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/(publishing)(?:\/requests\/([0-9a-f-]{36}))?|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/compare\/(now|[0-9a-f-]{36}))?|\/versions\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26}))?)?)?$/;
+  /^#\/documents(?:\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/(access)|\/(publishing)(?:\/requests\/([0-9a-f-]{36}))?|\/baselines\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26})|\/compare\/(now|[0-9a-f-]{36}))?|\/versions\/([0-9a-f-]{36})(?:\/nodes\/([a-z2-7]{26}))?|\/review\/threads\/([0-9a-f-]{36}))?)?$/;
 
 /**
  * What a `#/documents...` address names: the list, one document, one node of one document, one
@@ -31,6 +31,8 @@ export type DocumentAddress =
       readonly baseline: string;
       readonly node: string | null;
     }
+  /** The document in Review, its threads panel at one thread (the SV plan, SV-M). */
+  | { readonly kind: 'review'; readonly document: string; readonly thread: string }
   /** One version of the document, read only, and a node in it (SCH-058; the SV plan, SV-H). */
   | {
       readonly kind: 'version';
@@ -49,9 +51,22 @@ export type DocumentAddress =
 export function documentAddress(hash: string): DocumentAddress | null {
   const matched = DOCUMENTS.exec(hash);
   if (!matched) return null;
-  const [, document, node, access, publishing, request, baseline, pinned, against, version, at] =
-    matched;
+  const [
+    ,
+    document,
+    node,
+    access,
+    publishing,
+    request,
+    baseline,
+    pinned,
+    against,
+    version,
+    at,
+    thread,
+  ] = matched;
   if (document === undefined) return { kind: 'documents' };
+  if (thread !== undefined) return { kind: 'review', document, thread };
   if (version !== undefined) return { kind: 'version', document, version, node: at ?? null };
   if (access !== undefined) return { kind: 'access', document };
   if (publishing !== undefined) return { kind: 'publishing', document, request: request ?? null };
@@ -60,6 +75,11 @@ export function documentAddress(hash: string): DocumentAddress | null {
   }
   if (baseline !== undefined) return { kind: 'baseline', document, baseline, node: pinned ?? null };
   return { kind: 'document', document, node: node ?? null };
+}
+
+/** A document opened in Review, its threads panel at one thread (the SV plan, SV-M). */
+export function reviewThreadLink(document: string, thread: string): string {
+  return `#/documents/${document}/review/threads/${thread}`;
 }
 
 /** The address of one version of a document, read only, and a node in it (SCH-058). */

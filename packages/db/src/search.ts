@@ -20,6 +20,7 @@ import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
 import { deletionStored, isDeleted } from './deletion.js';
 import { earlierStored } from './search-earlier.js';
+import { indexEveryThread, vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
 
@@ -225,19 +226,30 @@ interface Placing {
   readonly deleted?: boolean;
 }
 
-/** Rewrites an artifact's current entries from these drafts. */
+/**
+ * Rewrites an artifact's current entries from these drafts, leaving its threads' alone (SV-K). From 0089
+ * the vector is a plain column, set here (SV-L).
+ */
 async function write(
   trx: TenantTransaction,
   placing: Placing,
   drafts: readonly SearchEntryDraft[],
 ): Promise<void> {
-  await trx.deleteFrom('search_entry').where('artifact_id', '=', placing.artifactId).execute();
+  const threads = await vectorStored(trx);
+  let gone = trx.deleteFrom('search_entry').where('artifact_id', '=', placing.artifactId);
+  if (threads) gone = gone.where('thread_id', 'is', null);
+  await gone.execute();
   if (drafts.length === 0) return;
   const entries = drafts.map((draft) => ({ id: randomUUID(), draft }));
+  const bodyOf = (draft: SearchEntryDraft) => draft.texts.map((each) => each.text).join(' ');
   await trx
     .insertInto('search_entry')
     .values(
       entries.map(({ id, draft }) => ({
+        // Before 0089 the column is generated, and only its default may be written.
+        vector: threads
+          ? sql<string>`to_tsvector(${draft.configuration}::regconfig, ${bodyOf(draft)})`
+          : sql<string>`default`,
         id,
         artifact_id: placing.artifactId,
         kind: draft.kind,
@@ -250,7 +262,7 @@ async function write(
         component_type: draft.kind === 'component' ? placing.componentType : null,
         field_values: JSON.stringify(draft.values),
         configuration: draft.configuration,
-        body: draft.texts.map((each) => each.text).join(' '),
+        body: bodyOf(draft),
         ...(placing.archived === undefined ? {} : { archived: placing.archived }),
         ...(placing.deleted === undefined ? {} : { deleted: placing.deleted }),
       })),
@@ -327,12 +339,14 @@ const naming = (person: string) =>
  * moved rows name are held FOR SHARE, in id order, so an erasure waits for them to commit (SV-J).
  */
 async function moveEarlier(trx: TenantTransaction, version: StoredVersion): Promise<void> {
+  // A thread's row is current whatever version it was made against, and never moves (SV-K).
+  const notThread = (await vectorStored(trx)) ? sql`and e.thread_id is null` : sql``;
   const older = sql`(select v.id from artifact_version v
      where v.artifact_id = ${version.artifactId}
        and (v.revision_no, v.version_no) < (${version.revision}, ${version.version}))`;
   const { rows: newer } = await sql<{ id: string }>`
     select e.id from search_entry e join artifact_version v on v.id = e.version_id
-     where e.artifact_id = ${version.artifactId}
+     where e.artifact_id = ${version.artifactId} ${notThread}
        and (v.revision_no, v.version_no) > (${version.revision}, ${version.version})
      limit 1`.execute(trx);
   if (newer.length > 0) {
@@ -344,19 +358,23 @@ async function moveEarlier(trx: TenantTransaction, version: StoredVersion): Prom
      where p.id::text in (
        select jsonb_path_query(e.field_values, '$.** ? (exists(@.user)).user') #>> '{}'
          from search_entry e
-        where e.artifact_id = ${version.artifactId} and e.version_id in ${older})
+        where e.artifact_id = ${version.artifactId} and e.version_id in ${older} ${notThread})
      order by p.id
      for share`.execute(trx);
   const columns = sql.raw(
     'id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values, configuration, body, vector, archived, deleted',
   );
   await sql`insert into search_earlier (${columns})
-    select ${columns} from search_entry
-     where artifact_id = ${version.artifactId} and version_id in ${older}`.execute(trx);
+    select ${columns} from search_entry e
+     where artifact_id = ${version.artifactId} and version_id in ${older} ${notThread}`.execute(
+    trx,
+  );
   await sql`insert into search_earlier_text (entry_id, place, body, configuration, vector)
     select t.entry_id, t.place, t.body, t.configuration, t.vector
       from search_text t join search_entry e on e.id = t.entry_id
-     where e.artifact_id = ${version.artifactId} and e.version_id in ${older}`.execute(trx);
+     where e.artifact_id = ${version.artifactId} and e.version_id in ${older} ${notThread}`.execute(
+    trx,
+  );
 }
 
 /** What every version of an artifact is indexed with: where it is, who made it, and its acts. */
@@ -567,14 +585,19 @@ async function writeEveryEarlier(trx: TenantTransaction): Promise<void> {
 
 /**
  * The projection again, from the chain: what the migration runner runs in the run that applies 0031
- * (`whole`: every searchable artifact's latest version and every publication) or 0088 (`earlier`: every
- * earlier version, written apart, until #596 moves it to a resumable job), and what a changed projection
- * runs. Neither scope touches the other's table.
+ * (`whole`: every searchable artifact's latest version, every publication and every thread), 0088
+ * (`earlier`: every earlier version, written apart, until #596 moves it to a resumable job) or 0089
+ * (`threads`: every thread's row alone), and what a changed projection runs. No scope touches another's
+ * rows but `whole`, which holds `threads`.
  */
 export async function reindexSearch(
   trx: TenantTransaction,
-  scope: 'whole' | 'earlier' = 'whole',
+  scope: 'whole' | 'earlier' | 'threads' = 'whole',
 ): Promise<void> {
+  if (scope === 'threads') {
+    await indexEveryThread(trx);
+    return;
+  }
   if (scope === 'earlier') {
     if (!(await earlierStored(trx))) return;
     await trx.deleteFrom('search_earlier').execute();
@@ -597,6 +620,7 @@ export async function reindexSearch(
   }
   const publications = await trx.selectFrom('publication').select('id').execute();
   for (const each of publications) await indexPublication(trx, each.id);
+  await indexEveryThread(trx);
 }
 
 /**
