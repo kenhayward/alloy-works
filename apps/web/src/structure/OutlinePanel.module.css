@@ -219,6 +219,13 @@
   list-style: none;
 }
 
+/* WCAG 2.2's target size: a line of its own is still 24px tall. */
+.referring a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 .stack {
   display: grid;
   justify-items: start;
