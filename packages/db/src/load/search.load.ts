@@ -419,7 +419,12 @@ describe('search at scale', () => {
         probe: {
           ...(options.road === undefined ? {} : { road: options.road }),
           seen: (event) => {
-            if (event.road !== undefined) options.seen?.(event.statement, event.road);
+            if (event.road !== undefined) {
+              options.seen?.(
+                event.scan === undefined ? event.statement : `${event.statement}@${event.scan}`,
+                event.road,
+              );
+            }
           },
         },
       });

@@ -44,6 +44,8 @@ export interface SearchProbe {
   readonly seen?: (event: {
     readonly statement: 'results' | 'facets' | 'page';
     readonly road?: SearchRoad;
+    /** The table a road scanned: every version scans two. */
+    readonly scan?: string;
     readonly plan?: unknown;
   }) => void;
 }
@@ -738,6 +740,7 @@ export async function searchWords(
       where: RawBuilder<SqlBool>,
       candidates: RawBuilder<unknown>,
       rows: number,
+      relation: string,
     ) => {
       let road = options.probe?.road;
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
@@ -764,16 +767,16 @@ export async function searchWords(
         await explained(statement, walk);
         const { rows: walked } = await sql<{ id: string; at: string }>`${walk}`.execute(trx);
         if (walked.length > N || reads === Number.MAX_SAFE_INTEGER) {
-          seen?.({ statement, road });
+          seen?.({ statement, road, scan: relation });
           return walked;
         }
         // Too few among the rows read: the indexes road answers instead.
-        seen?.({ statement, road });
+        seen?.({ statement, road, scan: relation });
         road = 'indexes';
       }
       await explained(statement, indexes);
       const { rows: found } = await sql<{ id: string; at: string }>`${indexes}`.execute(trx);
-      seen?.({ statement, road });
+      seen?.({ statement, road, scan: relation });
       return found;
     };
     const sizes = await Promise.all(scans.map((scan) => sizeOf(scan.relation)));
@@ -781,7 +784,7 @@ export async function searchWords(
     const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
       const found: { id: string; at: string }[] = [];
       for (const [index, scan] of scans.entries()) {
-        found.push(...(await newestOf(statement, where, scan.from, sizes[index]!)));
+        found.push(...(await newestOf(statement, where, scan.from, sizes[index]!, scan.relation)));
       }
       return found
         .sort((a, b) => {
