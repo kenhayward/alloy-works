@@ -74,7 +74,19 @@ export type DocumentBindingsQuery = z.infer<typeof DocumentBindingsQuery>;
  * who may read the query definition, as D2 shows a definition only to its reader. The stored record
  * is whole either way.
  */
+const [serviceIdentity, endUserIdentity] = provenanceSchema.shape.identity.options;
+
 export const ProvenanceView = provenanceSchema.extend({
+  identity: z.union([
+    serviceIdentity,
+    endUserIdentity.extend({
+      asSeen: endUserIdentity.shape.asSeen
+        .nullable()
+        .describe(
+          'The name the source saw the person by, or null where they have since been erased; the record still holds it',
+        ),
+    }),
+  ]),
   columns: z
     .array(
       provenanceSchema.shape.columns.element.extend({

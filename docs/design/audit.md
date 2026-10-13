@@ -98,7 +98,9 @@ audit_label (
 - **Labels** (Ken, 2026-10-08): every event keeps the names and titles needed to read it once its
   originals are gone - the actor's name, the subject's title, the space's name, a grant's role and
   grantee. **Erasure** (VER-038) of a person replaces their labels' text with a fixed word and sets
-  `erased_at`, by an act that is itself an event; nothing else ever changes a label.
+  `erased_at`, by an act that is itself an event; nothing else ever changes a label. Erasing a person
+  ([lifecycle.md](lifecycle.md), "Erasure") ends with it, after every event the act records, and its
+  event carries the administrator's label (0087); an erased person is never labelled again.
 - **Detail is strict per kind**, a zod shape in `packages/domain/src/audit/`: a version cut names its
   version and parent; a connection change the fields changed; a refusal its permission, target, wire
   code and rule; a grant its role, level and effect. No free text a person typed, other than labels.
@@ -195,8 +197,9 @@ order and is computed at export, so it needs nothing stored now.
 ## Kept as written
 
 The migration revokes `update`, `delete` and `truncate` on `audit_event` from the service's login, as
-the version chain's does, with a trigger refusing an update for anyone else; `audit_label` grants
-`update (text, erased_at)` alone, to an erasure function the service calls. Nothing deletes from
+the version chain's does, with a trigger refusing an update for anyone else; a label changes only by
+`erase_labels`, run as the schema's owner, which sets `text` and `erased_at` alone (a trigger refuses
+anything else), and which the service calls last when it erases a person. Nothing deletes from
 either. **This is policy enforced by the database, not write-once storage** (LIF-Q02): an operator with
 the owner's role could still alter a row, which LIF-055's signed export (T7) is for.
 

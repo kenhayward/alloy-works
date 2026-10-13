@@ -9,6 +9,7 @@ import {
   type MetadataValues,
 } from '@alloy-works/domain';
 import { currentDefinitionsFor, type CurrentDefinitions } from './creation.js';
+import { erasedIn } from './erasure.js';
 import type { TenantTransaction } from './tables.js';
 import type { StoredVersion } from './versions.js';
 import {
@@ -60,16 +61,23 @@ export async function unstorableValues(
     (each) => each.rule === 'fixed' || each.rule === 'type',
   );
   const named = principalIdsIn(values, effective).filter((id) => UUID.test(id));
-  const known = new Set(
+  const known = new Map(
     named.length === 0
       ? []
-      : (await trx.selectFrom('principal').select('id').where('id', 'in', named).execute()).map(
-          (row) => row.id,
-        ),
+      : (
+          await trx
+            .selectFrom('principal')
+            .select('id')
+            .select(erasedIn().as('erased'))
+            .where('id', 'in', named)
+            .execute()
+        ).map((row) => [row.id, row.erased]),
   );
-  // Nothing deactivates a principal yet, so every principal this tenant holds is an active one.
+  // An erased person is the one inactive principal (the ER plan, ER-D), which still passes.
   failures.push(
-    ...checkUserValues(values, effective, (id) => (known.has(id) ? { active: true } : undefined)),
+    ...checkUserValues(values, effective, (id) =>
+      known.has(id) ? { active: !known.get(id) } : undefined,
+    ),
   );
   return failures;
 }
@@ -94,7 +102,9 @@ export async function listPeople(
     .selectFrom('principal as p')
     .select(['p.id', 'p.display_name', 'p.email'])
     .select(sortColumns([sql`p.created_at`]))
-    .where('p.subject', 'is not', null);
+    .where('p.subject', 'is not', null)
+    // An erased person is nobody to pick (the ER plan, ER-D).
+    .where(erasedIn('p'), '=', false);
   const { rows, next } = await keysetPage<{
     id: string;
     display_name: string | null;

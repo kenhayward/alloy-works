@@ -87,6 +87,9 @@ export const PrincipalList = z.object({
         .enum(['user', 'service', 'external'])
         .describe('external: from outside the organisation, and held to the external rules'),
       invited: z.boolean().describe('Invited by address, and not yet signed in'),
+      erased: z
+        .boolean()
+        .describe('Erased: named "Erased person", their address gone, and never signed in again'),
     }),
   ),
   next: z.string().nullable().describe('The cursor for the next page, or null at the end'),

@@ -237,6 +237,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0084_legal_holds',
       '0085_deletion',
       '0086_retention_keeps',
+      '0087_erasure',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

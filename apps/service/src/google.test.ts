@@ -1,6 +1,8 @@
 import {
   bootstrapCluster,
   createTenant,
+  ERASED_NAME,
+  erasePerson,
   inviteToTenant,
   migrate,
   permitGoogleSignIn,
@@ -99,5 +101,24 @@ describe('who a Google account may enter as (IAM-054)', () => {
 
   it('refuses an account nobody invited', async () => {
     expect(await admit(account('bob-1', 'bob@example.com'))).toBeUndefined();
+  });
+
+  it('answers an erased account erased, and never names it again (the ER plan, ER-D)', async () => {
+    const workspace = { hostedDomain: 'example.org' };
+    const erasing = await admit(account('alice-admin', 'alice@example.org', workspace));
+    const nell = await admit(account('nell-1', 'nell@example.org', workspace));
+    await service.withTenant(tenant, (trx) => erasePerson(trx, nell!, erasing!), {
+      actorKind: 'person',
+      actor: erasing!,
+    });
+    expect(await admit(account('nell-1', 'nell@example.org', workspace))).toBe('erased');
+    const row = await service.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('principal')
+        .select(['display_name', 'email'])
+        .where('id', '=', nell!)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row).toEqual({ display_name: ERASED_NAME, email: null });
   });
 });

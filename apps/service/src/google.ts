@@ -1,30 +1,23 @@
-import { claimInvitation, type TenantTransaction } from '@alloy-works/db';
+import { claimInvitation, identifyKnown, type TenantTransaction } from '@alloy-works/db';
 import type { Identity } from './oidc.js';
 
 /**
  * Whether a Google account may enter this environment, and as which principal (IAM-054). Signing in
  * to Google proves who someone is, not that they belong here: an account enters as a principal
  * admitted before, as the principal an invitation to its verified address made, or through a Workspace
- * domain the environment names. Returns that principal, or undefined for an account it does not admit.
+ * domain the environment names. Returns that principal, `erased` for one erased, or undefined for an
+ * account it does not admit.
  */
 export async function admitGoogleAccount(
   trx: TenantTransaction,
   identity: Identity,
   /** The sign-in request's trace id, for the events a claim records. */
   traceId?: string,
-): Promise<string | undefined> {
-  // Admitted before: found by issuer and subject alone, whatever its address says now.
-  const known = await trx
-    .updateTable('principal')
-    .set({
-      email: identity.email,
-      email_verified: identity.emailVerified,
-      display_name: identity.name,
-    })
-    .where('issuer', '=', identity.issuer)
-    .where('subject', '=', identity.subject)
-    .returning('id')
-    .executeTakeFirst();
+): Promise<string | 'erased' | undefined> {
+  // Admitted before: found by issuer and subject alone, whatever its address says now; an erased
+  // account is answered so, and named nothing (the ER plan, ER-D).
+  const known = await identifyKnown(trx, identity);
+  if (known === 'erased') return known;
   if (known) return known.id;
 
   // Invited: bound once, to this account, only for an address Google verifies. From now on the

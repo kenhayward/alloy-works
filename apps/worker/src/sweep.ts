@@ -2,7 +2,7 @@ import {
   CHECK_GIVE_UPS,
   enqueueJob,
   foldDigests,
-  labelled,
+  principalLabel,
   publicationsToCheckAgain,
   recordEvent,
   recordCheckGivenUp,
@@ -45,16 +45,8 @@ export async function sweepExpiredSignIns(
           .returning(['id', 'principal_id', 'expires_at', 'idle_expires_at'])
           .execute();
         for (const session of sessions) {
-          const holder = await trx
-            .selectFrom('principal')
-            .select(['display_name', 'email'])
-            .where('id', '=', session.principal_id)
-            .executeTakeFirst();
-          const label = labelled(
-            'subject',
-            holder && (holder.display_name ?? holder.email),
-            session.principal_id,
-          );
+          // Nobody erased is named (the ER plan, ER-D).
+          const label = await principalLabel(trx, 'subject', session.principal_id);
           const expiredAt =
             session.idle_expires_at < session.expires_at
               ? session.idle_expires_at

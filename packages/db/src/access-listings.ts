@@ -1,6 +1,7 @@
 import type { Level, Permission } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
+import { erasedIn } from './erasure.js';
 import type { TenantTransaction } from './tables.js';
 
 export type { Page, PageRequest };
@@ -13,6 +14,8 @@ export interface PersonSummary {
   readonly kind: 'user' | 'service' | 'external';
   /** Invited by address, and not yet signed in. */
   readonly invited: boolean;
+  /** Erased (the ER plan, ER-F): named by the fixed word, their address gone. */
+  readonly erased: boolean;
 }
 
 export interface ListedGrant {
@@ -179,6 +182,7 @@ export async function listPrincipals(
     .selectFrom('principal')
     .select(['id', 'display_name as name', 'email', 'kind'])
     .select(sql<boolean>`issuer is null`.as('invited'))
+    .select(erasedIn().as('erased'))
     .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
     .orderBy('id')
     .limit(page.limit + 1)

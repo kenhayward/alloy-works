@@ -857,6 +857,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1164 (2026-10-13): ER1's erasure - the store, the routes, the People page and asSeen unshown.
     // 1160 (2026-10-13): the DL final review; two refusals cite LIF-019 no more, a preview's LIF-023.
     // 1161 (2026-10-13): DL2's retention keeps - the store, the routes, the Delete dialog and Retention.
     // 1154 (2026-10-13): DL1's SCH-032 test, an unreadable dependant never counted.
@@ -874,7 +875,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1160);
+    expect(model.citations).toHaveLength(1164);
   });
 
   it('cites no identifier the corpus does not hold', () => {

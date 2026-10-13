@@ -174,12 +174,13 @@ const answers = (responses: LightMyRequestResponse[]) =>
 describe('a route that changes access', () => {
   const env = freshEnvironment();
 
-  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, and set a group's members or delete it, each checking administer", () => {
+  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, set a group's members or delete it, and erase a person, each checking administer", () => {
     const declaring = allRoutes.filter(
       (route) => route.access.check === 'permission' && route.access.changesAccess === true,
     );
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
       'deleteGroup',
+      'erasePrincipal',
       'makeGrant',
       'removeGrant',
       'setGroupMembers',

@@ -291,6 +291,8 @@ const OTHER_TENANT_IDS: Readonly<
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
   leavePresence: async () => ({ viewer: '55555555-5555-4555-8555-555555555555' }),
   listPrincipalTokens: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
+  getErasure: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
+  erasePrincipal: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).principal }),
   revokePrincipalToken: async (tenant, db) => {
     const { principal, token } = await tokenIn(tenant, db);
     return { id: principal, token };

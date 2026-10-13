@@ -1,10 +1,11 @@
 # Lifecycle
 
-What happens to an artifact at the end of its working life
+What happens to an artifact at the end of its working life, and to a person at the end of theirs
 ([ADR-0060](../decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md)). This design
 covers **archival** and **legal holds**, built by [the AH plan](../plans/2026-10-12-ah-archival-and-holds.md),
-and **deletion** and **retention**, built by [the DL plan](../plans/2026-10-13-dl-deletion-and-retention.md);
-their decisions are the detail.
+**deletion** and **retention**, built by [the DL plan](../plans/2026-10-13-dl-deletion-and-retention.md),
+and **erasure**, built by [the ER plan](../plans/2026-10-13-er-erasure.md); their decisions are the
+detail.
 
 ## Requirements owned
 
@@ -20,6 +21,7 @@ their decisions are the detail.
 | **VER-044** | A restore naming a component since deleted is refused, naming each (DL-F)             |
 | **LIF-019** | Retention, below: a keep per kind, per space, or per kind in a space (DL-G)           |
 | **VER-037** | A keep and a hold each refuse deleting anything, a baseline's dependants among them   |
+| **VER-038** | Erasure, below: what is erased and what remains, stated and shown before erasing      |
 
 LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `artifact.deleted`,
 `artifact.undeleted`, `hold.applied`, `hold.removed` and `retention.changed`, are
@@ -182,3 +184,39 @@ and until when.
 
 **Audited** (LIF-019): `retention.changed`, `{ kind, space, days }`, days null where cleared, with
 the space.
+
+## Erasure
+
+**What erases** (ER-A, ER-C): a person, by an administrator of the environment, `administer` at the
+tenant (a space's administrator refused, an external one capped, a token scoped to it), never
+themselves or a service, and refused while any grant names them: their access is removed first.
+`packages/db/src/erasure.ts`; `GET /v1/principals/{id}/erasure` states it, `POST .../erase` does it.
+
+**What is erased**, in one transaction: their sessions ended, their tokens revoked, their provider
+and own memberships removed, the accepted invitation's row (it holds their address) deleted, any
+Google hand-off dropped; `display_name` becomes **Erased person**, `email` null, `email_verified`
+false, `erased_at` set (0087); last, `erase_labels` gives every audit label naming them a fixed word,
+those the act's own events wrote among them. Somebody invited who never signed in is withdrawn, and
+so goes whole. Every reader of a name shows the fixed word; `principalLabel` names them nothing, the
+people picker leaves them out, and a user value naming them reads as an inactive user.
+
+**What remains** (VER-038, ER-B), stated by the preview and shown before **Erase**: their id, and the
+issuer's pseudonymous subject for them, so every reference, author, thread, grant and event still
+holds; every event recorded against the id, readable by the fixed word; content, titles, comments and
+messages they wrote, their name included wherever somebody typed it ([ADR-0060](../decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md):
+LIF-Q03 stays open for them); a dataset version's record of how a source saw them (`asSeen`,
+immutable content), which the bindings view no longer shows for an erased person; audit exports made
+before; and the erasure's own event.
+
+**Never again** (ER-D): a sign-in by an erased person's issuer and subject is refused
+`403 principal_erased`, recorded as a failed sign-in naming nobody, before their claims touch the row;
+`principal_erased_stays` (0087) refuses any change to an erased row's name, address or identity, the
+owner's included. A new identity is a new person.
+
+**Races**: the act takes the access epoch, then the invitation's row, then the principal's, as a
+claim takes them; a sign-in holds the principal's row `FOR UPDATE` to look them up, and holds it
+`FOR SHARE` after any epoch lock before it makes a session. Either the act waits and ends the session,
+or the sign-in waits and is refused.
+
+**Audited**: each session, token, membership and withdrawal as its own kind, then
+`audit.label_erased`, `{ labels }`, about the person by id, naming the administrator and nobody erased.

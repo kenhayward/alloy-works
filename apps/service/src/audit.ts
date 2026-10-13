@@ -147,7 +147,8 @@ export type SignInFailure =
   | 'provider_refused'
   | 'not_invited'
   | 'handoff_expired'
-  | 'handoff_other_browser';
+  | 'handoff_other_browser'
+  | 'principal_erased';
 
 /**
  * Records a failed sign-in (IAM-013) in a short transaction of its own, since the sign-in commits

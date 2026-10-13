@@ -40,8 +40,8 @@ const SignInRoute = z.enum(['organisation', 'google']);
 
 /**
  * Why a sign-in failed, by kind alone (IAM-013): never the provider's message. A provider's error or
- * refusal and an uninvited account name nobody; a Google hand-off that expired or was redeemed in
- * another browser names the principal it was for.
+ * refusal, an uninvited account and an erased person (the ER plan, ER-D) name nobody; a Google
+ * hand-off that expired or was redeemed in another browser names the principal it was for.
  */
 export const signInFailures = [
   'provider_error',
@@ -49,6 +49,7 @@ export const signInFailures = [
   'not_invited',
   'handoff_expired',
   'handoff_other_browser',
+  'principal_erased',
 ] as const;
 const Permission = z.enum(permissions);
 const empty = z.strictObject({});
@@ -173,8 +174,9 @@ export const auditKindSpecs = {
   'authentication.signed_out': kind(
     ['IAM-013', 'IAM-040'],
     z.strictObject({
-      // `ended_by_holder`: its holder ended it from another of their sessions (IAM-040).
-      ended: z.enum(['signed_out', 'expired', 'route_closed', 'ended_by_holder']),
+      // `ended_by_holder`: its holder ended it from another of their sessions (IAM-040). `erased`:
+      // its holder was erased (the ER plan, ER-A).
+      ended: z.enum(['signed_out', 'expired', 'route_closed', 'ended_by_holder', 'erased']),
       session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),
     }),
@@ -300,7 +302,7 @@ export const auditKindSpecs = {
   'audit.label_erased': kind(
     ['VER-038'],
     z.strictObject({ labels: z.int().nonnegative() }),
-    'packages/db/migrations/tenant/0060_audit.sql',
+    'packages/db/migrations/tenant/0087_erasure.sql',
   ),
   // Declared now, emitted by the design that builds the act, which gives its detail a shape.
   'workflow.transitioned': kind(['LIF-026'], empty, LATER),

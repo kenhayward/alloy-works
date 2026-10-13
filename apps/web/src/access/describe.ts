@@ -30,6 +30,8 @@ export interface ShownPerson {
   readonly kind: 'user' | 'service' | 'external';
   /** Invited by address, and not yet signed in. */
   readonly invited: boolean;
+  /** Erased: named by the fixed word, their address gone (the ER plan, ER-F). */
+  readonly erased?: boolean | undefined;
 }
 
 /** An invitation as `GET /v1/invitations` lists it, with the members this page reads. */
@@ -183,7 +185,8 @@ export function isShownPerson(value: unknown): value is ShownPerson {
     (value.name === null || typeof value.name === 'string') &&
     (value.email === null || typeof value.email === 'string') &&
     (value.kind === 'user' || value.kind === 'service' || value.kind === 'external') &&
-    typeof value.invited === 'boolean'
+    typeof value.invited === 'boolean' &&
+    (value.erased === undefined || typeof value.erased === 'boolean')
   );
 }
 

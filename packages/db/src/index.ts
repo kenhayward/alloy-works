@@ -135,8 +135,10 @@ export type {
 export {
   closeSignInRoute,
   configureOrganisationSignIn,
+  identifyKnown,
   inviteToTenant,
   permitGoogleSignIn,
+  type SignedInClaims,
   type SignInRoute,
 } from './sign-in.js';
 export {
@@ -433,6 +435,16 @@ export {
   type HoldPlaceAnswer,
   type HoldReleaseAnswer,
 } from './holds.js';
+export {
+  ERASED_NAME,
+  erasedIn,
+  erasePerson,
+  erasureOf,
+  heldErased,
+  type ErasureAnswer,
+  type ErasureRefusal,
+  type ErasureState,
+} from './erasure.js';
 export {
   KEPT_KINDS,
   keptUntil,

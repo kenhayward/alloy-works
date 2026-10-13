@@ -377,6 +377,21 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             ),
         ],
       });
+      // Erasing a person asks first, saying what goes and what stays (the ER plan, ER-F): opened on
+      // Grace and closed, so nobody the suites share is erased.
+      await sections.getByRole('link', { name: /^People/ }).click();
+      await administration
+        .getByRole('table', { name: 'People' })
+        .getByRole('row', { name: /^Grace / })
+        .getByRole('button', { name: 'More actions for Grace' })
+        .click();
+      await page.getByRole('menuitem', { name: 'Erase' }).click();
+      const erasing = page.getByRole('dialog', { name: 'Erase Grace?' });
+      await check('erasing a person', {
+        shows: [heading('Erase Grace?', 2), erasing.getByRole('heading', { name: 'What stays' })],
+      });
+      await erasing.getByRole('button', { name: 'Cancel' }).click();
+      await leave(page.getByRole('dialog'));
     });
   });
 

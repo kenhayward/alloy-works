@@ -144,4 +144,34 @@ describe('sweeping what sign-ins leave behind', () => {
       await bare.close();
     }
   });
+
+  it('names nobody erased in the event of a session it ends (the ER plan, ER-D)', async () => {
+    const now = new Date();
+    const { principal, before } = await worker.withTenant(tenant, async (trx) => {
+      const erased = await trx
+        .insertInto('principal')
+        .values({ issuer: 'https://idp.example', subject: 'nell', display_name: 'Erased person' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await trx
+        .updateTable('principal')
+        .set({ erased_at: now })
+        .where('id', '=', erased.id)
+        .execute();
+      await trx
+        .insertInto('session')
+        .values({
+          token_hash: 'session-erased',
+          principal_id: erased.id,
+          route: 'organisation',
+          idle_expires_at: new Date(now.getTime() - 60_000),
+          expires_at: new Date(now.getTime() + 60_000),
+        })
+        .execute();
+      return { principal: erased.id, before: await newestEvent(trx) };
+    });
+    await sweepExpiredSignIns(worker, now);
+    const events = await worker.withTenant(tenant, (trx) => auditEvents(trx, before));
+    expect(events.map((event) => [event.subject, event.labels])).toEqual([[principal, {}]]);
+  });
 });

@@ -124,6 +124,7 @@ const WIRE_CODES = {
   'artifact.deleted': 'artifact_deleted',
   'deletion.refused': 'deletion_refused',
   'reference.deleted': 'reference_deleted',
+  'erasure.refused': 'erasure_refused',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

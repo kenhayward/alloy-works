@@ -138,6 +138,8 @@ describe('the rule behind a refusal', () => {
       'superseder.invalid',
       'superseded.already',
       'anchor.invalid',
+      // A person a grant still names, oneself, or a service: erasure's own guards (the ER plan, ER-C).
+      'erasure.refused',
       'parts.invalid',
       'thread.resolved',
       'comment.not_yours',

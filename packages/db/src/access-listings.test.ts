@@ -268,8 +268,22 @@ describe('listing grants, roles and people, for managing access', () => {
     expect(page.after).toBeNull();
     expect(page.items).toEqual(
       [
-        { id: ada, name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
-        { id: grace, name: 'Grace', email: 'grace@example.test', kind: 'user', invited: false },
+        {
+          id: ada,
+          name: 'Ada',
+          email: 'ada@example.test',
+          kind: 'user',
+          invited: false,
+          erased: false,
+        },
+        {
+          id: grace,
+          name: 'Grace',
+          email: 'grace@example.test',
+          kind: 'user',
+          invited: false,
+          erased: false,
+        },
       ].sort((a, b) => a.id.localeCompare(b.id)),
     );
 

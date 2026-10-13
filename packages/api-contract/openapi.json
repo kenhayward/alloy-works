@@ -21678,7 +21678,11 @@
                                                 ]
                                               },
                                               "asSeen": {
-                                                "type": "string"
+                                                "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -22735,7 +22739,11 @@
                                                 ]
                                               },
                                               "asSeen": {
-                                                "type": "string"
+                                                "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -53103,7 +53111,11 @@
                                                 ]
                                               },
                                               "asSeen": {
-                                                "type": "string"
+                                                "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -54160,7 +54172,11 @@
                                                 ]
                                               },
                                               "asSeen": {
-                                                "type": "string"
+                                                "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -56183,7 +56199,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -57240,7 +57260,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -59011,7 +59035,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -60068,7 +60096,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -61812,7 +61844,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -62869,7 +62905,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -64613,7 +64653,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -65670,7 +65714,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -67359,7 +67407,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -68416,7 +68468,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -70105,7 +70161,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -71162,7 +71222,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -73506,7 +73570,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -74563,7 +74631,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -76211,7 +76283,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -77268,7 +77344,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -78973,7 +79053,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -80030,7 +80114,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -81774,7 +81862,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -82831,7 +82923,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -84602,7 +84698,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -85659,7 +85759,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -87864,7 +87968,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -88921,7 +89029,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -90617,7 +90729,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -91674,7 +91790,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -93363,7 +93483,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -94420,7 +94544,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -96068,7 +96196,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -97125,7 +97257,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -98850,7 +98986,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -99907,7 +100047,11 @@
                                           ]
                                         },
                                         "asSeen": {
-                                          "type": "string"
+                                          "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -101651,7 +101795,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -102708,7 +102856,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -104479,7 +104631,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -105536,7 +105692,11 @@
                                               ]
                                             },
                                             "asSeen": {
-                                              "type": "string"
+                                              "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -107220,7 +107380,11 @@
                                   ]
                                 },
                                 "asSeen": {
-                                  "type": "string"
+                                  "description": "The name the source saw the person by, or null where they have since been erased; the record still holds it",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 }
                               },
                               "required": [
@@ -133658,6 +133822,10 @@
                           "invited": {
                             "type": "boolean",
                             "description": "Invited by address, and not yet signed in"
+                          },
+                          "erased": {
+                            "type": "boolean",
+                            "description": "Erased: named \"Erased person\", their address gone, and never signed in again"
                           }
                         },
                         "required": [
@@ -133665,7 +133833,8 @@
                           "name",
                           "email",
                           "kind",
-                          "invited"
+                          "invited",
+                          "erased"
                         ]
                       }
                     },
@@ -133830,6 +133999,704 @@
           },
           "404": {
             "description": "No such level or grant in this environment, or none the caller may see",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/principals/{id}/erase": {
+      "post": {
+        "operationId": "erasePrincipal",
+        "summary": "Erase a person: their name, address and audit labels, and their access",
+        "description": "Erases a person: their name becomes \"Erased person\", their address goes, every audit log label naming them takes a fixed word, and their sessions, API tokens, group memberships and invitation go with it. Somebody invited who never signed in is withdrawn. A later sign-in by the same account is refused. Refused while a grant names them, for the caller themselves and for a service. Erasing somebody erased changes nothing. Needs administer at the environment. Audited, naming the administrator and nobody erased.",
+        "tags": [
+          "People and principals"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Erased, or erased already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "erased": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "labels": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "How many audit labels this erasure erased; 0 where they were erased already"
+                    }
+                  },
+                  "required": [
+                    "erased",
+                    "labels"
+                  ]
+                },
+                "example": {
+                  "erased": true,
+                  "labels": 0
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such person in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "erasure_refused: a grant names them, they are the caller, or a service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "refusals": {
+                      "description": "erasure_refused: every reason",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "granted",
+                              "self",
+                              "service"
+                            ],
+                            "description": "granted: a grant names them, `grants` saying how many; remove their access first. self: nobody erases themselves. service: a service principal is no person"
+                          },
+                          "grants": {
+                            "description": "granted: how many grants name them",
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/principals/{id}/erasure": {
+      "get": {
+        "operationId": "getErasure",
+        "summary": "What erasing a person takes, what stays, and what refuses it",
+        "description": "States what erasing a person takes - their sessions, API tokens, group memberships, the invitation holding their address, and every audit log label naming them - what stays - their id and the identifier their provider gives them, every event against the id, and what they wrote - and everything refusing it now: a grant naming them, the caller themselves, or a service. Needs administer at the environment.",
+        "tags": [
+          "People and principals"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What erasing them would do now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "person": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "service",
+                            "external"
+                          ]
+                        },
+                        "invited": {
+                          "type": "boolean",
+                          "description": "Invited and never signed in: erasing withdraws the invitation, and them with it"
+                        },
+                        "erased": {
+                          "type": "boolean",
+                          "description": "Whether they are erased now"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "kind",
+                        "invited",
+                        "erased"
+                      ]
+                    },
+                    "erases": {
+                      "type": "object",
+                      "properties": {
+                        "sessions": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Sessions ended"
+                        },
+                        "tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "API tokens revoked"
+                        },
+                        "memberships": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Group memberships removed"
+                        },
+                        "invitation": {
+                          "type": "boolean",
+                          "description": "Whether an invitation holding their address is removed"
+                        },
+                        "labels": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Audit log labels naming them now, each taking a fixed word; those the erasure itself records are erased too"
+                        }
+                      },
+                      "required": [
+                        "sessions",
+                        "tokens",
+                        "memberships",
+                        "invitation",
+                        "labels"
+                      ],
+                      "description": "What goes: their name, which becomes \"Erased person\", their address, and every audit label naming them, with their access"
+                    },
+                    "remains": {
+                      "type": "object",
+                      "properties": {
+                        "events": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Audit events recorded against them, by id"
+                        }
+                      },
+                      "required": [
+                        "events"
+                      ],
+                      "description": "What stays: their id and their provider's identifier for them, which refuses any later sign-in; every event against the id; what they wrote, titles, comments and messages; what a data source recorded seeing them as, no longer shown; audit exports made before; and the erasure's own event"
+                    },
+                    "refusals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "granted",
+                              "self",
+                              "service"
+                            ],
+                            "description": "granted: a grant names them, `grants` saying how many; remove their access first. self: nobody erases themselves. service: a service principal is no person"
+                          },
+                          "grants": {
+                            "description": "granted: how many grants name them",
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "code"
+                        ]
+                      },
+                      "description": "Everything refusing erasure now; empty where they may be erased, or are erased"
+                    }
+                  },
+                  "required": [
+                    "person",
+                    "erases",
+                    "remains",
+                    "refusals"
+                  ]
+                },
+                "example": {
+                  "person": {
+                    "id": "example",
+                    "kind": "user",
+                    "invited": false,
+                    "erased": false
+                  },
+                  "erases": {
+                    "sessions": 0,
+                    "tokens": 0,
+                    "memberships": 0,
+                    "invitation": false,
+                    "labels": 0
+                  },
+                  "remains": {
+                    "events": 0
+                  },
+                  "refusals": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such person in this environment",
             "content": {
               "application/json": {
                 "schema": {
@@ -151329,7 +152196,7 @@
             }
           },
           "403": {
-            "description": "This account is not invited to that environment",
+            "description": "not_invited: this account is not invited to that environment; or principal_erased: it was erased from it",
             "content": {
               "application/json": {
                 "schema": {
@@ -151504,6 +152371,47 @@
           },
           "401": {
             "description": "The sign-in could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "principal_erased: this account was erased from this environment",
             "content": {
               "application/json": {
                 "schema": {
@@ -151778,6 +152686,47 @@
           },
           "401": {
             "description": "The sign-in could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "principal_erased: this account was erased from this environment",
             "content": {
               "application/json": {
                 "schema": {
