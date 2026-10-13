@@ -48037,7 +48037,7 @@ export interface operations {
                         count: number;
                         /** @description Whether more match than the count, which is then a lower bound */
                         capped: boolean;
-                        /** @description Whether the facets were counted over the most recently changed matches alone: the 1,000 newest with every filter, and the 1,000 newest failing one. Every facet count is then a lower bound, even a small exact-looking one, and a value only older matches hold is missing. Never for every version or a baseline. Under the latest, a capped count means the results too are the best matches among the 1,000 changed most recently */
+                        /** @description Whether the facets were counted over the most recently changed matches alone: the 1,000 newest with every filter, and the 1,000 newest failing one. Every facet count is then a lower bound, even a small exact-looking one, and a value only older matches hold is missing. Never for a baseline. Under the latest or every version, a capped count means the results too are the best matches among the 1,000 changed most recently */
                         facetsBounded: boolean;
                         items: {
                             /** @enum {string} */

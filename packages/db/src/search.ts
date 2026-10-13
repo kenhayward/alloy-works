@@ -20,6 +20,7 @@ import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
 import { deletionStored, isDeleted } from './deletion.js';
 import { earlierStored } from './search-earlier.js';
+import { foldHistory, historyStored, rebuildHistory } from './search-history.js';
 import { indexEveryThread, vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
@@ -458,6 +459,10 @@ export async function indexVersion(trx: TenantTransaction, version: StoredVersio
   const facts = await artifactFacts(trx, version.artifactId, version.kind);
   if (kept.has(version.kind) && (await earlierStored(trx))) await moveEarlier(trx, version);
   await write(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
+  // Each place's words over every version, folded under the lock its writer holds (SV3-K).
+  if (version.kind === 'component' || version.kind === 'document') {
+    await foldHistory(trx, version.artifactId, version.id);
+  }
 }
 
 /**
@@ -481,10 +486,10 @@ export async function lockNaming(trx: TenantTransaction, person: string): Promis
  * Rewrites every artifact whose entries name `person` in a value (#594): an entry's `field_values` are
  * the values its words were said from, so it is every entry whose text holds their name, and no more.
  * Each under its artifact's lock, in id order, its latest read under the lock, so a save cannot slip a
- * newer version beneath it (H1).
+ * newer version beneath it (H1). Answers the artifacts rewritten, whose history the erasure rebuilds.
  */
-export async function reindexNaming(trx: TenantTransaction, person: string): Promise<void> {
-  if (!(await projected(trx))) return;
+export async function reindexNaming(trx: TenantTransaction, person: string): Promise<string[]> {
+  if (!(await projected(trx))) return [];
   const named = await trx
     .selectFrom('search_entry')
     .select('artifact_id')
@@ -497,6 +502,7 @@ export async function reindexNaming(trx: TenantTransaction, person: string): Pro
     const version = await latestVersion(trx, each.artifact_id);
     if (version) await indexVersion(trx, version);
   }
+  return named.map((each) => each.artifact_id);
 }
 
 /**
@@ -583,17 +589,47 @@ async function writeEveryEarlier(trx: TenantTransaction): Promise<void> {
   }
 }
 
+/** What a reindex rewrites (`reindexSearch`). */
+export type ReindexScope = 'whole' | 'earlier' | 'threads' | 'history';
+
+/**
+ * Runs the scopes asked for once each, in order, and answers the order run: `whole` holds `threads`;
+ * history is made from the rest, so `whole` and `earlier` imply it and it runs last (SV3-K).
+ */
+export async function reindexScopes(
+  trx: TenantTransaction,
+  asked: Iterable<ReindexScope>,
+): Promise<ReindexScope[]> {
+  const scopes = new Set(asked);
+  if (scopes.has('whole')) scopes.delete('threads');
+  if (scopes.has('whole') || scopes.has('earlier')) scopes.add('history');
+  const order = (['whole', 'earlier', 'threads', 'history'] as const).filter((scope) =>
+    scopes.has(scope),
+  );
+  for (const scope of order) await reindexOne(trx, scope);
+  return order;
+}
+
 /**
  * The projection again, from the chain: what the migration runner runs in the run that applies 0031
  * (`whole`: every searchable artifact's latest version, every publication and every thread), 0088
- * (`earlier`: every earlier version, written apart, until #596 moves it to a resumable job) or 0089
- * (`threads`: every thread's row alone), and what a changed projection runs. No scope touches another's
- * rows but `whole`, which holds `threads`.
+ * (`earlier`: every earlier version, written apart, until #596 moves it to a resumable job), 0089
+ * (`threads`: every thread's row alone) or 0091 (`history`: every place's words over every version,
+ * from the projection), and what a changed projection runs. No scope touches another's rows but
+ * `whole`, which holds `threads`; `whole` and `earlier` then make history again.
  */
 export async function reindexSearch(
   trx: TenantTransaction,
-  scope: 'whole' | 'earlier' | 'threads' = 'whole',
+  scope: ReindexScope = 'whole',
 ): Promise<void> {
+  await reindexScopes(trx, [scope]);
+}
+
+async function reindexOne(trx: TenantTransaction, scope: ReindexScope): Promise<void> {
+  if (scope === 'history') {
+    await rebuildHistory(trx);
+    return;
+  }
   if (scope === 'threads') {
     await indexEveryThread(trx);
     return;
@@ -604,6 +640,8 @@ export async function reindexSearch(
     await writeEveryEarlier(trx);
     return;
   }
+  // History is made again after, from what this writes; folding into the old would be wasted.
+  if (await historyStored(trx)) await trx.deleteFrom('search_history').execute();
   await trx.deleteFrom('search_entry').execute();
   const latest = await trx
     .selectFrom('artifact_version')
@@ -626,10 +664,14 @@ export async function reindexSearch(
 /**
  * Rewrites every earlier version's rows whose values name `person` from that version (#594, for
  * `search_earlier`): an erased person's name is then said by the fixed word in every version. Each
- * artifact under its lock, in id order, so its acts' flags are read as they stand (L1).
+ * artifact under its lock, in id order, so its acts' flags are read as they stand (L1). Answers the
+ * artifacts rewritten, whose history the erasure rebuilds.
  */
-export async function rewriteEarlierNaming(trx: TenantTransaction, person: string): Promise<void> {
-  if (!(await earlierStored(trx))) return;
+export async function rewriteEarlierNaming(
+  trx: TenantTransaction,
+  person: string,
+): Promise<string[]> {
+  if (!(await earlierStored(trx))) return [];
   const named = await trx
     .selectFrom('search_earlier')
     .select(['artifact_id', 'version_id'])
@@ -654,4 +696,5 @@ export async function rewriteEarlierNaming(trx: TenantTransaction, person: strin
     const facts = await artifactFacts(trx, version.artifactId, version.kind);
     await writeEarlier(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
   }
+  return [...new Set(named.map((each) => each.artifact_id))];
 }

@@ -13,6 +13,7 @@ import { grant } from './grants.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
+import { rebuildHistory } from './search-history.js';
 import {
   SEARCH_RANK_BOUND,
   searchWords,
@@ -243,12 +244,16 @@ describe('search bounded at scale (SV3)', () => {
                (${kites.artifactId}::uuid, 'section', 'simple', ${kites.id}::uuid, ${quality}::uuid,
                 'Kites', ${ada}::uuid, now(), 'simple', 'Running kites',
                 to_tsvector('simple', 'Running kites'))`.execute(trx);
+      // Every version reads each place's history, made from these rows as 0091's run makes it.
+      await rebuildHistory(trx);
     });
     // Statistics, as any tenant past its first hour has them, so the planner weighs the indexes.
     const admin = new pg.Client({ connectionString: db.adminUrl });
     await admin.connect();
     try {
-      await admin.query(`analyze ${admin.escapeIdentifier(production.schema)}.search_entry`);
+      for (const table of ['search_entry', 'search_history']) {
+        await admin.query(`analyze ${admin.escapeIdentifier(production.schema)}.${table}`);
+      }
     } finally {
       await admin.end();
     }
@@ -306,7 +311,7 @@ describe('search bounded at scale (SV3)', () => {
     expect(found.items.map((each) => each.node).sort()).toEqual(['en', 'simple']);
   });
 
-  it('returns the same page, total and facets on either road, every page, filtered and not', async () => {
+  const bothRoads = async (scope: 'latest' | 'all') => {
     for (const filters of [
       {},
       { values: [{ field: approved, value: 'true' }] },
@@ -315,12 +320,20 @@ describe('search bounded at scale (SV3)', () => {
       for (let offset = 0; offset <= 1000; offset += 50) {
         const [walk, indexes] = await Promise.all(
           (['walk', 'indexes'] as const).map((road) =>
-            search(ada, 'yak', { offset, limit: 50, filters, probe: { road } }),
+            search(ada, 'yak', { scope, offset, limit: 50, filters, probe: { road } }),
           ),
         );
         expect({ filters, offset, answer: walk }).toEqual({ filters, offset, answer: indexes });
       }
     }
+  };
+
+  it('returns the same page, total and facets on either road, every page, filtered and not', async () => {
+    await bothRoads('latest');
+  });
+
+  it('returns the same page, total and facets on either road under every version, every page, filtered and not', async () => {
+    await bothRoads('all');
   });
 
   const nothingFor = async (scope: 'latest' | 'all', road?: SearchRoad) => {
@@ -364,8 +377,24 @@ describe('search bounded at scale (SV3)', () => {
     await nothingFor('latest', 'indexes');
   });
 
-  it('SCH-010 finds nothing, counts and facets included, a user may not read under every version', async () => {
+  it('SCH-010 finds nothing, counts and facets included, a user may not read under every version on the walk road', async () => {
+    await nothingFor('all', 'walk');
+  });
+
+  it('SCH-010 finds nothing, counts and facets included, a user may not read under every version on the indexes road', async () => {
+    await nothingFor('all', 'indexes');
+  });
+
+  it('SCH-010 finds nothing, counts and facets included, a user may not read under every version on the road chosen', async () => {
     await nothingFor('all');
+  });
+
+  it('bounds every version as it bounds the latest, its facets past the bound lower bounds', async () => {
+    for (const road of ['walk', 'indexes'] as const) {
+      const all = await search(ada, 'yak', { scope: 'all', probe: { road } });
+      expect([all.count, all.capped, all.facetsBounded]).toEqual([SEARCH_RANK_BOUND, true, true]);
+      expect(all.facets.kinds.every((each) => each.capped)).toBe(true);
+    }
   });
 
   it('finds, under a filter, a match older than the newest 1,000 (SV3-D)', async () => {
@@ -399,6 +428,15 @@ describe('search bounded at scale (SV3)', () => {
       ).rows[0]!.mode;
     });
     expect(mode).toBe('force_custom_plan');
+  });
+
+  it('never compiles a search, which costs more than running it', async () => {
+    const jit = await service.withTenant(production, async (trx) => {
+      await searchWords(trx, ada, 'yak', { scope: 'all' });
+      return (await sql<{ jit: string }>`select current_setting('jit') as jit`.execute(trx))
+        .rows[0]!.jit;
+    });
+    expect(jit).toBe('off');
   });
 
   it('looks for a term under 3 characters as part of a word only beside a longer term', async () => {

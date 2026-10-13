@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { Kysely, PostgresDialect, type PostgresPool } from 'kysely';
 import pg from 'pg';
 import { assertTenantRole } from './names.js';
-import { reindexSearch } from './search.js';
+import { reindexScopes, type ReindexScope } from './search.js';
 import type { TenantTables, TenantTransaction } from './tables.js';
 
 export interface MigrationReport {
@@ -29,11 +29,13 @@ const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
  * it, is added here, so every environment's is rebuilt by the run that applies it (search.md, "Written
  * with the version").
  */
-const REINDEXED_BY = new Map<string, 'whole' | 'earlier' | 'threads'>([
+const REINDEXED_BY = new Map<string, ReindexScope>([
   ['0031_search', 'whole'],
   ['0088_search_earlier', 'earlier'],
   // Every thread's row, and nothing else's (the SV plan, SV-K).
   ['0089_search_threads', 'threads'],
+  // Every place's words over every version, from the projection (the SV3 plan, SV3-N).
+  ['0091_search_history', 'history'],
 ]);
 
 /**
@@ -110,11 +112,10 @@ export async function migrate(
           after: async (applied) => {
             // Each scope once, the current set first: none rebuilds another's rows, but the whole
             // holds every thread's.
-            const scopes = new Set(applied.flatMap((version) => REINDEXED_BY.get(version) ?? []));
-            if (scopes.has('whole')) scopes.delete('threads');
-            for (const scope of ['whole', 'earlier', 'threads'] as const) {
-              if (scopes.has(scope)) await reindexSearch(transactionOver(client), scope);
-            }
+            await reindexScopes(
+              transactionOver(client),
+              applied.flatMap((version) => REINDEXED_BY.get(version) ?? []),
+            );
           },
         },
         tenantMigrations,

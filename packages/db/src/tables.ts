@@ -497,6 +497,29 @@ export interface SearchEarlierTextTable {
   vector: ColumnType<string, string, never>;
 }
 
+/**
+ * A place's words over every version (0091; the SV3 plan, SV3-I): one row per component, document and
+ * section, its vector and body folded from every version, the rest the newest version holding it.
+ */
+export interface SearchHistoryTable {
+  id: Generated<string>;
+  artifact_id: string;
+  kind: 'component' | 'document' | 'section';
+  node: string | null;
+  version_id: string;
+  space_id: string | null;
+  title: string;
+  owner: string | null;
+  changed_at: Date;
+  component_type: string | null;
+  field_values: ColumnType<Record<string, unknown>, string, string>;
+  configuration: SearchConfiguration;
+  body: string;
+  vector: ColumnType<string, string, string>;
+  archived: ColumnType<boolean, boolean | undefined, boolean>;
+  deleted: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
@@ -791,6 +814,7 @@ export interface TenantTables {
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;
+  search_history: SearchHistoryTable;
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;

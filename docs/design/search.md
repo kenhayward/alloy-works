@@ -48,7 +48,7 @@ are never in it.
 | **SCH-057** | A result links by identity - the artifact's id and the place's own id, never a position. Where the place is no longer in the version the reader opens, the page says so by name and shows the version it opened, which is the newest                                                                                     |
 | **SCH-059** | Results are narrowed by kind, space, a metadata value, owner - who made the artifact - and a date range, each a filter over the same predicate                                                                                                                                                                           |
 | **SCH-062** | Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it                                                                                                                                   |
-| **SCH-003** | The latest version by default; on request every version, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))                                                              |
+| **SCH-003** | The latest version by default; on request every version, from one `search_history` row a place, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))                       |
 | **SCH-058** | A result from an earlier version names it and links to that version's read-only page at its place; one found in a baseline, to the baseline's page at its node                                                                                                                                                           |
 | **SCH-071** | A thread is one `search_entry` on the artifact it is anchored to, so the one predicate filters it; each message a `search_text` place, appended to the entry as it is written and an edit rebuilt from the entry's own places, never by re-reading the thread ([Threads](#threads))                                      |
 | **SCH-066** | An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction                                                                                                  |
@@ -116,7 +116,8 @@ of the tenant costs what scoring most of the tenant costs. Above a cap, the matc
 most recently changed up to the cap. They are found over what the user may see, so the bound leaks
 nothing, and a query matching most of a tenant is one whose ranking says little anyway.
 
-As built ([SV3](../plans/2026-10-13-sv3-search-at-scale.md); the latest only, every version from SV3b):
+As built ([SV3](../plans/2026-10-13-sv3-search-at-scale.md); the latest, and every version from
+history):
 the candidates are the 1,000 newest matches (`SEARCH_RANK_BOUND`), `changed_at desc, id desc`, a total
 order, read after every filter the reader set; 1,001 are read, so "more" is known. Only they are
 ranked, paged and faceted. The words are matched by a constant tsquery per configuration in use, so
@@ -354,9 +355,9 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
   `search_earlier` and `search_earlier_text` (0088), ids and vectors as they were, before it writes the
   new one's. Components, documents with their sections, and assets: what a baseline pins. `search_entry`
   stays the current set, so the default query reads exactly what it read before, and holds no union.
-- **The request.** `versions=all` reads both tables, earlier assets left out (no page shows one), and
-  collapses to one result per artifact and place at its newest matching version; counts and facets count
-  those, each facet without its own filter. `baseline=<id>` reads only the versions the baseline pins,
+- **The request.** `versions=all` reads `search_history` (below), and the current rows of every kind
+  it does not hold, bounded as the latest is: the same roads, the same 1,000, facets bounded.
+  `baseline=<id>` reads only the versions the baseline pins, exact and unbounded,
   archived content included; one the reader may not read is `404 baseline_not_found`; both together
   are 400 (the latest with a baseline is the baseline). The one predicate applies on every branch, so a pin the reader may not read is neither found
   nor counted (SCH-010, SCH-032).
@@ -367,9 +368,34 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
   **Search this baseline**.
 - **Derived**: 0088's run writes every earlier version's rows from the chain; erasure rewrites earlier
   rows naming the person, as #594 rewrites current ones, each artifact under its lock.
-- **Known gap, #596**: that backfill runs inside the migration's transaction. Measured at 20,000
-  components (96,003 earlier versions) it took 678 s and wrote 3.8 GB, near 9 hours and 190 GB at a
-  million; #596 moves it to a resumable worker job.
+
+**Every version from one row a place** (SV3b; [SV3](../plans/2026-10-13-sv3-search-at-scale.md),
+SV3-I to SV3-N):
+
+- **`search_history`** (0091): one row per component, document and section that any version held.
+  Its vector and body hold every version's words; everything else - title, owner, changed, component
+  type, values, configuration, flags - is the newest version holding the place's, so filters and facets
+  read current values and a value only an earlier version held finds nothing. A place gone from the
+  newest version keeps its row as its last version left it, found under every version only. Assets,
+  templates, definitions, publications and threads have none: every version reads them from
+  `search_entry`.
+- **The fold**: `search_history_fold(history, newer) = newer || ts_delete(history, newer's lexemes)`, so
+  a lexeme is held once, at the newest position holding it; the body is the newest text then the
+  earlier versions' other whitespace-separated tokens, distinct and sorted. `indexVersion` folds each
+  new current row into its place's row under the artifact's lock: a cost of places, never versions.
+  The acts set the flags on history as on earlier rows. A fold never takes a word out, so erasure
+  rebuilds the history of every artifact either naming rewrite touched, after both
+  (`rebuildHistory`, one statement over `search_entry` and `search_earlier`, never the chain); so
+  does the reindex, last, implied by `whole` and `earlier`, and 0091's run.
+- **The match** (SV3-L): a place matches when its words over every version together do. The trades,
+  recorded beside SCH-003: two words in two versions find it; `-word` excludes a place any version held
+  it in; a phrase held only by an earlier version is lost once one of its words reappears in the
+  newest, whose position then stands for it. A scoped term matches a place any of whose versions held
+  it at that place. A configuration change keeps earlier words as their versions folded them.
+- **The version named** (SV3-M), for the page's rows alone: the newest of the place's versions that
+  matches the whole query, else the newest holding any of its words; its passage is that version's.
+- **0091's run** writes every place's row in the migration's transaction, in SQL over the projection
+  (deployments are dev scale; the load suite times it).
 
 ## Threads
 

@@ -570,6 +570,16 @@ describe('searching earlier versions and baselines', () => {
     await saving;
     await erasing;
     expect(await earlierWords(named.artifactId)).not.toContain('Zelda');
+    // Nor in its history, which folded her name in with the save (SV3-K).
+    const history = await tenant((trx) =>
+      trx
+        .selectFrom('search_history')
+        .select(sql<string>`body || ' ' || vector::text`.as('words'))
+        .where('artifact_id', '=', named.artifactId)
+        .execute(),
+    );
+    expect(history.length).toBeGreaterThan(0);
+    expect(history.map((each) => each.words).join(' ')).not.toMatch(/zelda/iu);
   });
 
   it('refuses to index a stale version over a newer one, moving nothing', async () => {
@@ -678,6 +688,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0088_search_earlier',
         '0089_search_threads',
         '0090_search_at_scale',
+        '0091_search_history',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx
