@@ -120158,6 +120158,23 @@
                               }
                             ],
                             "description": "Who holds the component now and until when: null where nobody does, or where the caller may not read it"
+                          },
+                          "newer": {
+                            "description": "The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string",
+                                "description": "`revision.version`, as `0.3`"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
                           }
                         },
                         "required": [

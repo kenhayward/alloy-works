@@ -30,6 +30,8 @@ export type TenantEvent =
   // A window's presence beaten or gone (0068): the stream reads the row and redacts it (COL-003).
   | { readonly kind: 'presence'; readonly viewer: string; readonly document: string }
   | { readonly kind: 'presence_left'; readonly viewer: string; readonly document: string }
+  // A notification made for its recipient (COL-063): told on their own streams that one waits.
+  | { readonly kind: 'inbox'; readonly recipient: string }
   | { readonly kind: 'credential_ended'; readonly session: string }
   | { readonly kind: 'credential_ended'; readonly token: string };
 

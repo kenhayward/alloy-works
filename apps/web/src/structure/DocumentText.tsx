@@ -56,6 +56,7 @@ import { deskRoom, useCanvas } from '../theme/Canvas.js';
 import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
 import { usePresentation } from '../theme/presentation.js';
+import { NewerVersion, type VersionNamed } from './NewerVersion.js';
 import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
@@ -446,6 +447,7 @@ export function DocumentText({
   threadMarks,
   threadCounts,
   onSuggest,
+  newer,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -516,6 +518,17 @@ export function DocumentText({
   threadCounts?: ReadonlyMap<string, number>;
   /** In Review, opens a draft of a component to suggest a change to it (the SG plan, SG-J). */
   onSuggest?: (node: string) => void;
+  /**
+   * Each reference pinned below a newer version the reader may read, by node, and where the comparison
+   * between them is read from (CNT-181).
+   */
+  newer?: {
+    readonly client: ReturnType<typeof createApiClient>;
+    readonly byNode: ReadonlyMap<
+      string,
+      { readonly pinned: VersionNamed; readonly newer: VersionNamed }
+    >;
+  };
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072): a
   // sheet on the desk its parent is (ADR-0056).
@@ -688,6 +701,15 @@ export function DocumentText({
             {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
                 (ADR-0056). */}
             {titled(node, depth)}
+            {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
+              <NewerVersion
+                // A comparison shown is of the pair it was asked for: another pair starts afresh.
+                key={`${newer.byNode.get(node.id)!.pinned.id}:${newer.byNode.get(node.id)!.newer.id}`}
+                client={newer.client}
+                component={node.component}
+                {...newer.byNode.get(node.id)!}
+              />
+            )}
             {node.component !== null &&
               (editing === node.id && editor
                 ? editor(node.component, {

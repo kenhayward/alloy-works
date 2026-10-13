@@ -46,7 +46,8 @@ export interface ScopedStream {
  * **Scoped** to a document or a component (the PL plan, PL-A, PL-B), it sends only what its viewer
  * may read of that scope, as read when it opened: a lock read again as it now stands, the document's
  * outline, and the end any change to access brings. The environment's own stream sends samples alone.
- * Every stream ends after `STREAM_LIFETIME_MS` and is read afresh when it comes back.
+ * Every stream ends after `STREAM_LIFETIME_MS` and is read afresh when it comes back. Every stream,
+ * scoped or not, tells its viewer a notification waits for them (API-063), and nobody else.
  */
 export async function streamToViewer(options: {
   readonly request: FastifyRequest;
@@ -56,6 +57,8 @@ export async function streamToViewer(options: {
   readonly tenant: Tenant;
   /** What the viewer signed in with: its ending ends the stream. */
   readonly credential: Credential | null;
+  /** Whose stream it is: told when a notification waits for them, on every stream they hold. */
+  readonly principalId: string;
   /** A document's or a component's stream, read when it was asked for; none for the environment's. */
   readonly scoped?: ScopedStream;
   readonly lifetimeMs?: number;
@@ -83,6 +86,10 @@ export async function streamToViewer(options: {
 
   /** What one event becomes for this viewer. Run one at a time, in the order they were heard. */
   const deliver = async (event: TenantEvent): Promise<void> => {
+    if (event.kind === 'inbox') {
+      if (event.recipient === options.principalId) send('inbox', {});
+      return;
+    }
     if (scoped === undefined) {
       if (event.kind === 'sample') send('sample', event);
       return;

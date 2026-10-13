@@ -61,3 +61,20 @@
   margin: 0;
   color: var(--muted);
 }
+
+/* A high-contrast mode takes the tints (CNT-138): the underline, the strike and the badges' borders
+   stay, thicker, in the system's text colour. */
+@media (forced-colors: active) {
+  .added {
+    text-decoration: underline 2px;
+  }
+
+  .removed {
+    text-decoration: line-through 2px;
+  }
+
+  .badge,
+  .similar {
+    border-color: CanvasText;
+  }
+}

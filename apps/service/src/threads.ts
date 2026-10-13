@@ -10,9 +10,11 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   addComment,
+  deletedOnceReferenced,
   editComment,
   latestVersion,
   listThreads,
+  loadFactsFor,
   readBaseline,
   readThread,
   readVersion,
@@ -24,7 +26,13 @@ import {
   type ThreadAnswer,
   type ThreadSummary,
 } from '@alloy-works/db';
-import { anchorStands, readContent, readOutline, type ThreadAnchor } from '@alloy-works/domain';
+import {
+  anchorStands,
+  decide,
+  readContent,
+  readOutline,
+  type ThreadAnchor,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import type { AppError } from './errors.js';
@@ -181,6 +189,15 @@ export function threadHandlers() {
           const placed = occurrences.get(each.component) ?? [];
           placed.push({ node: each.node, version: each.version });
           occurrences.set(each.component, placed);
+        }
+        // A component it once placed, since deleted, stands nowhere in it: its threads are listed
+        // orphaned, placed nowhere (COL-067), to whoever may read it but for its deletion (SCH-032).
+        const deleted = await deletedOnceReferenced(trx, id);
+        const facts = await loadFactsFor(trx, principalId, deleted);
+        for (const [component, known] of facts) {
+          if (decide('read', known).allowed && !occurrences.has(component)) {
+            occurrences.set(component, []);
+          }
         }
       }
       return listedOn(trx, id, latest.id, occurrences, query, after, limit, stands);

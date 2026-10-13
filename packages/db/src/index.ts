@@ -238,6 +238,7 @@ export {
   latestVersion,
   versionTitles,
   versionContents,
+  latestVersionsOf,
   listVersions,
   readVersion,
   headingOf,
@@ -410,6 +411,7 @@ export {
 export { archiveArtifact, isArchived, unarchiveArtifact, type ArchivalAnswer } from './archival.js';
 export {
   deleteArtifact,
+  deletedOnceReferenced,
   deletionOf,
   isDeleted,
   listDeleted,

@@ -38,11 +38,14 @@ export function allowPageNoise(...expected: [RegExp, ...RegExp[]]): void {
  * reads it.
  *
  * `signedIn: false` starts the context with nothing in it instead, for the screens a person meets
- * before signing in.
+ * before signing in. `forcedColors: true` emulates a high-contrast mode, `forced-colors: active`.
  */
 export async function withPage<T>(
   test: (page: Page) => Promise<T>,
-  { signedIn = true }: { readonly signedIn?: boolean } = {},
+  {
+    signedIn = true,
+    forcedColors = false,
+  }: { readonly signedIn?: boolean; readonly forcedColors?: boolean } = {},
 ): Promise<T> {
   browser ??= launchPinned();
   const context = await (
@@ -51,6 +54,7 @@ export async function withPage<T>(
     ...(signedIn ? { storageState: inject('storageState') } : {}),
     viewport: { width: 1280, height: 800 },
     locale: 'en-GB',
+    ...(forcedColors ? { forcedColors: 'active' as const } : {}),
   });
   const noise: string[] = [];
   let result: T;

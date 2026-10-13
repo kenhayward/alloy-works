@@ -196,6 +196,32 @@ function split(rows: readonly Row[], readable: ReadableSet | undefined) {
 
 const REFERENCES = `lax $.** ? (@.type == "reference" && @.component == $c)`;
 
+/**
+ * The components any version of a document referenced that are deleted now (COL-067): what its
+ * threads listing surfaces as orphaned, as no version of it places them now (DL-C refuses deleting one
+ * referenced). The caller decides which the reader may read.
+ */
+export async function deletedOnceReferenced(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<string[]> {
+  if (!UUID.test(documentId) || !(await deletionStored(trx))) return [];
+  // From the deleted, few, to whether any version of this one document references each.
+  const { rows } = await sql<{ id: string }>`
+    select d.artifact_id as id
+      from (select distinct on (artifact_id) artifact_id, act
+              from artifact_deletion
+             where kind = 'component'
+             order by artifact_id, id desc) d
+     where d.act = 'deleted'
+       and exists (select from artifact_version v
+                    where v.artifact_id = ${documentId}
+                      and jsonb_path_exists(v.content, ${REFERENCES}::jsonpath,
+                            jsonb_build_object('c', d.artifact_id::text)))
+     order by d.artifact_id`.execute(trx);
+  return rows.map((row) => row.id);
+}
+
 /** Everything that depends on it now, every reason, `by`'s readable set naming what it may (DL-C). */
 async function dependants(
   trx: TenantTransaction,
@@ -393,6 +419,16 @@ async function act(
     .set({ deleted: act === 'deleted' })
     .where('artifact_id', '=', artifactId)
     .execute();
+  // Presence in it ends as a dropped connection's does (COL-067, COL-004): each row removed, and its
+  // trigger tells every stream the window left. A lock refuses the deletion, so none is left on it.
+  if (act === 'deleted') {
+    await trx
+      .deleteFrom('presence')
+      .where((where) =>
+        where.or([where('component_id', '=', artifactId), where('document_id', '=', artifactId)]),
+      )
+      .execute();
+  }
   const place = await artifactPlace(trx, artifactId);
   await recordEvent(
     trx,

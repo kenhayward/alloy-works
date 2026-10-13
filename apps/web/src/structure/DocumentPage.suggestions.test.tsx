@@ -157,7 +157,36 @@ describe('suggestions in Review (collaboration.md, Suggestions)', () => {
     ).toBeInTheDocument();
     expect(within(panel).getByText('Nothing changed.')).toBeInTheDocument();
     await userEvent.click(within(panel).getByRole('button', { name: 'Accept' }));
-    expect(await within(panel).findByText('Accepted.')).toBeInTheDocument();
+    expect(
+      await within(panel).findByText(/^Ada's suggestion on .+ accepted\.$/),
+    ).toBeInTheDocument();
     expect(asked).toContain(`POST /v1/suggestions/${SUGGESTION}/acceptance`);
+  });
+
+  it('CNT-137 announces a suggestion sent and accepted, naming whose and where, in status regions there from the start', async () => {
+    const { text } = await openInReview();
+    await userEvent.click(
+      await within(text).findByRole('button', { name: /^Suggest changes to / }),
+    );
+    await screen.findByRole('textbox', { name: 'Content of Install the printer' });
+    // The panel's region is there, empty, before anything is said in it.
+    const panel = await screen.findByRole('tabpanel', { name: 'Suggestions' });
+    expect(within(panel).getByRole('status')).toHaveTextContent('');
+    await userEvent.click(screen.getByRole('button', { name: 'Send suggestion' }));
+    // Said on the page's own status bar, naming where it was made.
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('status')
+          .some((each) => each.textContent === 'Suggestion sent on 1 Install the printer.'),
+      ).toBe(true),
+    );
+    await userEvent.click(await within(panel).findByRole('button', { name: /^Ada on / }));
+    await userEvent.click(await within(panel).findByRole('button', { name: 'Accept' }));
+    await waitFor(() =>
+      expect(within(panel).getByRole('status')).toHaveTextContent(
+        "Ada's suggestion on 1 Install the printer accepted.",
+      ),
+    );
   });
 });

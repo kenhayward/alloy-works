@@ -5,6 +5,7 @@ import {
   createDocument,
   createSpace,
   createTenant,
+  deleteArtifact,
   findRole,
   grant,
   migrate,
@@ -288,6 +289,52 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
       anchor: { kind: 'node', node: pinned },
       orphaned: false,
     });
+  });
+
+  it('COL-067 COL-017 lists a thread anchored into a component the document placed, since deleted, as orphaned, to a reader of it alone', async () => {
+    const ours = await component([para('p1', 'Set the tray, then wait.')]);
+    const theirs = await component([para('p1', 'Set the tray, then wait.')], quality, 'grace');
+    const kept = await component([para('p1', 'Set the tray, then wait.')]);
+    const onOurs = (await start(ours, SPAN)).json<ThreadView>().id;
+    const onTheirs = (await start(theirs, SPAN, 'grace')).json<ThreadView>().id;
+    const onKept = (await start(kept, SPAN)).json<ThreadView>().id;
+    const placed = await documentWith([
+      reference('o'.repeat(26), ours.artifactId, { kind: 'latest' }),
+      reference('t'.repeat(26), theirs.artifactId, { kind: 'latest' }),
+      reference('k'.repeat(26), kept.artifactId, { kind: 'latest' }),
+    ]);
+    // The references taken out, as a deletion needs, and two of the three components deleted.
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const recorded = await recordVersion(trx, {
+        artifactId: placed.artifactId,
+        openedFrom: placed.id,
+        author: ids.ada!,
+        substance: {
+          kind: 'document',
+          content: { ...(placed.content as OutlineDocument), nodes: [] },
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      for (const [gone, by] of [
+        [ours.artifactId, ids.ada!],
+        [theirs.artifactId, ids.grace!],
+      ] as const) {
+        expect(await deleteArtifact(trx, gone, by)).toEqual({ answer: 'deleted' });
+      }
+    });
+    const listed = async (who: string) =>
+      (await call('GET', `/v1/documents/${placed.artifactId}/threads`, who, undefined))
+        .json<ThreadList>()
+        .threads.map((each) => [each.id, each.orphaned, each.places]);
+    expect(await listed('grace')).toEqual(
+      expect.arrayContaining([
+        [onOurs, true, []],
+        [onTheirs, true, []],
+      ]),
+    );
+    // Ivy may not read the Quality space; a component taken out and not deleted is not listed here.
+    expect(await listed('ivy')).toEqual([[onOurs, true, []]]);
+    expect((await listed('grace')).map(([id]) => id)).not.toContain(onKept);
   });
 
   it('COL-014 COL-013 keeps replies in order, resolves once with who and when, and then takes nothing more', async () => {

@@ -28,6 +28,14 @@ describe('the committed asyncapi.json', () => {
     expect(Object.keys(components.messages)).toContain('snapshot');
   });
 
+  it('API-063 specifies presence, locks and notifications apart from OpenAPI, each a message of its own', () => {
+    const { components } = buildAsyncApi();
+    for (const name of ['presence', 'presence_left', 'lock', 'inbox']) {
+      expect(components.messages, name).toHaveProperty(name);
+    }
+    expect(components.messages.inbox?.summary).toMatch(/notification/);
+  });
+
   it('names a message for every event and a schema for each', () => {
     const document = buildAsyncApi();
     expect(Object.keys(document.components.messages).sort()).toEqual(
