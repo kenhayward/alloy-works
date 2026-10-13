@@ -3,6 +3,22 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.164.0 - 2026-10-13 (PR #600)
+
+The T3 close: every T3 requirement built and tested, or split and moved by [the T3 audit](<docs/reviews/T3 - Audit against the code.md>).
+
+### Added
+
+- **A newer version, said.** Where a document pins a component and a newer version you may read exists, the document says so and compares the two in place.
+- **Annotations announced and marked.** Starting, resolving, accepting, rejecting and sending a thread or a suggestion is announced, naming which and where; anchors and redlines are marked by border, outline and words, and stay so in high contrast.
+- **Search reaches further.** Search every version, or what a baseline pins; a result from an earlier version opens that version, on a page of its own. Threads are found by their messages, by whoever may read what they are on, and open on a page of their own, with Open in Review.
+- **What refers to a part.** The Part panel lists what in the document refers to a section or a component, and removing one that is referenced warns, naming where.
+- **Notifications and deleted components, live.** A new notification reaches your open sessions at once; a deleted component's presence ends and its threads show as orphaned.
+
+### Fixed
+
+- **An erased person's former name is no longer found by search.**
+
 ## 0.163.0 - 2026-10-13 (PR #591)
 
 ### Added
