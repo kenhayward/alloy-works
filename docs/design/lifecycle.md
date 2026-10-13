@@ -188,9 +188,11 @@ the space.
 ## Erasure
 
 **What erases** (ER-A, ER-C): a person, by an administrator of the environment, `administer` at the
-tenant (a space's administrator refused, an external one capped, a token scoped to it), never
-themselves or a service, and refused while any grant names them: their access is removed first.
-`packages/db/src/erasure.ts`; `GET /v1/principals/{id}/erasure` states it, `POST .../erase` does it.
+tenant (a space's administrator refused, an external one capped), in a session: never a token, which
+may only read the preview. Never themselves or a service, and refused while any grant names somebody
+who has signed in: their access is removed first. Somebody invited is withdrawn, which removes and
+records their grants. `packages/db/src/erasure.ts`; `GET /v1/principals/{id}/erasure` states it,
+`POST .../erase` does it.
 
 **What is erased**, in one transaction: their sessions ended, their tokens revoked, their provider
 and own memberships removed, the accepted invitation's row (it holds their address) deleted, any
@@ -198,7 +200,8 @@ Google hand-off dropped; `display_name` becomes **Erased person**, `email` null,
 false, `erased_at` set (0087); last, `erase_labels` gives every audit label naming them a fixed word,
 those the act's own events wrote among them. Somebody invited who never signed in is withdrawn, and
 so goes whole. Every reader of a name shows the fixed word; `principalLabel` names them nothing, the
-people picker leaves them out, and a user value naming them reads as an inactive user.
+people picker and the access and group pickers leave them out, and a user value naming them reads as
+an inactive user. Erasing the erased ends whatever access a race left them and answers unchanged.
 
 **What remains** (VER-038, ER-B), stated by the preview and shown before **Erase**: their id, and the
 issuer's pseudonymous subject for them, so every reference, author, thread, grant and event still
@@ -211,12 +214,17 @@ before; and the erasure's own event.
 **Never again** (ER-D): a sign-in by an erased person's issuer and subject is refused
 `403 principal_erased`, recorded as a failed sign-in naming nobody, before their claims touch the row;
 `principal_erased_stays` (0087) refuses any change to an erased row's name, address or identity, the
-owner's included. A new identity is a new person.
+owner's included; a grant or a membership naming them is refused `grant_subject_erased` or
+`group_member_erased`. `audit_label_erased_on_write` (0087) writes any label naming them as
+`erase_labels` would, so a request authenticated before the act, or a worker that read their name,
+names nobody. A new identity is a new person.
 
 **Races**: the act takes the access epoch, then the invitation's row, then the principal's, as a
 claim takes them; a sign-in holds the principal's row `FOR UPDATE` to look them up, and holds it
-`FOR SHARE` after any epoch lock before it makes a session. Either the act waits and ends the session,
-or the sign-in waits and is refused.
+`FOR SHARE` after any epoch lock and before it settles memberships or makes a session, rolling back
+if they are erased. Either the act waits and ends the session, or the sign-in waits and is refused.
+A label's trigger holds the row `FOR KEY SHARE`: a label written during the act waits for it, and the
+act waits for one written before it.
 
 **Audited**: each session, token, membership and withdrawal as its own kind, then
 `audit.label_erased`, `{ labels }`, about the person by id, naming the administrator and nobody erased.

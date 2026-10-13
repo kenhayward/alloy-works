@@ -19676,7 +19676,7 @@
     {
       "id": "VER-038",
       "file": "apps/service/src/erasure-routes.test.ts",
-      "line": 163,
+      "line": 194,
       "kind": "title"
     },
     {
@@ -20168,25 +20168,25 @@
     {
       "id": "IAM-007",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 140,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 294,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 201,
+      "line": 204,
       "kind": "rule"
     },
     {
       "id": "IAM-075",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 215,
+      "line": 218,
       "kind": "title"
     },
     {
@@ -20480,19 +20480,19 @@
     {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 1474,
+      "line": 1506,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 809,
+      "line": 841,
       "kind": "title"
     },
     {
       "id": "IAM-031",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 874,
+      "line": 906,
       "kind": "title"
     },
     {
@@ -20528,13 +20528,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1339,
+      "line": 1348,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1481,
+      "line": 1490,
       "kind": "title"
     },
     {

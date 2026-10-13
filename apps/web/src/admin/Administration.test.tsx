@@ -439,7 +439,9 @@ describe('People in Administration', () => {
 
     await userEvent.click((await offered(/Marta/, 'Marta'))!);
     const asking = await screen.findByRole('dialog', { name: 'Erase Marta?' });
-    expect(await within(asking).findByText(/Erased person/)).toBeInTheDocument();
+    expect(
+      await within(asking).findByText(/becomes "Erased person" everywhere/),
+    ).toBeInTheDocument();
     expect(asking).toHaveTextContent('12 audit log labels naming them');
     expect(asking).toHaveTextContent('1 session');
     expect(asking).toHaveTextContent('2 API tokens');
@@ -986,7 +988,12 @@ const personOf = (id: string, name: string) => ({
  * the second; `authors` names who is in Authors to begin with.
  */
 function groupsService(authors: readonly string[] = ['p2']) {
-  const people = [personOf('p1', 'Ada'), personOf('p2', 'Grace'), personOf('p3', 'Alice')];
+  const people = [
+    personOf('p1', 'Ada'),
+    personOf('p2', 'Grace'),
+    personOf('p3', 'Alice'),
+    { ...personOf('p4', 'Erased person'), email: null, erased: true },
+  ];
   const member = (id: string) => {
     const person = people.find((each) => each.id === id)!;
     return { id: person.id, name: person.name, email: person.email };
@@ -996,7 +1003,7 @@ function groupsService(authors: readonly string[] = ['p2']) {
     name: string;
     source: 'tenant' | 'provider';
     providerValue: string | null;
-    members: { id: string; name: string; email: string }[];
+    members: { id: string; name: string; email: string | null }[];
   }[] = [
     {
       id: 'g1',
@@ -1182,6 +1189,8 @@ describe('Groups in Administration', () => {
     expect(screen.getByRole('table', { name: 'Groups' })).toBe(table);
     expect(await within(choosing).findByRole('checkbox', { name: /^Grace/ })).toBeChecked();
     expect(choosing).toHaveTextContent('1 of 3 people chosen');
+    // Nobody erased joins a group again.
+    expect(within(choosing).queryByRole('checkbox', { name: /Erased person/ })).toBeNull();
     await userEvent.type(within(choosing).getByRole('searchbox', { name: 'Find a person' }), 'Ali');
     expect(within(choosing).getAllByRole('checkbox')).toHaveLength(1);
     await userEvent.clear(within(choosing).getByRole('searchbox', { name: 'Find a person' }));

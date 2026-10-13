@@ -73,3 +73,33 @@ begin
   execute format('grant execute on function erase_labels(uuid) to %I', current_schema());
 end
 $$;
+
+-- A label naming somebody erased is written as erase_labels leaves one (H1 of the ER final review): a
+-- request authenticated before the act, or a worker that read their name, may record after it. Their
+-- row is held FOR KEY SHARE, so a label written while an erasure is in flight waits for it, and an
+-- erasure waits for a label written before it. KEY SHARE, not SHARE: an ordinary rename never waits.
+create function audit_label_erased_on_write() returns trigger
+  language plpgsql security definer as $$
+declare
+  erased timestamptz;
+begin
+  -- Locked by id alone, then read: a filter on erased_at would pass over a row an erasure holds.
+  select erased_at into erased from principal where id = new.refers_to for key share;
+  if erased is not null then
+    new.text := 'erased';
+    new.erased_at := now();
+  end if;
+  return new;
+end
+$$;
+do $$
+begin
+  execute format(
+    'alter function audit_label_erased_on_write() set search_path = %I, pg_temp',
+    current_schema()
+  );
+  execute 'revoke execute on function audit_label_erased_on_write() from public';
+end
+$$;
+create trigger audit_label_erased_on_write before insert on audit_label
+  for each row execute function audit_label_erased_on_write();

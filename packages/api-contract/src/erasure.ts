@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
-import { ErrorBody } from './schemas.js';
+import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** A person, by their principal's id. */
-export const ErasureParams = z.object({ id: z.uuid() });
+export const ErasureParams = z.object({ id: LowercaseUuid });
 export type ErasureParams = z.infer<typeof ErasureParams>;
 
 /** Why erasing a person is refused (the ER plan, ER-C): every reason, not the first. */
@@ -84,6 +84,11 @@ const forbidden = {
   description: 'The caller may not administer this environment',
   schema: ErrorBody,
 } as const;
+const forbiddenOrToken = {
+  description:
+    'The caller may not administer this environment; or token_not_allowed: a token never erases',
+  schema: ErrorBody,
+} as const;
 const missing = { description: 'No such person in this environment', schema: ErrorBody } as const;
 
 /** Erasing a person (lifecycle.md, "Erasure"; the ER plan, ER-A to ER-F), an environment administrator's. */
@@ -109,12 +114,13 @@ export const erasureRoutes = {
     path: '/v1/principals/{id}/erase',
     summary: 'Erase a person: their name, address and audit labels, and their access',
     tenantScoped: true,
-    access: { ...administer, changesAccess: true },
+    // A person at the keyboard, never a token: erasure cannot be undone (the ER final review).
+    access: { ...administer, changesAccess: true, credential: 'session' },
     params: ErasureParams,
     responses: {
       200: { description: 'Erased, or erased already', schema: Erased },
       401: unauthenticated,
-      403: forbidden,
+      403: forbiddenOrToken,
       404: missing,
       409: {
         description: 'erasure_refused: a grant names them, they are the caller, or a service',

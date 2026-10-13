@@ -48,7 +48,7 @@ export function erasureRefusalWords(refusal: ErasureRefusal): string {
 function goes(erasure: Erasure): string[] {
   const { erases } = erasure;
   return [
-    'Their name, which becomes Erased person everywhere it is shown, and their address',
+    'Their name, which becomes "Erased person" everywhere it is shown, and their address',
     `${counted(erases.labels, 'audit log label naming them', 'audit log labels naming them')}, each replaced by a fixed word, with those this erasure records`,
     ...(erases.sessions > 0 ? [`${counted(erases.sessions, 'session', 'sessions')}, ended`] : []),
     ...(erases.tokens > 0 ? [`${counted(erases.tokens, 'API token', 'API tokens')}, revoked`] : []),

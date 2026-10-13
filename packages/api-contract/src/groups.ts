@@ -136,7 +136,7 @@ export const groupRoutes = {
       404: missing,
       409: {
         description:
-          'group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
+          'group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
         schema: ErrorBody,
       },
     },

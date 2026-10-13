@@ -60,6 +60,7 @@ const REFUSALS = new Map<GrantRefusal | 'grant.last_administrator', string>([
   ],
   ['grant.role_missing', 'There is no such role in this environment.'],
   ['grant.subject_missing', 'There is no such person or group in this environment.'],
+  ['grant.subject_erased', 'That person was erased, and is granted nothing again.'],
   [
     'grant.external_at_tenant',
     'Someone from outside the organisation can be granted access to a space or an item, never the whole environment.',

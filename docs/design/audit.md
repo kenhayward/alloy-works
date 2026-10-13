@@ -100,7 +100,8 @@ audit_label (
   grantee. **Erasure** (VER-038) of a person replaces their labels' text with a fixed word and sets
   `erased_at`, by an act that is itself an event; nothing else ever changes a label. Erasing a person
   ([lifecycle.md](lifecycle.md), "Erasure") ends with it, after every event the act records, and its
-  event carries the administrator's label (0087); an erased person is never labelled again.
+  event carries the administrator's label (0087); an erased person is never labelled again: a label
+  written naming them later is written erased (`audit_label_erased_on_write`, 0087).
 - **Detail is strict per kind**, a zod shape in `packages/domain/src/audit/`: a version cut names its
   version and parent; a connection change the fields changed; a refusal its permission, target, wire
   code and rule; a grant its role, level and effect. No free text a person typed, other than labels.

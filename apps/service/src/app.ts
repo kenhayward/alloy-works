@@ -20,7 +20,7 @@ import {
   enqueueJob,
   findApiToken,
   groupNames,
-  heldErased,
+  holdPrincipal,
   identifyKnown,
   loadFacts,
   notifyTenant,
@@ -263,6 +263,9 @@ function sameValue(a: string, b: string): boolean {
 const signInFailed = () =>
   new AppError(401, 'sign_in_failed', 'The sign-in could not be completed. Please start again.');
 
+/** Thrown inside a sign-in's transaction, so it commits nothing, where its principal is not held. */
+class SignInUnheld extends Error {}
+
 /** An erased person signing in again (the ER plan, ER-D): their identity is refused for good. */
 const principalErased = () =>
   new AppError(
@@ -468,16 +471,27 @@ export function buildApp(options: AppOptions): FastifyInstance {
     route: SignInRoute,
     groups?: readonly string[],
   ): Promise<FastifyReply> {
-    const token = await db.withTenant(tenant, async (trx) => {
-      // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
-      await actAs(trx, principalId, request.id);
-      if (groups !== undefined) await syncProviderGroups(trx, principalId, groups);
-      // Their row held after the epoch, as an erasure takes them: a session is made before an
-      // erasure ends it, or not at all (ER-D).
-      if (await heldErased(trx, principalId)) return undefined;
-      return createSession(trx, principalId, route);
-    });
+    let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
+    const token = await db
+      .withTenant(tenant, async (trx) => {
+        // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
+        await actAs(trx, principalId, request.id);
+        // Their row held after any epoch and before anything changes, as an erasure takes them: a
+        // session and its memberships are made before an erasure ends them, or not at all (ER-D).
+        const hold = async () => {
+          held = await holdPrincipal(trx, principalId);
+          if (held !== 'held') throw new SignInUnheld();
+        };
+        if (groups === undefined) await hold();
+        else await syncProviderGroups(trx, principalId, groups, hold);
+        return createSession(trx, principalId, route);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof SignInUnheld) return undefined;
+        throw error;
+      });
     if (token === undefined) {
+      if (held === 'missing') throw signInFailed();
       await recordSignInFailure(db, request, tenant, route, 'principal_erased');
       throw principalErased();
     }

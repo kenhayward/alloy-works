@@ -19,9 +19,11 @@ import {
   testTenantDatabase,
 } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { recordRefusal } from './audit.js';
+import { AppError } from './errors.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
 import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
@@ -134,7 +136,7 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
     }
   });
 
-  it('refuses a token not scoped to administer', async () => {
+  it('erases by a session alone, and states what it would do to a token scoped to administer', async () => {
     const issue = async (scopes: string[]) =>
       (
         await app.inject({
@@ -151,6 +153,9 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
     const bearer = (secret: string) => ({ authorization: `Bearer ${secret}` });
     const refused = await erase(ids.grace!, 'ivy', bearer(await issue(['edit'])));
     expect(refused.statusCode, refused.body).toBe(403);
+    const administering = await erase(ids.grace!, 'ivy', bearer(await issue(['administer'])));
+    expect(administering.statusCode, administering.body).toBe(403);
+    expect(administering.json()).toMatchObject({ code: 'token_not_allowed' });
     const reading = await call(
       'GET',
       `/v1/principals/${ids.grace}/erasure`,
@@ -160,7 +165,7 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
     expect(reading.statusCode, reading.body).toBe(200);
   });
 
-  it('VER-038 refuses while a grant names them, for oneself and for a service, every reason listed', async () => {
+  it('refuses while a grant names them, for oneself and for a service, every reason listed', async () => {
     const granted = await erase(ids.grace!);
     expect(granted.statusCode, granted.body).toBe(409);
     expect(granted.json()).toMatchObject({
@@ -171,6 +176,8 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
       code: 'erasure_refused',
       refusals: [{ code: 'granted', grants: 1 }, { code: 'self' }],
     });
+    // Their own id in capitals is no other person's.
+    expect((await erase(ids.ivy!.toUpperCase())).statusCode).toBe(400);
     const robot = await tenantDb.withTenant(tenant, (trx) =>
       trx
         .insertInto('principal')
@@ -218,5 +225,48 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
     const again = await erase(ids.grace!);
     expect(again.json()).toEqual({ erased: true, labels: 0 });
     expect((await preview(ids.grace!)).json<ErasureView>().person.erased).toBe(true);
+  });
+
+  it('refuses a grant naming somebody erased, and names nobody erased in a refusal recorded late', async () => {
+    const reader = await tenantDb.withTenant(tenant, (trx) => findRole(trx, 'Reader'));
+    const granting = await app.inject({
+      method: 'POST',
+      url: '/v1/grants',
+      headers: { host: HOST, cookie: cookies.ivy! },
+      payload: {
+        role: reader!.id,
+        subject: { principal: ids.grace },
+        level: 'tenant',
+        effect: 'allow',
+      },
+    });
+    expect(granting.statusCode, granting.body).toBe(409);
+    expect(granting.json()).toMatchObject({ code: 'grant_subject_erased' });
+
+    // A request Grace made before the act, refused after it, by her name as it was then.
+    const before = await tenantDb.withTenant(tenant, newestEvent);
+    const stale = {
+      id: 'req-stale',
+      tenant,
+      principal: { principalId: ids.grace, email: 'grace@example.com', displayName: 'Grace' },
+      credential: { kind: 'session', id: 'session-stale', route: 'organisation' },
+      log: { error: () => undefined },
+    } as unknown as FastifyRequest;
+    await recordRefusal(
+      tenantDb,
+      stale,
+      new AppError(403, 'forbidden', 'No.').refusing({
+        permission: 'administer',
+        target: { kind: 'tenant' },
+        reason: 'not_granted',
+        level: null,
+        hidden: false,
+      }),
+    );
+    const [late] = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+    expect(late).toMatchObject({ kind: 'access.refused', actor: ids.grace });
+    expect(late!.labels).toEqual({
+      actor: { text: 'erased', refersTo: ids.grace, erased: true },
+    });
   });
 });

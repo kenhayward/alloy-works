@@ -7,7 +7,11 @@ describe('erasure in the contract (the ER plan, ER-C)', () => {
     const administer = { check: 'permission', permission: 'administer', target: { tenant: true } };
     expect(routes.getErasure.access).toEqual(administer);
     // Erasing removes their memberships, a fact a decision reads.
-    expect(routes.erasePrincipal.access).toEqual({ ...administer, changesAccess: true });
+    expect(routes.erasePrincipal.access).toEqual({
+      ...administer,
+      changesAccess: true,
+      credential: 'session',
+    });
     const paths = [routes.getErasure, routes.erasePrincipal].map(
       (route) => `${route.method} ${route.path}`,
     );

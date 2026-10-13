@@ -126647,7 +126647,7 @@
             }
           },
           "409": {
-            "description": "grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
+            "description": "grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
             "content": {
               "application/json": {
                 "schema": {
@@ -128291,7 +128291,7 @@
             }
           },
           "409": {
-            "description": "group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
+            "description": "group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap",
             "content": {
               "application/json": {
                 "schema": {
@@ -134090,14 +134090,11 @@
         "tags": [
           "People and principals"
         ],
-        "x-alloy-token-enabled": true,
+        "x-alloy-token-enabled": false,
         "x-alloy-permission": "administer",
         "security": [
           {
             "session": []
-          },
-          {
-            "token": []
           }
         ],
         "parameters": [
@@ -134107,8 +134104,14 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {
@@ -134221,7 +134224,7 @@
             }
           },
           "403": {
-            "description": "The caller may not administer this environment",
+            "description": "The caller may not administer this environment; or token_not_allowed: a token never erases",
             "content": {
               "application/json": {
                 "schema": {
@@ -134439,8 +134442,14 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {

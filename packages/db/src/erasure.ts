@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { revokeApiToken } from './api-tokens.js';
 import { eraseLabels, labels, principalLabel, recordEvent } from './audit.js';
+import { recordGrantsRevoked } from './grants.js';
 import { recordMembershipsRemoved } from './groups.js';
 import { withdrawInvitation } from './invitations.js';
 import { notifyTenant } from './realtime.js';
@@ -85,11 +86,12 @@ async function stateOf(
       .executeTakeFirst()
       .then(counted);
   const grants = await count('access_grant');
+  // Somebody invited is withdrawn, which removes and records their grants (the ER final review, L1).
   const refusals: ErasureRefusal[] = row.erased
     ? []
     : [
-        ...(grants > 0 ? [{ reason: 'granted' as const, grants }] : []),
-        ...(person === by ? [{ reason: 'self' as const }] : []),
+        ...(grants > 0 && !row.invited ? [{ reason: 'granted' as const, grants }] : []),
+        ...(row.id === by.toLowerCase() ? [{ reason: 'self' as const }] : []),
         ...(row.kind === 'service' ? [{ reason: 'service' as const }] : []),
       ];
   return {
@@ -144,8 +146,8 @@ export async function erasureOf(
  * a sign-in or a claim of them waits and then finds them erased (ER-D). Every event the act records -
  * sessions ended, tokens revoked, memberships removed, an invitation withdrawn - comes before their
  * name is blanked, and `erase_labels` last, so no label it writes outlives it. Somebody invited who
- * never signed in is withdrawn, and so goes whole. Undefined for nobody this tenant holds; erasing the
- * erased changes nothing.
+ * never signed in is withdrawn, and so goes whole. Undefined for nobody this tenant holds. Erasing the
+ * erased ends whatever access a race left them, naming nobody, and answers unchanged.
  */
 export async function erasePerson(
   trx: TenantTransaction,
@@ -156,15 +158,45 @@ export async function erasePerson(
   await lockAccessForChange(trx);
   const state = await stateOf(trx, person, by, true);
   if (!state) return undefined;
-  if (state.person.erased) return { answer: 'unchanged' };
+  if (state.person.erased) {
+    await endAccess(trx, state.person.id);
+    return { answer: 'unchanged' };
+  }
   if (state.refusals.length > 0) return { answer: 'refused', refusals: state.refusals };
 
   if (state.person.invited) {
-    // Its principal goes, and the invitation with it (ER-A).
-    await withdrawInvitation(trx, state.invitationId!);
+    // Its principal goes, with its grants, and the invitation with it (ER-A).
+    const withdrawn =
+      state.invitationId === null ? undefined : await withdrawInvitation(trx, state.invitationId);
+    if (!withdrawn || 'refused' in withdrawn) {
+      throw new Error(`The invitation of ${person} could not be withdrawn`);
+    }
     return { answer: 'erased', labels: await eraseLabels(trx, person) };
   }
 
+  await endAccess(trx, state.person.id);
+  // The accepted invitation's row holds their address; it records nothing anything reads after.
+  if (state.invitationId !== null) {
+    await trx.deleteFrom('invitation').where('id', '=', state.invitationId).execute();
+  }
+  await trx
+    .updateTable('principal')
+    .set({
+      display_name: ERASED_NAME,
+      email: null,
+      email_verified: false,
+      erased_at: sql<Date>`now()`,
+    })
+    .where('id', '=', person)
+    .execute();
+  return { answer: 'erased', labels: await eraseLabels(trx, person) };
+}
+
+/**
+ * Ends everything giving `person` access, recording each before it goes: sessions, tokens, hand-offs,
+ * grants (none, but for the erased) and memberships.
+ */
+async function endAccess(trx: TenantTransaction, person: string): Promise<void> {
   const sessions = await trx
     .selectFrom('session')
     .select('id')
@@ -200,36 +232,26 @@ export async function erasePerson(
     await notifyTenant(trx, { kind: 'credential_ended', token: token.id });
   }
   await trx.deleteFrom('sign_in_handoff').where('principal_id', '=', person).execute();
+  await recordGrantsRevoked(trx, { principal: person });
+  await trx.deleteFrom('access_grant').where('principal_id', '=', person).execute();
   await recordMembershipsRemoved(trx, { principal: person });
   await trx.deleteFrom('group_member').where('principal_id', '=', person).execute();
-  // The accepted invitation's row holds their address; it records nothing anything reads after.
-  if (state.invitationId !== null) {
-    await trx.deleteFrom('invitation').where('id', '=', state.invitationId).execute();
-  }
-  await trx
-    .updateTable('principal')
-    .set({
-      display_name: ERASED_NAME,
-      email: null,
-      email_verified: false,
-      erased_at: sql<Date>`now()`,
-    })
-    .where('id', '=', person)
-    .execute();
-  return { answer: 'erased', labels: await eraseLabels(trx, person) };
 }
 
 /**
- * Whether `person` is erased or gone, their row held FOR SHARE to the end of the transaction: a sign-in
- * asks it after any lock on the access epoch and before it makes a session, so an erasure - the epoch,
- * then the row - ends the session or is seen here (ER-D).
+ * `person`'s row held FOR SHARE to the end of the transaction, answering whether they are erased or
+ * gone: a sign-in asks it after any lock on the access epoch and before it changes anything, so an
+ * erasure - the epoch, then the row - ends the session or is seen here (ER-D).
  */
-export async function heldErased(trx: TenantTransaction, person: string): Promise<boolean> {
+export async function holdPrincipal(
+  trx: TenantTransaction,
+  person: string,
+): Promise<'held' | 'erased' | 'missing'> {
   const row = await trx
     .selectFrom('principal')
     .select(erasedIn().as('erased'))
     .where('id', '=', person)
     .forShare()
     .executeTakeFirst();
-  return row?.erased ?? true;
+  return !row ? 'missing' : row.erased ? 'erased' : 'held';
 }

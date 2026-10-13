@@ -440,7 +440,7 @@ export {
   erasedIn,
   erasePerson,
   erasureOf,
-  heldErased,
+  holdPrincipal,
   type ErasureAnswer,
   type ErasureRefusal,
   type ErasureState,

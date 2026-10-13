@@ -403,6 +403,38 @@ describe('access to a component', () => {
     expect(asked.some((each) => each.route === 'POST /v1/grants')).toBe(false);
   });
 
+  it('offers nobody erased to give access to or to explain', async () => {
+    const { fetching } = service({
+      override: {
+        'GET /v1/principals': () =>
+          json(200, {
+            items: [
+              ...people,
+              {
+                id: '00000000-0000-4000-8000-0000000000e1',
+                name: 'Erased person',
+                email: null,
+                kind: 'user',
+                invited: false,
+                erased: true,
+              },
+            ],
+            next: null,
+          }),
+      },
+    });
+    panel(fetching);
+    await screen.findByRole('heading', { name: 'Access to Install the printer' });
+    const pickers = await screen.findAllByRole('combobox', { name: 'Person' });
+    for (const picker of [
+      ...pickers,
+      ...screen.queryAllByRole('combobox', { name: /Whose access/ }),
+    ]) {
+      expect(within(picker).getByRole('option', { name: /^Alice/ })).toBeInTheDocument();
+      expect(within(picker).queryByRole('option', { name: /Erased person/ })).toBeNull();
+    }
+  });
+
   it('shows the service refusal in its own words, and the lists as the service holds them', async () => {
     const { fetching } = service({
       override: {

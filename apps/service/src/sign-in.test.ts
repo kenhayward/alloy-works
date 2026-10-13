@@ -1,6 +1,7 @@
 import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
+  createGroup,
   createTenant,
   ERASED_NAME,
   erasePerson,
@@ -11,11 +12,13 @@ import {
 import {
   auditEvents,
   freshDatabase,
+  holdingTransaction,
   newestEvent,
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
+  untilWaitingOnLocks,
 } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -428,6 +431,45 @@ describe('signing in with the organisation provider', () => {
       [grace],
     );
     expect(rows).toEqual([{ email: null, display_name: ERASED_NAME, sessions: 0 }]);
+  });
+
+  it('refuses a sign-in whose groups wait on an erasure, settling no membership (the ER plan, ER-D)', async () => {
+    // Ada signed in before Ivy's group stood for anything she asserts.
+    expect((await signInAt('erased.acme.alloy.test', 'ada')).statusCode).toBe(302);
+    const ada = (
+      await queryAs(db.adminUrl, `select id from ${erasing.schema}.principal where subject = 'ada'`)
+    ).rows[0]!.id as string;
+    await tenantDb.withTenant(
+      erasing,
+      (trx) => createGroup(trx, 'Authors', { providerValue: 'authors' }),
+      { actorKind: 'system' },
+    );
+    // The epoch held, so the erasure waits on it first, then the sign-in settling her groups.
+    const release = await holdingTransaction(
+      db.adminUrl,
+      `select singleton from ${erasing.schema}.access_epoch for update`,
+    );
+    const erased = tenantDb.withTenant(
+      erasing,
+      (trx) => erasePerson(trx, ada, '00000000-0000-4000-8000-000000000001'),
+      { actorKind: 'system' },
+    );
+    await untilWaitingOnLocks(db.adminUrl, 1);
+    const signing = signInAt('erased.acme.alloy.test', 'ada');
+    await untilWaitingOnLocks(db.adminUrl, 2);
+    await release();
+    expect(await erased).toMatchObject({ answer: 'erased' });
+    const answer = await signing;
+    expect(answer.statusCode).toBe(403);
+    expect(answer.json()).toMatchObject({ code: 'principal_erased' });
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select (select count(*)::int from ${erasing.schema}.group_member where principal_id = $1)
+          as memberships,
+        (select count(*)::int from ${erasing.schema}.session where principal_id = $1) as sessions`,
+      [ada],
+    );
+    expect(rows).toEqual([{ memberships: 0, sessions: 0 }]);
   });
 
   it('never writes a client secret to its log or to a refusal', async () => {

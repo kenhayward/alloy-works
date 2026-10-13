@@ -195,7 +195,7 @@ export const managingAccessRoutes = {
       404: notFound,
       409: {
         description:
-          'grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
+          'grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap',
         schema: ErrorBody,
       },
     },

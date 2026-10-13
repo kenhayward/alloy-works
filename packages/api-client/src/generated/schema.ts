@@ -39336,7 +39336,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -40037,7 +40037,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -42527,7 +42527,7 @@ export interface operations {
                 "Idempotency-Key"?: string;
             };
             path: {
-                id: string;
+                id: string & (unknown & unknown);
             };
             cookie?: never;
         };
@@ -42577,7 +42577,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller may not administer this environment; or token_not_allowed: a token never erases */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -42677,7 +42677,7 @@ export interface operations {
                 "X-Request-Id"?: string;
             };
             path: {
-                id: string;
+                id: string & (unknown & unknown);
             };
             cookie?: never;
         };
