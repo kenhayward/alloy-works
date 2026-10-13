@@ -848,7 +848,7 @@ export async function requestPublication(
 }
 
 /**
- * A publication's event (LIF-026; the AU1 plan, AU1-L): about the document version it publishes, by
+ * A publication's event (LIF-067; the AU1 plan, AU1-L): about the document version it publishes, by
  * that version's title and its space's name. Requested in the request's transaction; produced and
  * failed in the worker's.
  */

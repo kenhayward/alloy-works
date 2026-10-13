@@ -84,7 +84,7 @@ describe('values revised by hand through the service', () => {
     return { ...made, state: await stateOf(made.document.id, 'v1') };
   };
 
-  it('DAT-057 DAT-058 revises a value in place, in front of what the query returned, which is kept; withdrawn, the query value shows again', async () => {
+  it('DAT-057 DAT-058 LIF-069 revises a value in place, in front of what the query returned, which is kept; withdrawn, the query value shows again', async () => {
     const { document, node, state } = await resolvedValue('31');
     const resolution = state.held!.resolution;
     let answer = await revise(document.id, {

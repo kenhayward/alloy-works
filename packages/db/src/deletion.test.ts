@@ -541,7 +541,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     }
   });
 
-  it('LIF-057 records artifact.deleted and artifact.undeleted about it, and deleting the deleted changes nothing', async () => {
+  it('LIF-073 records artifact.deleted and artifact.undeleted about it, and deleting the deleted changes nothing', async () => {
     const { space, ada } = await fresh();
     const audited = await component(space, ada, 'Audited procedure');
     expect(await remove(audited, ada)).toEqual({ answer: 'deleted' });

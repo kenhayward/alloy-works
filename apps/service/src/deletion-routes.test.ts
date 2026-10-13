@@ -391,7 +391,7 @@ describe('deleting a component or a document over HTTP (the DL plan, Task 1)', (
     expect((await list('ada')).items.map((each) => each.id)).not.toContain(procedure);
   });
 
-  it('LIF-057 records who deleted and undeleted it', async () => {
+  it('LIF-073 records who deleted and undeleted it', async () => {
     const audited = await component('Audited procedure');
     await call('POST', `/v1/components/${audited}/delete`, 'ada');
     await call('POST', `/v1/components/${audited}/undelete`, 'ada');

@@ -43,8 +43,8 @@ the stream at all: it is the streamed response to the request that asked for it.
 | **API-015** | The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E)                                                               |
 | **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                                                                                               |
 
-**API-014 is not claimed**: it names notifications and streamed model output beside presence and locks,
-and neither exists; the AsyncAPI document carries each as it is built.
+**API-063 is not claimed**: it names notifications beside presence and locks, and the AsyncAPI
+document does not carry them yet. API-064, streamed model output, is T5's (the T3 audit split API-014).
 
 Lock rules that are not about transport - who may take a lock, from whom, and how long it lasts
 (COL-005, COL-008 to COL-011) - belong to [collaboration.md](collaboration.md) and component-editor.md,

@@ -261,7 +261,7 @@ export async function recordAsset(
   return version;
 }
 
-/** An upload's end on the log (LIF-064; the AU1 plan, AU1-L), in the space it was made in. */
+/** An upload's end on the log (LIF-069; the AU1 plan, AU1-L), in the space it was made in. */
 async function recordAssetEvent(
   trx: TenantTransaction,
   spaceId: string,

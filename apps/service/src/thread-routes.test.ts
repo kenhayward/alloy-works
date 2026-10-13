@@ -260,7 +260,7 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     expect(await listed()).toMatchObject({ orphaned: true, comments: 1 });
   });
 
-  it('COL-017 places a component’s thread in a document by each occurrence’s own version', async () => {
+  it('COL-017 COL-018 places a component’s thread in a document by each occurrence’s own version', async () => {
     const before = await component([para('p1', 'Set the tray, then wait.')]);
     const { id } = (await start(before, SPAN)).json<ThreadView>();
     await revise(before, [para('p1', 'Set the lid.')]);

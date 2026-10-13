@@ -442,7 +442,7 @@ describe('content and data on the audit log', () => {
     expect(everything).not.toContain(SEALED);
   });
 
-  it('records an asset ingested and an upload refused, the worker naming who asked', async () => {
+  it('LIF-069 records an asset ingested and an upload refused, the worker naming who asked', async () => {
     const key = (fill: string) => `${tenant.role}/sha256/${fill.repeat(64)}`;
     const { answer: uploads } = await recorded(async (trx) => {
       const kept = await createAssetUpload(trx, {

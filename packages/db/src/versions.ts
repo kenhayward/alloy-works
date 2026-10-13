@@ -309,7 +309,7 @@ async function insertVersion(
 }
 
 /**
- * `content.version_cut` (LIF-026; the AU1 plan, AU1-J), for every version of every kind, in the
+ * `content.version_cut` (LIF-067; the AU1 plan, AU1-J), for every version of every kind, in the
  * transaction that cuts it: by whoever the transaction acts for, naming the author where that is
  * somebody else - the uploader of an image the worker ingests, the requester of a pending result -
  * and keeping the title or name it had and its space's name. A migration's versions are inserted in

@@ -163,7 +163,7 @@ describe('what an environment is doing, as it happens', () => {
     }
   });
 
-  it('opens with what there is now', async () => {
+  it('API-035 opens with what there is now', async () => {
     const id = await sampleIn(production);
     const stream = openStream(`${address}/v1/stream`, cookie);
     try {
@@ -209,7 +209,7 @@ describe('what an environment is doing, as it happens', () => {
     }
   });
 
-  it('loses nothing that happens while its snapshot is being read', async () => {
+  it('API-035 loses nothing that happens while its snapshot is being read', async () => {
     // The ordering the realtime spike paid for: an event that commits while the snapshot is being
     // read must arrive after it, not before it and then be undone by older state (ADR-0018).
     const id = await sampleIn(production);
@@ -240,7 +240,7 @@ describe('what an environment is doing, as it happens', () => {
     }
   });
 
-  it('reads its snapshot only once it is heard, so a sample finishing in between is not lost', async () => {
+  it('API-035 reads its snapshot only once it is heard, so a sample finishing in between is not lost', async () => {
     // Postgres hears nothing on a channel until its LISTEN has landed. This listener stretches that
     // moment for as long as the test likes: until the gate opens, an announcement reaches nobody,
     // exactly as one committed before the LISTEN would reach nobody.

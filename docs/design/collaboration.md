@@ -54,7 +54,9 @@ next hold the lock. A take is never instant and never silent.
 | **COL-020** | A reviewer suggests by editing a private draft of a component; the suggestion is that draft beside the content, drawn as a redline over the current version by the comparison's renderer, and the content is unchanged until it is accepted |
 | **COL-021** | A suggestion records its author and when it was made, and the version it was made against |
 | **COL-022** | Accepted or rejected one at a time, or in bulk: every pending suggestion on a component or across a document, optionally of one author |
+| **COL-065** | A component's pending suggestions are listed, and a document's across every component it places, `?state=pending`, as each reader may read them |
 | **COL-023** | One suggestion is one act: accepting applies every change it holds, or none of them |
+| **CNT-184** | Accepting applies every change a suggestion proposes, in every block, as one act; rejecting ends the whole of it as one |
 | **COL-024** | Accepting records a version authored by whoever accepts, `suggestion.accepted` naming the suggestion and its author; rejecting and withdrawing are audited too |
 | **COL-025** | Suggestions are made, listed and drawn with no lock, while the component is held |
 | **COL-041** | Accepting or rejecting serialises on the component and holds it for its transaction where it is free, the automatic claim, ending with the act; where the caller holds the lock, refused `edits_pending` while they have saved work after the current version |
@@ -75,13 +77,12 @@ nothing since they lost the network, so what they typed is in their window's sto
 and offered when it next opens, not an iteration; and what they did save is recoverable **within the
 tenant's retention** after the taker's next cut (VER-003), not for ever.
 
-**COL-027 named as a gap:** unresolved suggestions are reportable (a document's and a component's
-pending, counted and listed); the lifecycle gate that requires none is T9's LIF, and the claim waits
-for it.
+**COL-066 is not claimed:** the lifecycle gate requiring no unresolved suggestions is T9's LIF. COL-027,
+which held it with COL-065's reporting, was split by the T3 audit.
 
-**Not claimed:** COL-056. Nothing deletes a component or moves it between spaces yet (T7, T9); a lock
-whose component leaves a viewer's readable set already degrades to absence on the stream
-(realtime.md), and the claim waits for the act that would test it. COL-005 and COL-006 stay
+**Not claimed:** COL-067 and COL-068, which split COL-056 (the T3 audit): a component deleted, built
+since (ADR-0060), and moved between spaces, IAM-015's in T7. A lock whose component leaves a viewer's
+readable set already degrades to absence on the stream (realtime.md); the claim waits for the test. COL-005 and COL-006 stay
 component-editor.md's.
 
 ## The row

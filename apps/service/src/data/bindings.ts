@@ -1854,7 +1854,7 @@ type BindingEvent =
   'binding.resolved' | 'binding.checked' | 'binding.accepted' | 'binding.confirmed';
 
 /**
- * A binding's act on the log (LIF-026; the AU1 plan, AU1-L), in the transaction that records it, not
+ * A binding's act on the log (LIF-067; the AU1 plan, AU1-L), in the transaction that records it, not
  * the one that decided it: about the document, at its latest version, naming the node, the binding
  * and the dataset version it holds or found.
  */

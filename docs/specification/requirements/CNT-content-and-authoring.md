@@ -73,7 +73,9 @@ immutable and identity cannot be granted retrospectively.
 | **CNT-002** | Every block node must carry an identifier, allocated when the block is created, unique within its component, and never reused                                                                                                                                                                                                    | T1         | Specified             |
 | **CNT-003** | Every annotation over a range of text must be a mark; marks must be able to cover overlapping ranges without nesting and without being split into separate annotations                                                                                                                                                           | T1         | Specified             |
 | **CNT-004** | Every mark must carry an identifier; an annotation fragmented across several text nodes must remain one annotation under one identifier                                                                                                                                                                                          | T1         | Specified             |
-| **CNT-005** | Accepting, rejecting or excluding a marked annotation must act on every fragment of that identifier in one operation                                                                                                                                                                                                             | T3         | Specified             |
+| **CNT-005** | Accepting, rejecting or excluding a marked annotation must act on every fragment of that identifier in one operation                                                                                                                                                                                                             | T3         | Superseded by CNT-184 |
+| **CNT-184** | Accepting or rejecting a suggestion must act on every change it proposes, in every block it touches, in one operation                                                                                                                                                                                                            | T3         | Specified             |
+| **CNT-185** | Excluding conditioned content must act on every fragment of that condition's identifier in one operation (**REU**)                                                                                                                                                                                                               | T4         | Specified             |
 | **CNT-006** | The mark vocabulary must be closed. Adding a mark type is a schema change with a migration, not a configuration option                                                                                                                                                                                                           | Constraint | Specified             |
 | **CNT-007** | The model must contain no mark or node whose only purpose is to represent an overlap, a range start or a range end                                                                                                                                                                                                               | Constraint | Specified             |
 | **CNT-008** | Marks must be semantic in intent. The model must carry no typeface, font size, colour or spacing                                                                                                                                                                                                                                 | Constraint | Specified             |
@@ -1023,3 +1025,19 @@ revision is T9's (CNT-159). Split as CNT-108 was.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 181, of which 34 superseded and 1 withdrawn | 183, of which 35 superseded and 1 withdrawn |
+
+### From the T3 audit against the code (2026-10-13)
+
+[The T3 audit](<../../reviews/T3 - Audit against the code.md>) read every T3 requirement not yet
+`Covered` against the code at 0.163.0, as Ken chose on 2026-10-13
+([the TC plan](../../plans/2026-10-13-tc-t3-close.md)). A row moving tranche whole keeps its
+identifier, and only its tranche changes; a row split by tranche is superseded by its T3 half, and
+the rest becomes rows of their own.
+
+| What was found                                                                                                                                                              | Change                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| CNT-005's excluding acts on a condition, REU's, in T4. A suggestion is a proposal beside the content, not a mark (ADR-0058), so accepting and rejecting act on the proposal | **CNT-005 superseded by CNT-184**, in T3: accepting or rejecting a suggestion, with **CNT-185**, excluding conditioned content, in **T4** |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 183, of which 35 superseded and 1 withdrawn | 185, of which 36 superseded and 1 withdrawn |

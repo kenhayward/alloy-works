@@ -32,14 +32,16 @@ good as a word processor, or the product loses the room regardless of what else 
 
 ## 3. Presence
 
-| ID          | Requirement                                                                                                                                                                                                      | Tranche    | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **COL-001** | A user must be able to see who else is in a document, and roughly where                                                                                                                                          | T3         | Specified |
-| **COL-002** | Presence must show what each person is doing: reading, reviewing or editing (**CNT-154**, **CNT-155**)                                                                                                           | T3         | Specified |
-| **COL-003** | Presence must respect permissions - a user must not be shown somebody working in a component they may not read                                                                                                   | Constraint | Specified |
-| **COL-004** | Presence must degrade to absence rather than to a wrong answer when a connection drops                                                                                                                           | T3         | Specified |
-| **COL-055** | A presence claim must be bounded by a declared heartbeat: a mode not refreshed within that period must be shown as stale, and then as absence, never as a live claim                                             | T3         | Specified |
-| **COL-056** | Where a component is deleted or moved, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017) | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                        | Tranche    | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **COL-001** | A user must be able to see who else is in a document, and roughly where                                                                                                                                                            | T3         | Specified             |
+| **COL-002** | Presence must show what each person is doing: reading, reviewing or editing (**CNT-154**, **CNT-155**)                                                                                                                             | T3         | Specified             |
+| **COL-003** | Presence must respect permissions - a user must not be shown somebody working in a component they may not read                                                                                                                     | Constraint | Specified             |
+| **COL-004** | Presence must degrade to absence rather than to a wrong answer when a connection drops                                                                                                                                             | T3         | Specified             |
+| **COL-055** | A presence claim must be bounded by a declared heartbeat: a mode not refreshed within that period must be shown as stale, and then as absence, never as a live claim                                                               | T3         | Specified             |
+| **COL-056** | Where a component is deleted or moved, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                   | T3         | Superseded by COL-067 |
+| **COL-067** | Where a component is deleted, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                            | T3         | Specified             |
+| **COL-068** | Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017) | T7         | Specified             |
 
 **COL-055 bounds the case COL-004 does not.** A dropped connection is visible; a slow one is not,
 and a heartbeat that arrives late is indistinguishable from a person who left an hour ago. Presence
@@ -119,21 +121,23 @@ than implied by the word audit appearing elsewhere. **LIF** owns how long the re
 
 ## 6. Suggestions
 
-| ID          | Requirement                                                                                                                                                                                                                          | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **COL-020** | A reviewer must be able to propose a change as a suggestion, rendered as a redline, without altering the content                                                                                                                     | T3         | Specified |
-| **COL-021** | A suggestion must be attributable to its author and its time                                                                                                                                                                         | T3         | Specified |
-| **COL-022** | A suggestion must be acceptable or rejectable individually, and in bulk by author or by scope                                                                                                                                        | T3         | Specified |
-| **COL-023** | Accepting or rejecting must act on the whole suggestion in one operation, across every fragment of it (**CNT-005**)                                                                                                                  | Constraint | Specified |
-| **COL-024** | Accepting a suggestion must be audited, and must be attributable to the person who accepted it rather than to the person who proposed it                                                                                             | T3         | Specified |
-| **COL-025** | Suggestions must be visible against a locked component, so that review does not wait for an author to finish                                                                                                                         | T3         | Specified |
-| **COL-026** | An author must be able to see what they themselves changed in the current session, distinctly from what others have suggested (**CNT-113**)                                                                                          | T3         | Specified |
-| **COL-027** | Unresolved suggestions must be reportable, and a lifecycle gate must be able to require that there are none (**LIF**)                                                                                                                | T3         | Specified |
-| **COL-041** | Accepting or rejecting a suggestion writes to the component and is therefore an edit: the person doing it must hold the lock, claimed automatically where the component is free (COL-005)                                            | Constraint | Specified |
-| **COL-042** | Where another user holds the lock, accepting or rejecting must be refused, naming the holder and when the lock is expected to release (COL-007). The suggestion must stay pending                                                    | T3         | Specified |
-| **COL-043** | A suggestion must only ever be applied by a deliberate act of a person holding the lock. Nothing must apply one automatically - not a lock releasing, not a timeout, not a round closing, and not a queue of decisions taken earlier | Constraint | Specified |
-| **COL-048** | The author of a suggestion must be able to withdraw it while it is unresolved. A withdrawal must record who and when, exactly as a rejection does, and must not remove the record that the suggestion was made                       | T3         | Specified |
-| **COL-052** | Where accepting one suggestion leaves another no longer applicable, the second must be surfaced as stale, saying what happened to it. It must never be silently dropped, and must never be rejected on its author's behalf           | T3         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                          | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **COL-020** | A reviewer must be able to propose a change as a suggestion, rendered as a redline, without altering the content                                                                                                                     | T3         | Specified             |
+| **COL-021** | A suggestion must be attributable to its author and its time                                                                                                                                                                         | T3         | Specified             |
+| **COL-022** | A suggestion must be acceptable or rejectable individually, and in bulk by author or by scope                                                                                                                                        | T3         | Specified             |
+| **COL-023** | Accepting or rejecting must act on the whole suggestion in one operation, across every fragment of it (**CNT-184**)                                                                                                                  | Constraint | Specified             |
+| **COL-024** | Accepting a suggestion must be audited, and must be attributable to the person who accepted it rather than to the person who proposed it                                                                                             | T3         | Specified             |
+| **COL-025** | Suggestions must be visible against a locked component, so that review does not wait for an author to finish                                                                                                                         | T3         | Specified             |
+| **COL-026** | An author must be able to see what they themselves changed in the current session, distinctly from what others have suggested (**CNT-113**)                                                                                          | T3         | Specified             |
+| **COL-027** | Unresolved suggestions must be reportable, and a lifecycle gate must be able to require that there are none (**LIF**)                                                                                                                | T3         | Superseded by COL-065 |
+| **COL-065** | Unresolved suggestions must be reportable: a component's, and a document's across every component it places                                                                                                                          | T3         | Specified             |
+| **COL-066** | A lifecycle gate must be able to require that there are no unresolved suggestions (**LIF**)                                                                                                                                          | T9         | Specified             |
+| **COL-041** | Accepting or rejecting a suggestion writes to the component and is therefore an edit: the person doing it must hold the lock, claimed automatically where the component is free (COL-005)                                            | Constraint | Specified             |
+| **COL-042** | Where another user holds the lock, accepting or rejecting must be refused, naming the holder and when the lock is expected to release (COL-007). The suggestion must stay pending                                                    | T3         | Specified             |
+| **COL-043** | A suggestion must only ever be applied by a deliberate act of a person holding the lock. Nothing must apply one automatically - not a lock releasing, not a timeout, not a round closing, and not a queue of decisions taken earlier | Constraint | Specified             |
+| **COL-048** | The author of a suggestion must be able to withdraw it while it is unresolved. A withdrawal must record who and when, exactly as a rejection does, and must not remove the record that the suggestion was made                       | T3         | Specified             |
+| **COL-052** | Where accepting one suggestion leaves another no longer applicable, the second must be surfaced as stale, saying what happened to it. It must never be silently dropped, and must never be rejected on its author's behalf           | T3         | Specified             |
 
 **COL-041 to COL-043 close the interaction review ranked first, and the answer is the boring one.**
 Accepting a suggestion writes content, and so does rejecting one - the suggestion mark lives in the
@@ -193,7 +197,7 @@ repeated.
 | **COL-060** | Notification channels must be tenant configuration: which channels are enabled, the address or domain email is sent from, and the tenant's own policy. Changing that must be permissioned and audited, and must be carried in the configuration export (**ADM-005**, **ADM-027**) | T7         | Specified             |
 | **COL-061** | Notification delivery must state its guarantee: at-least-once with a stable event identifier a recipient can de-duplicate on (**API-045**), a declared retry and backoff, and a failing channel surfaced in tenant diagnostics (**ADM-036**) rather than silently dropped         | T7         | Specified             |
 | **COL-062** | The inbox must have a stated lifecycle: how long a notification is retained, who may delete one, what happens to a deprovisioned user's inbox, and that its contents are a second copy of tenant content and tenant-scoped as such (**IAM-066**)                                  | T3         | Specified             |
-| **COL-053** | The rule in COL-036 must hold wherever review material leaves the document: a report of unresolved suggestions (COL-027), an export, a digest and a webhook payload (COL-037) must each carry no content the recipient may not read                                               | Constraint | Specified             |
+| **COL-053** | The rule in COL-036 must hold wherever review material leaves the document: a report of unresolved suggestions (COL-065), an export, a digest and a webhook payload (COL-037) must each carry no content the recipient may not read                                               | Constraint | Specified             |
 
 **COL-036 is a leak that arrives by email.** A notification quoting the sentence somebody commented
 on sends that sentence to whoever is on the thread, past whatever permissions the document had.
@@ -340,3 +344,21 @@ identifier, and only its tranche changes.
 | Counts       | Before | After                     |
 | ------------ | ------ | ------------------------- |
 | Requirements | 62     | 64, of which 1 superseded |
+
+### From the T3 audit against the code (2026-10-13)
+
+[The T3 audit](<../../reviews/T3 - Audit against the code.md>) read every T3 requirement not yet
+`Covered` against the code at 0.163.0, as Ken chose on 2026-10-13
+([the TC plan](../../plans/2026-10-13-tc-t3-close.md)). A row moving tranche whole keeps its
+identifier, and only its tranche changes; a row split by tranche is superseded by its T3 half, and
+the rest becomes rows of their own.
+
+| What was found                                                                                                          | Change                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| COL-027's gate is LIF's, which is T9's (ADR-0047). Reporting is built                                                   | **COL-027 superseded by COL-065**, in T3, with **COL-066**, the gate, in **T9**                       |
+| COL-056 speaks of a component moved, and moving content between spaces is IAM-015, T7. Deleting one is built (ADR-0060) | **COL-056 superseded by COL-067**, a component deleted, in T3, with **COL-068**, one moved, in **T7** |
+| COL-023 and COL-053 pointed at CNT-005 and COL-027                                                                      | Edited for clarity: they cite **CNT-184** and **COL-065**                                             |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 64, of which 1 superseded | 68, of which 3 superseded |

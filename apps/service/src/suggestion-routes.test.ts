@@ -310,6 +310,34 @@ describe('suggestions over HTTP (collaboration.md, Suggestions)', () => {
     });
   });
 
+  it('COL-065 reports the unresolved suggestions of a component, and of a document across every component it places, and none resolved', async () => {
+    const first = await component([para('p1', 'Set the tray.')]);
+    const second = await component([para('p1', 'Set the tray.')]);
+    const document = await documentWith([
+      reference('c'.repeat(26), first.artifactId, { kind: 'latest' }),
+      reference('d'.repeat(26), second.artifactId, { kind: 'latest' }),
+    ]);
+    const open = (await suggest(first)).json<SuggestionView>().id;
+    const rejected = (await suggest(second)).json<SuggestionView>().id;
+    const later = (await suggest(second, 'alice')).json<SuggestionView>().id;
+    const refused = await call('POST', `/v1/suggestions/${rejected}/rejection`, 'ada');
+    expect(refused.statusCode, refused.body).toBe(200);
+    const pending = (path: string) =>
+      call('GET', `${path}?state=pending`, 'ivy').then((answer) =>
+        answer.json<SuggestionList>().suggestions.map((each) => [each.id, each.state]),
+      );
+    expect(await pending(`/v1/documents/${document.artifactId}/suggestions`)).toEqual(
+      expect.arrayContaining([
+        [open, 'pending'],
+        [later, 'pending'],
+      ]),
+    );
+    expect(await pending(`/v1/documents/${document.artifactId}/suggestions`)).toHaveLength(2);
+    expect(await pending(`/v1/components/${second.artifactId}/suggestions`)).toEqual([
+      [later, 'pending'],
+    ]);
+  });
+
   it('COL-048 lets its author alone withdraw a suggestion, and keeps it', async () => {
     const version = await component([para('p1', 'Set the tray.')]);
     const { id } = (await suggest(version)).json<SuggestionView>();
