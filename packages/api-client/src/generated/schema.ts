@@ -508,7 +508,7 @@ export interface paths {
         };
         /**
          * What deleting a component leaves, and what refuses it
-         * @description States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.
+         * @description States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.
          */
         get: operations["getComponentDeletion"];
         put?: never;
@@ -702,7 +702,7 @@ export interface paths {
         put?: never;
         /**
          * Undelete a component
-         * @description Undeletes a component, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.
+         * @description Undeletes a component, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.
          */
         post: operations["undeleteComponent"];
         delete?: never;
@@ -1059,6 +1059,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The deleted components and documents the caller may read, a page at a time
+         * @description Lists the deleted components and documents the caller may read but for their deletion, the latest deleted first in cursor pages, each with who deleted it, when, and whether the caller may undelete it (retire on it). Archived ones deleted are listed here, not among the archived.
+         */
+        get: operations["listDeleted"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents": {
         parameters: {
             query?: never;
@@ -1352,7 +1372,7 @@ export interface paths {
         };
         /**
          * What deleting a document leaves, and what refuses it
-         * @description States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.
+         * @description States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, a retention keep yet to pass, saying until when, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.
          */
         get: operations["getDocumentDeletion"];
         put?: never;
@@ -1610,7 +1630,7 @@ export interface paths {
         put?: never;
         /**
          * Undelete a document
-         * @description Undeletes a document, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.
+         * @description Undeletes a document, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.
          */
         post: operations["undeleteDocument"];
         delete?: never;
@@ -2313,6 +2333,30 @@ export interface paths {
          * @description Records the next query definition version from the version the caller opened. What it needs is decided by the version's own query: use connection on its connection, and for SQL write SQL there as well, so somebody who may not write SQL can turn SQL into a built query but not back. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.
          */
         post: operations["recordQueryDefinitionVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/retention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The retention keeps in force
+         * @description Returns the retention keeps in force: each a minimum in days, for a kind, a space, or a kind in a space. Every keep reaching a component or a document applies, the longest winning, and refuses deleting it until that many days have passed since its latest version. Needs administer at the environment.
+         */
+        get: operations["getRetention"];
+        /**
+         * Set or clear a retention keep for a kind, a space, or a kind in a space
+         * @description Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.
+         */
+        put: operations["setRetention"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10227,10 +10271,10 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -10243,6 +10287,10 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
+                            /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
+                            until?: string;
                         }[];
                     };
                 };
@@ -10331,9 +10379,10 @@ export interface operations {
                         kind: "component" | "document";
                         /** @description Whether it is deleted now */
                         deleted: boolean;
-                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed */
+                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual */
                         remains: {
                             versions: number;
+                            /** @description Unsaved changes: these still expire by their window, deleted or not */
                             iterations: number;
                             threads: number;
                             suggestions: number;
@@ -10344,10 +10393,10 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -10360,6 +10409,10 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
+                            /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
+                            until?: string;
                         }[];
                     };
                 };
@@ -18233,6 +18286,126 @@ export interface operations {
                                 [key: string]: unknown;
                             };
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDeleted: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                kind?: "component" | "document";
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the deleted, the latest deleted first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "component" | "document";
+                            /** @description Its title at its latest version */
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            deletedBy: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            deletedAt: string;
+                            /** @description Whether the caller may undelete it: retire on it */
+                            mayUndelete: boolean;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end */
+                        next: string | null;
+                        /** @description How many the caller may read are deleted, of the kind asked */
+                        total: number;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, a limit outside 1 to 100, or a kind it does not know */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -32751,10 +32924,10 @@ export interface operations {
                         /** @description deletion_refused: every reason */
                         refusals?: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -32767,6 +32940,10 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
+                            /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
+                            until?: string;
                         }[];
                     };
                 };
@@ -32855,9 +33032,10 @@ export interface operations {
                         kind: "component" | "document";
                         /** @description Whether it is deleted now */
                         deleted: boolean;
-                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed */
+                        /** @description What stays once deleted, unreachable but kept, and comes back on an undelete: nothing is removed, though unsaved changes still expire as usual */
                         remains: {
                             versions: number;
+                            /** @description Unsaved changes: these still expire by their window, deleted or not */
                             iterations: number;
                             threads: number;
                             suggestions: number;
@@ -32868,10 +33046,10 @@ export interface operations {
                         /** @description Everything refusing deletion now; empty where it may be deleted, or is deleted */
                         refusals: {
                             /**
-                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview places it. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
+                             * @description baselined: a baseline pins a version, superseded or not, or is of the document. published: a publication placed a version, or is of the document. publishing: a queued publish or preview, or a preview yet to expire, places it, named by its document. referenced: the latest version of a document references it, a deleted document included. held: a legal hold on it or its space. kept: a retention keep has yet to pass, `until` saying when. locked: somebody is editing it, `holder` saying who. in_review: a review round is open on it
                              * @enum {string}
                              */
-                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "locked" | "in_review";
+                            code: "baselined" | "published" | "publishing" | "referenced" | "held" | "kept" | "locked" | "in_review";
                             /** @description Each dependant the caller may read, by its title, or a baseline by its name */
                             named?: {
                                 id: string;
@@ -32884,6 +33062,10 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             };
+                            /** @description locked: whether the caller holds it, from this window or another */
+                            yours?: boolean;
+                            /** @description kept: when the longest retention keep reaching it passes, counted from its latest version */
+                            until?: string;
                         }[];
                     };
                 };
@@ -45278,6 +45460,288 @@ export interface operations {
                             /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                             mayUse: boolean;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRetention: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The keeps in force */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "keeps": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The keeps in force, each kind's first, then by space. Every one reaching an artifact applies and the longest wins */
+                        keeps: {
+                            /** @description null: every kind in the space */
+                            kind: ("component" | "document") | null;
+                            /** @description null: the kind in every space */
+                            space: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description The minimum in days, from the latest version */
+                            days: number;
+                            by: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            /** @description When it was set */
+                            at: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setRetention: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "kind": "component",
+                 *       "space": "00000000-0000-4000-8000-000000000001",
+                 *       "days": 1
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The kind it keeps; null for every kind in the space */
+                    kind: ("component" | "document") | null;
+                    /** @description The space whose content it keeps, by its id; null for the kind in every space */
+                    space: (string & (unknown & unknown)) | null;
+                    /** @description The minimum in days, from the latest version, before deletion; null clears it */
+                    days: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Set, or cleared; the keeps in force after it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "keeps": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The keeps in force, each kind's first, then by space. Every one reaching an artifact applies and the longest wins */
+                        keeps: {
+                            /** @description null: every kind in the space */
+                            kind: ("component" | "document") | null;
+                            /** @description null: the kind in every space */
+                            space: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description The minimum in days, from the latest version */
+                            days: number;
+                            by: {
+                                id: string;
+                                /** @description Their display name, or address; null where neither is known */
+                                name: string | null;
+                            };
+                            /** @description When it was set */
+                            at: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Neither a kind nor a space, or days outside 1 to 36500 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

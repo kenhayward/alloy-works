@@ -326,8 +326,17 @@ export const auditKindSpecs = {
   // A component or a document deleted and undeleted (the DL plan, DL-B): about the artifact.
   'artifact.deleted': kind(['LIF-057'], empty, 'packages/db/src/deletion.ts'),
   'artifact.undeleted': kind(['LIF-057'], empty, 'packages/db/src/deletion.ts'),
-  // A minimum keep declared (the DL plan, DL-G), emitted by DL2.
-  'retention.changed': kind(['LIF-019', 'LIF-026'], empty, LATER),
+  // A minimum keep set or cleared (the DL plan, DL-G): its key, a kind or a space or both, and its
+  // days, null where cleared. About the retention settings, with the space where one is named.
+  'retention.changed': kind(
+    ['LIF-019', 'LIF-026'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']).nullable(),
+      space: Id.nullable(),
+      days: z.int().min(1).max(36_500).nullable(),
+    }),
+    'packages/db/src/keeps.ts',
+  ),
   // A legal hold placed and released (the AH plan, AH-E): about the artifact or the space it holds;
   // its reason is Administration's alone, never the log's (LIF-030).
   'hold.applied': kind(['LIF-057'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),

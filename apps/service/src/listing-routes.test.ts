@@ -1,6 +1,7 @@
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
+  createComponent,
   createConnection,
   createQueryDefinition,
   createDocument,
@@ -343,6 +344,26 @@ describe('the listings through the service', () => {
     const components = (await get('/v1/components?limit=100')).json<Page>();
     const component = components.items[0]?.id;
     expect(component, 'a component to list the versions of').toBeDefined();
+    // Two deleted components, so the Deleted listing has pages to turn.
+    const me = (await get('/v1/me')).json<{ id: string }>().id;
+    for (const title of ['Deleted one', 'Deleted two']) {
+      const made = await tenantDb.withTenant(tenant, (trx) =>
+        createComponent(trx, {
+          spaceId: general,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: me,
+        }),
+      );
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const deleted = await app.inject({
+        method: 'POST',
+        url: `/v1/components/${made.version.artifactId}/delete`,
+        headers: { host: HOST, cookie },
+      });
+      expect(deleted.statusCode, deleted.body).toBe(200);
+    }
     // Two holds, so the holds listing has pages to turn.
     for (const target of [{ artifact: component }, { space: general }]) {
       const placed = await app.inject({
@@ -395,6 +416,7 @@ describe('the listings through the service', () => {
       listInvitations: '/v1/invitations',
       listGroups: '/v1/groups',
       listHolds: '/v1/holds',
+      listDeleted: '/v1/deleted',
       listAuditEvents: '/v1/audit?kind=group.made',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',

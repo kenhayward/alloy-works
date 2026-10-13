@@ -180,6 +180,7 @@ describe('the audit kinds', () => {
       'audit.label_erased': { labels: 3 },
       'hold.applied': { hold: ID },
       'hold.removed': { hold: OTHER },
+      'retention.changed': { kind: 'document', space: ID, days: 365 },
     };
     for (const [kind, detail] of Object.entries(examples)) {
       expect(parseAuditDetail(kind as (typeof auditKinds)[number], detail), kind).toEqual(detail);

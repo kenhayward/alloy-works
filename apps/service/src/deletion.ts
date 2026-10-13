@@ -1,4 +1,6 @@
 import type {
+  DeletedList,
+  DeletedListQuery,
   DeletedView,
   DeletionParams,
   DeletionRefusalView,
@@ -7,12 +9,19 @@ import type {
 import {
   deleteArtifact,
   deletionOf,
+  listDeleted,
+  loadFactsFor,
   undeleteArtifact,
   type DeletionRefusal,
+  type Tenant,
+  type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
+import { decide } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { notFound, scopesOf, type Authorised } from './access.js';
+import { cursorFor, pageAsked } from './listing.js';
+import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
 
 /** A refusal as the wire lists it. */
@@ -20,8 +29,10 @@ function refusalView(refusal: DeletionRefusal): DeletionRefusalView {
   switch (refusal.reason) {
     case 'held':
       return { code: 'held' };
+    case 'kept':
+      return { code: 'kept', until: refusal.until.toISOString() };
     case 'locked':
-      return { code: 'locked', holder: { ...refusal.holder } };
+      return { code: 'locked', holder: { ...refusal.holder }, yours: refusal.yours };
     default:
       return {
         code: refusal.reason,
@@ -87,5 +98,59 @@ export function deletionHandlers() {
     getDocumentDeletion: remains('document'),
     deleteDocument: deleting('document'),
     undeleteDocument: undeleting('document'),
+  };
+}
+
+/**
+ * The Deleted listing (the DL plan, DL-H): the deleted the caller may read but for the tombstone,
+ * filtered by the readable set inside its query, each saying whether the caller may undelete it -
+ * `retire` decided per row from one read of the facts, masked by the request's token.
+ */
+export function deletedListingHandlers(
+  db: TenantDatabase,
+  tenantOf: (request: FastifyRequest) => Tenant,
+  principalOf: (request: FastifyRequest) => SessionPrincipal,
+) {
+  return {
+    listDeleted: async (request: FastifyRequest): Promise<DeletedList> => {
+      const query = request.query as DeletedListQuery;
+      const asked = pageAsked('deleted', query);
+      const principal = principalOf(request).principalId;
+      const scopes = scopesOf(request);
+      return db.withTenant(tenantOf(request), async (trx) => {
+        const page = await listDeleted(
+          trx,
+          principal,
+          asked,
+          query.kind === undefined ? {} : { kind: query.kind },
+        );
+        if (!page) throw new Error('A signed-in principal is not in its own tenant');
+        const facts = await loadFactsFor(
+          trx,
+          principal,
+          page.items.map((each) => each.id),
+        );
+        const mayRetire = (id: string) => {
+          const known = facts.get(id);
+          return (
+            known !== undefined &&
+            decide('retire', { ...known, ...(scopes === undefined ? {} : { scopes }) }).allowed
+          );
+        };
+        return {
+          items: page.items.map((item) => ({
+            id: item.id,
+            kind: item.kind,
+            title: item.title,
+            space: { ...item.space },
+            deletedBy: { ...item.deletedBy },
+            deletedAt: item.deletedAt.toISOString(),
+            mayUndelete: mayRetire(item.id),
+          })),
+          next: cursorFor('deleted', asked.sort, asked.order, page.snapshot, page.next),
+          total: page.total,
+        };
+      });
+    },
   };
 }

@@ -1176,6 +1176,14 @@ describe('routes that check a permission', () => {
     // A legal hold is an administrator's of the whole environment (AH-G): refused before it is
     // looked for.
     listHolds: () => ({ url: '/v1/holds', status: 403 }),
+    // A retention keep is an administrator's of the whole environment (DL-G): refused before the
+    // space it names is looked for.
+    getRetention: () => ({ url: '/v1/retention', status: 403 }),
+    setRetention: () => ({
+      url: '/v1/retention',
+      status: 403,
+      payload: { kind: null, space: MISSING, days: 5 },
+    }),
     placeHold: () => ({
       url: '/v1/holds',
       status: 403,

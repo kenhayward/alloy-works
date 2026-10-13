@@ -1,0 +1,38 @@
+/* The Deleted listing (lifecycle.md): what was deleted, by whom and when, and Undelete. */
+.summary {
+  margin: var(--space-12) 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.deletedTable {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+.deletedTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.deletedTitle {
+  font-weight: 500;
+}
+
+.quiet {
+  color: var(--muted);
+}
+
+.said {
+  margin: 0 0 var(--space-8);
+}
+
+.said:empty {
+  display: none;
+}
+
+.undo {
+  width: 1%;
+  padding-block: var(--space-4);
+}

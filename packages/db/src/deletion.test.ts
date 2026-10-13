@@ -7,6 +7,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { archiveArtifact } from './archival.js';
 import { whatWaits } from './attention.js';
 import { makeBaseline } from './baselines.js';
 import { bootstrapCluster } from './bootstrap.js';
@@ -17,6 +18,7 @@ import {
   deleteArtifact,
   deletionOf,
   isDeleted,
+  listDeleted,
   undeleteArtifact,
   type DeletionRefusal,
 } from './deletion.js';
@@ -26,14 +28,14 @@ import {
   listReadableDocuments,
   readableComponents,
 } from './documents.js';
-import { claimLock } from './editing.js';
+import { claimLock, takeLock } from './editing.js';
 import { grant } from './grants.js';
 import { placeHold } from './holds.js';
 import { readableOf } from './inbox.js';
 import { streamScope } from './live.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { requestPublication } from './publishing.js';
+import { recordPreview, requestPublication } from './publishing.js';
 import { findRole } from './roles.js';
 import { openRound } from './rounds.js';
 import { searchWords } from './search-words.js';
@@ -210,7 +212,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     );
     const waiting = await component(space, ada, 'Waiting procedure');
     const queued = await document(space, ada, 'Queued report', [reference(waiting)]);
-    const request = await as(async (trx) => {
+    await as(async (trx) => {
       const asked = await requestPublication(trx, {
         documentId: queued.artifactId,
         version: queued.id,
@@ -219,7 +221,6 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
         kind: 'preview',
       });
       if (asked.answer !== 'requested') throw new Error(asked.answer);
-      return asked.request.id;
     });
     // Each reference gone from the latest, so neither is refused for being referenced.
     await emptied(report, ada);
@@ -232,7 +233,11 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       },
     ]);
     expect(await refusals(waiting, ada)).toEqual([
-      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unreadable: false },
+      {
+        reason: 'publishing',
+        named: [{ id: queued.artifactId, title: 'Queued report' }],
+        unreadable: false,
+      },
     ]);
     expect(await refusals(report.artifactId, ada)).toEqual([
       {
@@ -242,7 +247,11 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       },
     ]);
     expect(await refusals(queued.artifactId, ada)).toEqual([
-      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unreadable: false },
+      {
+        reason: 'publishing',
+        named: [{ id: queued.artifactId, title: 'Queued report' }],
+        unreadable: false,
+      },
     ]);
   });
 
@@ -289,7 +298,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
         named: [{ id: seen.artifactId, title: 'Seen report' }],
         unreadable: true,
       },
-      { reason: 'locked', holder: { id: grace, name: 'Grace' } },
+      { reason: 'locked', holder: { id: grace, name: 'Grace' }, yours: false },
     ]);
   });
 
@@ -398,6 +407,53 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     }));
     expect(back.components.items.map((each) => each.id)).toEqual([gone]);
     expect(back.found).toMatchObject({ outcome: 'results', count: 1 });
+  });
+
+  it('lists the deleted each reader may read, newest first, archived ones too, a page at a time as the walk began', async () => {
+    const { space, elsewhere, ada, grace } = await fresh();
+    const archived = await component(space, ada, 'Archived and deleted procedure');
+    const report = await document(space, ada, 'Deleted report');
+    await component(space, ada, 'Live procedure');
+    const unseen = await component(elsewhere, grace, 'Unseen procedure');
+    await as((trx) => archiveArtifact(trx, archived, ada));
+    await remove(archived, ada);
+    await remove(report.artifactId, ada);
+    await remove(unseen, grace);
+    const list = (by: string, limit = 50, kind?: 'component' | 'document') =>
+      as(async (trx) => (await listDeleted(trx, by, { limit }, kind ? { kind } : {}))!);
+
+    const first = await list(ada);
+    expect(first.items.map(({ id, kind, title }) => ({ id, kind, title }))).toEqual([
+      { id: report.artifactId, kind: 'document', title: 'Deleted report' },
+      { id: archived, kind: 'component', title: 'Archived and deleted procedure' },
+    ]);
+    expect(first.total).toBe(2);
+    expect(first.items[0]).toMatchObject({
+      space: { id: space },
+      deletedBy: { id: ada, name: 'Ada' },
+      deletedAt: expect.any(Date),
+    });
+    expect((await list(ada, 50, 'component')).items.map((each) => each.id)).toEqual([archived]);
+    expect((await list(grace)).items.map((each) => each.id)).toEqual([
+      unseen,
+      report.artifactId,
+      archived,
+    ]);
+
+    // A page at a time, as of the first page: an undelete and a delete since move nothing.
+    const page = await list(ada, 1);
+    expect(page.items.map((each) => each.id)).toEqual([report.artifactId]);
+    await bring(archived, ada);
+    const extra = await component(space, ada, 'Later procedure');
+    await remove(extra, ada);
+    const rest = await as(
+      async (trx) =>
+        (await listDeleted(trx, ada, { limit: 1, after: page.next!, snapshot: page.snapshot }))!,
+    );
+    expect(rest.items.map((each) => each.id)).toEqual([archived]);
+    expect(rest.next).toBeNull();
+    // Afresh, as things stand.
+    expect((await list(ada)).items.map((each) => each.id)).toEqual([extra, report.artifactId]);
   });
 
   it('leaves Needs your attention, and is reported by what changed since as deleted and undeleted', async () => {
@@ -523,6 +579,101 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     );
     expect(await remove(space, ada)).toBeUndefined();
     expect(await bring(randomUUID(), ada)).toBeUndefined();
+  });
+
+  /**
+   * Deletes `id` in a transaction held open while `racing` starts, then commits: what `racing`
+   * answers once the delete is in.
+   */
+  const racingADelete = async <T>(id: string, by: string, racing: () => Promise<T>) => {
+    let commit!: () => void;
+    const held = new Promise<void>((resolve) => (commit = resolve));
+    let deleted!: (answer: unknown) => void;
+    const done = new Promise((resolve) => (deleted = resolve));
+    const deleting = as(async (trx) => {
+      deleted(await deleteArtifact(trx, id, by));
+      await held;
+    });
+    expect(await done).toEqual({ answer: 'deleted' });
+    const raced = racing();
+    // Long enough for the racer to reach whatever it waits on.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    commit();
+    await deleting;
+    return raced;
+  };
+
+  it('serialises a lock claimed or taken as the delete runs: the deleted is missing', async () => {
+    const { space, ada, grace } = await fresh();
+    const raced = await component(space, ada, 'Claimed procedure');
+    const claimed = await racingADelete(raced, ada, () =>
+      as((trx) => claimLock(trx, { artifactId: raced, principal: grace, session: randomUUID() })),
+    );
+    expect(claimed).toEqual({ answer: 'artifact.missing' });
+    const taken = await as((trx) =>
+      takeLock(trx, { artifactId: raced, principal: grace, session: randomUUID() }),
+    );
+    expect(taken).toEqual({ answer: 'artifact.missing' });
+  });
+
+  it('serialises a review round opened as the delete runs: the deleted is missing', async () => {
+    const { space, ada, grace } = await fresh();
+    const report = await document(space, ada, 'Racing reviewed report');
+    const opened = await racingADelete(report.artifactId, ada, () =>
+      as((trx) =>
+        openRound(trx, {
+          document: report.artifactId,
+          title: 'Late review',
+          scope: [],
+          dueAt: new Date(Date.now() + 86_400_000),
+          baseline: null,
+          reviewers: [grace],
+          by: ada,
+        }),
+      ),
+    );
+    expect(opened).toEqual({ answer: 'document.missing' });
+  });
+
+  it('LIF-023 refuses deleting a component or a document an unexpired preview shows, naming the document and never the request', async () => {
+    const { space, ada } = await fresh();
+    const shown = await component(space, ada, 'Previewed procedure');
+    const report = await document(space, ada, 'Previewed report', [reference(shown)]);
+    await as(async (trx) => {
+      const asked = await requestPublication(trx, {
+        documentId: report.artifactId,
+        version: report.id,
+        formats: ['pdf'],
+        requester: ada,
+        kind: 'preview',
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      const sha256 = 'a'.repeat(64);
+      const expires = await recordPreview(trx, {
+        requestId: asked.request.id,
+        key: `${tenant.role}/sha256/${sha256}`,
+        sha256,
+        bytes: 1000,
+      });
+      if (!expires) throw new Error('The preview was not recorded');
+    });
+    await emptied(report, ada);
+    const publishing = {
+      reason: 'publishing',
+      named: [{ id: report.artifactId, title: 'Previewed report' }],
+      unreadable: false,
+    };
+    expect(await refusals(shown, ada)).toEqual([publishing]);
+    expect(await refusals(report.artifactId, ada)).toEqual([publishing]);
+  });
+
+  it('says the lock refusing a deletion is the deleter’s own', async () => {
+    const { space, ada } = await fresh();
+    const mine = await component(space, ada, 'My procedure');
+    await as((trx) => claimLock(trx, { artifactId: mine, principal: ada, session: randomUUID() }));
+    expect(await refusals(mine, ada)).toEqual([
+      { reason: 'locked', holder: { id: ada, name: 'Ada' }, yours: true },
+    ]);
   });
 
   it('two deletes at once record one act between them', async () => {

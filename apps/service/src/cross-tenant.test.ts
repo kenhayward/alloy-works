@@ -422,6 +422,7 @@ const VALID_INPUT: Readonly<
   createGroup: { payload: { name: 'Elsewhere' } },
   placeHold: { payload: { target: { space: SESSION }, reason: 'Elsewhere' } },
   releaseHold: { payload: { reason: 'Elsewhere' } },
+  setRetention: { payload: { kind: null, space: SESSION, days: 5 } },
   requestAuditExport: { payload: {} },
   beatPresence: {
     payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },
@@ -1452,6 +1453,31 @@ describe("no environment accepts another environment's session (IAM-004)", () =>
       expect(response.json()).toMatchObject({ code: 'not_found' });
     }
     expect(await held(b)).toBe(before);
+  });
+
+  it("setRetention will not keep another environment's space", async () => {
+    const kept = (tenant: Tenant) =>
+      tenantDb.withTenant(tenant, async (trx) =>
+        Number(
+          (
+            await trx
+              .selectFrom('retention_keep')
+              .select((eb) => eb.fn.countAll<string>().as('count'))
+              .executeTakeFirstOrThrow()
+          ).count,
+        ),
+      );
+    const before = await kept(b);
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/v1/retention',
+      headers: { host: A, cookie: fromA },
+      payload: { kind: null, space: await spaceIdIn(b, tenantDb), days: 5 },
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ code: 'not_found' });
+    expect(await kept(a)).toBe(0);
+    expect(await kept(b)).toBe(before);
   });
 
   it("will not fill a group with another environment's person, nor grant to another environment's group", async () => {

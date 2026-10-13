@@ -258,6 +258,13 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: page.getByText(/^\d+ archived components? you may read\./),
       });
       await archivedOnly.uncheck();
+      // And the deleted, listed alone by their own route (the DL plan, DL-H).
+      const deletedOnly = page.getByRole('checkbox', { name: 'Deleted', exact: true });
+      await deletedOnly.check();
+      await check('the deleted components', {
+        shows: page.getByText(/^\d+ deleted components? you may read\./),
+      });
+      await deletedOnly.uncheck();
 
       // Search, from search and commands in the header (ADR-0046).
       await page
@@ -353,6 +360,21 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             .getByRole('row')
             .first()
             .or(administration.getByText('Nothing is on hold.')),
+        ],
+      });
+      await sections.getByRole('link', { name: /^Retention/ }).click();
+      await check('Administration, Retention', {
+        shows: [
+          heading('Retention', 1),
+          administration
+            .getByRole('table', { name: 'Retention keeps' })
+            .getByRole('row')
+            .first()
+            .or(
+              administration.getByText(
+                'No keep is set: anything nothing depends on may be deleted.',
+              ),
+            ),
         ],
       });
     });

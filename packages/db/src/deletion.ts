@@ -4,8 +4,21 @@ import { loadReadableSet } from './access-facts.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { readLock } from './editing.js';
 import { isHeld } from './holds.js';
-import { visibleIn } from './listing.js';
+import { keptNow } from './keeps.js';
+import {
+  checkedLimit,
+  countOf,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+} from './listing.js';
 import { mayReadArtifact } from './queryDefinitions.js';
+import { readableArtifactsAs } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 
@@ -46,15 +59,22 @@ export function notDeletedAs(alias: string, snapshot?: string): RawBuilder<SqlBo
   return sql<SqlBool>`not ${deletedAs(alias, snapshot)}`;
 }
 
+/** Each transaction's answer, asked once: `isDeleted` runs on every `authorise`. */
+const stored = new WeakMap<TenantTransaction, boolean>();
+
 /**
  * Whether this tenant stores deletion yet (0085): a migration's own test runs today's code on a schema
  * short of it, where nothing is deleted.
  */
 export async function deletionStored(trx: TenantTransaction): Promise<boolean> {
+  const known = stored.get(trx);
+  if (known !== undefined) return known;
   const { rows } = await sql<{
     present: boolean;
   }>`select to_regclass('artifact_deletion') is not null as present`.execute(trx);
-  return rows[0]?.present === true;
+  const present = rows[0]?.present === true;
+  stored.set(trx, present);
+  return present;
 }
 
 /** Whether the artifact is deleted now. */
@@ -105,7 +125,7 @@ export type DeletionRefusal =
       readonly unreadable: boolean;
     }
   | {
-      /** A queued request, a publish or a preview, places it; a document's own. */
+      /** A queued publish or preview, or an unexpired preview, places it; a document's own. */
       readonly reason: 'publishing';
       readonly named: readonly Named[];
       readonly unreadable: boolean;
@@ -118,10 +138,13 @@ export type DeletionRefusal =
     }
   /** A hold on it or its space: no reason given (LIF-030). */
   | { readonly reason: 'held' }
-  /** Somebody is editing it. */
+  /** A retention keep, the longest reaching it, has yet to pass: until when (DL-G). */
+  | { readonly reason: 'kept'; readonly until: Date }
+  /** Somebody is editing it: `yours` where the deleter is, from this window or another. */
   | {
       readonly reason: 'locked';
       readonly holder: { readonly id: string; readonly name: string | null };
+      readonly yours: boolean;
     }
   /** A review round open on it. */
   | {
@@ -214,17 +237,24 @@ async function dependants(
      order by p.published_at, p.id`.execute(trx);
   add('published', publications);
 
+  // A queued request, or a done preview yet to expire, which still serves what it placed. Each named
+  // by its document, never by somebody's request.
   const { rows: requests } = await sql<Row>`
-    select r.id, d.content ->> 'title' as title, a.id as subject, a.space_id
+    select r.document_id as id,
+           (array_agg(d.content ->> 'title' order by r.requested_at desc, r.id desc))[1] as title,
+           r.document_id as subject, a.space_id
       from publication_request r join artifact a on a.id = r.document_id
       join artifact_version d on d.id = r.document_version_id
-     where r.state = 'queued' and ${
-       component
-         ? sql`r.id in (select request_id from publication_request_occurrence
-             where component_id = ${id})`
-         : sql`r.document_id = ${id}`
-     }
-     order by r.requested_at, r.id`.execute(trx);
+     where (r.state = 'queued'
+            or (r.kind = 'preview' and r.state = 'done' and r.expires_at > now()))
+       and ${
+         component
+           ? sql`r.id in (select request_id from publication_request_occurrence
+               where component_id = ${id})`
+           : sql`r.document_id = ${id}`
+       }
+     group by r.document_id, a.space_id
+     order by min(r.requested_at), r.document_id`.execute(trx);
   add('publishing', requests);
 
   if (component) {
@@ -251,11 +281,17 @@ async function dependants(
   }
 
   if (await isHeld(trx, id)) refusals.push({ reason: 'held' });
+  const until = await keptNow(trx, id);
+  if (until) refusals.push({ reason: 'kept', until });
 
   if (component) {
     const lock = await readLock(trx, id);
     if (lock)
-      refusals.push({ reason: 'locked', holder: { id: lock.holder, name: lock.holderName } });
+      refusals.push({
+        reason: 'locked',
+        holder: { id: lock.holder, name: lock.holderName },
+        yours: lock.holder === by,
+      });
   } else {
     const { rows: rounds } = await sql<Row>`
       select r.id, r.title, r.document_id as subject, a.space_id
@@ -389,4 +425,78 @@ export async function undeleteArtifact(
   by: string,
 ): Promise<UndeleteAnswer | undefined> {
   return (await act(trx, artifactId, by, 'undeleted')) as UndeleteAnswer | undefined;
+}
+
+/** A deleted component or document as the Deleted listing shows it (DL-H). */
+export interface DeletedSummary {
+  readonly id: string;
+  readonly kind: 'component' | 'document';
+  /** Its title at its latest version. */
+  readonly title: string;
+  readonly space: { readonly id: string; readonly name: string };
+  readonly deletedBy: { readonly id: string; readonly name: string | null };
+  readonly deletedAt: Date;
+}
+
+/**
+ * The deleted components and documents `principalId` may read but for the tombstone, the latest
+ * deleted first, a page at a time by keyset as of the walk's first page (API-007): archived ones
+ * among them, which the Archived listing leaves out. Whether each may be undeleted is the caller's to
+ * decide. Undefined when the tenant holds no such principal.
+ */
+export async function listDeleted(
+  trx: TenantTransaction,
+  principalId: string,
+  request: ListingRequest<'deleted'>,
+  filter: { readonly kind?: 'component' | 'document' } = {},
+): Promise<(Listed<DeletedSummary> & { readonly total: number }) | undefined> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.deleted.deleted;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const readable = await loadReadableSet(trx, principalId);
+  if (!readable) return undefined;
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const query = sql`
+    select a.id, a.kind, s.id as space_id, s.name as space_name, latest.title,
+           act.by, coalesce(p.display_name, p.email) as by_name, act.at,
+           ${sql.join(sortColumns([sql`act.at`]))}
+      from artifact a
+      join space s on s.id = a.space_id
+      join lateral (
+        select x.act, x.by, x.at from artifact_deletion x
+         where x.artifact_id = a.id and ${visibleIn('x.written_by', snapshot)}
+         order by x.id desc limit 1) act on act.act = 'deleted'
+      join lateral (
+        select v.content ->> 'title' as title from artifact_version v
+         where v.artifact_id = a.id and ${visibleIn('v.written_by', snapshot)}
+         order by v.revision_no desc, v.version_no desc limit 1) latest on true
+      left join principal p on p.id = act.by
+     where a.kind in ('component', 'document')
+       and ${filter.kind === undefined ? sql`true` : sql`a.kind = ${filter.kind}`}
+       and ${readableArtifactsAs('a', readable)}`;
+  const { rows, next } = await keysetPage<{
+    id: string;
+    kind: 'component' | 'document';
+    space_id: string;
+    space_name: string;
+    title: string | null;
+    by: string;
+    by_name: string | null;
+    at: Date;
+  }>(trx, query, types, request.order ?? order, limit, request.after);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      title: row.title ?? '',
+      space: { id: row.space_id, name: row.space_name },
+      deletedBy: { id: row.by, name: row.by_name },
+      deletedAt: new Date(row.at),
+    })),
+    next,
+    snapshot,
+    total: await countOf(trx, query),
+  };
 }

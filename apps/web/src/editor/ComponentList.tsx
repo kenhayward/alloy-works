@@ -2,6 +2,7 @@ import type { ComponentList as Page, createApiClient } from '@alloy-works/api-cl
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ListLayout } from '../layouts/ListLayout.js';
+import { DeletedList } from '../lifecycle/Deleted.js';
 import {
   ArchivedFilter,
   Facet,
@@ -57,6 +58,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const [typeFacet, setTypeFacet] = useState<readonly FacetValue[]>([]);
   // The archived alone, the one way to list them (LIF-020).
   const [archived, setArchived] = useState(false);
+  // The deleted alone, listed by their own route (the DL plan, DL-H).
+  const [deleted, setDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
   const creatable = useCreatableSpaces(client);
   const [notice, setNotice] = useState<string | null>(null);
@@ -115,6 +118,28 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   useEffect(() => {
     void load(null);
   }, [load]);
+
+  const status = (
+    <ArchivedFilter
+      chosen={archived}
+      onChoose={(chosen) => {
+        setArchived(chosen);
+        if (chosen) setDeleted(false);
+      }}
+      deleted={deleted}
+      onChooseDeleted={(chosen) => {
+        setDeleted(chosen);
+        if (chosen) setArchived(false);
+      }}
+    />
+  );
+  if (deleted) {
+    return (
+      <ListLayout filter={status}>
+        <DeletedList client={client} kind="component" />
+      </ListLayout>
+    );
+  }
 
   if (items === null) {
     if (failed === undefined) return null;
@@ -199,7 +224,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         chosen={typesChosen}
         onToggle={(value) => setTypesChosen((held) => toggled(held, value))}
       />
-      <ArchivedFilter chosen={archived} onChoose={setArchived} />
+      {status}
     </>
   );
 

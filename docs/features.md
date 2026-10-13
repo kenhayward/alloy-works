@@ -963,23 +963,33 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Spaces, each asking why. Administration > **Legal holds** lists every hold with what it holds, who
   placed it, when and why, and its release, and **Release** asks a reason too; a hold is released
   once, and never changed. A component's or a document's page says **On hold** only to whoever may
-  retire it or administer the environment. Nothing deletes yet, so a hold is recorded and shown;
-  deletion, when it comes, will refuse what is held. Placing and releasing are audited, without the
+  retire it or administer the environment. A hold refuses deleting what it holds, whatever any
+  retention keep says, and never refuses an undelete. Placing and releasing are audited, without the
   reason, which only Legal holds shows. Through the API, `POST /v1/holds`,
   `POST /v1/holds/{id}/release` and `GET /v1/holds`, which also hold a publication or an asset.
 - **Delete a component or a document.** Whoever may retire it chooses **Delete** beside Archive on
   its page, which first says what deleting it leaves and every reason it may not be deleted: a
-  baseline or a publication that placed any version, a publish or preview waiting to be made, a
+  baseline or a publication that placed any version, a publish or preview waiting to be made or a preview not yet expired, a
   document whose latest version references it (a deleted document included), a legal hold on it or
-  its space, somebody editing it, or a review round open on it. A dependant the deleter may not read
+  its space, a retention keep that has yet to pass (saying until when), somebody editing it (you
+  included: choose Done editing first), or a
+  review round open on it. A dependant the deleter may not read
   is never named or counted: it says only that something else depends on it. Anything ever baselined or published can never be deleted: archive it
   instead. Nothing is removed: a deleted component or document leaves every listing, search,
   reference and Needs your attention, and opens as deleted to whoever may read it; its versions,
-  threads, suggestions, rounds and audit events are kept and come back on undelete. A restore of a
+  threads, suggestions, rounds and audit events are kept and come back on undelete; unsaved changes
+  still expire as usual. A restore of a
   version referencing a component since deleted is refused, naming each. Deleting and undeleting are
   audited, and reported by what changed since. Through the API, `POST /v1/components/{id}/delete`,
   `undelete` and `GET .../deletion`, the same for documents; any other route answers a deleted one
-  `410 artifact_deleted`. The Deleted listing comes in DL2.
+  `410 artifact_deleted`. Each listing's **Deleted** filter, beside Archived, lists the deleted
+  components or documents you may read, with who deleted each and when, and **Undelete** for whoever
+  may retire it; undeleting is never refused. Through the API, `GET /v1/deleted`.
+- **Retention.** An administrator of the environment sets, in Administration > **Retention**, the
+  least number of days a component or a document is kept before it may be deleted, for components,
+  documents or both, in every space or in one. Every keep reaching one applies and the longest wins,
+  counted from its latest version; nothing is ever deleted because a keep has passed. Setting and
+  clearing a keep are audited. Through the API, `GET` and `PUT /v1/retention`.
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing

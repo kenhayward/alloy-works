@@ -17153,6 +17153,14 @@
         {
           "id": "VER-044",
           "howItIsMet": "A restore naming a component since deleted is refused, naming each (DL-F)"
+        },
+        {
+          "id": "LIF-019",
+          "howItIsMet": "Retention, below: a keep per kind, per space, or per kind in a space (DL-G)"
+        },
+        {
+          "id": "VER-037",
+          "howItIsMet": "A keep and a hold each refuse deleting anything, a baseline's dependants among them"
         }
       ]
     },
@@ -19218,7 +19226,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 333,
+      "line": 336,
       "kind": "title"
     },
     {
@@ -19464,7 +19472,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1168,
+      "line": 1169,
       "kind": "title"
     },
     {
@@ -19518,31 +19526,31 @@
     {
       "id": "LIF-023",
       "file": "apps/service/src/deletion-routes.test.ts",
-      "line": 223,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "LIF-024",
       "file": "apps/service/src/deletion-routes.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
       "id": "LIF-057",
       "file": "apps/service/src/deletion-routes.test.ts",
-      "line": 335,
+      "line": 394,
       "kind": "title"
     },
     {
       "id": "VER-044",
       "file": "apps/service/src/deletion-routes.test.ts",
-      "line": 252,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "VER-048",
       "file": "apps/service/src/deletion-routes.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
@@ -19800,7 +19808,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 300,
+      "line": 301,
       "kind": "title"
     },
     {
@@ -20023,6 +20031,12 @@
       "id": "VER-035",
       "file": "apps/service/src/restore-routes.test.ts",
       "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-019",
+      "file": "apps/service/src/retention-routes.test.ts",
+      "line": 150,
       "kind": "title"
     },
     {
@@ -20502,13 +20516,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1243,
+      "line": 1257,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1385,
+      "line": 1399,
       "kind": "title"
     },
     {
@@ -20539,6 +20553,12 @@
       "id": "LIF-022",
       "file": "apps/web/src/admin/Holds.test.tsx",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-019",
+      "file": "apps/web/src/admin/Retention.test.tsx",
+      "line": 67,
       "kind": "title"
     },
     {
@@ -20904,7 +20924,7 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 246,
+      "line": 264,
       "kind": "title"
     },
     {
@@ -21294,7 +21314,7 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentList.test.tsx",
-      "line": 126,
+      "line": 143,
       "kind": "title"
     },
     {
@@ -22644,43 +22664,43 @@
     {
       "id": "LIF-021",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 249,
+      "line": 258,
       "kind": "title"
     },
     {
       "id": "LIF-023",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 191,
+      "line": 193,
       "kind": "title"
     },
     {
       "id": "LIF-057",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 488,
+      "line": 544,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 296,
+      "line": 305,
       "kind": "title"
     },
     {
       "id": "VER-023",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 191,
+      "line": 193,
       "kind": "title"
     },
     {
       "id": "VER-047",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 329,
+      "line": 338,
       "kind": "title"
     },
     {
       "id": "VER-048",
       "file": "packages/db/src/deletion.test.ts",
-      "line": 329,
+      "line": 338,
       "kind": "title"
     },
     {
@@ -22891,6 +22911,30 @@
       "id": "COL-063",
       "file": "packages/db/src/inbox.test.ts",
       "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-019",
+      "file": "packages/db/src/keeps.test.ts",
+      "line": 135,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-021",
+      "file": "packages/db/src/keeps.test.ts",
+      "line": 188,
+      "kind": "title"
+    },
+    {
+      "id": "VER-036",
+      "file": "packages/db/src/keeps.test.ts",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "VER-037",
+      "file": "packages/db/src/keeps.test.ts",
+      "line": 202,
       "kind": "title"
     },
     {
@@ -23418,7 +23462,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 195,
+      "line": 196,
       "kind": "title"
     },
     {
@@ -25572,13 +25616,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 695,
+      "line": 717,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 361,
+      "line": 383,
       "kind": "title"
     },
     {

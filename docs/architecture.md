@@ -2118,6 +2118,21 @@ something must stay, built by [the AH plan](plans/2026-10-12-ah-archival-and-hol
 | `service: src/archival.ts`, `src/holds.ts`                      | The routes, `retire` per artifact, holds at the tenant's `administer` alone; the views' `mayRetire`, `mayHold`, `onHold`                       |
 | `web: src/lifecycle/`, `admin/Holds.tsx`, `listing/Listing.tsx` | Archive and Place a hold, the Archived filter, Administration > Legal holds                                                                    |
 
+## Deletion and retention
+
+Deletion is a tombstone and retention a minimum keep, built by
+[the DL plan](plans/2026-10-13-dl-deletion-and-retention.md) under
+[ADR-0060](decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md) and designed in
+[lifecycle.md](design/lifecycle.md): nothing is removed, and deletion is refused while anything
+depends on it.
+
+| Where                                                                 | Holds                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `migrations/tenant/0085_deletion`, `db: src/deletion.ts`              | `artifact_deletion`, insert-only; every dependant found, none unreadable named or counted; `notDeletedAs` at every reader and `search_entry.deleted`; one tenant-wide deletion lock, exclusive to delete and undelete, shared by every writer of a dependant |
+| `migrations/tenant/0086_retention_keeps`, `db: src/keeps.ts`          | `retention_keep`, insert-only, the latest per kind and space in force, the longest applying                                                                                                                                                                  |
+| `service: src/access.ts`, `src/deletion.ts`, `src/keeps.ts`           | 410 to a reader of a deleted artifact, 404 to anyone else; the routes, `retire` per artifact, keeps at the tenant's `administer`                                                                                                                             |
+| `web: src/lifecycle/Delete.tsx`, `Deleted.tsx`, `admin/Retention.tsx` | Delete and what remains, the Deleted listing, Administration > Retention                                                                                                                                                                                     |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

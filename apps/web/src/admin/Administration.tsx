@@ -11,6 +11,7 @@ import { Groups } from './Groups.js';
 import { Holds } from './Holds.js';
 import { Overview } from './Overview.js';
 import { People } from './People.js';
+import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
@@ -31,6 +32,7 @@ const SECTIONS = [
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
   { slug: 'holds', title: 'Legal holds', group: 'System' },
+  { slug: 'retention', title: 'Retention', group: 'System' },
   { slug: 'audit', title: 'Audit log', group: 'System' },
   { slug: 'about', title: 'About and release notes', group: 'System' },
 ] as const;
@@ -90,6 +92,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     count('holds', async () => {
       const { data } = await client.GET('/v1/holds', { params: { query: { limit: '1' } } });
       return data?.total;
+    });
+    count('retention', async () => {
+      const { data } = await client.GET('/v1/retention');
+      return data?.keeps.length;
     });
     count('roles', async () => {
       const read = await everyPage((cursor) =>
@@ -254,6 +260,7 @@ export function Administration({
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
         {shown === 'holds' && <Holds client={client} />}
+        {shown === 'retention' && <Retention client={client} />}
         {shown === 'audit' && <AuditLog client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>

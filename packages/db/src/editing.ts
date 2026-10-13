@@ -8,6 +8,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { componentFieldsNow, unstorableValues } from './component-values.js';
+import { isDeleted, shareDeletion } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { sha256Hex } from './version-digest.js';
 import { latestVersion, type StoredVersion } from './versions.js';
@@ -111,6 +112,16 @@ export async function serialise(trx: TenantTransaction, artifactId: string): Pro
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${artifactId}`}, 0))`.execute(
     trx,
   );
+}
+
+/**
+ * `serialise` for a write that makes a lock, behind the shared deletion lock (lifecycle.md, Races):
+ * false where the component is deleted, as a lock is a deletion's dependant.
+ */
+async function serialiseLive(trx: TenantTransaction, artifactId: string): Promise<boolean> {
+  await shareDeletion(trx);
+  await serialise(trx, artifactId);
+  return !(await isDeleted(trx, artifactId));
 }
 
 /** Whether this tenant holds a component by that id. */
@@ -234,7 +245,7 @@ export async function claimLock(
   input: EditingSession & { readonly move?: boolean },
 ): Promise<LockClaimAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
-  await serialise(trx, input.artifactId);
+  if (!(await serialiseLive(trx, input.artifactId))) return { answer: 'artifact.missing' };
   const held = await readLock(trx, input.artifactId);
   if (
     held &&
@@ -445,7 +456,7 @@ export type TakeAnswer =
  */
 export async function takeLock(trx: TenantTransaction, input: EditingSession): Promise<TakeAnswer> {
   if (!(await isComponent(trx, input.artifactId))) return { answer: 'artifact.missing' };
-  await serialise(trx, input.artifactId);
+  if (!(await serialiseLive(trx, input.artifactId))) return { answer: 'artifact.missing' };
   const lock = await readLock(trx, input.artifactId);
   if (!lock) return { answer: 'lock.free' };
   if (lock.holder === input.principal) return { answer: 'lock.own', lock };

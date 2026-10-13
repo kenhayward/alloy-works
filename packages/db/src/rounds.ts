@@ -8,6 +8,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
+import { isDeleted, shareDeletion } from './deletion.js';
 import { tell } from './inbox.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, readVersion } from './versions.js';
@@ -116,6 +117,10 @@ export async function openRound(
     readonly unable?: (madeAgainst: string, scope: readonly string[]) => Promise<number>;
   },
 ): Promise<OpenAnswer> {
+  // A round is a deletion's dependant (lifecycle.md, Races): either the delete sees it or it sees
+  // the tombstone.
+  await shareDeletion(trx);
+  if (await isDeleted(trx, input.document)) return { answer: 'document.missing' };
   let against: string;
   if (input.baseline !== null) {
     const baseline = await trx

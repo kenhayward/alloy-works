@@ -501,6 +501,17 @@ export interface LegalHoldReleaseTable {
   released_at: ColumnType<Date, never, never>;
 }
 
+/** A retention keep's change, inserted and never changed (0086; DL-G): the latest per key in force. */
+export interface RetentionKeepTable {
+  id: ColumnType<string, never, never>;
+  kind: 'component' | 'document' | null;
+  space_id: string | null;
+  days: number | null;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** One place in a search entry and its words; `vector` is generated from them (0031). */
 export interface SearchTextTable {
   entry_id: string;
@@ -739,6 +750,7 @@ export interface TenantTables {
   artifact_deletion: ArtifactDeletionTable;
   legal_hold: LegalHoldTable;
   legal_hold_release: LegalHoldReleaseTable;
+  retention_keep: RetentionKeepTable;
   search_text: SearchTextTable;
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;

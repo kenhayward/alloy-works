@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.162.0 - 2026-10-13 (PR #590)
+
+### Added
+
+- **Delete a component or a document.** Delete, beside Archive, first says what deleting it leaves and every reason it may not be deleted: a baseline, a publication, a publish waiting or a preview still open, a document referencing it, a legal hold, a retention keep and until when, somebody editing it (you included: choose Done editing first) or an open review round. Something you may not read is never named or counted. Nothing is removed, unsaved changes still expire as usual, and it opens as deleted to whoever may read it.
+- **Deleted, beside Archived.** Each listing's Deleted filter lists the deleted components or documents you may read, with who deleted each and when, and Undelete for whoever may. Undeleting is never refused. Through the API at `/v1/deleted`.
+- **Retention.** Administration > Retention sets the least number of days a component or a document is kept before it may be deleted, for a kind, a space or both; the longest applies. Through the API at `/v1/retention`.
+- **A restore naming a deleted component is refused**, naming each one by its last title.
+
 ## 0.161.0 - 2026-10-12 (PR #588)
 
 ### Added

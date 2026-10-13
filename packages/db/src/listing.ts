@@ -52,6 +52,8 @@ export const listingSorts = {
   // An author's own iterations of one component, the newest first (component-editor.md, "Recovery,
   // as W11 builds it"): what the Recovery panel lists.
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },
+  // The deleted a reader may read, the latest deleted first (the DL plan, DL-H).
+  deleted: { deleted: { types: ['timestamptz'], order: 'desc' } },
 } as const satisfies Record<
   string,
   Record<string, { types: readonly KeyType[]; order: SortOrder }>
@@ -191,7 +193,7 @@ export function sortColumns(keys: readonly RawBuilder<unknown>[]) {
  */
 export async function keysetPage<Row extends { readonly id: string }>(
   trx: TenantTransaction,
-  inner: Compilable,
+  inner: Compilable | RawBuilder<unknown>,
   types: readonly KeyType[],
   order: SortOrder,
   limit: number,
@@ -230,7 +232,10 @@ export interface FacetCount {
 }
 
 /** How many rows a listing's query holds: its total, with the filters in force. */
-export async function countOf(trx: TenantTransaction, query: Compilable): Promise<number> {
+export async function countOf(
+  trx: TenantTransaction,
+  query: Compilable | RawBuilder<unknown>,
+): Promise<number> {
   const { rows } = await sql<{ n: string }>`select count(*) as n from (${query}) as x`.execute(trx);
   return Number(rows[0]?.n ?? 0);
 }
