@@ -29,6 +29,7 @@ import {
   recordDocumentParameters,
   recordDocumentValues,
   versionContents,
+  latestVersionsOf,
   readableComponents,
   readDocument,
   readVersion,
@@ -506,8 +507,11 @@ export function documentHandlers(
       // its occurrence has a version to show, and said of no component they may not. The facts and
       // the locks are each read once for the whole document, not once per component.
       const componentOf = new Map<string, string>();
+      const pinned = new Set<string>();
       walkOutline(outline.nodes, (node) => {
-        if (node.type === 'reference') componentOf.set(node.id, node.component);
+        if (node.type !== 'reference') return;
+        componentOf.set(node.id, node.component);
+        if (node.mode.kind === 'pinned') pinned.add(node.id);
       });
       const facts = await loadFactsFor(trx, principalId, [...componentOf.values()]);
       const readable = [...facts].flatMap(([component, known]) =>
@@ -516,6 +520,9 @@ export function documentHandlers(
       const locks = await readLocks(trx, readable);
       // How many suggestions wait on each (SG-M), of those the caller may read.
       const pending = await pendingCounts(trx, readable);
+      // Each readable component's latest version: what a reference pinned below it is told is newer
+      // (CNT-181). Read only of components the caller may read, so none they may not is named (SCH-032).
+      const latest = await latestVersionsOf(trx, readable);
       const editing = new Map(
         readable.map((component) => {
           const lock = locks.get(component);
@@ -545,8 +552,17 @@ export function documentHandlers(
         occurrences: inputs.occurrences.map((occurrence) => {
           const component = componentOf.get(occurrence.node);
           const known = component === undefined ? undefined : editing.get(component);
+          const newest = component === undefined ? undefined : latest.get(component);
+          const newer =
+            pinned.has(occurrence.node) &&
+            occurrence.version !== null &&
+            newest !== undefined &&
+            newest.id !== occurrence.version
+              ? { newer: newest }
+              : {};
           return {
             ...occurrence,
+            ...newer,
             mayEdit: known?.mayEdit ?? false,
             mayComment: known?.mayComment ?? false,
             maySuggest: known?.maySuggest ?? false,

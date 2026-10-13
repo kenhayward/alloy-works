@@ -36938,6 +36938,12 @@ export interface operations {
                                     until: string;
                                 } | null;
                             } | null;
+                            /** @description The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise */
+                            newer?: {
+                                id: string;
+                                /** @description `revision.version`, as `0.3` */
+                                number: string;
+                            };
                         }[];
                         /** @description Each version an occurrence resolved to, once, however many occurrences name it, with its number */
                         versions: {

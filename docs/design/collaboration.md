@@ -36,6 +36,9 @@ next hold the lock. A take is never instant and never silent.
 | **COL-015** | A comment names people as mentions; each who may read what the thread is on is told in their inbox, and one who may not is told nothing, which the composer is then told |
 | **COL-016** | An anchor is a block's identifier and the text it quotes, not a position: it holds through any change that keeps that block and that text |
 | **COL-017** | A thread whose block, node or quoted text is gone is listed **orphaned**, never dropped, with the text it was on |
+| **COL-067** | A deleted component holds no lock: a held one refuses the deletion. Deleting it removes every presence in it, which each stream hears as `presence_left`, as it hears a dropped connection (COL-004). A document that once placed it places it in no version now (DL-C): its threads are listed there **orphaned**, placed nowhere, to whoever may read it but for its deletion, and opening one says it was deleted |
+| **CNT-137** | Starting and resolving a thread, sending a suggestion and accepting, rejecting or withdrawing one are said in a `role="status"` region there, empty, from the start, naming which: "Thread started on “the tray”.", "Ada's suggestion on 1 Install the printer accepted." |
+| **CNT-138** | A thread's anchor has a border beneath its tint, a cell's a dashed outline; a redline underlines and strikes through, and says "Added" and "Removed"; suggestions and states are named in words. Under `forced-colors: active` the borders, lines and words stay, in the system's colours, and a state dot stays a dot |
 | **COL-018** | `GET /v1/documents/{id}/threads`: its own nodes' and every placed component's the caller may read, each placed against the version its occurrence resolves to, filtered by state, author and since when |
 | **COL-019** | Threads are their own tables: nothing a publish reads holds one |
 | **COL-049** | No route deletes a thread or a comment, and the runtime role holds no delete on either |
@@ -80,10 +83,8 @@ tenant's retention** after the taker's next cut (VER-003), not for ever.
 **COL-066 is not claimed:** the lifecycle gate requiring no unresolved suggestions is T9's LIF. COL-027,
 which held it with COL-065's reporting, was split by the T3 audit.
 
-**Not claimed:** COL-067 and COL-068, which split COL-056 (the T3 audit): a component deleted, built
-since (ADR-0060), and moved between spaces, IAM-015's in T7. A lock whose component leaves a viewer's
-readable set already degrades to absence on the stream (realtime.md); the claim waits for the test. COL-005 and COL-006 stay
-component-editor.md's.
+**Not claimed:** COL-068, which split COL-056 with it (the T3 audit): a component moved between spaces,
+IAM-015's in T7. COL-005 and COL-006 stay component-editor.md's.
 
 ## The row
 

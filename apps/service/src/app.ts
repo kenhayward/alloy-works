@@ -876,6 +876,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         events,
         tenant,
         credential: request.credential,
+        principalId,
         ...(scope === undefined || components === undefined
           ? {}
           : {

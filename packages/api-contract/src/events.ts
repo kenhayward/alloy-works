@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * **The stream's events** (API-015; the PL plan, PL-E): what `GET /v1/stream` sends, each frame's
  * `event` name and the shape of its `data`, declared here once and published as AsyncAPI 3.0 beside
- * `openapi.json`, which cannot say it (API-014). Events carry ids and states, never content: what
+ * `openapi.json`, which cannot say it (API-014): presence, locks and notifications (API-063). Events carry ids and states, never content: what
  * something says is fetched through the API, as the viewer may read it.
  */
 
@@ -65,6 +65,12 @@ export const OutlineEvent = z
   .object({ document: Id })
   .describe("The stream's document has a new version: read its outline again (STR-066)");
 
+export const InboxEvent = z
+  .object({})
+  .describe(
+    'A notification waits for the viewer: read the inbox (COL-063). It names nothing, so it says nothing the inbox would not',
+  );
+
 export const PermissionsEvent = z
   .object({})
   .describe(
@@ -104,6 +110,11 @@ export const streamEvents = {
   outline: {
     summary: "The document's outline changed; sent on its stream",
     schema: OutlineEvent,
+  },
+  inbox: {
+    summary:
+      'A notification was made for the viewer, at once or as a digest; sent on every stream they hold, and to nobody else',
+    schema: InboxEvent,
   },
   permissions: {
     summary: 'Access changed in the environment; sent on every stream, which then ends',

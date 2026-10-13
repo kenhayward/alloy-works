@@ -3,6 +3,7 @@ import {
   bootstrapCluster,
   createSpace,
   createTenant,
+  deleteArtifact,
   findRole,
   grant,
   listenToTenants,
@@ -336,6 +337,33 @@ describe("a document's stream: its locks and outline, to whoever may read them (
     }
   });
 
+  it('API-063 tells a person, on each stream they hold, that a notification waits for them, and nobody else', async () => {
+    const graces = stream('grace', `?document=${report}`);
+    const environment = stream('grace', '');
+    const adas = stream('ada', `?document=${report}`);
+    try {
+      await nextOf(graces, 'snapshot');
+      await nextOf(environment, 'snapshot');
+      await nextOf(adas, 'snapshot');
+      const version = (await call('GET', `/v1/components/${open}`, 'ada')).json<{
+        version: { id: string };
+      }>().version.id;
+      const started = await call('POST', `/v1/components/${open}/threads`, 'ada', {
+        version,
+        anchor: { kind: 'component' },
+        parts: [{ text: 'Look, ' }, { mention: ids.grace }],
+      });
+      expect(started.statusCode, started.body).toBe(200);
+      expect((await nextOf(graces, 'inbox')).data).toEqual({});
+      expect((await nextOf(environment, 'inbox')).data).toEqual({});
+      await expect(adas.next(500)).rejects.toThrow(/no frame/);
+    } finally {
+      graces.close();
+      environment.close();
+      adas.close();
+    }
+  });
+
   describe('presence: who else is in a document, where and doing what', () => {
     const ADA_WINDOW = '44444444-4444-4444-8444-444444444444';
     const beat = (who: string, viewer: string, component: string | null, mode = 'author') =>
@@ -398,6 +426,59 @@ describe("a document's stream: its locks and outline, to whoever may read them (
       } finally {
         graces.close();
         adas.close();
+      }
+    });
+
+    it('COL-067 leaves no lock on a deleted component, and takes presence in it away as a dropped connection does', async () => {
+      const made = await call('POST', `/v1/spaces/${clinical}/components`, 'ada', {
+        title: 'Retired',
+        language: 'en-GB',
+        direction: 'ltr',
+      });
+      const retired = made.json<{ id: string }>().id;
+      const remove = () =>
+        tenantDb.withTenant(tenant, (trx) => deleteArtifact(trx, retired, ids.ada!));
+      // Held, it is not deleted: a lock is never left on a deleted component.
+      expect((await claim('ada', retired)).statusCode).toBe(200);
+      expect(await remove()).toMatchObject({
+        answer: 'refused',
+        refusals: [expect.objectContaining({ reason: 'locked' })],
+      });
+      expect((await release('ada', retired)).statusCode).toBe(200);
+
+      // Placed in the report, Ada is in it; taken out again, as a deletion needs, then deleted.
+      const outline = async (operation: object) => {
+        const current = (await call('GET', `/v1/documents/${report}`, 'ada')).json<{
+          version: { id: string };
+          outline: { nodes: { id: string; component?: string }[] };
+        }>();
+        const answer = await call('POST', `/v1/documents/${report}/outline`, 'ada', {
+          openedFrom: current.version.id,
+          operation,
+        });
+        expect(answer.statusCode, answer.body).toBe(200);
+        return answer.json<{ outline: { nodes: { id: string; component?: string }[] } }>();
+      };
+      const placed = await outline({
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: retired, mode: { kind: 'latest' } },
+      });
+      const node = placed.outline.nodes.find((each) => each.component === retired)!.id;
+      const graces = stream('grace', `?document=${report}`);
+      try {
+        await nextOf(graces, 'snapshot');
+        expect((await beat('ada', ADA_WINDOW, retired)).statusCode).toBe(204);
+        await nextOf(graces, 'presence');
+        await outline({ operation: 'remove', node });
+        expect(await remove()).toEqual({ answer: 'deleted' });
+        // The very event a dropped connection sends (COL-004).
+        expect((await nextOf(graces, 'presence_left')).data).toEqual({ viewer: ADA_WINDOW });
+        expect((await claim('ada', retired)).statusCode).toBe(410);
+      } finally {
+        graces.close();
+        await call('DELETE', `/v1/presence/${ADA_WINDOW}`, 'ada');
       }
     });
 

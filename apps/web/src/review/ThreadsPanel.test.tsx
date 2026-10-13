@@ -180,6 +180,32 @@ describe('the threads panel in Review', () => {
     expect(within(opened).getByText('@Grace')).toBeInTheDocument();
   });
 
+  it('CNT-137 announces a thread started and resolved, naming which, in a status region there from the start', async () => {
+    const { client } = service();
+    panel(client);
+    await screen.findByText('No threads here.');
+    // Present and empty before anything happens, so the first announcement is heard.
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    await userEvent.type(screen.getByLabelText('Comment'), 'Is this right?');
+    await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Thread started on “the tray”.'),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Thread on “the tray” resolved.'),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'All threads' }));
+    await userEvent.selectOptions(screen.getByLabelText('On'), 'whole');
+    await userEvent.type(screen.getByLabelText('Comment'), 'And this');
+    await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Thread started on the whole component.',
+      ),
+    );
+  });
+
   it('CNT-157 answers a thread, edits one’s own comment keeping its earlier text, and resolves it', async () => {
     const { client } = service();
     panel(client);
@@ -227,5 +253,39 @@ describe('the threads panel in Review', () => {
     await userEvent.selectOptions(screen.getByLabelText('Show'), 'resolved');
     const listed = await screen.findByRole('button', { name: 'The whole component' });
     expect(within(listed.closest('li')!).getByText('Resolved')).toBeInTheDocument();
+  });
+
+  it('COL-067 lists a thread on a component since deleted as no longer there, and says why it does not open', async () => {
+    const orphan = id(9);
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname.endsWith('/threads')) {
+        return json(200, {
+          threads: [
+            {
+              id: orphan,
+              on: { id: COMPONENT, kind: 'component' },
+              anchor: { kind: 'component' },
+              madeAgainst: VERSION,
+              startedBy: { id: ADA, name: 'Ada' },
+              startedAt: '2026-10-12T10:00:00.000Z',
+              resolvedAt: null,
+              comments: 1,
+              lastAt: '2026-10-12T10:00:00.000Z',
+              orphaned: true,
+              places: [],
+            },
+          ],
+          next: null,
+        });
+      }
+      return json(410, { code: 'artifact_deleted', message: 'This has been deleted.' });
+    }) as unknown as typeof fetch;
+    panel(createApiClient({ baseUrl: 'http://acme.test', fetch: fetching }));
+    const row = (await screen.findByRole('button', { name: 'The whole component' })).closest('li')!;
+    expect(within(row).getByText('Its text is no longer there')).toBeInTheDocument();
+    await userEvent.click(within(row).getByRole('button', { name: 'The whole component' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('This has been deleted.');
   });
 });

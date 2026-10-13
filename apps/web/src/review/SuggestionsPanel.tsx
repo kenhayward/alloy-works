@@ -157,10 +157,14 @@ export function SuggestionsPanel({
       );
       return;
     }
+    // Announced naming whose and where (CNT-137).
+    const done = answer.data as unknown as Opened;
     setSaid(
-      what === 'acceptance' ? 'Accepted.' : what === 'rejection' ? 'Rejected.' : 'Withdrawn.',
+      `${done.madeBy.name ?? 'Somebody'}'s suggestion on ${placeOf(done.component)} ${
+        what === 'acceptance' ? 'accepted' : what === 'rejection' ? 'rejected' : 'withdrawn'
+      }.`,
     );
-    setOpened(answer.data as unknown as Opened);
+    setOpened(done);
     if (what === 'acceptance') onChanged?.();
     await read();
   };

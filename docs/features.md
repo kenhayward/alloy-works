@@ -550,6 +550,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the version is a button: it opens **Always the latest** and every version of the component, newest
   first, with when each was made, and choosing one is a change to the document like any other - its
   own version, taken back with `Ctrl+Z` - after which the text and the label show what you chose.
+  Where a component is pinned below a newer version you may read, its text says so - "Version 0.3 is
+  newer than the 0.2 pinned here" - with **Compare 0.2 with 0.3**, which shows what changed between
+  them as a redline in place.
 
   **This is the document as it is written, not as it is paginated.** The page shows the outline you
   build beside the text in reading order, set in the document's theme, and in Authoring each
@@ -1040,6 +1043,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   nothing is applied in part. **Accept all** and **Reject all** act on every pending suggestion in the
   document, or one person's, leaving any that cannot be. Nothing is ever deleted. Through the API at
   `/v1/components/{id}/suggestions`, `/v1/documents/{id}/suggestions` and `/v1/suggestions`.
+  Sending, accepting, rejecting and withdrawing one is said to a screen reader, naming whose and where.
 - **Threads and Review.** A document has a third mode, **Review**, for whoever may comment on it or
   on a component it places: the text as Reading shows it, with each thread marked where it stands -
   words underlaid, a cell outlined, and a count on a component's label or a section's heading - and a
@@ -1047,7 +1051,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   thread on them; or on a whole component or a section. Reply, mention people, edit your own comment
   (every earlier text is kept and readable), and resolve, once; a resolved thread takes nothing more.
   Filter by open or resolved. A thread whose words have gone is listed as orphaned, never lost; in a
-  document a component's thread is placed by the version each occurrence shows. Threads are never
+  document a component's thread is placed by the version each occurrence shows, and one on a component
+  the document once placed, since deleted, is listed as orphaned too. Starting and resolving a thread
+  is said to a screen reader, naming which. Anchors, redlines and suggestions are told apart by
+  borders, underlining, striking through and words, not colour alone, and stay so in a high-contrast
+  mode. Threads are never
   deleted, never in the content, and never make a version. Through the API, `/v1/components/{id}/threads`,
   `/v1/documents/{id}/threads` and `/v1/threads/{id}`.
 - **The inbox.** The account chip says how many notifications are unread and opens the **Inbox**: who
@@ -1055,7 +1063,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   to read its thread as you may read it now, marked read or deleted. Choose, per kind, at once, a daily
   digest after 07:00 UTC, or never; mentions and replies come at once and resolutions daily unless you
   choose. A notification never holds the comment's words; once you may no longer read what it is on it
-  says only that something happened. Kept 90 days. Through the API at `/v1/inbox`, with a session only.
+  says only that something happened. Kept 90 days. Through the API at `/v1/inbox`, with a session only;
+  every event stream you hold says `inbox` when one arrives.
 - **Baselines.** A document's outline pane has a **Baselines** tab. Whoever may publish the document
   makes one of the version shown, under a name unique in the document that never changes: it pins the
   version of every component, image and value the document uses, and the layout and theme it is
@@ -1070,8 +1079,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and gone after a minute; each component's label says who is in it. Who holds a component, and until
   when, changes on every card the moment they claim or let go, without a reload. Somebody in a component
   you may not read is shown in the document alone. While the connection is down the bar says who is
-  here is not known, rather than show an old picture. Through the API: `GET /v1/stream?document=` or
-  `?component=`, and `PUT /v1/presence`, with its events described at `/asyncapi/v1.json`.
+  here is not known, rather than show an old picture. A component deleted takes everybody in it away,
+  as a lost connection does. Through the API: `GET /v1/stream?document=` or `?component=`, and
+  `PUT /v1/presence`, with its events, notifications among them, described at `/asyncapi/v1.json`.
 - **Your sessions, from the account chip.** **Sessions** lists everywhere you are signed in: how
   each signed in, when it began and when it was last used, this one marked. **End** ends another at
   once, and **End all other sessions** every one but this; whatever an ended session was doing stops

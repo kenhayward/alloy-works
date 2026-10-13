@@ -385,6 +385,12 @@ export const DocumentTextsView = z.object({
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
         ),
+        newer: z
+          .object({ id: z.string(), number: z.string().describe('`revision.version`, as `0.3`') })
+          .optional()
+          .describe(
+            "The component's latest version, where the reference is pinned to an earlier one and the caller may read the component; absent otherwise",
+          ),
       }),
     )
     .describe(

@@ -273,6 +273,48 @@ describe('suggestions over HTTP (collaboration.md, Suggestions)', () => {
     expect([again.statusCode, code(again)]).toEqual([409, 'suggestion_resolved']);
   });
 
+  it('CNT-184 accepts every change a suggestion proposes, in every block, as one version, and rejects the whole of one as one act', async () => {
+    const blocks = [para('p1', 'Unbox it.'), para('p2', 'Set the tray.'), para('p3', 'Wait.')];
+    // A change to p1, p2 removed, and p4 added after p3: three blocks in one suggestion.
+    const proposed = [para('p1', 'Unbox it carefully.'), para('p3', 'Wait.'), para('p4', 'Done.')];
+    const propose = (version: StoredVersion) =>
+      call('POST', `/v1/components/${version.artifactId}/suggestions`, 'grace', {
+        version: version.id,
+        content: { ...(version.content as ContentDocument), content: proposed },
+      }).then((made) => made.json<SuggestionView>().id);
+    const read = (artifact: string) =>
+      call('GET', `/v1/components/${artifact}`, 'ada').then((answer) =>
+        answer.json<{ version: { id: string }; content: ContentDocument }>(),
+      );
+    const versions = (artifact: string) =>
+      call('GET', `/v1/components/${artifact}/versions`, 'ada').then(
+        (answer) => answer.json<{ items: unknown[] }>().items.length,
+      );
+
+    const accepting = await component(blocks);
+    const before = await versions(accepting.artifactId);
+    const accepted = await call(
+      'POST',
+      `/v1/suggestions/${await propose(accepting)}/acceptance`,
+      'alice',
+    );
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(await versions(accepting.artifactId)).toBe(before + 1);
+    expect((await read(accepting.artifactId)).content.content).toEqual(proposed);
+
+    const rejecting = await component(blocks);
+    const id = await propose(rejecting);
+    const rejected = await call('POST', `/v1/suggestions/${id}/rejection`, 'alice');
+    expect(rejected.json<SuggestionView>()).toMatchObject({ state: 'rejected', stale: null });
+    // Nothing of it applied, in any block; and nothing of it left pending to accept.
+    expect(await read(rejecting.artifactId)).toMatchObject({
+      version: { id: rejecting.id },
+      content: { content: blocks },
+    });
+    const again = await call('POST', `/v1/suggestions/${id}/acceptance`, 'alice');
+    expect([again.statusCode, code(again)]).toEqual([409, 'suggestion_resolved']);
+  });
+
   it('COL-052 lists a suggestion that no longer fits as stale, with its places, and refuses accepting it', async () => {
     const version = await component([para('p1', 'Set the tray.')]);
     const { id } = (await suggest(version)).json<SuggestionView>();

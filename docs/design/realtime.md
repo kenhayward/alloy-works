@@ -42,9 +42,10 @@ the stream at all: it is the streamed response to the request that asked for it.
 | **COL-055** | Each presence event carries when it was beaten; a viewer shows it live under 30 seconds, stale to 60, then absent                                                                                                     |
 | **API-015** | The events are declared in zod and published as AsyncAPI 3.0 beside `openapi.json`, drift-checked, every event a test receives parsed against it (PL-E)                                                               |
 | **COL-007** | Lock events and the snapshot carry the holder and the expected release, wherever the component is shown                                                                                                               |
+| **API-063** | Presence, locks and notifications are each a message of the AsyncAPI document, apart from OpenAPI: `inbox` says a notification waits, on every stream its recipient holds                                             |
 
-**API-063 is not claimed**: it names notifications beside presence and locks, and the AsyncAPI
-document does not carry them yet. API-064, streamed model output, is T5's (the T3 audit split API-014).
+API-064, streamed model output, is T5's (the T3 audit split API-014). COL-067, a deleted component's
+locks and presence, is [collaboration.md](collaboration.md)'s.
 
 Lock rules that are not about transport - who may take a lock, from whom, and how long it lasts
 (COL-005, COL-008 to COL-011) - belong to [collaboration.md](collaboration.md) and component-editor.md,
@@ -64,7 +65,7 @@ random wait before reconnecting so that a crowd whose instance restarted does no
 | `presence`       | Person, component, mode                                                 | Everyone in the document; redacted as COL-003 says  |
 | `presence-leave` | Person                                                                  | Everyone in the document                            |
 | `lock`           | Component, holder or none, expected release                             | Everyone in the document who may read the component |
-| `inbox`          | That a notification is waiting                                          | Its recipient                                       |
+| `inbox`          | That a notification is waiting                                          | Its recipient, on every stream they hold            |
 | `permissions`    | That this viewer's permissions changed; the server then ends the stream | The viewer concerned                                |
 
 **Events carry ids, never content**, and a nudge says only that something is waiting, so nothing

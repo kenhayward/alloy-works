@@ -24,6 +24,9 @@
         "outline": {
           "$ref": "#/components/messages/outline"
         },
+        "inbox": {
+          "$ref": "#/components/messages/inbox"
+        },
         "permissions": {
           "$ref": "#/components/messages/permissions"
         },
@@ -54,6 +57,9 @@
         },
         {
           "$ref": "#/channels/stream/messages/outline"
+        },
+        {
+          "$ref": "#/channels/stream/messages/inbox"
         },
         {
           "$ref": "#/channels/stream/messages/permissions"
@@ -433,6 +439,18 @@
           ],
           "additionalProperties": false,
           "description": "The stream's document has a new version: read its outline again (STR-066)"
+        }
+      },
+      "inbox": {
+        "name": "inbox",
+        "summary": "A notification was made for the viewer, at once or as a digest; sent on every stream they hold, and to nobody else",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false,
+          "description": "A notification waits for the viewer: read the inbox (COL-063). It names nothing, so it says nothing the inbox would not"
         }
       },
       "permissions": {

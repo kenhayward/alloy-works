@@ -102,6 +102,7 @@ import {
   watchReader,
 } from './position.js';
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
+import type { VersionNamed } from './NewerVersion.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -634,6 +635,11 @@ export function DocumentPage({
   const [occurrenceVersions, setOccurrenceVersions] = useState<ReadonlyMap<string, string>>(
     new Map(),
   );
+  // Each reference pinned below a newer version the reader may read, by node (CNT-181), from the same
+  // answer: no request of its own.
+  const [newerByNode, setNewerByNode] = useState<
+    ReadonlyMap<string, { readonly pinned: VersionNamed; readonly newer: VersionNamed }>
+  >(new Map());
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
@@ -740,6 +746,25 @@ export function DocumentPage({
           ),
         );
         setResolved(numberOf);
+        setNewerByNode(
+          new Map(
+            data.occurrences.flatMap((occurrence) => {
+              const pinned = occurrence.version;
+              const number = pinned === null ? undefined : numbers.get(pinned);
+              return occurrence.newer === undefined || pinned === null || number === undefined
+                ? []
+                : [
+                    [
+                      occurrence.node,
+                      {
+                        pinned: { id: pinned, number },
+                        newer: { id: occurrence.newer.id, number: occurrence.newer.number },
+                      },
+                    ] as const,
+                  ];
+            }),
+          ),
+        );
         setTextsRead(shownVersion);
       })
       // The text is the reading view beside the outline: where it cannot be read, the cards show
@@ -2200,7 +2225,11 @@ export function DocumentPage({
                             thread.anchor.kind === 'node'
                               ? thread.anchor.node
                               : thread.places?.[0]?.node;
-                          return node === undefined ? 'This document' : place(node);
+                          if (node !== undefined) return place(node);
+                          // Placed nowhere: a component it no longer holds, since deleted (COL-067).
+                          return thread.on.kind === 'component'
+                            ? 'A component no longer in this document'
+                            : 'This document';
                         }}
                         onThreads={setThreadList}
                         onGoTo={(thread) => {
@@ -2298,6 +2327,7 @@ export function DocumentPage({
                 boundaries={boundaries}
                 marked={marked}
                 resolved={resolved}
+                newer={{ client, byNode: newerByNode }}
                 // The version is chosen from the label in Authoring, by whoever may restructure the
                 // document (DV-F); anywhere else the label says it and offers nothing.
                 {...(document.mayEdit && authoring ? { choosing } : {})}
@@ -2344,7 +2374,10 @@ export function DocumentPage({
                                 );
                                 return false;
                               }
-                              setNotice('Suggestion sent.');
+                              // Announced naming where (CNT-137).
+                              setNotice(
+                                `Suggestion sent on ${drafting === null ? 'a component' : placeInOutline(document.outline, drafting, names, document.scheme)}.`,
+                              );
                               setDrafting(null);
                               setSuggestionsRead((count) => count + 1);
                               setTextsAttempt((count) => count + 1);

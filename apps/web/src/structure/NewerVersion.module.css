@@ -1,0 +1,17 @@
+/* A reference pinned below a newer version (CNT-181): said beside its text, the comparison under it. */
+.newer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.comparison {
+  margin: 0 0 var(--space-8);
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}

@@ -6,6 +6,7 @@ import {
   findRole,
   grant,
   migrate,
+  readVersion,
   recordVersion,
   seedDevelopmentContent,
   substanceOf,
@@ -442,6 +443,68 @@ describe('what each occurrence contributes, through the service', () => {
     );
     expect((await call('grace', 'GET', `/v1/documents/${UNKNOWN}/texts`)).statusCode).toBe(404);
     expect((await call(undefined, 'GET', route)).statusCode).toBe(401);
+  });
+
+  it('CNT-181 SCH-032 names a newer version of a component a reference is pinned below, only to a reader of it', async () => {
+    const shared = await componentWith(general, 'Install the printer', [figure('f1', 'The tray')]);
+    const secret = await componentWith(quality, 'Calibration', [figure('s1', 'The bench')]);
+    let doc = await create('The pinned report');
+    const place = async (component: string, mode: Json) => {
+      const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: doc.outline.nodes.length,
+          node: { type: 'reference', component, mode },
+        },
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      doc = answer.json<DocumentBody>();
+    };
+    await place(shared.id, { kind: 'pinned', version: shared.version });
+    await place(shared.id, { kind: 'latest' });
+    await place(secret.id, { kind: 'pinned', version: secret.version });
+    const [pinned, floating, hidden] = doc.outline.nodes.map((node) => node.id);
+    const newer = (component: { id: string; version: string }) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const substance = substanceOf((await readVersion(trx, component.version))!);
+        if (substance.kind !== 'component') throw new Error('not a component');
+        const recorded = await recordVersion(trx, {
+          artifactId: component.id,
+          openedFrom: component.version,
+          author: ids.grace!,
+          substance: {
+            ...substance,
+            content: { ...substance.content, content: [figure('f2', 'The new tray')] } as never,
+          },
+        });
+        if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+        return recorded.version.id;
+      });
+    const route = `/v1/documents/${doc.id}/texts`;
+    const occurrences = async (who: string) =>
+      (await call(who, 'GET', route)).json<{
+        occurrences: { node: string; newer?: { id: string; number: string } }[];
+      }>().occurrences;
+    // Nothing newer yet: nothing said.
+    expect((await occurrences('alice')).every((each) => each.newer === undefined)).toBe(true);
+
+    const sharedNewer = await newer(shared);
+    const secretNewer = await newer(secret);
+    const forAlice = await occurrences('alice');
+    expect(forAlice.find((each) => each.node === pinned)?.newer).toEqual({
+      id: sharedNewer,
+      number: '0.3',
+    });
+    // One at the latest has nothing newer; one Alice may not read is never said to have.
+    expect(forAlice.find((each) => each.node === floating)?.newer).toBeUndefined();
+    expect(forAlice.find((each) => each.node === hidden)?.newer).toBeUndefined();
+    expect(JSON.stringify(forAlice)).not.toContain(secretNewer);
+    expect((await occurrences('grace')).find((each) => each.node === hidden)?.newer).toEqual({
+      id: secretNewer,
+      number: '0.3',
+    });
   });
 
   it('answers an empty outline with no occurrences, and 404 for what is not a readable document', async () => {

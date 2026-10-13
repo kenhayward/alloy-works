@@ -526,6 +526,32 @@ export async function versionContents(
   );
 }
 
+/**
+ * Each artifact's latest version, by its id and number, in one query: what a reference pinned below it
+ * is told is newer (CNT-181). The caller has decided who may read them.
+ */
+export async function latestVersionsOf(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<ReadonlyMap<string, { readonly id: string; readonly number: string }>> {
+  if (artifactIds.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('artifact_version')
+    .distinctOn('artifact_id')
+    .select(['artifact_id', 'id', 'revision_no', 'version_no'])
+    .where('artifact_id', 'in', [...artifactIds])
+    .orderBy('artifact_id')
+    .orderBy('revision_no', 'desc')
+    .orderBy('version_no', 'desc')
+    .execute();
+  return new Map(
+    rows.map((row) => [
+      row.artifact_id,
+      { id: row.id, number: `${row.revision_no}.${row.version_no}` },
+    ]),
+  );
+}
+
 /** One version as a listing of an artifact's versions shows it: its heading, with its author named. */
 export interface ListedVersion {
   readonly id: string;

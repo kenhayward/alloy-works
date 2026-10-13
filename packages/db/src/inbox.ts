@@ -3,6 +3,7 @@ import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { notDeletedAs } from './deletion.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import { notifyTenant } from './realtime.js';
 import type { TenantTransaction } from './tables.js';
 
 /** What a person may be told of (COL-034). */
@@ -143,8 +144,10 @@ export async function tell(
       ...(input.round === undefined ? {} : { round_id: input.round }),
       artifact_id: input.artifact,
     };
-    if (cadence === 'at_once') await trx.insertInto('notification').values(row).execute();
-    else await trx.insertInto('notification_held').values(row).execute();
+    if (cadence === 'at_once') {
+      await trx.insertInto('notification').values(row).execute();
+      await notifyTenant(trx, { kind: 'inbox', recipient });
+    } else await trx.insertInto('notification_held').values(row).execute();
     told.push(recipient);
   }
   return { untold, told };
@@ -331,6 +334,7 @@ export async function foldDigests(trx: TenantTransaction, now: Date): Promise<nu
       .insertInto('notification')
       .values({ recipient, kind: 'digest', counts: JSON.stringify(counts), at: boundary })
       .execute();
+    await notifyTenant(trx, { kind: 'inbox', recipient });
     made += 1;
   }
   return made;

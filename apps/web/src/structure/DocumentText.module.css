@@ -278,16 +278,32 @@
   font-size: var(--size-12);
 }
 
-/* Review (the TH plan, Task 3): where each thread stands, and how many stand on a card or a section. */
+/* Review (the TH plan, Task 3): where each thread stands, and how many stand on a card or a section.
+   A border beneath, not the tint alone, tells an anchor without colour (CNT-138). */
 .text mark[data-thread] {
+  border-bottom: 2px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: inherit;
 }
 
 .text td[data-thread],
 .text th[data-thread] {
-  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent);
   outline-offset: -2px;
+}
+
+/* A high-contrast mode takes the tint: the system's own highlight stands in, the border stays. */
+@media (forced-colors: active) {
+  .text mark[data-thread] {
+    border-bottom-color: CanvasText;
+    background: Mark;
+    color: MarkText;
+  }
+
+  .text td[data-thread],
+  .text th[data-thread] {
+    outline-color: CanvasText;
+  }
 }
 
 .threads {

@@ -77,6 +77,10 @@ export function anchorWords(anchor: ThreadAnchor): string {
   }
 }
 
+/** Where a thread stands, as a sentence says it: a quote as it is, anything else lower-cased. */
+const annotation = (anchor: ThreadAnchor) =>
+  anchor.kind === 'span' ? anchorWords(anchor) : anchorWords(anchor).toLowerCase();
+
 /** A comment's text: its words, and each person it names. */
 function Said({ parts, nameOf }: { parts: readonly Part[]; nameOf: (id: string) => string }) {
   return (
@@ -273,16 +277,24 @@ export function ThreadsPanel({
   }, [read]);
 
   const open = async (id: string) => {
+    setRefused('');
     const answer = await client.GET('/v1/threads/{id}', { params: { path: { id } } });
     if (answer.data) setOpened(answer.data as unknown as Thread);
+    // A thread on a component since deleted is listed and does not open (COL-067): say why.
+    else setRefused(refusalOf(answer.error, 'The thread could not be opened.'));
   };
 
-  /** Says whom a comment named who may not read what it is on, and so were told nothing (COL-015). */
-  const untold = (answer: unknown) => {
+  /**
+   * Says whom a comment named who may not read what it is on, and so were told nothing (COL-015),
+   * after what was done.
+   */
+  const untold = (answer: unknown, done = '') => {
     const missed = (answer as { untold?: string[] }).untold ?? [];
-    if (missed.length > 0) {
-      setSaid(`Not told, as they may not read this: ${missed.map(nameOf).join(', ')}.`);
-    }
+    const notTold =
+      missed.length > 0
+        ? `Not told, as they may not read this: ${missed.map(nameOf).join(', ')}.`
+        : '';
+    if (done !== '' || notTold !== '') setSaid([done, notTold].filter(Boolean).join(' '));
   };
 
   const chosen = targets.find((each) => each.key === target) ?? targets[0];
@@ -306,8 +318,8 @@ export function ThreadsPanel({
       setRefused(refusalOf(answer.error, 'The thread could not be started.'));
       return false;
     }
-    setSaid('Thread started.');
-    untold(answer.data);
+    // Announced naming which (CNT-137), in the region there from the start.
+    untold(answer.data, `Thread started on ${annotation(chosen.anchor)}.`);
     setOpened(answer.data as unknown as Thread);
     await read();
     return true;
@@ -357,7 +369,7 @@ export function ThreadsPanel({
       setRefused(refusalOf(answer.error, 'The thread could not be resolved.'));
       return;
     }
-    setSaid('Resolved.');
+    setSaid(`Thread on ${annotation((answer.data as unknown as Thread).anchor)} resolved.`);
     setOpened(answer.data as unknown as Thread);
     await read();
   };

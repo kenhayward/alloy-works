@@ -16329,6 +16329,18 @@
           "howItIsMet": "A thread whose block, node or quoted text is gone is listed **orphaned**, never dropped, with the text it was on"
         },
         {
+          "id": "COL-067",
+          "howItIsMet": "A deleted component holds no lock: a held one refuses the deletion. Deleting it removes every presence in it, which each stream hears as `presence_left`, as it hears a dropped connection (COL-004). A document that once placed it places it in no version now (DL-C): its threads are listed there **orphaned**, placed nowhere, to whoever may read it but for its deletion, and opening one says it was deleted"
+        },
+        {
+          "id": "CNT-137",
+          "howItIsMet": "Starting and resolving a thread, sending a suggestion and accepting, rejecting or withdrawing one are said in a `role=\"status\"` region there, empty, from the start, naming which: \"Thread started on “the tray”.\", \"Ada's suggestion on 1 Install the printer accepted.\""
+        },
+        {
+          "id": "CNT-138",
+          "howItIsMet": "A thread's anchor has a border beneath its tint, a cell's a dashed outline; a redline underlines and strikes through, and says \"Added\" and \"Removed\"; suggestions and states are named in words. Under `forced-colors: active` the borders, lines and words stay, in the system's colours, and a state dot stays a dot"
+        },
+        {
           "id": "COL-018",
           "howItIsMet": "`GET /v1/documents/{id}/threads`: its own nodes' and every placed component's the caller may read, each placed against the version its occurrence resolves to, filtered by state, author and since when"
         },
@@ -17343,6 +17355,10 @@
           "howItIsMet": "A component's label names the version its reference resolves to and whether it is the latest or pinned ([Versions](#versions))"
         },
         {
+          "id": "CNT-181",
+          "howItIsMet": "A reference pinned below a newer version the reader may read says so beside its text, naming both, and offers **Compare**: the component's comparison (CNT-111) between them, asked for only then ([Versions](#versions))"
+        },
+        {
           "id": "CNT-158",
           "howItIsMet": "In Authoring, where the reader may restructure the document, the label's version opens a list of the component's versions and **Always the latest**; choosing one is the outline's `set` of the reference's mode"
         },
@@ -17790,6 +17806,10 @@
         {
           "id": "COL-007",
           "howItIsMet": "Lock events and the snapshot carry the holder and the expected release, wherever the component is shown"
+        },
+        {
+          "id": "API-063",
+          "howItIsMet": "Presence, locks and notifications are each a message of the AsyncAPI document, apart from OpenAPI: `inbox` says a notification waits, on every stream its recipient holds"
         }
       ]
     },
@@ -19742,6 +19762,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-181",
+      "file": "apps/service/src/contributions-routes.test.ts",
+      "line": 448,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-032",
+      "file": "apps/service/src/contributions-routes.test.ts",
+      "line": 448,
+      "kind": "title"
+    },
+    {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
       "line": 1171,
@@ -20092,43 +20124,55 @@
     {
       "id": "API-016",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 283,
+      "line": 284,
+      "kind": "title"
+    },
+    {
+      "id": "API-063",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "COL-001",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 344,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "COL-002",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 344,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "COL-003",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 372,
+      "line": 400,
       "kind": "title"
     },
     {
       "id": "COL-004",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 388,
+      "line": 416,
       "kind": "title"
     },
     {
       "id": "COL-007",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 200,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "COL-055",
       "file": "apps/service/src/live-stream.test.ts",
-      "line": 422,
+      "line": 503,
+      "kind": "title"
+    },
+    {
+      "id": "COL-067",
+      "file": "apps/service/src/live-stream.test.ts",
+      "line": 432,
       "kind": "title"
     },
     {
@@ -20492,6 +20536,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-184",
+      "file": "apps/service/src/suggestion-routes.test.ts",
+      "line": 276,
+      "kind": "title"
+    },
+    {
       "id": "COL-020",
       "file": "apps/service/src/suggestion-routes.test.ts",
       "line": 205,
@@ -20506,7 +20556,7 @@
     {
       "id": "COL-022",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 291,
+      "line": 333,
       "kind": "title"
     },
     {
@@ -20530,19 +20580,19 @@
     {
       "id": "COL-048",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 341,
+      "line": 383,
       "kind": "title"
     },
     {
       "id": "COL-052",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 276,
+      "line": 318,
       "kind": "title"
     },
     {
       "id": "COL-065",
       "file": "apps/service/src/suggestion-routes.test.ts",
-      "line": 313,
+      "line": 355,
       "kind": "title"
     },
     {
@@ -20680,49 +20730,55 @@
     {
       "id": "COL-012",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 201,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "COL-013",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 293,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "COL-014",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 293,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "COL-016",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 247,
+      "line": 248,
       "kind": "title"
     },
     {
       "id": "COL-017",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 247,
+      "line": 248,
       "kind": "title"
     },
     {
       "id": "COL-018",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 263,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "COL-051",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 327,
+      "line": 374,
+      "kind": "title"
+    },
+    {
+      "id": "COL-067",
+      "file": "apps/service/src/thread-routes.test.ts",
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "IAM-081",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 346,
+      "line": 393,
       "kind": "title"
     },
     {
@@ -21512,9 +21568,21 @@
       "kind": "title"
     },
     {
+      "id": "CNT-137",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 183,
+      "kind": "title"
+    },
+    {
       "id": "CNT-157",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
       "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "COL-067",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 258,
       "kind": "title"
     },
     {
@@ -21806,6 +21874,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-181",
+      "file": "apps/web/src/structure/DocumentPage.newer.test.tsx",
+      "line": 83,
+      "kind": "title"
+    },
+    {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
       "line": 592,
@@ -21851,6 +21925,12 @@
       "id": "IAM-081",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
       "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-137",
+      "file": "apps/web/src/structure/DocumentPage.suggestions.test.tsx",
+      "line": 166,
       "kind": "title"
     },
     {
@@ -22643,6 +22723,12 @@
       "id": "API-017",
       "file": "packages/api-contract/src/spec.test.ts",
       "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "API-063",
+      "file": "packages/api-contract/src/spec.test.ts",
+      "line": 31,
       "kind": "title"
     },
     {
@@ -26009,6 +26095,12 @@
       "id": "STR-073",
       "file": "tests/browser/src/budgets.test.ts",
       "line": 268,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-138",
+      "file": "tests/browser/src/forced-colors.test.ts",
+      "line": 20,
       "kind": "title"
     },
     {
