@@ -12,6 +12,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
+import { deleteArtifact } from './deletion.js';
 import { createDocument, editOutline, recordDocumentValues } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
@@ -449,6 +450,37 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
     expect(await preview(first, grace)).toMatchObject({ refusals: [refused] });
     // Ada still reads it.
     expect((await restore(first, second)).answer).toBe('restored');
+  });
+
+  it('VER-044 refuses restoring references to components since deleted, naming each by its node and last title', async () => {
+    const printer = await component();
+    const scanner = await component();
+    const made = await blank();
+    const insert = (opened: StoredVersion, id: string) =>
+      act(opened, {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: id, mode: { kind: 'latest' } },
+      });
+    const both = await insert(await insert(made, printer.artifactId), scanner.artifactId);
+    const [first, second] = outline(both).nodes.map((node) => node.id);
+    const none = await act(await act(both, { operation: 'remove', node: first! }), {
+      operation: 'remove',
+      node: second!,
+    });
+    for (const gone of [printer, scanner]) {
+      expect(await work((trx) => deleteArtifact(trx, gone.artifactId, ada))).toEqual({
+        answer: 'deleted',
+      });
+    }
+    const missing = [
+      { answer: 'reference.deleted', node: first, title: 'Install the printer' },
+      { answer: 'reference.deleted', node: second, title: 'Install the printer' },
+    ];
+    expect(await preview(both)).toMatchObject({ refusals: missing });
+    expect(await restore(both, none)).toEqual(missing[0]);
+    expect(await countOf(made.artifactId)).toBe(5);
   });
 
   it("refuses what the document's template does not allow its sections, over the whole outline", async () => {

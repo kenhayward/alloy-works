@@ -99,6 +99,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
@@ -321,6 +322,8 @@ export interface BindingActs {
 type Loaded =
   | { readonly state: 'loading' }
   | { readonly state: 'missing' }
+  /** Deleted, answered 410 to a reader, or just now by its deleter (the DL plan, DL-B). */
+  | { readonly state: 'deleted' }
   /** Opening failed for a reason a retry may change (final review, finding 4). */
   | { readonly state: 'failed'; readonly signedOut: boolean }
   | { readonly state: 'unreadable'; readonly component: ComponentView }
@@ -1052,7 +1055,9 @@ export function ComponentEditor({
           setLoaded(
             response.status === 404
               ? { state: 'missing' }
-              : { state: 'failed', signedOut: response.status === 401 },
+              : response.status === 410
+                ? { state: 'deleted' }
+                : { state: 'failed', signedOut: response.status === 401 },
           );
           return;
         }
@@ -1844,6 +1849,14 @@ export function ComponentEditor({
       </Notice>
     );
   }
+  if (loaded.state === 'deleted') {
+    return (
+      <Notice tone="refused">
+        <p>This component has been deleted.</p>
+        {leave}
+      </Notice>
+    );
+  }
   if (loaded.state === 'failed') {
     return (
       <Notice tone={loaded.signedOut ? 'signedOut' : 'failed'}>
@@ -2232,6 +2245,15 @@ export function ComponentEditor({
                 setArchivedNow(now);
                 setNotice(said);
               }}
+            />
+            <DeleteButton
+              client={client}
+              kind="component"
+              id={componentId}
+              title={header.title}
+              mayRetire={shown.mayRetire === true}
+              className={styles['archive']}
+              onDeleted={() => setLoaded({ state: 'deleted' })}
             />
             <PlaceHoldButton
               client={client}

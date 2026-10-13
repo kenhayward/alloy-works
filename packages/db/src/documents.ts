@@ -29,6 +29,7 @@ import {
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { archivedAs, notArchivedAs } from './archival.js';
+import { deletionStored, isDeleted, notDeletedAs, shareDeletion } from './deletion.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { readableArtifacts, readableArtifactsAs } from './readable-artifacts.js';
 import {
@@ -418,6 +419,7 @@ export async function listReadableDocuments(
       .where('a.kind', '=', 'document')
       .where((eb) => readableArtifacts(eb, readable))
       .where(filter.archived === 'only' ? archivedAs('a', snapshot) : notArchivedAs('a', snapshot))
+      .where(notDeletedAs('a', snapshot))
       .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
         filter.spaces!.length === 0
           ? query.where(sql<boolean>`false`)
@@ -485,6 +487,8 @@ export async function readableComponents(
     .where('a.id', 'in', asked)
     .where('a.kind', '=', 'component')
     .where((eb) => readableArtifacts(eb, readable))
+    // A deleted one is read by nothing (DL-B), where the tenant stores deletion yet.
+    .$if(await deletionStored(trx), (query) => query.where(notDeletedAs('a')))
     .execute();
   return new Set(rows.map((row) => row.id));
 }
@@ -522,29 +526,40 @@ function targetOf(
   return undefined;
 }
 
+/** A reference allowed, refused, or to a component deleted, by its last title (VER-044; DL-F). */
+type ReferenceAnswer = 'ok' | 'refused' | { readonly deleted: true; readonly title: string };
+
 /**
  * Whether the author may point an outline at this target: a **component**, in this environment, that
  * the author may **read**, decided by the same facts and the same `decide` every route uses; and a
  * pinned version that **belongs to that component**. A document references components alone in T1,
- * so its own id - the only way a cycle could close (structure.md) - is refused with the rest.
+ * so its own id - the only way a cycle could close (structure.md) - is refused with the rest. One the
+ * author may read but for its deletion is answered deleted, with its last title (DL-F); under the
+ * shared deletion lock, so it is not deleted between this and the version that records it (DL-D).
  */
 async function mayReference(
   trx: TenantTransaction,
   author: string,
   target: { readonly component: string; readonly version: string | null },
-): Promise<boolean> {
-  if (!UUID.test(target.component)) return false;
+): Promise<ReferenceAnswer> {
+  if (!UUID.test(target.component)) return 'refused';
+  await shareDeletion(trx);
   const artifact = await trx
     .selectFrom('artifact')
     .select('kind')
     .where('id', '=', target.component)
     .executeTakeFirst();
-  if (artifact?.kind !== 'component') return false;
+  if (artifact?.kind !== 'component') return 'refused';
   const facts = await loadFacts(trx, author, { kind: 'artifact', id: target.component });
-  if (!facts || !decide('read', facts).allowed) return false;
-  if (target.version === null) return true;
+  if (!facts || !decide('read', facts).allowed) return 'refused';
+  if (await isDeleted(trx, target.component)) {
+    const last = await latestVersion(trx, target.component);
+    const title = (last?.content as { readonly title?: unknown } | undefined)?.title;
+    return { deleted: true, title: typeof title === 'string' ? title : '' };
+  }
+  if (target.version === null) return 'ok';
   const version = await readVersion(trx, target.version);
-  return version?.artifactId === target.component;
+  return version?.artifactId === target.component ? 'ok' : 'refused';
 }
 
 /**
@@ -583,7 +598,7 @@ export async function editOutline(
   // Checked before the operation is applied, in this transaction, so what is recorded points only
   // at what the author may read: nothing is stored that a later rule would have to refuse.
   const target = targetOf(read.outline, input.operation);
-  if (target && !(await mayReference(trx, input.author, target))) {
+  if (target && (await mayReference(trx, input.author, target)) !== 'ok') {
     return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
   }
   // Held to the document's template (TPL-015, STR-060): its recorded version's changes always, and
@@ -653,9 +668,14 @@ export async function recordRepoints(
   }
 }
 
-/** Why a document's restore would be refused by `editOutline`'s own guards (the RS plan, RS-F). */
+/**
+ * Why a document's restore would be refused by `editOutline`'s own guards (the RS plan, RS-F), and a
+ * reference to a component since deleted, by its node and last title (VER-044; DL-F).
+ */
 export type RestoredOutlineRefusal =
-  { readonly answer: 'outline.invalid'; readonly reason: string } | ValuesRefused;
+  | { readonly answer: 'outline.invalid'; readonly reason: string }
+  | { readonly answer: 'reference.deleted'; readonly node: string; readonly title: string }
+  | ValuesRefused;
 
 /** A whole outline and the document's values as a restore would store them, and what refuses it. */
 export interface RestoredOutline {
@@ -685,7 +705,7 @@ export async function restoredOutline(
   const before = new Map<string, OutlineNode>();
   walkOutline(latest.outline.nodes, (node) => before.set(node.id, node));
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  const targets: { component: string; version: string | null }[] = [];
+  const targets: { node: string; component: string; version: string | null }[] = [];
   const written = new Map<string, MetadataValues>();
   walkOutline(restored.outline.nodes, (node) => {
     const was = before.get(node.id);
@@ -698,16 +718,21 @@ export async function restoredOutline(
         return;
       }
       const version = node.mode.kind === 'pinned' ? node.mode.version : null;
-      targets.push({ component: node.component, version });
+      targets.push({ node: node.id, component: node.component, version });
     } else if (was === undefined || !same(was.values, node.values)) {
       written.set(node.id, node.values);
     }
   });
+  // Every node's, not the first's: each deleted one named, and the one sentence for the rest.
   const refusals: RestoredOutlineRefusal[] = [];
+  let refused = false;
   for (const target of targets) {
-    if (!(await mayReference(trx, input.author, target))) {
+    const answer = await mayReference(trx, input.author, target);
+    if (answer === 'refused' && !refused) {
+      refused = true;
       refusals.push({ answer: 'outline.invalid', reason: REFERENCE_REFUSED });
-      break;
+    } else if (typeof answer === 'object') {
+      refusals.push({ answer: 'reference.deleted', node: target.node, title: answer.title });
     }
   }
   const rules = await documentRules(trx, input.documentId);

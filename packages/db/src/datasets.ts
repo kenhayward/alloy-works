@@ -11,6 +11,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { deletedAmong } from './deletion.js';
 import { labelled, labels, recordEvent } from './audit.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import { isPlainName } from './plain-name.js';
@@ -543,9 +544,16 @@ async function splitByReading(
   rows: readonly { readonly id: string; readonly space_id: string; readonly title: string }[],
 ): Promise<Uses> {
   const readable = await loadReadableSet(trx, principalId);
+  // A deleted one is counted, never named (DL-B).
+  const deleted = await deletedAmong(
+    trx,
+    rows.map((row) => row.id),
+  );
   const shown = rows.filter(
     (row) =>
-      readable !== undefined && mayReadArtifact(readable, { id: row.id, spaceId: row.space_id }),
+      readable !== undefined &&
+      !deleted.has(row.id) &&
+      mayReadArtifact(readable, { id: row.id, spaceId: row.space_id }),
   );
   return {
     readable: shown.map(({ id, title }) => ({ id, title })),

@@ -456,6 +456,8 @@ export interface SearchEntryTable {
   vector: ColumnType<string, never, never>;
   /** Its artifact archived (0083): left out of search, and set by the acts and by indexing. */
   archived: Generated<boolean>;
+  /** Its artifact deleted (0085): left out of search, and set by the acts and by indexing. */
+  deleted: Generated<boolean>;
 }
 
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
@@ -464,6 +466,17 @@ export interface ArtifactArchivalTable {
   artifact_id: string;
   kind: 'component' | 'document';
   act: 'archived' | 'unarchived';
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** One deletion act on a component or a document, inserted and never changed (0085; DL-B). */
+export interface ArtifactDeletionTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  act: 'deleted' | 'undeleted';
   by: string;
   at: ColumnType<Date, never, never>;
   written_by: ColumnType<string, never, never>;
@@ -723,6 +736,7 @@ export interface TenantTables {
   asset_upload: AssetUploadTable;
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;
+  artifact_deletion: ArtifactDeletionTable;
   legal_hold: LegalHoldTable;
   legal_hold_release: LegalHoldReleaseTable;
   search_text: SearchTextTable;

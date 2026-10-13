@@ -3,6 +3,7 @@ import type { RouteAccess, RouteTarget } from '@alloy-works/api-contract';
 import {
   decideOnly,
   grantLevel,
+  isDeleted,
   loadFacts,
   lockAccessForChange,
   type TenantTransaction,
@@ -17,6 +18,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { AppError, type RefusedTarget } from './errors.js';
+import { refused as refusedWith } from './wire-codes.js';
 
 /** What a permission-checked handler is given: the transaction it was decided in, and the answer. */
 export interface Authorised {
@@ -84,6 +86,20 @@ export function refusedBy(
 /** Not found, for a target that exists and that the caller may not read: the read refused it. */
 const hiddenBy = (facts: AccessFacts, target: RefusedTarget) =>
   refusedBy(notFound(), decide('read', facts), facts, target, true);
+
+/**
+ * A deleted component or document (the DL plan, DL-B): gone, to whoever may read it but for its
+ * deletion; not found, as anything unreadable is, to anyone else.
+ */
+async function refuseDeleted(
+  trx: TenantTransaction,
+  facts: AccessFacts,
+  target: Level,
+): Promise<void> {
+  if (target.kind !== 'artifact' || !(await isDeleted(trx, target.id))) return;
+  if (!decide('read', facts).allowed) throw hiddenBy(facts, target);
+  throw refusedWith(410, 'artifact.deleted', 'This has been deleted.');
+}
 
 /**
  * The level a route's declaration names, from the request's validated parameters, query or body, or -
@@ -238,6 +254,7 @@ export async function authoriseAt(
   const loaded = await loadFacts(trx, caller.principalId, target);
   const facts = loaded && { ...loaded, scopes: caller.scopes };
   if (!facts) throw notFound();
+  await refuseDeleted(trx, facts, target);
   if (target.kind !== 'tenant' && !decide('read', facts).allowed) throw hiddenBy(facts, target);
   const decision = decide(permission, facts);
   if (!decision.allowed) throw refusedBy(forbidden(permission), decision, facts, target, false);
@@ -273,6 +290,7 @@ export async function authorise(
   // The request's token, if it was made with one, masks this decision and every one its handler
   // takes from these facts (TK-A).
   const facts: AccessFacts = { ...loaded, scopes: scopesOf(request) };
+  if (!check.readsDeleted) await refuseDeleted(trx, facts, target);
   // A grant is an administrator's to see (access.md, "Refusing"): one the caller may not manage is
   // answered as absent, even where they may read the level it was made at, so an id cannot be probed.
   // Recorded as the refusal it is, of the grant where one is hidden (the AU1 plan, AU1-E).

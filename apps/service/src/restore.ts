@@ -58,6 +58,7 @@ function refusalView(refusal: RestoreRefusal): RestorationView['refusals'][numbe
     // A document's: never previewed for a component, whose resolver refuses none of them.
     case 'outline.invalid':
     case 'template.unresolved':
+    case 'reference.deleted':
       throw new Error(`A component's restore is not refused ${refusal.answer}`);
   }
 }
@@ -67,6 +68,8 @@ function documentRefusalView(refusal: RestoreRefusal): DocumentRestorationView['
   switch (refusal.answer) {
     case 'outline.invalid':
       return { code: 'outline_invalid', reason: refusal.reason };
+    case 'reference.deleted':
+      return { code: 'reference_deleted', node: refusal.node, title: refusal.title };
     case 'template.unresolved':
       return { code: 'values_unresolved', unresolved: [...refusal.unresolved] };
     case 'values.invalid':
@@ -123,6 +126,12 @@ function refuse(refusal: RestoreRefusal): AppError {
         'This change does not apply to the outline as it stands.',
         { reason: refusal.reason },
       );
+    // VER-044: named, by its node and last title.
+    case 'reference.deleted':
+      return refused(409, 'reference.deleted', 'A component this version references is deleted.', {
+        node: refusal.node,
+        title: refusal.title,
+      });
     case 'template.unresolved':
       return refused(
         400,

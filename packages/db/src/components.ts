@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { archivedAs, notArchivedAs } from './archival.js';
+import { notDeletedAs } from './deletion.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import {
   checkedLimit,
@@ -116,6 +117,7 @@ export async function listReadableComponents(
       .where('a.kind', '=', 'component')
       .where((eb) => readableArtifacts(eb, readable))
       .where(filter.archived === 'only' ? archivedAs('a', snapshot) : notArchivedAs('a', snapshot))
+      .where(notDeletedAs('a', snapshot))
       .$if(filter.spaces !== undefined && leaving !== 'spaces', (query) =>
         // An empty list names no space, so it matches nothing - never "every space".
         filter.spaces!.length === 0

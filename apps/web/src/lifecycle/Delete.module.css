@@ -1,0 +1,30 @@
+/* Deleting's dialog: what it leaves, and every reason it may not be deleted (lifecycle.md). */
+.deleting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.deleting h2 {
+  margin: 0;
+  font-size: var(--size-16);
+}
+
+.deleting p {
+  margin: 0;
+}
+
+.reasons {
+  margin: 0;
+  padding-inline-start: var(--space-24);
+}
+
+.quiet {
+  color: var(--muted);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}

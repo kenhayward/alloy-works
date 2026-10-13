@@ -28,6 +28,7 @@ import { flushSync } from 'react-dom';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
@@ -370,6 +371,8 @@ function doesNotApply(refusal: unknown): string {
 type Loaded =
   | { readonly state: 'loading' }
   | { readonly state: 'missing' }
+  /** Deleted, answered 410 to a reader, or just now by its deleter (the DL plan, DL-B). */
+  | { readonly state: 'deleted' }
   | { readonly state: 'failed'; readonly signedOut: boolean }
   | { readonly state: 'unreadable' }
   | { readonly state: 'open'; readonly document: Opened };
@@ -1041,6 +1044,7 @@ export function DocumentPage({
         // Only a 404 means missing or unreadable, which the service answers alike: signed out, a
         // server error or no answer is not the document's absence.
         else if (response.status === 404) setLoaded({ state: 'missing' });
+        else if (response.status === 410) setLoaded({ state: 'deleted' });
         else setLoaded({ state: 'failed', signedOut: response.status === 401 });
       })
       .catch(() => {
@@ -1626,6 +1630,14 @@ export function DocumentPage({
       </Notice>
     );
   }
+  if (loaded.state === 'deleted') {
+    return (
+      <Notice tone="refused">
+        <p>This document has been deleted.</p>
+        {back}
+      </Notice>
+    );
+  }
   if (loaded.state === 'failed') {
     if (loaded.signedOut) {
       return (
@@ -1848,6 +1860,15 @@ export function DocumentPage({
                   if (latest.current?.id === document.id) show({ ...latest.current, archived });
                   setNotice(said);
                 }}
+              />
+              <DeleteButton
+                client={client}
+                kind="document"
+                id={document.id}
+                title={document.outline.title}
+                mayRetire={document.mayRetire}
+                className={styles['toggle']}
+                onDeleted={() => setLoaded({ state: 'deleted' })}
               />
               <PlaceHoldButton
                 client={client}

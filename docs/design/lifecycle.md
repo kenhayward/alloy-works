@@ -1,9 +1,10 @@
 # Lifecycle
 
-What happens to an artifact at the end of its working life, short of deletion
+What happens to an artifact at the end of its working life
 ([ADR-0060](../decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md)). This design
 covers **archival** and **legal holds**, built by [the AH plan](../plans/2026-10-12-ah-archival-and-holds.md),
-whose decisions are the detail. Deletion is DL's.
+and **deletion**, built by [the DL plan](../plans/2026-10-13-dl-deletion-and-retention.md); their
+decisions are the detail. Retention is DL2's.
 
 ## Requirements owned
 
@@ -11,9 +12,17 @@ whose decisions are the detail. Deletion is DL's.
 | ----------- | ------------------------------------------------------------------------------------- |
 | **LIF-020** | Archival, below: out of ordinary listings and search, still retrievable; AH-B to AH-D |
 | **LIF-022** | Legal holds, below: placed with who, when and why, removed only by a recorded act     |
+| **LIF-023** | Deletion, below: refused by a baseline, a publication or a hold, every reason listed  |
+| **LIF-021** | A hold on it or its space refuses deletion; no keep overrides it (DL-C, DL-G)         |
+| **LIF-024** | What remains, below, stated and shown before deleting                                 |
+| **VER-047** | The chain is kept whole, unreachable, read through the log and what remains           |
+| **VER-048** | What remains, below: identity, versions, the audit of them; nothing removed           |
+| **VER-044** | A restore naming a component since deleted is refused, naming each (DL-F)             |
 
-LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `hold.applied` and `hold.removed`, are
-[audit.md](audit.md)'s claim. LIF-021 and LIF-023 (a hold refuses deletion) are DL's.
+LIF-057's kinds, `artifact.archived`, `artifact.unarchived`, `artifact.deleted`,
+`artifact.undeleted`, `hold.applied` and `hold.removed`, are [audit.md](audit.md)'s claim.
+**VER-037 is not claimed yet**: a hold refuses deleting anything a baseline depends on, but its
+retention half waits for DL2's keeps, which claims it.
 
 ## Archival
 
@@ -70,8 +79,8 @@ keeps its release, once by its key, with a reason of its own, who and when. Noth
 deleted; a hold is in force while it has no release. A release is taken under the hold's advisory
 lock, so two at once record one; a second is refused (`hold_released`).
 
-**What a hold does now**: it is recorded, listed and shown. Nothing deletes yet; DL makes a hold
-refuse deletion. A hold does not refuse archival.
+**What a hold does**: it is recorded, listed and shown, and refuses deleting what it holds
+(Deletion, below). It refuses neither archival nor an undelete.
 
 **Where it shows**: Administration > **Legal holds** lists every hold, newest first, with what it
 holds, who placed it, when and why, and its release, and offers **Release** on one in force. That
@@ -87,3 +96,46 @@ shows the same labels.
 
 **Audited** (LIF-057): `hold.applied` and `hold.removed`, `{ hold }` its id, about the artifact or the
 space it holds, with its space.
+
+## Deletion
+
+**What deletes**: a component or a document, by whoever may **`retire`** it (DL-A). Assets,
+definitions and spaces do not, so a restore never meets a removed asset.
+
+**A tombstone, nothing removed** (0085): `artifact_deletion` holds each act, `deleted` or
+`undeleted`, with who and when, insert-only and guarded as archival's is. Deleted while the latest
+act is `deleted`.
+
+**Refused** (DL-C), every reason listed, not the first: a baseline pinning any version, superseded
+or not; a publication that placed any version, or a publish or preview queued to; a document whose
+latest version references it in any mode, a deleted document included, so undeleting one never
+revives a dangling reference; a hold on it or its space; a lock held, naming the holder; an open
+review round. A document's own baselines, publications and queued requests refuse it too. A
+dependant the deleter may not read is counted, not named. **The consequence**: anything ever
+baselined or published is undeletable; archive it instead.
+
+**What remains** (LIF-024, VER-047, VER-048), stated by `GET .../deletion` and shown before
+**Delete**: its identity, every version and its content, iterations, threads, suggestions, rounds
+and every audit event, kept and unreachable, and all of it back on **undelete**, which nothing
+refuses, a hold included. Content goes only by erasure.
+
+**Gone from every reader** (`notDeletedAs`, `search_entry.deleted`): the listings and their facets,
+`readableComponents` (so references, numbering, publishing, baselines and comparison), search, the
+inbox, Needs your attention, a stream's scope, a definition's where-used, and `mayReference`. By its
+id, `authorise` answers **410 `artifact_deleted`** to whoever may read it but for the tombstone and
+404 to anyone else; undelete and what remains opt out (`readsDeleted`). `recordVersion` refuses a
+version of it under its lock. `GET /v1/changes` reports a deletion and an undeletion as changes. An
+older version or a comparison shows a reference to a deleted component as withheld, as one the
+reader may not read; showing it as deleted is a gap.
+
+**Races** (DL-D): delete and undelete take the tenant's `alloy-works:deletion` advisory lock
+exclusive, then the artifact's; every writer of a dependant takes it shared first - `mayReference`,
+a document's restore, `makeBaseline` and `requestPublication` (by `resolvePublishable`), and
+`placeHold` - so either the dependant is seen or it sees the tombstone.
+
+**VER-044** (DL-F): `mayReference` answers a component the author may read but for its deletion as
+deleted, with its last title; a document's restore lists `reference_deleted` for each such node, the
+preview first, the write refusing `409 reference_deleted`.
+
+**Audited** (LIF-057): `artifact.deleted` and `artifact.undeleted`, about the artifact, with its
+space.

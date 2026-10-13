@@ -160,6 +160,25 @@ describe("a document's Versions panel", () => {
     expect(within(preview).queryByRole('button', { name: 'Restore this version' })).toBeNull();
   });
 
+  it('VER-044 names each component since deleted that a restore would reference, and offers none', async () => {
+    const { client } = service([
+      { code: 'reference_deleted', node: 'b'.repeat(26), title: 'Install the printer' },
+      { code: 'reference_deleted', node: 'c'.repeat(26), title: 'Clean the nozzle' },
+    ]);
+    render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    for (const title of ['Install the printer', 'Clean the nozzle']) {
+      expect(
+        await within(preview).findByText(
+          `${title} has been deleted, so this version cannot be restored.`,
+        ),
+      ).toBeInTheDocument();
+    }
+    expect(within(preview).queryByRole('button', { name: 'Restore this version' })).toBeNull();
+  });
+
   it('posts and shows the latest the preview was made against, not the list head (the RS final review)', async () => {
     const V5 = 'dddddddd-0000-4000-8000-000000000005';
     const { client, sent } = service([], { latest: summary(V5, '0.5') });

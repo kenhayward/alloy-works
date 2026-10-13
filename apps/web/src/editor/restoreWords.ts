@@ -4,6 +4,9 @@ export interface RestoreRefusal {
   readonly holder?: { readonly name: string | null } | undefined;
   /** outline_invalid: why, in the outline's own words. */
   readonly reason?: string | undefined;
+  /** reference_deleted: the reference's node, and its component's last title (VER-044). */
+  readonly node?: string | undefined;
+  readonly title?: string | undefined;
 }
 
 /** What a restore's write answered: the new version's number, or why not; 'sending' till then. */
@@ -37,6 +40,9 @@ export function restoreRefusalWords(refusal: RestoreRefusal): string {
       return refusal.reason === undefined
         ? 'This version no longer fits the outline as it stands, so it cannot be restored.'
         : `${refusal.reason}, so this version cannot be restored.`;
+    // VER-044: a component since deleted, by its last title.
+    case 'reference_deleted':
+      return `${refusal.title || 'A component it references'} has been deleted, so this version cannot be restored.`;
     case 'values_unresolved':
       return "This document's template names a field that no longer resolves, so this version's values cannot be checked.";
     case 'version_precondition':

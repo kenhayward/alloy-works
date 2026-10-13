@@ -353,6 +353,7 @@ export async function searchWords(
         )
         -- Archived content is no result, facet or count (LIF-020; lifecycle.md).
         and not e.archived
+        and not e.deleted
         and ${words}
         and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}
     ),

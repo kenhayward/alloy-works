@@ -17129,6 +17129,30 @@
         {
           "id": "LIF-022",
           "howItIsMet": "Legal holds, below: placed with who, when and why, removed only by a recorded act"
+        },
+        {
+          "id": "LIF-023",
+          "howItIsMet": "Deletion, below: refused by a baseline, a publication or a hold, every reason listed"
+        },
+        {
+          "id": "LIF-021",
+          "howItIsMet": "A hold on it or its space refuses deletion; no keep overrides it (DL-C, DL-G)"
+        },
+        {
+          "id": "LIF-024",
+          "howItIsMet": "What remains, below, stated and shown before deleting"
+        },
+        {
+          "id": "VER-047",
+          "howItIsMet": "The chain is kept whole, unreachable, read through the log and what remains"
+        },
+        {
+          "id": "VER-048",
+          "howItIsMet": "What remains, below: identity, versions, the audit of them; nothing removed"
+        },
+        {
+          "id": "VER-044",
+          "howItIsMet": "A restore naming a component since deleted is refused, naming each (DL-F)"
         }
       ]
     },
@@ -17943,7 +17967,7 @@
         },
         {
           "id": "VER-023",
-          "howItIsMet": "`baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check"
+          "howItIsMet": "`baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check; a tombstone removes no row, so its refusal is checked in code ([lifecycle.md](lifecycle.md))"
         },
         {
           "id": "VER-032",
@@ -19194,7 +19218,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 327,
+      "line": 333,
       "kind": "title"
     },
     {
@@ -19440,7 +19464,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1162,
+      "line": 1168,
       "kind": "title"
     },
     {
@@ -19490,6 +19514,36 @@
       "file": "apps/service/src/definition-routes.test.ts",
       "line": 200,
       "kind": "rule"
+    },
+    {
+      "id": "LIF-023",
+      "file": "apps/service/src/deletion-routes.test.ts",
+      "line": 223,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-024",
+      "file": "apps/service/src/deletion-routes.test.ts",
+      "line": 181,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "apps/service/src/deletion-routes.test.ts",
+      "line": 335,
+      "kind": "title"
+    },
+    {
+      "id": "VER-044",
+      "file": "apps/service/src/deletion-routes.test.ts",
+      "line": 252,
+      "kind": "title"
+    },
+    {
+      "id": "VER-048",
+      "file": "apps/service/src/deletion-routes.test.ts",
+      "line": 181,
+      "kind": "title"
     },
     {
       "id": "DAT-030",
@@ -20692,6 +20746,18 @@
       "kind": "title"
     },
     {
+      "id": "LIF-023",
+      "file": "apps/web/src/editor/ComponentEditor.deletion.test.tsx",
+      "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-024",
+      "file": "apps/web/src/editor/ComponentEditor.deletion.test.tsx",
+      "line": 13,
+      "kind": "title"
+    },
+    {
       "id": "COL-020",
       "file": "apps/web/src/editor/ComponentEditor.draft.test.tsx",
       "line": 27,
@@ -21412,6 +21478,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-024",
+      "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
+      "line": 606,
+      "kind": "title"
+    },
+    {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
       "line": 33,
@@ -21426,7 +21498,7 @@
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 685,
+      "line": 717,
       "kind": "title"
     },
     {
@@ -21469,6 +21541,12 @@
       "id": "VER-035",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
       "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "VER-044",
+      "file": "apps/web/src/structure/DocumentVersions.test.tsx",
+      "line": 163,
       "kind": "title"
     },
     {
@@ -22564,27 +22642,69 @@
       "kind": "title"
     },
     {
+      "id": "LIF-021",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 241,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-023",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-057",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 468,
+      "kind": "title"
+    },
+    {
+      "id": "VER-023",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "VER-047",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 309,
+      "kind": "title"
+    },
+    {
+      "id": "VER-048",
+      "file": "packages/db/src/deletion.test.ts",
+      "line": 309,
+      "kind": "title"
+    },
+    {
       "id": "CNT-182",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 298,
+      "line": 299,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 340,
+      "line": 341,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 363,
+      "line": 364,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 397,
+      "line": 398,
+      "kind": "title"
+    },
+    {
+      "id": "VER-044",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 455,
       "kind": "title"
     },
     {
@@ -23292,7 +23412,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 193,
+      "line": 195,
       "kind": "title"
     },
     {
@@ -25446,7 +25566,7 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 684,
+      "line": 695,
       "kind": "title"
     },
     {

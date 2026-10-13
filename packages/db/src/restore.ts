@@ -15,6 +15,7 @@ import {
 } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { componentFieldsNow } from './component-values.js';
+import { shareDeletion } from './deletion.js';
 import { recordRepoints, restoredOutline, type RestoredOutlineRefusal } from './documents.js';
 import { isComponent, readLock, serialise, type LockState } from './editing.js';
 import type { TenantTransaction } from './tables.js';
@@ -156,6 +157,8 @@ async function resolveDocument(
   asked: RestoreAsked,
 ): Promise<Restoration | undefined> {
   if ((await latestVersion(trx, asked.artifactId))?.kind !== 'document') return undefined;
+  // Its references are a deletion's dependants (DL-D), the deletion lock before the document's.
+  await shareDeletion(trx);
   await lockArtifact(trx, asked.artifactId);
   const source = await readVersion(trx, asked.version);
   if (!source || source.artifactId !== asked.artifactId) return undefined;

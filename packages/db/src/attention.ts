@@ -8,6 +8,7 @@ import {
 import { sql } from 'kysely';
 import { loadFactsFor, loadReadableSet } from './access-facts.js';
 import { notArchivedAs } from './archival.js';
+import { notDeletedAs } from './deletion.js';
 import { CREDENTIAL_CURRENT, credentialSetFor } from './connections.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
 import { newestUncutIteration } from './recovery.js';
@@ -87,6 +88,7 @@ async function publishFailed(trx: TenantTransaction, me: string, readable: Reada
     ) r
     join artifact a on a.id = r.document_id
     where r.state = 'failed' and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
+      and ${notDeletedAs('a')}
       and not exists (
         select 1 from publication p
         join publication_request pr on pr.id = p.request_id
@@ -117,7 +119,7 @@ async function withIterations(trx: TenantTransaction, me: string, readable: Read
     join artifact a on a.id = i.artifact_id
     left join unsaved_discarded d on d.artifact_id = i.artifact_id and d.principal_id = ${me}
     where i.principal_id = ${me} and ${iterationRetained('i')}
-      and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
+      and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')} and ${notDeletedAs('a')}
     group by i.artifact_id, d.up_to
     having d.up_to is null or max(i.created_at) > d.up_to
     order by max(i.created_at) desc, i.artifact_id
@@ -148,6 +150,7 @@ async function publishedEarlier(trx: TenantTransaction, me: string, readable: Re
       order by p.published_at desc, pa.created_at desc, p.id desc limit 1
     ) lp on true
     where a.kind = 'document' and ${readableArtifactsAs('a', readable)} and ${notArchivedAs('a')}
+      and ${notDeletedAs('a')}
       and (lp.revision_no, lp.version_no) < (lv.revision_no, lv.version_no)
   `.execute(trx);
   return rows.map((row): Found => ({ kind: 'published_earlier', id: row.id, at: row.at }));

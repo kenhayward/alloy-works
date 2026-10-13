@@ -54,7 +54,7 @@ designation applied to a row in that chain rather than a second history beside i
 | **VER-020** | The condition set in force is stored on the baseline row, because a document has as many resolutions as it has profiles                                                                                                                                                                                                                      |
 | **VER-021** | Baseline creation is an explicit call, made either by a person or by the lifecycle service at a gate                                                                                                                                                                                                                                         |
 | **VER-022** | Everything a baseline pins is reachable by foreign key, and nothing reachable that way is collectable                                                                                                                                                                                                                                        |
-| **VER-023** | `baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check                                                                                                                                                                                                      |
+| **VER-023** | `baseline_pin` restricts deletion of the version it references. The database refuses, rather than application code remembering to check; a tombstone removes no row, so its refusal is checked in code ([lifecycle.md](lifecycle.md))                                                                                                        |
 | **VER-032** | Restore reads an earlier version and inserts a new one with matching content. The earlier row is untouched                                                                                                                                                                                                                                   |
 | **VER-033** | The new version records the version it was restored from, so the chain reads as a decision                                                                                                                                                                                                                                                   |
 | **VER-035** | Preview resolves the restore without inserting, using the same code path as the write                                                                                                                                                                                                                                                        |
@@ -67,9 +67,10 @@ designation applied to a row in that chain rather than a second history beside i
 | **MET-016** | Values are held in their own column beside `content`, and the content document's closed root (CNT-146) refuses a member that is not its own                                                                                                                                                                                                  |
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                                                                                    |
 
-**VER-037, a legal hold checked where a pinned deletion is refused, is not claimed here**: nothing
-deletes yet, so the AH plan records a hold and DL makes it refuse deletion, claiming VER-037 there
-(the [AH plan](../plans/2026-10-12-ah-archival-and-holds.md), AH-H).
+**VER-037, a legal hold checked where a pinned deletion is refused, is not claimed here**: deletion
+is a tombstone ([lifecycle.md](lifecycle.md)), so no row is removed and VER-023's key never fires
+for it; the tombstone's refusal of anything a baseline pins is checked in code, under a lock, and a
+hold refuses it there too. DL2 claims VER-037 in lifecycle.md once retention refuses it as well.
 
 **VER-057, query definitions, is met by the same mechanism** - one more `artifact_kind` beside those
 VER-056 names - and is claimed by [data.md](data.md), DAT's T2 design, which says what a query
@@ -101,7 +102,8 @@ none refuses it; the advisory lock every version takes serialises it. Its previe
 with the latest's, withholding what the restorer may not read, and each reference it re-points is
 audited `reference.repointed` (CNT-182).
 
-**VER-044 is not claimed here.** It replaces VER-034, and it moves the question. VER-034 asked that a
+**VER-044 is [lifecycle.md](lifecycle.md)'s claim** (DL-F): a restore naming a component since
+deleted is refused, naming each. The history: it replaces VER-034, and it moves the question. VER-034 asked that a
 restore be refused where it would leave a baseline unable to resolve, and this design answered that
 with VER-023's foreign key. VER-044 records why that answer was aimed at nothing: a restore inserts a
 version rather than rewriting one (VER-032), so no existing baseline's pins can be disturbed by it.

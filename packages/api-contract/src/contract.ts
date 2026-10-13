@@ -64,6 +64,12 @@ export type RouteAccess =
       readonly target: RouteTarget;
       readonly changesAccess?: true;
       readonly credential?: 'session';
+      /**
+       * Whether it reaches a deleted component or document: undeleting one, and what remains of it.
+       * Every other route answers one `410 artifact_deleted` to whoever may read it but for its
+       * deletion, and 404 to anyone else (the DL plan, DL-B).
+       */
+      readonly readsDeleted?: true;
     };
 
 /**

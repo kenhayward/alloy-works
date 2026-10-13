@@ -153,6 +153,12 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   unarchiveComponent: writes('artifact.unarchived'),
   archiveDocument: writes('artifact.archived'),
   unarchiveDocument: writes('artifact.unarchived'),
+  getComponentDeletion: read,
+  deleteComponent: writes('artifact.deleted'),
+  undeleteComponent: writes('artifact.undeleted'),
+  getDocumentDeletion: read,
+  deleteDocument: writes('artifact.deleted'),
+  undeleteDocument: writes('artifact.undeleted'),
   listIterations: read,
   getIteration: read,
   // What is offered to the caller to recover, about their own iterations: no act of record (the R2 plan).

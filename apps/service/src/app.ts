@@ -87,6 +87,7 @@ import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
 import { restoreHandlers } from './restore.js';
 import { archivalHandlers } from './archival.js';
+import { deletionHandlers } from './deletion.js';
 import { holdHandlers } from './holds.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
@@ -506,6 +507,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...roundHandlers(),
     ...restoreHandlers(),
     ...archivalHandlers(),
+    ...deletionHandlers(),
     ...holdHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),

@@ -290,7 +290,9 @@ const COMPATIBILITY =
   'X-Request-Id may be supplied by a caller and is returned on every response. Listings use opaque ' +
   'cursors; send the next cursor without editing it. For supported mutations, Idempotency-Key ' +
   'makes a retry safe and Idempotent-Replayed marks a replay. Versioned edits require the version ' +
-  'the caller read; a conflict means read again before editing. The current v1 document describes ' +
+  'the caller read; a conflict means read again before editing. A deleted component or document ' +
+  'is answered 410 artifact_deleted to a caller who may read it, and is not found to anyone else. ' +
+  'The current v1 document describes ' +
   'the synchronous HTTP API; the event stream has a separately specified protocol.';
 
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
