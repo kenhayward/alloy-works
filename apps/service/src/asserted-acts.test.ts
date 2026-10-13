@@ -1,4 +1,4 @@
-import { pendingResult, refusePending, uploadForDatasetImage } from '@alloy-works/db';
+import { erasePerson, pendingResult, refusePending, uploadForDatasetImage } from '@alloy-works/db';
 import { queryAs } from '@alloy-works/db/testing';
 import type { Provenance } from '@alloy-works/domain';
 import { tenantPrefix } from '@alloy-works/objects';
@@ -146,6 +146,32 @@ describe('acts on a connection that runs as each person', () => {
       )
     ).rows.map((row) => (row as { identity_key: string }).identity_key);
     expect(keys.sort()).toEqual([`asserted:${h.ids.ada}`, `asserted:${h.ids.grace}`].sort());
+  });
+
+  it('VER-038 no longer shows as whom the source saw a person once they are erased, and keeps the record', async () => {
+    await h.allow(h.ids.ivy!, h.roles.Author!, { kind: 'space', id: h.general });
+    await h.allow(h.ids.ivy!, h.roles['Connection user']!, { kind: 'space', id: h.general });
+    const { document, node } = await placed(binding('b1', built.id));
+    answersAs([['1', 'North']]);
+    const answer = await resolve('ivy', document.id, node, { sharesOwnView: true });
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect((await stateOf('ada', document.id)).held?.provenance).toMatchObject({
+      identity: { principal: h.ids.ivy, asSeen: 'ivy@example.com' },
+    });
+    await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      await trx.deleteFrom('access_grant').where('principal_id', '=', h.ids.ivy!).execute();
+      await erasePerson(trx, h.ids.ivy!, h.ids.ada!);
+    });
+    expect((await stateOf('ada', document.id)).held?.provenance).toMatchObject({
+      identity: { kind: 'endUser', principal: h.ids.ivy, asSeen: null },
+    });
+    // The dataset version itself is immutable content, and still holds it (ER-B).
+    expect(
+      await count(
+        `select count(*)::int as n from $schema.artifact_version
+          where kind = 'dataset' and content::text like '%ivy@example.com%'`,
+      ),
+    ).toBeGreaterThan(0);
   });
 
   it('runs as the subject where the connection names people by it, and as the creator of a token, saying so', async () => {

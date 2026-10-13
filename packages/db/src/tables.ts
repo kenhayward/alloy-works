@@ -100,6 +100,8 @@ export interface PrincipalTable {
   display_name: string | null;
   created_at: Generated<Date>;
   kind: Generated<PrincipalKind>;
+  /** When they were erased (0087; the ER plan, ER-A): their name the fixed word, their address gone. */
+  erased_at: ColumnType<Date | null, never, Date | null>;
 }
 
 export interface ProfileTable {

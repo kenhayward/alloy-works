@@ -293,7 +293,7 @@ const operationTags = {
   ],
   Sessions: ['listSessions', 'endSession', 'endOtherSessions'],
   'Event stream': ['openStream', 'beatPresence', 'leavePresence'],
-  'People and principals': ['listPeople', 'listPrincipals'],
+  'People and principals': ['listPeople', 'listPrincipals', 'getErasure', 'erasePrincipal'],
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
   'Roles and grants': [
@@ -580,6 +580,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'For an environment administrator, revokes a person’s token. The next request with it is refused.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
+  getErasure:
+    'States what erasing a person takes - their sessions, API tokens, group memberships, the invitation holding their address, and every audit log label naming them - what stays - their id and the identifier their provider gives them, every event against the id, and what they wrote - and everything refusing it now: a grant naming them, the caller themselves, or a service. Needs administer at the environment.',
+  erasePrincipal:
+    'Erases a person: their name becomes "Erased person", their address goes, every audit log label naming them takes a fixed word, and their sessions, API tokens, group memberships and invitation go with it. Somebody invited who never signed in is withdrawn. A later sign-in by the same account is refused. Refused while a grant names them, for the caller themselves and for a service. Erasing somebody erased changes nothing. Needs administer at the environment. Audited, naming the administrator and nobody erased.',
   listGroups: 'Lists the environment’s groups and their members in cursor pages.',
   requestAuditExport:
     'Asks for an export of every event matching the filters, as the log stands at the request: a job writes it as JSON Lines, one event a line in the read’s shape. Asking is itself an event.',

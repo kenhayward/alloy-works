@@ -20,6 +20,8 @@ import {
   enqueueJob,
   findApiToken,
   groupNames,
+  holdPrincipal,
+  identifyKnown,
   loadFacts,
   notifyTenant,
   openSecret,
@@ -90,6 +92,7 @@ import { archivalHandlers } from './archival.js';
 import { deletedListingHandlers, deletionHandlers } from './deletion.js';
 import { holdHandlers } from './holds.js';
 import { retentionHandlers } from './retention.js';
+import { erasureHandlers } from './erasure.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
 import { comparisonHandlers } from './comparison.js';
@@ -259,6 +262,17 @@ function sameValue(a: string, b: string): boolean {
 
 const signInFailed = () =>
   new AppError(401, 'sign_in_failed', 'The sign-in could not be completed. Please start again.');
+
+/** Thrown inside a sign-in's transaction, so it commits nothing, where its principal is not held. */
+class SignInUnheld extends Error {}
+
+/** An erased person signing in again (the ER plan, ER-D): their identity is refused for good. */
+const principalErased = () =>
+  new AppError(
+    403,
+    'principal_erased',
+    'This account was erased from this environment, and cannot sign in to it.',
+  );
 
 const routeClosed = () =>
   new AppError(
@@ -457,12 +471,30 @@ export function buildApp(options: AppOptions): FastifyInstance {
     route: SignInRoute,
     groups?: readonly string[],
   ): Promise<FastifyReply> {
-    const token = await db.withTenant(tenant, async (trx) => {
-      // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
-      await actAs(trx, principalId, request.id);
-      if (groups !== undefined) await syncProviderGroups(trx, principalId, groups);
-      return createSession(trx, principalId, route);
-    });
+    let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
+    const token = await db
+      .withTenant(tenant, async (trx) => {
+        // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
+        await actAs(trx, principalId, request.id);
+        // Their row held after any epoch and before anything changes, as an erasure takes them: a
+        // session and its memberships are made before an erasure ends them, or not at all (ER-D).
+        const hold = async () => {
+          held = await holdPrincipal(trx, principalId);
+          if (held !== 'held') throw new SignInUnheld();
+        };
+        if (groups === undefined) await hold();
+        else await syncProviderGroups(trx, principalId, groups, hold);
+        return createSession(trx, principalId, route);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof SignInUnheld) return undefined;
+        throw error;
+      });
+    if (token === undefined) {
+      if (held === 'missing') throw signInFailed();
+      await recordSignInFailure(db, request, tenant, route, 'principal_erased');
+      throw principalErased();
+    }
     reply.setCookie(SESSION_COOKIE, token, { ...COOKIE, maxAge: SESSION_POLICY.absoluteMs / 1000 });
     return reply.redirect('/', 302);
   }
@@ -512,6 +544,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...deletedListingHandlers(db, tenantOf, principalOf),
     ...holdHandlers(),
     ...retentionHandlers(),
+    ...erasureHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),
 
@@ -565,24 +598,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // this environment has never seen can become an invitation's principal, and only for an
       // address the provider verifies; anybody else the provider authenticates is made a principal
       // holding nothing, as before.
+      // An erased person is refused before anything of theirs is written (ER-D).
       const principal = await db.withTenant(tenant, async (trx) => {
-        const known = await trx
-          .updateTable('principal')
-          .set({
-            email: identity.email,
-            email_verified: identity.emailVerified,
-            display_name: identity.name,
-          })
-          .where('issuer', '=', identity.issuer)
-          .where('subject', '=', identity.subject)
-          .returning('id')
-          .executeTakeFirst();
+        const known = await identifyKnown(trx, identity);
         if (known) return known;
         const invited = await claimInvitation(trx, identity, 'organisation', request.id);
         if (invited) return { id: invited };
         // An upsert still: the same identity's first sign-in in another window may land between the
-        // lookup above and this insert.
-        return trx
+        // lookup above and this insert. An erased one is never renamed, and answers nothing.
+        const made = await trx
           .insertInto('principal')
           .values({
             issuer: identity.issuer,
@@ -592,15 +616,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
             display_name: identity.name,
           })
           .onConflict((conflict) =>
-            conflict.columns(['issuer', 'subject']).doUpdateSet({
-              email: identity.email,
-              email_verified: identity.emailVerified,
-              display_name: identity.name,
-            }),
+            conflict
+              .columns(['issuer', 'subject'])
+              .doUpdateSet({
+                email: identity.email,
+                email_verified: identity.emailVerified,
+                display_name: identity.name,
+              })
+              .where('principal.erased_at', 'is', null),
           )
           .returning('id')
-          .executeTakeFirstOrThrow();
+          .executeTakeFirst();
+        return made ?? 'erased';
       });
+      if (principal === 'erased') {
+        await recordSignInFailure(db, request, tenant, 'organisation', 'principal_erased');
+        throw principalErased();
+      }
       return signInAs(request, reply, tenant, principal.id, 'organisation', identity.groups);
     },
 
@@ -656,7 +688,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const code = randomBytes(32).toString('base64url');
       const admitted = await db.withTenant(tenant, async (trx) => {
         const principalId = await admitGoogleAccount(trx, identity, request.id);
-        if (principalId === undefined) return false;
+        if (principalId === undefined || principalId === 'erased') return principalId ?? false;
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
         await trx
@@ -670,6 +702,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
           .execute();
         return true;
       });
+      if (admitted === 'erased') {
+        await recordSignInFailure(db, request, tenant, 'google', 'principal_erased');
+        throw principalErased();
+      }
       if (!admitted) {
         // An account nobody invited names nobody here, and is recorded as such (IAM-013).
         await recordSignInFailure(db, request, tenant, 'google', 'not_invited');

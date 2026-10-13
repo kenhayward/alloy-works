@@ -2133,6 +2133,18 @@ depends on it.
 | `service: src/access.ts`, `src/deletion.ts`, `src/keeps.ts`           | 410 to a reader of a deleted artifact, 404 to anyone else; the routes, `retire` per artifact, keeps at the tenant's `administer`                                                                                                                             |
 | `web: src/lifecycle/Delete.tsx`, `Deleted.tsx`, `admin/Retention.tsx` | Delete and what remains, the Deleted listing, Administration > Retention                                                                                                                                                                                     |
 
+## Erasure
+
+A person's labels erased by an administrator's act, built by [the ER plan](plans/2026-10-13-er-erasure.md)
+under [ADR-0060](decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.md) and designed in
+[lifecycle.md](design/lifecycle.md): ids stay, names and addresses go, and what they wrote remains.
+
+| Where                                                  | Holds                                                                                                                                                                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0087_erasure`, `db: src/erasure.ts` | `principal.erased_at`, kept erased by a trigger; `erase_labels` naming the administrator; `audit_label_erased_on_write`; `erasePerson`, ending access and recording it before the name goes and the labels last |
+| `db: src/sign-in.ts`, `service: src/app.ts`            | Sign-in holding the person's row, refusing the erased before any write                                                                                                                                          |
+| `service: src/erasure.ts`; `web: src/admin/Erase.tsx`  | The routes, a session's alone; Erase in Administration > People                                                                                                                                                 |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

@@ -28,6 +28,7 @@ const WIRE_CODES = {
   'grant.administer_denied_at_tenant': 'grant_administer_denied_at_tenant',
   'grant.role_missing': 'grant_role_missing',
   'grant.subject_missing': 'grant_subject_missing',
+  'grant.subject_erased': 'grant_subject_erased',
   'grant.external_at_tenant': 'grant_external_at_tenant',
   'grant.external_capped': 'grant_external_capped',
   'grant.external_past_cap': 'grant_external_past_cap',
@@ -39,6 +40,7 @@ const WIRE_CODES = {
   'group.value_taken': 'group_value_taken',
   'group.from_provider': 'group_from_provider',
   'group.member_missing': 'group_member_missing',
+  'group.member_erased': 'group_member_erased',
   'format.unsupported': 'format_unsupported',
   'page_reference.without_pdf': 'page_reference_without_pdf',
   'layout.language': 'layout_language',
@@ -124,6 +126,7 @@ const WIRE_CODES = {
   'artifact.deleted': 'artifact_deleted',
   'deletion.refused': 'deletion_refused',
   'reference.deleted': 'reference_deleted',
+  'erasure.refused': 'erasure_refused',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

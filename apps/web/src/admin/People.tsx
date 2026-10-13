@@ -16,6 +16,7 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { EraseDialog } from './Erase.js';
 import { NOT_YOURS, Shown, useListing } from './listing.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -60,8 +61,12 @@ const dayOf = (iso: string, year = true) =>
 const longDay = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-/** A person's status: an invitation not yet accepted, a service at work, or somebody who signed in. */
+/**
+ * A person's status: erased, an invitation not yet accepted, a service at work, or somebody who signed
+ * in.
+ */
 function status(person: ShownPerson) {
+  if (person.erased === true) return <Chip>Erased</Chip>;
   if (person.invited) return <Chip tone="warn">Invited</Chip>;
   return <Chip tone="ok">{person.kind === 'service' ? 'Active' : 'Signed in'}</Chip>;
 }
@@ -432,7 +437,8 @@ function InvitePeople({
 /**
  * Administration's People (ADR-0049; the AD plan, AD5): the people a page at a time and the waiting
  * invitations, each a tab. A person's tokens and what they may do open in the side panel beside the
- * list; Invite people asks for an address; withdrawing an invitation asks first.
+ * list; Invite people asks for an address; withdrawing an invitation and erasing a person (ER-F) ask
+ * first.
  */
 export function People({ client }: { client: Client }) {
   const ids = useId();
@@ -453,7 +459,23 @@ export function People({ client }: { client: Client }) {
   const [open, setOpen] = useState<{ person: ShownPerson; tab: 'tokens' | 'may' } | null>(null);
   const [inviting, setInviting] = useState(false);
   const [withdrawing, setWithdrawing] = useState<InvitationRow | null>(null);
+  const [erasing, setErasing] = useState<ShownPerson | null>(null);
   const [said, setSaid] = useState('');
+  // Who is reading, so Erase is never offered on themselves (ER-F); the route refuses it too.
+  const [me, setMe] = useState<string | null>(null);
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/me')
+      .then(({ data }) => current && data && setMe(data.id))
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  /** Erase is offered on a person: never oneself, a service, or somebody erased already. */
+  const erasable = (person: ShownPerson) =>
+    me !== null && person.id !== me && person.kind !== 'service' && person.erased !== true;
 
   const pending =
     invitations !== null && typeof invitations === 'object'
@@ -610,7 +632,9 @@ export function People({ client }: { client: Client }) {
                                   onSelect: () => setOpen({ person, tab: 'tokens' }),
                                   ...(person.invited
                                     ? { unavailable: 'Not signed in yet, so no tokens' }
-                                    : {}),
+                                    : person.erased === true
+                                      ? { unavailable: 'Erased, so no tokens' }
+                                      : {}),
                                 },
                               ]}
                               more={[
@@ -618,6 +642,15 @@ export function People({ client }: { client: Client }) {
                                   label: 'What they may do',
                                   onSelect: () => setOpen({ person, tab: 'may' }),
                                 },
+                                ...(erasable(person)
+                                  ? [
+                                      {
+                                        label: 'Erase',
+                                        danger: true,
+                                        onSelect: () => setErasing(person),
+                                      },
+                                    ]
+                                  : []),
                               ]}
                             />
                           </td>
@@ -768,6 +801,20 @@ export function People({ client }: { client: Client }) {
           onDone={(words) => {
             setInviting(false);
             setSaid(words);
+            setGeneration((count) => count + 1);
+          }}
+        />
+      )}
+      {erasing !== null && (
+        <EraseDialog
+          client={client}
+          id={erasing.id}
+          name={nameOf(erasing)}
+          onClose={() => setErasing(null)}
+          onErased={() => {
+            setSaid(`Erased ${nameOf(erasing)}.`);
+            setErasing(null);
+            if (open?.person.id === erasing.id) setOpen(null);
             setGeneration((count) => count + 1);
           }}
         />

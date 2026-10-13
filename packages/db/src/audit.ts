@@ -187,8 +187,8 @@ export async function eraseLabels(trx: TenantTransaction, principalId: string): 
 
 /**
  * A principal's label, as `role`: their display name, or the address an invitation holds for somebody
- * who has not signed in yet. Undefined for a principal the tenant does not hold. Refers to them, so
- * erasure reaches it.
+ * who has not signed in yet. Undefined for a principal the tenant does not hold, and for one erased,
+ * who is never named again (the ER plan, ER-D). Refers to them, so erasure reaches it.
  */
 export async function principalLabel(
   trx: TenantTransaction,
@@ -198,8 +198,10 @@ export async function principalLabel(
   const row = await trx
     .selectFrom('principal')
     .select(['display_name', 'email'])
+    .select(sql<boolean>`(to_jsonb(principal) ->> 'erased_at') is not null`.as('erased'))
     .where('id', '=', principalId)
     .executeTakeFirst();
+  if (row?.erased) return undefined;
   return labelled(role, row && (row.display_name ?? row.email), principalId);
 }
 

@@ -533,8 +533,10 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
   // Withdrawing an invitation, like a level dropping out of `manageable`, can take somebody already
   // chosen off the list this page can still offer: the choice is dropped rather than sent, or shown,
   // for somebody no longer nameable.
-  const effectivePerson = people.some((each) => each.id === person) ? person : '';
-  const effectiveExplainFor = people.some((each) => each.id === explainFor) ? explainFor : '';
+  // Nobody erased is granted anything or explained again (the ER final review, M3).
+  const offered = people.filter((each) => each.erased !== true);
+  const effectivePerson = offered.some((each) => each.id === person) ? person : '';
+  const effectiveExplainFor = offered.some((each) => each.id === explainFor) ? explainFor : '';
   // A group is offered only where there are groups the caller may name.
   const offersGroups = groups !== null && groups.length > 0;
   const toGroup = offersGroups && giveTo === 'group';
@@ -700,7 +702,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
     }
   };
 
-  const personOptions = people.map((each) => (
+  const personOptions = offered.map((each) => (
     <option key={each.id} value={each.id}>
       {personName(each)}
       {each.name !== null && each.email !== null ? ` (${each.email})` : ''}

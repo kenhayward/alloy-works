@@ -1207,6 +1207,9 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { name: 'Mine' },
     }),
+    // A person is erased by an administrator of the whole environment (ER-C).
+    getErasure: () => ({ url: `/v1/principals/${ids.alice}/erasure`, status: 403 }),
+    erasePrincipal: () => ({ url: `/v1/principals/${ids.alice}/erase`, status: 403 }),
     listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
     revokePrincipalToken: () => ({
       url: `/v1/principals/${ids.alice}/tokens/${MISSING}`,

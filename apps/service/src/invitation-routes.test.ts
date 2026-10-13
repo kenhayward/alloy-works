@@ -172,6 +172,7 @@ describe('inviting people through the service', () => {
       email: 'ivy@example.com',
       kind: 'user',
       invited: true,
+      erased: false,
     });
     const given = await call('ada', 'POST', '/v1/grants', {
       role: author,

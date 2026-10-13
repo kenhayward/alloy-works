@@ -1,8 +1,10 @@
+import { sql } from 'kysely';
 import type pg from 'pg';
 import { asAdministrator } from './admin.js';
 import { labelled, labels, recordEventSql } from './audit.js';
 import { invitedAddress } from './invitations.js';
 import type { Tenant } from './provision.js';
+import type { TenantTransaction } from './tables.js';
 import { openSecret, sealSecret } from '@alloy-works/sealing';
 
 export type SignInRoute = 'organisation' | 'google';
@@ -17,6 +19,47 @@ export type SignInRoute = 'organisation' | 'google';
 export const signedInAddressQuery = (prefix: string) => `
   select 1 from ${prefix}principal
   where issuer is not null and email_verified and lower(email) = $1`;
+
+/** What a provider asserts of who has just authenticated, as a sign-in keeps it on their principal. */
+export interface SignedInClaims {
+  readonly issuer: string;
+  readonly subject: string;
+  readonly email: string | null;
+  readonly emailVerified: boolean;
+  readonly name: string | null;
+}
+
+/**
+ * Finds somebody this environment has seen, by issuer and subject alone, and keeps their claims: their
+ * address and name as the provider asserts them now. Their row is held to the end of the sign-in's
+ * transaction, so an erasure of them waits for it, or it for the erasure, which it then answers
+ * `erased`, naming them nothing (the ER plan, ER-D). Undefined for somebody never seen.
+ */
+export async function identifyKnown(
+  trx: TenantTransaction,
+  claims: SignedInClaims,
+): Promise<{ readonly id: string } | 'erased' | undefined> {
+  const known = await trx
+    .selectFrom('principal')
+    .select('id')
+    .select(sql<boolean>`erased_at is not null`.as('erased'))
+    .where('issuer', '=', claims.issuer)
+    .where('subject', '=', claims.subject)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!known) return undefined;
+  if (known.erased) return 'erased';
+  await trx
+    .updateTable('principal')
+    .set({
+      email: claims.email,
+      email_verified: claims.emailVerified,
+      display_name: claims.name,
+    })
+    .where('id', '=', known.id)
+    .execute();
+  return { id: known.id };
+}
 
 /**
  * Points a tenant at its organisation's identity provider and permits the route, run as an

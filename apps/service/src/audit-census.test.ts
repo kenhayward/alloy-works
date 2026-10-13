@@ -249,6 +249,14 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   endOtherSessions: writes('authentication.signed_out'),
   listPrincipalTokens: read,
   revokePrincipalToken: writes('token.revoked'),
+  getErasure: read,
+  erasePrincipal: writes(
+    'authentication.signed_out',
+    'token.revoked',
+    'group.member_removed',
+    'invitation.withdrawn',
+    'audit.label_erased',
+  ),
 };
 
 /** The writers that are not routes, by where they are found and their name. */
@@ -293,7 +301,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     seedDevelopmentContent: writes('content.version_cut', 'access.granted'),
     seedDevelopmentConnectionUse: writes('access.granted'),
   },
-  /** Erasure, which no route reaches yet (packages/db/src/audit.ts). */
+  /** Erasure of labels (packages/db/src/audit.ts), which erasing a person ends with. */
   erasure: {
     eraseLabels: writes('audit.label_erased'),
   },

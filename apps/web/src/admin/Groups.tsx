@@ -145,7 +145,12 @@ function Members({
     )
       .then((answer) => {
         if (!current) return;
-        setPeople('items' in answer && answer.items.every(isShownPerson) ? answer.items : 'failed');
+        // Nobody erased joins a group again (the ER final review, M3).
+        setPeople(
+          'items' in answer && answer.items.every(isShownPerson)
+            ? answer.items.filter((each) => each.erased !== true)
+            : 'failed',
+        );
       })
       .catch(() => {
         if (current) setPeople('failed');

@@ -247,6 +247,17 @@ describe('the audit kinds', () => {
         failure: 'invalid_grant',
       }),
     ).toThrow();
+    // An erased person's sign-in is refused naming nobody, and the sessions erasure ends say why.
+    expect(
+      parseAuditDetail('authentication.sign_in_failed', {
+        route: 'organisation',
+        failure: 'principal_erased',
+        count: 1,
+      }),
+    ).toMatchObject({ failure: 'principal_erased' });
+    expect(parseAuditDetail('authentication.signed_out', { ended: 'erased', session: ID })).toEqual(
+      { ended: 'erased', session: ID },
+    );
     // And the thrown words name where it failed, never what it held.
     expect(() => parseAuditDetail('settings.changed', { settings: ['secret=swordfish'] })).toThrow(
       /^(?!.*swordfish).*settings\.0/,

@@ -1,0 +1,31 @@
+/* Erasing's dialog: what goes, what stays, and every reason it may not happen yet (lifecycle.md). */
+.erasing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.erasing h2,
+.erasing h3 {
+  margin: 0;
+  font-size: var(--size-16);
+}
+
+.erasing h3 {
+  font-size: var(--size-14);
+}
+
+.erasing p {
+  margin: 0;
+}
+
+.listed {
+  margin: 0;
+  padding-inline-start: var(--space-24);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}

@@ -49,6 +49,7 @@ const REFUSALS = new Map<GroupRefusal, string>([
     "This group's members are whoever the organisation's sign-in says are in it, so they cannot be named here.",
   ],
   ['group.member_missing', 'There is no such person in this environment.'],
+  ['group.member_erased', 'Somebody chosen was erased, and joins no group again.'],
   [
     'grant.external_at_tenant',
     'This group holds access to the whole environment, which someone from outside the organisation cannot be given.',

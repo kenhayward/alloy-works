@@ -31,6 +31,7 @@ import {
   documentParameterDeclarations,
   documentsHolding,
   documentsResolving,
+  erasedIn,
   finishPending,
   holdObject,
   inSavepoint,
@@ -163,11 +164,11 @@ import { connectionFacts, requireSqlPermitted } from './sql-access.js';
  * The stored record is unchanged; the rows, their checksum and count, each declared column's name and
  * type, and the parameter values the document itself supplied stay inspectable.
  */
-const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
+const provenanceView = (provenance: Provenance, readsDefinition: boolean, erased = false) =>
   (readsDefinition
-    ? provenance
+    ? withIdentity(provenance, erased)
     : {
-        ...provenance,
+        ...withIdentity(provenance, erased),
         connection: null,
         ran:
           'sql' in provenance.ran
@@ -177,6 +178,38 @@ const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
               : { object: null },
         columns: provenance.columns.map((column) => ({ ...column, from: null })),
       }) as unknown as z.infer<typeof ProvenanceView>;
+
+/**
+ * The record with whose view it was, and, unless that person is since erased, the name the source saw
+ * them by: kept in the dataset version, never shown once they are (the ER plan, ER-B).
+ */
+const withIdentity = (provenance: Provenance, erased: boolean): Provenance =>
+  erased && provenance.identity.kind === 'endUser'
+    ? ({
+        ...provenance,
+        identity: { ...provenance.identity, asSeen: null },
+      } as unknown as Provenance)
+    : provenance;
+
+/** Whether the person whose own view a record is has been erased, each asked once a request. */
+function erasedViewer(trx: TenantTransaction) {
+  const known = new Map<string, Promise<boolean>>();
+  return (provenance: Provenance) => {
+    if (provenance.identity.kind !== 'endUser') return Promise.resolve(false);
+    const principal = provenance.identity.principal;
+    let erased = known.get(principal);
+    if (!erased) {
+      erased = trx
+        .selectFrom('principal')
+        .select(erasedIn().as('erased'))
+        .where('id', '=', principal)
+        .executeTakeFirst()
+        .then((row) => row?.erased === true);
+      known.set(principal, erased);
+    }
+    return erased;
+  };
+}
 
 /** Whether the caller may read a query definition, each asked once a request. */
 export function definitionReader(trx: TenantTransaction, caller: Caller) {
@@ -1462,6 +1495,7 @@ function viewer(
 ) {
   // `read` on any artifact, each asked once: a definition, and a connection.
   const reads = definitionReader(trx, caller);
+  const erased = erasedViewer(trx);
   const facts = new Map<string, Promise<boolean>>();
   /** Whether the caller holds a permission on an artifact, each asked once. */
   const may = (permission: 'edit' | 'use_connection', artifact: string) => {
@@ -1712,7 +1746,11 @@ function viewer(
           dataset: held.held.dataset,
           version: held.held.version,
           number: `${held.held.number.revision}.${held.held.number.version}`,
-          provenance: provenanceView(held.held.provenance, readsDefinition),
+          provenance: provenanceView(
+            held.held.provenance,
+            readsDefinition,
+            await erased(held.held.provenance),
+          ),
           key: [...(await keyOf(held.held.provenance.queryDefinition.version))],
           name: name?.name ?? null,
           stale,
@@ -1730,6 +1768,7 @@ function viewer(
                 provenance: provenanceView(
                   held.waiting.provenance,
                   await reads(held.waiting.provenance.queryDefinition.artifact),
+                  await erased(held.waiting.provenance),
                 ),
                 taken: viewTaken(placed, taken, held.waiting.version, held.waiting.provenance),
               }
@@ -2879,6 +2918,7 @@ export function bindingHandlers(
         provenance: provenanceView(
           found.provenance,
           await definitionReader(trx, callerOf(request))(found.provenance.queryDefinition.artifact),
+          await erasedViewer(trx)(found.provenance),
         ),
         result: { columns: result.columns, rows: result.rows },
       };

@@ -257,7 +257,11 @@ export async function recordMembershipsRemoved(
 }
 
 export type MembershipAnswer =
-  { readonly added: true } | { readonly refused: ExternalRefusal | 'group.from_provider' };
+  | { readonly added: true }
+  | { readonly refused: ExternalRefusal | 'group.from_provider' | 'group.member_erased' };
+
+/** Whether the principal row is erased, read so a schema before 0087 answers no. */
+const erased = sql<boolean>`(to_jsonb(principal) ->> 'erased_at') is not null`;
 
 /**
  * Adds a principal to a tenant-managed group; adding one already there changes nothing, and answers
@@ -292,8 +296,11 @@ export async function addToGroup(
   const principal = await trx
     .selectFrom('principal')
     .select('kind')
+    .select(erased.as('erased'))
     .where('id', '=', principalId)
     .executeTakeFirstOrThrow();
+  // Nobody erased joins anything again (the ER final review, M3).
+  if (principal.erased) return { refused: 'group.member_erased' };
   if (principal.kind === 'external') {
     const refusal = await externalJoinRefusal(trx, groupId);
     if (refusal) return { refused: refusal };
@@ -320,7 +327,11 @@ export type SetMembersAnswer =
   | { readonly set: true }
   | {
       readonly refused:
-        ExternalRefusal | 'group.missing' | 'group.from_provider' | 'group.member_missing';
+        | ExternalRefusal
+        | 'group.missing'
+        | 'group.from_provider'
+        | 'group.member_missing'
+        | 'group.member_erased';
     };
 
 /**
@@ -355,6 +366,7 @@ export async function setGroupMembers(
       : await trx
           .selectFrom('principal')
           .select(['id', 'kind'])
+          .select(erased.as('erased'))
           .where('id', 'in', wanted)
           .execute();
   if (people.length !== wanted.length) return { refused: 'group.member_missing' };
@@ -370,6 +382,7 @@ export async function setGroupMembers(
   );
   const joining = people.filter((person) => !current.has(person.id));
   const leaving = [...current].filter((id) => !wanted.includes(id));
+  if (joining.some((person) => person.erased)) return { refused: 'group.member_erased' };
 
   if (joining.some((person) => person.kind === 'external')) {
     const refusal = await externalJoinRefusal(trx, groupId);
@@ -458,11 +471,14 @@ export async function deleteGroup(
  *
  * Holds no lock of its own before the epoch, and so belongs in a transaction that has taken none it
  * could be waiting on - never the claim of an invitation, whose rows a withdrawal takes after the epoch.
+ * `beforeChange` runs after any epoch is taken and before anything is written: a sign-in holds the
+ * principal's row there, in the order an erasure takes them, and throws to change nothing (ER-D).
  */
 export async function syncProviderGroups(
   trx: TenantTransaction,
   principalId: string,
   values: readonly string[],
+  beforeChange?: () => Promise<void>,
 ): Promise<void> {
   const asserted = [...new Set(values)];
   const differences = async () => {
@@ -492,8 +508,10 @@ export async function syncProviderGroups(
   };
 
   let found = await differences();
-  if (found.joining.length > 0 || found.leaving.length > 0) {
-    await lockAccessForChange(trx);
+  const changing = found.joining.length > 0 || found.leaving.length > 0;
+  if (changing) await lockAccessForChange(trx);
+  await beforeChange?.();
+  if (changing) {
     found = await differences();
     for (const group of found.leaving) {
       await recordMembershipEvent(

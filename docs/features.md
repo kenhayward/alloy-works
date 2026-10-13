@@ -990,6 +990,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   documents or both, in every space or in one. Every keep reaching one applies and the longest wins,
   counted from its latest version; nothing is ever deleted because a keep has passed. Setting and
   clearing a keep are audited. Through the API, `GET` and `PUT /v1/retention`.
+- **Erasure.** An administrator of the environment erases a person from Administration > **People**,
+  under More actions: never themselves, a service, or somebody erased already. The dialog says first
+  what goes, what stays and any grant naming them, which must be removed before. Their name becomes
+  _Erased person_ wherever it is shown, their address goes, every audit log label naming them takes
+  a fixed word, and their sessions, API tokens, group memberships and invitation go with it; somebody
+  invited who never signed in is withdrawn. Their id and the identifier their provider gives them
+  stay, so whatever they wrote, every grant they made and every event still holds, and their account
+  is refused if it signs in again. What a data source saw them as is kept in the data and no longer
+  shown; audit log exports made before keep what they held. The People list shows them **Erased**.
+  Erasing is audited, naming the administrator. Through the API, `GET /v1/principals/{id}/erasure`
+  and `POST /v1/principals/{id}/erase`.
 - **Needs your attention.** Home lists, for the person signed in, what waits on them that they may
   resolve, each with its reason and one link, and nothing they may not read listed or counted: a
   document whose latest publish of theirs failed, its reason in brief, linking to its Publishing
@@ -1532,7 +1543,8 @@ Named explicitly so nobody has to read the source to find out:
   once made.
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
-- No way to delete a component or a document, including one made by mistake.
+- Erasing a person leaves what they wrote: content, titles, comments and messages stay as written,
+  their name included wherever somebody typed it, and audit log exports made before keep it too.
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.

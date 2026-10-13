@@ -3,6 +3,12 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.163.0 - 2026-10-13 (PR #591)
+
+### Added
+
+- **Erasure.** An environment administrator, signed in, erases a person from Administration > People: their name and address, every audit log label naming them and their access go, by one audited act. What goes, what stays and any grant to remove first are shown before. Their account can never sign in again, and nobody may grant them access or add them to a group. What they wrote stays.
+
 ## 0.162.0 - 2026-10-13 (PR #590)
 
 ### Added

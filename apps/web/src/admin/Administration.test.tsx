@@ -178,7 +178,14 @@ const administering =
 
 /** The service as People meets it: people a page at a time, invitations, tokens, and why. */
 function peopleService() {
-  const people = [
+  const people: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    kind: string;
+    invited: boolean;
+    erased?: boolean;
+  }[] = [
     { id: 'p1', name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
     { id: 'p2', name: 'Marta', email: 'marta@partner.test', kind: 'external', invited: false },
     { id: 'p3', name: 'Publishing robot', email: null, kind: 'service', invited: false },
@@ -213,6 +220,7 @@ function peopleService() {
   ];
   const sent: { method: string; path: string; body: unknown }[] = [];
   const asked: URL[] = [];
+  const erasure = { granted: 0 };
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
@@ -244,6 +252,26 @@ function peopleService() {
         1,
       );
       return json(200, { withdrawn: withdrawing[1] });
+    }
+    if (route === 'GET /v1/me') {
+      return json(200, {
+        id: 'p1',
+        displayName: 'Ada',
+        email: 'ada@example.test',
+        environment: 'Development',
+      });
+    }
+    if (route === 'GET /v1/principals/p2/erasure') {
+      return json(200, {
+        person: { id: 'p2', kind: 'external', invited: false, erased: false },
+        erases: { sessions: 1, tokens: 2, memberships: 1, invitation: true, labels: 12 },
+        remains: { events: 30 },
+        refusals: erasure.granted > 0 ? [{ code: 'granted', grants: erasure.granted }] : [],
+      });
+    }
+    if (route === 'POST /v1/principals/p2/erase') {
+      people[1] = { ...people[1]!, name: 'Erased person', email: null, erased: true };
+      return json(200, { erased: true, labels: 14 });
     }
     if (route === 'GET /v1/principals/p1/tokens') return json(200, { items: tokens, next: null });
     if (route.startsWith('DELETE /v1/principals/p1/tokens/')) {
@@ -280,6 +308,7 @@ function peopleService() {
     client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
     sent,
     asked,
+    erasure,
   };
 }
 
@@ -390,6 +419,61 @@ describe('People in Administration', () => {
     expect([explained.searchParams.get('principal'), explained.searchParams.get('target')]).toEqual(
       ['p1', 'tenant'],
     );
+  });
+
+  it('VER-038 erases a person only after saying what goes and what stays, then shows them Erased', async () => {
+    const { client, sent } = peopleService();
+    const { table, page } = await openPeople(client);
+    const offered = async (name: RegExp, who: string) => {
+      await userEvent.click(
+        within(row(table, name)).getByRole('button', { name: `More actions for ${who}` }),
+      );
+      const erase = screen.queryByRole('menuitem', { name: 'Erase' });
+      return erase;
+    };
+    // Never oneself, nor a service.
+    expect(await offered(/^Ada /, 'Ada')).toBeNull();
+    await userEvent.keyboard('{Escape}');
+    expect(await offered(/Publishing robot/, 'Publishing robot')).toBeNull();
+    await userEvent.keyboard('{Escape}');
+
+    await userEvent.click((await offered(/Marta/, 'Marta'))!);
+    const asking = await screen.findByRole('dialog', { name: 'Erase Marta?' });
+    expect(
+      await within(asking).findByText(/becomes "Erased person" everywhere/),
+    ).toBeInTheDocument();
+    expect(asking).toHaveTextContent('12 audit log labels naming them');
+    expect(asking).toHaveTextContent('1 session');
+    expect(asking).toHaveTextContent('2 API tokens');
+    expect(asking).toHaveTextContent('30 audit events');
+    expect(asking).toHaveTextContent('This cannot be undone.');
+    expect(asking.textContent).not.toMatch(/[\u2013\u2014]/);
+    await userEvent.click(within(asking).getByRole('button', { name: 'Erase' }));
+    expect(await within(page).findByText('Erased Marta.')).toBeInTheDocument();
+    expect(sent).toEqual([{ method: 'POST', path: '/v1/principals/p2/erase', body: undefined }]);
+    const erased = await within(table).findByRole('row', { name: /^Erased person/ });
+    expect(within(erased).getByText('Erased')).toBeInTheDocument();
+    await userEvent.click(
+      within(erased).getByRole('button', { name: 'More actions for Erased person' }),
+    );
+    expect(screen.queryByRole('menuitem', { name: 'Erase' })).toBeNull();
+  });
+
+  it('says a grant must go before a person is erased, and offers nothing to erase', async () => {
+    const { client, sent, erasure } = peopleService();
+    erasure.granted = 2;
+    const { table } = await openPeople(client);
+    await userEvent.click(
+      within(row(table, /Marta/)).getByRole('button', { name: 'More actions for Marta' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Erase' }));
+    const asking = await screen.findByRole('dialog', { name: 'Erase Marta?' });
+    expect(
+      await within(asking).findByText('2 grants name them: remove their access first.'),
+    ).toBeInTheDocument();
+    expect(within(asking).queryByRole('button', { name: 'Erase' })).toBeNull();
+    await userEvent.click(within(asking).getByRole('button', { name: 'Cancel' }));
+    expect(sent).toEqual([]);
   });
 
   it('pages the people, saying how many are shown of how many there are', async () => {
@@ -904,7 +988,12 @@ const personOf = (id: string, name: string) => ({
  * the second; `authors` names who is in Authors to begin with.
  */
 function groupsService(authors: readonly string[] = ['p2']) {
-  const people = [personOf('p1', 'Ada'), personOf('p2', 'Grace'), personOf('p3', 'Alice')];
+  const people = [
+    personOf('p1', 'Ada'),
+    personOf('p2', 'Grace'),
+    personOf('p3', 'Alice'),
+    { ...personOf('p4', 'Erased person'), email: null, erased: true },
+  ];
   const member = (id: string) => {
     const person = people.find((each) => each.id === id)!;
     return { id: person.id, name: person.name, email: person.email };
@@ -914,7 +1003,7 @@ function groupsService(authors: readonly string[] = ['p2']) {
     name: string;
     source: 'tenant' | 'provider';
     providerValue: string | null;
-    members: { id: string; name: string; email: string }[];
+    members: { id: string; name: string; email: string | null }[];
   }[] = [
     {
       id: 'g1',
@@ -1100,6 +1189,8 @@ describe('Groups in Administration', () => {
     expect(screen.getByRole('table', { name: 'Groups' })).toBe(table);
     expect(await within(choosing).findByRole('checkbox', { name: /^Grace/ })).toBeChecked();
     expect(choosing).toHaveTextContent('1 of 3 people chosen');
+    // Nobody erased joins a group again.
+    expect(within(choosing).queryByRole('checkbox', { name: /Erased person/ })).toBeNull();
     await userEvent.type(within(choosing).getByRole('searchbox', { name: 'Find a person' }), 'Ali');
     expect(within(choosing).getAllByRole('checkbox')).toHaveLength(1);
     await userEvent.clear(within(choosing).getByRole('searchbox', { name: 'Find a person' }));

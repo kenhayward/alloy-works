@@ -1,7 +1,10 @@
 import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
+  createGroup,
   createTenant,
+  ERASED_NAME,
+  erasePerson,
   migrate,
   type Tenant,
   type TenantDatabase,
@@ -9,11 +12,13 @@ import {
 import {
   auditEvents,
   freshDatabase,
+  holdingTransaction,
   newestEvent,
   queryAs,
   TEST_PASSWORDS,
   type TestDatabase,
   testTenantDatabase,
+  untilWaitingOnLocks,
 } from '@alloy-works/db/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
@@ -36,6 +41,7 @@ describe('signing in with the organisation provider', () => {
   let production: Tenant;
   let copied: Tenant;
   let before: Tenant;
+  let erasing: Tenant;
   const lines: string[] = [];
 
   beforeAll(async () => {
@@ -52,6 +58,7 @@ describe('signing in with the organisation provider', () => {
             callback('other.acme.alloy.test'),
             callback('copied.acme.alloy.test'),
             callback('before.acme.alloy.test'),
+            callback('erased.acme.alloy.test'),
           ],
         },
       ],
@@ -90,6 +97,12 @@ describe('signing in with the organisation provider', () => {
       hostnames: ['before.acme.alloy.test'],
     });
     await configureStandIn(db.adminUrl, before, { issuer: idp.issuer, clientId: 'alloy' });
+    erasing = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Erasing' },
+      hostnames: ['erased.acme.alloy.test'],
+    });
+    await configureStandIn(db.adminUrl, erasing, { issuer: idp.issuer, clientId: 'alloy' });
     tenantDb = testTenantDatabase(db.serviceUrl);
     app = buildApp({
       db: tenantDb,
@@ -191,11 +204,11 @@ describe('signing in with the organisation provider', () => {
     expect(response.json()).toMatchObject({ code: 'sign_in_route_closed', rule: 'IAM-043' });
   });
 
-  /** Signs Ada in at `host`, and answers the callback's response. */
-  async function signInAt(host: string) {
+  /** Signs Ada, or `who`, in at `host`, and answers the callback's response. */
+  async function signInAt(host: string, who = 'ada') {
     const started = await app.inject({ url: '/v1/sign-in/organisation', headers: { host } });
     const signIn = started.cookies.find((candidate) => candidate.name === '__Host-aw_signin')!;
-    const back = await completeAtStandIn(started.headers.location!, 'ada', idp.issuer);
+    const back = await completeAtStandIn(started.headers.location!, who, idp.issuer);
     return app.inject({
       url: `${back.pathname}${back.search}`,
       headers: { host, cookie: `${signIn.name}=${signIn.value}` },
@@ -373,6 +386,90 @@ describe('signing in with the organisation provider', () => {
     expect(later.map((event) => event.detail)).toEqual([
       { route: 'organisation', failure: 'provider_error', count: 5 },
     ]);
+  });
+
+  it('refuses an erased person signing in again, naming nobody, and never names them again (the ER plan, ER-D)', async () => {
+    await freshTally('erased.acme.alloy.test');
+    expect((await signInAt('erased.acme.alloy.test', 'ada')).statusCode).toBe(302);
+    expect((await signInAt('erased.acme.alloy.test', 'grace')).statusCode).toBe(302);
+    const id = (subject: string) =>
+      tenantDb.withTenant(erasing, (trx) =>
+        trx
+          .selectFrom('principal')
+          .select('id')
+          .where('subject', '=', subject)
+          .executeTakeFirstOrThrow()
+          .then((row) => row.id),
+      );
+    const [ada, grace] = [await id('ada'), await id('grace')];
+    await tenantDb.withTenant(erasing, (trx) => erasePerson(trx, grace, ada), {
+      actorKind: 'person',
+      actor: ada,
+      actorLabel: 'Ada',
+    });
+
+    let answer: Awaited<ReturnType<typeof signInAt>> | undefined;
+    const events = await recorded('erased.acme.alloy.test', async () => {
+      answer = await signInAt('erased.acme.alloy.test', 'grace');
+    });
+    expect(answer!.statusCode).toBe(403);
+    expect(answer!.json()).toMatchObject({ code: 'principal_erased' });
+    expect(answer!.cookies.find((each) => each.name === '__Host-aw_session')).toBeUndefined();
+    expect(
+      events.map((event) => [event.kind, event.actorKind, event.subject, event.labels]),
+    ).toEqual([['authentication.sign_in_failed', 'anonymous', null, {}]]);
+    expect(events[0]!.detail).toEqual({
+      route: 'organisation',
+      failure: 'principal_erased',
+      count: 1,
+    });
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select email, display_name, (select count(*)::int from ${erasing.schema}.session s
+          where s.principal_id = p.id) as sessions
+        from ${erasing.schema}.principal p where id = $1`,
+      [grace],
+    );
+    expect(rows).toEqual([{ email: null, display_name: ERASED_NAME, sessions: 0 }]);
+  });
+
+  it('refuses a sign-in whose groups wait on an erasure, settling no membership (the ER plan, ER-D)', async () => {
+    // Ada signed in before Ivy's group stood for anything she asserts.
+    expect((await signInAt('erased.acme.alloy.test', 'ada')).statusCode).toBe(302);
+    const ada = (
+      await queryAs(db.adminUrl, `select id from ${erasing.schema}.principal where subject = 'ada'`)
+    ).rows[0]!.id as string;
+    await tenantDb.withTenant(
+      erasing,
+      (trx) => createGroup(trx, 'Authors', { providerValue: 'authors' }),
+      { actorKind: 'system' },
+    );
+    // The epoch held, so the erasure waits on it first, then the sign-in settling her groups.
+    const release = await holdingTransaction(
+      db.adminUrl,
+      `select singleton from ${erasing.schema}.access_epoch for update`,
+    );
+    const erased = tenantDb.withTenant(
+      erasing,
+      (trx) => erasePerson(trx, ada, '00000000-0000-4000-8000-000000000001'),
+      { actorKind: 'system' },
+    );
+    await untilWaitingOnLocks(db.adminUrl, 1);
+    const signing = signInAt('erased.acme.alloy.test', 'ada');
+    await untilWaitingOnLocks(db.adminUrl, 2);
+    await release();
+    expect(await erased).toMatchObject({ answer: 'erased' });
+    const answer = await signing;
+    expect(answer.statusCode).toBe(403);
+    expect(answer.json()).toMatchObject({ code: 'principal_erased' });
+    const { rows } = await queryAs(
+      db.adminUrl,
+      `select (select count(*)::int from ${erasing.schema}.group_member where principal_id = $1)
+          as memberships,
+        (select count(*)::int from ${erasing.schema}.session where principal_id = $1) as sessions`,
+      [ada],
+    );
+    expect(rows).toEqual([{ memberships: 0, sessions: 0 }]);
   });
 
   it('never writes a client secret to its log or to a refusal', async () => {

@@ -17161,6 +17161,10 @@
         {
           "id": "VER-037",
           "howItIsMet": "A keep and a hold each refuse deleting anything, a baseline's dependants among them"
+        },
+        {
+          "id": "VER-038",
+          "howItIsMet": "Erasure, below: what is erased and what remains, stated and shown before erasing"
         }
       ]
     },
@@ -17992,10 +17996,6 @@
         {
           "id": "VER-036",
           "howItIsMet": "Versions, revisions and baselines have no expiry of their own; retention is a policy decision applied above this layer"
-        },
-        {
-          "id": "VER-038",
-          "howItIsMet": "The author of a version is a reference to a principal, never a copy of their details, so erasure acts in one place and the record of the act survives"
         },
         {
           "id": "VER-039",
@@ -19130,37 +19130,43 @@
     {
       "id": "DAT-084",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 284,
+      "line": 310,
       "kind": "title"
     },
     {
       "id": "DAT-091",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 385,
+      "line": 411,
       "kind": "rule"
     },
     {
       "id": "DAT-091",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 377,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "DAT-102",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 414,
+      "line": 440,
       "kind": "rule"
     },
     {
       "id": "DAT-102",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 410,
+      "line": 436,
       "kind": "title"
     },
     {
       "id": "DAT-117",
       "file": "apps/service/src/asserted-acts.test.ts",
       "line": 114,
+      "kind": "title"
+    },
+    {
+      "id": "VER-038",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 151,
       "kind": "title"
     },
     {
@@ -19226,7 +19232,7 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 336,
+      "line": 344,
       "kind": "title"
     },
     {
@@ -19472,7 +19478,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1169,
+      "line": 1171,
       "kind": "title"
     },
     {
@@ -19668,6 +19674,12 @@
       "kind": "title"
     },
     {
+      "id": "VER-038",
+      "file": "apps/service/src/erasure-routes.test.ts",
+      "line": 194,
+      "kind": "title"
+    },
+    {
       "id": "IAM-059",
       "file": "apps/service/src/first-administrator.test.ts",
       "line": 127,
@@ -19712,7 +19724,7 @@
     {
       "id": "IAM-054",
       "file": "apps/service/src/google.test.ts",
-      "line": 31,
+      "line": 33,
       "kind": "title"
     },
     {
@@ -20156,25 +20168,25 @@
     {
       "id": "IAM-007",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 130,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 284,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "IAM-043",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 191,
+      "line": 204,
       "kind": "rule"
     },
     {
       "id": "IAM-075",
       "file": "apps/service/src/sign-in.test.ts",
-      "line": 205,
+      "line": 218,
       "kind": "title"
     },
     {
@@ -20468,19 +20480,19 @@
     {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 1474,
+      "line": 1506,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 809,
+      "line": 841,
       "kind": "title"
     },
     {
       "id": "IAM-031",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
-      "line": 874,
+      "line": 906,
       "kind": "title"
     },
     {
@@ -20516,13 +20528,19 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1257,
+      "line": 1348,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1399,
+      "line": 1490,
+      "kind": "title"
+    },
+    {
+      "id": "VER-038",
+      "file": "apps/web/src/admin/Administration.test.tsx",
+      "line": 424,
       "kind": "title"
     },
     {
@@ -22821,6 +22839,12 @@
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
       "line": 390,
+      "kind": "title"
+    },
+    {
+      "id": "VER-038",
+      "file": "packages/db/src/erasure.test.ts",
+      "line": 197,
       "kind": "title"
     },
     {
@@ -25616,13 +25640,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 717,
+      "line": 732,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 383,
+      "line": 398,
       "kind": "title"
     },
     {

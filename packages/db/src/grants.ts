@@ -40,6 +40,7 @@ export type GrantRefusal =
   | ExternalRefusal
   | 'grant.role_missing'
   | 'grant.subject_missing'
+  | 'grant.subject_erased'
   | 'grant.duplicate'
   | 'grant.allow_without_read'
   | 'grant.administer_denied_at_tenant';
@@ -88,18 +89,22 @@ export function externalRefusal(
   return undefined;
 }
 
-/** Whether the grant reaches an external principal; undefined when the tenant holds no such subject. */
+/**
+ * Whether the grant reaches an external principal; undefined when the tenant holds no such subject,
+ * and 'erased' for a person erased, whom nothing is granted again (the ER final review, M3).
+ */
 async function reachesExternal(
   trx: TenantTransaction,
   subject: NewGrant['subject'],
-): Promise<boolean | undefined> {
+): Promise<boolean | 'erased' | undefined> {
   if ('principal' in subject) {
     const row = await trx
       .selectFrom('principal')
       .select('kind')
+      .select(sql<boolean>`(to_jsonb(principal) ->> 'erased_at') is not null`.as('erased'))
       .where('id', '=', subject.principal)
       .executeTakeFirst();
-    return row && row.kind === 'external';
+    return row && (row.erased ? 'erased' : row.kind === 'external');
   }
   const group = await trx
     .selectFrom('access_group')
@@ -137,6 +142,7 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
   if (!role) return { refused: 'grant.role_missing' };
   const external = await reachesExternal(trx, input.subject);
   if (external === undefined) return { refused: 'grant.subject_missing' };
+  if (external === 'erased') return { refused: 'grant.subject_erased' };
   // An allow must hold read; a denial may name any role (access.md, "Permissions").
   if (input.effect === 'allow' && !allowable(role.permissions)) {
     return { refused: 'grant.allow_without_read' };

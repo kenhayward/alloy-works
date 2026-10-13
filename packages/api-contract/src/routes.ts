@@ -1,6 +1,7 @@
 import { archivalRoutes } from './archival.js';
 import { deletionRoutes } from './deletion.js';
 import { holdRoutes } from './holds.js';
+import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
 import { assetRoutes } from './assets.js';
 import { auditRoutes } from './audit.js';
@@ -74,6 +75,10 @@ const signInFailed = {
   description: 'The sign-in could not be completed',
   schema: ErrorBody,
 } as const;
+const erased = {
+  description: 'principal_erased: this account was erased from this environment',
+  schema: ErrorBody,
+} as const;
 
 /** access.md, "Refusing": an artifact the caller may not read is one that does not exist. */
 const notFound = {
@@ -136,6 +141,7 @@ const ownRoutes = {
     responses: {
       302: { description: 'Signed in, and on to the application' },
       401: signInFailed,
+      403: erased,
     },
   },
   startGoogleSignIn: {
@@ -162,7 +168,11 @@ const ownRoutes = {
     responses: {
       302: { description: 'Admitted, and on to the environment that asked, with a one-time code' },
       401: signInFailed,
-      403: { description: 'This account is not invited to that environment', schema: ErrorBody },
+      403: {
+        description:
+          'not_invited: this account is not invited to that environment; or principal_erased: it was erased from it',
+        schema: ErrorBody,
+      },
       404: { description: 'This is not the sign-in address', schema: ErrorBody },
     },
   },
@@ -177,6 +187,7 @@ const ownRoutes = {
     responses: {
       302: { description: 'Signed in, and on to the application' },
       401: signInFailed,
+      403: erased,
     },
   },
   openStream: {
@@ -331,7 +342,8 @@ type Routes = typeof ownRoutes &
   typeof archivalRoutes &
   typeof holdRoutes &
   typeof deletionRoutes &
-  typeof retentionRoutes;
+  typeof retentionRoutes &
+  typeof erasureRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -370,6 +382,7 @@ export const routes: Routes = {
   ...holdRoutes,
   ...deletionRoutes,
   ...retentionRoutes,
+  ...erasureRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

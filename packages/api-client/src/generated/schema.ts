@@ -2139,6 +2139,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/principals/{id}/erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erase a person: their name, address and audit labels, and their access
+         * @description Erases a person: their name becomes "Erased person", their address goes, every audit log label naming them takes a fixed word, and their sessions, API tokens, group memberships and invitation go with it. Somebody invited who never signed in is withdrawn. A later sign-in by the same account is refused. Refused while a grant names them, for the caller themselves and for a service. Erasing somebody erased changes nothing. Needs administer at the environment. Audited, naming the administrator and nobody erased.
+         */
+        post: operations["erasePrincipal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/principals/{id}/erasure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What erasing a person takes, what stays, and what refuses it
+         * @description States what erasing a person takes - their sessions, API tokens, group memberships, the invitation holding their address, and every audit log label naming them - what stays - their id and the identifier their provider gives them, every event against the id, and what they wrote - and everything refusing it now: a grant naming them, the caller themselves, or a service. Needs administer at the environment.
+         */
+        get: operations["getErasure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/principals/{id}/tokens": {
         parameters: {
             query?: never;
@@ -8621,7 +8661,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -8858,7 +8899,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -19586,7 +19628,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -19823,7 +19866,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -20339,7 +20383,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -20576,7 +20621,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -21007,7 +21053,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -21244,7 +21291,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -21799,7 +21847,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -22036,7 +22085,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -22394,7 +22444,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -22631,7 +22682,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -23022,7 +23074,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -23259,7 +23312,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -23650,7 +23704,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -23887,7 +23942,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -24521,7 +24577,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -24758,7 +24815,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -25129,7 +25187,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -25366,7 +25425,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -25903,7 +25963,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -26140,7 +26201,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -26498,7 +26560,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -26735,7 +26798,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -27166,7 +27230,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -27403,7 +27468,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -27976,7 +28042,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -28213,7 +28280,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -28606,7 +28674,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -28843,7 +28912,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -29234,7 +29304,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -29471,7 +29542,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -29842,7 +29914,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -30079,7 +30152,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -30622,7 +30696,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -30859,7 +30934,8 @@ export interface operations {
                                     principal: string;
                                     /** @enum {string} */
                                     signInRoute: "organisation" | "google" | "token";
-                                    asSeen: string;
+                                    /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                    asSeen: string | null;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -31217,7 +31293,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -31454,7 +31531,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -31885,7 +31963,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -32122,7 +32201,8 @@ export interface operations {
                                         principal: string;
                                         /** @enum {string} */
                                         signInRoute: "organisation" | "google" | "token";
-                                        asSeen: string;
+                                        /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                        asSeen: string | null;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -32629,7 +32709,8 @@ export interface operations {
                                 principal: string;
                                 /** @enum {string} */
                                 signInRoute: "organisation" | "google" | "token";
-                                asSeen: string;
+                                /** @description The name the source saw the person by, or null where they have since been erased; the record still holds it */
+                                asSeen: string | null;
                             };
                             at: string;
                             durationMs: number;
@@ -39255,7 +39336,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_subject_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -39956,7 +40037,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
+            /** @description group_from_provider, group_member_missing, group_member_erased, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -42324,6 +42405,8 @@ export interface operations {
                             kind: "user" | "service" | "external";
                             /** @description Invited by address, and not yet signed in */
                             invited: boolean;
+                            /** @description Erased: named "Erased person", their address gone, and never signed in again */
+                            erased: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -42393,6 +42476,324 @@ export interface operations {
                 };
             };
             /** @description No such level or grant in this environment, or none the caller may see */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    erasePrincipal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Erased, or erased already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "erased": true,
+                     *       "labels": 0
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        erased: true;
+                        /** @description How many audit labels this erasure erased; 0 where they were erased already */
+                        labels: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment; or token_not_allowed: a token never erases */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such person in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description erasure_refused: a grant names them, they are the caller, or a service */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description erasure_refused: every reason */
+                        refusals?: {
+                            /**
+                             * @description granted: a grant names them, `grants` saying how many; remove their access first. self: nobody erases themselves. service: a service principal is no person
+                             * @enum {string}
+                             */
+                            code: "granted" | "self" | "service";
+                            /** @description granted: how many grants name them */
+                            grants?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getErasure: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What erasing them would do now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "person": {
+                     *         "id": "example",
+                     *         "kind": "user",
+                     *         "invited": false,
+                     *         "erased": false
+                     *       },
+                     *       "erases": {
+                     *         "sessions": 0,
+                     *         "tokens": 0,
+                     *         "memberships": 0,
+                     *         "invitation": false,
+                     *         "labels": 0
+                     *       },
+                     *       "remains": {
+                     *         "events": 0
+                     *       },
+                     *       "refusals": []
+                     *     }
+                     */
+                    "application/json": {
+                        person: {
+                            id: string;
+                            /** @enum {string} */
+                            kind: "user" | "service" | "external";
+                            /** @description Invited and never signed in: erasing withdraws the invitation, and them with it */
+                            invited: boolean;
+                            /** @description Whether they are erased now */
+                            erased: boolean;
+                        };
+                        /** @description What goes: their name, which becomes "Erased person", their address, and every audit label naming them, with their access */
+                        erases: {
+                            /** @description Sessions ended */
+                            sessions: number;
+                            /** @description API tokens revoked */
+                            tokens: number;
+                            /** @description Group memberships removed */
+                            memberships: number;
+                            /** @description Whether an invitation holding their address is removed */
+                            invitation: boolean;
+                            /** @description Audit log labels naming them now, each taking a fixed word; those the erasure itself records are erased too */
+                            labels: number;
+                        };
+                        /** @description What stays: their id and their provider's identifier for them, which refuses any later sign-in; every event against the id; what they wrote, titles, comments and messages; what a data source recorded seeing them as, no longer shown; audit exports made before; and the erasure's own event */
+                        remains: {
+                            /** @description Audit events recorded against them, by id */
+                            events: number;
+                        };
+                        /** @description Everything refusing erasure now; empty where they may be erased, or are erased */
+                        refusals: {
+                            /**
+                             * @description granted: a grant names them, `grants` saying how many; remove their access first. self: nobody erases themselves. service: a service principal is no person
+                             * @enum {string}
+                             */
+                            code: "granted" | "self" | "service";
+                            /** @description granted: how many grants name them */
+                            grants?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such person in this environment */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -48268,7 +48669,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description This account is not invited to that environment */
+            /** @description not_invited: this account is not invited to that environment; or principal_erased: it was erased from it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -48357,6 +48758,26 @@ export interface operations {
             };
             /** @description The sign-in could not be completed */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description principal_erased: this account was erased from this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -48491,6 +48912,26 @@ export interface operations {
             };
             /** @description The sign-in could not be completed */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description principal_erased: this account was erased from this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

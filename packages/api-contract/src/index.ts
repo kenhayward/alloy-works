@@ -79,6 +79,14 @@ export {
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
+  Erased,
+  ErasureParams,
+  ErasureRefusalView,
+  ErasureRefused,
+  ErasureView,
+  erasureRoutes,
+} from './erasure.js';
+export {
   GrantBody,
   GrantList,
   GrantListQuery,
