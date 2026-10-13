@@ -201,7 +201,9 @@ false, `erased_at` set (0087); last, `erase_labels` gives every audit label nami
 those the act's own events wrote among them. Somebody invited who never signed in is withdrawn, and
 so goes whole. Every reader of a name shows the fixed word; `principalLabel` names them nothing, the
 people picker and the access and group pickers leave them out, and a user value naming them reads as
-an inactive user. Erasing the erased ends whatever access a race left them and answers unchanged.
+an inactive user. Search is rewritten in the act: every artifact whose entries' values name them
+(`reindexNaming`, read from `search_entry.field_values`) is indexed again, saying the fixed word, or
+nothing for somebody withdrawn (#594). Erasing the erased ends whatever access a race left them and answers unchanged.
 
 **What remains** (VER-038, ER-B), stated by the preview and shown before **Erase**: their id, and the
 issuer's pseudonymous subject for them, so every reference, author, thread, grant and event still
@@ -224,7 +226,8 @@ claim takes them; a sign-in holds the principal's row `FOR UPDATE` to look them 
 `FOR SHARE` after any epoch lock and before it settles memberships or makes a session, rolling back
 if they are erased. Either the act waits and ends the session, or the sign-in waits and is refused.
 A label's trigger holds the row `FOR KEY SHARE`: a label written during the act waits for it, and the
-act waits for one written before it.
+act waits for one written before it. Indexing a version holds each person it names `FOR SHARE`: the
+act waits for that version's entries and rewrites them, or the indexer waits and says the fixed word.
 
 **Audited**: each session, token, membership and withdrawal as its own kind, then
 `audit.label_erased`, `{ labels }`, about the person by id, naming the administrator and nobody erased.

@@ -1,5 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import type { AuditContext } from '@alloy-works/domain';
+import {
+  DEFINITION_SCHEMA_VERSION,
+  type AuditContext,
+  type ContentDocument,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { issueApiToken } from './api-tokens.js';
@@ -7,11 +11,14 @@ import { principalLabel, recordEvent } from './audit.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { listPeople } from './component-values.js';
 import { createComponent } from './creation.js';
+import { createDefinition } from './definitions.js';
+import { claimLock, saveIteration } from './editing.js';
 import { ERASED_NAME, erasePerson, erasureOf, holdPrincipal } from './erasure.js';
 import { grant } from './grants.js';
 import { addToGroup, createGroup, setGroupMembers, syncProviderGroups } from './groups.js';
 import { claimInvitation, invite } from './invitations.js';
 import { migrate } from './migrate.js';
+import { cutVersion } from './promotion.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { identifyKnown } from './sign-in.js';
@@ -39,6 +46,8 @@ describe('erasure of a person', () => {
   let ada: string;
   let adaActs: AuditContext;
   let space: string;
+  let owner: string;
+  let protocol: string;
 
   const as = <T>(work: (trx: TenantTransaction) => Promise<T>, context: AuditContext = SYSTEM) =>
     service.withTenant(tenant, work, context);
@@ -187,7 +196,86 @@ describe('erasure of a person', () => {
     ada = (await signedIn('Ada')).id;
     adaActs = { actorKind: 'person', actor: ada, actorLabel: 'Ada', traceId: 'req-erase' };
     space = (await as((trx) => createSpace(trx, 'Clinical'), adaActs)).id;
+    // A person-valued Owner on a Protocol type, so a component names somebody in its words.
+    const defined = async (kind: 'field' | 'metadataSchema' | 'componentType', body: object) => {
+      const made = await as((trx) =>
+        createDefinition(trx, {
+          kind,
+          author: ada,
+          definition: { schemaVersion: DEFINITION_SCHEMA_VERSION, ...body },
+        } as never),
+      );
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.definition.id;
+    };
+    owner = await defined('field', {
+      name: 'Owner',
+      dataType: 'user',
+      multiplicity: 'one',
+      validation: {},
+    });
+    const review = await defined('metadataSchema', {
+      name: 'Review',
+      entries: [{ field: owner, required: false, fixed: false }],
+    });
+    protocol = await defined('componentType', {
+      name: 'Protocol',
+      assignments: [{ schema: review, requires: [] }],
+    });
   });
+
+  /** A component of the Protocol type whose owner is `person`, saved; `cut` makes it a version. */
+  async function ownedBy(person: string) {
+    const session = randomUUID();
+    const made = await as((trx) =>
+      createComponent(trx, {
+        spaceId: space,
+        componentTypeId: protocol,
+        title: 'Dosing',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const { version } = made;
+    const at = { artifactId: version.artifactId, principal: ada, session };
+    await as((trx) => claimLock(trx, at));
+    const saved = await as((trx) =>
+      saveIteration(trx, {
+        ...at,
+        sequence: 1,
+        openedFrom: version.id,
+        content: version.content as ContentDocument,
+        values: { [owner]: { user: person } },
+      }),
+    );
+    if (saved.answer !== 'accepted') throw new Error(saved.answer);
+    return {
+      artifactId: version.artifactId,
+      cut: async (trx: TenantTransaction) => {
+        const cut = await cutVersion(trx, { ...at, openedFrom: version.id });
+        if (cut.answer !== 'recorded') throw new Error(cut.answer);
+      },
+    };
+  }
+
+  /** Every word search holds of an artifact, entries and places alike. */
+  const searched = (artifact: string) =>
+    as(async (trx) => {
+      const entries = await trx
+        .selectFrom('search_entry')
+        .select('body')
+        .where('artifact_id', '=', artifact)
+        .execute();
+      const places = await trx
+        .selectFrom('search_text as t')
+        .innerJoin('search_entry as e', 'e.id', 't.entry_id')
+        .select('t.body')
+        .where('e.artifact_id', '=', artifact)
+        .execute();
+      return [...entries, ...places].map((row) => row.body).join(' ');
+    });
 
   afterAll(async () => {
     await service.close();
@@ -597,5 +685,63 @@ describe('erasure of a person', () => {
     expect(await signing).toBe('erased');
     expect((await principalRow(id))!.display_name).toBe(ERASED_NAME);
     expect(await liveLabels(id)).toBe(0);
+  });
+
+  it('VER-038 rewrites search, so their former name finds nothing that named them', async () => {
+    const { id } = await grace();
+    const named = await ownedBy(id);
+    await as(named.cut);
+    expect(await searched(named.artifactId)).toContain('Grace');
+    await as((trx) => erasePerson(trx, id, ada), adaActs);
+    const said = await searched(named.artifactId);
+    expect(said).not.toContain('Grace');
+    expect(said).toContain(ERASED_NAME);
+  });
+
+  it('VER-038 rewrites search for somebody invited who never signed in', async () => {
+    const id = await as(async (trx) => {
+      const invited = await invite(trx, {
+        email: `alan-${randomUUID()}@example.test`,
+        external: false,
+        invitedBy: ada,
+      });
+      if (!('invited' in invited)) throw new Error('not invited');
+      return invited.invited.principalId;
+    }, adaActs);
+    await as((trx) =>
+      trx.updateTable('principal').set({ display_name: 'Alan' }).where('id', '=', id).execute(),
+    );
+    const named = await ownedBy(id);
+    await as(named.cut);
+    expect(await searched(named.artifactId)).toContain('Alan');
+    expect(await as((trx) => erasePerson(trx, id, ada), adaActs)).toMatchObject({
+      answer: 'erased',
+    });
+    expect(await searched(named.artifactId)).not.toContain('Alan');
+  });
+
+  it('serialises a version indexed while the act runs: the act waits, then rewrites it', async () => {
+    const { id } = await grace();
+    const named = await ownedBy(id);
+    let indexed!: () => void;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (indexed = resolve));
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const cutting = as(async (trx) => {
+      await named.cut(trx);
+      indexed();
+      await gate;
+    });
+    await held;
+    const erasing = as((trx) => erasePerson(trx, id, ada), adaActs);
+    // The act waits behind the version's hold of her row.
+    try {
+      await untilWaitingOnLocks(db.adminUrl, 1);
+    } finally {
+      release();
+    }
+    await cutting;
+    expect(await erasing).toMatchObject({ answer: 'erased' });
+    expect(await searched(named.artifactId)).not.toContain('Grace');
   });
 });

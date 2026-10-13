@@ -139,6 +139,8 @@ async function contextFor(trx: TenantTransaction, source: SearchSource): Promise
     if (schema) schemas.set(id, schema.name);
   }
   const known = people.filter((id) => UUID.test(id));
+  // Held FOR SHARE, in order, so an erasure (#594) waits for this version's entries to commit, or this
+  // waits and reads the fixed word: an erasure rewrites only what is committed.
   const names =
     known.length === 0
       ? []
@@ -146,6 +148,8 @@ async function contextFor(trx: TenantTransaction, source: SearchSource): Promise
           .selectFrom('principal')
           .select(['id', 'display_name'])
           .where('id', 'in', [...new Set(known)])
+          .orderBy('id')
+          .forShare()
           .execute();
   return {
     fields,
@@ -303,6 +307,31 @@ export async function indexVersion(trx: TenantTransaction, version: StoredVersio
     },
     source ? entriesOf(source, await contextFor(trx, source)) : [],
   );
+}
+
+/**
+ * Rewrites every artifact whose entries name `person` in a value (#594): an entry's `field_values` are
+ * the values its words were said from, so it is every entry whose text holds their name, and no more.
+ */
+export async function reindexNaming(trx: TenantTransaction, person: string): Promise<void> {
+  if (!(await projected(trx))) return;
+  const naming = await trx
+    .selectFrom('search_entry')
+    .select('artifact_id')
+    .distinct()
+    .where(
+      sql<boolean>`jsonb_path_exists(field_values, '$.** ? (@.user == $id)', jsonb_build_object('id', ${person}::text))`,
+    )
+    .orderBy('artifact_id')
+    .execute();
+  const latest = await latestContents(
+    trx,
+    naming.map((row) => row.artifact_id),
+  );
+  for (const each of latest.values()) {
+    const version = await readVersion(trx, each.version);
+    if (version) await indexVersion(trx, version);
+  }
 }
 
 /**
