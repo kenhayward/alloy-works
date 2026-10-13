@@ -48,3 +48,25 @@ VER-047, VER-048).
 - The final review hunts a deletion escaping a dependant or a keep, a deleted artifact still read, and
   anything removed rather than kept. `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the
   version (0.162.0) and the baseline.
+
+## Changed while building
+
+| Where | Planned                                                | Built, and why                                                                                                                                                                            |
+| ----- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRs   | Two                                                    | Two, #589 and #590                                                                                                                                                                        |
+| DL-C  | Unreadable dependants counted                          | Neither named nor counted: a refusal says only that something the deleter may not read depends on it (SCH-032), the residual stated in lifecycle.md                                       |
+| DL-C  | Publications and queued requests                       | An unexpired, done preview refuses too; refusals name the document, never another's request; a lock held by the deleter says so ("choose Done editing first") (the final review, 3, 4, 8) |
+| DL-D  | The shared deletion lock                               | Lock claims and takes and a round's opening take it too, and re-check (the final review, 1)                                                                                               |
+| DL-E  | Uncut iterations come back                             | They still expire by their window (VER-003) (the final review, 2)                                                                                                                         |
+| DL-F  | A deleted reference shown as deleted in older versions | Shown as withheld: the outline view would need a new member; named a gap in lifecycle.md                                                                                                  |
+| DL-G  | Keeps with their history                               | `GET /v1/retention` answers the keeps in force; their history is the audit log's `retention.changed`. Days are 24-hour periods, at most 36500                                             |
+| DL-H  | The Deleted listing                                    | A Deleted choice beside Archived in each listing's Status filter, not a page of its own                                                                                                   |
+
+## Final review
+
+Fixed: a lock claim or a round opening racing a delete (1); iterations promised back that still expire
+(2); a done preview serving a deleted component for up to an hour (3); the deleter's own lock named
+as another's (4); titles citing LIF-019 beyond their tests (6); another's preview request named (8).
+Left: the reference check scans document versions and `authorise` adds a lookup, for the load suite
+to measure (5); token scopes do not narrow the Deleted listing, as with every listing (7); the
+expired preview's case is untested.
