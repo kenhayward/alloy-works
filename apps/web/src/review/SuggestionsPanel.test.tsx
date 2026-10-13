@@ -81,7 +81,7 @@ describe('the suggestions panel in Review', () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Accept all' }));
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Accepted 1. Left 1 pending, which could not be.',
+      'Accepted 1 suggestion. 1 left pending, which could not be.',
     );
     expect(asked).toContainEqual({
       route: 'POST /v1/suggestions/resolutions',

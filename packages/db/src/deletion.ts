@@ -206,16 +206,19 @@ export async function deletedOnceReferenced(
   documentId: string,
 ): Promise<string[]> {
   if (!UUID.test(documentId) || !(await deletionStored(trx))) return [];
+  // From the deleted, few, to whether any version of this one document references each.
   const { rows } = await sql<{ id: string }>`
-    select distinct a.id
-      from artifact_version v
-     cross join lateral jsonb_path_query(v.content,
-             'lax $.** ? (@.type == "reference").component') as c(component)
-      join artifact a on a.id::text = c.component #>> '{}'
-     where v.artifact_id = ${documentId}
-       and a.kind = 'component'
-       and ${deletedAs('a')}
-     order by a.id`.execute(trx);
+    select d.artifact_id as id
+      from (select distinct on (artifact_id) artifact_id, act
+              from artifact_deletion
+             where kind = 'component'
+             order by artifact_id, id desc) d
+     where d.act = 'deleted'
+       and exists (select from artifact_version v
+                    where v.artifact_id = ${documentId}
+                      and jsonb_path_exists(v.content, ${REFERENCES}::jsonpath,
+                            jsonb_build_object('c', d.artifact_id::text)))
+     order by d.artifact_id`.execute(trx);
   return rows.map((row) => row.id);
 }
 

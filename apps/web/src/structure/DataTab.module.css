@@ -205,11 +205,10 @@
   margin-inline-start: auto;
 }
 
-/* A high-contrast mode takes a dot's colour: it stays a dot, in the text's colour, its words beside
-   it saying the state (CNT-138). */
+/* A high-contrast mode takes a dot's colour: a border keeps it a dot, in the text's colour, its words
+   beside it saying the state (CNT-138). */
 @media (forced-colors: active) {
   .dot {
-    forced-color-adjust: none;
-    background: CanvasText;
+    border: 2px solid CanvasText;
   }
 }

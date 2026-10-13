@@ -152,7 +152,7 @@ const panel = (client: ReturnType<typeof service>['client']) =>
       people={PEOPLE}
       principalId={ADA}
       mayAnswer={() => true}
-      placeOf={() => 'In 1 Method'}
+      placeOf={() => '1 Method'}
     />,
   );
 
@@ -180,7 +180,7 @@ describe('the threads panel in Review', () => {
     expect(within(opened).getByText('@Grace')).toBeInTheDocument();
   });
 
-  it('CNT-137 announces a thread started and resolved, naming which, in a status region there from the start', async () => {
+  it('CNT-137 announces a thread started and resolved, naming which and where, in a status region there from the start', async () => {
     const { client } = service();
     panel(client);
     await screen.findByText('No threads here.');
@@ -189,11 +189,15 @@ describe('the threads panel in Review', () => {
     await userEvent.type(screen.getByLabelText('Comment'), 'Is this right?');
     await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Thread started on “the tray”.'),
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Thread started on “the tray” in 1 Method.',
+      ),
     );
     await userEvent.click(screen.getByRole('button', { name: 'Resolve' }));
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Thread on “the tray” resolved.'),
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Thread on “the tray” in 1 Method resolved.',
+      ),
     );
     await userEvent.click(screen.getByRole('button', { name: 'All threads' }));
     await userEvent.selectOptions(screen.getByLabelText('On'), 'whole');
@@ -201,7 +205,7 @@ describe('the threads panel in Review', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start thread' }));
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
-        'Thread started on the whole component.',
+        'Thread started on the whole component in 1 Method.',
       ),
     );
   });

@@ -45,7 +45,9 @@ the stream at all: it is the streamed response to the request that asked for it.
 | **API-063** | Presence, locks and notifications are each a message of the AsyncAPI document, apart from OpenAPI: `inbox` says a notification waits, on every stream its recipient holds                                             |
 
 API-064, streamed model output, is T5's (the T3 audit split API-014). COL-067, a deleted component's
-locks and presence, is [collaboration.md](collaboration.md)'s.
+locks and presence, is [collaboration.md](collaboration.md)'s. A stream scoped to a component is not
+ended when the component is deleted: it carries no lock or presence of it, and its reconnect is
+answered 404. Every stream takes a session alone (TK-D), so `inbox` never reaches a token.
 
 Lock rules that are not about transport - who may take a lock, from whom, and how long it lasts
 (COL-005, COL-008 to COL-011) - belong to [collaboration.md](collaboration.md) and component-editor.md,

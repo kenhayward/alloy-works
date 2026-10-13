@@ -247,7 +247,7 @@ export function ThreadsPanel({
   const nameOf = (id: string) => people.find((each) => each.id === id)?.name ?? 'Somebody';
 
   // Every page of them, so every thread is listed and marked, however many (the TH final review).
-  const read = useCallback(async () => {
+  const read = useCallback(async (): Promise<readonly ThreadSummary[] | null> => {
     const listed: ThreadSummary[] = [];
     let cursor: string | undefined;
     do {
@@ -264,12 +264,16 @@ export function ThreadsPanel({
           : await client.GET('/v1/baselines/{id}/threads', {
               params: { path: { id: baseline }, query },
             });
-      if (!answer.data) return setThreads(null);
+      if (!answer.data) {
+        setThreads(null);
+        return null;
+      }
       listed.push(...(answer.data.threads as unknown as ThreadSummary[]));
       cursor = answer.data.next ?? undefined;
     } while (cursor !== undefined);
     setThreads(listed);
     onThreadsNow(listed);
+    return listed;
   }, [client, document, baseline, show, onThreadsNow]);
 
   useEffect(() => {
@@ -297,6 +301,11 @@ export function ThreadsPanel({
     if (done !== '' || notTold !== '') setSaid([done, notTold].filter(Boolean).join(' '));
   };
 
+  const summaryOf = (id: string) => threads?.find((each) => each.id === id);
+  /** Where a listed thread stands, as an announcement says it; nothing where it is not listed. */
+  const where = (summary: ThreadSummary | undefined) =>
+    summary === undefined ? '' : ` in ${placeOf(summary)}`;
+
   const chosen = targets.find((each) => each.key === target) ?? targets[0];
 
   const start = async (parts: Part[]) => {
@@ -318,10 +327,14 @@ export function ThreadsPanel({
       setRefused(refusalOf(answer.error, 'The thread could not be started.'));
       return false;
     }
-    // Announced naming which (CNT-137), in the region there from the start.
-    untold(answer.data, `Thread started on ${annotation(chosen.anchor)}.`);
     setOpened(answer.data as unknown as Thread);
-    await read();
+    const started = (answer.data as unknown as Thread).id;
+    const listed = await read();
+    // Announced naming which and where (CNT-137), in the region there from the start.
+    untold(
+      answer.data,
+      `Thread started on ${annotation(chosen.anchor)}${where(listed?.find((each) => each.id === started))}.`,
+    );
     return true;
   };
 
@@ -369,12 +382,12 @@ export function ThreadsPanel({
       setRefused(refusalOf(answer.error, 'The thread could not be resolved.'));
       return;
     }
-    setSaid(`Thread on ${annotation((answer.data as unknown as Thread).anchor)} resolved.`);
+    setSaid(
+      `Thread on ${annotation((answer.data as unknown as Thread).anchor)}${where(summaryOf(thread))} resolved.`,
+    );
     setOpened(answer.data as unknown as Thread);
     await read();
   };
-
-  const summaryOf = (id: string) => threads?.find((each) => each.id === id);
 
   return (
     <div className={styles['panel']}>

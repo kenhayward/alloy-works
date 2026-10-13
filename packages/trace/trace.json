@@ -16334,7 +16334,7 @@
         },
         {
           "id": "CNT-137",
-          "howItIsMet": "Starting and resolving a thread, sending a suggestion and accepting, rejecting or withdrawing one are said in a `role=\"status\"` region there, empty, from the start, naming which: \"Thread started on “the tray”.\", \"Ada's suggestion on 1 Install the printer accepted.\""
+          "howItIsMet": "Starting and resolving a thread, sending a suggestion and accepting, rejecting or withdrawing one are said in a `role=\"status\"` region there, empty, from the start, naming which and where: \"Thread started on “the tray” in 1 Method.\", \"Ada's suggestion on 1 Install the printer accepted.\" Accept all and Reject all count rather than name: \"Accepted 3 suggestions. 1 left pending, which could not be.\""
         },
         {
           "id": "CNT-138",
@@ -20128,12 +20128,6 @@
       "kind": "title"
     },
     {
-      "id": "API-063",
-      "file": "apps/service/src/live-stream.test.ts",
-      "line": 340,
-      "kind": "title"
-    },
-    {
       "id": "COL-001",
       "file": "apps/service/src/live-stream.test.ts",
       "line": 372,
@@ -21582,7 +21576,7 @@
     {
       "id": "COL-067",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 258,
+      "line": 262,
       "kind": "title"
     },
     {
@@ -21876,7 +21870,7 @@
     {
       "id": "CNT-181",
       "file": "apps/web/src/structure/DocumentPage.newer.test.tsx",
-      "line": 83,
+      "line": 86,
       "kind": "title"
     },
     {
@@ -26100,7 +26094,7 @@
     {
       "id": "CNT-138",
       "file": "tests/browser/src/forced-colors.test.ts",
-      "line": 20,
+      "line": 47,
       "kind": "title"
     },
     {

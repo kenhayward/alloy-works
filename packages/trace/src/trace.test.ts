@@ -859,6 +859,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1190 (2026-10-13): TC2's final review; the stream's inbox test cites API-063 no more.
     // 1191 (2026-10-13): TC2's annotations and notices.
     // 1179 (2026-10-13): the T3 audit - IAM-077, API-017, API-035, PUB-044, LIF-056, LIF-067, LIF-069,
     // VER-058, COL-065, DAT-120 and DAT-122, in tests already there or new; LIF-073 for LIF-057, and
@@ -881,7 +882,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1191);
+    expect(model.citations).toHaveLength(1190);
   });
 
   it('cites no identifier the corpus does not hold', () => {

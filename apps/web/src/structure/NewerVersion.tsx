@@ -72,7 +72,11 @@ export function NewerVersion({
           </button>
         )}
       </p>
-      {shown === 'failed' && <p className={styles['newer']}>The comparison could not be read.</p>}
+      {shown === 'failed' && (
+        <p role="alert" className={styles['newer']}>
+          The comparison could not be read.
+        </p>
+      )}
       {shown !== null && shown !== 'failed' && shown !== 'reading' && (
         <div className={styles['comparison']}>
           <Redline

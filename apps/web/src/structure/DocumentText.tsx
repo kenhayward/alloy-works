@@ -703,6 +703,8 @@ export function DocumentText({
             {titled(node, depth)}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
               <NewerVersion
+                // A comparison shown is of the pair it was asked for: another pair starts afresh.
+                key={`${newer.byNode.get(node.id)!.pinned.id}:${newer.byNode.get(node.id)!.newer.id}`}
                 client={newer.client}
                 component={node.component}
                 {...newer.byNode.get(node.id)!}

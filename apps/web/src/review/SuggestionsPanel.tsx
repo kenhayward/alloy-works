@@ -185,9 +185,11 @@ export function SuggestionsPanel({
     }
     const { resolved, left } = answer.data;
     const done = what === 'accept' ? 'Accepted' : 'Rejected';
+    // Many at once are counted, not named (CNT-137 names each one acted on alone).
+    const many = (count: number) => `${count} ${count === 1 ? 'suggestion' : 'suggestions'}`;
     setSaid(
-      `${done} ${resolved.length}.` +
-        (left.length === 0 ? '' : ` Left ${left.length} pending, which could not be.`),
+      `${done} ${many(resolved.length)}.` +
+        (left.length === 0 ? '' : ` ${left.length} left pending, which could not be.`),
     );
     if (what === 'accept' && resolved.length > 0) onChanged?.();
     await read();

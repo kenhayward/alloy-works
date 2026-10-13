@@ -337,7 +337,7 @@ describe("a document's stream: its locks and outline, to whoever may read them (
     }
   });
 
-  it('API-063 tells a person, on each stream they hold, that a notification waits for them, and nobody else', async () => {
+  it('tells a person, on each session stream they hold, that a notification waits for them, and nobody else', async () => {
     const graces = stream('grace', `?document=${report}`);
     const environment = stream('grace', '');
     const adas = stream('ada', `?document=${report}`);

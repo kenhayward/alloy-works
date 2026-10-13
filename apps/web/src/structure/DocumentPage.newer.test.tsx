@@ -29,7 +29,9 @@ const printer = (value: string): ContentDocument => ({
 });
 
 /** The document, placing the printer pinned at 0.2 while 0.3 is its latest, `newer` saying so or not. */
-async function openPinned({ newer }: { newer: boolean }) {
+async function openPinned({ newer, failing = false }: { newer: boolean; failing?: boolean }) {
+  // What the texts route names as newer: a test may move it on, as another author's version would.
+  const latest = { id: NEWER, number: '0.3' };
   const pinned = {
     ...reference(REFERENCE, 'latest'),
     mode: { kind: 'pinned', version: PINNED },
@@ -53,13 +55,14 @@ async function openPinned({ newer }: { newer: boolean }) {
             maySuggest: false,
             pendingSuggestions: 0,
             lock: null,
-            ...(newer ? { newer: { id: NEWER, number: '0.3' } } : {}),
+            ...(newer ? { newer: { ...latest } } : {}),
           },
         ],
         versions: [{ id: PINNED, number: '0.2', content: printer('Unbox the printer.') }],
       });
     }
     if (url.pathname === `/v1/components/${PRINTER}/comparison`) {
+      if (failing) return json(500, { code: 'internal', message: 'Something went wrong.' });
       const older = printer('Unbox the printer.');
       const newerContent = printer('Unbox the printer carefully.');
       return json(200, {
@@ -76,7 +79,7 @@ async function openPinned({ newer }: { newer: boolean }) {
   render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
   const text = await screen.findByRole('region', { name: "The document's text" });
   await within(text).findByText('Unbox the printer.');
-  return { text, asked };
+  return { text, asked, latest };
 }
 
 describe('a reference pinned below a newer version (document-view.md, Versions)', () => {
@@ -94,6 +97,30 @@ describe('a reference pinned below a newer version (document-view.md, Versions)'
     expect(redline.querySelector('ins')?.textContent).toMatch(/^Added: .*carefully/);
     await userEvent.click(within(text).getByRole('button', { name: 'Hide the comparison' }));
     expect(within(text).queryByRole('list', { name: 'Changes from 0.2 to 0.3' })).toBeNull();
+  });
+
+  it('CNT-181 closes a comparison shown when a still newer version is named, rather than show the older one under it', async () => {
+    const { text, latest } = await openPinned({ newer: true });
+    await userEvent.click(within(text).getByRole('button', { name: 'Compare 0.2 with 0.3' }));
+    await within(text).findByRole('list', { name: 'Changes from 0.2 to 0.3' });
+    latest.id = 'bbbbbbbb-0000-4000-8000-000000000004';
+    latest.number = '0.4';
+    // The page reads its texts again when the window is focused.
+    window.dispatchEvent(new Event('focus'));
+    expect(
+      await within(text).findByText('Version 0.4 is newer than the 0.2 pinned here.'),
+    ).toBeVisible();
+    expect(within(text).queryByRole('list', { name: /^Changes from / })).toBeNull();
+    expect(within(text).getByRole('button', { name: 'Compare 0.2 with 0.4' })).toBeVisible();
+  });
+
+  it('alerts that a comparison could not be read, and offers it again', async () => {
+    const { text } = await openPinned({ newer: true, failing: true });
+    await userEvent.click(within(text).getByRole('button', { name: 'Compare 0.2 with 0.3' }));
+    expect(await within(text).findByRole('alert')).toHaveTextContent(
+      'The comparison could not be read.',
+    );
+    expect(within(text).getByRole('button', { name: 'Compare 0.2 with 0.3' })).toBeVisible();
   });
 
   it('says nothing where no newer version is named', async () => {
