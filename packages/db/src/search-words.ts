@@ -1,6 +1,13 @@
-import { nameKey, parseQuery, type SearchKind } from '@alloy-works/domain';
+import {
+  nameKey,
+  parseQuery,
+  readOutline,
+  walkOutline,
+  type SearchKind,
+} from '@alloy-works/domain';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -42,7 +49,41 @@ export interface SearchResult {
   /** Where in the entry it matched best (search.md, "The tables"), or null for an entry of no words. */
   readonly place: string | null;
   readonly passage: readonly PassagePiece[];
+  /** The version it matched in, for a kind whose earlier versions are kept (SV-G); else null. */
+  readonly version: {
+    readonly id: string;
+    /** `revision.version`, as the Versions panel says it. */
+    readonly number: string;
+    readonly latest: boolean;
+  } | null;
+  /**
+   * The baseline searched, and where in its document the result is: a section's node, a component's
+   * first pinned node in outline order, or null for the document or an asset (SV-C).
+   */
+  readonly baseline: {
+    readonly id: string;
+    readonly name: string;
+    readonly document: string;
+    readonly node: string | null;
+  } | null;
 }
+
+/**
+ * Which versions a search reads (the SV plan, SV-C): the latest alone, every version, or what one
+ * baseline pins.
+ */
+export type SearchScope = 'latest' | 'all' | { readonly baseline: string };
+
+/** The kinds whose results name a version: those whose earlier versions are kept (SV-A). */
+const VERSIONED = new Set<SearchKind>(['component', 'document', 'section', 'asset']);
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+
+/** Every column both projections' entries share, in one order, so the two can be read as one. */
+const ENTRY_COLUMNS = sql.raw(
+  'id, kind, artifact_id, node, version_id, title, space_id, changed_at, owner, component_type, field_values, configuration, body, vector, archived, deleted',
+);
+const TEXT_COLUMNS = sql.raw('entry_id, place, body, configuration, vector');
 
 /**
  * What narrows a search (SCH-059), each dimension one filter, several values within one either of them.
@@ -171,23 +212,136 @@ const capped = (rows: readonly FacetRow[] | null): FacetValue[] =>
   }));
 
 /**
+ * Where each component version a baseline pins first stands in its document, in outline order, by
+ * `<component>:<version>`: where a result found in it opens the baseline (SV-C).
+ */
+async function firstPinnedNodes(
+  trx: TenantTransaction,
+  baseline: { readonly id: string; readonly document: string; readonly documentVersion: string },
+): Promise<Map<string, string>> {
+  const [pins, document] = await Promise.all([
+    trx
+      .selectFrom('baseline_pin')
+      .select(['node', 'artifact_id', 'version_id'])
+      .where('baseline_id', '=', baseline.id)
+      .where('kind', '=', 'component')
+      .execute(),
+    trx
+      .selectFrom('artifact_version')
+      .select('content')
+      .where('id', '=', baseline.documentVersion)
+      .executeTakeFirstOrThrow(),
+  ]);
+  const read = readOutline(document.content, {
+    artifact: baseline.document,
+    version: baseline.documentVersion,
+  });
+  const order = new Map<string, number>();
+  if (read.ok) walkOutline(read.outline.nodes, (node) => order.set(node.id, order.size));
+  const placed = new Map<string, string>();
+  for (const pin of [...pins].sort(
+    (a, b) =>
+      (order.get(a.node ?? '') ?? Number.MAX_SAFE_INTEGER) -
+      (order.get(b.node ?? '') ?? Number.MAX_SAFE_INTEGER),
+  )) {
+    const key = `${pin.artifact_id}:${pin.version_id}`;
+    if (pin.node !== null && !placed.has(key)) placed.set(key, pin.node);
+  }
+  return placed;
+}
+
+export interface SearchOptions {
+  readonly offset?: number;
+  readonly limit?: number;
+  readonly filters?: SearchFilters;
+  readonly scope?: SearchScope;
+}
+
+/**
  * Searches as `principal`: undefined where the tenant holds no such principal. A scoped term's name is
  * `title`, or a field's by its folded name - only for a reader who may read that field, as access.md
  * reads a definition (SE-H), so a field is no scope for anybody else and says nothing of what it holds.
- * A field facets for the same readers alone.
+ * A field facets for the same readers alone. A baseline the reader may not read, or none, is
+ * `baseline_not_found`.
  */
+export function searchWords(
+  trx: TenantTransaction,
+  principal: string,
+  query: string,
+  options?: SearchOptions & { readonly scope?: 'latest' | 'all' },
+): Promise<SearchAnswer | undefined>;
+export function searchWords(
+  trx: TenantTransaction,
+  principal: string,
+  query: string,
+  options: SearchOptions,
+): Promise<SearchAnswer | 'baseline_not_found' | undefined>;
 export async function searchWords(
   trx: TenantTransaction,
   principal: string,
   query: string,
-  options: {
-    readonly offset?: number;
-    readonly limit?: number;
-    readonly filters?: SearchFilters;
-  } = {},
-): Promise<SearchAnswer | undefined> {
+  options: SearchOptions = {},
+): Promise<SearchAnswer | 'baseline_not_found' | undefined> {
   const readable = await loadReadableSet(trx, principal);
   if (!readable) return undefined;
+  const scope = options.scope ?? 'latest';
+  // A baseline is read as its document is (BL-H): one the reader may not read, or none, is not found.
+  let baseline: { id: string; name: string; document: string; documentVersion: string } | undefined;
+  if (typeof scope === 'object') {
+    if (!UUID.test(scope.baseline)) return 'baseline_not_found';
+    const row = await trx
+      .selectFrom('baseline as b')
+      .innerJoin('artifact as a', 'a.id', 'b.document_id')
+      .select(['b.id', 'b.name', 'b.document_id', 'b.document_version_id', 'a.space_id'])
+      .where('b.id', '=', scope.baseline)
+      .executeTakeFirst();
+    const readableDocument =
+      row !== undefined &&
+      (((row.space_id === null ? readable.tenant : readable.spaces.includes(row.space_id)) &&
+        !readable.excluded.includes(row.document_id)) ||
+        readable.included.includes(row.document_id));
+    if (!readableDocument || (await isDeleted(trx, row.document_id))) {
+      return 'baseline_not_found';
+    }
+    baseline = {
+      id: row.id,
+      name: row.name,
+      document: row.document_id,
+      documentVersion: row.document_version_id,
+    };
+  }
+  // The latest alone reads `search_entry` as it always has, with no union (SV-C). Every version adds
+  // `search_earlier` but its assets, which no page shows (SV-A); a baseline reads what it pins.
+  const pinnedBy = (at: { id: string; document: string; documentVersion: string }) =>
+    sql<SqlBool>`((x.artifact_id = ${at.document} and x.version_id = ${at.documentVersion})
+      or exists (select 1 from baseline_pin bp
+                  where bp.baseline_id = ${at.id}
+                    and bp.artifact_id = x.artifact_id and bp.version_id = x.version_id))`;
+  const source =
+    scope === 'latest'
+      ? sql`search_entry`
+      : baseline === undefined
+        ? sql`(select ${ENTRY_COLUMNS}, true as current from search_entry
+               union all
+               select ${ENTRY_COLUMNS}, false as current from search_earlier where kind <> 'asset')`
+        : sql`(select ${ENTRY_COLUMNS}, true as current from search_entry x where ${pinnedBy(baseline)}
+               union all
+               select ${ENTRY_COLUMNS}, false as current from search_earlier x
+                where ${pinnedBy(baseline)})`;
+  const texts =
+    scope === 'latest'
+      ? sql`search_text`
+      : sql`(select ${TEXT_COLUMNS} from search_text
+             union all
+             select ${TEXT_COLUMNS} from search_earlier_text)`;
+  // Archived content leaves ordinary search (LIF-020), and stays in a baseline that pins it (SV-E).
+  const shown =
+    baseline === undefined
+      ? sql<SqlBool>`not e.archived and not e.deleted`
+      : sql<SqlBool>`not e.deleted`;
+  // One result per artifact and place however many of its versions match, counted once (SV-C).
+  const counted =
+    scope === 'latest' ? sql`count(*)` : sql`count(distinct (b.artifact_id, coalesce(b.node, '')))`;
   const parsed = parseQuery(query);
   if (parsed.outcome !== 'query') return parsed;
 
@@ -213,7 +367,7 @@ export async function searchWords(
       place = `field:${field.artifact_id}`;
     }
     const holds = sql<SqlBool>`exists (
-      select 1 from search_text s
+      select 1 from ${texts} s
       where s.entry_id = e.id and s.place = ${place}
         and s.vector @@ websearch_to_tsquery(s.configuration, ${term.words}))`;
     places.push(term.excluded ? sql<SqlBool>`not ${holds}` : holds);
@@ -321,6 +475,10 @@ export async function searchWords(
       changed_at: string;
       place: string | null;
       passage: string | null;
+      version_id: string;
+      current: boolean;
+      revision_no: number | null;
+      version_no: number | null;
     }[];
     kinds: FacetRow[];
     spaces: FacetRow[];
@@ -342,9 +500,10 @@ export async function searchWords(
     ),
     base as (
       select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-             e.component_type, e.field_values,
+             e.component_type, e.field_values, e.version_id,
+             ${scope === 'latest' ? sql`true` : sql`e.current`} as current,
              ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
-      from search_entry e
+      from ${source} e
       where (
           ((e.space_id = any(${[...readable.spaces]}::uuid[])
               or (e.space_id is null and ${readable.tenant}::boolean))
@@ -352,8 +511,7 @@ export async function searchWords(
           or e.artifact_id = any(${[...readable.included]}::uuid[])
         )
         -- Archived content is no result, facet or count (LIF-020; lifecycle.md).
-        and not e.archived
-        and not e.deleted
+        and ${shown}
         and ${words}
         and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}
     ),
@@ -379,34 +537,44 @@ export async function searchWords(
       where k.key is not null and k.key <> ''
     ),
     flagged as (select b.*, ${flagged} from base b),
-    matched as (select * from flagged b where ${allBut('')})
+    matched as (select * from flagged b where ${allBut('')}),
+    -- Each artifact and place once, at its newest version that matched every filter (SV-C).
+    results as (${
+      scope === 'latest'
+        ? sql`select * from matched`
+        : sql`select distinct on (m.artifact_id, m.node) m.*
+               from matched m join artifact_version v on v.id = m.version_id
+               order by m.artifact_id, m.node, v.revision_no desc, v.version_no desc`
+    })
     select
-      (select count(*) from (select 1 from matched limit ${SEARCH_COUNT_CAP + 1}) c) as total,
+      (select count(*) from (select 1 from results limit ${SEARCH_COUNT_CAP + 1}) c) as total,
       (select coalesce(json_agg(r order by r.rank desc, r.changed_at desc, r.id), '[]'::json)
        from (
          select p.id, p.rank, p.kind, p.artifact_id, p.node, p.title, p.space_id,
-                sp.name as space_name, p.changed_at, best.place, best.passage
-         from (select * from matched order by rank desc, changed_at desc, id
+                sp.name as space_name, p.changed_at, best.place, best.passage,
+                p.version_id, p.current, av.revision_no, av.version_no
+         from (select * from results order by rank desc, changed_at desc, id
                limit ${limit} offset ${offset}) p
          left join space sp on sp.id = p.space_id
+         left join artifact_version av on av.id = p.version_id
          left join lateral (
            select t.place,
                   ts_headline(t.configuration, t.body,
                               websearch_to_tsquery(t.configuration, ${parsed.anyOf}),
                               ${HEADLINE}) as passage
-           from search_text t
+           from ${texts} t
            where t.entry_id = p.id
            order by ts_rank(t.vector, websearch_to_tsquery(t.configuration, ${parsed.anyOf})) desc,
                     t.place = 'title' desc, t.place
            limit 1
          ) best on true
        ) r) as items,
-      ${facetJson(sql`select b.kind as value, b.kind as label, count(*)::int as n
+      ${facetJson(sql`select b.kind as value, b.kind as label, ${counted}::int as n
                       from flagged b where ${allBut('f_kind')} group by b.kind`)} as kinds,
-      ${facetJson(sql`select b.space_id::text as value, sp.name as label, count(*)::int as n
+      ${facetJson(sql`select b.space_id::text as value, sp.name as label, ${counted}::int as n
                       from flagged b join space sp on sp.id = b.space_id
                       where ${allBut('f_space')} group by b.space_id, sp.name`)} as spaces,
-      ${facetJson(sql`select b.component_type::text as value, t.name as label, count(*)::int as n
+      ${facetJson(sql`select b.component_type::text as value, t.name as label, ${counted}::int as n
                       from flagged b
                       join (select distinct on (artifact_id) artifact_id, content ->> 'name' as name
                             from artifact_version where kind = 'componentType'
@@ -414,21 +582,21 @@ export async function searchWords(
                         on t.artifact_id = b.component_type
                       where ${allBut('f_type')} group by b.component_type, t.name`)} as component_types,
       ${facetJson(sql`select b.owner::text as value,
-                             coalesce(pr.display_name, pr.email, 'Unnamed') as label, count(*)::int as n
+                             coalesce(pr.display_name, pr.email, 'Unnamed') as label, ${counted}::int as n
                       from flagged b join principal pr on pr.id = b.owner
                       where ${allBut('f_owner')}
                       group by b.owner, pr.display_name, pr.email`)} as owners,
       (select json_build_array(
          json_build_object('value', 'today', 'label', 'today',
-                           'n', count(*) filter (where b.changed_at >= ${rangeStart.today})),
+                           'n', ${counted} filter (where b.changed_at >= ${rangeStart.today})),
          json_build_object('value', 'week', 'label', 'week',
-                           'n', count(*) filter (where b.changed_at >= ${rangeStart.week})),
+                           'n', ${counted} filter (where b.changed_at >= ${rangeStart.week})),
          json_build_object('value', 'month', 'label', 'month',
-                           'n', count(*) filter (where b.changed_at >= ${rangeStart.month})),
+                           'n', ${counted} filter (where b.changed_at >= ${rangeStart.month})),
          json_build_object('value', 'year', 'label', 'year',
-                           'n', count(*) filter (where b.changed_at >= ${rangeStart.year})),
+                           'n', ${counted} filter (where b.changed_at >= ${rangeStart.year})),
          json_build_object('value', 'earlier', 'label', 'earlier',
-                           'n', count(*) filter (where b.changed_at < ${rangeStart.year})))
+                           'n', ${counted} filter (where b.changed_at < ${rangeStart.year})))
        from flagged b where ${allBut('f_changed')}) as changed,
       (select json_agg(json_build_object('field', y.field, 'name', y.name, 'data_type', y.data_type,
                                          'value', y.value, 'label', y.label, 'n', y.n)
@@ -437,7 +605,8 @@ export async function searchWords(
          select x.*, row_number() over (partition by x.field order by x.n desc, x.label) as place
          from (
            select ev.field::text as field, f.name, f.data_type, ev.key as value,
-                  coalesce(pr.display_name, ev.key) as label, count(distinct ev.entry_id)::int as n
+                  coalesce(pr.display_name, ev.key) as label,
+                  ${scope === 'latest' ? sql`count(distinct ev.entry_id)` : counted}::int as n
            from entry_values ev
            join flagged b on b.id = ev.entry_id
            join readable_fields f on f.field = ev.field
@@ -450,6 +619,10 @@ export async function searchWords(
 
   const row = rows[0]!;
   const total = Number(row.total);
+  const placed =
+    baseline !== undefined && row.items.some((item) => item.kind === 'component')
+      ? await firstPinnedNodes(trx, baseline)
+      : new Map<string, string>();
   const fields = new Map<
     string,
     { field: string; name: string; dataType: string; values: FacetRow[] }
@@ -478,6 +651,28 @@ export async function searchWords(
       changedAt: new Date(item.changed_at),
       place: item.place,
       passage: piecesOf(item.passage),
+      version:
+        VERSIONED.has(item.kind) && item.revision_no !== null
+          ? {
+              id: item.version_id,
+              number: `${item.revision_no}.${item.version_no}`,
+              latest: item.current,
+            }
+          : null,
+      baseline:
+        baseline === undefined
+          ? null
+          : {
+              id: baseline.id,
+              name: baseline.name,
+              document: baseline.document,
+              node:
+                item.kind === 'section'
+                  ? item.node
+                  : item.kind === 'component'
+                    ? (placed.get(`${item.artifact_id}:${item.version_id}`) ?? null)
+                    : null,
+            },
     })),
     facets: {
       kinds: capped(row.kinds),

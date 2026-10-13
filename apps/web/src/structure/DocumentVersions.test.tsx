@@ -121,6 +121,17 @@ function service(
 }
 
 describe("a document's Versions panel", () => {
+  it('SCH-058 opens each earlier version on its own page, read only', async () => {
+    const { client } = service();
+    render(<DocumentVersions client={client} id={DOCUMENT} mayEdit={false} />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    expect(within(list).getByRole('link', { name: 'Open 0.2' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}/versions/${V2}`,
+    );
+    expect(within(list).queryByRole('link', { name: 'Open 0.3' })).toBeNull();
+  });
+
   it('VER-035 VER-033 previews what restoring an earlier version would change in the outline, then restores it', async () => {
     const { client, asked, sent } = service();
     const onRestored = vi.fn();

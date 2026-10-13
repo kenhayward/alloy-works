@@ -155,6 +155,7 @@ const operationTags = {
     'takeLock',
     'releaseLock',
     'listComponentVersions',
+    'getComponentVersion',
     'cutVersion',
     'previewRestore',
     'restoreVersion',
@@ -167,6 +168,7 @@ const operationTags = {
   Documents: [
     'listDocuments',
     'listDocumentVersions',
+    'getDocumentVersion',
     'previewDocumentRestore',
     'restoreDocumentVersion',
     'archiveDocument',
@@ -428,6 +430,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists released component versions newest first using an opaque cursor. It does not include working iterations.',
   listDocumentVersions:
     'Lists a document’s versions newest first using an opaque cursor, each with the version it was restored from, if any.',
+  getComponentVersion:
+    'Reads one version of a component, read only: its content and values as that version holds them, its number, who cut it and when, and which version is the latest. Where a search result from an earlier version links.',
+  getDocumentVersion:
+    'Reads one version of a document, read only: its outline and values as that version holds them, each reference to a component the caller may not read withheld, its number, who cut it and when, and which version is the latest. Its components’ text is not read.',
   previewDocumentRestore:
     'Answers what restoring an earlier version of a document would make, inserting nothing: its outline compared with the latest’s, a component the caller may not read withheld on both sides, and anything that would refuse it. The outline, its references and their modes and its values come back as they stood; its parameters stay as they are now. Refused by the outline’s own guards: a reference the caller may not read, a section change the template does not allow, or a value its field no longer takes.',
   restoreDocumentVersion:
@@ -628,7 +634,8 @@ const descriptions: Readonly<Record<string, string>> = {
   makeGrant:
     'Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.',
   removeGrant: 'Removes a grant unless it is needed to keep the environment administered.',
-  search: 'Searches only content the caller may read, with facets and stable cursor paging.',
+  search:
+    'Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.',
   getEditingSettings:
     'Reads the environment’s editing settings, including how long saved changes are retained.',
   setEditingSettings:

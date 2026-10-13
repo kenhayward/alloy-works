@@ -21,6 +21,7 @@ import {
 } from '../review/ThreadsPanel.js';
 
 import { Chip } from '../parts/Chip.js';
+import { searchLink } from '../search/links.js';
 import { bindingStatesIn, type BindingState } from './bindingContexts.js';
 import styles from './BaselinePage.module.css';
 import { DocumentText } from './DocumentText.js';
@@ -263,8 +264,9 @@ export function BaselinePage({
   return (
     <article className={styles['page']} aria-labelledby="baseline-heading">
       <header className={styles['head']}>
-        <p>
+        <p className={styles['links']}>
           <a href={documentLink(document)}>Open the document as it is now</a>
+          <a href={searchLink('', { versions: 'latest', baseline })}>Search this baseline</a>
         </p>
         <h1 id="baseline-heading" className={styles['title']}>
           {shown.name}

@@ -88,6 +88,7 @@ import { attentionHandlers } from './attention.js';
 import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
 import { restoreHandlers } from './restore.js';
+import { versionHandlers } from './versions.js';
 import { archivalHandlers } from './archival.js';
 import { deletedListingHandlers, deletionHandlers } from './deletion.js';
 import { holdHandlers } from './holds.js';
@@ -539,6 +540,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...suggestionHandlers(),
     ...roundHandlers(),
     ...restoreHandlers(),
+    ...versionHandlers(),
     ...archivalHandlers(),
     ...deletionHandlers(),
     ...deletedListingHandlers(db, tenantOf, principalOf),

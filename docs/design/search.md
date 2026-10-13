@@ -48,6 +48,8 @@ are never in it.
 | **SCH-057** | A result links by identity - the artifact's id and the place's own id, never a position. Where the place is no longer in the version the reader opens, the page says so by name and shows the version it opened, which is the newest                                                                                     |
 | **SCH-059** | Results are narrowed by kind, space, a metadata value, owner - who made the artifact - and a date range, each a filter over the same predicate                                                                                                                                                                           |
 | **SCH-062** | Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it                                                                                                                                   |
+| **SCH-003** | The latest version by default; on request every version, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))                                                              |
+| **SCH-058** | A result from an earlier version names it and links to that version's read-only page at its place; one found in a baseline, to the baseline's page at its node                                                                                                                                                           |
 | **SCH-066** | An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction                                                                                                  |
 
 **IAM-075 is not claimed here.** It asks that search indexes, caches, secrets and publications each be
@@ -84,8 +86,9 @@ the copy is what lets a passage be filtered where it is indexed.
 Rows are written when a version is created, in the same transaction, so the words are findable at
 once (SCH-050). The vector arrives when the block's embedding does, which is a model call and
 asynchronous; until then the passage is not searchable by meaning and the entry is still findable by
-words. A new version replaces its artifact's rows, so search sees the current version. SCH-003 makes
-earlier versions searchable on request, which is not designed here.
+words. A new version replaces its artifact's rows, so search sees the current version; a component's,
+a document's or an asset's earlier rows move aside, searchable on request
+([Earlier versions and baselines](#earlier-versions-and-baselines)).
 
 ## The permission predicate
 
@@ -322,6 +325,28 @@ Taken as recommended on Ken's instruction of 2026-09-27 to continue after W5, ea
 | SE-F | Owner is the author of the artifact's first version; changed is its latest version's time                                                                                                       |
 | SE-G | A result's link lands on the newest version and says by name when the place it names is gone                                                                                                    |
 | SE-H | Definitions are found by anyone with the tenant's `read`, as access.md reads them; a section by whoever may read its document                                                                   |
+
+## Earlier versions and baselines
+
+Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), SV-A to SV-I).
+
+- **Kept, not re-read.** `indexVersion` moves an artifact's rows from any other version into
+  `search_earlier` and `search_earlier_text` (0088), ids and vectors as they were, before it writes the
+  new one's. Components, documents with their sections, and assets: what a baseline pins. `search_entry`
+  stays the current set, so the default query reads exactly what it read before, and holds no union.
+- **The request.** `versions=all` reads both tables, earlier assets left out (no page shows one), and
+  collapses to one result per artifact and place at its newest matching version; counts and facets count
+  those, each facet without its own filter. `baseline=<id>` reads only the versions the baseline pins,
+  archived content included; one the reader may not read is `404 baseline_not_found`; both together
+  are 400. The one predicate applies on every branch, so a pin the reader may not read is neither found
+  nor counted (SCH-010, SCH-032).
+- **The result** names its version (`number`, `latest`) and, in a baseline, the baseline and where in
+  its document it stands. An earlier version links to its read-only page,
+  `#/components/{id}/versions/{version}` or `#/documents/{id}/versions/{version}`; a baseline's result to
+  the baseline's page at its node. Each Versions panel row opens its version; a baseline offers
+  **Search this baseline**.
+- **Derived**: 0088's run writes every earlier version's rows from the chain; erasure rewrites earlier
+  rows naming the person, as #594 rewrites current ones.
 
 ## Open questions
 

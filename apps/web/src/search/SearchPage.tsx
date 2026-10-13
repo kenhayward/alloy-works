@@ -2,7 +2,8 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
-import { resultLink, whereFound } from './links.js';
+import { Chip } from '../parts/Chip.js';
+import { resultLink, whereFound, type SearchScope } from './links.js';
 import styles from './SearchPage.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -23,6 +24,17 @@ interface Result {
   readonly changedAt: string;
   readonly place: string | null;
   readonly passage: readonly { readonly text: string; readonly matched: boolean }[];
+  readonly version?: {
+    readonly id: string;
+    readonly number: string;
+    readonly latest: boolean;
+  } | null;
+  readonly baseline?: {
+    readonly id: string;
+    readonly name: string;
+    readonly document: string;
+    readonly node: string | null;
+  } | null;
 }
 
 interface Facets {
@@ -59,6 +71,16 @@ interface Chosen {
   readonly changed: string | null;
   readonly values: readonly string[];
 }
+
+const LATEST: SearchScope = { versions: 'latest', baseline: null };
+
+/** Which version or baseline a result was found in, in words; null for the latest. */
+const foundIn = (item: Result): string | null =>
+  item.baseline
+    ? `In baseline ${item.baseline.name}`
+    : item.version && !item.version.latest
+      ? `Version ${item.version.number}, earlier`
+      : null;
 
 const NOTHING_CHOSEN: Chosen = {
   kinds: [],
@@ -157,19 +179,26 @@ function FacetGroup({
 export function SearchPage({
   client,
   query,
+  scope = LATEST,
   onSearch,
+  onScope,
 }: {
   readonly client: Client;
   /** The query the address holds. */
   readonly query: string;
+  /** Which versions, or which baseline, the address holds (SV-I). */
+  readonly scope?: SearchScope;
   /** Told a query to search for, which the address then holds. */
   readonly onSearch: (query: string) => void;
+  /** Told the versions or baseline to search, which the address then holds. */
+  readonly onScope?: (scope: SearchScope) => void;
 }) {
   const [typed, setTyped] = useState(query);
   const [chosen, setChosen] = useState<Chosen>(NOTHING_CHOSEN);
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [more, setMore] = useState<readonly Result[]>([]);
-  const [problem, setProblem] = useState<'signedOut' | 'failed' | null>(null);
+  const [problem, setProblem] = useState<'signedOut' | 'failed' | 'noBaseline' | null>(null);
+  const [baselineName, setBaselineName] = useState<string | null>(null);
   // A page being fetched: asked for once, however often Show more is pressed meanwhile.
   const fetchingMore = useRef(false);
   const [showingMore, setShowingMore] = useState(false);
@@ -179,6 +208,23 @@ export function SearchPage({
   const headingId = useId();
 
   useEffect(() => setTyped(query), [query]);
+
+  // The baseline searched, named in its chip.
+  const { baseline, versions } = scope;
+  useEffect(() => {
+    setBaselineName(null);
+    if (baseline === null) return undefined;
+    let current = true;
+    client
+      .GET('/v1/baselines/{id}', { params: { path: { id: baseline } } })
+      .then(({ data }) => {
+        if (current && data) setBaselineName(data.name);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client, baseline]);
 
   const ask = useCallback(
     async (offset: number) => {
@@ -193,12 +239,17 @@ export function SearchPage({
             ...listed('owner', chosen.owners),
             ...(chosen.changed === null ? {} : { changed: chosen.changed as 'today' }),
             ...(chosen.values.length === 0 ? {} : { value: [...chosen.values] }),
+            ...(baseline !== null
+              ? { baseline }
+              : versions === 'all'
+                ? { versions: 'all' as const }
+                : {}),
           },
         },
       });
       return { data: data as Answer | undefined, status: response.status };
     },
-    [client, query, chosen],
+    [client, query, chosen, baseline, versions],
   );
 
   useEffect(() => {
@@ -213,7 +264,7 @@ export function SearchPage({
       .then(({ data, status }) => {
         if (request.current !== generation) return;
         if (!data) {
-          setProblem(status === 401 ? 'signedOut' : 'failed');
+          setProblem(status === 401 ? 'signedOut' : status === 404 ? 'noBaseline' : 'failed');
           return;
         }
         setAnswer(data);
@@ -269,9 +320,42 @@ export function SearchPage({
         />
         <button type="submit">Search</button>
       </form>
+      <div className={styles['scope']}>
+        {baseline === null ? (
+          <label className={styles['option']}>
+            Versions
+            <select
+              value={versions}
+              onChange={(event) =>
+                onScope?.({
+                  versions: event.target.value === 'all' ? 'all' : 'latest',
+                  baseline: null,
+                })
+              }
+            >
+              <option value="latest">Latest</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        ) : (
+          <>
+            <Chip tone="accent">
+              {baselineName === null ? 'In a baseline' : `In baseline ${baselineName}`}
+            </Chip>
+            <button type="button" onClick={() => onScope?.(LATEST)}>
+              Search without the baseline
+            </button>
+          </>
+        )}
+      </div>
       {problem === 'signedOut' && (
         <Notice tone="signedOut">
           <p>You are signed out. Sign in again to search.</p>
+        </Notice>
+      )}
+      {problem === 'noBaseline' && (
+        <Notice tone="failed">
+          <p>There is no baseline you can read by that id.</p>
         </Notice>
       )}
       {problem === 'failed' && (
@@ -344,6 +428,7 @@ export function SearchPage({
             {items.map((item) => {
               const link = resultLink(item);
               const where = whereFound(item.place, fields);
+              const found = foundIn(item);
               return (
                 <li key={`${item.artifactId}:${item.node ?? ''}`}>
                   <article className={styles['result']}>
@@ -352,6 +437,7 @@ export function SearchPage({
                       {item.space === null ? '' : ` in ${item.space.name}`}
                     </p>
                     <h2>{link === null ? item.title : <a href={link}>{item.title}</a>}</h2>
+                    {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (
                       <p className={styles['passage']}>

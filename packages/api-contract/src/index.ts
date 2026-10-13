@@ -65,6 +65,7 @@ export {
   RestoreParams,
   restoreRoutes,
 } from './restore.js';
+export { ComponentVersionView, DocumentVersionView, versionRoutes } from './versions.js';
 export { ArchivalParams, ArchivalView, archivalRoutes } from './archival.js';
 export {
   DeletedItem,

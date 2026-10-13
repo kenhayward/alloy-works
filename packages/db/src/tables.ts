@@ -462,6 +462,38 @@ export interface SearchEntryTable {
   deleted: Generated<boolean>;
 }
 
+/**
+ * An earlier version's entry (0088; the SV plan, SV-A): a `search_entry` row moved here, its id and
+ * vector kept, when its artifact gained a version. Only the two flags ever change.
+ */
+export interface SearchEarlierTable {
+  id: string;
+  artifact_id: string;
+  kind: 'component' | 'document' | 'section' | 'asset';
+  node: string | null;
+  version_id: string;
+  space_id: string | null;
+  title: string;
+  owner: string | null;
+  changed_at: Date;
+  component_type: string | null;
+  field_values: ColumnType<Record<string, unknown>, string, never>;
+  configuration: SearchConfiguration;
+  body: string;
+  vector: ColumnType<string, string, never>;
+  archived: ColumnType<boolean, boolean | undefined, boolean>;
+  deleted: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
+/** An earlier entry's place and its words, as `search_text` held them (0088). */
+export interface SearchEarlierTextTable {
+  entry_id: string;
+  place: string;
+  body: string;
+  configuration: SearchConfiguration;
+  vector: ColumnType<string, string, never>;
+}
+
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
@@ -754,6 +786,8 @@ export interface TenantTables {
   legal_hold_release: LegalHoldReleaseTable;
   retention_keep: RetentionKeepTable;
   search_text: SearchTextTable;
+  search_earlier: SearchEarlierTable;
+  search_earlier_text: SearchEarlierTextTable;
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;

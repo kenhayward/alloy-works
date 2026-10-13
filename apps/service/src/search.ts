@@ -8,6 +8,7 @@ import {
 } from '@alloy-works/db';
 import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
+import { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** A list said as a reader says it: `a`, `a and b`, `a, b and c`. */
@@ -72,6 +73,8 @@ function view(answer: SearchAnswer): SearchAnswerView {
       changedAt: each.changedAt.toISOString(),
       place: each.place,
       passage: each.passage.map((piece) => ({ ...piece })),
+      version: each.version === null ? null : { ...each.version },
+      baseline: each.baseline === null ? null : { ...each.baseline },
     })),
   };
 }
@@ -123,13 +126,32 @@ export function searchHandlers(
     // Anybody signed in may search, over what they may read (search.md, SE-H).
     search: async (request: FastifyRequest): Promise<SearchAnswerView> => {
       const query = request.query as SearchQuery;
+      // Every version or one baseline, never both (the SV plan, SV-C).
+      if (query.versions !== undefined && query.baseline !== undefined) {
+        throw new AppError(
+          400,
+          'invalid_request',
+          'Search every version or one baseline, not both.',
+        );
+      }
       const answer = await db.withTenant(tenantOf(request), (trx) =>
         searchWords(trx, principalOf(request).principalId, query.q ?? '', {
           ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
           ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
           filters: filtersOf(query),
+          scope:
+            query.baseline === undefined
+              ? (query.versions ?? 'latest')
+              : { baseline: query.baseline },
         }),
       );
+      if (answer === 'baseline_not_found') {
+        throw new AppError(
+          404,
+          'baseline_not_found',
+          'There is no baseline you can read by that id.',
+        );
+      }
       // A session names a principal the environment holds; one that has gone reads nothing.
       return view(
         answer ?? {

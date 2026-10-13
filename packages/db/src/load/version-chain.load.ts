@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from '../bootstrap.js';
 import { migrate } from '../migrate.js';
 import { createTenant, type Tenant } from '../provision.js';
+import { reindexSearch } from '../search.js';
 import { createTenantDatabase, type TenantDatabase } from '../tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '../testing/database.js';
 import { versionDigests } from '../version-digest.js';
@@ -388,6 +389,39 @@ describe('inline JSONB at authoring volume', () => {
     report.digests = summary(all);
     expect(percentile(all, 95)).toBeLessThanOrEqual(THRESHOLDS.digestsP95);
   }, 600_000);
+
+  it("writes every earlier version's search rows, as 0088's run does, and says what they cost", async () => {
+    const started = performance.now();
+    await service.withTenant(tenant, (trx) => reindexSearch(trx, 'earlier'));
+    const seconds = (performance.now() - started) / 1e3;
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      const measured = async (table: string) =>
+        (
+          await admin.query<{ n: string; bytes: string }>(
+            `select (select count(*) from ${admin.escapeIdentifier(tenant.schema)}.${table}) as n,
+                    pg_total_relation_size($1::regclass) as bytes`,
+            [`${tenant.schema}.${table}`],
+          )
+        ).rows[0]!;
+      const [entries, texts] = [
+        await measured('search_earlier'),
+        await measured('search_earlier_text'),
+      ];
+      // The SV plan, SV-B: sharing words between versions is worth building past these.
+      report.earlierSearch = {
+        seconds: Number(seconds.toFixed(1)),
+        entries: Number(entries.n),
+        entryMegabytes: Number((Number(entries.bytes) / 1e6).toFixed(1)),
+        texts: Number(texts.n),
+        textMegabytes: Number((Number(texts.bytes) / 1e6).toFixed(1)),
+      };
+      expect(Number(entries.n)).toBeGreaterThan(0);
+    } finally {
+      await admin.end();
+    }
+  }, 3_600_000);
 
   it('projects the chain for a tenant of a million components', () => {
     const storage = report.storage as { projectedGigabytesAtAMillionComponents: number };

@@ -6,6 +6,7 @@ import {
   documentAccessLink,
   documentAddress,
   documentLink,
+  documentVersionLink,
   nodeLink,
   publishingLink,
   templateAccessAddress,
@@ -55,6 +56,23 @@ describe('the addresses of a document and its nodes', () => {
     ]) {
       expect(documentAddress(other), other).toBeNull();
     }
+  });
+
+  it('addresses one version of a document, and a node in it, and reads them back', () => {
+    const VERSION = 'dddddddd-0000-4000-8000-000000000001';
+    expect(documentAddress(documentVersionLink(DOCUMENT, VERSION, NODE))).toEqual({
+      kind: 'version',
+      document: DOCUMENT,
+      version: VERSION,
+      node: NODE,
+    });
+    expect(documentAddress(documentVersionLink(DOCUMENT, VERSION))).toEqual({
+      kind: 'version',
+      document: DOCUMENT,
+      version: VERSION,
+      node: null,
+    });
+    expect(documentAddress(`#/documents/${DOCUMENT}/versions`)).toBeNull();
   });
 
   it('reads the list, a document and a node of a document, and nothing else', () => {

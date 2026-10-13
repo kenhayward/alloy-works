@@ -77,6 +77,18 @@ describe('the Versions panel', () => {
     expect(asked).toContain(`/v1/components/${COMPONENT}/comparison?from=${V2}&to=${V3}`);
   });
 
+  it('SCH-058 opens each earlier version on its own page, read only', async () => {
+    const { client } = service();
+    render(<VersionsPanel client={client} id={COMPONENT} />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    expect(within(list).getByRole('link', { name: 'Open 0.2' })).toHaveAttribute(
+      'href',
+      `#/components/${COMPONENT}/versions/${V2}`,
+    );
+    // The latest is the component itself.
+    expect(within(list).queryByRole('link', { name: 'Open 0.3' })).toBeNull();
+  });
+
   it('CNT-113 COL-026 shows my own changes since the version I opened, from what the editor holds now', async () => {
     const { client, asked } = service();
     render(

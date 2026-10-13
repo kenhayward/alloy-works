@@ -1,6 +1,8 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
+import { componentVersionLink } from '../search/links.js';
+import { documentVersionLink } from '../structure/links.js';
 import styles from './VersionList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -28,6 +30,7 @@ export function VersionList({
   limit,
   onCompare,
   onRestore,
+  opens = false,
   read = 0,
   of = 'component',
 }: {
@@ -40,6 +43,8 @@ export function VersionList({
   onCompare?: (version: ListedVersion, latest: ListedVersion) => void;
   /** Offered on each version but the latest: previews restoring it (the RS plan, RS-H). */
   onRestore?: (version: ListedVersion, latest: ListedVersion) => void;
+  /** Whether each version but the latest offers Open, on its own page read only (SCH-058). */
+  opens?: boolean;
   /** Read again each time this changes, as after a restore. */
   read?: number;
 }) {
@@ -94,6 +99,19 @@ export function VersionList({
               >{`Restored from version ${version.restoredFrom}`}</span>
             )}
           </span>
+          {opens && version !== versions[0] && (
+            <a
+              className={styles['open']}
+              aria-label={`Open ${version.number}`}
+              href={
+                of === 'document'
+                  ? documentVersionLink(id, version.id)
+                  : componentVersionLink(id, version.id)
+              }
+            >
+              Open
+            </a>
+          )}
           {onCompare && version !== versions[0] && (
             <button
               type="button"

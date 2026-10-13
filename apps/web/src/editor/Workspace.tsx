@@ -18,8 +18,9 @@ import { PublicationList } from '../publishing/PublicationList.js';
 import { PublicationPage } from '../publishing/PublicationPage.js';
 import { useAbout } from '../shell/about.js';
 import { hashOf, placeOf, type Place } from '../shell/places.js';
-import { componentAddress, searchAddress, searchLink } from '../search/links.js';
+import { componentAddress, searchAddress, searchLink, searchScope } from '../search/links.js';
 import { SearchPage } from '../search/SearchPage.js';
+import { ComponentVersionPage, DocumentVersionPage } from '../versions/VersionPages.js';
 import { DocumentList } from '../structure/DocumentList.js';
 import { BaselineComparisonPage } from '../compare/BaselineComparisonPage.js';
 import { BaselinePage } from '../structure/BaselinePage.js';
@@ -221,6 +222,17 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     if (hash === '' || hash === '#' || hash === '#/') return <Home client={client} />;
     if (/^#\/admin(?:\/|$)/.test(hash)) return <AdministrationPage client={client} />;
     const address = componentAddress(hash);
+    if (address?.version) {
+      return (
+        <ComponentVersionPage
+          key={`${address.component}:${address.version}`}
+          client={client}
+          component={address.component}
+          version={address.version}
+          block={address.block}
+        />
+      );
+    }
     const opened = address?.component;
     if (opened && address?.access) {
       return (
@@ -329,8 +341,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           <SearchPage
             client={client}
             query={searched}
+            scope={searchScope(hash)}
             onSearch={(query) => {
-              window.location.hash = searchLink(query);
+              window.location.hash = searchLink(query, searchScope(hash));
+            }}
+            onScope={(scope) => {
+              window.location.hash = searchLink(searched, scope);
             }}
           />
         </>
@@ -449,6 +465,17 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             against={documents.against}
           />
         </>
+      );
+    }
+    if (documents?.kind === 'version') {
+      return (
+        <DocumentVersionPage
+          key={`${documents.document}:${documents.version}`}
+          client={client}
+          document={documents.document}
+          version={documents.version}
+          node={documents.node}
+        />
       );
     }
     if (documents?.kind === 'baseline') {

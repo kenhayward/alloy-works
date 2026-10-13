@@ -58,3 +58,9 @@
 .threads {
   min-width: 0;
 }
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+}

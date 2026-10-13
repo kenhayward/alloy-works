@@ -34962,6 +34962,379 @@
         }
       }
     },
+    "/v1/components/{id}/versions/{version}": {
+      "get": {
+        "operationId": "getComponentVersion",
+        "summary": "One version of a component, read only",
+        "description": "Reads one version of a component, read only: its content and values as that version holds them, its number, who cut it and when, and which version is the latest. Where a search result from an earlier version links.",
+        "tags": [
+          "Components"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The earlier version to restore"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "component": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "The version's title"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "author": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "Their name now; an erased person by the erased label",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Who cut it; null for a starter definition"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "createdAt",
+                        "note",
+                        "author"
+                      ]
+                    },
+                    "latest": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The latest version, which may be this one"
+                    },
+                    "content": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The version's content document (content-model.md), exactly as stored"
+                    },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Its metadata values, by field"
+                    },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether the component is archived now"
+                    }
+                  },
+                  "required": [
+                    "component",
+                    "title",
+                    "version",
+                    "latest",
+                    "content",
+                    "values",
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "component": "example",
+                  "title": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "createdAt": "example",
+                    "note": "example",
+                    "author": {
+                      "id": "example",
+                      "name": "example"
+                    }
+                  },
+                  "latest": {
+                    "id": "example",
+                    "number": "example"
+                  },
+                  "content": {},
+                  "values": {},
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a component the caller may read is one whose versions they may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component the caller may read, or a version that is not one of its versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/components/{id}/versions/{version}/restoration": {
       "get": {
         "operationId": "previewRestore",
@@ -124323,6 +124696,400 @@
         }
       }
     },
+    "/v1/documents/{id}/versions/{version}": {
+      "get": {
+        "operationId": "getDocumentVersion",
+        "summary": "One version of a document, read only",
+        "description": "Reads one version of a document, read only: its outline and values as that version holds them, each reference to a component the caller may not read withheld, its number, who cut it and when, and which version is the latest. Its components’ text is not read.",
+        "tags": [
+          "Documents"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The earlier version to restore"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "The version's title"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "author": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "description": "Their name now; an erased person by the erased label",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Who cut it; null for a starter definition"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "createdAt",
+                        "note",
+                        "author"
+                      ]
+                    },
+                    "latest": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The latest version, which may be this one"
+                    },
+                    "outline": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Its outline, each reference to a component the caller may not read withheld, as the document view withholds one"
+                    },
+                    "titles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "title"
+                        ]
+                      },
+                      "description": "Each reference the caller may read, by the title of the component version it places"
+                    },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Its metadata values, by field"
+                    },
+                    "archived": {
+                      "type": "boolean",
+                      "description": "Whether the document is archived now"
+                    }
+                  },
+                  "required": [
+                    "document",
+                    "title",
+                    "version",
+                    "latest",
+                    "outline",
+                    "titles",
+                    "values",
+                    "archived"
+                  ]
+                },
+                "example": {
+                  "document": "example",
+                  "title": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "createdAt": "example",
+                    "note": "example",
+                    "author": {
+                      "id": "example",
+                      "name": "example"
+                    }
+                  },
+                  "latest": {
+                    "id": "example",
+                    "number": "example"
+                  },
+                  "outline": {},
+                  "titles": [],
+                  "values": {},
+                  "archived": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a document the caller may read is one whose versions they may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read, or a version that is not one of its versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/versions/{version}/restoration": {
       "get": {
         "operationId": "previewDocumentRestore",
@@ -149611,7 +150378,7 @@
       "get": {
         "operationId": "search",
         "summary": "Everything the caller may read that holds these words, a page at a time",
-        "description": "Searches only content the caller may read, with facets and stable cursor paging.",
+        "description": "Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.",
         "tags": [
           "Search"
         ],
@@ -149751,6 +150518,29 @@
                   }
                 }
               ]
+            }
+          },
+          {
+            "name": "versions",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Which versions to search: the latest of each, when absent, or every version, each result at its newest version that matches",
+              "type": "string",
+              "enum": [
+                "latest",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "baseline",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Search only what this baseline pins, by id, at the versions it pins; not with `versions`",
+              "type": "string",
+              "maxLength": 100
             }
           },
           {
@@ -149934,6 +150724,71 @@
                                   ]
                                 },
                                 "description": "Words from that place, about thirty, each matched word a piece of its own"
+                              },
+                              "version": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "number": {
+                                        "type": "string",
+                                        "description": "`revision.version`"
+                                      },
+                                      "latest": {
+                                        "type": "boolean",
+                                        "description": "Whether it is the latest version"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number",
+                                      "latest"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The version it matched in, for a component, a document, a section or an asset; null for anything else"
+                              },
+                              "baseline": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "document": {
+                                        "type": "string",
+                                        "description": "The baseline's document"
+                                      },
+                                      "node": {
+                                        "description": "Where in the document it stands: a section, or where a component is first placed",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "document",
+                                      "node"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The baseline searched, when the search named one"
                               }
                             },
                             "required": [
@@ -149944,7 +150799,9 @@
                               "space",
                               "changedAt",
                               "place",
-                              "passage"
+                              "passage",
+                              "version",
+                              "baseline"
                             ]
                           }
                         },
@@ -150205,7 +151062,7 @@
             }
           },
           "400": {
-            "description": "An offset or a limit out of range, or a filter that is not one",
+            "description": "An offset or a limit out of range, a filter that is not one, or every version and a baseline together",
             "content": {
               "application/json": {
                 "schema": {
@@ -150247,6 +151104,47 @@
           },
           "401": {
             "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A baseline the caller may not read, or none by that id",
             "content": {
               "application/json": {
                 "schema": {

@@ -79,3 +79,12 @@
   background: var(--accent-weak);
   color: inherit;
 }
+
+/* Which versions, or which baseline, the search reads (the SV plan, SV-I). */
+.scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  margin-block: var(--space-8);
+}

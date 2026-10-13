@@ -6,7 +6,7 @@ import { recordGrantsRevoked } from './grants.js';
 import { recordMembershipsRemoved } from './groups.js';
 import { withdrawInvitation } from './invitations.js';
 import { notifyTenant } from './realtime.js';
-import { reindexNaming } from './search.js';
+import { reindexNaming, rewriteEarlierNaming } from './search.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -174,6 +174,7 @@ export async function erasePerson(
       throw new Error(`The invitation of ${person} could not be withdrawn`);
     }
     await reindexNaming(trx, state.person.id);
+    await rewriteEarlierNaming(trx, state.person.id);
     return { answer: 'erased', labels: await eraseLabels(trx, person) };
   }
 
@@ -194,6 +195,8 @@ export async function erasePerson(
     .execute();
   // Search said their name wherever a value named them; it says the fixed word now (#594).
   await reindexNaming(trx, state.person.id);
+  // Earlier versions' words said their name too (SV-J).
+  await rewriteEarlierNaming(trx, state.person.id);
   return { answer: 'erased', labels: await eraseLabels(trx, person) };
 }
 
