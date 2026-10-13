@@ -972,7 +972,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   baseline or a publication that placed any version, a publish or preview waiting to be made, a
   document whose latest version references it (a deleted document included), a legal hold on it or
   its space, somebody editing it, or a review round open on it. A dependant the deleter may not read
-  is counted, not named. Anything ever baselined or published can never be deleted: archive it
+  is never named or counted: it says only that something else depends on it. Anything ever baselined or published can never be deleted: archive it
   instead. Nothing is removed: a deleted component or document leaves every listing, search,
   reference and Needs your attention, and opens as deleted to whoever may read it; its versions,
   threads, suggestions, rounds and audit events are kept and come back on undelete. A restore of a

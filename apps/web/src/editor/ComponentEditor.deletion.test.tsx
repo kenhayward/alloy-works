@@ -30,7 +30,7 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
     expect(asked.map((each) => each.route)).toContain('POST /v1/components/{id}/delete');
   });
 
-  it('LIF-023 says every reason it may not be deleted, naming what may be read and counting the rest, and offers no Delete', async () => {
+  it('LIF-023 says every reason it may not be deleted, naming what may be read and saying only that something else does, and offers no Delete', async () => {
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ mayRetire: true })),
       'GET /v1/components/{id}/deletion': () =>
@@ -39,8 +39,8 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
           deleted: false,
           remains,
           refusals: [
-            { code: 'baselined', named: [{ id: 'b1', title: 'Issue 1' }], unnamed: 0 },
-            { code: 'referenced', named: [{ id: 'd1', title: 'Dosing report' }], unnamed: 2 },
+            { code: 'baselined', named: [{ id: 'b1', title: 'Issue 1' }], unreadable: false },
+            { code: 'referenced', named: [{ id: 'd1', title: 'Dosing report' }], unreadable: true },
             { code: 'held' },
             { code: 'locked', holder: { id: 'g', name: 'Grace' } },
           ],
@@ -51,7 +51,7 @@ describe('deletion on a component’s own page (lifecycle.md)', () => {
     const deleting = await screen.findByRole('dialog', { name: 'Delete Install the printer' });
     for (const said of [
       'A baseline pins it: Issue 1.',
-      'Documents reference it: Dosing report, and 2 you may not read.',
+      'A document references it: Dosing report. Something you may not read does too.',
       'A legal hold is on it or its space.',
       'Grace is editing it.',
     ]) {

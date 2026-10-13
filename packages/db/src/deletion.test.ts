@@ -196,7 +196,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     // The reference gone from the latest, the baseline still pins the version it took.
     await emptied(report, ada);
     expect(await refusals(pinned, ada)).toEqual([
-      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unnamed: 0 },
+      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unreadable: false },
     ]);
     expect(await as((trx) => isDeleted(trx, pinned))).toBe(false);
   });
@@ -225,16 +225,24 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
     await emptied(report, ada);
     await emptied(queued, ada);
     expect(await refusals(placed, ada)).toEqual([
-      { reason: 'published', named: [{ id: publication, title: 'Published report' }], unnamed: 0 },
+      {
+        reason: 'published',
+        named: [{ id: publication, title: 'Published report' }],
+        unreadable: false,
+      },
     ]);
     expect(await refusals(waiting, ada)).toEqual([
-      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unnamed: 0 },
+      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unreadable: false },
     ]);
     expect(await refusals(report.artifactId, ada)).toEqual([
-      { reason: 'published', named: [{ id: publication, title: 'Published report' }], unnamed: 0 },
+      {
+        reason: 'published',
+        named: [{ id: publication, title: 'Published report' }],
+        unreadable: false,
+      },
     ]);
     expect(await refusals(queued.artifactId, ada)).toEqual([
-      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unnamed: 0 },
+      { reason: 'publishing', named: [{ id: request, title: 'Queued report' }], unreadable: false },
     ]);
   });
 
@@ -259,12 +267,12 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       placeHold(trx, { target: { artifact: report.artifactId }, reason: 'A matter', by: ada }),
     );
     expect(await refusals(report.artifactId, ada)).toEqual([
-      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unnamed: 0 },
+      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unreadable: false },
       { reason: 'held' },
     ]);
   });
 
-  it('LIF-023 lists every reason, not the first, and counts what the deleter may not read rather than naming it', async () => {
+  it('LIF-023 lists every reason, not the first, and names only what the deleter may read', async () => {
     const { space, elsewhere, ada, grace } = await fresh();
     const busy = await component(space, ada, 'Busy procedure');
     const seen = await document(space, ada, 'Seen report', [reference(busy)]);
@@ -275,14 +283,26 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       claimLock(trx, { artifactId: busy, principal: grace, session: randomUUID() }),
     );
     expect(await refusals(busy, ada)).toEqual([
-      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unnamed: 0 },
+      { reason: 'baselined', named: [{ id: issue, title: 'Issue 1' }], unreadable: false },
       {
         reason: 'referenced',
         named: [{ id: seen.artifactId, title: 'Seen report' }],
-        unnamed: 1,
+        unreadable: true,
       },
       { reason: 'locked', holder: { id: grace, name: 'Grace' } },
     ]);
+  });
+
+  it('SCH-032 answers two dependants the deleter may not read exactly as one, naming and counting neither', async () => {
+    const { space, elsewhere, ada, grace } = await fresh();
+    const once = await component(space, ada, 'Once procedure');
+    const twice = await component(space, ada, 'Twice procedure');
+    await document(elsewhere, grace, 'Unseen report', [reference(once)]);
+    await document(elsewhere, grace, 'Unseen report', [reference(twice)]);
+    await document(elsewhere, grace, 'Another unseen report', [reference(twice)]);
+    const one = await refusals(once, ada);
+    expect(one).toEqual([{ reason: 'referenced', named: [], unreadable: true }]);
+    expect(await refusals(twice, ada)).toEqual(one);
   });
 
   it('refuses deleting a document in an open review round, naming the round', async () => {
@@ -302,7 +322,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       return opened.round.id;
     });
     expect(await refusals(report.artifactId, ada)).toEqual([
-      { reason: 'in_review', named: [{ id: round, title: 'First review' }], unnamed: 0 },
+      { reason: 'in_review', named: [{ id: round, title: 'First review' }], unreadable: false },
     ]);
   });
 
@@ -408,7 +428,7 @@ describe('deleting a component or a document (lifecycle.md; the DL plan, DL-A to
       {
         reason: 'referenced',
         named: [{ id: report.artifactId, title: 'Deleted report' }],
-        unnamed: 0,
+        unreadable: false,
       },
     ]);
     expect(await bring(report.artifactId, ada)).toEqual({ answer: 'undeleted' });

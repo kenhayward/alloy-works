@@ -238,7 +238,7 @@ describe('deleting a component or a document over HTTP (the DL plan, Task 1)', (
       return made.baseline;
     });
     const expected = [
-      { code: 'baselined', named: [{ id: baseline, title: 'Issue 1' }], unnamed: 0 },
+      { code: 'baselined', named: [{ id: baseline, title: 'Issue 1' }], unreadable: false },
       { code: 'held' },
     ];
     const preview = await call('GET', `/v1/documents/${report.artifactId}/deletion`, 'ada');

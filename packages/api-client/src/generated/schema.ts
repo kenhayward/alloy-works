@@ -508,7 +508,7 @@ export interface paths {
         };
         /**
          * What deleting a component leaves, and what refuses it
-         * @description States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is counted, not named. Needs retire on the component, and answers a deleted one too.
+         * @description States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.
          */
         get: operations["getComponentDeletion"];
         put?: never;
@@ -1352,7 +1352,7 @@ export interface paths {
         };
         /**
          * What deleting a document leaves, and what refuses it
-         * @description States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is counted, not named. Needs retire on the document, and answers a deleted one too.
+         * @description States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.
          */
         get: operations["getDocumentDeletion"];
         put?: never;
@@ -10236,8 +10236,8 @@ export interface operations {
                                 id: string;
                                 title: string;
                             }[];
-                            /** @description How many dependants more, which the caller may not read */
-                            unnamed?: number;
+                            /** @description Whether something the caller may not read depends on it too: never how many, nor what */
+                            unreadable?: boolean;
                             /** @description locked: who holds the lock */
                             holder?: {
                                 id: string;
@@ -10353,8 +10353,8 @@ export interface operations {
                                 id: string;
                                 title: string;
                             }[];
-                            /** @description How many dependants more, which the caller may not read */
-                            unnamed?: number;
+                            /** @description Whether something the caller may not read depends on it too: never how many, nor what */
+                            unreadable?: boolean;
                             /** @description locked: who holds the lock */
                             holder?: {
                                 id: string;
@@ -32760,8 +32760,8 @@ export interface operations {
                                 id: string;
                                 title: string;
                             }[];
-                            /** @description How many dependants more, which the caller may not read */
-                            unnamed?: number;
+                            /** @description Whether something the caller may not read depends on it too: never how many, nor what */
+                            unreadable?: boolean;
                             /** @description locked: who holds the lock */
                             holder?: {
                                 id: string;
@@ -32877,8 +32877,8 @@ export interface operations {
                                 id: string;
                                 title: string;
                             }[];
-                            /** @description How many dependants more, which the caller may not read */
-                            unnamed?: number;
+                            /** @description Whether something the caller may not read depends on it too: never how many, nor what */
+                            unreadable?: boolean;
                             /** @description locked: who holds the lock */
                             holder?: {
                                 id: string;

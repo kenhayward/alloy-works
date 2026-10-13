@@ -111,7 +111,10 @@ or not; a publication that placed any version, or a publish or preview queued to
 latest version references it in any mode, a deleted document included, so undeleting one never
 revives a dangling reference; a hold on it or its space; a lock held, naming the holder; an open
 review round. A document's own baselines, publications and queued requests refuse it too. A
-dependant the deleter may not read is counted, not named. **The consequence**: anything ever
+dependant the deleter may not read is never named or counted: the refusal says only that
+something they may not read depends on it too (SCH-032). **Residual**: a refused deletion
+unavoidably shows that something depends on it, as ranking may reflect what a reader cannot read
+([search.md](search.md)); it never says what, or how many. **The consequence**: anything ever
 baselined or published is undeletable; archive it instead.
 
 **What remains** (LIF-024, VER-047, VER-048), stated by `GET .../deletion` and shown before

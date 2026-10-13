@@ -96,25 +96,25 @@ export type DeletionRefusal =
       /** A baseline pins a version, superseded or not; a document's own baselines. */
       readonly reason: 'baselined';
       readonly named: readonly Named[];
-      readonly unnamed: number;
+      readonly unreadable: boolean;
     }
   | {
       /** A publication placed a version; a document's own publications. */
       readonly reason: 'published';
       readonly named: readonly Named[];
-      readonly unnamed: number;
+      readonly unreadable: boolean;
     }
   | {
       /** A queued request, a publish or a preview, places it; a document's own. */
       readonly reason: 'publishing';
       readonly named: readonly Named[];
-      readonly unnamed: number;
+      readonly unreadable: boolean;
     }
   | {
       /** A document's latest version references it, in any mode, deleted documents included. */
       readonly reason: 'referenced';
       readonly named: readonly Named[];
-      readonly unnamed: number;
+      readonly unreadable: boolean;
     }
   /** A hold on it or its space: no reason given (LIF-030). */
   | { readonly reason: 'held' }
@@ -124,7 +124,11 @@ export type DeletionRefusal =
       readonly holder: { readonly id: string; readonly name: string | null };
     }
   /** A review round open on it. */
-  | { readonly reason: 'in_review'; readonly named: readonly Named[]; readonly unnamed: number };
+  | {
+      readonly reason: 'in_review';
+      readonly named: readonly Named[];
+      readonly unreadable: boolean;
+    };
 
 /** What a deletion leaves (LIF-024, VER-048): counts of what stays, unreachable, and comes back. */
 export interface Remains {
@@ -152,16 +156,19 @@ interface Row {
   readonly space_id: string | null;
 }
 
-/** Each named where `readable` holds it, the rest counted (DL-C), in the order read. */
+/**
+ * Each named where `readable` holds it, in the order read; of the rest only that there are any, never
+ * how many or what (SCH-032).
+ */
 function split(rows: readonly Row[], readable: ReadableSet | undefined) {
   const named: Named[] = [];
-  let unnamed = 0;
+  let unreadable = false;
   for (const row of rows) {
     if (readable && mayReadArtifact(readable, { id: row.subject, spaceId: row.space_id })) {
       named.push({ id: row.id, title: row.title ?? '' });
-    } else unnamed += 1;
+    } else unreadable = true;
   }
-  return { named, unnamed };
+  return { named, unreadable };
 }
 
 const REFERENCES = `lax $.** ? (@.type == "reference" && @.component == $c)`;

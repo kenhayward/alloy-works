@@ -12,7 +12,7 @@ export type Deletable = 'component' | 'document';
 export interface DeletionRefusal {
   readonly code: string;
   readonly named?: readonly { readonly id: string; readonly title: string }[] | undefined;
-  readonly unnamed?: number | undefined;
+  readonly unreadable?: boolean | undefined;
   readonly holder?: { readonly name: string | null } | undefined;
 }
 
@@ -48,29 +48,32 @@ export function remainsWords(remains: Remains): string {
   return `Nothing is removed: its ${listed(parts)} are kept, out of reach, and come back if it is undeleted.`;
 }
 
-/** Why it may not be deleted, in words: each dependant named that may be read, the rest counted. */
+/**
+ * Why it may not be deleted, in words: each dependant named that may be read, and of any other only
+ * that there is one, never how many (SCH-032).
+ */
 export function deletionRefusalWords(refusal: DeletionRefusal): string {
   const names = (refusal.named ?? []).map((each) => each.title || 'Untitled');
-  const unnamed = refusal.unnamed ?? 0;
-  const hidden = `${unnamed} you may not read`;
-  const which =
-    unnamed === 0 ? listed(names) : names.length === 0 ? hidden : `${listed(names)}, and ${hidden}`;
-  const of = (one: string, many: string) =>
-    `${names.length + unnamed === 1 ? one : many}: ${which}.`;
+  const of = (one: string, many: string, unseen: string) => {
+    if (names.length === 0) return `Something you may not read ${unseen}.`;
+    const named = `${names.length === 1 ? one : many}: ${listed(names)}.`;
+    return refusal.unreadable === true ? `${named} Something you may not read does too.` : named;
+  };
   switch (refusal.code) {
     case 'baselined':
-      return of('A baseline pins it', 'Baselines pin it');
+      return of('A baseline pins it', 'Baselines pin it', 'pins it');
     case 'published':
-      return of('A publication placed it', 'Publications placed it');
+      return of('A publication placed it', 'Publications placed it', 'placed it');
     case 'publishing':
       return of(
         'A publication waiting to be made places it',
         'Publications waiting to be made place it',
+        'is waiting to be made with it',
       );
     case 'referenced':
-      return of('A document references it', 'Documents reference it');
+      return of('A document references it', 'Documents reference it', 'references it');
     case 'in_review':
-      return of('A review round is open on it', 'Review rounds are open on it');
+      return of('A review round is open on it', 'Review rounds are open on it', 'is reviewing it');
     case 'held':
       return 'A legal hold is on it or its space.';
     case 'locked':

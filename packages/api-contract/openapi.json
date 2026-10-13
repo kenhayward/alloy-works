@@ -26729,11 +26729,9 @@
                               ]
                             }
                           },
-                          "unnamed": {
-                            "description": "How many dependants more, which the caller may not read",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 9007199254740991
+                          "unreadable": {
+                            "description": "Whether something the caller may not read depends on it too: never how many, nor what",
+                            "type": "boolean"
                           },
                           "holder": {
                             "description": "locked: who holds the lock",
@@ -26867,7 +26865,7 @@
       "get": {
         "operationId": "getComponentDeletion",
         "summary": "What deleting a component leaves, and what refuses it",
-        "description": "States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is counted, not named. Needs retire on the component, and answers a deleted one too.",
+        "description": "States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.",
         "tags": [
           "Components"
         ],
@@ -27004,11 +27002,9 @@
                               ]
                             }
                           },
-                          "unnamed": {
-                            "description": "How many dependants more, which the caller may not read",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 9007199254740991
+                          "unreadable": {
+                            "description": "Whether something the caller may not read depends on it too: never how many, nor what",
+                            "type": "boolean"
                           },
                           "holder": {
                             "description": "locked: who holds the lock",
@@ -107793,11 +107789,9 @@
                               ]
                             }
                           },
-                          "unnamed": {
-                            "description": "How many dependants more, which the caller may not read",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 9007199254740991
+                          "unreadable": {
+                            "description": "Whether something the caller may not read depends on it too: never how many, nor what",
+                            "type": "boolean"
                           },
                           "holder": {
                             "description": "locked: who holds the lock",
@@ -107931,7 +107925,7 @@
       "get": {
         "operationId": "getDocumentDeletion",
         "summary": "What deleting a document leaves, and what refuses it",
-        "description": "States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is counted, not named. Needs retire on the document, and answers a deleted one too.",
+        "description": "States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.",
         "tags": [
           "Documents"
         ],
@@ -108068,11 +108062,9 @@
                               ]
                             }
                           },
-                          "unnamed": {
-                            "description": "How many dependants more, which the caller may not read",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 9007199254740991
+                          "unreadable": {
+                            "description": "Whether something the caller may not read depends on it too: never how many, nor what",
+                            "type": "boolean"
                           },
                           "holder": {
                             "description": "locked: who holds the lock",

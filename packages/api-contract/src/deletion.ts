@@ -19,11 +19,12 @@ export const DeletionRefusalView = z.object({
     .array(Named)
     .optional()
     .describe('Each dependant the caller may read, by its title, or a baseline by its name'),
-  unnamed: z
-    .int()
-    .nonnegative()
+  unreadable: z
+    .boolean()
     .optional()
-    .describe('How many dependants more, which the caller may not read'),
+    .describe(
+      'Whether something the caller may not read depends on it too: never how many, nor what',
+    ),
   holder: z
     .object({ id: z.string(), name: z.string().nullable() })
     .optional()

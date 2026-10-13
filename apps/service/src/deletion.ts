@@ -26,7 +26,7 @@ function refusalView(refusal: DeletionRefusal): DeletionRefusalView {
       return {
         code: refusal.reason,
         named: refusal.named.map((each) => ({ ...each })),
-        unnamed: refusal.unnamed,
+        unreadable: refusal.unreadable,
       };
   }
 }

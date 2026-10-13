@@ -445,13 +445,13 @@ const descriptions: Readonly<Record<string, string>> = {
   unarchiveDocument:
     'Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.',
   getComponentDeletion:
-    'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is counted, not named. Needs retire on the component, and answers a deleted one too.',
+    'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
   deleteComponent:
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
   undeleteComponent:
     'Undeletes a component, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.',
   getDocumentDeletion:
-    'States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is counted, not named. Needs retire on the document, and answers a deleted one too.',
+    'States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.',
   deleteDocument:
     'Deletes a document: it leaves every listing and search and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed. Needs retire on the document. Audited.',
   undeleteDocument:
