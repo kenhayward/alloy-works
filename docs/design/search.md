@@ -100,7 +100,9 @@ artifacts denied them there, plus the artifacts granted them outside those space
 **Each search is planned for its own parameters.** `searchWords` sets `plan_cache_mode` to
 `force_custom_plan` in its transaction before anything else (SV3-H). A plan made once and reused cannot suit both a user who sees five
 spaces and one who sees two thousand, and in the spike the reused plan was two to three times slower in the worst case. A test
-pins the setting, because its absence is invisible: results stay correct and only get slower.
+pins the setting, because its absence is invisible: results stay correct and only get slower. JIT is off
+for the same reason: every version's page is costed past its threshold, and compiling it took a second
+at a million where running it takes milliseconds.
 
 **The size of the visible set is known before the query runs**, because the service computed the set.
 That size - an estimate from space sizes, not a count of rows - decides the vector strategy below.
@@ -121,7 +123,10 @@ history):
 the candidates are the 1,000 newest matches (`SEARCH_RANK_BOUND`), `changed_at desc, id desc`, a total
 order, read after every filter the reader set; 1,001 are read, so "more" is known. Only they are
 ranked, paged and faceted. The words are matched by a constant tsquery per configuration in use, so
-the word index serves them; the configurations in use are probed first, one btree probe each. The
+the word index serves them; the configurations in use are probed first, one btree probe each, each
+configuration a constant (by a parameter, the planner reads the whole table for one no row holds). Every
+version scans history and the current rows of the kinds it does not hold apart, each by its own road,
+and merges the newest. The
 newest are found by one of two **roads**, chosen per scan from the planner's estimate M of the
 matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M > sqrt(1,000 x rows),
 reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else

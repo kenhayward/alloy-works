@@ -599,8 +599,8 @@ describe('search at scale', () => {
         timings.push(row);
         console.info(JSON.stringify(row));
         if (COMPONENTS >= MILLION) {
-          expect(row.p95, `${reader.name} ${each.name}`).toBeLessThanOrEqual(BUDGET.p95);
-          expect(row.max, `${reader.name} ${each.name}`).toBeLessThan(BUDGET.max);
+          expect.soft(row.p95, `${reader.name} ${each.name}`).toBeLessThanOrEqual(BUDGET.p95);
+          expect.soft(row.max, `${reader.name} ${each.name}`).toBeLessThan(BUDGET.max);
         }
       }
     }

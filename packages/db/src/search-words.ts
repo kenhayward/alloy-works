@@ -3,6 +3,7 @@ import {
   parseQuery,
   readOutline,
   SEARCH_CONFIGURATIONS,
+  searchKinds,
   walkOutline,
   type SearchKind,
 } from '@alloy-works/domain';
@@ -120,8 +121,13 @@ const ENTRY_COLUMNS = sql.raw(
   'id, kind, artifact_id, node, version_id, title, space_id, changed_at, owner, component_type, field_values, configuration, body, vector, archived, deleted',
 );
 const TEXT_COLUMNS = sql.raw('entry_id, place, body, configuration, vector');
-/** The kinds history holds, as an SQL list. */
+/** The kinds history holds, and every other, as SQL lists. */
 const IN_HISTORY = sql`(${sql.join(HISTORY_KINDS.map((kind) => sql.lit(kind)))})`;
+const NOT_IN_HISTORY = sql`(${sql.join(
+  searchKinds
+    .filter((kind) => !(HISTORY_KINDS as readonly string[]).includes(kind))
+    .map((kind) => sql.lit(kind)),
+)})`;
 
 /**
  * What narrows a search (SCH-059), each dimension one filter, several values within one either of them.
@@ -437,16 +443,28 @@ export async function searchWords(
   // second where running it takes milliseconds (SV3b's load suite).
   await sql`set local jit = off`.execute(trx);
 
-  // The configurations in use, one index probe each (SV3-A).
+  // The configurations in use, one index probe each (SV3-A), each named as a constant: probed by a
+  // parameter, the planner reckons any configuration as common as the commonest and reads the whole
+  // table for one in no row. Every version probes history, and before 0091 the earlier rows; the
+  // version a history row names matches an earlier version's words by its own configuration.
+  const probed =
+    scope === 'latest'
+      ? ['search_entry']
+      : ['search_entry', history ? 'search_history' : 'search_earlier'];
   const { rows: inUse } = await sql<{ c: string }>`
-    select c from unnest(${[...SEARCH_CONFIGURATIONS]}::text[]) c
-    where exists (select 1 from search_entry where configuration = c::regconfig)
-      ${
-        scope === 'latest'
-          ? sql``
-          : sql`or exists (select 1 from search_earlier where configuration = c::regconfig)`
-      }
-      ${history ? sql`or exists (select 1 from search_history where configuration = c::regconfig)` : sql``}
+    ${sql.join(
+      SEARCH_CONFIGURATIONS.map(
+        (c) =>
+          sql`select ${sql.lit(c)}::text as c where ${sql.join(
+            probed.map(
+              (table) =>
+                sql`exists (select 1 from ${sql.table(table)} where configuration = ${sql.lit(c)}::regconfig)`,
+            ),
+            sql` or `,
+          )}`,
+      ),
+      sql` union all `,
+    )}
     order by c`.execute(trx);
   const configurations = inUse.map((row) => row.c);
   /** `alias`'s words matching `words`, a constant tsquery per configuration, so an index serves it. */
@@ -687,8 +705,8 @@ export async function searchWords(
               relation: 'search_history',
             },
             {
-              from: sql`(select *, true as current from search_entry
-                         where kind not in ${IN_HISTORY})`,
+              // Named, not excluded: the kind index then finds them, never the rows history holds.
+              from: sql`(select *, true as current from search_entry where kind in ${NOT_IN_HISTORY})`,
               relation: 'search_entry',
             },
           ];
