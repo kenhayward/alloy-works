@@ -2145,6 +2145,19 @@ under [ADR-0060](decisions/0060-deletion-is-a-tombstone-and-retention-a-minimum.
 | `db: src/sign-in.ts`, `service: src/app.ts`            | Sign-in holding the person's row, refusing the erased before any write                                                                                                                                          |
 | `service: src/erasure.ts`; `web: src/admin/Erase.tsx`  | The routes, a session's alone; Erase in Administration > People                                                                                                                                                 |
 
+## Closing T3
+
+What [the TC plan](plans/2026-10-13-tc-t3-close.md) built after
+[the T3 audit](<reviews/T3 - Audit against the code.md>), and [the SV plan](plans/2026-10-13-sv-search-reaches-further.md)'s search.
+
+| Where                                                                                                        | Holds                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0088_search_earlier`, `db: src/search.ts`, `src/search-earlier.ts`, `src/search-words.ts` | Earlier versions' words moved aside under the artifact's lock; `versions=all` and `baseline=` scopes; the backfill inside the upgrade (#596) |
+| `migrations/tenant/0089_search_threads`, `db: src/search-threads.ts`                                         | One entry per thread, each message a place, appended as messages arrive                                                                      |
+| `service: src/versions.ts`; `web: src/versions/`, `review/ThreadPage.tsx`                                    | Earlier versions and threads read on pages of their own                                                                                      |
+| `domain: src/structure/incoming.ts`                                                                          | What in a document refers to a node, and the removal warning                                                                                 |
+| `web: src/structure/NewerVersion.tsx`, the panels' live regions, forced-colours rules                        | A newer version said; annotations announced and marked                                                                                       |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

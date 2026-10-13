@@ -543,6 +543,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   link to a part opens the document at it, its heading below the page's header and marked until you
   choose another.
 
+  **What refers to a part is shown before it goes.** A chosen part's panel lists, under **Referenced
+  by**, each place in the document whose text or title refers to it or to anything in it, each a link
+  that takes you there, or says nothing else does. Removing a part something refers to says how many
+  references it breaks and lists where they are before you confirm; it is still yours to remove. A
+  component you may not read is never counted. Deleting a referenced figure or table inside a
+  component is not warned of yet: the reference shows as broken afterwards.
+
   **Each component says which version the document shows.** Its label says the version - `Version
 0.3, latest` when it follows the component's latest, `Version 0.1, pinned` when the document is
   pinned to one - and _waiting on revisions_ where it waits on an approved one, which nothing can be
