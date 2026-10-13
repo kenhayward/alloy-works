@@ -35,3 +35,23 @@ One PR, ER1: the plan, the design, the act, its route and its page, and the clos
   suite.
 - The final review hunts a name or address still held or re-created anywhere after erasure.
   `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the version (0.163.0) and the baseline.
+
+## Changed while building
+
+| Where | Planned                           | Built, and why                                                                                                                                                                                                                                                                                                                                          |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR    | One                               | One, #591                                                                                                                                                                                                                                                                                                                                               |
+| ER-A  | Provider memberships removed      | Every membership and grant ended, recorded, before the name goes; erasing the erased ends anything a race left                                                                                                                                                                                                                                          |
+| ER-C  | Refused while a grant names them  | Only for one who has signed in: an invitee is withdrawn, which removes and records their grants; erasing is a session's alone, never a token's                                                                                                                                                                                                          |
+| ER-D  | Later labels treat them as erased | A trigger on `audit_label` (`audit_label_erased_on_write`, locking the person by id `for key share`) writes any label naming an erased person already erased; grants and memberships naming them refused (`grant_subject_erased`, `group_member_erased`); sign-in holds the row after the epoch and before any membership write, rolling back if erased |
+| ER-D  | Sign-in refused                   | 403 `principal_erased`, telling the person alone (Ken agreed); a principal gone mid sign-in is an ordinary failure                                                                                                                                                                                                                                      |
+
+## Final review
+
+Fixed: a request authenticated before the erasure writing the person's name back as a label (H1); a
+sign-in racing an erasure re-creating memberships and committing (H2); an uppercase id escaping the
+self refusal (M1); erasing the erased cleaning nothing up (M2); grants and memberships to the erased
+(M3); an invitee refused for the grant withdrawal removes (L1); a refused withdrawal ignored (L2); a
+missing principal answered as erased (L3); titles citing VER-038 for refusals (L4); the dialog's words
+(L5). Left: a transaction naming a person in a label before taking the access epoch may deadlock with
+their erasure, which Postgres breaks by aborting one side.
