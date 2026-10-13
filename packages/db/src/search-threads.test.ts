@@ -615,7 +615,7 @@ describe('migration 0089, which makes threads searchable', () => {
       });
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0089_search_threads']);
+      expect(report.tenants[id]).toEqual(['0089_search_threads', '0090_search_at_scale']);
       const answer = await service.withTenant(tenant, (trx) =>
         searchWords(trx, ada, 'tapir hotter'),
       );

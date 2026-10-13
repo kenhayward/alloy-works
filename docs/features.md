@@ -899,7 +899,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   value says how it differs from the document's latest publication, and **Resolve**, **Keep** and
   **Go to** act on it there.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
-  by its words, or by part of a word in any case, and nothing you may not: components, documents and each of their sections,
+  by its words, or by part of a word of three characters or more in any case, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
   wherever they are in a component - its title, its text, a caption, an image's description, a
   footnote, a field's value. Put a phrase in quotes, leave a word out with `-`, and look in one place
@@ -909,7 +909,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document. A place that has gone since is said to be gone, and the latest version opens. Beside the
   results, narrow them by kind, space, component type, who made it, when it last changed and a field's
   value, each choice saying how many results it would leave; past 1,000 a count says at least 1,000.
-  A search with nothing to look for says why. What you save is found the moment it is saved.
+  Past 1,000 matches, the results are the best of the 1,000 changed most recently, and say so, and
+  each choice counts those 1,000, at least. A search with nothing to look for says why. What you save is found the moment it is saved.
   `GET /v1/search` answers the same search.
 - **Earlier versions and baselines in search.** Search reads the latest version of each thing; choose
   **Versions: All** to search every earlier version of components, documents and their sections too,

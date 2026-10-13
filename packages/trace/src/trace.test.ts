@@ -93,7 +93,8 @@ describe('the committed trace.json', () => {
     // 1555, from 1553 (2026-10-12): CNT-182 and CNT-183, superseding CNT-161 (the RS plan).
     // 1581, from 1555 (2026-10-13): the T3 audit - 26 rows split from LIF-026, LIF-057, LIF-064, API-014, CNT-005,
     // COL-027, COL-056, DAT-013, DAT-061, SCH-038, STR-033 and VER-021, which they supersede.
-    expect(model.requirements).toHaveLength(1581);
+    // 1582, from 1581 (2026-10-13): SCH-073, superseding SCH-034 (the SV3 plan, SV3-F).
+    expect(model.requirements).toHaveLength(1582);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -859,6 +860,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1212 (2026-10-13): SV3a's bounded search - SCH-010 on each road, SCH-073 for SCH-034.
     // 1211 (2026-10-13): TC4's incoming references - the domain and the Part panel.
     // 1208 (2026-10-13): SV2's threads in search, and their page.
     // 1202 (2026-10-13): SV1's earlier versions and baselines in search, and their pages.
@@ -885,7 +887,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1211);
+    expect(model.citations).toHaveLength(1212);
   });
 
   it('cites no identifier the corpus does not hold', () => {

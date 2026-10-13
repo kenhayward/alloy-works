@@ -303,6 +303,7 @@ describe('searching words', () => {
             outcome: 'results',
             count: 0,
             capped: false,
+            facetsBounded: false,
             items: [],
             // Nor does any facet count what she may not see.
             facets: {

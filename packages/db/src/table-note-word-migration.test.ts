@@ -124,6 +124,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0087_erasure',
       '0088_search_earlier',
       '0089_search_threads',
+      '0090_search_at_scale',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

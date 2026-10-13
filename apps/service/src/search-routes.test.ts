@@ -175,6 +175,7 @@ describe('searching through the service', () => {
       outcome: 'results',
       count: 0,
       capped: false,
+      facetsBounded: false,
       items: [],
       message: 'Nothing you can see matches this search.',
     });

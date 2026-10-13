@@ -1,5 +1,6 @@
 import type { SearchAnswerView, SearchQuery } from '@alloy-works/api-contract';
 import {
+  SEARCH_RANK_BOUND,
   searchWords,
   type SearchAnswer,
   type SearchFilters,
@@ -34,7 +35,13 @@ export function sentenceFor(answer: SearchAnswer): string {
       return `No field you can see is called ${answer.name}, so nothing can be looked for in it.`;
     case 'results':
       if (answer.count === 0) return 'Nothing you can see matches this search.';
-      if (answer.capped) return `More than ${answer.count.toLocaleString('en-GB')} results.`;
+      // Past the bound the latest ranks only its most recently changed matches (SV3-C): under it,
+      // the count is capped exactly when the ranking is bounded.
+      if (answer.capped) {
+        return answer.facetsBounded
+          ? `More than ${answer.count.toLocaleString('en-GB')} results. Showing the best of the ${SEARCH_RANK_BOUND.toLocaleString('en-GB')} changed most recently.`
+          : `More than ${answer.count.toLocaleString('en-GB')} results.`;
+      }
       return answer.count === 1 ? '1 result.' : `${answer.count.toLocaleString('en-GB')} results.`;
   }
 }
@@ -49,6 +56,7 @@ function view(answer: SearchAnswer): SearchAnswerView {
     outcome: 'results',
     count: answer.count,
     capped: answer.capped,
+    facetsBounded: answer.facetsBounded,
     message,
     facets: {
       kinds: answer.facets.kinds.map((each) => ({ ...each })),
@@ -159,6 +167,7 @@ export function searchHandlers(
           outcome: 'results',
           count: 0,
           capped: false,
+          facetsBounded: false,
           items: [],
           facets: {
             kinds: [],

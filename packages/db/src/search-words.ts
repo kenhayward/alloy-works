@@ -2,6 +2,7 @@ import {
   nameKey,
   parseQuery,
   readOutline,
+  SEARCH_CONFIGURATIONS,
   walkOutline,
   type SearchKind,
 } from '@alloy-works/domain';
@@ -15,11 +16,29 @@ import type { TenantTransaction } from './tables.js';
  * A search by words (search.md, "One query"; SCH-016, SCH-017, SCH-039, SCH-046, SCH-059): one
  * statement over the projection, holding the reader's readable set, the query, the filters, the best
  * place in each entry and a passage from it, the count, and every facet - each counted with the other
- * filters in force and its own left out, and each capped over what the reader may see (SCH-034).
+ * filters in force and its own left out, and each capped over what the reader may see (SCH-073). The
+ * latest is first bounded to its most recently changed matches, found by the road chosen (SV3).
  */
 
-/** Past this many, a count says only that there are more (SCH-034). */
+/** Past this many, a count says only that there are more (SCH-073). */
 export const SEARCH_COUNT_CAP = 1000;
+
+/** How many of the most recently changed matches the latest ranks and facets (SV3-C). */
+export const SEARCH_RANK_BOUND = 1000;
+
+/** How the latest finds its newest matches: walking them in changed order, or by the word indexes. */
+export type SearchRoad = 'walk' | 'indexes';
+
+/** For tests and the load suite alone: a road forced, the plans explained, and each scan's road. */
+export interface SearchProbe {
+  readonly road?: SearchRoad;
+  readonly explain?: boolean;
+  readonly seen?: (event: {
+    readonly statement: 'results' | 'facets' | 'page';
+    readonly road?: SearchRoad;
+    readonly plan?: unknown;
+  }) => void;
+}
 
 /** How many results a page holds unless asked for fewer, and the most it holds. */
 export const SEARCH_PAGE = 20;
@@ -117,7 +136,7 @@ export interface FacetValue {
   readonly label: string;
   /** Up to the cap. */
   readonly count: number;
-  /** Whether more hold it than the count says, so the count is a lower bound (SCH-034). */
+  /** Whether more hold it than the count says, so the count is a lower bound (SCH-073). */
   readonly capped: boolean;
 }
 
@@ -147,8 +166,13 @@ export type SearchAnswer =
       readonly outcome: 'results';
       /** How many match, up to the cap. */
       readonly count: number;
-      /** Whether more match than the count says, so the count is a lower bound (SCH-034). */
+      /** Whether more match than the count says, so the count is a lower bound (SCH-073). */
       readonly capped: boolean;
+      /**
+       * Whether the facets were counted over the most recently changed matches alone, so that every
+       * facet count is a lower bound and a value only older matches hold is missing (SV3-F).
+       */
+      readonly facetsBounded: boolean;
       readonly items: readonly SearchResult[];
       readonly facets: SearchFacets;
     };
@@ -187,25 +211,47 @@ const rangeStart: Record<Exclude<ChangedRange, 'earlier'>, RawBuilder<Date>> = {
   year: sql`date_trunc('year', now())`,
 };
 
-/** A dimension's filter over `b`, compared as text so an identifier of no shape matches nothing. */
-function among(column: string, values: readonly string[] | undefined): RawBuilder<SqlBool> {
+/** A dimension's filter over a row, compared as text so an identifier of no shape matches nothing. */
+function among(
+  alias: string,
+  column: string,
+  values: readonly string[] | undefined,
+): RawBuilder<SqlBool> {
   return values === undefined || values.length === 0
     ? sql<SqlBool>`true`
-    : sql<SqlBool>`${sql.ref(column)}::text = any(${[...values]}::text[])`;
+    : sql<SqlBool>`${sql.ref(`${alias}.${column}`)}::text = any(${[...values]}::text[])`;
 }
 
-function changedFilter(changed: SearchFilters['changed']): RawBuilder<SqlBool> {
+function changedFilter(alias: string, changed: SearchFilters['changed']): RawBuilder<SqlBool> {
   if (changed === undefined) return sql<SqlBool>`true`;
+  const at = sql.ref(`${alias}.changed_at`);
   if ('within' in changed) {
     return changed.within === 'earlier'
-      ? sql<SqlBool>`b.changed_at < ${rangeStart.year}`
-      : sql<SqlBool>`b.changed_at >= ${rangeStart[changed.within]}`;
+      ? sql<SqlBool>`${at} < ${rangeStart.year}`
+      : sql<SqlBool>`${at} >= ${rangeStart[changed.within]}`;
   }
   const from = calendarDate(changed.from);
   const to = calendarDate(changed.to);
-  return sql<SqlBool>`${from === undefined ? sql`true` : sql`b.changed_at >= ${from}::date`}
-    and ${to === undefined ? sql`true` : sql`b.changed_at < ${to}::date + 1`}`;
+  return sql<SqlBool>`${from === undefined ? sql`true` : sql`${at} >= ${from}::date`}
+    and ${to === undefined ? sql`true` : sql`${at} < ${to}::date + 1`}`;
 }
+
+/**
+ * A field's value `x` as its facet names it: a boolean as true or false, a person by id, a date by its
+ * month, and a text of one value as written (SE-E); null for anything else.
+ */
+const valueKey = (
+  x: RawBuilder<unknown>,
+  dataType: RawBuilder<unknown>,
+  multiplicity: RawBuilder<unknown>,
+) =>
+  sql<string | null>`case
+    when ${dataType} = 'boolean' and jsonb_typeof(${x}) = 'boolean' then ${x}::text
+    when ${dataType} = 'user' and jsonb_typeof(${x}) = 'object' then ${x} ->> 'user'
+    when ${dataType} = 'date' and jsonb_typeof(${x}) = 'string' then left(${x} #>> '{}', 7)
+    when ${dataType} = 'text' and ${multiplicity} = 'one'
+         and jsonb_typeof(${x}) = 'string' then ${x} #>> '{}'
+  end`;
 
 interface FacetRow {
   readonly value: string;
@@ -213,12 +259,13 @@ interface FacetRow {
   readonly n: number;
 }
 
-const capped = (rows: readonly FacetRow[] | null): FacetValue[] =>
+/** A facet's values, each capped; every one a lower bound where the facets were bounded (SV3-F). */
+const cappedOf = (rows: readonly FacetRow[] | null, bounded: boolean): FacetValue[] =>
   (rows ?? []).map((row) => ({
     value: row.value,
     label: row.label,
     count: Math.min(row.n, SEARCH_COUNT_CAP),
-    capped: row.n > SEARCH_COUNT_CAP,
+    capped: bounded || row.n > SEARCH_COUNT_CAP,
   }));
 
 /**
@@ -265,6 +312,7 @@ export interface SearchOptions {
   readonly limit?: number;
   readonly filters?: SearchFilters;
   readonly scope?: SearchScope;
+  readonly probe?: SearchProbe;
 }
 
 /**
@@ -365,7 +413,35 @@ export async function searchWords(
   const parsed = parseQuery(query);
   if (parsed.outcome !== 'query') return parsed;
 
+  // Each statement planned for its own parameters (search.md, "The permission predicate"; SV3-H).
+  await sql`set local plan_cache_mode = force_custom_plan`.execute(trx);
+
+  // The configurations in use, one index probe each (SV3-A).
+  const { rows: inUse } = await sql<{ c: string }>`
+    select c from unnest(${[...SEARCH_CONFIGURATIONS]}::text[]) c
+    where exists (select 1 from search_entry where configuration = c::regconfig)
+      ${
+        scope === 'latest'
+          ? sql``
+          : sql`or exists (select 1 from search_earlier where configuration = c::regconfig)`
+      }
+    order by c`.execute(trx);
+  const configurations = inUse.map((row) => row.c);
+  /** `alias`'s words matching `words`, a constant tsquery per configuration, so an index serves it. */
+  const matches = (alias: string, words: string) =>
+    configurations.length === 0
+      ? sql<SqlBool>`false`
+      : sql<SqlBool>`(${sql.join(
+          configurations.map(
+            (c) => sql`(${sql.ref(`${alias}.configuration`)} = ${c}::regconfig
+              and ${sql.ref(`${alias}.vector`)} @@ websearch_to_tsquery(${c}::regconfig, ${words}))`,
+          ),
+          sql` or `,
+        )})`;
+
   const places: RawBuilder<SqlBool>[] = [];
+  // A query of scoped terms alone is found through its places' index (SV3-A).
+  let driver: RawBuilder<SqlBool> | undefined;
   for (const term of parsed.scoped) {
     let place: string;
     if (nameKey(term.name) === 'title') {
@@ -391,6 +467,10 @@ export async function searchWords(
       where s.entry_id = e.id and s.place = ${place}
         and s.vector @@ websearch_to_tsquery(s.configuration, ${term.words}))`;
     places.push(term.excluded ? sql<SqlBool>`not ${holds}` : holds);
+    if (!term.excluded && driver === undefined) {
+      driver = sql<SqlBool>`e.id in (
+        select s.entry_id from ${texts} s where s.place = ${place} and ${matches('s', term.words)})`;
+    }
   }
 
   // Nothing any configuration can search for - punctuation, and nothing else - is no query at all.
@@ -400,12 +480,12 @@ export async function searchWords(
   if (!lexemes[0]?.any) return { outcome: 'nothing_to_match', excluded: [] };
 
   // The words, as the entry's language reads them; or every term as a part of the entry's text, in
-  // any case, none excluded (UI6), which the trigram index answers. A typed `%` or `_` is a
-  // character, never a pattern.
-  const whole = sql<SqlBool>`e.vector @@ websearch_to_tsquery(e.configuration, ${parsed.words})`;
+  // any case, none excluded (UI6), which the trigram index answers - so never for a term under three
+  // characters, which no trigram holds (SV3-A). A typed `%` or `_` is a character, never a pattern.
+  const whole = matches('e', parsed.words);
   const like = (term: string) => `%${term.replace(/[\\%_]/gu, (each) => `\\${each}`)}%`;
   const contains =
-    parsed.contains === null
+    parsed.contains === null || parsed.contains.all.some((term) => [...term].length < 3)
       ? null
       : sql.join(
           [
@@ -416,48 +496,85 @@ export async function searchWords(
         );
   const words =
     parsed.words === ''
-      ? sql<SqlBool>`true`
+      ? (driver ?? sql<SqlBool>`true`)
       : contains === null
         ? whole
         : sql<SqlBool>`(${whole} or (${contains}))`;
   const limit = Math.min(Math.max(options.limit ?? SEARCH_PAGE, 1), SEARCH_PAGE_MAX);
   const offset = Math.min(Math.max(options.offset ?? 0, 0), SEARCH_COUNT_CAP);
 
+  // The readable set as access.md's predicate, word for word: an artifact in no space - a definition -
+  // is read at the tenant, and refused like any other by a grant on itself. A section is its
+  // document's, by the document's artifact. A field is read the same way, so the fields a reader may
+  // read are the only ones that facet or filter for them.
+  const readableRow = sql<SqlBool>`(
+      ((e.space_id = any(${[...readable.spaces]}::uuid[])
+          or (e.space_id is null and ${readable.tenant}::boolean))
+        and not e.artifact_id = any(${[...readable.excluded]}::uuid[]))
+      or e.artifact_id = any(${[...readable.included]}::uuid[])
+    )`;
+  // Archived content is no result, facet or count (LIF-020; lifecycle.md).
+  const matching = sql<SqlBool>`${readableRow} and ${shown} and ${words}
+    and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}`;
+
   // Every filter a column of its own, so a facet can leave its own out: `f_field_<n>` for each field
-  // filtered on, several values of one field either of them.
+  // filtered on, several values of one field either of them. A field's value is read from the row's
+  // own values, as its facet reads it, and only for a field the reader may read.
   const filters = options.filters ?? {};
   const byField = new Map<string, string[]>();
   for (const each of filters.values ?? []) {
     byField.set(each.field, [...(byField.get(each.field) ?? []), each.value]);
   }
+  const filterFields = new Map(
+    byField.size === 0
+      ? []
+      : (
+          await sql<{ field: string; data_type: string; multiplicity: string }>`
+            select distinct on (v.artifact_id) v.artifact_id::text as field,
+                   v.content ->> 'dataType' as data_type, v.content ->> 'multiplicity' as multiplicity
+            from artifact_version v
+            where v.kind = 'field'
+              and v.artifact_id = any(${[...byField.keys()].filter((id) => UUID.test(id))}::uuid[])
+              and ((${readable.tenant}::boolean
+                    and not v.artifact_id = any(${[...readable.excluded]}::uuid[]))
+                   or v.artifact_id = any(${[...readable.included]}::uuid[]))
+            order by v.artifact_id, v.revision_no desc, v.version_no desc`.execute(trx)
+        ).rows.map((row) => [row.field, row] as const),
+  );
   const fieldFilters = [...byField].map(([field, values], index) => ({
     field,
     values,
     flag: `f_field_${index}`,
   }));
-  const flags = [
-    ['f_kind', among('b.kind', filters.kinds)],
-    ['f_space', among('b.space_id', filters.spaces)],
-    ['f_type', among('b.component_type', filters.componentTypes)],
-    ['f_owner', among('b.owner', filters.owners)],
-    ['f_changed', changedFilter(filters.changed)],
-    ...fieldFilters.map(
-      ({ field, values, flag }) =>
-        [
-          flag,
-          sql<SqlBool>`exists (select 1 from entry_values ev
-            where ev.entry_id = b.id and ev.field::text = ${field} and ev.key = any(${values}::text[]))`,
-        ] as const,
-    ),
-  ] as const;
+  const valueFilter = (alias: string, field: string, values: readonly string[]) => {
+    const known = filterFields.get(field);
+    if (known === undefined) return sql<SqlBool>`false`;
+    const held = sql`${sql.ref(`${alias}.field_values`)} -> ${field}`;
+    return sql<SqlBool>`exists (
+      select 1 from jsonb_array_elements(
+        case when jsonb_typeof(${held}) = 'array' then ${held} else jsonb_build_array(${held}) end) el(x)
+      where ${valueKey(sql`el.x`, sql`${known.data_type}::text`, sql`${known.multiplicity}::text`)}
+            = any(${[...values]}::text[]))`;
+  };
+  const flagsOver = (alias: string) =>
+    [
+      ['f_kind', among(alias, 'kind', filters.kinds)],
+      ['f_space', among(alias, 'space_id', filters.spaces)],
+      ['f_type', among(alias, 'component_type', filters.componentTypes)],
+      ['f_owner', among(alias, 'owner', filters.owners)],
+      ['f_changed', changedFilter(alias, filters.changed)],
+      ...fieldFilters.map(
+        ({ field, values, flag }) => [flag, valueFilter(alias, field, values)] as const,
+      ),
+    ] as const;
   const flagged = sql.join(
-    flags.map(([flag, predicate]) => sql`${predicate} as ${sql.raw(flag)}`),
+    flagsOver('b').map(([flag, predicate]) => sql`${predicate} as ${sql.raw(flag)}`),
     sql`, `,
   );
   /** Every filter in force but `left`, over the flagged row `b`. */
   const allBut = (left: string) =>
     sql.raw(
-      flags
+      flagsOver('b')
         .filter(([flag]) => flag !== left)
         .map(([flag]) => `b.${flag}`)
         .join(' and ') || 'true',
@@ -479,11 +596,115 @@ export async function searchWords(
                              order by x.n desc, x.label, x.value), '[]'::json)
     from (${rows}) x)`;
 
-  // The readable set as access.md's predicate, word for word: an artifact in no space - a definition -
-  // is read at the tenant, and refused like any other by a grant on itself. A section is its
-  // document's, by the document's artifact. A field is read the same way, so the fields a reader may
-  // read are the only ones that facet or filter for them.
-  const { rows } = await sql<{
+  // The latest is bounded (SV3-C, SV3-D): results from the newest N + 1 rows matching every filter,
+  // facets from those and the newest N + 1 failing at most one, each found by the road chosen (SV3-E).
+  let bounded: { results: string[]; facets: string[]; facetsBounded: boolean } | undefined;
+  if (scope === 'latest') {
+    const seen = options.probe?.seen;
+    const explained = async (
+      statement: 'results' | 'facets' | 'page',
+      query: RawBuilder<unknown>,
+    ) => {
+      if (options.probe?.explain !== true) return;
+      const { rows: plan } = await sql<{
+        'QUERY PLAN': unknown;
+      }>`explain (format json) ${query}`.execute(trx);
+      seen?.({ statement, plan: plan[0]?.['QUERY PLAN'] });
+    };
+    const { rows: sized } = await sql<{ rows: number }>`
+      select reltuples::float8 as rows from pg_class where oid = 'search_entry'::regclass`.execute(
+      trx,
+    );
+    const rows = Number(sized[0]?.rows ?? -1);
+    const N = SEARCH_RANK_BOUND;
+    const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
+      let road = options.probe?.road;
+      // The rows a walk reads at most: every row for a road forced, so it answers alone.
+      let reads: number = Number.MAX_SAFE_INTEGER;
+      if (road === undefined) {
+        const { rows: estimate } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
+          explain (format json) select 1 from search_entry e where ${where}`.execute(trx);
+        const matches = Number(estimate[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0);
+        road = rows > 0 && matches > Math.sqrt(N * rows) ? 'walk' : 'indexes';
+        if (road === 'walk') reads = Math.ceil((4 * (N + 1) * rows) / matches);
+      }
+      // The limit inside, the reader's predicate outside: the limit bounds the cost alone.
+      const walk = sql`
+        select e.id from (select * from search_entry order by changed_at desc, id desc
+                          limit ${reads}) e
+        where ${where} order by e.changed_at desc, e.id desc limit ${N + 1}`;
+      // Ordered by an expression no index holds, so the planner finds the matches by their indexes.
+      const indexes = sql`
+        select e.id from search_entry e where ${where}
+        order by e.changed_at + interval '0 s' desc, e.id desc limit ${N + 1}`;
+      if (road === 'walk') {
+        await explained(statement, walk);
+        const { rows: walked } = await sql<{ id: string }>`${walk}`.execute(trx);
+        if (walked.length > N || reads === Number.MAX_SAFE_INTEGER) {
+          seen?.({ statement, road });
+          return walked.map((row) => row.id);
+        }
+        road = 'indexes';
+      }
+      await explained(statement, indexes);
+      const { rows: found } = await sql<{ id: string }>`${indexes}`.execute(trx);
+      seen?.({ statement, road });
+      return found.map((row) => row.id);
+    };
+    const flags = flagsOver('e').map(
+      ([, predicate]) => sql<SqlBool>`coalesce(${predicate}, false)`,
+    );
+    const results = await newest(
+      'results',
+      sql<SqlBool>`${matching} and ${sql.join(flags, sql` and `)}`,
+    );
+    const anyFilter =
+      byField.size > 0 ||
+      filters.changed !== undefined ||
+      [filters.kinds, filters.spaces, filters.componentTypes, filters.owners].some(
+        (each) => each !== undefined && each.length > 0,
+      );
+    const facets = anyFilter
+      ? await newest(
+          'facets',
+          sql<SqlBool>`${matching}
+            and (${sql.join(
+              flags.map((flag) => sql`(not ${flag})::int`),
+              sql` + `,
+            )}) <= 1`,
+        )
+      : results;
+    bounded = {
+      results,
+      facets: [...new Set([...results.slice(0, N), ...facets.slice(0, N)])],
+      facetsBounded: facets.length > N,
+    };
+  }
+
+  // The rows read: the latest's candidates by id, the predicate checked again; every version's or a
+  // baseline's, every match, exact and unbounded.
+  const base =
+    bounded === undefined
+      ? sql`
+          select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
+                 e.component_type, e.field_values, e.version_id, e.thread_id, e.current,
+                 ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
+          from ${source} e
+          where ${matching}`
+      : sql`
+          select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
+                 e.component_type, e.field_values, e.version_id, e.thread_id, true as current
+          from ${source} e
+          where e.id = any(${bounded.facets}::uuid[]) and ${readableRow} and ${shown}`;
+  // Ranked over the candidates alone (SV3-C).
+  const matched =
+    bounded === undefined
+      ? sql`select * from flagged b where ${allBut('')}`
+      : sql`select b.*, ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
+            from flagged b join search_entry e on e.id = b.id
+            where b.id = any(${bounded.results.slice(0, SEARCH_RANK_BOUND)}::uuid[])`;
+
+  const page = sql<{
     total: string;
     items: {
       kind: SearchKind;
@@ -521,23 +742,7 @@ export async function searchWords(
              or v.artifact_id = any(${[...readable.included]}::uuid[]))
       order by v.artifact_id, v.revision_no desc, v.version_no desc
     ),
-    base as (
-      select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-             e.component_type, e.field_values, e.version_id, e.thread_id,
-             ${scope === 'latest' ? sql`true` : sql`e.current`} as current,
-             ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
-      from ${source} e
-      where (
-          ((e.space_id = any(${[...readable.spaces]}::uuid[])
-              or (e.space_id is null and ${readable.tenant}::boolean))
-            and not e.artifact_id = any(${[...readable.excluded]}::uuid[]))
-          or e.artifact_id = any(${[...readable.included]}::uuid[])
-        )
-        -- Archived content is no result, facet or count (LIF-020; lifecycle.md).
-        and ${shown}
-        and ${words}
-        and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}
-    ),
+    base as (${base}),
     -- Each value an entry holds for a field that facets, as its facet names it: a boolean as true or
     -- false, a person by id, a date by its month, and a text of one value as written (SE-E).
     entry_values as (
@@ -546,13 +751,7 @@ export async function searchWords(
       cross join lateral jsonb_each(b.field_values) as fv(field, value)
       join readable_fields f on f.field::text = fv.field
       cross join lateral (
-        select case
-                 when f.data_type = 'boolean' and jsonb_typeof(x) = 'boolean' then x::text
-                 when f.data_type = 'user' and jsonb_typeof(x) = 'object' then x ->> 'user'
-                 when f.data_type = 'date' and jsonb_typeof(x) = 'string' then left(x #>> '{}', 7)
-                 when f.data_type = 'text' and f.multiplicity = 'one'
-                      and jsonb_typeof(x) = 'string' then x #>> '{}'
-               end as key
+        select ${valueKey(sql`x`, sql`f.data_type`, sql`f.multiplicity`)} as key
         from jsonb_array_elements(
                case when jsonb_typeof(fv.value) = 'array' then fv.value
                     else jsonb_build_array(fv.value) end) as el(x)
@@ -560,7 +759,7 @@ export async function searchWords(
       where k.key is not null and k.key <> ''
     ),
     flagged as (select b.*, ${flagged} from base b),
-    matched as (select * from flagged b where ${allBut('')}),
+    matched as (${matched}),
     -- Each artifact and place once, at its newest version that matched every filter (SV-C).
     results as (${
       scope === 'latest'
@@ -648,10 +847,19 @@ export async function searchWords(
            group by ev.field, f.name, f.data_type, ev.key, pr.display_name
          ) x
        ) y
-       where y.place <= ${FIELD_FACET_VALUES}) as fields`.execute(trx);
+       where y.place <= ${FIELD_FACET_VALUES}) as fields`;
+  if (options.probe?.explain === true) {
+    const { rows: plan } = await sql<{
+      'QUERY PLAN': unknown;
+    }>`explain (format json) ${page}`.execute(trx);
+    options.probe.seen?.({ statement: 'page', plan: plan[0]?.['QUERY PLAN'] });
+  }
+  const { rows } = await page.execute(trx);
 
   const row = rows[0]!;
-  const total = Number(row.total);
+  const total = bounded === undefined ? Number(row.total) : bounded.results.length;
+  const facetsBounded = bounded?.facetsBounded ?? false;
+  const capped = (each: readonly FacetRow[] | null) => cappedOf(each, facetsBounded);
   const placed =
     baseline !== undefined && row.items.some((item) => item.kind === 'component')
       ? await firstPinnedNodes(trx, baseline)
@@ -674,6 +882,7 @@ export async function searchWords(
     outcome: 'results',
     count: Math.min(total, SEARCH_COUNT_CAP),
     capped: total > SEARCH_COUNT_CAP,
+    facetsBounded,
     items: row.items.map((item) => ({
       kind: item.kind,
       artifactId: item.artifact_id,

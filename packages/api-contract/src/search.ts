@@ -180,6 +180,11 @@ export const SearchAnswerView = z.discriminatedUnion('outcome', [
     outcome: z.literal('results'),
     count: z.number().int().describe('How many match, up to 1,000'),
     capped: z.boolean().describe('Whether more match than the count, which is then a lower bound'),
+    facetsBounded: z
+      .boolean()
+      .describe(
+        'Whether the facets were counted over the 1,000 matches changed most recently alone, so every facet count is a lower bound and a value only older matches hold is missing. Never for every version or a baseline. Under the latest, a capped count means the results too are the best of those 1,000',
+      ),
     items: z.array(SearchResultView),
     facets: SearchFacetsView,
     ...said,
