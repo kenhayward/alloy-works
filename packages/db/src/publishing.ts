@@ -40,6 +40,7 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
+import { isDeleted, shareDeletion } from './deletion.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
@@ -620,8 +621,11 @@ export async function resolvePublishable(
   },
 ): Promise<Publishable | PublishRefusal> {
   const { formats, kind } = input;
+  // A request and a baseline are a deletion's dependants (DL-D): one waits for the other.
+  await shareDeletion(trx);
   const latest = await latestVersion(trx, input.documentId);
   if (!latest || latest.kind !== 'document') return { answer: 'document.missing' };
+  if (await isDeleted(trx, input.documentId)) return { answer: 'document.missing' };
   if (latest.id !== input.version) {
     return { answer: 'version.precondition', current: headingOf(latest) };
   }

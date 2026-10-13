@@ -18,6 +18,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
+import { deletionStored, isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { readVersion, type StoredVersion } from './versions.js';
 
@@ -209,6 +210,8 @@ interface Placing {
   readonly componentType: string | null;
   /** Its artifact archived; undefined before 0083 stores archival. */
   readonly archived?: boolean;
+  /** Its artifact deleted; undefined before 0085 stores deletion. */
+  readonly deleted?: boolean;
 }
 
 async function write(
@@ -237,6 +240,7 @@ async function write(
         configuration: draft.configuration,
         body: draft.texts.map((each) => each.text).join(' '),
         ...(placing.archived === undefined ? {} : { archived: placing.archived }),
+        ...(placing.deleted === undefined ? {} : { deleted: placing.deleted }),
       })),
     )
     .execute();
@@ -295,6 +299,7 @@ export async function indexVersion(trx: TenantTransaction, version: StoredVersio
       ...((await archivalStored(trx))
         ? { archived: await isArchived(trx, version.artifactId) }
         : {}),
+      ...((await deletionStored(trx)) ? { deleted: await isDeleted(trx, version.artifactId) } : {}),
     },
     source ? entriesOf(source, await contextFor(trx, source)) : [],
   );

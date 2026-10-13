@@ -38,6 +38,8 @@ describe('the rule behind a refusal', () => {
       ['suggestion.not_yours', 'suggestion_not_yours', 'COL-048'],
       ['revision.decision_required', 'revision_decision_required', 'DAT-060'],
       ['round.closed', 'round_closed', 'COL-057'],
+      ['deletion.refused', 'deletion_refused', 'LIF-023'],
+      ['reference.deleted', 'reference_deleted', 'VER-044'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -170,6 +172,8 @@ describe('the rule behind a refusal', () => {
       'restore.unreadable',
       // The AH plan's (AH-F): a release of a hold released already. A guard of the design's own.
       'hold.released',
+      // A deleted component or document, answered 410 (the DL plan, DL-B): a state, not a rule.
+      'artifact.deleted',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

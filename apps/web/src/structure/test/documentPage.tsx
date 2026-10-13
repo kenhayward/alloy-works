@@ -365,6 +365,16 @@ export function service(
       return json(200, { archived });
     }
     if (url === '/v1/holds' && request.method === 'POST') return json(200, { id: 'h1' });
+    // What deleting it leaves, and nothing refusing it; then deleted (the DL plan).
+    if (url === `/v1/documents/${DOCUMENT}/deletion`) {
+      return json(200, {
+        kind: 'document',
+        deleted: false,
+        remains: { versions: 2, iterations: 0, threads: 0, suggestions: 0, rounds: 1, events: 4 },
+        refusals: [],
+      });
+    }
+    if (url === `/v1/documents/${DOCUMENT}/delete`) return json(200, { deleted: true });
     // The document's baselines (the BL plan): one, made by Ada.
     if (url === `/v1/documents/${DOCUMENT}/baselines` && request.method === 'GET') {
       return json(200, {

@@ -407,6 +407,17 @@ export {
 } from './components.js';
 export { archiveArtifact, isArchived, unarchiveArtifact, type ArchivalAnswer } from './archival.js';
 export {
+  deleteArtifact,
+  deletionOf,
+  isDeleted,
+  undeleteArtifact,
+  type DeleteAnswer,
+  type DeletionRefusal,
+  type DeletionState,
+  type Remains,
+  type UndeleteAnswer,
+} from './deletion.js';
+export {
   countHolds,
   HELD_KINDS,
   isHeld,

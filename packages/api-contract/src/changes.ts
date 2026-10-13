@@ -50,6 +50,10 @@ export const ChangesView = z.object({
       title: z.string(),
       versions: z.int().describe('How many versions were cut since'),
       latest: z.object({ id: LowercaseUuid, number: z.string(), at: z.string() }),
+      deletion: z
+        .object({ act: z.enum(['deleted', 'undeleted']), at: z.string() })
+        .nullable()
+        .describe('Its latest deletion or undeletion since, or null where none'),
     }),
   ),
   values: z

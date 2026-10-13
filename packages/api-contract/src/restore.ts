@@ -93,11 +93,14 @@ const DocumentRestoreRefusalView = z.object({
       'outline_invalid',
       'values_invalid',
       'values_unresolved',
+      'reference_deleted',
     ])
     .describe(
-      "restore_unreadable: the version no longer reads. restore_unchanged: it would make what the latest already is. outline_invalid: the outline's own guards refuse it, `reason` saying which. values_invalid: a value its field no longer takes. values_unresolved: the template no longer resolves to check its values",
+      "restore_unreadable: the version no longer reads. restore_unchanged: it would make what the latest already is. outline_invalid: the outline's own guards refuse it, `reason` saying which. values_invalid: a value its field no longer takes. values_unresolved: the template no longer resolves to check its values. reference_deleted: a reference to a component since deleted, one for each, `node` and `title` saying which",
     ),
   reason: z.string().optional().describe('outline_invalid: why, in words'),
+  node: z.string().optional().describe('reference_deleted: the reference, by its node'),
+  title: z.string().optional().describe("reference_deleted: the component's last title"),
   failures: z.array(Failure).optional().describe('values_invalid: each value refused'),
   unresolved: z
     .array(z.unknown())
@@ -131,6 +134,8 @@ export type DocumentRestorationView = z.infer<typeof DocumentRestorationView>;
 /** A document's restore refused: `editOutline`'s members beside the version chain's. */
 const DocumentRestoreRefusal = EditingRefusal.extend({
   reason: z.string().optional().describe('outline_invalid: why, in words'),
+  node: z.string().optional().describe('reference_deleted: the reference, by its node'),
+  title: z.string().optional().describe("reference_deleted: the component's last title"),
   unresolved: z
     .array(z.unknown())
     .optional()

@@ -159,7 +159,10 @@ export function DocumentVersions({
                 label={`What restoring ${restoring.version.number} would change`}
               />
               {restoring.preview.refusals.map((refusal) => (
-                <p key={`${refusal.code} ${refusal.reason ?? ''}`} className={styles['muted']}>
+                <p
+                  key={`${refusal.code} ${refusal.reason ?? ''} ${refusal.node ?? ''}`}
+                  className={styles['muted']}
+                >
                   {documentRestoreWords(refusal)}
                 </p>
               ))}

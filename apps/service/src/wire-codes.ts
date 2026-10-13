@@ -121,6 +121,9 @@ const WIRE_CODES = {
   'restore.locked': 'restore_locked',
   'restore.unreadable': 'restore_unreadable',
   'hold.released': 'hold_released',
+  'artifact.deleted': 'artifact_deleted',
+  'deletion.refused': 'deletion_refused',
+  'reference.deleted': 'reference_deleted',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -183,6 +186,9 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'suggestion.stale': 'COL-052',
   // The suggestion's author alone withdraws it.
   'suggestion.not_yours': 'COL-048',
+  // A deletion something depends on (lifecycle.md, DL-C), and a restore naming what is deleted.
+  'deletion.refused': 'LIF-023',
+  'reference.deleted': 'VER-044',
 };
 
 /** The wire's spelling of a store's dotted answer. */

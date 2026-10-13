@@ -603,6 +603,38 @@ describe('the outline panel', () => {
     expect(fake.sent.map((each) => each.url)).toContain(`/v1/documents/${DOCUMENT}/unarchive`);
   });
 
+  it('LIF-024 says what deleting a document leaves, deletes it, and then says it is deleted', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), { retires: true });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    const deleting = await screen.findByRole('dialog', { name: /^Delete / });
+    expect(
+      await within(deleting).findByText(
+        'Nothing is removed: its 2 versions, 1 review round and 4 audit events are kept, out of reach, and come back if it is undeleted.',
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(within(deleting).getByRole('button', { name: 'Delete' }));
+    expect(await screen.findByText('This document has been deleted.')).toBeInTheDocument();
+    expect(fake.sent.map((each) => each.url)).toContain(`/v1/documents/${DOCUMENT}/delete`);
+  });
+
+  it('says a deleted document is deleted when it is opened, and offers no Delete to whoever may not retire it', async () => {
+    const live = service(outline([section(METHOD, 'Method')]));
+    const { unmount } = open(live.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    unmount();
+    const gone = service(outline([section(METHOD, 'Method')]));
+    gone.refuse(`/v1/documents/${DOCUMENT}`, 410, {
+      code: 'artifact_deleted',
+      message: 'This has been deleted.',
+      traceId: 't',
+    });
+    open(gone.fetch);
+    expect(await screen.findByText('This document has been deleted.')).toBeInTheDocument();
+  });
+
   it('shows On hold where the view says so, and places a hold, asking why, for an environment administrator', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), { onHold: true, mayHold: true });
     open(fake.fetch);

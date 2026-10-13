@@ -55,6 +55,7 @@ export function changesHandlers(db: TenantDatabase, tenantOf: (request: FastifyR
         artifacts: answer.artifacts.map((each) => ({
           ...each,
           latest: { ...each.latest, at: each.latest.at.toISOString() },
+          deletion: each.deletion && { ...each.deletion, at: each.deletion.at.toISOString() },
         })),
         values: answer.values.map((each) => ({ ...each, at: each.at.toISOString() })),
       };

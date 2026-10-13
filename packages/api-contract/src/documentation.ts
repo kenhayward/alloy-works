@@ -155,6 +155,9 @@ const operationTags = {
     'restoreVersion',
     'archiveComponent',
     'unarchiveComponent',
+    'getComponentDeletion',
+    'deleteComponent',
+    'undeleteComponent',
   ],
   Documents: [
     'listDocuments',
@@ -163,6 +166,9 @@ const operationTags = {
     'restoreDocumentVersion',
     'archiveDocument',
     'unarchiveDocument',
+    'getDocumentDeletion',
+    'deleteDocument',
+    'undeleteDocument',
     'getDocument',
     'createDocument',
     'editOutline',
@@ -337,7 +343,7 @@ const descriptions: Readonly<Record<string, string>> = {
   compareComponentVersions:
     'Compares two versions of a component: each block, list item, table cell and footnote matched by identity or by similar wording, saying which, then placed, its text compared word by word. Both versions’ content comes with the changes, for a redline.',
   listChangesSince:
-    'Lists what changed since an instant in one scope - a document and the components it places, a space, or up to 200 artifacts a caller already holds - as the caller may read it: each artifact with versions cut since, and each value a document resolved or accepted since. Versions are never deleted, so the record begins at the first; a question reaching back before it is answered from there, and says so.',
+    'Lists what changed since an instant in one scope - a document and the components it places, a space, or up to 200 artifacts a caller already holds - as the caller may read it: each artifact with versions cut since, or deleted or undeleted since, and each value a document resolved or accepted since. Versions are never deleted, so the record begins at the first; a question reaching back before it is answered from there, and says so.',
   compareBaselineResolved:
     'Compares what a publish of a baseline and of another baseline, or of the document now, would print: each component the caller may read whose values differ, or would for a cause, with why - somebody edited it, its data changed, or a definition did - and what differs for the whole document. A difference nobody typed is named as the data’s or the definitions’.',
   compareBaseline:
@@ -438,6 +444,18 @@ const descriptions: Readonly<Record<string, string>> = {
     'Archives a document: it leaves ordinary listings, their counts and search, and still opens by its id and publishes. Its publications are not archived with it. Needs retire on the document. Archiving one already archived changes nothing. Audited.',
   unarchiveDocument:
     'Unarchives a document, so it is listed and found again. Needs retire on the document. Unarchiving one not archived changes nothing. Audited.',
+  getComponentDeletion:
+    'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
+  deleteComponent:
+    'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
+  undeleteComponent:
+    'Undeletes a component, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.',
+  getDocumentDeletion:
+    'States what deleting a document leaves - its versions, threads, review rounds and audit events, all kept - and everything that refuses deleting it now: its baselines and publications, a queued publish or preview, a legal hold on it or its space, or an open review round. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the document, and answers a deleted one too.',
+  deleteDocument:
+    'Deletes a document: it leaves every listing and search and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed. Needs retire on the document. Audited.',
+  undeleteDocument:
+    'Undeletes a document, everything it kept with it. Never refused by a legal hold. Undeleting one not deleted changes nothing. Needs retire on the document. Audited.',
   getDocument:
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:

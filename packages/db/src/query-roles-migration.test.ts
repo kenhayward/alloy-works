@@ -152,6 +152,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0082_restored_from',
       '0083_archival',
       '0084_legal_holds',
+      '0085_deletion',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -181,6 +182,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0082_restored_from',
       '0083_archival',
       '0084_legal_holds',
+      '0085_deletion',
     ]);
 
     expect(await queryRoles(development)).toEqual([

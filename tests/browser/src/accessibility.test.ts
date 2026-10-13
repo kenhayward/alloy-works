@@ -647,6 +647,17 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         });
       }
       await recovery.getByRole('button', { name: 'Cancel' }).click();
+
+      // Delete, beside Archive (the DL plan, DL-H): what deleting it leaves and anything refusing it,
+      // read as it opens. Cancelled: nothing is deleted.
+      await button('Delete').click();
+      const deleting = page.getByRole('dialog', { name: /^Delete / });
+      await deleting.getByText(/^Nothing is removed/).waitFor({ timeout: 15_000 });
+      await check('the Delete dialog', {
+        shows: deleting.getByText(/^Nothing is removed/),
+        hides: [deleting.getByText('Reading what depends on it.')],
+      });
+      await deleting.getByRole('button', { name: 'Cancel' }).click();
     });
   });
 

@@ -42,6 +42,7 @@ import {
 } from './audit.js';
 import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedConnection, checkNotInUse } from './definition-references.js';
+import { isDeleted } from './deletion.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
 import { checkSpaceLive } from './spaces.js';
@@ -772,6 +773,13 @@ async function record(
   await lockArtifact(trx, input.artifactId);
   const current = await latestVersion(trx, input.artifactId);
   if (!current) return { answer: 'artifact.missing' };
+  // A deleted one takes no version (DL-B): checked under the lock its delete takes too.
+  if (
+    (current.kind === 'component' || current.kind === 'document') &&
+    (await isDeleted(trx, input.artifactId))
+  ) {
+    return { answer: 'artifact.missing' };
+  }
   if (current.id !== input.openedFrom) return { answer: 'version.precondition', current };
   if (input.substance.kind !== current.kind) {
     throw new Error(

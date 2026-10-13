@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { isLabelledKind, labelFor } from '@alloy-works/domain';
 import { labelled, labels, recordEvent } from './audit.js';
+import { shareDeletion } from './deletion.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -42,6 +43,8 @@ export async function placeHold(
 ): Promise<HoldPlaceAnswer> {
   const reason = reasonOf(input.reason);
   if (reason === undefined) return { answer: 'reason.invalid' };
+  // A deletion's dependant (DL-D): placed before a delete reads the holds, or after it.
+  await shareDeletion(trx);
   const on = await targetOf(trx, input.target);
   if (!on) return { answer: 'target.missing' };
   const { id } = await trx

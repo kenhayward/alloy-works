@@ -307,7 +307,6 @@ export const auditKindSpecs = {
   'approval.given': kind(['LIF-026'], empty, LATER),
   'approval.rejected': kind(['LIF-026', 'LIF-053'], empty, LATER),
   'gate.rejected': kind(['LIF-053', 'LIF-057'], empty, LATER),
-  'artifact.deleted': kind(['LIF-057'], empty, LATER),
   'revision.designated': kind(['LIF-026'], empty, LATER),
   // A baseline made, and one superseded by a later one (the BL plan): about the document version it
   // pins, the subject; its name is the document's content, never the log's.
@@ -324,6 +323,11 @@ export const auditKindSpecs = {
   // A component or a document archived and unarchived (the AH plan, AH-E): about the artifact.
   'artifact.archived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
   'artifact.unarchived': kind(['LIF-057'], empty, 'packages/db/src/archival.ts'),
+  // A component or a document deleted and undeleted (the DL plan, DL-B): about the artifact.
+  'artifact.deleted': kind(['LIF-057'], empty, 'packages/db/src/deletion.ts'),
+  'artifact.undeleted': kind(['LIF-057'], empty, 'packages/db/src/deletion.ts'),
+  // A minimum keep declared (the DL plan, DL-G), emitted by DL2.
+  'retention.changed': kind(['LIF-019', 'LIF-026'], empty, LATER),
   // A legal hold placed and released (the AH plan, AH-E): about the artifact or the space it holds;
   // its reason is Administration's alone, never the log's (LIF-030).
   'hold.applied': kind(['LIF-057'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),

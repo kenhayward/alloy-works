@@ -56,6 +56,8 @@ describe('the audit kinds', () => {
       'artifact.archived',
       'artifact.unarchived',
       'artifact.deleted',
+      'artifact.undeleted',
+      'retention.changed',
       'revision.designated',
       'baseline.made',
       'baseline.superseded',

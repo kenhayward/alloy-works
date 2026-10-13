@@ -1,6 +1,7 @@
 import { labelFor } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { notDeletedAs } from './deletion.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -68,6 +69,7 @@ export async function readableOf(
     .select('a.id')
     .where('a.id', 'in', asked)
     .where((eb) => readableArtifacts(eb, readable))
+    .where(notDeletedAs('a'))
     .execute();
   return new Set(rows.map((row) => row.id));
 }

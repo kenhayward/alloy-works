@@ -1,6 +1,7 @@
 import { walkOutline, readOutline } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
+import { isDeleted } from './deletion.js';
 import { readDocument, readableComponents } from './documents.js';
 import { readLocks } from './editing.js';
 import { mayReadArtifact } from './queryDefinitions.js';
@@ -45,6 +46,7 @@ export async function streamScope(
       .where('kind', '=', 'component')
       .executeTakeFirst();
     if (!row || !mayReadArtifact(readable, { id: row.id, spaceId: row.space_id })) return undefined;
+    if (await isDeleted(trx, row.id)) return undefined;
     return new Set([row.id]);
   }
   if (!UUID.test(scope.document)) return undefined;
@@ -52,6 +54,7 @@ export async function streamScope(
   if (!document || !mayReadArtifact(readable, { id: document.id, spaceId: document.space.id })) {
     return undefined;
   }
+  if (await isDeleted(trx, document.id)) return undefined;
   const read = readOutline(document.version.content, {
     artifact: document.id,
     version: document.version.id,

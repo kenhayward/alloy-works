@@ -7,7 +7,7 @@ import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion } from './versions.js';
 
-/** An artifact with versions cut since the instant (SCH-025). */
+/** An artifact with versions cut since the instant, or deleted or undeleted since (SCH-025). */
 export interface ChangedArtifact {
   readonly artifact: string;
   readonly kind: string;
@@ -15,6 +15,8 @@ export interface ChangedArtifact {
   /** How many versions were cut since. */
   readonly versions: number;
   readonly latest: { readonly id: string; readonly number: string; readonly at: Date };
+  /** Its latest deletion act since, or null where none (DL-E). */
+  readonly deletion: { readonly act: 'deleted' | 'undeleted'; readonly at: Date } | null;
 }
 
 /**
@@ -96,11 +98,20 @@ export async function changesSince(
     version_no: number;
     created_at: Date;
     title: string | null;
+    act: 'deleted' | 'undeleted' | null;
+    acted_at: Date | null;
   }>`
-    select c.artifact_id, c.versions, l.id, l.revision_no, l.version_no, l.created_at, l.title
-      from (select artifact_id, count(*) as versions
-              from artifact_version
-             where artifact_id = any(${ids}::uuid[]) and created_at > ${input.since}
+    select c.artifact_id, c.versions, l.id, l.revision_no, l.version_no, l.created_at, l.title,
+           d.act, d.at as acted_at
+      from (select artifact_id, sum(versions) as versions
+              from (select artifact_id, count(*) as versions
+                      from artifact_version
+                     where artifact_id = any(${ids}::uuid[]) and created_at > ${input.since}
+                     group by artifact_id
+                    -- A deletion and an undeletion are changes too (DL-E).
+                    union all
+                    select artifact_id, 0 from artifact_deletion
+                     where artifact_id = any(${ids}::uuid[]) and at > ${input.since}) t
              group by artifact_id) c
       cross join lateral (
         select v.id, v.revision_no, v.version_no, v.created_at, v.content->>'title' as title
@@ -108,7 +119,12 @@ export async function changesSince(
          where v.artifact_id = c.artifact_id
          order by v.revision_no desc, v.version_no desc
          limit 1) l
-     order by l.created_at desc, l.id
+      left join lateral (
+        select x.act, x.at from artifact_deletion x
+         where x.artifact_id = c.artifact_id and x.at > ${input.since}
+         order by x.id desc
+         limit 1) d on true
+     order by greatest(l.created_at, coalesce(d.at, l.created_at)) desc, l.id
      limit ${CHANGES_MAX + 1}`.execute(trx);
   const artifacts = rows.slice(0, CHANGES_MAX).map((row) => ({
     artifact: row.artifact_id,
@@ -116,6 +132,7 @@ export async function changesSince(
     title: row.title ?? '',
     versions: Number(row.versions),
     latest: { id: row.id, number: `${row.revision_no}.${row.version_no}`, at: row.created_at },
+    deletion: row.act === null ? null : { act: row.act, at: row.acted_at! },
   }));
 
   // Values only at nodes whose component the reader may read, as the Data tab answers them: a node
