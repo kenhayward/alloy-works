@@ -854,6 +854,24 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
     });
     const methods = nodesOf(document)[1]!;
+    // A section whose title refers to Methods, so Methods is referenced (STR-074).
+    document = await edit(client, document, {
+      operation: 'insert',
+      parent: null,
+      position: 2,
+      node: {
+        type: 'section',
+        title: [
+          { type: 'text', value: 'Summary of ', marks: [] },
+          {
+            type: 'crossReference',
+            id: 'r1',
+            target: { kind: 'node', node: methods.id },
+            display: 'number',
+          },
+        ],
+      },
+    });
 
     await withPage(async (page) => {
       const check = async (state: string, arrival: Arrival) => {
@@ -930,7 +948,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('boundaries shown', { shows: page.locator('[data-boundaries="shown"]') });
 
       await row(/Methods/).click();
-      await check('a section chosen in the outline', { shows: node(/Methods/) });
+      await check('a section chosen in the outline', {
+        shows: [node(/Methods/), page.getByRole('list', { name: 'Referenced by' })],
+      });
 
       await page.goto(`${SERVICE}/#/documents/${document.id}/nodes/${methods.children[0]!.id}`);
       await check('a section arrived at by a link', { shows: [...drawn, node(/Measures/)] });
@@ -968,7 +988,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       // The removal asked about.
       await page.getByRole('button', { name: 'Remove section' }).click();
       const question = page.getByRole('group', { name: 'Confirm removal' });
-      await check('the removal asked about', { shows: question });
+      await check('the removal asked about', {
+        shows: [question, question.getByText(/^Referenced once elsewhere/)],
+      });
       await question.getByRole('button', { name: 'Keep' }).click();
       await leave(question);
 

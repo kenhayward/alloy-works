@@ -504,6 +504,8 @@ describe('the domain package', () => {
         'literalValues',
         // A binding with its document arguments substituted (the TP2 plan, TP2-A).
         'substituteDocumentArguments',
+        // What in its own document references a node (STR-074; TC4).
+        'incomingReferences',
         'PROVENANCE_SCHEMA_VERSION',
         'parseProvenance',
         'parseProvenanceForWrite',

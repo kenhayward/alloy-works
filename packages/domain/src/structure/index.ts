@@ -82,5 +82,8 @@ export type {
   UnresolvedReason,
 } from './references.js';
 
+export { incomingReferences } from './incoming.js';
+export type { IncomingInput, IncomingReference } from './incoming.js';
+
 export { baselineDigestInput, baselineNameProblem } from './baseline.js';
 export type { BaselinePins, PinnedVersion } from './baseline.js';

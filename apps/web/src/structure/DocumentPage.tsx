@@ -2,16 +2,19 @@ import type { FieldView } from '@alloy-works/api-client';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
+  incomingReferences,
   layoutWordsSchema,
   number,
   numberingSchemeSchema,
   parseContentDocument,
+  readContent,
   readOutlineView,
   resolve,
   sectionNumbers,
   walkOutline,
   cellRevisable,
   formatsFor,
+  type BlockNode,
   type BoundTableNode,
   type ColumnType,
   type Contribution,
@@ -789,6 +792,18 @@ export function DocumentPage({
   // and again whenever they are read again - after an editor's Done, a version cut, an outline act -
   // and only where a text holds a binding. A failed read shows no values, and says nothing.
   const [bindingStates, setBindingStates] = useState<readonly BindingState[] | null>(null);
+  // What in this document refers to each node (STR-074), from the texts already read: unknown until
+  // they are, so nothing is said to refer to nothing before it is known. A text not given is never
+  // counted (SCH-032).
+  const referencesTo = useMemo(() => {
+    if (loaded.state !== 'open' || textsRead !== shownVersion) return undefined;
+    const occurrences = new Map<string, readonly BlockNode[]>();
+    for (const [node, content] of texts) {
+      const read = readContent(content, { artifact: node, version: '' });
+      if (read.ok) occurrences.set(node, read.document.content);
+    }
+    return incomingReferences({ outline: loaded.document.outline, occurrences });
+  }, [loaded, texts, textsRead, shownVersion]);
   // What matters about each node to an author (STR-038): who else holds its component, as the stream
   // says; the broken references its text drew; the values its bindings failed to hold.
   const outlineMarks = useMemo(() => {
@@ -1949,6 +1964,7 @@ export function DocumentPage({
             <OutlinePanel
               outline={document.outline}
               marks={outlineMarks}
+              {...(referencesTo === undefined ? {} : { referencesTo })}
               head={
                 // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
                 outlinePane.collapsed ? null : (

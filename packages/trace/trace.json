@@ -18505,6 +18505,10 @@
           "howItIsMet": "A reference's target is a closed union - `node` for an outline node, `block` and `component` for a caption-bearing block or a footnote - each naming its target by identifier, never by number or position; a component may hold a `node` target (XR-B), so body text can point at a section"
         },
         {
+          "id": "STR-074",
+          "howItIsMet": "`incomingReferences` binds every reference in the document's section titles and readable texts as `referenceResolver` does, and answers for a node each reference to it or to anything in it from outside it, computed in the page from the texts it already reads, no index and no request of its own. The Part panel lists each referring place as a link, and removing a referenced node names them before it is confirmed, never refused. A text the reader may not read is never read, and a withheld occurrence names no component a reference could bind to (SCH-032)"
+        },
+        {
           "id": "STR-065",
           "howItIsMet": "The contents panel is the outline, rendered: it renders the outline every operation returns rather than a copy of one, so it updates with every act the author makes, and clicking a node takes the reader to it ([Navigation](#navigation))"
         },
@@ -21970,6 +21974,18 @@
       "kind": "title"
     },
     {
+      "id": "SCH-032",
+      "file": "apps/web/src/structure/DocumentPage.references.test.tsx",
+      "line": 156,
+      "kind": "title"
+    },
+    {
+      "id": "STR-074",
+      "file": "apps/web/src/structure/DocumentPage.references.test.tsx",
+      "line": 99,
+      "kind": "title"
+    },
+    {
       "id": "CNT-155",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
       "line": 165,
@@ -24762,7 +24778,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 665,
+      "line": 667,
       "kind": "title"
     },
     {
@@ -25435,6 +25451,12 @@
       "id": "VER-046",
       "file": "packages/domain/src/structure/baseline.test.ts",
       "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "STR-074",
+      "file": "packages/domain/src/structure/incoming.test.ts",
+      "line": 75,
       "kind": "title"
     },
     {

@@ -8,6 +8,7 @@ import {
   resolve,
   sectionNumbers,
   type Contribution,
+  type IncomingReference,
   type NumberingScheme,
   type OutlineView,
   type OutlineViewNode,
@@ -274,6 +275,11 @@ export interface OutlinePanelProps {
    * broken references and failed values its text holds. None where nothing does.
    */
   readonly marks?: ReadonlyMap<string, NodeMarks>;
+  /**
+   * What in this document refers to a node or to anything in it, from outside it (STR-074): listed in
+   * the Part panel, and named before the node is removed. Absent until the page knows.
+   */
+  readonly referencesTo?: (node: string) => readonly IncomingReference[];
 }
 
 /**
@@ -394,6 +400,7 @@ export function OutlinePanel({
   onSelected = () => {},
   inView = null,
   marks,
+  referencesTo,
   sectionFields,
   schemas,
   people,
@@ -657,6 +664,27 @@ export function OutlinePanel({
       choose(id, true);
     }
   };
+
+  /** Where a reference to the chosen node stands, chosen from the Part panel or the removal (STR-074). */
+  const goTo = (id: string) => {
+    setConfirming(null);
+    setActive(id);
+    setHighlighted(null);
+    onSelected(id);
+    setFocusTarget(id);
+  };
+  const referring = (id: string) =>
+    referencesTo && (
+      <ReferencedBy
+        references={referencesTo(id)}
+        nameOf={(node) => {
+          const found = placeOf(nodes, node)?.node;
+          return found === undefined ? 'A component' : nodeName(found, names);
+        }}
+        linkOf={linkOf}
+        onGo={goTo}
+      />
+    );
 
   const choose = (id: string, focus: boolean) => {
     setActive(id);
@@ -1137,6 +1165,7 @@ export function OutlinePanel({
                 openField={openField}
                 onNotice={onNotice}
                 onRemove={() => setConfirming(selected.id)}
+                referencedBy={referring(selected.id)}
                 language={outline.language}
                 direction={outline.direction}
                 onEquation={askEquation}
@@ -1159,6 +1188,11 @@ export function OutlinePanel({
               <ConfirmRemoval
                 node={placeOf(nodes, confirming)?.node}
                 names={names}
+                referencedBy={
+                  referencesTo !== undefined && referencesTo(confirming).length > 0
+                    ? { count: referencesTo(confirming).length, list: referring(confirming) }
+                    : null
+                }
                 onRemove={() => void remove(confirming)}
                 onKeep={() => {
                   setConfirming(null);
@@ -1173,6 +1207,7 @@ export function OutlinePanel({
                   name={nodeName(selected, names)}
                   onNotice={onNotice}
                 />
+                {referring(selected.id)}
               </div>
             )}
           </div>,
@@ -1318,16 +1353,66 @@ function ComponentChooser({
  * A removal has no inverse (`tree.ts`, `inverseOf`), and it empties the undo stack, because every entry
  * beneath it was computed against an outline that still held what it took - so the question says both.
  */
+/**
+ * The places in the document that refer to a node (STR-074), one link each, by the node it stands in
+ * and how many references it holds: a Part panel row, and the list a removal names.
+ */
+function ReferencedBy({
+  references,
+  nameOf,
+  linkOf,
+  onGo,
+}: {
+  references: readonly IncomingReference[];
+  nameOf: (node: string) => string;
+  linkOf: ((node: string) => string) | undefined;
+  onGo: (node: string) => void;
+}) {
+  const label = useId();
+  const counts = new Map<string, number>();
+  for (const each of references) counts.set(each.from, (counts.get(each.from) ?? 0) + 1);
+  return (
+    <div className={styles['partRow']}>
+      <span id={label} className={styles['rowLabel']}>
+        Referenced by
+      </span>
+      {counts.size === 0 ? (
+        <span>Nothing else in this document refers to it.</span>
+      ) : (
+        <ul aria-labelledby={label} className={styles['referring']}>
+          {[...counts].map(([from, count]) => (
+            <li key={from}>
+              <a
+                href={linkOf?.(from) ?? '#'}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onGo(from);
+                }}
+              >
+                {nameOf(from)}
+                {count > 1 ? `, ${count} references` : ''}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const IRREVERSIBLE = 'This cannot be undone, and nothing before it can be undone afterwards.';
 
 function ConfirmRemoval({
   node,
   names,
+  referencedBy,
   onRemove,
   onKeep,
 }: {
   node: OutlineViewNode | undefined;
   names: Names;
+  /** What refers to the node from elsewhere (STR-074): warned of, never refused. */
+  referencedBy: { readonly count: number; readonly list: ReactNode } | null;
   onRemove: () => void;
   onKeep: () => void;
 }) {
@@ -1346,6 +1431,14 @@ function ConfirmRemoval({
           ? `Remove ${name} and everything beneath it? ${IRREVERSIBLE}`
           : `Remove ${name}? ${IRREVERSIBLE}`}
       </p>
+      {referencedBy !== null && (
+        <>
+          <p>
+            {`Referenced ${referencedBy.count === 1 ? 'once' : `${referencedBy.count} times`} elsewhere in this document. Removing it breaks each reference.`}
+          </p>
+          {referencedBy.list}
+        </>
+      )}
       {/* Focus goes to the question the author has just asked to be put. */}
       <button type="button" autoFocus onClick={onRemove}>
         Remove
@@ -1400,10 +1493,13 @@ function NodeDetails({
   schemas,
   people,
   link,
+  referencedBy,
 }: {
   node: OutlineViewNode;
   /** The node's link (`NodeLink`), a row of its own before Remove. */
   link?: ReactNode;
+  /** What in the document refers to it (STR-074), a row after its link. */
+  referencedBy?: ReactNode;
   /** Whether the node is at the top level, the only place `matter` may be set (STR-016). */
   topLevel: boolean;
   /** Whether **Front matter** is one of the node's choices: what `mayBeFront` says (STR-064). */
@@ -1577,6 +1673,7 @@ function NodeDetails({
         </div>
       )}
       {link}
+      {referencedBy}
       <div className={styles['foot']}>
         <button type="button" className={styles['remove']} onClick={() => !busy && onRemove()}>
           <Icon name="Delete" size={14} />
