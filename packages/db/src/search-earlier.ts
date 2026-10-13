@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { historyStored } from './search-history.js';
 import type { TenantTransaction } from './tables.js';
 
 const earlierKnown = new WeakMap<TenantTransaction, boolean>();
@@ -19,7 +20,7 @@ export async function earlierStored(trx: TenantTransaction): Promise<boolean> {
   return present;
 }
 
-/** Sets an archival or deletion act's flag on every earlier version's rows too (SV-E). */
+/** Sets an archival or deletion act's flag on every earlier version's rows and its history too (SV-E). */
 export async function flagEarlier(
   trx: TenantTransaction,
   artifactId: string,
@@ -27,4 +28,6 @@ export async function flagEarlier(
 ): Promise<void> {
   if (!(await earlierStored(trx))) return;
   await trx.updateTable('search_earlier').set(flag).where('artifact_id', '=', artifactId).execute();
+  if (!(await historyStored(trx))) return;
+  await trx.updateTable('search_history').set(flag).where('artifact_id', '=', artifactId).execute();
 }

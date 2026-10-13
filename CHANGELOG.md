@@ -3,6 +3,23 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.165.0 - 2026-10-14 (PR #606)
+
+Search at scale, after [the search-versions spike](docs/specification/spikes/Search_Versions_Spike_Findings.md).
+
+### Changed
+
+- **Past 1,000 matches, search shows the best matches among the 1,000 changed most recently**, and says so.
+- **Facets past 1,000 matches count the most recently changed matches alone**: the 1,000 newest with every filter, and the 1,000 newest failing one. Each count then says at least, even a small one, and `facetsBounded` in `GET /v1/search` says so.
+- **A term under three characters is part of a word only beside a longer term**; alone, it is looked for as a whole word.
+- **Searching every version is bounded as searching the latest is**: past 1,000 matches, its results, counts and facets come from the 1,000 changed most recently.
+- **Every version matches a place by its words across all its versions together**: two words held by two versions find it, and an excluded word excludes a place any version held it in. A phrase only an earlier version held is not found once one of its words is back in the newest version.
+- **Filters and facets over every version read each place's newest values.**
+
+### Fixed
+
+- **Search is fast on a large tenant.** Words are found through their index, and the definitions a search reads through theirs, so a search no longer reads everything its reader may see (#602).
+
 ## 0.164.0 - 2026-10-13 (PR #600)
 
 The T3 close: every T3 requirement built and tested, or split and moved by [the T3 audit](<docs/reviews/T3 - Audit against the code.md>).

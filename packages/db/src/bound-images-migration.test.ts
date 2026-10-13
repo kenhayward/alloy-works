@@ -201,6 +201,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0088_search_earlier',
       '0089_search_threads',
       '0090_search_at_scale',
+      '0091_search_history',
     ]);
     const kept = await queryAs(
       db.adminUrl,

@@ -18040,7 +18040,7 @@
         },
         {
           "id": "SCH-003",
-          "howItIsMet": "The latest version by default; on request every version, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))"
+          "howItIsMet": "The latest version by default; on request every version, from one `search_history` row a place, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))"
         },
         {
           "id": "SCH-058",
@@ -23659,7 +23659,7 @@
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-bounded.test.ts",
-      "line": 359,
+      "line": 372,
       "kind": "title"
     },
     {
@@ -23708,6 +23708,36 @@
       "id": "SCH-073",
       "file": "packages/db/src/search-facets.test.ts",
       "line": 388,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-020",
+      "file": "packages/db/src/search-history.test.ts",
+      "line": 396,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-003",
+      "file": "packages/db/src/search-history.test.ts",
+      "line": 375,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-010",
+      "file": "packages/db/src/search-history.test.ts",
+      "line": 520,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-032",
+      "file": "packages/db/src/search-history.test.ts",
+      "line": 520,
+      "kind": "title"
+    },
+    {
+      "id": "VER-038",
+      "file": "packages/db/src/search-history.test.ts",
+      "line": 411,
       "kind": "title"
     },
     {

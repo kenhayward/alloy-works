@@ -7,6 +7,7 @@ import { recordMembershipsRemoved } from './groups.js';
 import { withdrawInvitation } from './invitations.js';
 import { notifyTenant } from './realtime.js';
 import { lockNaming, reindexNaming, rewriteEarlierNaming } from './search.js';
+import { rebuildHistory } from './search-history.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -175,8 +176,7 @@ export async function erasePerson(
     if (!withdrawn || 'refused' in withdrawn) {
       throw new Error(`The invitation of ${person} could not be withdrawn`);
     }
-    await reindexNaming(trx, state.person.id);
-    await rewriteEarlierNaming(trx, state.person.id);
+    await unsayName(trx, state.person.id);
     return { answer: 'erased', labels: await eraseLabels(trx, person) };
   }
 
@@ -195,11 +195,21 @@ export async function erasePerson(
     })
     .where('id', '=', person)
     .execute();
-  // Search said their name wherever a value named them; it says the fixed word now (#594).
-  await reindexNaming(trx, state.person.id);
-  // Earlier versions' words said their name too (SV-J).
-  await rewriteEarlierNaming(trx, state.person.id);
+  await unsayName(trx, state.person.id);
   return { answer: 'erased', labels: await eraseLabels(trx, person) };
+}
+
+/**
+ * Search said their name wherever a value named them; it says the fixed word now (#594), in earlier
+ * versions' words too (SV-J). A fold never takes a word out, so every artifact either rewrite touched
+ * has its history made again, after both, under the locks they took (SV3-K).
+ */
+async function unsayName(trx: TenantTransaction, person: string): Promise<void> {
+  const current = await reindexNaming(trx, person);
+  const earlier = await rewriteEarlierNaming(trx, person);
+  for (const artifact of [...new Set([...current, ...earlier])].sort()) {
+    await rebuildHistory(trx, artifact);
+  }
 }
 
 /**

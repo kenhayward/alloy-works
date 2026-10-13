@@ -3,12 +3,14 @@ import {
   parseQuery,
   readOutline,
   SEARCH_CONFIGURATIONS,
+  searchKinds,
   walkOutline,
   type SearchKind,
 } from '@alloy-works/domain';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
+import { HISTORY_KINDS, historyStored } from './search-history.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -17,16 +19,17 @@ import type { TenantTransaction } from './tables.js';
  * statement over the projection, holding the reader's readable set, the query, the filters, the best
  * place in each entry and a passage from it, the count, and every facet - each counted with the other
  * filters in force and its own left out, and each capped over what the reader may see (SCH-073). The
- * latest is first bounded to its most recently changed matches, found by the road chosen (SV3).
+ * latest, and every version from one row a place, are first bounded to their most recently changed
+ * matches, found by the road chosen (SV3).
  */
 
 /** Past this many, a count says only that there are more (SCH-073). */
 export const SEARCH_COUNT_CAP = 1000;
 
-/** How many of the most recently changed matches the latest ranks and facets (SV3-C). */
+/** How many of the most recently changed matches a bounded search ranks and facets (SV3-C). */
 export const SEARCH_RANK_BOUND = 1000;
 
-/** How the latest finds its newest matches: walking them in changed order, or by the word indexes. */
+/** How a bounded search finds its newest matches: walking them in changed order, or by the word indexes. */
 export type SearchRoad = 'walk' | 'indexes';
 
 /**
@@ -41,6 +44,8 @@ export interface SearchProbe {
   readonly seen?: (event: {
     readonly statement: 'results' | 'facets' | 'page';
     readonly road?: SearchRoad;
+    /** The table a road scanned: every version scans two. */
+    readonly scan?: string;
     readonly plan?: unknown;
   }) => void;
 }
@@ -118,6 +123,13 @@ const ENTRY_COLUMNS = sql.raw(
   'id, kind, artifact_id, node, version_id, title, space_id, changed_at, owner, component_type, field_values, configuration, body, vector, archived, deleted',
 );
 const TEXT_COLUMNS = sql.raw('entry_id, place, body, configuration, vector');
+/** The kinds history holds, and every other, as SQL lists. */
+const IN_HISTORY = sql`(${sql.join(HISTORY_KINDS.map((kind) => sql.lit(kind)))})`;
+const NOT_IN_HISTORY = sql`(${sql.join(
+  searchKinds
+    .filter((kind) => !(HISTORY_KINDS as readonly string[]).includes(kind))
+    .map((kind) => sql.lit(kind)),
+)})`;
 
 /**
  * What narrows a search (SCH-059), each dimension one filter, several values within one either of them.
@@ -350,6 +362,8 @@ export async function searchWords(
   const scope = options.scope ?? 'latest';
   // Threads have rows from 0089; before it, which only a test migrated to an earlier point reads, none.
   const threaded = await vectorStored(trx);
+  // Every version from one row a place from 0091 (SV3-L); before it, the union of every version's.
+  const history = scope === 'all' && (await historyStored(trx));
   const threadOf = threaded ? sql`thread_id` : sql`null::uuid as thread_id`;
   // A baseline is read as its document is (BL-H): one the reader may not read, or none, is not found.
   let baseline: { id: string; name: string; document: string; documentVersion: string } | undefined;
@@ -376,8 +390,10 @@ export async function searchWords(
       documentVersion: row.document_version_id,
     };
   }
-  // The latest alone reads `search_entry` as it always has, with no union (SV-C). Every version adds
-  // `search_earlier` but its assets, which no page shows (SV-A); a baseline reads what it pins.
+  // The latest alone reads `search_entry` as it always has, with no union (SV-C). Every version reads
+  // history, and the current rows of the kinds it does not hold (SV3-L): scanned apart (below), read
+  // here by the ids found. Before 0091 it adds `search_earlier` but its assets, which no page shows
+  // (SV-A). A baseline reads what it pins.
   const pinnedBy = (at: { id: string; document: string; documentVersion: string }) =>
     sql<SqlBool>`((x.artifact_id = ${at.document} and x.version_id = ${at.documentVersion})
       or exists (select 1 from baseline_pin bp
@@ -389,12 +405,16 @@ export async function searchWords(
       ? threaded
         ? sql`search_entry`
         : sql`(select *, null::uuid as thread_id from search_entry)`
-      : baseline === undefined
-        ? sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry
+      : history
+        ? sql`(select ${ENTRY_COLUMNS}, null::uuid as thread_id, false as current from search_history
+               union all
+               select ${ENTRY_COLUMNS}, thread_id, true as current from search_entry)`
+        : baseline === undefined
+          ? sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry
                union all
                select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier
                 where kind <> 'asset')`
-        : sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry x
+          : sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry x
                 where ${pinnedBy(baseline)} ${threaded ? sql`and x.thread_id is null` : sql``}
                union all
                select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier x
@@ -410,26 +430,43 @@ export async function searchWords(
     baseline === undefined
       ? sql<SqlBool>`not e.archived and not e.deleted`
       : sql<SqlBool>`not e.deleted`;
-  // One result per artifact and place however many of its versions match, counted once (SV-C).
-  const counted =
-    scope === 'latest'
-      ? sql`count(*)`
-      : sql`count(distinct (b.artifact_id, coalesce(b.node, ''), coalesce(b.thread_id::text, '')))`;
+  // One result per artifact and place however many of its versions match, counted once (SV-C): from
+  // history, each place is one row already.
+  const collapse = scope !== 'latest' && !history;
+  const counted = !collapse
+    ? sql`count(*)`
+    : sql`count(distinct (b.artifact_id, coalesce(b.node, ''), coalesce(b.thread_id::text, '')))`;
   const parsed = parseQuery(query);
   if (parsed.outcome !== 'query') return parsed;
 
   // Each statement planned for its own parameters (search.md, "The permission predicate"; SV3-H).
   await sql`set local plan_cache_mode = force_custom_plan`.execute(trx);
+  // Never compiled: every version's page is costed past JIT's threshold, and compiling it took a
+  // second where running it takes milliseconds (SV3b's load suite).
+  await sql`set local jit = off`.execute(trx);
 
-  // The configurations in use, one index probe each (SV3-A).
+  // The configurations in use, one index probe each (SV3-A), each named as a constant: probed by a
+  // parameter, the planner reckons any configuration as common as the commonest and reads the whole
+  // table for one in no row. Every version probes history, and before 0091 the earlier rows; the
+  // version a history row names matches an earlier version's words by its own configuration.
+  const probed =
+    scope === 'latest'
+      ? ['search_entry']
+      : ['search_entry', history ? 'search_history' : 'search_earlier'];
   const { rows: inUse } = await sql<{ c: string }>`
-    select c from unnest(${[...SEARCH_CONFIGURATIONS]}::text[]) c
-    where exists (select 1 from search_entry where configuration = c::regconfig)
-      ${
-        scope === 'latest'
-          ? sql``
-          : sql`or exists (select 1 from search_earlier where configuration = c::regconfig)`
-      }
+    ${sql.join(
+      SEARCH_CONFIGURATIONS.map(
+        (c) =>
+          sql`select ${sql.lit(c)}::text as c where ${sql.join(
+            probed.map(
+              (table) =>
+                sql`exists (select 1 from ${sql.table(table)} where configuration = ${sql.lit(c)}::regconfig)`,
+            ),
+            sql` or `,
+          )}`,
+      ),
+      sql` union all `,
+    )}
     order by c`.execute(trx);
   const configurations = inUse.map((row) => row.c);
   /** `alias`'s words matching `words`, a constant tsquery per configuration, so an index serves it. */
@@ -444,9 +481,7 @@ export async function searchWords(
           sql` or `,
         )})`;
 
-  const places: RawBuilder<SqlBool>[] = [];
-  // A query of scoped terms alone is found through its places' index (SV3-A).
-  let driver: RawBuilder<SqlBool> | undefined;
+  const scopedTerms: { place: string; words: string; excluded: boolean }[] = [];
   for (const term of parsed.scoped) {
     let place: string;
     if (nameKey(term.name) === 'title') {
@@ -467,16 +502,49 @@ export async function searchWords(
       if (!readableField) return { outcome: 'unknown_field', name: term.name };
       place = `field:${field.artifact_id}`;
     }
-    const holds = sql<SqlBool>`exists (
-      select 1 from ${texts} s
-      where s.entry_id = e.id and s.place = ${place}
-        and s.vector @@ websearch_to_tsquery(s.configuration, ${term.words}))`;
-    places.push(term.excluded ? sql<SqlBool>`not ${holds}` : holds);
-    if (!term.excluded && driver === undefined) {
-      driver = sql<SqlBool>`e.id in (
-        select s.entry_id from ${texts} s where s.place = ${place} and ${matches('s', term.words)})`;
-    }
+    scopedTerms.push({ place, words: term.words, excluded: term.excluded });
   }
+  /** Whether `alias`'s row holds `words` at `place`, its places in `from` by the row's id. */
+  const heldAt = (alias: string, from: RawBuilder<unknown>, place: string, words: string) =>
+    sql<SqlBool>`exists (
+      select 1 from ${from} s
+      where s.entry_id = ${sql.ref(`${alias}.id`)} and s.place = ${place}
+        and s.vector @@ websearch_to_tsquery(s.configuration, ${words}))`;
+  // Under every version, a history row holds a scoped term any of its place's versions held (SV3-L).
+  // A node compared so each version's row is found by its index, a section's node by equality and an
+  // artifact's own row by `is null`, never by `is not distinct from`, which no index serves.
+  // `offset 0` keeps each a probe per row: without it Postgres may hash every place in the tenant
+  // holding the words, once, which costs far more than the candidates' probes.
+  const heldByVersions = (place: string, words: string, node: RawBuilder<SqlBool>) =>
+    sql<SqlBool>`(exists (
+             select 1 from search_entry x join search_text s on s.entry_id = x.id
+             where x.artifact_id = e.artifact_id and ${node}
+               and x.kind in ${IN_HISTORY} and s.place = ${place}
+               and s.vector @@ websearch_to_tsquery(s.configuration, ${words}) offset 0)
+        or exists (
+             select 1 from search_earlier x join search_earlier_text s on s.entry_id = x.id
+             where x.artifact_id = e.artifact_id and ${node} and s.place = ${place}
+               and s.vector @@ websearch_to_tsquery(s.configuration, ${words}) offset 0))`;
+  const heldOverVersions = (place: string, words: string) =>
+    sql<SqlBool>`(case when e.current then ${heldAt('e', sql`search_text`, place, words)}
+      when e.node is null then ${heldByVersions(place, words, sql<SqlBool>`x.node is null`)}
+      else ${heldByVersions(place, words, sql<SqlBool>`x.node = e.node`)} end)`;
+  const places = scopedTerms.map(({ place, words, excluded }) => {
+    const holds = history ? heldOverVersions(place, words) : heldAt('e', texts, place, words);
+    return excluded ? sql<SqlBool>`not ${holds}` : holds;
+  });
+  // A query of scoped terms alone is found through its places' index (SV3-A); under every version,
+  // through the row's own words, which hold every place's in every version: a superset, the places'
+  // test above then exact.
+  const wanted = scopedTerms.find((term) => !term.excluded);
+  const driver =
+    wanted === undefined
+      ? undefined
+      : history
+        ? matches('e', wanted.words)
+        : sql<SqlBool>`e.id in (
+            select s.entry_id from ${texts} s
+            where s.place = ${wanted.place} and ${matches('s', wanted.words)})`;
 
   // Nothing any configuration can search for - punctuation, and nothing else - is no query at all.
   const { rows: lexemes } = await sql<{
@@ -489,29 +557,42 @@ export async function searchWords(
   // which no trigram holds, only narrows a longer one's, written so the index is never planned for it;
   // with no longer term there is no part-of-a-word match (SV3-A). A typed `%` or `_` is a character,
   // never a pattern.
-  const whole = matches('e', parsed.words);
   const like = (term: string) => `%${term.replace(/[\\%_]/gu, (each) => `\\${each}`)}%`;
   const short = (term: string) => [...term].length < 3;
-  const contains =
-    parsed.contains === null || parsed.contains.all.every(short)
-      ? null
-      : sql.join(
-          [
-            ...parsed.contains.all.map((term) =>
-              short(term)
-                ? sql<SqlBool>`(e.body || '') ilike ${like(term)}`
-                : sql<SqlBool>`e.body ilike ${like(term)}`,
-            ),
-            ...parsed.contains.none.map((term) => sql<SqlBool>`e.body not ilike ${like(term)}`),
-          ],
-          sql` and `,
-        );
-  const words =
-    parsed.words === ''
-      ? (driver ?? sql<SqlBool>`true`)
-      : contains === null
-        ? whole
-        : sql<SqlBool>`(${whole} or (${contains}))`;
+  /** `alias`'s row matching the words, or holding every term as a part of a word. */
+  const wordsOver = (alias: string) => {
+    const body = sql.ref(`${alias}.body`);
+    const whole = matches(alias, parsed.words);
+    const contains =
+      parsed.contains === null || parsed.contains.all.every(short)
+        ? null
+        : sql.join(
+            [
+              ...parsed.contains.all.map((term) =>
+                short(term)
+                  ? sql<SqlBool>`(${body} || '') ilike ${like(term)}`
+                  : sql<SqlBool>`${body} ilike ${like(term)}`,
+              ),
+              ...parsed.contains.none.map((term) => sql<SqlBool>`${body} not ilike ${like(term)}`),
+            ],
+            sql` and `,
+          );
+    return contains === null ? whole : sql<SqlBool>`(${whole} or (${contains}))`;
+  };
+  const words = parsed.words === '' ? (driver ?? sql<SqlBool>`true`) : wordsOver('e');
+  /** One version's row, `alias`, matching the whole query: the version a history row names (SV3-M). */
+  const wholeOver = (alias: string, from: RawBuilder<unknown>) =>
+    sql.join(
+      [
+        parsed.words === '' ? sql<SqlBool>`true` : wordsOver(alias),
+        ...scopedTerms.map(({ place, words: held, excluded }) =>
+          excluded
+            ? sql<SqlBool>`not ${heldAt(alias, from, place, held)}`
+            : heldAt(alias, from, place, held),
+        ),
+      ],
+      sql` and `,
+    );
   const limit = Math.min(Math.max(options.limit ?? SEARCH_PAGE, 1), SEARCH_PAGE_MAX);
   const offset = Math.min(Math.max(options.offset ?? 0, 0), SEARCH_COUNT_CAP);
 
@@ -609,10 +690,31 @@ export async function searchWords(
                              order by x.n desc, x.label, x.value), '[]'::json)
     from (${rows}) x)`;
 
-  // The latest is bounded (SV3-C, SV3-D): results from the newest N + 1 rows matching every filter,
-  // facets from those and the newest N + 1 failing at most one, each found by the road chosen (SV3-E).
+  // The latest, and every version from history, are bounded (SV3-C, SV3-D): results from the newest
+  // N + 1 rows matching every filter, facets from those and the newest N + 1 failing at most one, each
+  // found by the road chosen (SV3-E).
   let bounded: { results: string[]; facets: string[]; facetsBounded: boolean } | undefined;
-  if (scope === 'latest') {
+  if (scope === 'latest' || history) {
+    // Every version scans history, and the current rows of the kinds it does not hold, apart: each by
+    // its own road, the newest of the two merged. One union would read the current rows history stands
+    // for too, as a branch with a `where` of its own is never flattened.
+    const scans =
+      scope === 'latest'
+        ? [{ from: sql`search_entry`, relation: 'search_entry' }]
+        : [
+            {
+              from: sql`(select *, null::uuid as thread_id, false as current from search_history)`,
+              relation: 'search_history',
+            },
+            {
+              // Named, not excluded: the kind index then finds them, never the rows history holds.
+              from: sql`(select *, true as current from search_entry where kind in ${NOT_IN_HISTORY})`,
+              relation: 'search_entry',
+              // Always by the indexes: a walk of the table's (changed_at, id) index would read the
+              // current rows history stands for too, and a table's size says nothing of these kinds'.
+              indexesOnly: true,
+            },
+          ];
     const seen = options.probe?.seen;
     const explained = async (
       statement: 'results' | 'facets' | 'page',
@@ -625,50 +727,85 @@ export async function searchWords(
       seen?.({ statement, plan: plan[0]?.['QUERY PLAN'] });
     };
     // The rows as the planner reckons them: its last count, scaled to the table's size now.
-    const { rows: sized } = await sql<{ rows: number }>`
-      select case when relpages > 0
-                  then reltuples / relpages
-                       * (pg_relation_size(oid) / current_setting('block_size')::int)
-                  else reltuples end::float8 as rows
-      from pg_class where oid = 'search_entry'::regclass`.execute(trx);
-    const rows = Number(sized[0]?.rows ?? -1);
+    const sizeOf = async (relation: string) => {
+      const { rows: sized } = await sql<{ rows: number }>`
+        select case when relpages > 0
+                    then reltuples / relpages
+                         * (pg_relation_size(oid) / current_setting('block_size')::int)
+                    else reltuples end::float8 as rows
+        from pg_class where oid = ${relation}::regclass`.execute(trx);
+      return Number(sized[0]?.rows ?? -1);
+    };
     const N = SEARCH_RANK_BOUND;
-    const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
-      let road = options.probe?.road;
+    /** The newest N + 1 rows of one scan matching `where`, with when each changed, in microseconds. */
+    const newestOf = async (
+      statement: 'results' | 'facets',
+      where: RawBuilder<SqlBool>,
+      candidates: RawBuilder<unknown>,
+      rows: number,
+      relation: string,
+      indexesOnly: boolean,
+    ) => {
+      let road: SearchRoad | undefined = indexesOnly ? 'indexes' : options.probe?.road;
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
       // test sets how many.
       let reads: number = options.probe?.reads ?? Number.MAX_SAFE_INTEGER;
       if (road === undefined) {
         const { rows: estimate } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
-          explain (format json) select 1 from search_entry e where ${where}`.execute(trx);
+          explain (format json) select 1 from ${candidates} e where ${where}`.execute(trx);
         const matches = Number(estimate[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0);
         road = rows > 0 && matches > Math.sqrt(N * rows) ? 'walk' : 'indexes';
         if (road === 'walk') reads = Math.ceil((4 * (N + 1) * rows) / matches);
       }
+      const at = sql`(extract(epoch from e.changed_at) * 1000000)::bigint::text as at`;
       // The limit inside, the reader's predicate outside: the limit bounds the cost alone.
       const walk = sql`
-        select e.id from (select * from search_entry order by changed_at desc, id desc
-                          limit ${reads}) e
+        select e.id, ${at} from (select * from ${candidates} c order by changed_at desc, id desc
+                                 limit ${reads}) e
         where ${where} order by e.changed_at desc, e.id desc limit ${N + 1}`;
       // Ordered by an expression no index holds, so the planner finds the matches by their indexes.
       const indexes = sql`
-        select e.id from search_entry e where ${where}
+        select e.id, ${at} from ${candidates} e where ${where}
         order by e.changed_at + interval '0 s' desc, e.id desc limit ${N + 1}`;
       if (road === 'walk') {
         await explained(statement, walk);
-        const { rows: walked } = await sql<{ id: string }>`${walk}`.execute(trx);
+        const { rows: walked } = await sql<{ id: string; at: string }>`${walk}`.execute(trx);
         if (walked.length > N || reads === Number.MAX_SAFE_INTEGER) {
-          seen?.({ statement, road });
-          return walked.map((row) => row.id);
+          seen?.({ statement, road, scan: relation });
+          return walked;
         }
         // Too few among the rows read: the indexes road answers instead.
-        seen?.({ statement, road });
+        seen?.({ statement, road, scan: relation });
         road = 'indexes';
       }
       await explained(statement, indexes);
-      const { rows: found } = await sql<{ id: string }>`${indexes}`.execute(trx);
-      seen?.({ statement, road });
-      return found.map((row) => row.id);
+      const { rows: found } = await sql<{ id: string; at: string }>`${indexes}`.execute(trx);
+      seen?.({ statement, road, scan: relation });
+      return found;
+    };
+    const sizes = await Promise.all(scans.map((scan) => sizeOf(scan.relation)));
+    /** The newest N + 1 over every scan, in the one order, `changed_at desc, id desc`. */
+    const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
+      const found: { id: string; at: string }[] = [];
+      for (const [index, scan] of scans.entries()) {
+        found.push(
+          ...(await newestOf(
+            statement,
+            where,
+            scan.from,
+            sizes[index]!,
+            scan.relation,
+            'indexesOnly' in scan,
+          )),
+        );
+      }
+      return found
+        .sort((a, b) => {
+          const by = BigInt(b.at) - BigInt(a.at);
+          return by !== 0n ? (by > 0n ? 1 : -1) : a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+        })
+        .slice(0, N + 1)
+        .map((row) => row.id);
     };
     const flags = flagsOver('e').map(
       ([, predicate]) => sql<SqlBool>`coalesce(${predicate}, false)`,
@@ -700,28 +837,45 @@ export async function searchWords(
     };
   }
 
-  // The rows read: the latest's candidates by id, the predicate checked again; every version's or a
-  // baseline's, every match, exact and unbounded.
+  // The rows read: a bounded search's candidates by id, the predicate checked again, and ranked over
+  // them alone (SV3-C); a baseline's, or every version's before 0091, every match, exact and unbounded.
+  const rank = sql`ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank`;
   const base =
     bounded === undefined
       ? sql`
           select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-                 e.component_type, e.field_values, e.version_id, e.thread_id, e.current,
-                 ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
+                 e.component_type, e.field_values, e.version_id, e.thread_id, e.current, ${rank}
           from ${source} e
           where ${matching}`
       : sql`
           select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-                 e.component_type, e.field_values, e.version_id, e.thread_id, true as current
+                 e.component_type, e.field_values, e.version_id, e.thread_id,
+                 ${scope === 'latest' ? sql`true` : sql`e.current`} as current, ${rank}
           from ${source} e
           where e.id = any(${bounded.facets}::uuid[]) and ${readableRow} and ${shown}`;
-  // Ranked over the candidates alone (SV3-C).
   const matched =
     bounded === undefined
       ? sql`select * from flagged b where ${allBut('')}`
-      : sql`select b.*, ts_rank(e.vector, websearch_to_tsquery(e.configuration, ${parsed.anyOf})) as rank
-            from flagged b join search_entry e on e.id = b.id
+      : sql`select * from flagged b
             where b.id = any(${bounded.results.slice(0, SEARCH_RANK_BOUND)}::uuid[])`;
+  // The version a history row names, for the page's rows alone (SV3-M): the newest of its place's
+  // versions matching the whole query, else the newest holding any of its words.
+  const versionOf = (table: string, texts: string, current: boolean) => sql`
+    select x.id, x.version_id, ${current}::boolean as current, v.revision_no, v.version_no,
+           ${wholeOver('x', sql.raw(texts))} as whole,
+           x.vector @@ websearch_to_tsquery(x.configuration, ${parsed.anyOf}) as some
+    from ${sql.raw(table)} x join artifact_version v on v.id = x.version_id
+    where x.artifact_id = p.artifact_id
+      and (x.node = p.node or (p.node is null and x.node is null))
+      ${table === 'search_entry' ? sql`and x.kind in ${IN_HISTORY}` : sql``}`;
+  const named = history
+    ? sql`select n.id, n.version_id, n.current from (
+            ${versionOf('search_entry', 'search_text', true)}
+            union all
+            ${versionOf('search_earlier', 'search_earlier_text', false)}) n
+          order by n.whole desc, n.some desc, n.revision_no desc, n.version_no desc
+          limit 1`
+    : sql`select null::uuid as id, null::uuid as version_id, null::boolean as current`;
 
   const page = sql<{
     total: string;
@@ -781,7 +935,7 @@ export async function searchWords(
     matched as (${matched}),
     -- Each artifact and place once, at its newest version that matched every filter (SV-C).
     results as (${
-      scope === 'latest'
+      !collapse
         ? sql`select * from matched`
         : sql`select distinct on (m.artifact_id, m.node, m.thread_id) m.*
                from matched m join artifact_version v on v.id = m.version_id
@@ -793,12 +947,14 @@ export async function searchWords(
        from (
          select p.id, p.rank, p.kind, p.artifact_id, p.node, p.title, p.space_id,
                 sp.name as space_name, p.changed_at, best.place, best.passage,
-                p.version_id, p.current, av.revision_no, av.version_no,
+                coalesce(named.version_id, p.version_id) as version_id,
+                coalesce(named.current, p.current) as current, av.revision_no, av.version_no,
                 p.thread_id, th.on_kind as thread_on, th.resolved
          from (select * from results order by rank desc, changed_at desc, id
                limit ${limit} offset ${offset}) p
          left join space sp on sp.id = p.space_id
-         left join artifact_version av on av.id = p.version_id
+         left join lateral (${named}) named on not p.current
+         left join artifact_version av on av.id = coalesce(named.version_id, p.version_id)
          -- Resolved as it is now, read when searched (SV-M).
          left join lateral (${
            threaded
@@ -814,7 +970,7 @@ export async function searchWords(
                               websearch_to_tsquery(t.configuration, ${parsed.anyOf}),
                               ${HEADLINE}) as passage
            from ${texts} t
-           where t.entry_id = p.id
+           where t.entry_id = coalesce(named.id, p.id)
            order by ts_rank(t.vector, websearch_to_tsquery(t.configuration, ${parsed.anyOf})) desc,
                     t.place = 'title' desc, t.place
            limit 1
@@ -857,7 +1013,7 @@ export async function searchWords(
          from (
            select ev.field::text as field, f.name, f.data_type, ev.key as value,
                   coalesce(pr.display_name, ev.key) as label,
-                  ${scope === 'latest' ? sql`count(distinct ev.entry_id)` : counted}::int as n
+                  ${collapse ? counted : sql`count(distinct ev.entry_id)`}::int as n
            from entry_values ev
            join flagged b on b.id = ev.entry_id
            join readable_fields f on f.field = ev.field

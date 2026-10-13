@@ -2158,6 +2158,18 @@ What [the TC plan](plans/2026-10-13-tc-t3-close.md) built after
 | `domain: src/structure/incoming.ts`                                                                          | What in a document refers to a node, and the removal warning                                                                                 |
 | `web: src/structure/NewerVersion.tsx`, the panels' live regions, forced-colours rules                        | A newer version said; annotations announced and marked                                                                                       |
 
+## Search at scale
+
+What [the SV3 plan](plans/2026-10-13-sv3-search-at-scale.md) built after
+[the search-versions spike](specification/spikes/Search_Versions_Spike_Findings.md). SCH-033 is not
+yet met for every reader (#604, #605).
+
+| Where                                                                | Holds                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migrations/tenant/0090_search_at_scale`, `db: src/search-words.ts`  | Words by a constant tsquery per configuration; the 1,000 newest matches ranked, the road (a bounded walk of the newest rows, or the word indexes) chosen by an estimate; facets over the newest candidates, `facetsBounded` |
+| `migrations/tenant/0091_search_history`, `db: src/search-history.ts` | One row per place, its words folded across versions, kept by indexing, archival, deletion and erasure; every version reads it                                                                                               |
+| `db: src/load/search.load.ts`                                        | The search profile at a hundred thousand and a million components, ground truth for every road                                                                                                                              |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

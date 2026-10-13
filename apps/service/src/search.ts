@@ -35,8 +35,8 @@ export function sentenceFor(answer: SearchAnswer): string {
       return `No field you can see is called ${answer.name}, so nothing can be looked for in it.`;
     case 'results':
       if (answer.count === 0) return 'Nothing you can see matches this search.';
-      // Past the bound the latest ranks only its most recently changed matches (SV3-C): under it,
-      // the count is capped exactly when the ranking is bounded.
+      // Past the bound the latest and every version rank only their most recently changed matches
+      // (SV3-C): the count is capped exactly when the ranking is bounded.
       if (answer.capped) {
         return answer.facetsBounded
           ? `More than ${answer.count.toLocaleString('en-GB')} results. Showing the best matches among the ${SEARCH_RANK_BOUND.toLocaleString('en-GB')} changed most recently.`

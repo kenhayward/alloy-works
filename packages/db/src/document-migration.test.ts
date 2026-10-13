@@ -163,6 +163,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0088_search_earlier',
       '0089_search_threads',
       '0090_search_at_scale',
+      '0091_search_history',
     ]);
 
     // The component and its version are as they were.
@@ -317,6 +318,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0088_search_earlier',
       '0089_search_threads',
       '0090_search_at_scale',
+      '0091_search_history',
     ]);
 
     const { rows } = await queryAs(

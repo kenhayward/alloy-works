@@ -115,3 +115,9 @@ Marked **(pre-flight)** where the pre-flight review of 2026-10-13 changed or add
 - **SV3-J** (body as distinct earlier words) and **SV3-L/M** (the union matches; the version named
   falls back to one holding a word) as the trades stated.
 - **The load suite** carrying SCH-033's test, run at a million by hand at the close.
+
+## Built
+
+SV3a #603 (fixing #602) and SV3b #606, with the close. At a million components every answer matched
+ground truth, and every version's worst p95 fell from 125 s to under 1 s; SCH-033 is not yet met for a
+reader with many denials (#604) and for two latest-path cases (#605), so it stays Designed.
