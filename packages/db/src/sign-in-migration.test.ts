@@ -97,6 +97,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0085_deletion',
       '0086_retention_keeps',
       '0087_erasure',
+      '0088_search_earlier',
     ]);
 
     const read = async () =>

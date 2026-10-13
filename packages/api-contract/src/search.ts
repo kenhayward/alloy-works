@@ -52,6 +52,19 @@ export const SearchQuery = z.object({
     .describe(
       "Only what holds this value of a field, as `<field id>:<value>`, the value as the field's facet gives it; repeated for more, several of one field either of them",
     ),
+  versions: z
+    .enum(['latest', 'all'])
+    .optional()
+    .describe(
+      'Which versions to search: the latest of each, when absent, or every version, each result at its newest version that matches',
+    ),
+  baseline: z
+    .string()
+    .max(100)
+    .optional()
+    .describe(
+      'Search only what this baseline pins, by id, at the versions it pins; not with `versions=all`',
+    ),
 });
 export type SearchQuery = z.infer<typeof SearchQuery>;
 
@@ -84,6 +97,30 @@ export const SearchResultView = z.object({
   passage: z
     .array(z.object({ text: z.string(), matched: z.boolean() }))
     .describe('Words from that place, about thirty, each matched word a piece of its own'),
+  version: z
+    .object({
+      id: z.string(),
+      number: z.string().describe('`revision.version`'),
+      latest: z.boolean().describe('Whether it is the latest version'),
+    })
+    .nullable()
+    .describe(
+      'The version it matched in, for a component, a document, a section or an asset; null for anything else',
+    ),
+  baseline: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      document: z.string().describe("The baseline's document"),
+      node: z
+        .string()
+        .nullable()
+        .describe(
+          'Where in the document it stands: a section, or where a component is first placed',
+        ),
+    })
+    .nullable()
+    .describe('The baseline searched, when the search named one'),
 });
 export type SearchResultView = z.infer<typeof SearchResultView>;
 
@@ -154,10 +191,15 @@ export const searchRoutes = {
         schema: SearchAnswerView,
       },
       400: {
-        description: 'An offset or a limit out of range, or a filter that is not one',
+        description:
+          'An offset or a limit out of range, a filter that is not one, or every version and a baseline together',
         schema: ErrorBody,
       },
       401: { description: 'No session, or not one this environment issued', schema: ErrorBody },
+      404: {
+        description: 'A baseline the caller may not read, or none by that id',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

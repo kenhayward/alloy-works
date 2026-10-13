@@ -904,6 +904,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   value, each choice saying how many results it would leave; past 1,000 a count says at least 1,000.
   A search with nothing to look for says why. What you save is found the moment it is saved.
   `GET /v1/search` answers the same search.
+- **Earlier versions and baselines in search.** Search reads the latest version of each thing; choose
+  **Versions: All** to search every earlier version of components, documents and their sections too,
+  each found once, at its newest version that matches, and said to be "Version 0.2, earlier". **Search
+  this baseline** on a baseline's page searches only what it pins, archived content included, each
+  result opening the baseline at its place. A result from an earlier version opens that version's own
+  page, read only, at the place it matched, naming who made it, when, and the latest; each Versions
+  panel row opens its version the same way. `versions=all` and `baseline=<id>` on `GET /v1/search`,
+  and `GET /v1/components/{id}/versions/{version}` and `GET /v1/documents/{id}/versions/{version}`.
 
 - **Tokens for your own scripts, through the API.** Signed in, you can issue yourself an API token for a
   script: `POST /v1/tokens` with a name, the permissions it may use and when it expires, at most 365 days

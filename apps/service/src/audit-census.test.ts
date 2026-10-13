@@ -94,6 +94,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   editOutline: writes('content.version_cut', 'reference.repointed'),
   listDocumentVersions: read,
   previewDocumentRestore: read,
+  getDocumentVersion: read,
+  getComponentVersion: read,
   restoreDocumentVersion: writes('content.restored', 'content.version_cut', 'reference.repointed'),
   requestPublication: writes('publication.requested'),
   requestPreview: { none: 'preview' },

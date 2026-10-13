@@ -19,6 +19,7 @@ import {
 } from './listing.js';
 import { mayReadArtifact } from './queryDefinitions.js';
 import { readableArtifactsAs } from './readable-artifacts.js';
+import { flagEarlier } from './search-earlier.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 
@@ -419,6 +420,7 @@ async function act(
     .set({ deleted: act === 'deleted' })
     .where('artifact_id', '=', artifactId)
     .execute();
+  await flagEarlier(trx, artifactId, { deleted: act === 'deleted' });
   // Presence in it ends as a dropped connection's does (COL-067, COL-004): each row removed, and its
   // trigger tells every stream the window left. A lock refuses the deletion, so none is left on it.
   if (act === 'deleted') {

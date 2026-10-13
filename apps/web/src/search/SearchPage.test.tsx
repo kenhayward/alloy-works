@@ -194,3 +194,95 @@ describe('the search page', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('2 results.');
   });
 });
+
+describe('the search page, over earlier versions and baselines', () => {
+  const VERSION = 'dddddddd-0000-4000-8000-000000000001';
+  const BASELINE = 'eeeeeeee-0000-4000-8000-000000000001';
+  const earlier = {
+    ...results,
+    count: 1,
+    message: '1 result.',
+    items: [
+      {
+        ...results.items[0]!,
+        version: { id: VERSION, number: '0.2', latest: false },
+        baseline: null,
+      },
+    ],
+  };
+
+  /** The service answering a search with `answer`, and the baseline by its name. */
+  function withBaseline(answer: unknown) {
+    const asked: URLSearchParams[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === `/v1/baselines/${BASELINE}`) {
+        return json(200, { id: BASELINE, document: REPORT, name: 'Approved' });
+      }
+      if (url.pathname !== '/v1/search') return json(404, {});
+      asked.push(url.searchParams);
+      return json(200, answer);
+    }) as unknown as typeof fetch;
+    return { client: createApiClient({ baseUrl: 'http://search.test', fetch: fetching }), asked };
+  }
+
+  it('SCH-003 SCH-058 searches every version when asked, saying which a result is from and linking to it', async () => {
+    const { client, asked } = withBaseline(earlier);
+    const scoped = vi.fn();
+    render(
+      <SearchPage
+        client={client}
+        query="lever"
+        scope={{ versions: 'all', baseline: null }}
+        onSearch={() => undefined}
+        onScope={scoped}
+      />,
+    );
+    const [found] = await screen.findAllByRole('article');
+    expect(asked[0]?.get('versions')).toBe('all');
+    expect(found).toHaveTextContent('Version 0.2, earlier');
+    expect(within(found!).getByRole('link', { name: 'Lever guide' })).toHaveAttribute(
+      'href',
+      `#/components/${GUIDE}/versions/${VERSION}/blocks/b2`,
+    );
+    const versions = screen.getByRole('combobox', { name: 'Versions' });
+    expect(versions).toHaveValue('all');
+    await userEvent.selectOptions(versions, 'latest');
+    expect(scoped).toHaveBeenCalledWith({ versions: 'latest', baseline: null });
+  });
+
+  it('SCH-003 searches one baseline, named in a chip that takes it off again', async () => {
+    const { client, asked } = withBaseline({
+      ...earlier,
+      items: [
+        {
+          ...earlier.items[0]!,
+          baseline: { id: BASELINE, name: 'Approved', document: REPORT, node: NODE },
+        },
+      ],
+    });
+    const scoped = vi.fn();
+    render(
+      <SearchPage
+        client={client}
+        query="lever"
+        scope={{ versions: 'latest', baseline: BASELINE }}
+        onSearch={() => undefined}
+        onScope={scoped}
+      />,
+    );
+    const [found] = await screen.findAllByRole('article');
+    expect(asked[0]?.get('baseline')).toBe(BASELINE);
+    expect(asked[0]?.get('versions')).toBeNull();
+    expect(found).toHaveTextContent('In baseline Approved');
+    expect(within(found!).getByRole('link', { name: 'Lever guide' })).toHaveAttribute(
+      'href',
+      `#/documents/${REPORT}/baselines/${BASELINE}/nodes/${NODE}`,
+    );
+    expect(await screen.findByText('In baseline Approved', { selector: 'span' })).toBeVisible();
+    expect(screen.queryByRole('combobox', { name: 'Versions' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Search without the baseline' }));
+    expect(scoped).toHaveBeenCalledWith({ versions: 'latest', baseline: null });
+  });
+});

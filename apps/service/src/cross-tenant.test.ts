@@ -223,6 +223,8 @@ const OTHER_TENANT_IDS: Readonly<
   listIterations: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getIteration: async (tenant, db) => ({ id: await componentIdIn(tenant, db), iteration: SESSION }),
   previewRestore: async (tenant, db) => componentVersionIn(tenant, db),
+  getComponentVersion: async (tenant, db) => componentVersionIn(tenant, db),
+  getDocumentVersion: async (tenant, db) => documentVersionIn(tenant, db),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   unarchiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   archiveDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),

@@ -194,6 +194,7 @@ export function VersionsPanel({
         client={client}
         id={id}
         read={read}
+        opens
         onCompare={(version, latest) => {
           setRestoring(null);
           void compare(version, latest);

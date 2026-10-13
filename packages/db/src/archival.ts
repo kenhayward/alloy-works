@@ -1,6 +1,7 @@
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { visibleIn } from './listing.js';
+import { flagEarlier } from './search-earlier.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 
@@ -81,6 +82,7 @@ async function act(
     .set({ archived: act === 'archived' })
     .where('artifact_id', '=', artifactId)
     .execute();
+  await flagEarlier(trx, artifactId, { archived: act === 'archived' });
   const place = await artifactPlace(trx, artifactId);
   await recordEvent(
     trx,

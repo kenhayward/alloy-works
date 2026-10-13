@@ -18,6 +18,7 @@ import { presenceRoutes } from './presence.js';
 import { presentationRoutes } from './presentation.js';
 import { queryDefinitionRoutes } from './query-definitions.js';
 import { searchRoutes } from './search.js';
+import { versionRoutes } from './versions.js';
 import { sessionRoutes } from './sessions.js';
 import { settingsRoutes } from './settings.js';
 import type { RouteContract } from './contract.js';
@@ -339,6 +340,7 @@ type Routes = typeof ownRoutes &
   typeof suggestionRoutes &
   typeof roundRoutes &
   typeof restoreRoutes &
+  typeof versionRoutes &
   typeof archivalRoutes &
   typeof holdRoutes &
   typeof deletionRoutes &
@@ -378,6 +380,7 @@ export const routes: Routes = {
   ...suggestionRoutes,
   ...roundRoutes,
   ...restoreRoutes,
+  ...versionRoutes,
   ...archivalRoutes,
   ...holdRoutes,
   ...deletionRoutes,

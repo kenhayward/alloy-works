@@ -151,6 +151,48 @@ async function heldChanges(client: Client, name: string) {
   return made;
 }
 
+/**
+ * A component whose second version says a word of its own and whose third does not, so only every
+ * version finds it (the SV plan, SV-I), and the word.
+ */
+async function earlierWord(client: Client) {
+  const word = `quokka${Date.now()
+    .toString(36)
+    .replace(/\d/g, (digit) => 'abcdefghij'[Number(digit)]!)}`;
+  const paragraph = (text: string) => [
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [{ type: 'text', value: text, marks: [] }],
+    },
+  ];
+  const made = await makeComponent(client, 'Burrow notes', paragraph(`The ${word} burrow.`));
+  const { data: read } = await client.GET('/v1/components/{id}', {
+    params: { path: { id: made.id } },
+  });
+  if (!read) throw new Error(`reading ${made.id} answered nothing`);
+  const session = randomUUID();
+  const claimed = await client.POST('/v1/components/{id}/lock', {
+    params: { path: { id: made.id } },
+    body: { session },
+  });
+  if (!claimed.data) throw new Error(`claiming answered ${claimed.response.status}`);
+  const saved = await client.PUT('/v1/components/{id}/iterations/{session}/{sequence}', {
+    params: { path: { id: made.id, session, sequence: '1' } },
+    body: {
+      openedFrom: read.version.id,
+      content: { ...read.content, content: paragraph('Gone.') },
+    },
+  });
+  if (!saved.data) throw new Error(`saving answered ${saved.response.status}`);
+  const done = await client.DELETE('/v1/components/{id}/lock', {
+    params: { path: { id: made.id }, query: { session, openedFrom: read.version.id } },
+  });
+  if (!done.response.ok) throw new Error(`Done editing answered ${done.response.status}`);
+  return { ...made, word };
+}
+
 /** The component's page, opened by its address, its surface drawn and its save chip saying Saved. */
 async function openComponent(page: Page, id: string): Promise<Locator> {
   await page.goto(`${SERVICE}/#/components/${id}`);
@@ -181,6 +223,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     task,
   }) => {
     const held = await heldChanges(api(), 'Changes held');
+    const earlier = await earlierWord(api());
     await withPage(async (page) => {
       const check = async (state: string, arrival: Arrival) => {
         await arrive(arrival);
@@ -281,6 +324,25 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .getByRole('heading', { level: 2 })
           .getByRole('link', { name: /printer/ })
           .first(),
+      });
+
+      // Every version (the SV plan, SV-I), and a result's earlier version on its own page (SCH-058).
+      await page.goto(`${SERVICE}/#/search?q=${earlier.word}&versions=all`);
+      const found = page.getByRole('article').filter({ hasText: earlier.title });
+      await check('the search page over every version', {
+        shows: [
+          found.getByText(/^Version \d+\.\d+, earlier$/),
+          page.getByRole('combobox', { name: 'Versions' }),
+        ],
+      });
+      await found.getByRole('link', { name: earlier.title }).click();
+      await check('an earlier version of a component', {
+        shows: [
+          page
+            .getByRole('article', { name: earlier.title })
+            .getByText(`The ${earlier.word} burrow.`),
+          page.getByRole('link', { name: 'Open the latest' }),
+        ],
       });
 
       // The account's menu, and the two modals it opens.
@@ -925,6 +987,21 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await check('the publication page', {
         shows: [page.locator('#publication-title'), page.getByText(/Not approved/).first()],
         hides: [tree],
+      });
+
+      // An earlier version of the document, read only (SCH-058; the SV plan, SV-H).
+      const { data: listedVersions } = await client.GET('/v1/documents/{id}/versions', {
+        params: { path: { id: document.id } },
+      });
+      const firstVersion = listedVersions?.items.at(-1);
+      if (!firstVersion || firstVersion.id === listedVersions?.items[0]?.id)
+        throw new Error('No earlier version');
+      await page.goto(`${SERVICE}/#/documents/${document.id}/versions/${firstVersion.id}`);
+      await check('an earlier version of a document', {
+        shows: [
+          page.locator('#version-heading'),
+          page.getByRole('link', { name: 'Open the latest' }),
+        ],
       });
     });
   });

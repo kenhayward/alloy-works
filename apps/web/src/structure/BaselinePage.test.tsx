@@ -104,6 +104,10 @@ describe('a baseline at its own address', () => {
     expect(screen.getByRole('link', { name: 'Open the document as it is now' })).toHaveAttribute(
       'href',
       `#/documents/${DOCUMENT}`,
+    ); // Its words searched as it pins them (SCH-003).
+    expect(screen.getByRole('link', { name: 'Search this baseline' })).toHaveAttribute(
+      'href',
+      `#/search?baseline=${BASELINE}`,
     );
   });
 

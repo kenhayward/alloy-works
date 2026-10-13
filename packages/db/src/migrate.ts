@@ -24,11 +24,15 @@ const DEFAULT_DIR = new URL('../migrations/', import.meta.url);
 
 /**
  * The tenant migrations after which search's projection is made again from the chain, in the same
- * transaction: 0031, which makes it. A later migration that changes what the projection holds, or how a
- * version is read into it, is added here, so every environment's is rebuilt by the run that applies it
- * (search.md, "Written with the version").
+ * transaction, and how much of it: 0031, which makes it, the whole; 0088, which keeps earlier versions,
+ * those alone. A later migration that changes what the projection holds, or how a version is read into
+ * it, is added here, so every environment's is rebuilt by the run that applies it (search.md, "Written
+ * with the version").
  */
-const REINDEXED_BY = new Set(['0031_search']);
+const REINDEXED_BY = new Map<string, 'whole' | 'earlier'>([
+  ['0031_search', 'whole'],
+  ['0088_search_earlier', 'earlier'],
+]);
 
 /**
  * The migration's own connection, as a tenant transaction: the one `applyAll` opened, as the tenant's
@@ -102,8 +106,10 @@ export async function migrate(
           owner: `${role}_owner`,
           runtime: role,
           after: async (applied) => {
-            if (applied.some((version) => REINDEXED_BY.has(version))) {
-              await reindexSearch(transactionOver(client));
+            // Each scope once, the current set first: neither rebuilds the other's table.
+            const scopes = new Set(applied.flatMap((version) => REINDEXED_BY.get(version) ?? []));
+            for (const scope of ['whole', 'earlier'] as const) {
+              if (scopes.has(scope)) await reindexSearch(transactionOver(client), scope);
             }
           },
         },

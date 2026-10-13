@@ -573,6 +573,12 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         `select count(*)::int as n from ${h.tenant.schema}.search_entry where artifact_id = $1`,
         [asset],
       );
+    /** And none kept for an earlier version: indexed twice at one version, it keeps nothing (SV-A). */
+    const earlierEntries = (asset: string) =>
+      count(
+        `select count(*)::int as n from ${h.tenant.schema}.search_earlier where artifact_id = $1`,
+        [asset],
+      );
 
     it('refuses a dataset image to a reader of its space who reads no document holding it, and keeps it out of search', async () => {
       const image = png(40);
@@ -602,6 +608,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         expect((await h.call('ada', 'GET', path)).statusCode, path).toBe(200);
       }
       expect(await entries(asset.artifactId)).toBe(0);
+      expect(await earlierEntries(asset.artifactId)).toBe(0);
     });
 
     it('IAM-013 records a dataset image refused to a reader of no document holding it as a hidden refusal', async () => {

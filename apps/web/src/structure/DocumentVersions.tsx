@@ -140,6 +140,7 @@ export function DocumentVersions({
         id={id}
         of="document"
         read={read}
+        opens
         {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
       />
       {restoring && label && (

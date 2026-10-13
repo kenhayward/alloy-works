@@ -755,6 +755,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One version of a component, read only
+         * @description Reads one version of a component, read only: its content and values as that version holds them, its number, who cut it and when, and which version is the latest. Where a search result from an earlier version links.
+         */
+        get: operations["getComponentVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/versions/{version}/restoration": {
         parameters: {
             query?: never;
@@ -1679,6 +1699,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One version of a document, read only
+         * @description Reads one version of a document, read only: its outline and values as that version holds them, each reference to a component the caller may not read withheld, its number, who cut it and when, and which version is the latest. Its components’ text is not read.
+         */
+        get: operations["getDocumentVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/versions/{version}/restoration": {
         parameters: {
             query?: never;
@@ -2572,7 +2612,7 @@ export interface paths {
         };
         /**
          * Everything the caller may read that holds these words, a page at a time
-         * @description Searches only content the caller may read, with facets and stable cursor paging.
+         * @description Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.
          */
         get: operations["search"];
         put?: never;
@@ -13502,6 +13542,169 @@ export interface operations {
                             schemas: string[];
                             detail: string;
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getComponentVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "component": "example",
+                     *       "title": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example",
+                     *         "author": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         }
+                     *       },
+                     *       "latest": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "content": {},
+                     *       "values": {},
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        component: string;
+                        /** @description The version's title */
+                        title: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            createdAt: string;
+                            note: string | null;
+                            /** @description Who cut it; null for a starter definition */
+                            author: {
+                                id: string;
+                                /** @description Their name now; an erased person by the erased label */
+                                name: string | null;
+                            } | null;
+                        };
+                        /** @description The latest version, which may be this one */
+                        latest: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The version's content document (content-model.md), exactly as stored */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Its metadata values, by field */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the component is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a component the caller may read is one whose versions they may read */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component the caller may read, or a version that is not one of its versions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -38481,6 +38684,175 @@ export interface operations {
             };
         };
     };
+    getDocumentVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "document": "example",
+                     *       "title": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example",
+                     *         "author": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         }
+                     *       },
+                     *       "latest": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "titles": [],
+                     *       "values": {},
+                     *       "archived": false
+                     *     }
+                     */
+                    "application/json": {
+                        document: string;
+                        /** @description The version's title */
+                        title: string;
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            createdAt: string;
+                            note: string | null;
+                            /** @description Who cut it; null for a starter definition */
+                            author: {
+                                id: string;
+                                /** @description Their name now; an erased person by the erased label */
+                                name: string | null;
+                            } | null;
+                        };
+                        /** @description The latest version, which may be this one */
+                        latest: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description Its outline, each reference to a component the caller may not read withheld, as the document view withholds one */
+                        outline: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Each reference the caller may read, by the title of the component version it places */
+                        titles: {
+                            node: string;
+                            title: string;
+                        }[];
+                        /** @description Its metadata values, by field */
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Whether the document is archived now */
+                        archived: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may read is one whose versions they may read */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a version that is not one of its versions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     previewDocumentRestore: {
         parameters: {
             query?: never;
@@ -47614,6 +47986,8 @@ export interface operations {
                 changedFrom?: string;
                 changedTo?: string;
                 value?: string | string[];
+                versions?: "latest" | "all";
+                baseline?: string;
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -47682,6 +48056,23 @@ export interface operations {
                                 text: string;
                                 matched: boolean;
                             }[];
+                            /** @description The version it matched in, for a component, a document, a section or an asset; null for anything else */
+                            version: {
+                                id: string;
+                                /** @description `revision.version` */
+                                number: string;
+                                /** @description Whether it is the latest version */
+                                latest: boolean;
+                            } | null;
+                            /** @description The baseline searched, when the search named one */
+                            baseline: {
+                                id: string;
+                                name: string;
+                                /** @description The baseline's document */
+                                document: string;
+                                /** @description Where in the document it stands: a section, or where a component is first placed */
+                                node: string | null;
+                            } | null;
                         }[];
                         /** @description Every declared dimension, each counted with the other filters in force and its own left out */
                         facets: {
@@ -47752,7 +48143,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description An offset or a limit out of range, or a filter that is not one */
+            /** @description An offset or a limit out of range, a filter that is not one, or every version and a baseline together */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47774,6 +48165,26 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A baseline the caller may not read, or none by that id */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

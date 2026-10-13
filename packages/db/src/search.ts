@@ -19,8 +19,9 @@ import {
 import { sql } from 'kysely';
 import { archivalStored, isArchived } from './archival.js';
 import { deletionStored, isDeleted } from './deletion.js';
+import { earlierStored } from './search-earlier.js';
 import type { TenantTransaction } from './tables.js';
-import { readVersion, type StoredVersion } from './versions.js';
+import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
 
 /**
  * Search's projection, written (docs/design/search.md, "Written with the version"; SCH-066): an
@@ -44,6 +45,12 @@ const versioned = new Set<string>([
   'componentType',
   'queryDefinition',
 ]);
+
+/**
+ * The kinds whose earlier versions stay searchable (the SV plan, SV-A): what a baseline pins. A
+ * document's sections go with it, as its rows.
+ */
+const kept = new Set<string>(['component', 'document', 'asset']);
 
 /**
  * Whether this tenant has the projection yet. It has from the run that applies 0031, which makes it
@@ -218,6 +225,7 @@ interface Placing {
   readonly deleted?: boolean;
 }
 
+/** Rewrites an artifact's current entries from these drafts. */
 async function write(
   trx: TenantTransaction,
   placing: Placing,
@@ -259,77 +267,216 @@ async function write(
   if (texts.length > 0) await trx.insertInto('search_text').values(texts).execute();
 }
 
+/** Adds an earlier version's entries, as a move would have left them (0088). */
+async function writeEarlier(
+  trx: TenantTransaction,
+  placing: Placing,
+  drafts: readonly SearchEntryDraft[],
+): Promise<void> {
+  if (drafts.length === 0) return;
+  const entries = drafts.map((draft) => ({ id: randomUUID(), draft }));
+  const vector = (configuration: string, body: string) =>
+    sql<string>`to_tsvector(${configuration}::regconfig, ${body})`;
+  await trx
+    .insertInto('search_earlier')
+    .values(
+      entries.map(({ id, draft }) => {
+        const body = draft.texts.map((each) => each.text).join(' ');
+        return {
+          id,
+          artifact_id: placing.artifactId,
+          kind: draft.kind as 'component' | 'document' | 'section' | 'asset',
+          node: draft.node,
+          version_id: placing.versionId,
+          space_id: placing.spaceId,
+          title: draft.title,
+          owner: placing.owner,
+          changed_at: placing.changedAt,
+          component_type: draft.kind === 'component' ? placing.componentType : null,
+          field_values: JSON.stringify(draft.values),
+          configuration: draft.configuration,
+          body,
+          vector: vector(draft.configuration, body),
+          archived: placing.archived ?? false,
+          deleted: placing.deleted ?? false,
+        };
+      }),
+    )
+    .execute();
+  const texts = entries.flatMap(({ id, draft }) =>
+    draft.texts.map((each) => ({
+      entry_id: id,
+      place: each.place,
+      body: each.text,
+      configuration: draft.configuration,
+      vector: vector(draft.configuration, each.text),
+    })),
+  );
+  if (texts.length > 0) await trx.insertInto('search_earlier_text').values(texts).execute();
+}
+
+/** Rows whose values name `person`, by the same path wherever a value is held (#594). */
+const naming = (person: string) =>
+  sql<boolean>`jsonb_path_exists(field_values, '$.** ? (@.user == $id)', jsonb_build_object('id', ${person}::text))`;
+
 /**
- * Rewrites an artifact's entries - and a document's sections' - from its version, which is its latest:
- * called by `insertVersion` for every version the chain writes, in that version's transaction.
+ * Moves an artifact's rows from versions older than `version` into `search_earlier`, each keeping its
+ * id and vector, one statement per table, before `write` deletes what is left; refuses where the
+ * current rows are a newer version's, which only a stale read would index over. A version indexed
+ * again - a dataset's image is, once its upload names it (assets.ts) - moves nothing. The people the
+ * moved rows name are held FOR SHARE, in id order, so an erasure waits for them to commit (SV-J).
  */
-export async function indexVersion(trx: TenantTransaction, version: StoredVersion): Promise<void> {
-  if (!versioned.has(version.kind) || !(await projected(trx))) return;
+async function moveEarlier(trx: TenantTransaction, version: StoredVersion): Promise<void> {
+  const older = sql`(select v.id from artifact_version v
+     where v.artifact_id = ${version.artifactId}
+       and (v.revision_no, v.version_no) < (${version.revision}, ${version.version}))`;
+  const { rows: newer } = await sql<{ id: string }>`
+    select e.id from search_entry e join artifact_version v on v.id = e.version_id
+     where e.artifact_id = ${version.artifactId}
+       and (v.revision_no, v.version_no) > (${version.revision}, ${version.version})
+     limit 1`.execute(trx);
+  if (newer.length > 0) {
+    throw new Error(
+      `Version ${version.id} is indexed over a newer version of ${version.artifactId}`,
+    );
+  }
+  await sql`select p.id from principal p
+     where p.id::text in (
+       select jsonb_path_query(e.field_values, '$.** ? (exists(@.user)).user') #>> '{}'
+         from search_entry e
+        where e.artifact_id = ${version.artifactId} and e.version_id in ${older})
+     order by p.id
+     for share`.execute(trx);
+  const columns = sql.raw(
+    'id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values, configuration, body, vector, archived, deleted',
+  );
+  await sql`insert into search_earlier (${columns})
+    select ${columns} from search_entry
+     where artifact_id = ${version.artifactId} and version_id in ${older}`.execute(trx);
+  await sql`insert into search_earlier_text (entry_id, place, body, configuration, vector)
+    select t.entry_id, t.place, t.body, t.configuration, t.vector
+      from search_text t join search_entry e on e.id = t.entry_id
+     where e.artifact_id = ${version.artifactId} and e.version_id in ${older}`.execute(trx);
+}
+
+/** What every version of an artifact is indexed with: where it is, who made it, and its acts. */
+interface ArtifactFacts {
+  readonly spaceId: string | null;
+  readonly owner: string | null;
+  /** An asset a dataset's image made, which is never found (D8-I). */
+  readonly hidden: boolean;
+  readonly archived?: boolean;
+  readonly deleted?: boolean;
+}
+
+async function artifactFacts(
+  trx: TenantTransaction,
+  artifactId: string,
+  kind: string,
+): Promise<ArtifactFacts> {
   // An asset a dataset's image made is never found (D8-I): read only through a document holding it.
   const hidden =
-    version.kind === 'asset' &&
+    kind === 'asset' &&
     (await hasUploadOrigin(trx)) &&
     (await trx
       .selectFrom('asset_upload')
       .select('id')
-      .where('asset_id', '=', version.artifactId)
+      .where('asset_id', '=', artifactId)
       .where('origin', '=', 'dataset')
       .executeTakeFirst()) !== undefined;
-  const source = hidden ? undefined : sourceOf(version);
   const artifact = await trx
     .selectFrom('artifact')
     .select('space_id')
-    .where('id', '=', version.artifactId)
+    .where('id', '=', artifactId)
     .executeTakeFirstOrThrow();
-  // Who made it: the author of its first version, which is this one when it is the first.
+  // Who made it: the author of its first version.
   const first = await trx
     .selectFrom('artifact_version')
     .select('author_id')
-    .where('artifact_id', '=', version.artifactId)
+    .where('artifact_id', '=', artifactId)
     .orderBy('revision_no')
     .orderBy('version_no')
     .limit(1)
     .executeTakeFirstOrThrow();
-  await write(
-    trx,
-    {
-      artifactId: version.artifactId,
-      versionId: version.id,
-      spaceId: artifact.space_id,
-      owner: first.author_id,
-      changedAt: version.createdAt,
-      componentType: version.definitions.find((each) => each.kind === 'componentType')?.id ?? null,
-      // As the acts left it, so an edit of an archived artifact does not bring it back (AH-D).
-      ...((await archivalStored(trx))
-        ? { archived: await isArchived(trx, version.artifactId) }
-        : {}),
-      ...((await deletionStored(trx)) ? { deleted: await isDeleted(trx, version.artifactId) } : {}),
-    },
-    source ? entriesOf(source, await contextFor(trx, source)) : [],
-  );
+  return {
+    spaceId: artifact.space_id,
+    owner: first.author_id,
+    hidden,
+    // As the acts left it, so an edit of an archived artifact does not bring it back (AH-D).
+    ...((await archivalStored(trx)) ? { archived: await isArchived(trx, artifactId) } : {}),
+    ...((await deletionStored(trx)) ? { deleted: await isDeleted(trx, artifactId) } : {}),
+  };
+}
+
+function placingOf(version: StoredVersion, facts: ArtifactFacts): Placing {
+  return {
+    artifactId: version.artifactId,
+    versionId: version.id,
+    spaceId: facts.spaceId,
+    owner: facts.owner,
+    changedAt: version.createdAt,
+    componentType: version.definitions.find((each) => each.kind === 'componentType')?.id ?? null,
+    ...(facts.archived === undefined ? {} : { archived: facts.archived }),
+    ...(facts.deleted === undefined ? {} : { deleted: facts.deleted }),
+  };
+}
+
+async function draftsOf(
+  trx: TenantTransaction,
+  version: StoredVersion,
+  facts: ArtifactFacts,
+): Promise<readonly SearchEntryDraft[]> {
+  const source = facts.hidden ? undefined : sourceOf(version);
+  return source ? entriesOf(source, await contextFor(trx, source)) : [];
+}
+
+/**
+ * Rewrites an artifact's entries - and a document's sections' - from its version, which is its latest:
+ * called by `insertVersion` for every version the chain writes, in that version's transaction. A kept
+ * kind's rows from earlier versions move to `search_earlier` first (SV-A).
+ */
+export async function indexVersion(trx: TenantTransaction, version: StoredVersion): Promise<void> {
+  if (!versioned.has(version.kind) || !(await projected(trx))) return;
+  const facts = await artifactFacts(trx, version.artifactId, version.kind);
+  if (kept.has(version.kind) && (await earlierStored(trx))) await moveEarlier(trx, version);
+  await write(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
+}
+
+/**
+ * Takes the lock of every artifact whose rows, current or earlier, name `person`, in id order: what an
+ * erasure takes before it holds the person's row, so a save holding one of them and waiting on that row
+ * finishes first rather than deadlocking (the SV final review, H1).
+ */
+export async function lockNaming(trx: TenantTransaction, person: string): Promise<void> {
+  if (!UUID.test(person) || !(await projected(trx))) return;
+  const current = trx.selectFrom('search_entry').select('artifact_id').where(naming(person));
+  const rows = (await earlierStored(trx))
+    ? await current
+        .union(trx.selectFrom('search_earlier').select('artifact_id').where(naming(person)))
+        .orderBy('artifact_id')
+        .execute()
+    : await current.distinct().orderBy('artifact_id').execute();
+  for (const row of rows) await lockArtifact(trx, row.artifact_id);
 }
 
 /**
  * Rewrites every artifact whose entries name `person` in a value (#594): an entry's `field_values` are
  * the values its words were said from, so it is every entry whose text holds their name, and no more.
+ * Each under its artifact's lock, in id order, its latest read under the lock, so a save cannot slip a
+ * newer version beneath it (H1).
  */
 export async function reindexNaming(trx: TenantTransaction, person: string): Promise<void> {
   if (!(await projected(trx))) return;
-  const naming = await trx
+  const named = await trx
     .selectFrom('search_entry')
     .select('artifact_id')
     .distinct()
-    .where(
-      sql<boolean>`jsonb_path_exists(field_values, '$.** ? (@.user == $id)', jsonb_build_object('id', ${person}::text))`,
-    )
+    .where(naming(person))
     .orderBy('artifact_id')
     .execute();
-  const latest = await latestContents(
-    trx,
-    naming.map((row) => row.artifact_id),
-  );
-  for (const each of latest.values()) {
-    const version = await readVersion(trx, each.version);
+  for (const each of named) {
+    await lockArtifact(trx, each.artifact_id);
+    const version = await latestVersion(trx, each.artifact_id);
     if (version) await indexVersion(trx, version);
   }
 }
@@ -386,10 +533,54 @@ export async function indexPublication(trx: TenantTransaction, id: string): Prom
 }
 
 /**
- * The whole projection again, from every searchable artifact's latest version and every publication:
- * what the migration runner runs in the run that applies 0031, and what a changed projection runs.
+ * Every earlier version's rows, from the chain (0088): each version but the latest of a kept kind,
+ * written straight to `search_earlier` rather than through a chain of moves.
  */
-export async function reindexSearch(trx: TenantTransaction): Promise<void> {
+async function writeEveryEarlier(trx: TenantTransaction): Promise<void> {
+  const { rows } = await sql<{ id: string; artifact_id: string; kind: string }>`
+    select v.id, v.artifact_id, v.kind
+      from (select id, artifact_id, kind, revision_no, version_no,
+                   row_number() over (partition by artifact_id
+                                      order by revision_no desc, version_no desc) as newest
+              from artifact_version
+             where kind = any(${[...kept]}::text[])) v
+     where v.newest > 1
+     order by v.artifact_id, v.revision_no, v.version_no`.execute(trx);
+  let current: { readonly artifactId: string; readonly facts: ArtifactFacts } | undefined;
+  for (const row of rows) {
+    if (current?.artifactId !== row.artifact_id) {
+      current = {
+        artifactId: row.artifact_id,
+        facts: await artifactFacts(trx, row.artifact_id, row.kind),
+      };
+    }
+    if (current.facts.hidden) continue;
+    const version = await readVersion(trx, row.id);
+    if (!version) continue;
+    await writeEarlier(
+      trx,
+      placingOf(version, current.facts),
+      await draftsOf(trx, version, current.facts),
+    );
+  }
+}
+
+/**
+ * The projection again, from the chain: what the migration runner runs in the run that applies 0031
+ * (`whole`: every searchable artifact's latest version and every publication) or 0088 (`earlier`: every
+ * earlier version, written apart, until #596 moves it to a resumable job), and what a changed projection
+ * runs. Neither scope touches the other's table.
+ */
+export async function reindexSearch(
+  trx: TenantTransaction,
+  scope: 'whole' | 'earlier' = 'whole',
+): Promise<void> {
+  if (scope === 'earlier') {
+    if (!(await earlierStored(trx))) return;
+    await trx.deleteFrom('search_earlier').execute();
+    await writeEveryEarlier(trx);
+    return;
+  }
   await trx.deleteFrom('search_entry').execute();
   const latest = await trx
     .selectFrom('artifact_version')
@@ -406,4 +597,37 @@ export async function reindexSearch(trx: TenantTransaction): Promise<void> {
   }
   const publications = await trx.selectFrom('publication').select('id').execute();
   for (const each of publications) await indexPublication(trx, each.id);
+}
+
+/**
+ * Rewrites every earlier version's rows whose values name `person` from that version (#594, for
+ * `search_earlier`): an erased person's name is then said by the fixed word in every version. Each
+ * artifact under its lock, in id order, so its acts' flags are read as they stand (L1).
+ */
+export async function rewriteEarlierNaming(trx: TenantTransaction, person: string): Promise<void> {
+  if (!(await earlierStored(trx))) return;
+  const named = await trx
+    .selectFrom('search_earlier')
+    .select(['artifact_id', 'version_id'])
+    .distinct()
+    .where(naming(person))
+    .orderBy('artifact_id')
+    .orderBy('version_id')
+    .execute();
+  let locked: string | undefined;
+  for (const each of named) {
+    if (locked !== each.artifact_id) {
+      await lockArtifact(trx, each.artifact_id);
+      locked = each.artifact_id;
+    }
+    const version = await readVersion(trx, each.version_id);
+    if (!version) continue;
+    await trx
+      .deleteFrom('search_earlier')
+      .where('artifact_id', '=', each.artifact_id)
+      .where('version_id', '=', each.version_id)
+      .execute();
+    const facts = await artifactFacts(trx, version.artifactId, version.kind);
+    await writeEarlier(trx, placingOf(version, facts), await draftsOf(trx, version, facts));
+  }
 }

@@ -18030,6 +18030,14 @@
           "howItIsMet": "Component type is a filter and a facet over components; a field facets across every entry whose values hold it - a component's, a document's, a section's - however it came to hold it"
         },
         {
+          "id": "SCH-003",
+          "howItIsMet": "The latest version by default; on request every version, or what one baseline pins: earlier versions' rows kept in `search_earlier`, read only when asked, the latest's query unchanged ([Earlier versions and baselines](#earlier-versions-and-baselines))"
+        },
+        {
+          "id": "SCH-058",
+          "howItIsMet": "A result from an earlier version names it and links to that version's read-only page at its place; one found in a baseline, to the baseline's page at its node"
+        },
+        {
           "id": "SCH-066",
           "howItIsMet": "An entry's rows are written in the transaction that writes its version, so new and changed words are findable the moment the version is: the interval is none, measured by a test that searches in the next transaction"
         }
@@ -19506,13 +19514,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 344,
+      "line": 346,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 357,
+      "line": 359,
       "kind": "title"
     },
     {
@@ -19776,7 +19784,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1171,
+      "line": 1173,
       "kind": "title"
     },
     {
@@ -19794,13 +19802,13 @@
     {
       "id": "DAT-097",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 862,
+      "line": 869,
       "kind": "title"
     },
     {
       "id": "IAM-013",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 607,
+      "line": 614,
       "kind": "title"
     },
     {
@@ -20818,6 +20826,18 @@
       "kind": "title"
     },
     {
+      "id": "SCH-003",
+      "file": "apps/service/src/version-routes.test.ts",
+      "line": 196,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-058",
+      "file": "apps/service/src/version-routes.test.ts",
+      "line": 196,
+      "kind": "title"
+    },
+    {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
       "line": 1506,
@@ -21402,11 +21422,17 @@
     {
       "id": "CNT-113",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 80,
+      "line": 92,
       "kind": "title"
     },
     {
       "id": "COL-026",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-058",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
       "line": 80,
       "kind": "title"
@@ -21414,7 +21440,7 @@
     {
       "id": "VER-035",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
-      "line": 194,
+      "line": 206,
       "kind": "title"
     },
     {
@@ -21586,6 +21612,24 @@
       "kind": "title"
     },
     {
+      "id": "SCH-003",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 230,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-058",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 230,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-058",
+      "file": "apps/web/src/search/links.test.ts",
+      "line": 56,
+      "kind": "title"
+    },
+    {
       "id": "COL-063",
       "file": "apps/web/src/shell/Header.test.tsx",
       "line": 196,
@@ -21594,7 +21638,7 @@
     {
       "id": "COL-031",
       "file": "apps/web/src/structure/BaselinePage.test.tsx",
-      "line": 130,
+      "line": 134,
       "kind": "title"
     },
     {
@@ -21940,21 +21984,27 @@
       "kind": "title"
     },
     {
-      "id": "VER-033",
+      "id": "SCH-058",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
       "line": 124,
+      "kind": "title"
+    },
+    {
+      "id": "VER-033",
+      "file": "apps/web/src/structure/DocumentVersions.test.tsx",
+      "line": 135,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 124,
+      "line": 135,
       "kind": "title"
     },
     {
       "id": "VER-044",
       "file": "apps/web/src/structure/DocumentVersions.test.tsx",
-      "line": 163,
+      "line": 174,
       "kind": "title"
     },
     {
@@ -22002,13 +22052,13 @@
     {
       "id": "STR-047",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 36,
+      "line": 37,
       "kind": "title"
     },
     {
       "id": "VER-025",
       "file": "apps/web/src/structure/links.test.ts",
-      "line": 19,
+      "line": 20,
       "kind": "title"
     },
     {
@@ -22063,6 +22113,12 @@
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
       "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-058",
+      "file": "apps/web/src/versions/VersionPages.test.tsx",
+      "line": 42,
       "kind": "title"
     },
     {
@@ -23551,6 +23607,30 @@
       "id": "COL-057",
       "file": "packages/db/src/rounds.test.ts",
       "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-003",
+      "file": "packages/db/src/search-earlier.test.ts",
+      "line": 224,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-010",
+      "file": "packages/db/src/search-earlier.test.ts",
+      "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-032",
+      "file": "packages/db/src/search-earlier.test.ts",
+      "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "VER-038",
+      "file": "packages/db/src/search-earlier.test.ts",
+      "line": 517,
       "kind": "title"
     },
     {
@@ -26064,13 +26144,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 732,
+      "line": 794,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 398,
+      "line": 460,
       "kind": "title"
     },
     {
