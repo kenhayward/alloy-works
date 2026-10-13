@@ -52,6 +52,11 @@ and STY.
 answered by a **From the T2 audit against the code** subsection in DAT, STY and TAB, and by
 [ADR-0044](../decisions/0044-the-delegated-tokens-requirement-moves-past-the-first-release.md).
 
+**[T3 - Audit against the code](<T3 - Audit against the code.md>)** does the same for T3 at
+0.163.0: its twenty-two rows not `Covered`, built, split or moved, and a spot check of fifteen that
+are. It is answered by a **From the T3 audit against the code** subsection in API, CNT, COL, DAT,
+LIF, SCH, STR and VER.
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.
