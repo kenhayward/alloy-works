@@ -251,7 +251,7 @@ describe('search bounded at scale (SV3)', () => {
     const admin = new pg.Client({ connectionString: db.adminUrl });
     await admin.connect();
     try {
-      for (const table of ['search_entry', 'search_history']) {
+      for (const table of ['search_entry', 'search_text', 'search_history']) {
         await admin.query(`analyze ${admin.escapeIdentifier(production.schema)}.${table}`);
       }
     } finally {
@@ -274,12 +274,18 @@ describe('search bounded at scale (SV3)', () => {
       .then(resultsOf);
 
   /** The plans of a search's statements, by name, with sequential scans off and the road forced. */
-  const plans = (query: string, road: SearchRoad, filters: SearchFilters = {}) =>
+  const plans = (
+    query: string,
+    road: SearchRoad,
+    filters: SearchFilters = {},
+    scope: 'latest' | 'all' = 'latest',
+  ) =>
     service.withTenant(production, async (trx) => {
       await sql`set local enable_seqscan = off`.execute(trx);
       const seen: Record<string, string[]> = {};
       await searchWords(trx, ada, query, {
         filters,
+        scope,
         probe: {
           road,
           explain: true,
@@ -302,8 +308,60 @@ describe('search bounded at scale (SV3)', () => {
     // A filtered search's facets are a second scan, on the road forced.
     const filtered = await plans('running or kites', 'indexes', { spaces: [quality] });
     expect(filtered.facets).toContain('search_entry_vector');
-    // Scoped terms alone are found through their places' index.
-    expect((await plans('title:yak', 'indexes')).results).toContain('search_text_vector');
+    // Title terms alone are found through titles' own index.
+    expect((await plans('title:yak', 'indexes')).results).toContain('search_text_title');
+  });
+
+  it('finds a kind filtered for through its index, the latest and every version', async () => {
+    expect((await plans('yak', 'indexes', { kinds: ['section'] })).results).toContain(
+      'search_entry_kind',
+    );
+    expect((await plans('yak', 'indexes', { kinds: ['section'] }, 'all')).results).toContain(
+      'search_history_kind',
+    );
+  });
+
+  /** The matches the planner reckoned when it chose the road for a statement. */
+  const estimated = async (
+    query: string,
+    filters: SearchFilters = {},
+    statement: 'results' | 'facets' = 'results',
+  ) => {
+    const estimates: number[] = [];
+    await search(ada, query, {
+      filters,
+      probe: {
+        seen: (event) => {
+          if (event.statement === statement && event.estimate !== undefined) {
+            estimates.push(event.estimate);
+          }
+        },
+      },
+    });
+    expect(estimates).toHaveLength(1);
+    return estimates[0]!;
+  };
+
+  it('reckons a query of title terms alone as matching as many as it does, choosing its road by them', async () => {
+    // Over 1,100 titles hold yak; testing the term twice, the planner reckoned a few dozen.
+    expect(await estimated('title:yak')).toBeGreaterThan(500);
+  });
+
+  it('reckons a filtered search as matching as few as it does, choosing its road by them', async () => {
+    // One yak section in Archive; filters the planner could not read, it reckoned hundreds.
+    expect(await estimated('yak', { kinds: ['section'], spaces: [archive] })).toBeLessThan(20);
+  });
+
+  it('reckons the facets under one filter as the matches, which all fail at most it', async () => {
+    // Read as a sum of failed filters, the planner reckoned a third of them.
+    expect(await estimated('yak', { kinds: ['section'] }, 'facets')).toBe(await estimated('yak'));
+  });
+
+  it('finds nothing by a filter of an identifier of no shape, and ignores one beside others', async () => {
+    expect((await search(ada, 'yak', { filters: { spaces: ['not an id'] } })).count).toBe(0);
+    expect(
+      await search(ada, 'yak', { filters: { spaces: ['NOT AN ID', archive], owners: ['x', ada] } }),
+    ).toEqual(await search(ada, 'yak', { filters: { spaces: [archive], owners: [ada] } }));
   });
 
   it('finds a word in each configuration it is written in', async () => {

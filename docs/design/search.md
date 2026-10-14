@@ -132,7 +132,9 @@ matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M 
 reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else
 find the matches by the **indexes** and sort the newest out of them. Both return the same rows. A
 wanted term under three characters is looked for as a word alone, since no trigram holds it; scoped
-terms alone are found through `search_text`'s word index.
+terms alone are found through `search_text`'s word index, title terms through titles' own (0092), whose
+statistics count titles alone. The filters are written so their columns' indexes serve them and the
+estimate counts them (#605).
 
 **Ranking may use statistics from the whole tenant (SCH-032).** Postgres's own ranking uses none. This
 is permission for a better ranking later, not a description of today's. The road leaves a residual in
