@@ -10,7 +10,7 @@ import {
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
-import { HISTORY_KINDS, historyStored } from './search-history.js';
+import { HISTORY_KINDS, historyStored, historyTitled } from './search-history.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -545,13 +545,15 @@ export async function searchWords(
   // A query of scoped terms alone is found through its places' index (SV3-A); under every version,
   // through the row's own words, which hold every place's in every version: a superset, the places'
   // test below then exact. A title through its own index, whose statistics count titles alone (0092;
-  // #605); a field through every place's.
+  // #605), under every version through every version's titles (0093; #608); a field through every
+  // place's.
   const wanted = parsed.words === '' ? scopedTerms.find((term) => !term.excluded) : undefined;
+  const titled = history && wanted?.place === 'title' && (await historyTitled(trx));
   const driver =
     wanted === undefined
       ? undefined
       : history
-        ? matches('e', wanted.words)
+        ? matches('e', wanted.words, titled ? sql`e.title_vector` : undefined)
         : wanted.place === 'title'
           ? sql<SqlBool>`e.id in (
               select s.entry_id from ${texts} s
@@ -629,8 +631,10 @@ export async function searchWords(
       or e.artifact_id = any(${[...readable.included]}::uuid[])
     )`;
   // Archived content is no result, facet or count (LIF-020; lifecycle.md).
-  const matching = sql<SqlBool>`${readableRow} and ${shown} and ${words}
-    and ${places.length === 0 ? sql<SqlBool>`true` : sql.join(places, sql` and `)}`;
+  // The places' tests apart: per row, so a bounded search runs them on the newest candidates alone.
+  const candidate = sql<SqlBool>`${readableRow} and ${shown} and ${words}`;
+  const held = places.length === 0 ? undefined : sql<SqlBool>`${sql.join(places, sql` and `)}`;
+  const matching = held === undefined ? candidate : sql<SqlBool>`${candidate} and ${held}`;
 
   // Every filter a column of its own, so a facet can leave its own out: `f_field_<n>` for each field
   // filtered on, several values of one field either of them. A field's value is read from the row's
@@ -730,7 +734,9 @@ export async function searchWords(
             },
             {
               // Named, not excluded: the kind index then finds them, never the rows history holds.
-              from: sql`(select *, true as current from search_entry where kind in ${NOT_IN_HISTORY})`,
+              // Their own words stand for titles, a superset the title test then makes exact.
+              from: sql`(select *, true as current, vector as title_vector from search_entry
+                         where kind in ${NOT_IN_HISTORY})`,
               relation: 'search_entry',
               // Always by the indexes: a walk of the table's (changed_at, id) index would read the
               // current rows history stands for too, and a table's size says nothing of these kinds'.
@@ -765,15 +771,20 @@ export async function searchWords(
         explain (format json) select 1 from ${candidates} e where ${where}`.execute(trx);
       return Number(plan[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0);
     };
-    /** The newest N + 1 rows of one scan matching `where`, with when each changed, in microseconds. */
+    /**
+     * The newest N + 1 rows of one scan matching `where` and the places' tests, with when each
+     * changed, in microseconds.
+     */
     const newestOf = async (
       statement: 'results' | 'facets',
-      where: RawBuilder<SqlBool>,
+      candidateWhere: RawBuilder<SqlBool>,
       candidates: RawBuilder<unknown>,
       rows: number,
       relation: string,
       indexesOnly: boolean,
     ) => {
+      const where =
+        held === undefined ? candidateWhere : sql<SqlBool>`${candidateWhere} and ${held}`;
       let road: SearchRoad | undefined = indexesOnly ? 'indexes' : options.probe?.road;
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
       // test sets how many.
@@ -791,10 +802,22 @@ export async function searchWords(
         select e.id, ${at} from (select * from ${candidates} c order by changed_at desc, id desc
                                  limit ${reads}) e
         where ${where} order by e.changed_at desc, e.id desc limit ${N + 1}`;
-      // Ordered by an expression no index holds, so the planner finds the matches by their indexes.
-      const indexes = sql`
-        select e.id, ${at} from ${candidates} e where ${where}
-        order by e.changed_at + interval '0 s' desc, e.id desc limit ${N + 1}`;
+      // What the places' tests and the answer read, alone: a sort of every column could spill.
+      const narrow = sql.raw(
+        `e.id, e.artifact_id, e.node, e.changed_at${scope === 'latest' ? '' : ', e.current'}`,
+      );
+      // Ordered by an expression no index holds, so the planner finds the matches by their indexes;
+      // the places' tests then run in that order until N + 1 pass, not on every candidate (#608).
+      const indexes =
+        held === undefined
+          ? sql`
+            select e.id, ${at} from ${candidates} e where ${where}
+            order by e.changed_at + interval '0 s' desc, e.id desc limit ${N + 1}`
+          : sql`
+            select e.id, ${at}
+            from (select ${narrow}, e.changed_at + interval '0 s' as sort_at from ${candidates} e
+                  where ${candidateWhere} order by sort_at desc, e.id desc offset 0) e
+            where ${held} order by e.sort_at desc, e.id desc limit ${N + 1}`;
       if (road === 'walk') {
         await explained(statement, walk);
         const { rows: walked } = await sql<{ id: string; at: string }>`${walk}`.execute(trx);
@@ -847,7 +870,7 @@ export async function searchWords(
     // Bare, so an index on a filtered column serves the results and the planner counts them (#605).
     const results = await newest(
       'results',
-      sql<SqlBool>`${matching} and ${sql.join(
+      sql<SqlBool>`${candidate} and ${sql.join(
         flagsOver('e').map(([, predicate]) => predicate),
         sql` and `,
       )}`,
@@ -866,8 +889,8 @@ export async function searchWords(
         : await newest(
             'facets',
             inForce === 1
-              ? matching
-              : sql<SqlBool>`${matching}
+              ? candidate
+              : sql<SqlBool>`${candidate}
                   and (${sql.join(
                     flags.map((flag) => sql`(not ${flag})::int`),
                     sql` + `,

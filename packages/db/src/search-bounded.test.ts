@@ -59,6 +59,36 @@ function indexesIn(plan: unknown): string[] {
   return names;
 }
 
+/** A JSON plan's node types, outermost first, depth first. */
+function nodesIn(plan: unknown): string[] {
+  const types: string[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) node.forEach(walk);
+    else if (node !== null && typeof node === 'object') {
+      const { 'Node Type': type, ...rest } = node as Record<string, unknown>;
+      if (typeof type === 'string') types.push(type);
+      for (const value of Object.values(rest)) walk(value);
+    }
+  };
+  walk(plan);
+  return types;
+}
+
+/** The width the planner reckons of each sort in a JSON plan. */
+function sortWidthsIn(plan: unknown): number[] {
+  const widths: number[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) node.forEach(walk);
+    else if (node !== null && typeof node === 'object') {
+      const record = node as Record<string, unknown>;
+      if (record['Node Type'] === 'Sort') widths.push(Number(record['Plan Width']));
+      Object.values(record).forEach(walk);
+    }
+  };
+  walk(plan);
+  return widths;
+}
+
 const ZERO_CHANGED = ['today', 'week', 'month', 'year', 'earlier'].map((value) => ({
   value,
   label: value,
@@ -324,6 +354,63 @@ describe('search bounded at scale (SV3)', () => {
     expect((await plans('title:yak', 'indexes')).results).toContain('search_text_title');
   });
 
+  it('tests the places of only the newest candidates on the indexes road, never every match', async () => {
+    const top: string[][] = [];
+    await service.withTenant(production, (trx) =>
+      searchWords(trx, ada, 'title:yak', {
+        scope: 'all',
+        probe: {
+          road: 'indexes',
+          explain: true,
+          seen: (event) => {
+            if (event.statement === 'results' && event.plan !== undefined) {
+              top.push(nodesIn(event.plan).slice(0, 3));
+            }
+          },
+        },
+      }),
+    );
+    // History's scan: the limit over the places' test over the candidates in order, no sort between.
+    expect(top[0]).toEqual(['Limit', 'Subquery Scan', 'Sort']);
+  });
+
+  it('sorts the candidates whose places it tests by narrow rows, never their words', async () => {
+    for (const [query, scope] of [
+      ['title:yak', 'all'],
+      ['yak title:yak', 'latest'],
+    ] as const) {
+      const widths: number[] = [];
+      await service.withTenant(production, (trx) =>
+        searchWords(trx, ada, query, {
+          scope,
+          probe: {
+            road: 'indexes',
+            explain: true,
+            seen: (event) => {
+              if (event.statement === 'results' && event.plan !== undefined) {
+                widths.push(...sortWidthsIn(event.plan));
+              }
+            },
+          },
+        }),
+      );
+      // One sort a scan, each of ids, a node, a flag and two times: under a hundred bytes; with
+      // every column, hundreds.
+      expect({ query, sorts: widths.length > 0 }).toEqual({ query, sorts: true });
+      expect({ query, widths: widths.filter((width) => width >= 100) }).toEqual({
+        query,
+        widths: [],
+      });
+    }
+  });
+
+  it("finds title terms alone under every version through history's titles, not every place's words", async () => {
+    // A title few places hold: a tiny table's other indexes cost no more for one most hold.
+    const { results } = await plans('title:herds', 'indexes', {}, 'all');
+    expect(results).toContain('search_history_title');
+    expect(results).not.toContain('search_history_vector');
+  });
+
   it('finds a kind filtered for through its index, the latest and every version', async () => {
     expect((await plans('yak', 'indexes', { kinds: ['section'] })).results).toContain(
       'search_entry_kind',
@@ -341,10 +428,12 @@ describe('search bounded at scale (SV3)', () => {
     query: string,
     filters: SearchFilters = {},
     statement: 'results' | 'facets' = 'results',
+    scope: 'latest' | 'all' = 'latest',
   ) => {
     const seen: { estimate: number; rows: number }[] = [];
     await search(ada, query, {
       filters,
+      scope,
       probe: {
         seen: (event) => {
           if (event.statement === statement && event.estimate !== undefined) {
@@ -378,6 +467,12 @@ describe('search bounded at scale (SV3)', () => {
     expect(await estimated('title:yak')).toBeGreaterThan(500);
   });
 
+  it('reckons a query of title terms alone under every version by titles alone', async () => {
+    // Herding is in every yak's words and no title: reckoned by every place's words, over a thousand.
+    expect(await estimated('title:herding', {}, 'results', 'all')).toBeLessThan(20);
+    expect(await estimated('title:yak', {}, 'results', 'all')).toBeGreaterThan(500);
+  });
+
   it('reckons a filtered search as matching as few as it does, choosing its road by them', async () => {
     // One yak section in Archive; filters the planner could not read, it reckoned hundreds.
     expect(await estimated('yak', { kinds: ['section'], spaces: [archive] })).toBeLessThan(20);
@@ -400,7 +495,7 @@ describe('search bounded at scale (SV3)', () => {
     expect(found.items.map((each) => each.node).sort()).toEqual(['en', 'simple']);
   });
 
-  const bothRoads = async (scope: 'latest' | 'all') => {
+  const bothRoads = async (scope: 'latest' | 'all', query = 'yak') => {
     for (const filters of [
       {},
       { values: [{ field: approved, value: 'true' }] },
@@ -409,7 +504,7 @@ describe('search bounded at scale (SV3)', () => {
       for (let offset = 0; offset <= 1000; offset += 50) {
         const [walk, indexes] = await Promise.all(
           (['walk', 'indexes'] as const).map((road) =>
-            search(ada, 'yak', { scope, offset, limit: 50, filters, probe: { road } }),
+            search(ada, query, { scope, offset, limit: 50, filters, probe: { road } }),
           ),
         );
         expect({ filters, offset, answer: walk }).toEqual({ filters, offset, answer: indexes });
@@ -423,6 +518,18 @@ describe('search bounded at scale (SV3)', () => {
 
   it('returns the same page, total and facets on either road under every version, every page, filtered and not', async () => {
     await bothRoads('all');
+  });
+
+  it('returns the same page, total and facets on either road under every version for title terms alone, every page, filtered and not', async () => {
+    await bothRoads('all', 'title:yak');
+  });
+
+  it('returns the same page, total and facets on either road for words and a scoped term, every page, filtered and not', async () => {
+    await bothRoads('latest', 'yak title:yak');
+  });
+
+  it('returns the same page, total and facets on either road under every version for words and a scoped term, every page, filtered and not', async () => {
+    await bothRoads('all', 'yak title:yak');
   });
 
   const nothingFor = async (scope: 'latest' | 'all', road?: SearchRoad) => {

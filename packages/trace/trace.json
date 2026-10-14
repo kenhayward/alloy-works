@@ -23659,7 +23659,7 @@
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-bounded.test.ts",
-      "line": 461,
+      "line": 568,
       "kind": "title"
     },
     {
@@ -23713,31 +23713,31 @@
     {
       "id": "LIF-020",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 396,
+      "line": 397,
       "kind": "title"
     },
     {
       "id": "SCH-003",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 375,
+      "line": 376,
       "kind": "title"
     },
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 520,
+      "line": 521,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 520,
+      "line": 521,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 411,
+      "line": 412,
       "kind": "title"
     },
     {
