@@ -423,6 +423,7 @@ export const workflowRoutes = {
     responses: {
       200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
       401: unauthenticated,
+      403: { description: 'The caller may not read this component', schema: ErrorBody },
       404: { description: 'No such component the caller may read', schema: ErrorBody },
     },
   },
@@ -437,6 +438,7 @@ export const workflowRoutes = {
     responses: {
       200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
       401: unauthenticated,
+      403: { description: 'The caller may not read this document', schema: ErrorBody },
       404: { description: 'No such document the caller may read', schema: ErrorBody },
     },
   },
