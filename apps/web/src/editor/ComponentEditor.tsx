@@ -81,6 +81,7 @@ import { InPlaceBand } from './InPlaceBand.js';
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -101,6 +102,13 @@ import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
+import {
+  readStanding,
+  standingIn,
+  TransitionButtons,
+  type Standing,
+} from '../lifecycle/Workflow.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
@@ -563,6 +571,8 @@ export function ComponentEditor({
   const [notice, setNotice] = useState<string | null>(null);
   // Archived or unarchived on this page since it opened: what it shows over the GET's (lifecycle.md).
   const [archivedNow, setArchivedNow] = useState<boolean | null>(null);
+  // Moved on this page, or heard moved on its stream, since it opened: shown over the GET's (WF-G).
+  const [standingNow, setStandingNow] = useState<Standing | null>(null);
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
@@ -998,7 +1008,16 @@ export function ComponentEditor({
   sessionIdRef.current = sessionId;
   // Who holds it as its stream says, so its holder hears at once that somebody asks to take it over,
   // and that they have (COL-045, COL-047).
-  const heard = useHeardLock(componentId, drafting ? NO_FOLLOW : follow);
+  // Its state read again when its stream says it moved: by a move, or by a save of an approved one.
+  const restand = useCallback(() => {
+    const asked = componentId;
+    void readStanding(client, 'component', asked).then((now) => {
+      if (now && asked === componentIdRef.current) setStandingNow(now);
+    });
+  }, [client, componentId]);
+  const componentIdRef = useRef(componentId);
+  componentIdRef.current = componentId;
+  const heard = useHeardLock(componentId, drafting ? NO_FOLLOW : follow, restand);
   const runPromptingRef = useRef(runPrompting);
   runPromptingRef.current = runPrompting;
   const openAtRef = useRef(openAt);
@@ -1880,6 +1899,7 @@ export function ComponentEditor({
   }
   const { component: shown } = loaded;
   const archived = archivedNow ?? shown.archived === true;
+  const standing = standingNow ?? standingIn(shown);
   const title = (shown.content as { title?: unknown }).title;
   // Once this session has claimed or released the lock itself, the GET-time snapshot no longer
   // reflects who holds it (fix round 1, minor) - so it is never consulted again, rather than
@@ -2230,9 +2250,26 @@ export function ComponentEditor({
             >
               {session?.version.number ?? shown.version.number} · {shown.space.name}
             </span>
+            {standing && <StateLozenge state={standing.state} />}
             {archived && <Chip>Archived</Chip>}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
             {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
+            {standing && (
+              <TransitionButtons
+                client={client}
+                kind="component"
+                id={componentId}
+                title={header.title}
+                standing={standing}
+                className={styles['archive']}
+                onMoved={(now, said) => {
+                  setStandingNow(now);
+                  setNotice(said);
+                }}
+                onNotice={setNotice}
+                onStale={restand}
+              />
+            )}
             <ArchiveButton
               client={client}
               kind="component"
@@ -2278,6 +2315,12 @@ export function ComponentEditor({
           </>
         )}
       </header>
+      {/* Before the first save of an approved one, what a save does (WF-F). */}
+      {standing?.state.approved && shown.mayEdit && !drafting && (
+        <p className={styles['approvedNote']}>
+          This is approved. Saving starts a new draft, and the approved version stays as it is.
+        </p>
+      )}
       {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
       {session && loaded.state === 'open' && !drafting && (
         <StatusLead>

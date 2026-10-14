@@ -445,3 +445,11 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Before the first save of an approved document, what a save does (the WF1 plan, WF-F). */
+.approvedNote {
+  margin: 0;
+  padding: var(--space-4) var(--space-12);
+  color: var(--muted);
+  font-size: var(--size-12);
+}

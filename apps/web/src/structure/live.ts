@@ -54,6 +54,14 @@ export interface LiveDocument {
   readonly connected: boolean;
   /** Counts each change to the outline heard, for whoever reads it again (STR-066). */
   readonly outlineChanges: number;
+  /** Each workflow state heard since it opened, by artifact: the document's or a component's (WF-G). */
+  readonly states: ReadonlyMap<string, LiveState>;
+}
+
+/** A workflow state as the stream says it. */
+export interface LiveState {
+  readonly key: string;
+  readonly name: string;
 }
 
 /**
@@ -93,6 +101,7 @@ export function useLiveDocument({
   clock.current = now;
   const [connected, setConnected] = useState(false);
   const [outlineChanges, setOutlineChanges] = useState(0);
+  const [states, setStates] = useState<ReadonlyMap<string, LiveState>>(new Map());
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -131,6 +140,9 @@ export function useLiveDocument({
           });
         } else if (event === 'outline') {
           setOutlineChanges((count) => count + 1);
+        } else if (event === 'workflow') {
+          const { artifact, state } = data as { artifact: string; state: LiveState };
+          setStates((was) => new Map(was).set(artifact, state));
         } else if (event === 'permissions') {
           setConnected(false);
         }
@@ -179,5 +191,5 @@ export function useLiveDocument({
     .filter((each) => each.viewer !== viewer && each.person.id !== principalId)
     .map(({ beatHere, ...each }) => ({ ...each, freshness: freshnessOf(beatHere, at) }))
     .filter((each) => each.freshness !== 'absent');
-  return { locks, people, connected, outlineChanges };
+  return { locks, people, connected, outlineChanges, states };
 }

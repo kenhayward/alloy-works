@@ -42,6 +42,7 @@ const results = {
         { text: 'lever', matched: true },
         { text: ' until it clicks.', matched: false },
       ],
+      state: { key: 'in_review', name: 'In review' },
     },
     {
       kind: 'section',
@@ -59,6 +60,7 @@ const results = {
     spaces: [facet(SPACE, 'General', 2)],
     componentTypes: [],
     owners: [],
+    states: [facet('in_review', 'In review', 1), facet('draft', 'Draft', 1)],
     changed: ['today', 'week', 'month', 'year', 'earlier'].map((value) =>
       facet(value, value, value === 'earlier' ? 0 : 2),
     ),
@@ -321,5 +323,19 @@ describe('the search page, over earlier versions and baselines', () => {
     expect(screen.queryByRole('combobox', { name: 'Versions' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Search without the baseline' }));
     expect(scoped).toHaveBeenCalledWith({ versions: 'latest', baseline: null });
+  });
+
+  it('LIF-005 SCH-060 shows each result’s workflow state, and narrows by state', async () => {
+    const { client, asked } = service(() => json(200, results));
+    render(<SearchPage client={client} query="lever" onSearch={vi.fn()} />);
+    const guide = await screen.findByRole('link', { name: 'Lever guide' });
+    expect(within(guide.closest('article')!).getByText('In review')).toHaveAttribute(
+      'data-kind',
+      'inReview',
+    );
+
+    const states = screen.getByRole('group', { name: 'State' });
+    await userEvent.click(within(states).getByRole('checkbox', { name: 'In review (1)' }));
+    await waitFor(() => expect(asked.at(-1)?.get('state')).toBe('in_review'));
   });
 });

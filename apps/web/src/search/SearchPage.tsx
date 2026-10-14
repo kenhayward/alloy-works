@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { Chip } from '../parts/Chip.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
 import styles from './SearchPage.module.css';
 
@@ -40,10 +41,14 @@ interface Result {
     readonly on: 'component' | 'document';
     readonly resolved: boolean;
   } | null;
+  /** A component's or a document's state now, a section's its document's (WF-H). */
+  readonly state?: { readonly key: string; readonly name: string } | null;
 }
 
 interface Facets {
   readonly kinds: readonly FacetValue[];
+  /** Absent from a service before workflow (WF-H). */
+  readonly states?: readonly FacetValue[];
   readonly spaces: readonly FacetValue[];
   readonly componentTypes: readonly FacetValue[];
   readonly owners: readonly FacetValue[];
@@ -70,6 +75,7 @@ type Answer =
 /** What narrows the search: each dimension's chosen values, and a field's as `<field>:<value>`. */
 interface Chosen {
   readonly kinds: readonly string[];
+  readonly states: readonly string[];
   readonly spaces: readonly string[];
   readonly componentTypes: readonly string[];
   readonly owners: readonly string[];
@@ -91,6 +97,7 @@ const foundIn = (item: Result): string | null =>
 
 const NOTHING_CHOSEN: Chosen = {
   kinds: [],
+  states: [],
   spaces: [],
   componentTypes: [],
   owners: [],
@@ -243,6 +250,7 @@ export function SearchPage({
             ...(offset === 0 ? {} : { offset: String(offset) }),
             ...listed('kind', chosen.kinds),
             ...listed('space', chosen.spaces),
+            ...listed('state', chosen.states),
             ...listed('type', chosen.componentTypes),
             ...listed('owner', chosen.owners),
             ...(chosen.changed === null ? {} : { changed: chosen.changed as 'today' }),
@@ -393,6 +401,13 @@ export function SearchPage({
               onToggle={choose('spaces')}
             />
             <FacetGroup
+              legend="State"
+              values={results.facets.states ?? []}
+              chosen={chosen.states}
+              label={(facet) => facet.label}
+              onToggle={choose('states')}
+            />
+            <FacetGroup
               legend="Component type"
               values={results.facets.componentTypes}
               chosen={chosen.componentTypes}
@@ -445,6 +460,7 @@ export function SearchPage({
                       {item.space === null ? '' : ` in ${item.space.name}`}
                     </p>
                     <h2>{link === null ? item.title : <a href={link}>{item.title}</a>}</h2>
+                    {item.state && <StateLozenge state={item.state} />}
                     {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (

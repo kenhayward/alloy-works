@@ -31,6 +31,13 @@ import { flushSync } from 'react-dom';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import {
+  readStanding,
+  standingIn,
+  TransitionButtons,
+  type Standing,
+} from '../lifecycle/Workflow.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
@@ -134,6 +141,8 @@ interface Opened {
   readonly archived: boolean;
   /** Whether the reader may archive and unarchive it. */
   readonly mayRetire: boolean;
+  /** Its workflow state and the transitions the reader may take (WF-G); null from a view before it. */
+  readonly standing: Standing | null;
   /** Under a legal hold, told only to whoever may retire it or administer the environment. */
   readonly onHold: boolean;
   /** Whether the reader may place a legal hold: an environment administrator. */
@@ -244,6 +253,7 @@ function documentIn(data: unknown): Read {
     mayReview: mayReview === true,
     archived: archived === true,
     mayRetire: mayRetire === true,
+    standing: standingIn(data) ?? null,
     onHold: onHold === true,
     mayHold: mayHold === true,
     scheme: scheme?.success ? scheme.data : null,
@@ -342,7 +352,16 @@ function contributionsIn(data: unknown): ReadonlyMap<string, readonly Contributi
 function componentsIn(items: readonly unknown[]): ComponentChoice[] {
   return items.flatMap((item) => {
     if (!isRecord(item) || typeof item.id !== 'string' || typeof item.title !== 'string') return [];
-    return [{ id: item.id, title: item.title }];
+    const { state } = item;
+    return [
+      {
+        id: item.id,
+        title: item.title,
+        ...(isRecord(state) && typeof state.key === 'string' && typeof state.name === 'string'
+          ? { state: { key: state.key, name: state.name } }
+          : {}),
+      },
+    ];
   });
 }
 
@@ -1223,6 +1242,31 @@ export function DocumentPage({
     setLoaded({ state: 'open', document });
   }, []);
 
+  // What Add component offers and the Part panel names, each state as its stream last said (WF-G).
+  const componentsNow = useMemo<ComponentChoices>(
+    () =>
+      components.state === 'loaded' && live.states.size > 0
+        ? {
+            ...components,
+            items: components.items.map((each) => {
+              const heard = live.states.get(each.id);
+              return heard === undefined ? each : { ...each, state: heard };
+            }),
+          }
+        : components,
+    [components, live.states],
+  );
+  // Its state read again, with what the reader may take from it, as its stream says it moved (WF-G).
+  const restand = useCallback(() => {
+    void readStanding(client, 'document', id).then((standing) => {
+      if (standing && latest.current?.id === id) show({ ...latest.current, standing });
+    });
+  }, [client, id, show]);
+  const heardState = live.states.get(id);
+  useEffect(() => {
+    if (heardState !== undefined) restand();
+  }, [heardState, restand]);
+
   // Another person's change to the outline (STR-066; the PL plan, PL-J): read again as its stream
   // says, once no act of this page's own is in flight - one that is, answers with the outline as it
   // then stands, and the read waits for it. This page's own change comes back as the version it holds.
@@ -1905,11 +1949,28 @@ export function DocumentPage({
               Show boundaries
             </button>
             <PeopleHere people={live.people} connected={live.connected} />
+            {document.standing && <StateLozenge state={document.standing.state} />}
             {document.archived && <Chip>Archived</Chip>}
             {document.onHold && <Chip>On hold</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
               Archive or Unarchive to whoever may retire it (lifecycle.md). */}
             <span className={styles['access']}>
+              {document.standing && (
+                <TransitionButtons
+                  client={client}
+                  kind="document"
+                  id={document.id}
+                  title={document.outline.title}
+                  standing={document.standing}
+                  className={styles['toggle']}
+                  onMoved={(standing, said) => {
+                    if (latest.current?.id === document.id) show({ ...latest.current, standing });
+                    setNotice(said);
+                  }}
+                  onNotice={setNotice}
+                  onStale={restand}
+                />
+              )}
               <ArchiveButton
                 client={client}
                 kind="document"
@@ -1953,6 +2014,12 @@ export function DocumentPage({
               />
             </span>
           </div>
+          {/* Before the first save of an approved one, what a save does (WF-F). */}
+          {authoring && document.mayEdit && document.standing?.state.approved && (
+            <p className={styles['approvedNote']}>
+              This is approved. Saving starts a new draft, and the approved version stays as it is.
+            </p>
+          )}
           {/* In Authoring, the band a component open in place keeps its strip, toolbar and second line
             in, on the chrome: there before one opens, so the sheet does not move when it does
             (ADR-0056, CNT-075), and kept in view as the text scrolls. */}
@@ -2068,7 +2135,7 @@ export function DocumentPage({
                 return top === undefined ? 'unsent' : apply(top, true);
               }}
               names={names}
-              components={components}
+              components={componentsNow}
               onReloadComponents={() => setComponentsAttempt((count) => count + 1)}
               linked={linked}
               linkOf={(node) =>

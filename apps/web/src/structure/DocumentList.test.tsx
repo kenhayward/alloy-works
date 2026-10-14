@@ -29,6 +29,7 @@ const row = (
   sections: 46,
   components: 128,
   publishing,
+  state: { key: 'approved', name: 'Approved' },
 });
 
 function listed() {
@@ -109,6 +110,7 @@ describe('the documents list', () => {
       'Operator manual',
       'General',
       '1.12',
+      'Approved',
       '46',
       '128',
       'Changed since',
@@ -173,5 +175,14 @@ describe('the documents list', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('LIF-005 shows each document’s workflow state as its lozenge', async () => {
+    render(<DocumentList client={listed()} onOpen={vi.fn()} />);
+    const link = await screen.findByRole('link', { name: 'Operator manual' });
+    expect(within(link.closest('tr')!).getByText('Approved')).toHaveAttribute(
+      'data-kind',
+      'approved',
+    );
   });
 });

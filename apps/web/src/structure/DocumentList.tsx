@@ -18,7 +18,7 @@ import {
 import { usePagedListing } from '../listing/usePagedListing.js';
 import { DeletedList } from '../lifecycle/Deleted.js';
 import { Chip } from '../parts/Chip.js';
-import { Lozenge } from '../states/Lozenge.js';
+import { Lozenge, StateLozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
 import { documentLink } from './links.js';
@@ -44,7 +44,15 @@ interface Listed {
   readonly sections: number | null;
   readonly components: number | null;
   readonly publishing: Publishing | null;
+  /** Its workflow state (WF-G); null from a service before it. */
+  readonly state: { readonly key: string; readonly name: string } | null;
 }
+
+const stateIn = (value: unknown): Listed['state'] => {
+  const { key, name } =
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  return typeof key === 'string' && typeof name === 'string' ? { key, name } : null;
+};
 
 const isPublishing = (value: unknown): value is Publishing =>
   PUBLISHING.some((each) => each.state === value);
@@ -60,7 +68,7 @@ function documentsIn(data: unknown): Listed[] | undefined {
   if (!Array.isArray(items)) return undefined;
   return items.flatMap((item: unknown) => {
     if (typeof item !== 'object' || item === null) return [];
-    const { id, title, space, version, changedAt, sections, components, publishing } =
+    const { id, title, space, version, changedAt, sections, components, publishing, state } =
       item as Record<string, unknown>;
     const { id: spaceId, name } =
       typeof space === 'object' && space !== null
@@ -84,6 +92,7 @@ function documentsIn(data: unknown): Listed[] | undefined {
         sections: typeof sections === 'number' ? sections : null,
         components: typeof components === 'number' ? components : null,
         publishing: isPublishing(publishing) ? publishing : null,
+        state: stateIn(state),
       },
     ];
   });
@@ -310,6 +319,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                   <th scope="col">Title</th>
                   <th scope="col">Space</th>
                   <th scope="col">Version</th>
+                  <th scope="col">State</th>
                   <th scope="col" className={styles['number']}>
                     Sections
                   </th>
@@ -331,6 +341,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>{item.version}</td>
+                    <td>{item.state !== null && <StateLozenge state={item.state} />}</td>
                     <td className={styles['number']}>{item.sections ?? ''}</td>
                     <td className={styles['number']}>{item.components ?? ''}</td>
                     <td>

@@ -2,6 +2,7 @@ import type { ComponentList as Page, createApiClient } from '@alloy-works/api-cl
 import { useEffect, useState } from 'react';
 
 import { PaneToggle, type Pane } from '../layouts/PaneWidth.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import styles from './SpacePane.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -56,6 +57,7 @@ export function SpacePane({
               aria-current={item.id === current ? 'page' : undefined}
             >
               <span className={styles['title']}>{item.title}</span>
+              {item.state && <StateLozenge state={item.state} />}
               <span className={styles['number']}>{item.version}</span>
             </a>
           </li>
