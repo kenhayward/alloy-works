@@ -419,6 +419,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a component's approvals and rejections
+         * @description Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.
+         */
+        get: operations["listComponentApprovals"];
+        put?: never;
+        /**
+         * Approve or reject a component at a gate
+         * @description Approves or rejects a component at a gate from its state, against the version the approver saw, needing approve on the component. The gate passes once enough distinct approvers approve the current version this round, none of them an author where the gate says so, and then designates a revision. A rejection needs a reason and returns the component to the gate's declared state. Refused where it is not at the gate, the version was replaced, it is archived, or the caller approved it already. Audited.
+         */
+        post: operations["decideComponentGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/archive": {
         parameters: {
             query?: never;
@@ -1153,6 +1177,30 @@ export interface paths {
         get: operations["getDocument"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a document's approvals and rejections
+         * @description Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.
+         */
+        get: operations["listDocumentApprovals"];
+        put?: never;
+        /**
+         * Approve or reject a document at a gate
+         * @description Approves or rejects a document at a gate from its state, against the version the approver saw, needing approve on the document. The gate passes once enough distinct approvers approve the current version this round, none of them an author where the gate says so, and then designates a revision. A rejection needs a reason and returns the document to the gate's declared state. Refused where it is not at the gate, the version was replaced, it is archived, or the caller approved it already. Audited.
+         */
+        post: operations["decideDocumentGate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9664,6 +9712,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -9739,6 +9793,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -9887,6 +9976,368 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listComponentApprovals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every decision at its gates, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "approvals": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every approval and rejection, newest first */
+                        approvals: {
+                            transition: string;
+                            /** @enum {string} */
+                            decision: "approved" | "rejected";
+                            /** @description A rejection's reason; null for an approval */
+                            reason: string | null;
+                            by: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * Format: uuid
+                             * @description The version decided
+                             */
+                            versionId: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideComponentGate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "decision": "approved"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The gate, by its transition key */
+                    transition: string;
+                    /**
+                     * Format: uuid
+                     * @description The version the approver saw: refused, as version_moved, where it has been replaced since
+                     */
+                    version: string;
+                    /** @enum {string} */
+                    decision: "approved" | "rejected";
+                    /** @description Why it is rejected: required for a rejection, kept with it */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Decided; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not approve it, or is one of its authors where the gate refuses them (approval_author) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
                     };
                 };
             };
@@ -12924,7 +13375,13 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
-                     *       "transitions": []
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -12935,7 +13392,7 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
-                        /** @description The transitions the caller may take from it now */
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
                             name: string;
@@ -12946,6 +13403,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                     };
                 };
             };
@@ -19222,6 +19714,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -19347,6 +19845,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -19438,6 +19971,368 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listDocumentApprovals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every decision at its gates, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "approvals": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every approval and rejection, newest first */
+                        approvals: {
+                            transition: string;
+                            /** @enum {string} */
+                            decision: "approved" | "rejected";
+                            /** @description A rejection's reason; null for an approval */
+                            reason: string | null;
+                            by: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * Format: uuid
+                             * @description The version decided
+                             */
+                            versionId: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideDocumentGate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "decision": "approved"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The gate, by its transition key */
+                    transition: string;
+                    /**
+                     * Format: uuid
+                     * @description The version the approver saw: refused, as version_moved, where it has been replaced since
+                     */
+                    version: string;
+                    /** @enum {string} */
+                    decision: "approved" | "rejected";
+                    /** @description Why it is rejected: required for a rejection, kept with it */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Decided; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not approve it, or is one of its authors where the gate refuses them (approval_author) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
                     };
                 };
             };
@@ -34460,6 +35355,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -34585,6 +35486,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34743,6 +35679,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34997,6 +35968,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35383,6 +36389,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -35508,6 +36520,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35666,6 +36713,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35920,6 +37002,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -38173,7 +39290,13 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
-                     *       "transitions": []
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -38184,7 +39307,7 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
-                        /** @description The transitions the caller may take from it now */
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
                             name: string;
@@ -38195,6 +39318,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                     };
                 };
             };
@@ -38665,6 +39823,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -38790,6 +39954,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -38948,6 +40147,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -39202,6 +40436,41 @@ export interface operations {
                                 };
                                 reasonRequired: boolean;
                             }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -51076,6 +52345,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -51151,6 +52426,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -52133,6 +53443,12 @@ export interface operations {
                      *         "approved": false
                      *       },
                      *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -52258,6 +53574,41 @@ export interface operations {
                             };
                             reasonRequired: boolean;
                         }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -57243,6 +58594,18 @@ export interface operations {
                                         /** @enum {string} */
                                         permission: "edit" | "approve";
                                         reasonRequired: boolean;
+                                        gate?: {
+                                            approvals: number;
+                                            notAuthor: boolean;
+                                            reject: {
+                                                name: string;
+                                                to: string;
+                                            };
+                                            designates: boolean;
+                                            baseline: boolean;
+                                            /** @enum {string} */
+                                            publication: "none" | "permitted" | "required";
+                                        };
                                     }[];
                                 };
                                 /** @description Who saved it; null for the seed */
@@ -57386,6 +58749,39 @@ export interface operations {
                          * @default false
                          */
                         reasonRequired?: boolean;
+                        /** @description Present for a gate: decided by approvers, never taken as a move; its permission is approve */
+                        gate?: {
+                            /** @description How many distinct approvers it needs */
+                            approvals: number;
+                            /**
+                             * @description Whether whoever recorded a version since the last revision is refused
+                             * @default false
+                             */
+                            notAuthor?: boolean;
+                            /** @description What a rejection is called, and where it returns */
+                            reject: {
+                                /** @description As people read it; trimmed and NFC */
+                                name: string;
+                                /** @description The state a rejection returns it to */
+                                to: string;
+                            };
+                            /**
+                             * @description Whether passing it designates a revision
+                             * @default true
+                             */
+                            designates?: boolean;
+                            /**
+                             * @description A document's gate: whether passing takes a baseline
+                             * @default false
+                             */
+                            baseline?: boolean;
+                            /**
+                             * @description A document's gate: whether passing may, or must, request an approved publication
+                             * @default none
+                             * @enum {string}
+                             */
+                            publication?: "none" | "permitted" | "required";
+                        };
                     }[];
                     /**
                      * @description The kind it is the workflow of
@@ -57443,6 +58839,18 @@ export interface operations {
                                 /** @enum {string} */
                                 permission: "edit" | "approve";
                                 reasonRequired: boolean;
+                                gate?: {
+                                    approvals: number;
+                                    notAuthor: boolean;
+                                    reject: {
+                                        name: string;
+                                        to: string;
+                                    };
+                                    designates: boolean;
+                                    baseline: boolean;
+                                    /** @enum {string} */
+                                    publication: "none" | "permitted" | "required";
+                                };
                             }[];
                         };
                         /** @description Who saved it; null for the seed */
@@ -57622,6 +59030,18 @@ export interface operations {
                                 /** @enum {string} */
                                 permission: "edit" | "approve";
                                 reasonRequired: boolean;
+                                gate?: {
+                                    approvals: number;
+                                    notAuthor: boolean;
+                                    reject: {
+                                        name: string;
+                                        to: string;
+                                    };
+                                    designates: boolean;
+                                    baseline: boolean;
+                                    /** @enum {string} */
+                                    publication: "none" | "permitted" | "required";
+                                };
                             }[];
                         };
                         /** @description Who saved it; null for the seed */

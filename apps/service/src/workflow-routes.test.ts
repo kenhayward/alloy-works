@@ -287,7 +287,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(kept).toEqual({ reason: 'Name the dose.', by: ids.ada });
   });
 
-  it('LIF-008 LIF-010 LIF-013 approves at a gate by an approver who is not its author, designating a revision, and lists who decided what', async () => {
+  it('LIF-008 LIF-010 approves at a gate by an approver who is not its author, designating a revision, and lists who decided what', async () => {
     const created = await made('documents', 'Dosing record');
     await move('documents', created.id, 'ada', { transition: 'submit', from: 'draft' });
     const decision = {

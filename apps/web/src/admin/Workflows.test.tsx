@@ -73,21 +73,19 @@ describe("Administration's Workflows", () => {
     ).toBeInTheDocument();
 
     const transitions = within(components()).getByRole('table', { name: 'Component transitions' });
-    const returning = within(transitions).getAllByRole('row')[2]!;
-    expect(within(returning).getByRole('textbox', { name: 'Name of Return' })).toHaveValue(
-      'Return',
+    const reopening = within(transitions).getAllByRole('row')[3]!;
+    expect(within(reopening).getByRole('textbox', { name: 'Name of Reopen' })).toHaveValue(
+      'Reopen',
     );
-    expect(within(returning).getByRole('combobox', { name: 'Return moves from' })).toHaveValue(
-      'in_review',
+    expect(within(reopening).getByRole('combobox', { name: 'Reopen moves from' })).toHaveValue(
+      'approved',
     );
-    expect(within(returning).getByRole('combobox', { name: 'Return moves to' })).toHaveValue(
+    expect(within(reopening).getByRole('combobox', { name: 'Reopen moves to' })).toHaveValue(
       'draft',
     );
-    expect(within(returning).getByRole('combobox', { name: 'Return needs' })).toHaveValue(
-      'approve',
-    );
+    expect(within(reopening).getByRole('combobox', { name: 'Reopen needs' })).toHaveValue('edit');
     expect(
-      within(returning).getByRole('checkbox', { name: 'Return asks for a reason' }),
+      within(reopening).getByRole('checkbox', { name: 'Reopen asks for a reason' }),
     ).toBeChecked();
   });
 
@@ -157,6 +155,52 @@ describe("Administration's Workflows", () => {
         within(region).getByText('Version 2, saved by Ivy on 14 Oct 2026'),
       ).toBeInTheDocument(),
     );
+  });
+
+  it('LIF-003 LIF-009 LIF-010 LIF-052 makes a transition a gate, saving its approvers, its author rule and where a rejection returns', async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    await within(await screen.findByRole('region', { name: 'Components' })).findByRole('table', {
+      name: 'Component transitions',
+    });
+    const region = components();
+    // Approve is the seed's gate; Reopen becomes one.
+    expect(within(region).getByRole('checkbox', { name: 'Approve is a gate' })).toBeChecked();
+    await userEvent.click(within(region).getByRole('checkbox', { name: 'Reopen is a gate' }));
+    await userEvent.selectOptions(
+      within(region).getByRole('combobox', { name: 'Approvers Reopen needs' }),
+      '2',
+    );
+    await userEvent.click(
+      within(region).getByRole('checkbox', { name: 'Reopen refuses its authors' }),
+    );
+    const rejected = within(region).getByRole('textbox', { name: 'Rejecting Reopen is called' });
+    await userEvent.clear(rejected);
+    await userEvent.type(rejected, 'Keep');
+    await userEvent.selectOptions(
+      within(region).getByRole('combobox', { name: 'Rejecting Reopen returns to' }),
+      'approved',
+    );
+    await userEvent.click(within(region).getByRole('button', { name: 'Save as version 2' }));
+
+    expect(await within(region).findByText('Saved as version 2.')).toBeInTheDocument();
+    const saved = sent[0] as { transitions: { key: string }[] };
+    expect(saved.transitions.find((each) => each.key === 'reopen')).toEqual({
+      key: 'reopen',
+      name: 'Reopen',
+      from: 'approved',
+      to: 'draft',
+      permission: 'approve',
+      reasonRequired: true,
+      gate: {
+        approvals: 2,
+        notAuthor: false,
+        reject: { name: 'Keep', to: 'approved' },
+        designates: true,
+        baseline: false,
+        publication: 'none',
+      },
+    });
   });
 
   it('removes a state with the transitions to and from it, and says each problem the service finds', async () => {

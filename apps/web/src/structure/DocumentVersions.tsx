@@ -10,6 +10,7 @@ import {
   type RestoreRefusal,
 } from '../editor/restoreWords.js';
 import { VersionList, type ListedVersion } from '../editor/VersionList.js';
+import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from '../editor/VersionList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -143,6 +144,7 @@ export function DocumentVersions({
         opens
         {...(mayEdit ? { onRestore: (version: ListedVersion) => void preview(version) } : {})}
       />
+      <ApprovalsList client={client} kind="document" id={id} key={latest} />
       {restoring && label && (
         <section aria-label={label} className={styles['compared']}>
           <h3 className={styles['heading']}>{label}</h3>

@@ -1,9 +1,9 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { TransitionButtons, type Standing } from './Workflow.js';
+import { RevisionChip, TransitionButtons, type Standing } from './Workflow.js';
 
 const ID = '5d9c6b1e-2f3a-4b5c-8d7e-9f0a1b2c3d4e';
 
@@ -35,6 +35,27 @@ function service(answer: (body: unknown) => Response) {
   return { client: createApiClient({ baseUrl: 'http://dev.acme.test', fetch: fetching }), sent };
 }
 
+const VERSION = '7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5';
+
+/** In review at a gate of two, one approval in. */
+const AT_GATE: Standing = {
+  state: { key: 'in_review', name: 'In review', approved: false },
+  transitions: [],
+  gates: [
+    {
+      key: 'approve',
+      name: 'Approve',
+      to: { key: 'approved', name: 'Approved' },
+      reject: { name: 'Return', to: { key: 'draft', name: 'Draft' } },
+      count: 1,
+      required: 2,
+      approvedByCaller: false,
+      mayDecide: true,
+    },
+  ],
+  revision: null,
+};
+
 function place(client: ReturnType<typeof createApiClient>, standing = IN_REVIEW) {
   const said: string[] = [];
   const moved: Standing[] = [];
@@ -46,6 +67,7 @@ function place(client: ReturnType<typeof createApiClient>, standing = IN_REVIEW)
       id={ID}
       title="Dosing guide"
       standing={standing}
+      versionId={VERSION}
       onMoved={(now, words) => {
         moved.push(now);
         said.push(words);
@@ -77,7 +99,12 @@ describe('moving along a workflow transition (the WF1 plan, WF-F)', () => {
       },
     ]);
     expect(moved).toEqual([
-      { state: { key: 'approved', name: 'Approved', approved: true }, transitions: [] },
+      {
+        state: { key: 'approved', name: 'Approved', approved: true },
+        transitions: [],
+        gates: [],
+        revision: null,
+      },
     ]);
   });
 
@@ -137,5 +164,84 @@ describe('moving along a workflow transition (the WF1 plan, WF-F)', () => {
     const { client } = service(() => json(500, {}));
     place(client, { state: { key: 'draft', name: 'Draft', approved: false }, transitions: [] });
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('deciding a gate (the WF2 plan, WF2-L)', () => {
+  it('LIF-009 says how far a gate has got, and approves it against the version seen', async () => {
+    const { client, sent } = service(() =>
+      json(200, {
+        state: { key: 'approved', name: 'Approved', approved: true },
+        transitions: [],
+        gates: [],
+        revision: { number: 1, versionId: VERSION, at: '2026-10-14T12:00:00.000Z' },
+      }),
+    );
+    const { said } = place(client, AT_GATE);
+    expect(screen.getByText('1 of 2 approvals')).toBeInTheDocument();
+    expect(screen.getAllByRole('button').map((each) => each.textContent)).toEqual([
+      'Approve',
+      'Return',
+    ]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(said).toEqual(['Approved Dosing guide. It is now Approved.']));
+    expect(sent).toEqual([
+      {
+        path: `/v1/documents/${ID}/approvals`,
+        body: { transition: 'approve', version: VERSION, decision: 'approved' },
+      },
+    ]);
+  });
+
+  it('LIF-051 asks why before a rejection, and sends it as one', async () => {
+    const { client, sent } = service(() =>
+      json(200, {
+        state: { key: 'draft', name: 'Draft', approved: false },
+        transitions: [],
+        gates: [],
+        revision: null,
+      }),
+    );
+    const { said } = place(client, AT_GATE);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Return' }));
+    const dialog = screen.getByRole('dialog', { name: 'Return Dosing guide' });
+    expect(dialog).toHaveTextContent('It returns to Draft.');
+    await userEvent.type(screen.getByLabelText('Reason'), 'Name the dose.');
+    await userEvent.click(screen.getByRole('button', { name: 'Return to Draft' }));
+    await waitFor(() => expect(said).toEqual(['Moved Dosing guide to Draft.']));
+    expect(sent).toEqual([
+      {
+        path: `/v1/documents/${ID}/approvals`,
+        body: {
+          transition: 'approve',
+          version: VERSION,
+          decision: 'rejected',
+          reason: 'Name the dose.',
+        },
+      },
+    ]);
+  });
+
+  it('offers no second approval to whoever approved, and no decision to whoever may not', () => {
+    const { client } = service(() => json(500, {}));
+    const gate = AT_GATE.gates![0]!;
+    place(client, { ...AT_GATE, gates: [{ ...gate, approvedByCaller: true }] });
+    expect(screen.getByText('1 of 2 approvals, yours among them')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    cleanup();
+    place(client, { ...AT_GATE, gates: [{ ...gate, mayDecide: false }] });
+    expect(screen.getByText('1 of 2 approvals')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('VER-015 names a revision, and says nothing for revision 0', () => {
+    const { rerender } = render(<RevisionChip revision={null} />);
+    expect(screen.queryByText(/Revision/)).not.toBeInTheDocument();
+    rerender(
+      <RevisionChip revision={{ number: 2, versionId: VERSION, at: '2026-10-14T12:00:00.000Z' }} />,
+    );
+    expect(screen.getByText('Revision 2')).toBeInTheDocument();
   });
 });

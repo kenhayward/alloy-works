@@ -684,3 +684,11 @@
 .workflow .table input:not([type]) {
   width: 100%;
 }
+
+/* A gate's settings, inline in its transition's row (WF2-L). */
+.gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}

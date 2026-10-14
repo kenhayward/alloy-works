@@ -35,3 +35,17 @@
   justify-content: flex-end;
   gap: var(--space-8);
 }
+
+/* A gate's progress and its decisions, in a header's row (the WF2 plan, WF2-L). */
+.gate {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* Who decided at its gates, beside the versions (WF2-L). */
+.approvals {
+  margin: var(--space-8) 0 0;
+  padding-left: var(--space-16);
+  color: var(--muted);
+}
