@@ -24,7 +24,7 @@ const row = (id: string, title: string, version: string) => ({
 });
 
 describe('the space pane', () => {
-  it('LIF-005 lists the components of the space with their states, marking the one open', async () => {
+  it('lists the components of the space with their states, marking the one open', async () => {
     const asked: URL[] = [];
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);

@@ -177,7 +177,7 @@ describe('the documents list', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('LIF-005 shows each document’s workflow state as its lozenge', async () => {
+  it('shows each document’s workflow state as its lozenge', async () => {
     render(<DocumentList client={listed()} onOpen={vi.fn()} />);
     const link = await screen.findByRole('link', { name: 'Operator manual' });
     expect(within(link.closest('tr')!).getByText('Approved')).toHaveAttribute(

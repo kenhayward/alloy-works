@@ -45,7 +45,7 @@ const sentTo = (fake: ReturnType<typeof service>, path: string) =>
   fake.sent.filter((each) => each.url === path).map((each) => each.body);
 
 describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
-  it('LIF-005 shows the document’s state beside Archived, and moves it by a transition from the header', async () => {
+  it('shows the document’s state beside Archived, and moves it by a transition from the header', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), { moves: { submit: IN_REVIEW } });
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
@@ -102,7 +102,7 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     expect(screen.queryByText(/Saving starts a new draft/)).toBeNull();
   });
 
-  it('LIF-005 follows the state the document’s stream says it moved to', async () => {
+  it('follows the state the document’s stream says it moved to', async () => {
     const fake = service(outline([section(METHOD, 'Method')]));
     const streams: FollowOptions[] = [];
     render(
@@ -131,7 +131,7 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
   });
 
-  it('LIF-005 shows a placed component’s state in the Part panel, and none for one the reader may not read', async () => {
+  it('shows a placed component’s state in the Part panel, and none for one the reader may not read', async () => {
     const placed = outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]);
     const readable = service(placed, {
       components: {
@@ -156,7 +156,7 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     expect(within(part()).queryByText('State')).toBeNull();
   });
 
-  it('LIF-005 shows the state of the component Add component would place', async () => {
+  it('shows the state of the component Add component would place', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), {
       components: {
         ...COMPONENTS,

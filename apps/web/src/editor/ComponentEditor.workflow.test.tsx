@@ -21,7 +21,7 @@ const SUBMIT = {
 const header = () => screen.getByRole('group', { name: 'Component header' });
 
 describe('workflow on a component’s own page (the WF1 plan, WF-G)', () => {
-  it('LIF-005 shows the component’s state in its header, and moves it by a transition offered there', async () => {
+  it('shows the component’s state in its header, and moves it by a transition offered there', async () => {
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened({ state: DRAFT, transitions: [SUBMIT] })),
       'POST /v1/components/{id}/transitions': () =>
@@ -60,7 +60,7 @@ describe('workflow on a component’s own page (the WF1 plan, WF-G)', () => {
     expect(screen.queryByText(/Saving starts a new draft/)).not.toBeInTheDocument();
   });
 
-  it('LIF-005 follows the state its stream says it moved to, reading what the reader may take again', async () => {
+  it('follows the state its stream says it moved to, reading what the reader may take again', async () => {
     const streams: FollowOptions[] = [];
     let view = opened({ state: DRAFT, transitions: [SUBMIT] });
     const { surface } = open({ 'GET /v1/components/{id}': () => json(200, view) }, quick, false, {

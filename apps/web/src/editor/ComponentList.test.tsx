@@ -336,7 +336,7 @@ describe('the components list', () => {
     expect(cells[5]).toHaveTextContent('You');
   });
 
-  it('LIF-005 shows each component’s workflow state as its lozenge', async () => {
+  it('shows each component’s workflow state as its lozenge', async () => {
     const { client } = service();
     render(<ComponentList client={client} principalId="p9" />);
     const link = await screen.findByRole('link', { name: 'Replace the toner' });

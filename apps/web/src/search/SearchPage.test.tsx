@@ -325,7 +325,7 @@ describe('the search page, over earlier versions and baselines', () => {
     expect(scoped).toHaveBeenCalledWith({ versions: 'latest', baseline: null });
   });
 
-  it('LIF-005 SCH-060 shows each result’s workflow state, and narrows by state', async () => {
+  it('SCH-060 shows each result’s workflow state, and narrows by state', async () => {
     const { client, asked } = service(() => json(200, results));
     render(<SearchPage client={client} query="lever" onSearch={vi.fn()} />);
     const guide = await screen.findByRole('link', { name: 'Lever guide' });

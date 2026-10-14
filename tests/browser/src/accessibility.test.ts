@@ -486,6 +486,15 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
             ),
         ],
       });
+      // Each kind's workflow, its states and transitions edited in place (the WF1 plan, WF-J).
+      await sections.getByRole('link', { name: /^Workflows/ }).click();
+      await check('Administration, Workflows', {
+        shows: [
+          heading('Workflows', 1),
+          administration.getByRole('table', { name: 'Component states' }).getByRole('row').first(),
+          administration.getByRole('table', { name: 'Document transitions' }),
+        ],
+      });
       // Erasing a person asks first, saying what goes and what stays (the ER plan, ER-F): opened on
       // Grace and closed, so nobody the suites share is erased.
       await sections.getByRole('link', { name: /^People/ }).click();
@@ -835,6 +844,34 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const notSaved = page.getByText('Not saved', { exact: true });
       await notSaved.waitFor({ timeout: 30_000 });
       await checkAxe(page, 'a save that failed', task.meta, { shows: notSaved });
+    });
+  });
+
+  it('LIF-061 passes axe on a document’s workflow state, its transitions and the reason Return asks for', async ({
+    task,
+  }) => {
+    const document = await makeDocument(api(), 'Workflow', ['Introduction']);
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      const chip = (name: string) => page.locator('[data-kind]', { hasText: name }).first();
+      await page.goto(`${SERVICE}/#/documents/${document.id}`);
+      await check('a document in Draft, Submit offered', {
+        shows: [chip('Draft'), page.getByRole('button', { name: 'Submit', exact: true })],
+      });
+      await page.getByRole('button', { name: 'Submit', exact: true }).click();
+      await check('a document in review, Return and Approve offered', {
+        shows: [chip('In review'), page.getByRole('button', { name: 'Return', exact: true })],
+      });
+      await page.getByRole('button', { name: 'Return', exact: true }).click();
+      const asking = page.getByRole('dialog', { name: /^Return / });
+      await check('the reason Return asks for', {
+        shows: [asking.getByRole('heading', { name: /^Return / }), asking.getByLabel('Reason')],
+      });
+      await asking.getByRole('button', { name: 'Cancel' }).click();
+      await leave(page.getByRole('dialog'));
     });
   });
 

@@ -55,7 +55,7 @@ describe('the states kit', () => {
     expect(screen.getByText('Never published')).toHaveAttribute('data-tone', 'neutral');
   });
 
-  it('LIF-005 draws a workflow state by its name, in the tone the seed’s state means', () => {
+  it('draws a workflow state by its name, in the tone the seed’s state means', () => {
     render(
       <>
         <StateLozenge state={{ key: 'draft', name: 'Draft' }} />
