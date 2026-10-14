@@ -7574,9 +7574,27 @@
       "area": "LIF",
       "statement": "The audit log must also record a workflow transition, an approval and a signature, each as an event type of its own (LIF-067)",
       "tranche": "T9",
-      "status": "Specified",
+      "status": "Superseded by LIF-075",
       "document": "LIF-lifecycle-workflow-and-audit.md",
       "line": 197
+    },
+    {
+      "id": "LIF-075",
+      "area": "LIF",
+      "statement": "The audit log must also record a workflow transition and an approval, each as an event type of its own (LIF-067)",
+      "tranche": "T9",
+      "status": "Specified",
+      "document": "LIF-lifecycle-workflow-and-audit.md",
+      "line": 198
+    },
+    {
+      "id": "LIF-076",
+      "area": "LIF",
+      "statement": "The audit log must also record a signature as an event type of its own (LIF-067)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "LIF-lifecycle-workflow-and-audit.md",
+      "line": 199
     },
     {
       "id": "LIF-027",
@@ -7585,7 +7603,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 198
+      "line": 200
     },
     {
       "id": "LIF-028",
@@ -7594,7 +7612,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 199
+      "line": 201
     },
     {
       "id": "LIF-029",
@@ -7603,7 +7621,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 200
+      "line": 202
     },
     {
       "id": "LIF-030",
@@ -7612,7 +7630,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 201
+      "line": 203
     },
     {
       "id": "LIF-031",
@@ -7621,7 +7639,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 202
+      "line": 204
     },
     {
       "id": "LIF-032",
@@ -7630,7 +7648,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 203
+      "line": 205
     },
     {
       "id": "LIF-055",
@@ -7639,7 +7657,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 204
+      "line": 206
     },
     {
       "id": "LIF-056",
@@ -7648,7 +7666,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 205
+      "line": 207
     },
     {
       "id": "LIF-057",
@@ -7657,7 +7675,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-073",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 206
+      "line": 208
     },
     {
       "id": "LIF-073",
@@ -7666,7 +7684,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 207
+      "line": 209
     },
     {
       "id": "LIF-074",
@@ -7675,7 +7693,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 208
+      "line": 210
     },
     {
       "id": "LIF-062",
@@ -7684,7 +7702,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 209
+      "line": 211
     },
     {
       "id": "LIF-063",
@@ -7693,7 +7711,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 210
+      "line": 212
     },
     {
       "id": "LIF-064",
@@ -7702,7 +7720,7 @@
       "tranche": "T3",
       "status": "Superseded by LIF-069",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 211
+      "line": 213
     },
     {
       "id": "LIF-069",
@@ -7711,7 +7729,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 212
+      "line": 214
     },
     {
       "id": "LIF-070",
@@ -7720,7 +7738,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 213
+      "line": 215
     },
     {
       "id": "LIF-071",
@@ -7729,7 +7747,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 214
+      "line": 216
     },
     {
       "id": "LIF-072",
@@ -7738,16 +7756,16 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 215
+      "line": 217
     },
     {
       "id": "LIF-065",
       "area": "LIF",
       "statement": "A gate must be able to require that a document's profile is complete - every axis its conditional content depends on explicitly set (**REU-053**) - before it is issued",
-      "tranche": "T9",
+      "tranche": "T4",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 216
+      "line": 218
     },
     {
       "id": "LIF-066",
@@ -7756,7 +7774,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 217
+      "line": 219
     },
     {
       "id": "LIF-033",
@@ -7765,7 +7783,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 247
+      "line": 249
     },
     {
       "id": "LIF-034",
@@ -7774,7 +7792,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 248
+      "line": 250
     },
     {
       "id": "LIF-035",
@@ -7783,7 +7801,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 249
+      "line": 251
     },
     {
       "id": "LOC-001",
@@ -10084,7 +10102,7 @@
       "id": "REU-050",
       "area": "REU",
       "statement": "Each reference must independently take one of three modes, and which it takes must be visible: **pinned** to a version or revision, **floating at latest**, or **tracking the latest approved revision** (**LIF-038**)",
-      "tranche": "T4",
+      "tranche": "T9",
       "status": "Specified",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
       "line": 45
@@ -14616,37 +14634,37 @@
       "id": "LIF-N01",
       "statement": "**Not an electronic signature provider.** The product records an attested act; a qualified signature is somebody else's business",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 258
+      "line": 260
     },
     {
       "id": "LIF-N02",
       "statement": "**No editing or deletion of audit entries**, by anybody, including an administrator",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 259
+      "line": 261
     },
     {
       "id": "LIF-N03",
       "statement": "**No workflow scripting.** Transitions are declared, not programmed; an escape hatch here becomes an unauditable path",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 260
+      "line": 262
     },
     {
       "id": "LIF-N04",
       "statement": "**Not a records management system** for anything other than this product's own content",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 261
+      "line": 263
     },
     {
       "id": "LIF-N05",
       "statement": "**No branching by copying.** A divergent line (LIF-044) is a declared relationship between revisions of one artifact, never a duplicate artifact somebody keeps in step by hand",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 262
+      "line": 264
     },
     {
       "id": "LIF-N06",
       "statement": "**Not a version control system.** Divergence here is a regulated fact - two revisions effective in two places - not a development workflow. Nothing rebases, cherry-picks, replays or rewrites history",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 263
+      "line": 265
     },
     {
       "id": "LOC-N01",
@@ -15480,49 +15498,49 @@
       "question": "**Which regimes are targeted first?** 21 CFR Part 11, SOX and GxP overlap but differ in what they require of a signature and a record",
       "settledBy": "The first customer. It decides how much of section 4 is needed at once",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 269
+      "line": 271
     },
     {
       "id": "LIF-Q02",
       "question": "**Is the audit log write-once at the storage layer, or only by policy?** LIF-025 says impossible through any product surface, which is weaker than immutable",
       "settledBy": "The storage decision, and whether an auditor will accept application-enforced immutability",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 270
+      "line": 272
     },
     {
       "id": "LIF-Q03",
       "question": "**How does erasure of personal data work against LIF-025 (see VER-038)?**",
       "settledBy": "One design decision covering both, taken with legal input",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 271
+      "line": 273
     },
     {
       "id": "LIF-Q04",
       "question": "**Do components have their own lifecycle, or only documents?** A component approved once and reused in forty reports is attractive and hard",
       "settledBy": "**Settled: yes, and it is not optional.** Customers were unambiguous - an approved component carries value on its own and stays approved while the document around it is still being polished. Section 5, LIF-036 to LIF-041, with \"latest approved\" as a third reference mode",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 272
+      "line": 274
     },
     {
       "id": "LIF-Q05",
       "question": "**How far does bringing a divergent line back go (LIF-045)?** Choosing a side is simple and loses work; reconciling two changed revisions is a three-way merge of content, which is a large piece of work",
       "settledBy": "The first customer who diverges and then converges. Until then LIF-045 requires comparison, an explicit act and a record of what was left behind, which is the part that cannot be added later",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 273
+      "line": 275
     },
     {
       "id": "LIF-Q06",
       "question": "**What happens by default when a review date passes and nobody acts (LIF-059)?** A state change is safe and disruptive; a flag is gentle and ignorable",
-      "settledBy": "House procedure at the first regulated customer. LIF-059 makes it declarable either way, so this decides the default rather than the capability",
+      "settledBy": "**Answered (ADR-0061): visibility alone** by default; LIF-059 lets a workflow definition declare a state change or an escalation instead",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 274
+      "line": 276
     },
     {
       "id": "LIF-Q07",
       "question": "**Is the scope a revision is effective for (LIF-042) the same axis as a profiling condition (**REU**)?** A plant and a market look like conditions, and effectiveness is a property of a revision rather than of content",
       "settledBy": "A decision with **REU**. Sharing the axis makes one vocabulary; separating them stops a content filter deciding what is legally in force",
       "document": "LIF-lifecycle-workflow-and-audit.md",
-      "line": 275
+      "line": 277
     },
     {
       "id": "LOC-Q01",

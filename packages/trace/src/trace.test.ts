@@ -94,7 +94,7 @@ describe('the committed trace.json', () => {
     // 1581, from 1555 (2026-10-13): the T3 audit - 26 rows split from LIF-026, LIF-057, LIF-064, API-014, CNT-005,
     // COL-027, COL-056, DAT-013, DAT-061, SCH-038, STR-033 and VER-021, which they supersede.
     // 1582, from 1581 (2026-10-13): SCH-073, superseding SCH-034 (the SV3 plan, SV3-F).
-    expect(model.requirements).toHaveLength(1582);
+    expect(model.requirements).toHaveLength(1584);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
