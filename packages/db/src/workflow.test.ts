@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
   SEED_WORKFLOW,
+  SEED_WORKFLOW_1,
   type BlockNode,
   type ContentDocument,
   type OutlineDocument,
@@ -47,6 +48,9 @@ const para = (id: string, value: string): BlockNode => ({
   style: 'body',
   content: words(value),
 });
+/** WF1's workflow, without a gate: what these tests move under, as version 3 of each kind. */
+const PLAIN = SEED_WORKFLOW_1;
+
 const base = { numbered: true, matter: 'body' as const, pageBreak: 'none' as const, values: {} };
 
 function resultsOf(answer: SearchAnswer | 'baseline_not_found' | undefined) {
@@ -174,6 +178,9 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
         ).id;
       ada = await person('Ada');
       grace = await person('Grace');
+      for (const kind of ['component', 'document'] as const) {
+        await defineWorkflow(trx, { kind, body: PLAIN, by: ada });
+      }
       for (const who of [ada, grace]) {
         await grant(trx, {
           roleId: (await findRole(trx, 'Author'))!.id,
@@ -191,19 +198,21 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     await db?.drop();
   });
 
-  it('LIF-001 LIF-002 seeds every tenant with version 1 for each kind: draft, in review, approved', async () => {
-    for (const each of [tenant, other]) {
-      const definitions = await service.withTenant(each, (trx) => listWorkflows(trx));
-      expect(
-        definitions.map((summary) => [summary.definition.kind, summary.definition.version]),
-      ).toEqual([
-        ['component', 1],
-        ['document', 1],
-      ]);
-      for (const summary of definitions) {
-        expect(summary.definition.body).toEqual(SEED_WORKFLOW);
-        expect(summary.definition.by).toBeNull();
-      }
+  it("LIF-001 LIF-002 LIF-054 seeds every tenant with each kind's workflow: version 1, and version 2 with its gate", async () => {
+    const definitions = await service.withTenant(other, (trx) => listWorkflows(trx));
+    expect(
+      definitions.map((summary) => [summary.definition.kind, summary.definition.version]),
+    ).toEqual([
+      ['component', 2],
+      ['document', 2],
+    ]);
+    for (const summary of definitions) {
+      expect(summary.definition.body).toEqual(SEED_WORKFLOW);
+      expect(summary.definition.by).toBeNull();
+      const first = await service.withTenant(other, (trx) =>
+        workflowVersion(trx, summary.definition.kind, 1),
+      );
+      expect(first?.body).toEqual(SEED_WORKFLOW_1);
     }
   });
 
@@ -213,7 +222,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       expect(standing).toMatchObject({
         kind: made.kind,
         state: { key: 'draft', name: 'Draft', approved: false },
-        definition: { version: 1 },
+        definition: { version: 3 },
       });
       const rows = await as((trx) =>
         trx
@@ -224,7 +233,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
           .execute(),
       );
       expect(rows).toEqual([
-        { transition: null, from_state: null, to_state: 'draft', by: ada, version_no: 1 },
+        { transition: null, from_state: null, to_state: 'draft', by: ada, version_no: 3 },
       ]);
     }
   });
@@ -284,7 +293,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
         transition: 'submit',
         from: 'draft',
         to: 'in_review',
-        definition: 1,
+        definition: 3,
         reason: false,
       },
       {
@@ -292,7 +301,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
         transition: 'return',
         from: 'in_review',
         to: 'draft',
-        definition: 1,
+        definition: 3,
         reason: true,
       },
     ]);
@@ -330,7 +339,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     const kept = await component('Kept in review');
     await move(kept, 'submit', 'draft');
     const tightened: WorkflowBody = {
-      states: SEED_WORKFLOW.states.filter((each) => each.key !== 'in_review'),
+      states: PLAIN.states.filter((each) => each.key !== 'in_review'),
       transitions: [
         {
           key: 'submit',
@@ -353,7 +362,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     const defined = await as((trx) =>
       defineWorkflow(trx, { kind: 'component', body: tightened, by: ada }),
     );
-    expect(defined).toMatchObject({ answer: 'defined', definition: { version: 2 } });
+    expect(defined).toMatchObject({ answer: 'defined', definition: { version: 4 } });
     try {
       // A draft's submit now needs approve, at once.
       const fresh = await component('Fresh draft');
@@ -363,25 +372,25 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       });
       expect(await move(fresh, 'submit', 'draft')).toMatchObject({
         answer: 'moved',
-        standing: { state: { key: 'approved' }, definition: { version: 2 } },
+        standing: { state: { key: 'approved' }, definition: { version: 4 } },
       });
       // In review, which version 2 dropped: kept, and moved under version 1.
       expect(await as((trx) => workflowStanding(trx, kept.artifactId))).toMatchObject({
         state: { key: 'in_review', name: 'In review' },
-        definition: { version: 1 },
+        definition: { version: 3 },
       });
       expect(await move(kept, 'approve', 'in_review')).toMatchObject({ answer: 'moved' });
-      expect((await moves(kept.artifactId)).at(-1)).toMatchObject({ definition: 1 });
+      expect((await moves(kept.artifactId)).at(-1)).toMatchObject({ definition: 3 });
       expect(await as((trx) => workflowVersion(trx, 'component', 1))).toMatchObject({
-        body: SEED_WORKFLOW,
+        body: PLAIN,
       });
-      expect(await as((trx) => workflowVersion(trx, 'component', 3))).toBeUndefined();
+      expect(await as((trx) => workflowVersion(trx, 'component', 5))).toBeUndefined();
       // The same body again changes nothing.
       expect(
         await as((trx) => defineWorkflow(trx, { kind: 'component', body: tightened, by: ada })),
-      ).toMatchObject({ answer: 'unchanged', definition: { version: 2 } });
+      ).toMatchObject({ answer: 'unchanged', definition: { version: 4 } });
     } finally {
-      await as((trx) => defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada }));
+      await as((trx) => defineWorkflow(trx, { kind: 'component', body: PLAIN, by: ada }));
     }
   });
 
@@ -391,8 +400,8 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       defineWorkflow(trx, {
         kind: 'document',
         body: {
-          states: [...SEED_WORKFLOW.states, { key: 'lost', name: 'Lost' }],
-          transitions: SEED_WORKFLOW.transitions,
+          states: [...PLAIN.states, { key: 'lost', name: 'Lost' }],
+          transitions: PLAIN.transitions,
         },
         by: ada,
       }),
@@ -404,8 +413,8 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
   it('saves two definitions at once as two versions, each audited', async () => {
     const before = (await as((trx) => newestDefinition(trx, 'document'))).version;
     const renamed = (name: string): WorkflowBody => ({
-      ...SEED_WORKFLOW,
-      states: SEED_WORKFLOW.states.map((each) => (each.key === 'draft' ? { ...each, name } : each)),
+      ...PLAIN,
+      states: PLAIN.states.map((each) => (each.key === 'draft' ? { ...each, name } : each)),
     });
     const saved = await Promise.all(
       ['Working', 'Writing'].map((name) =>
@@ -425,14 +434,14 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       { kind: 'document', version: before + 1 },
       { kind: 'document', version: before + 2 },
     ]);
-    await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
+    await as((trx) => defineWorkflow(trx, { kind: 'document', body: PLAIN, by: ada }));
   });
 
   it('refuses a save based on a version another has since replaced, saving nothing', async () => {
     const before = (await as((trx) => newestDefinition(trx, 'component'))).version;
     const renamed: WorkflowBody = {
-      ...SEED_WORKFLOW,
-      states: SEED_WORKFLOW.states.map((each) =>
+      ...PLAIN,
+      states: PLAIN.states.map((each) =>
         each.key === 'draft' ? { ...each, name: 'Working' } : each,
       ),
     };
@@ -441,11 +450,11 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     );
     expect(saved).toMatchObject({ answer: 'defined', definition: { version: before + 1 } });
     const behind = await as((trx) =>
-      defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada, basedOn: before }),
+      defineWorkflow(trx, { kind: 'component', body: PLAIN, by: ada, basedOn: before }),
     );
     expect(behind).toEqual({ answer: 'behind', version: before + 1 });
     expect((await as((trx) => newestDefinition(trx, 'component'))).version).toBe(before + 1);
-    await as((trx) => defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada }));
+    await as((trx) => defineWorkflow(trx, { kind: 'component', body: PLAIN, by: ada }));
   });
 
   it('never moves a component under the document workflow', async () => {
@@ -627,8 +636,8 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       await move(placed, 'submit', 'draft');
       await move(made, 'submit', 'draft');
       const checking: WorkflowBody = {
-        ...SEED_WORKFLOW,
-        states: SEED_WORKFLOW.states.map((each) =>
+        ...PLAIN,
+        states: PLAIN.states.map((each) =>
           each.key === 'in_review' ? { ...each, name: 'Checking' } : each,
         ),
       };
@@ -642,7 +651,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
           { value: 'in_review', label: 'In review or Checking', count: 2, capped: false },
         ]);
       } finally {
-        await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
+        await as((trx) => defineWorkflow(trx, { kind: 'document', body: PLAIN, by: ada }));
       }
     });
 

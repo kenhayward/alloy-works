@@ -138,10 +138,11 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `retention.changed`                                                     | a keep set or cleared ([lifecycle.md](lifecycle.md)), `{ kind, space, days }`                                                              | LIF-019, LIF-067 |
 | `workflow.transitioned`                                                 | a move ([workflow.md](workflow.md)), `{ kind, transition, from, to, definition, reason, approved? }`, whether a reason was given, never it | LIF-075, LIF-061 |
 | `workflow.defined`                                                      | a kind's workflow saved as a version ([workflow.md](workflow.md)), `{ kind, version }`                                                     | LIF-007, LIF-067 |
+| `approval.given`                                                        | an approval at a gate ([workflow.md](workflow.md)), `{ kind, transition, count, required }`, the version approved its subject's            | LIF-075, LIF-008 |
+| `gate.rejected`                                                         | a gate refused by an approver, `{ kind, transition, to }`; the reason on the approval's row, never here (LIF-053: never `access.refused`)  | LIF-074, LIF-051 |
+| `revision.designated`                                                   | a revision designated as a gate passed, `{ kind, transition, revision }`                                                                   | LIF-013, VER-014 |
 
-**Declared now, emitted by the design that builds the act:** `approval.given`, `approval.rejected`, `gate.rejected` (LIF-053: never `access.refused`),
-`revision.designated`,
-`baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
+**Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`
 (TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`, and those the AU1 review
 added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,

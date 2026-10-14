@@ -562,6 +562,38 @@ export interface WorkflowTransitionTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** One approval or rejection at a gate, inserted and never changed (0096; WF2-C). */
+export interface WorkflowApprovalTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  /** The move into the gate's from-state that began the round it counts in. */
+  round: string;
+  version_id: string;
+  definition_id: string;
+  transition: string;
+  decision: 'approved' | 'rejected';
+  /** A rejection's alone. */
+  reason: string | null;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A revision: a version designated as a gate passed, inserted and never changed (0096; WF2-F). */
+export interface RevisionDesignationTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  version_id: string;
+  revision_no: number;
+  definition_id: string;
+  transition: string;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
@@ -855,6 +887,8 @@ export interface TenantTables {
   retention_keep: RetentionKeepTable;
   workflow_definition: WorkflowDefinitionTable;
   workflow_transition: WorkflowTransitionTable;
+  workflow_approval: WorkflowApprovalTable;
+  revision_designation: RevisionDesignationTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

@@ -326,11 +326,39 @@ export const auditKindSpecs = {
     z.strictObject({ kind: z.enum(['component', 'document']), version: z.int().positive() }),
     'packages/db/src/workflow.ts',
   ),
-  // Declared now, emitted by the design that builds the act, which gives its detail a shape.
-  'approval.given': kind(['LIF-075'], empty, LATER),
-  'approval.rejected': kind(['LIF-075', 'LIF-053'], empty, LATER),
-  'gate.rejected': kind(['LIF-053', 'LIF-074'], empty, LATER),
-  'revision.designated': kind(['LIF-013', 'VER-014'], empty, LATER),
+  // An approval at a gate, counted towards its passing (the WF2 plan, WF2-C, WF2-G): about the
+  // artifact, the version approved its subject's.
+  'approval.given': kind(
+    ['LIF-075', 'LIF-008'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      transition: AuditName,
+      count: z.int().positive(),
+      required: z.int().positive(),
+    }),
+    'packages/db/src/workflow-gates.ts',
+  ),
+  // A gate refused by an approver, the artifact returned (WF2-E): its own event, never a refusal of
+  // access (LIF-053). The reason is kept on the approval's row, as a move's is.
+  'gate.rejected': kind(
+    ['LIF-074', 'LIF-053', 'LIF-051'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      transition: AuditName,
+      to: AuditName,
+    }),
+    'packages/db/src/workflow-gates.ts',
+  ),
+  // A revision designated as a gate passed (WF2-F): about the version designated.
+  'revision.designated': kind(
+    ['LIF-013', 'VER-014'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      transition: AuditName,
+      revision: z.int().positive(),
+    }),
+    'packages/db/src/workflow-gates.ts',
+  ),
   // A baseline made, and one superseded by a later one (the BL plan): about the document version it
   // pins, the subject; its name is the document's content, never the log's.
   'baseline.made': kind(

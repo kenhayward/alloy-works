@@ -46,6 +46,52 @@ export async function workflowStored(trx: TenantTransaction): Promise<boolean> {
   return present;
 }
 
+const gatesKnown = new WeakMap<TenantTransaction, boolean>();
+
+/** Whether this tenant stores approvals and revisions yet (0096), for older schemas likewise. */
+export async function gatesStored(trx: TenantTransaction): Promise<boolean> {
+  const known = gatesKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('revision_designation') is not null as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  gatesKnown.set(trx, present);
+  return present;
+}
+
+/** An artifact's latest revision: its number, the version designated, and when. */
+export interface Revision {
+  readonly number: number;
+  readonly versionId: string;
+  readonly at: Date;
+}
+
+/** An artifact's latest revision, or null where none was ever designated (revision 0, VER-015). */
+export async function latestRevision(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<Revision | null> {
+  if (!(await gatesStored(trx))) return null;
+  const row = await trx
+    .selectFrom('revision_designation')
+    .select(['revision_no', 'version_id', 'at'])
+    .where('artifact_id', '=', artifactId)
+    .orderBy('revision_no', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return row ? { number: row.revision_no, versionId: row.version_id, at: row.at } : null;
+}
+
+/** How far a gate from the artifact's state has got this round, on its current version (WF2-C). */
+export interface GateProgress {
+  readonly transition: string;
+  readonly count: number;
+  readonly required: number;
+  /** Who approved it this round, on the current version. */
+  readonly approvedBy: readonly string[];
+}
+
 /** One version of a kind's definition. */
 export interface WorkflowDefinition {
   readonly id: string;
@@ -174,7 +220,7 @@ export async function defineWorkflow(
     readonly basedOn?: number;
   },
 ): Promise<DefineAnswer> {
-  const parsed = parseWorkflowBody(input.body);
+  const parsed = parseWorkflowBody(input.body, input.kind);
   if (!parsed.ok) return { answer: 'invalid', problems: parsed.problems };
   await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:workflow:${input.kind}`} || current_schema(), 0))`.execute(
     trx,
@@ -215,6 +261,57 @@ export interface WorkflowStanding {
   readonly transitions: readonly WorkflowTransition[];
   /** The version current at its latest move; null for one made since and never moved. */
   readonly version: string | null;
+  /** The move that put it in its state: a gate's round began there (WF2-C). */
+  readonly round: string;
+  /** Its latest revision, or null for revision 0 (WF2-F). */
+  readonly revision: Revision | null;
+  /** Each gate from its state, and how far it has got. */
+  readonly gates: readonly GateProgress[];
+}
+
+/** The id of an artifact's latest version: what a move, an approval and a designation name. */
+export async function latestVersionId(trx: TenantTransaction, artifactId: string): Promise<string> {
+  const latest = await trx
+    .selectFrom('artifact_version')
+    .select('id')
+    .where('artifact_id', '=', artifactId)
+    .orderBy('revision_no', 'desc')
+    .orderBy('version_no', 'desc')
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  return latest.id;
+}
+
+/** Each gate's approvals this round on the current version; none before 0096. */
+async function gateProgress(
+  trx: TenantTransaction,
+  artifactId: string,
+  round: string,
+  transitions: readonly WorkflowTransition[],
+): Promise<GateProgress[]> {
+  const gates = transitions.filter((each) => each.gate !== undefined);
+  if (gates.length === 0) return [];
+  const approvals = (await gatesStored(trx))
+    ? await trx
+        .selectFrom('workflow_approval')
+        .select(['transition', 'by'])
+        .where('round', '=', round)
+        .where('decision', '=', 'approved')
+        .where('version_id', '=', await latestVersionId(trx, artifactId))
+        .orderBy('id')
+        .execute()
+    : [];
+  return gates.map((each) => {
+    const approvedBy = [
+      ...new Set(approvals.filter((row) => row.transition === each.key).map((row) => row.by)),
+    ];
+    return {
+      transition: each.key,
+      count: approvedBy.length,
+      required: each.gate!.approvals,
+      approvedBy,
+    };
+  });
 }
 
 /** An artifact's state's key now, read alone: what indexing writes. */
@@ -240,7 +337,7 @@ export async function workflowStanding(
   if (!UUID.test(artifactId) || !(await workflowStored(trx))) return undefined;
   const row = await trx
     .selectFrom('workflow_transition')
-    .select(['kind', 'to_state', 'definition_id', 'version_id'])
+    .select(['id', 'kind', 'to_state', 'definition_id', 'version_id'])
     .where('artifact_id', '=', artifactId)
     .orderBy('id', 'desc')
     .limit(1)
@@ -253,6 +350,7 @@ export async function workflowStanding(
     row.to_state,
   );
   const state = definition.body.states.find((each) => each.key === row.to_state);
+  const transitions = transitionsFrom(definition.body, row.to_state);
   return {
     kind: row.kind,
     state: {
@@ -261,8 +359,11 @@ export async function workflowStanding(
       approved: state?.approved ?? false,
     },
     definition,
-    transitions: transitionsFrom(definition.body, row.to_state),
+    transitions,
     version: row.version_id,
+    round: String(row.id),
+    revision: await latestRevision(trx, artifactId),
+    gates: await gateProgress(trx, artifactId, String(row.id), transitions),
   };
 }
 
@@ -359,7 +460,7 @@ export async function startWorkflow(
 }
 
 /** Writes a move's row, search's copy, the audit event and the stream's word of it. */
-async function moved(
+export async function moved(
   trx: TenantTransaction,
   standing: WorkflowStanding,
   move: {
@@ -437,13 +538,14 @@ export type MoveAnswer =
   | { readonly answer: 'moved'; readonly standing: WorkflowStanding }
   | { readonly answer: 'artifact.missing' }
   | { readonly answer: 'transition.unknown' }
+  | { readonly answer: 'transition.gated' }
   | { readonly answer: 'state.moved'; readonly standing: WorkflowStanding }
   | { readonly answer: 'artifact.archived' }
   | { readonly answer: 'permission.refused'; readonly permission: TransitionPermission }
   | { readonly answer: 'reason.required' | 'reason.invalid' };
 
 /** A reason as kept: trimmed, NFC, at most 2000 characters; none where it is empty. */
-const MAX_REASON = 2000;
+export const MAX_REASON = 2000;
 
 /**
  * Moves a component or a document along a transition (WF-F), under its lock: refused, by name, where it
@@ -473,6 +575,8 @@ export async function moveArtifact(
   if (standing.state.key !== input.from) return { answer: 'state.moved', standing };
   const transition = standing.transitions.find((each) => each.key === input.transition);
   if (!transition) return { answer: 'transition.unknown' };
+  // A gate passes by its approvals alone (WF2-C).
+  if (transition.gate !== undefined) return { answer: 'transition.gated' };
   if (await isArchived(trx, input.artifactId)) return { answer: 'artifact.archived' };
   if (!input.may(transition.permission)) {
     return { answer: 'permission.refused', permission: transition.permission };
@@ -480,17 +584,9 @@ export async function moveArtifact(
   const reason = input.reason?.normalize('NFC').trim() ?? '';
   if (reason.length > MAX_REASON) return { answer: 'reason.invalid' };
   if (transition.reasonRequired && reason === '') return { answer: 'reason.required' };
-  const latest = await trx
-    .selectFrom('artifact_version')
-    .select('id')
-    .where('artifact_id', '=', input.artifactId)
-    .orderBy('revision_no', 'desc')
-    .orderBy('version_no', 'desc')
-    .limit(1)
-    .executeTakeFirstOrThrow();
   await moved(trx, standing, {
     artifactId: input.artifactId,
-    version: latest.id,
+    version: await latestVersionId(trx, input.artifactId),
     transition: transition.key,
     to: transition.to,
     reason: reason === '' ? null : reason,

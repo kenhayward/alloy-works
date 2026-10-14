@@ -48,7 +48,7 @@ import { indexVersion } from './search.js';
 import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
-import { draftOnSave, startWorkflow } from './workflow.js';
+import { draftOnSave, latestRevision, startWorkflow } from './workflow.js';
 
 /** A version as the chain holds it. `content` is exactly what was written, never migrated. */
 /**
@@ -845,10 +845,18 @@ async function record(
   if (digests.versionDigest === latest) {
     return { answer: 'version.unchanged', current };
   }
+  // After a revision is designated, versions count again from 1 under its number (VER-009, WF2-F).
+  const revision = Math.max(
+    current.revision,
+    (await latestRevision(trx, input.artifactId))?.number ?? 0,
+  );
   const version = await insertVersion(
     trx,
     input.artifactId,
-    { revision: current.revision, version: current.version + 1 },
+    {
+      revision,
+      version: revision === current.revision ? current.version + 1 : 1,
+    },
     input,
     substance,
     current.id,

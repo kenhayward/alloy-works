@@ -108,9 +108,7 @@ describe('a workflow definition (workflow.md)', () => {
     expect(parseWorkflowBody(body(gate({ baseline: true })), 'document')).toMatchObject({
       ok: true,
     });
-    expect(
-      parseWorkflowBody(body(gate({ publication: 'required' })), 'document'),
-    ).toMatchObject({
+    expect(parseWorkflowBody(body(gate({ publication: 'required' })), 'document')).toMatchObject({
       ok: false,
       problems: [{ rule: 'gate_publication', path: 'transitions.0.gate.publication' }],
     });
