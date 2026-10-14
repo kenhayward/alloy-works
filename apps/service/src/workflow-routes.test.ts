@@ -158,6 +158,13 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       transitions: [],
     });
     expect(invalid.statusCode).toBe(400);
+    const behind = await call('POST', '/v1/workflows', 'ada', {
+      kind: 'document',
+      basedOn: 999,
+      ...SEED_WORKFLOW,
+    });
+    expect(behind.statusCode).toBe(409);
+    expect(behind.json()).toMatchObject({ code: 'workflow_behind' });
     expect(invalid.json()).toMatchObject({
       code: 'workflow_invalid',
       problems: [{ rule: 'initial_not_one', path: 'states' }],
@@ -202,7 +209,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const submitted = await move('components', id, 'ada', { transition: 'submit', from: 'draft' });
     expect(submitted.statusCode, submitted.body).toBe(200);
     expect(submitted.json<TransitionAnswer>()).toEqual({
-      state: { key: 'in_review', name: 'In review' },
+      state: { key: 'in_review', name: 'In review', approved: false },
       transitions: [],
     });
     expect((await component(id, 'grace')).transitions.map((each) => each.key)).toEqual([
@@ -222,6 +229,12 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const bare = await move('components', id, 'grace', { transition: 'return', from: 'in_review' });
     expect(bare.statusCode).toBe(400);
     expect(bare.json()).toMatchObject({ code: 'reason_required', rule: 'LIF-061' });
+    const long = await move('components', id, 'grace', {
+      transition: 'return',
+      from: 'in_review',
+      reason: 'x'.repeat(2001),
+    });
+    expect(long.statusCode).toBe(400);
     const returned = await move('components', id, 'grace', {
       transition: 'return',
       from: 'in_review',
@@ -267,8 +280,9 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const created = await made('components', 'Approved dose');
     await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' });
     await move('components', created.id, 'grace', { transition: 'approve', from: 'in_review' });
-    expect((await component(created.id, 'ada')).state.key).toBe('approved');
     const opened = await component(created.id, 'ada');
+    // Its view says it is approved, for the editor to say a save starts a draft (WF-F).
+    expect(opened.state).toEqual({ key: 'approved', name: 'Approved', approved: true });
     expect(
       (await call('POST', `/v1/components/${created.id}/lock`, 'ada', { session: SESSION }))
         .statusCode,
@@ -298,7 +312,11 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       openedFrom: opened.version.id,
     });
     expect(cut.statusCode, cut.body).toBe(200);
-    expect((await component(created.id, 'ada')).state).toEqual({ key: 'draft', name: 'Draft' });
+    expect((await component(created.id, 'ada')).state).toEqual({
+      key: 'draft',
+      name: 'Draft',
+      approved: false,
+    });
     const events = await tenantDb.withTenant(tenant, (trx) =>
       trx
         .selectFrom('audit_event')

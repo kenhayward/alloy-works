@@ -62,6 +62,7 @@ export type WorkflowRule =
   | 'workflow_invalid'
   | 'key_duplicate'
   | 'initial_not_one'
+  | 'initial_approved'
   | 'state_unknown'
   | 'transition_to_itself'
   | 'state_unreachable';
@@ -116,6 +117,16 @@ export function parseWorkflowBody(
       message: 'Exactly one state is initial',
     });
   }
+  body.states.forEach((each, index) => {
+    // A save of an approved artifact moves it to the initial state (WF-F), so that one never counts.
+    if (each.initial && each.approved) {
+      problems.push({
+        rule: 'initial_approved',
+        path: `states.${index}`,
+        message: 'The initial state cannot count as approved',
+      });
+    }
+  });
   const keys = new Set(body.states.map((each) => each.key));
   body.transitions.forEach((each, index) => {
     for (const end of ['from', 'to'] as const) {

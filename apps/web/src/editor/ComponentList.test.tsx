@@ -23,6 +23,7 @@ const row = (id: string, title: string, space: string, by: { id: string; name: s
   language: 'en-GB',
   changedAt: new Date(2025, 11, 3, 11, 0).toISOString(),
   changedBy: by,
+  state: { key: 'in_review', name: 'In review' },
 });
 
 const SPACES = [
@@ -134,10 +135,11 @@ describe('the components list', () => {
     expect(link).toHaveAttribute('href', `#/components/${TONER}`);
     const cells = within(link.closest('tr')!).getAllByRole('cell');
     expect(within(cells[0]!).getByText('Training, en-GB')).toBeInTheDocument();
-    // The sixth cell holds the row's buttons.
-    expect(cells.slice(1, 5).map((cell) => cell.textContent)).toEqual([
+    // The seventh cell holds the row's buttons.
+    expect(cells.slice(1, 6).map((cell) => cell.textContent)).toEqual([
       'Topic',
       '0.2',
+      'In review',
       '3 Dec 2025',
       'Grace',
     ]);
@@ -331,6 +333,16 @@ describe('the components list', () => {
 
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     const cells = within(link.closest('tr')!).getAllByRole('cell');
-    expect(cells[4]).toHaveTextContent('You');
+    expect(cells[5]).toHaveTextContent('You');
+  });
+
+  it('shows each component’s workflow state as its lozenge', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    const link = await screen.findByRole('link', { name: 'Replace the toner' });
+    expect(within(link.closest('tr')!).getByText('In review')).toHaveAttribute(
+      'data-kind',
+      'inReview',
+    );
   });
 });

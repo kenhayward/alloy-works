@@ -1020,6 +1020,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   documents or both, in every space or in one. Every keep reaching one applies and the longest wins,
   counted from its latest version; nothing is ever deleted because a keep has passed. Setting and
   clearing a keep are audited. Through the API, `GET` and `PUT /v1/retention`.
+- **Workflow states.** Every component and document is in one state of its kind's workflow, a new
+  one in Draft, shown in its header, both lists, search results, beside a component **Add component**
+  would place and, for a placed component you may read, in the Part panel. Each transition you may
+  take is a button in the header: by default **Submit** (Draft to In review, to whoever may edit),
+  **Return** (back to Draft, with a reason) and **Approve** (to whoever may approve), and **Reopen**
+  (Approved to Draft, with a reason). One asking for a reason asks first; a move refused, because it
+  moved meanwhile, is archived or is not yours, says so, and an open page follows a move at once.
+  Saving an approved one moves it back to Draft, which its page says before the first save; the
+  approved version is unchanged. Every move is audited, its reason kept on the move alone. Search's
+  **State** facet narrows by state. Through the API, `POST /v1/{components|documents}/{id}/transitions`.
+- **Workflows.** An administrator of the environment edits each kind's workflow in Administration >
+  **Workflows**: its states, how many are in each, where one starts and which count as approved, and
+  its transitions, each with what it needs (edit or approve) and whether it asks for a reason. A save
+  is the next version, in force at once, refused naming each problem; every version is kept. Saving
+  is audited. Through the API, `GET` and `POST /v1/workflows` and
+  `GET /v1/workflows/{kind}/versions/{n}`.
 - **Erasure.** An administrator of the environment erases a person from Administration > **People**,
   under More actions: never themselves, a service, or somebody erased already. The dialog says first
   what goes, what stays and any grant naming them, which must be removed before. Their name becomes
@@ -1612,9 +1628,9 @@ Named explicitly so nobody has to read the source to find out:
   default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search by meaning, no taxonomy, no workflow, no revisions: versions are cut,
-  kept, pinned, compared and suggested to, and nothing yet approves one. A publication of a
-  baseline still says it is not approved, until a workflow can approve one. Conditional text
+- No search by meaning, no taxonomy, no approvals, gates or revisions: a workflow's state moves to
+  Approved, and nothing yet designates the version approved. A publication of a baseline still says
+  it is not approved, until an approval can approve one. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread
   is seen by whoever may read what it is on.

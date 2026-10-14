@@ -155,6 +155,30 @@ export function outline(nodes: OutlineNode[]): OutlineDocument {
 export const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
+/** A workflow standing, as a view carries it (WF-G). */
+export interface Standing {
+  state: { key: string; name: string; approved: boolean };
+  transitions: {
+    key: string;
+    name: string;
+    to: { key: string; name: string };
+    reasonRequired: boolean;
+  }[];
+}
+
+/** Draft, as a new one is, with Submit offered. */
+export const DRAFT: Standing = {
+  state: { key: 'draft', name: 'Draft', approved: false },
+  transitions: [
+    {
+      key: 'submit',
+      name: 'Submit',
+      to: { key: 'in_review', name: 'In review' },
+      reasonRequired: false,
+    },
+  ],
+};
+
 export const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567';
 
 export const PUBLISH_REQUEST = '99999999-0000-4000-8000-000000000001';
@@ -229,6 +253,9 @@ export function service(
      * view names a template and carries them, and the parameters routes answer as the service does.
      */
     parameters?: { declarations: unknown[]; values: Record<string, unknown> };
+    /** Its workflow state and the transitions offered (WF-G); a move answers its `moves` entry. */
+    standing?: Standing;
+    moves?: Record<string, Standing>;
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -255,6 +282,7 @@ export function service(
   }[] = [{ id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1', outline: start }];
   let allocated = 0;
   let archived = options.archived ?? false;
+  let standing = options.standing ?? DRAFT;
   const newIdentifier = () => {
     allocated += 1;
     return `nnnnnnnnnnnnnnnnnnnnnnnn${BASE32[Math.floor(allocated / 32)]}${BASE32[allocated % 32]}`;
@@ -290,6 +318,7 @@ export function service(
     mayComment: options.mayComment ?? false,
     mayReview: options.mayReview ?? false,
     archived,
+    ...standing,
     mayRetire: options.retires ?? false,
     onHold: options.onHold ?? false,
     mayHold: options.mayHold ?? false,
@@ -365,6 +394,11 @@ export function service(
       return json(200, { archived });
     }
     if (url === '/v1/holds' && request.method === 'POST') return json(200, { id: 'h1' });
+    if (url === `/v1/documents/${DOCUMENT}/transitions`) {
+      const { transition } = body as { transition: string };
+      standing = options.moves?.[transition] ?? standing;
+      return json(200, standing);
+    }
     // What deleting it leaves, and nothing refusing it; then deleted (the DL plan).
     if (url === `/v1/documents/${DOCUMENT}/deletion`) {
       return json(200, {
@@ -595,6 +629,10 @@ export function service(
     /** Answers the next act at the same version, as the service does for one that changes nothing. */
     unchanged: () => {
       unchangedNext = true;
+    },
+    /** Somebody else's move, as the service would now answer it. */
+    moved: (now: Standing) => {
+      standing = now;
     },
     /** Somebody else's act, recorded straight into the chain. */
     theirs: (operation: OutlineOperation) => {

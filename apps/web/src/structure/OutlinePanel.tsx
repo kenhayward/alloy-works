@@ -65,6 +65,7 @@ import {
   type DropTarget,
   type Names,
 } from './tree.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { HeldFields } from '../metadata/HeldFields.js';
 import { Segmented } from '../parts/Segmented.js';
 
@@ -101,6 +102,8 @@ const TITLE_CHANGED =
 export interface ComponentChoice {
   readonly id: string;
   readonly title: string;
+  /** Its workflow state now, where the listing carries one (WF-G). */
+  readonly state?: { readonly key: string; readonly name: string } | undefined;
 }
 
 /** What the page knows of the components the caller may read, for **Add component** to offer. */
@@ -680,6 +683,11 @@ export function OutlinePanel({
   walkOutline(nodes, (node) => {
     if (node.type === 'reference' && node.component === null) withheld = true;
   });
+  // A placed component's state, from the listing of what the reader may read: none for any other.
+  const placedState = (node: OutlineViewNode) =>
+    node.type === 'reference' && node.component !== null && components.state === 'loaded'
+      ? components.items.find((each) => each.id === node.component)?.state
+      : undefined;
   const referring = (id: string) =>
     referencesTo !== undefined && (
       <ReferencedBy
@@ -1167,6 +1175,7 @@ export function OutlinePanel({
                 frontAfter={frontAfter(nodes, selected.id)}
                 unnumberedAbove={unnumberedAncestor(nodes, selected.id)}
                 names={names}
+                state={placedState(selected)}
                 busy={busy}
                 onOperation={(operation) => send(operation, null)}
                 onRetitle={retitle}
@@ -1214,6 +1223,7 @@ export function OutlinePanel({
             )}
             {selected && linkOf && confirming === null && !editable && (
               <div className={styles['rows']}>
+                <StateRow state={placedState(selected)} />
                 <NodeLink
                   address={linkOf(selected.id)}
                   name={nodeName(selected, names)}
@@ -1333,6 +1343,7 @@ function ComponentChooser({
   const first = components.items[0];
   if (first === undefined) return <p>There are no components you may add.</p>;
   const value = components.items.some((each) => each.id === chosen) ? chosen : first.id;
+  const state = components.items.find((each) => each.id === value)?.state;
   return (
     <form
       onSubmit={(event) => {
@@ -1353,6 +1364,7 @@ function ComponentChooser({
           ))}
         </select>
       </label>
+      {state && <StateLozenge state={state} />}
       <button type="submit">Add</button>
       <button type="button" onClick={onCancel}>
         Cancel
@@ -1518,6 +1530,21 @@ interface Field {
   readonly sent: readonly string[];
 }
 
+/** A placed component's workflow state, a row of the Part panel (WF-G); nothing where none is known. */
+function StateRow({
+  state,
+}: {
+  state: { readonly key: string; readonly name: string } | undefined;
+}) {
+  if (state === undefined) return null;
+  return (
+    <div className={styles['partRow']}>
+      <span className={styles['rowLabel']}>State</span>
+      <StateLozenge state={state} />
+    </div>
+  );
+}
+
 function NodeDetails({
   node,
   topLevel,
@@ -1525,6 +1552,7 @@ function NodeDetails({
   frontAfter,
   unnumberedAbove,
   names,
+  state,
   busy,
   onOperation,
   onRetitle,
@@ -1558,6 +1586,8 @@ function NodeDetails({
   /** The nearest ancestor not numbered, beneath which this node takes no number whatever it says. */
   unnumberedAbove: OutlineViewNode | undefined;
   names: Names;
+  /** A placed component's state, where the reader may read it (WF-G). */
+  state: { readonly key: string; readonly name: string } | undefined;
   busy: boolean;
   onOperation: (operation: OutlineOperation) => Promise<Answered>;
   onRetitle: (operation: RetitleOperation) => Promise<RetitleAnswer>;
@@ -1603,6 +1633,7 @@ function NodeDetails({
           </a>
         </div>
       )}
+      <StateRow state={state} />
       {node.type === 'section' && (
         <TitleField
           node={node}

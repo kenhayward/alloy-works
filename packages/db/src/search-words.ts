@@ -6,6 +6,7 @@ import {
   searchKinds,
   walkOutline,
   type SearchKind,
+  type WorkflowKind,
 } from '@alloy-works/domain';
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -1217,8 +1218,14 @@ export async function searchWords(
   const capped = (each: readonly FacetRow[] | null) => cappedOf(each, facetsBounded);
   const stateNamed =
     row.states.length === 0 && row.items.every((item) => item.workflow_state === null)
-      ? new Map<string, string>()
+      ? new Map<WorkflowKind, ReadonlyMap<string, string>>()
       : await stateNames(trx);
+  // A section is its document's; a facet counts both kinds, so it names each name they give a key.
+  const stateName = (kind: string, key: string) =>
+    stateNamed.get(kind === 'component' ? 'component' : 'document')?.get(key) ?? key;
+  const stateLabel = (key: string) =>
+    [...new Set([...stateNamed.values()].map((names) => names.get(key) ?? key))].join(' or ') ||
+    key;
   const placed =
     baseline !== undefined && row.items.some((item) => item.kind === 'component')
       ? await firstPinnedNodes(trx, baseline)
@@ -1283,7 +1290,7 @@ export async function searchWords(
           ? null
           : {
               key: item.workflow_state,
-              name: stateNamed.get(item.workflow_state) ?? item.workflow_state,
+              name: stateName(item.kind, item.workflow_state),
             },
     })),
     facets: {
@@ -1291,9 +1298,7 @@ export async function searchWords(
       spaces: capped(row.spaces),
       componentTypes: capped(row.component_types),
       owners: capped(row.owners),
-      states: capped(
-        row.states.map((each) => ({ ...each, label: stateNamed.get(each.value) ?? each.value })),
-      ),
+      states: capped(row.states.map((each) => ({ ...each, label: stateLabel(each.value) }))),
       changed: capped(row.changed),
       fields: [...fields.values()].map((each) => ({
         field: each.field,

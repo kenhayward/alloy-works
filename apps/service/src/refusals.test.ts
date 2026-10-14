@@ -186,6 +186,9 @@ describe('the rule behind a refusal', () => {
       'state.moved',
       'transition.unknown',
       'artifact.archived',
+      // A reason too long, and a save begun from a version since replaced.
+      'reason.invalid',
+      'workflow.behind',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

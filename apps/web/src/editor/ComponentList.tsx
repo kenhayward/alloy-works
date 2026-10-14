@@ -16,6 +16,7 @@ import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Empty } from '../states/Empty.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { whenChanged } from './changed.js';
 import { ComponentDetail } from './ComponentDetail.js';
@@ -306,6 +307,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                   <th scope="col">Title</th>
                   <th scope="col">Type</th>
                   <th scope="col">Version</th>
+                  <th scope="col">State</th>
                   <th scope="col">Changed</th>
                   <th scope="col">By</th>
                   <td aria-hidden="true" />
@@ -325,6 +327,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                     </td>
                     <td className={styles['muted']}>{item.type ?? ''}</td>
                     <td className={styles['code']}>{item.version}</td>
+                    <td>{item.state && <StateLozenge state={item.state} />}</td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
                     </td>

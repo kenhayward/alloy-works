@@ -156,7 +156,8 @@ export async function listWorkflows(trx: TenantTransaction): Promise<WorkflowSum
 
 export type DefineAnswer =
   | { readonly answer: 'defined' | 'unchanged'; readonly definition: WorkflowDefinition }
-  | { readonly answer: 'invalid'; readonly problems: readonly WorkflowProblem[] };
+  | { readonly answer: 'invalid'; readonly problems: readonly WorkflowProblem[] }
+  | { readonly answer: 'behind'; readonly version: number };
 
 /**
  * Saves a kind's definition as its next version (LIF-001, LIF-002, LIF-007), under the kind's lock so
@@ -165,7 +166,13 @@ export type DefineAnswer =
  */
 export async function defineWorkflow(
   trx: TenantTransaction,
-  input: { readonly kind: WorkflowKind; readonly body: unknown; readonly by: string },
+  input: {
+    readonly kind: WorkflowKind;
+    readonly body: unknown;
+    readonly by: string;
+    /** The version the edit began from: refused if another has replaced it since. */
+    readonly basedOn?: number;
+  },
 ): Promise<DefineAnswer> {
   const parsed = parseWorkflowBody(input.body);
   if (!parsed.ok) return { answer: 'invalid', problems: parsed.problems };
@@ -173,6 +180,9 @@ export async function defineWorkflow(
     trx,
   );
   const newest = await newestDefinition(trx, input.kind);
+  if (input.basedOn !== undefined && input.basedOn !== newest.version) {
+    return { answer: 'behind', version: newest.version };
+  }
   if (JSON.stringify(newest.body) === JSON.stringify(parsed.body)) {
     return { answer: 'unchanged', definition: newest };
   }
@@ -292,14 +302,15 @@ export async function workflowStates(
   return states;
 }
 
-/** The name each state key has in the definitions in force, components' first: search's facet's. */
-export async function stateNames(trx: TenantTransaction): Promise<ReadonlyMap<string, string>> {
-  const names = new Map<string, string>();
+/** The name each state key has in each kind's definition in force: search's. */
+export async function stateNames(
+  trx: TenantTransaction,
+): Promise<ReadonlyMap<WorkflowKind, ReadonlyMap<string, string>>> {
+  const names = new Map<WorkflowKind, ReadonlyMap<string, string>>();
   if (!(await workflowStored(trx))) return names;
   for (const kind of WORKFLOW_KINDS) {
-    for (const each of (await newestDefinition(trx, kind)).body.states) {
-      if (!names.has(each.key)) names.set(each.key, each.name);
-    }
+    const { states } = (await newestDefinition(trx, kind)).body;
+    names.set(kind, new Map(states.map((each) => [each.key, each.name])));
   }
   return names;
 }

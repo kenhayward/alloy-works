@@ -2170,6 +2170,19 @@ yet met for every reader (#604, #605).
 | `migrations/tenant/0091_search_history`, `db: src/search-history.ts` | One row per place, its words folded across versions, kept by indexing, archival, deletion and erasure; every version reads it                                                                                               |
 | `db: src/load/search.load.ts`                                        | The search profile at a hundred thousand and a million components, ground truth for every road                                                                                                                              |
 
+## Workflow
+
+Every component and document in one state of its kind's workflow, built by
+[the WF1 plan](plans/2026-10-14-wf1-workflow-definitions-and-states.md), T9's first phase
+([ADR-0061](decisions/0061-t9s-order.md)), and designed in [workflow.md](design/workflow.md).
+
+| Where                                                                          | Holds                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/workflow/`                                                        | The body's schema and validation, the seed, the deciding definition                                                                                                                            |
+| `migrations/tenant/0095_workflow`, `db: src/workflow.ts`                       | `workflow_definition` and `workflow_transition`, insert-only; the latest move is the state; a save of an approved one moves it to the initial state in `record`; `search_entry.workflow_state` |
+| `service: src/workflows.ts`, `src/stream.ts`                                   | `/v1/workflows` at the tenant's `administer`; moves by the transition's permission; the views' `state` and `transitions`; the `workflow` stream event                                          |
+| `web: src/lifecycle/Workflow.tsx`, `states/Lozenge.tsx`, `admin/Workflows.tsx` | The state's lozenge wherever it appears, the header's transitions and reason dialog, Administration > Workflows                                                                                |
+
 ## Publishing
 
 A document's latest version made into a tagged PDF of its outline and its paragraphs, laid out by a

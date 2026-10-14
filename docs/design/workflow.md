@@ -7,17 +7,18 @@ decisions, WF-A to WF-K, are the detail. Approvals, gates and revisions are phas
 
 ## Requirements owned
 
-| Requirement | How                                                                                                |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed        |
-| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason        |
-| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                    |
-| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`               |
-| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row |
-| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                   |
+| Requirement | How                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed; "per artifact type" read as per kind, as LIF-019's is (Ken, 2026-10-14) |
+| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason                                                                          |
+| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                                                                                      |
+| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                 |
+| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                   |
+| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                     |
 
-**Not claimed:** LIF-005, one state shown wherever the artifact appears, waits for WF1b's interface;
-the views carry it already. LIF-036 asks for a component approvable on its own, and LIF-075 for an
+**Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
+the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-036 asks for a component approvable on its own, and LIF-075 for an
 approval's own event: both need phase 2's approvals. `workflow.transitioned` is emitted here and
 [audit.md](audit.md) lists it. LIF-040's approved revision staying designated waits for phase 2's
 designation; the move to draft on a save is here.
@@ -34,9 +35,9 @@ review to Approved, `approve`), Reopen (Approved to Draft, `edit`, reason). Retu
 **The body** (`packages/domain/src/workflow/`): states with a key, a name, `initial` and `approved`;
 transitions with a key, a name, `from`, `to`, `permission` (`edit` or `approve`) and
 `reasonRequired`. Refused, each problem named (`workflow_invalid`): a key used twice, not one initial
-state, a transition naming no state or moving to its own, a state unreachable from the initial one.
+state, an initial state that counts as approved (every save would leave and re-enter it), a transition naming no state or moving to its own, a state unreachable from the initial one.
 
-**Saved** by `POST /v1/workflows { kind, states, transitions }`, `administer` at the tenant, under the kind's advisory lock,
+**Saved** by `POST /v1/workflows { kind, basedOn?, states, transitions }` (`workflow_behind`, 409, where another version was saved since `basedOn`), `administer` at the tenant, under the kind's advisory lock,
 so two saves take turns and make two versions; the body in force again changes nothing. Audited as
 `workflow.defined` `{ kind, version }`. `GET /v1/workflows` lists each kind's definition in force and
 how many of the kind, deleted ones aside, sit in each state.
@@ -69,10 +70,22 @@ parameters, a restore, an accepted suggestion) moves an artifact in a state mark
 initial state in the save's transaction, with no transition key, audited naming the version that was
 approved. A save in any other state leaves it.
 
-**Shown** (WF-G): a component's and a document's view carry `state { key, name }` and the transitions
-the reader may take (none while archived); both lists and search results carry the state. A
-`workflow` stream event, `{ artifact, state }`, reaches a document's or a component's stream for the
-artifact itself or a component in it the viewer may read, and nobody else (`stream.ts`).
+**Shown** (WF-G): a component's and a document's view carry `state { key, name, approved }` and the
+transitions the reader may take (none while archived); both lists and search results carry
+`{ key, name }`. A `workflow` stream event, `{ artifact, state }`, reaches a document's or a
+component's stream for the artifact itself or a component in it the viewer may read, and nobody else
+(`stream.ts`).
+
+**In the interface** (WF1b): a lozenge (`StateLozenge`; the seed's three in their tones, any other
+state neutral) in the document and component headers beside Archived, both lists, the space pane,
+search results, beside the component Add component would place, and in the Part panel for a placed
+component the reader may read (from the listing of what they may, so never another). Each transition
+offered is a header button sending the state it was seen in; a reason asked for first where required;
+a refusal said in the service's words, the state read again where it moved. A page reads its state
+again on the `workflow` event; a placed component's comes from the event itself. Before the first
+save of an approved one, the page says a save starts a new draft. Home's attention carries no state
+and shows none; the inbox, the relationships panel and baselines stay out (WF-G).
+Administration > Workflows edits each kind's states and transitions and saves the next version.
 
 ## Search
 

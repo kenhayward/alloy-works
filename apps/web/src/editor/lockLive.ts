@@ -1,5 +1,5 @@
 import { followStream, type FollowOptions } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** A component's lock as its stream says it (COL-007), with any ask to take it over (COL-047). */
 export interface HeardLock {
@@ -19,8 +19,12 @@ export interface HeardLock {
 export function useHeardLock(
   componentId: string,
   follow: (options: FollowOptions) => () => void = followStream,
+  /** Told the state its stream says it moved to (WF-G). */
+  onWorkflow?: (state: { readonly key: string; readonly name: string }) => void,
 ): HeardLock | undefined {
   const [heard, setHeard] = useState<HeardLock | undefined>(undefined);
+  const told = useRef(onWorkflow);
+  told.current = onWorkflow;
   useEffect(() => {
     setHeard(undefined);
     return follow({
@@ -31,6 +35,12 @@ export function useHeardLock(
           setHeard(lock ?? { holder: null, expectedRelease: null, taking: null });
         } else if (event === 'lock') {
           setHeard(data as HeardLock);
+        } else if (event === 'workflow') {
+          const { artifact, state } = data as {
+            artifact?: unknown;
+            state?: { key: string; name: string };
+          };
+          if (artifact === componentId && state) told.current?.(state);
         }
       },
       onDropped: () => setHeard(undefined),

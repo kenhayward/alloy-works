@@ -54,7 +54,18 @@ describe('a workflow definition (workflow.md)', () => {
     ]);
   });
 
-  it('LIF-001 refuses a body with a duplicate key, by rule', () => {
+  it('refuses an initial state that counts as approved, which every save would leave and re-enter', () => {
+    const parsed = parseWorkflowBody({
+      states: [state('approved', { initial: true, approved: true }), state('draft')],
+      transitions: [move('edit', 'approved', 'draft')],
+    });
+    expect(parsed).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'initial_approved', path: 'states.0' }],
+    });
+  });
+
+  it('refuses a body with a duplicate key, by rule', () => {
     const parsed = parseWorkflowBody({
       states: [state('draft', { initial: true }), state('draft')],
       transitions: [],
@@ -67,7 +78,7 @@ describe('a workflow definition (workflow.md)', () => {
     expect(twice).toMatchObject({ ok: false, problems: [{ rule: 'key_duplicate' }] });
   });
 
-  it('LIF-001 refuses a state no transition reaches from the initial one', () => {
+  it('refuses a state no transition reaches from the initial one', () => {
     const parsed = parseWorkflowBody({
       states: [state('draft', { initial: true }), state('done'), state('lost')],
       transitions: [move('finish', 'draft', 'done'), move('find', 'lost', 'draft')],

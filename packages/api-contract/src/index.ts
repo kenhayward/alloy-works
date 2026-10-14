@@ -90,6 +90,7 @@ export {
   WorkflowKindParam,
   DefineWorkflowBody,
   WorkflowRefusal,
+  WorkflowStandingView,
   WorkflowStateView,
   WorkflowsView,
   WorkflowVersionParams,

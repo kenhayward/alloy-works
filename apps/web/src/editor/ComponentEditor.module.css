@@ -238,3 +238,11 @@
   border-bottom: 1px solid var(--border);
   font-size: var(--size-13);
 }
+
+/* Before the first save of an approved component, what a save does (the WF1 plan, WF-F). */
+.approvedNote {
+  flex-basis: 100%;
+  margin: 0 0 var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-12);
+}

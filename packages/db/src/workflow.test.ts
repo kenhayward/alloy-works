@@ -428,6 +428,26 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
   });
 
+  it('refuses a save based on a version another has since replaced, saving nothing', async () => {
+    const before = (await as((trx) => newestDefinition(trx, 'component'))).version;
+    const renamed: WorkflowBody = {
+      ...SEED_WORKFLOW,
+      states: SEED_WORKFLOW.states.map((each) =>
+        each.key === 'draft' ? { ...each, name: 'Working' } : each,
+      ),
+    };
+    const saved = await as((trx) =>
+      defineWorkflow(trx, { kind: 'component', body: renamed, by: grace, basedOn: before }),
+    );
+    expect(saved).toMatchObject({ answer: 'defined', definition: { version: before + 1 } });
+    const behind = await as((trx) =>
+      defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada, basedOn: before }),
+    );
+    expect(behind).toEqual({ answer: 'behind', version: before + 1 });
+    expect((await as((trx) => newestDefinition(trx, 'component'))).version).toBe(before + 1);
+    await as((trx) => defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada }));
+  });
+
   it('never moves a component under the document workflow', async () => {
     const made = await component();
     const documents = await as((trx) => newestDefinition(trx, 'document'));
@@ -597,6 +617,32 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
           narrowed.facets.states.map((each) => each.value),
           scope,
         ).toEqual(['draft', 'in_review']);
+      }
+    });
+
+    it("names each result by its own kind's workflow, and a facet by both where they differ", async () => {
+      const word = unique();
+      const placed = await component(`${word} part`);
+      const made = await document(`${word} guide`);
+      await move(placed, 'submit', 'draft');
+      await move(made, 'submit', 'draft');
+      const checking: WorkflowBody = {
+        ...SEED_WORKFLOW,
+        states: SEED_WORKFLOW.states.map((each) =>
+          each.key === 'in_review' ? { ...each, name: 'Checking' } : each,
+        ),
+      };
+      await as((trx) => defineWorkflow(trx, { kind: 'document', body: checking, by: grace }));
+      try {
+        const found = await search(word);
+        expect(
+          Object.fromEntries(found.items.map((item) => [item.kind, item.state?.name])),
+        ).toEqual({ component: 'In review', document: 'Checking' });
+        expect(found.facets.states).toEqual([
+          { value: 'in_review', label: 'In review or Checking', count: 2, capped: false },
+        ]);
+      } finally {
+        await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
       }
     });
 

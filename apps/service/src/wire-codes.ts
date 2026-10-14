@@ -133,6 +133,8 @@ const WIRE_CODES = {
   'transition.unknown': 'transition_unknown',
   'artifact.archived': 'artifact_archived',
   'reason.required': 'reason_required',
+  'reason.invalid': 'reason_invalid',
+  'workflow.behind': 'workflow_behind',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

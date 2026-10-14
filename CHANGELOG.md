@@ -3,6 +3,30 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.166.0 - 2026-10-14 (PR #616)
+
+Workflow's first phase: definitions and states (ADR-0061), and the search fixes since 0.165.0.
+
+### Added
+
+- **Workflow states.** Every component and document is in one workflow state, starting in Draft, and moves to In review and Approved by the transitions its kind's workflow declares, each audited, with a reason where the transition asks for one.
+- **Workflows per environment.** An administrator saves each kind's states and transitions as a new version through the API; every version is kept. Saving an approved component or document moves it back to Draft.
+- **Search by state.** Search narrows by workflow state, from its State facet, and counts results in each.
+- **The state, shown.** A component's and a document's state shows in its header, in both lists, in search results, beside a component Add component would place, and in the Part panel for a placed component you may read; an open page follows a move at once.
+- **Moving from the header.** Each transition you may take is a button in the header; one that needs a reason asks for it first, and a refusal says why. Before an approved component or document is saved, its page says that saving starts a new draft.
+- **Administration > Workflows.** Each kind's states, how many are in each, and its transitions, with what each needs and whether it asks for a reason: add, rename and remove them, choose where one starts and which counts as approved, and save as the next version.
+
+### Changed
+
+- **The workflow tranche has an order.** T9 is built in six phases, starting with workflow definitions and states (ADR-0061).
+
+### Fixed
+
+- **Search for a reader with many individual exceptions.** Working out what a reader may see no longer slows with the number of single-item grants and denials they hold, so their searches stay within budget.
+- **Search by title terms alone, and filtered search, in large spaces.** A query of `title:` terms alone, and a search narrowed by kind, space, type, owner or date, are found through their own indexes, so they answer quickly at a million components.
+- **Search every version by title terms alone, in large spaces.** A query of `title:` terms alone over every version is found through each place's titles across its versions, so it answers quickly at a million components.
+- **Search by field terms in large spaces.** A query scoped to a field, alone or beside other words, is found through the words fields hold, so it answers quickly at a million components, for the latest version and for every version.
+
 ## 0.165.0 - 2026-10-14 (PR #606)
 
 Search at scale, after [the search-versions spike](docs/specification/spikes/Search_Versions_Spike_Findings.md).

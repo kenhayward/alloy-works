@@ -16,6 +16,7 @@ import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
+import { Workflows } from './Workflows.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -28,6 +29,7 @@ const SECTIONS = [
   { slug: 'overview', title: 'Overview', group: 'Environment' },
   { slug: 'spaces', title: 'Spaces', group: 'Environment' },
   { slug: 'editing', title: 'Editing', group: 'Environment' },
+  { slug: 'workflows', title: 'Workflows', group: 'Environment' },
   { slug: 'people', title: 'People', group: 'People and access' },
   { slug: 'groups', title: 'Groups', group: 'People and access' },
   { slug: 'roles', title: 'Roles', group: 'People and access' },
@@ -256,6 +258,7 @@ export function Administration({
         {shown === 'editing' && (
           <Editing client={client} mayChange={administers.get('tenant') === true} />
         )}
+        {shown === 'workflows' && <Workflows client={client} />}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}

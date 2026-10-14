@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { Empty } from './Empty.js';
-import { Lozenge } from './Lozenge.js';
+import { Lozenge, StateLozenge } from './Lozenge.js';
 import { Notice } from './Notice.js';
 import { Waiting } from './Waiting.js';
 
@@ -53,5 +53,25 @@ describe('the states kit', () => {
     expect(screen.getByText('Not approved')).toHaveAttribute('data-tone', 'warn');
     expect(screen.getByText('Being edited by Grace')).toHaveAttribute('data-tone', 'info');
     expect(screen.getByText('Never published')).toHaveAttribute('data-tone', 'neutral');
+  });
+
+  it('draws a workflow state by its name, in the tone the seed’s state means', () => {
+    render(
+      <>
+        <StateLozenge state={{ key: 'draft', name: 'Draft' }} />
+        <StateLozenge state={{ key: 'in_review', name: 'In review' }} />
+        <StateLozenge state={{ key: 'approved', name: 'Approved' }} />
+        <StateLozenge state={{ key: 'withdrawn', name: 'Withdrawn' }} />
+      </>,
+    );
+
+    expect(screen.getByText('Draft')).toHaveAttribute('data-kind', 'draft');
+    expect(screen.getByText('Draft')).toHaveAttribute('data-tone', 'neutral');
+    expect(screen.getByText('In review')).toHaveAttribute('data-kind', 'inReview');
+    expect(screen.getByText('In review')).toHaveAttribute('data-tone', 'info');
+    expect(screen.getByText('Approved')).toHaveAttribute('data-kind', 'approved');
+    expect(screen.getByText('Approved')).toHaveAttribute('data-tone', 'ok');
+    // A state the seed does not have is a fact, named as its workflow names it.
+    expect(screen.getByText('Withdrawn')).toHaveAttribute('data-tone', 'neutral');
   });
 });

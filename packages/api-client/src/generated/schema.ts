@@ -9660,7 +9660,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -9724,6 +9725,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -12918,7 +12921,8 @@ export interface operations {
                      * @example {
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": []
                      *     }
@@ -12928,6 +12932,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The transitions the caller may take from it now */
                         transitions: {
@@ -12943,7 +12949,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description reason_required: the transition needs a reason, and none was given */
+            /** @description reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -19212,7 +19218,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -19326,6 +19333,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -34447,7 +34456,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -34561,6 +34571,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -34717,6 +34729,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -34969,6 +34983,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -35363,7 +35379,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -35477,6 +35494,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -35633,6 +35652,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -35885,6 +35906,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -38147,7 +38170,8 @@ export interface operations {
                      * @example {
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": []
                      *     }
@@ -38157,6 +38181,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The transitions the caller may take from it now */
                         transitions: {
@@ -38172,7 +38198,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description reason_required: the transition needs a reason, and none was given */
+            /** @description reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -38635,7 +38661,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -38749,6 +38776,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -38905,6 +38934,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -39157,6 +39188,8 @@ export interface operations {
                             state: {
                                 key: string;
                                 name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
                             };
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
@@ -51039,7 +51072,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -51103,6 +51137,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -52093,7 +52129,8 @@ export interface operations {
                      *       "mayRetire": false,
                      *       "state": {
                      *         "key": "example",
-                     *         "name": "example"
+                     *         "name": "example",
+                     *         "approved": false
                      *       },
                      *       "transitions": [],
                      *       "onHold": false,
@@ -52207,6 +52244,8 @@ export interface operations {
                         state: {
                             key: string;
                             name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
                         };
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
@@ -57353,6 +57392,8 @@ export interface operations {
                      * @enum {string}
                      */
                     kind: "component" | "document";
+                    /** @description The version the edit began from; refused if another has been saved since */
+                    basedOn?: number;
                 };
             };
         };
@@ -57463,6 +57504,26 @@ export interface operations {
             };
             /** @description The caller may not administer this environment */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description workflow_behind: another version was saved since the one the edit began from */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

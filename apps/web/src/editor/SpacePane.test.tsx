@@ -20,10 +20,11 @@ const row = (id: string, title: string, version: string) => ({
   language: 'en-GB',
   changedAt: '2026-09-01T09:00:00.000Z',
   changedBy: null,
+  state: { key: 'draft', name: 'Draft' },
 });
 
 describe('the space pane', () => {
-  it('lists the components of the space, marking the one open', async () => {
+  it('lists the components of the space with their states, marking the one open', async () => {
     const asked: URL[] = [];
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
@@ -44,6 +45,8 @@ describe('the space pane', () => {
     const open = await within(pane).findByRole('link', { name: /Replace the toner/ });
     expect(open).toHaveAttribute('aria-current', 'page');
     expect(open).toHaveTextContent('1.4');
+    // Its workflow state, beside its version.
+    expect(within(open).getByText('Draft')).toHaveAttribute('data-kind', 'draft');
     const other = within(pane).getByRole('link', { name: /Install the printer/ });
     expect(other).toHaveAttribute('href', `#/components/${PRINTER}`);
     expect(other).not.toHaveAttribute('aria-current');
