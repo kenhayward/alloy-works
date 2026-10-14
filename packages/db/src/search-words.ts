@@ -48,6 +48,8 @@ export interface SearchProbe {
     readonly scan?: string;
     /** The matches the planner reckoned when it chose the road; none for a road forced. */
     readonly estimate?: number;
+    /** The rows the road was chosen, and a walk's reads sized, by; none for a road forced. */
+    readonly rows?: number;
     readonly plan?: unknown;
   }) => void;
 }
@@ -776,10 +778,10 @@ export async function searchWords(
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
       // test sets how many.
       let reads: number = options.probe?.reads ?? Number.MAX_SAFE_INTEGER;
-      let estimate: { estimate: number } | undefined;
+      let estimate: { estimate: number; rows: number } | undefined;
       if (road === undefined) {
         const matches = await planned(candidates, where);
-        estimate = { estimate: matches };
+        estimate = { estimate: matches, rows };
         road = rows > 0 && matches > Math.sqrt(N * rows) ? 'walk' : 'indexes';
         if (road === 'walk') reads = Math.ceil((4 * (N + 1) * rows) / matches);
       }

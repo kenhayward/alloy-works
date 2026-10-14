@@ -246,6 +246,18 @@ describe('search bounded at scale (SV3)', () => {
                 to_tsvector('simple', 'Running kites'))`.execute(trx);
       // Every version reads each place's history, made from these rows as 0091's run makes it.
       await rebuildHistory(trx);
+      // Two thousand ibex long ago, so the newest rows are a part of the table: in a
+      // space of their own, and in no history, so no other test's estimate counts them.
+      const highlands = (await createSpace(trx, 'Highlands')).id;
+      const ibex = await emptyDocument(trx, highlands, 'Ibex annals');
+      await sql`
+        insert into search_entry
+          (artifact_id, kind, node, version_id, space_id, title, owner, changed_at, configuration,
+           body, vector)
+        select ${ibex.artifactId}::uuid, 'section', 'ibex' || n, ${ibex.id}::uuid, ${highlands}::uuid,
+               'Ibex ' || n, ${ada}::uuid, now() - interval '3 years' - n * interval '1 s',
+               'english', 'Ibex grazing', to_tsvector('english', 'Ibex grazing')
+        from generate_series(1, 2000) n`.execute(trx);
     });
     // Statistics, as any tenant past its first hour has them, so the planner weighs the indexes.
     const admin = new pg.Client({ connectionString: db.adminUrl });
@@ -321,26 +333,45 @@ describe('search bounded at scale (SV3)', () => {
     );
   });
 
-  /** The matches the planner reckoned when it chose the road for a statement. */
-  const estimated = async (
+  /**
+   * The matches the planner reckoned when it chose the road for a statement, and the rows it chose by:
+   * the first, as a walk that falls back is seen twice with the same.
+   */
+  const reckoned = async (
     query: string,
     filters: SearchFilters = {},
     statement: 'results' | 'facets' = 'results',
   ) => {
-    const estimates: number[] = [];
+    const seen: { estimate: number; rows: number }[] = [];
     await search(ada, query, {
       filters,
       probe: {
         seen: (event) => {
           if (event.statement === statement && event.estimate !== undefined) {
-            estimates.push(event.estimate);
+            seen.push({ estimate: event.estimate, rows: event.rows! });
           }
         },
       },
     });
-    expect(estimates).toHaveLength(1);
-    return estimates[0]!;
+    expect(seen.length).toBeGreaterThan(0);
+    return seen[0]!;
   };
+  const estimated = async (...args: Parameters<typeof reckoned>) =>
+    (await reckoned(...args)).estimate;
+
+  it('sizes the road to the rows changed since a date, the newest a walk reads, and to the table with an end too', async () => {
+    const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+    const table = (await reckoned('grazing')).rows;
+    // The two thousand ibex changed three years ago; the rest since.
+    for (const changed of [{ from: since }, { within: 'year' as const }]) {
+      const { rows } = await reckoned('grazing', { changed });
+      expect({ changed, rows }).toEqual({ changed, rows: expect.any(Number) });
+      expect(rows).toBeLessThan(table / 2);
+    }
+    expect((await reckoned('grazing', { changed: { from: since, to: '2999-12-31' } })).rows).toBe(
+      table,
+    );
+  });
 
   it('reckons a query of title terms alone as matching as many as it does, choosing its road by them', async () => {
     // Over 1,100 titles hold yak; testing the term twice, the planner reckoned a few dozen.

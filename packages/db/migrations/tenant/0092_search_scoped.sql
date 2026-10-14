@@ -7,6 +7,7 @@ set constraints all immediate;
 
 -- Titles' words, so a query of title terms alone is found through titles alone; an expression rather
 -- than a partial index, so the planner keeps statistics of titles' words and counts their matches.
+-- Its cost on write: an entry for every place, a null one for each that is not a title.
 create index search_text_title on search_text using gin ((case when place = 'title' then vector end));
 analyze search_text;
 

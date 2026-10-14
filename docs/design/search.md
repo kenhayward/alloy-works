@@ -204,7 +204,7 @@ The total stays exact to the cap.
   spike did, and measures p95 for three kinds of user. **Not yet met**: after #604 and #605 the latest
   is within it in every case at a million (worst p95 226ms), but every version is not for title terms
   alone (p95 435ms medium, 268ms broad): each candidate place probes every version's title, as history
-  holds no title words of its own.
+  holds no title words of its own ([#608](https://github.com/kenhayward/alloy-works/issues/608)).
 
 ## Searching words, in T1
 
