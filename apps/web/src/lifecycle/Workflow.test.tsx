@@ -47,6 +47,8 @@ const AT_GATE: Standing = {
       name: 'Approve',
       to: { key: 'approved', name: 'Approved' },
       reject: { name: 'Return', to: { key: 'draft', name: 'Draft' } },
+      publication: 'none',
+      mayPublish: false,
       count: 1,
       required: 2,
       approvedByCaller: false,
@@ -234,6 +236,31 @@ describe('deciding a gate (the WF2 plan, WF2-L)', () => {
     place(client, { ...AT_GATE, gates: [{ ...gate, mayDecide: false }] });
     expect(screen.getByText('1 of 2 approvals')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('LIF-050 offers Approve and publish where the gate permits a publication and the approver may publish, asking for one', async () => {
+    const { client, sent } = service(() =>
+      json(200, {
+        state: { key: 'approved', name: 'Approved', approved: true },
+        transitions: [],
+        gates: [],
+        revision: { number: 1, versionId: VERSION, at: '2026-10-14T12:00:00.000Z' },
+      }),
+    );
+    const gate = AT_GATE.gates![0]!;
+    place(client, {
+      ...AT_GATE,
+      gates: [{ ...gate, count: 0, required: 1, publication: 'permitted', mayPublish: true }],
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Approve and publish' }));
+    await waitFor(() =>
+      expect(sent).toEqual([
+        {
+          path: `/v1/documents/${ID}/approvals`,
+          body: { transition: 'approve', version: VERSION, decision: 'approved', publish: true },
+        },
+      ]),
+    );
   });
 
   it('VER-015 names a revision, and says nothing for revision 0', () => {

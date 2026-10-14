@@ -9811,6 +9811,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -10169,6 +10176,8 @@ export interface operations {
                     decision: "approved" | "rejected";
                     /** @description Why it is rejected: required for a rejection, kept with it */
                     reason?: string;
+                    /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
+                    publish?: boolean;
                 };
             };
         };
@@ -10236,6 +10245,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -10336,7 +10352,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13441,6 +13457,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -19883,6 +19906,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -20184,6 +20214,8 @@ export interface operations {
                     decision: "approved" | "rejected";
                     /** @description Why it is rejected: required for a rejection, kept with it */
                     reason?: string;
+                    /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
+                    publish?: boolean;
                 };
             };
         };
@@ -20251,6 +20283,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -20351,7 +20390,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -35544,6 +35583,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -35737,6 +35783,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -36026,6 +36079,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -36578,6 +36638,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -36771,6 +36838,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -37060,6 +37134,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -37672,10 +37753,10 @@ export interface operations {
                             };
                             publishedAt: string;
                             /**
-                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice
                              * @enum {string}
                              */
-                            approval: "none" | "baseline";
+                            approval: "none" | "baseline" | "approved";
                             /** @description The baseline it was made from, or null */
                             baseline: string | null;
                             formats: string[];
@@ -39376,6 +39457,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -40012,6 +40100,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -40205,6 +40300,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -40494,6 +40596,13 @@ export interface operations {
                                         name: string;
                                     };
                                 };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
                                 /** @description Approvals this round on the current version */
                                 count: number;
                                 /** @description Approvals it needs, each by a distinct person */
@@ -45768,10 +45877,10 @@ export interface operations {
                             };
                             publishedAt: string;
                             /**
-                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                             * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice
                              * @enum {string}
                              */
-                            approval: "none" | "baseline";
+                            approval: "none" | "baseline" | "approved";
                             /** @description The baseline it was made from, or null */
                             baseline: string | null;
                             formats: string[];
@@ -45926,10 +46035,10 @@ export interface operations {
                         };
                         publishedAt: string;
                         /**
-                         * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it
+                         * @description `none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice
                          * @enum {string}
                          */
-                        approval: "none" | "baseline";
+                        approval: "none" | "baseline" | "approved";
                         /** @description The baseline it was made from, or null */
                         baseline: string | null;
                         formats: string[];
@@ -52484,6 +52593,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */
@@ -53632,6 +53748,13 @@ export interface operations {
                                     name: string;
                                 };
                             };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
                             /** @description Approvals this round on the current version */
                             count: number;
                             /** @description Approvals it needs, each by a distinct person */

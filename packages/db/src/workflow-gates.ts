@@ -182,7 +182,10 @@ export async function decideGate(
     const made = await makeBaseline(trx, {
       documentId: input.artifactId,
       version,
-      name: number === undefined ? `${transition.name} ${new Date().toISOString()}` : `Revision ${number}`,
+      name:
+        number === undefined
+          ? `${transition.name} ${new Date().toISOString()}`
+          : `Revision ${number}`,
       maker: input.by,
       gate: transition.key,
     });

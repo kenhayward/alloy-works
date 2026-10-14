@@ -68,8 +68,9 @@ import type { JobHandler } from '../worker.js';
  * to query the template before it compiles, scaling or turning a table too wide (TB3-H, TB3-I), 21
  * the first to set a bound table's groups under their headings and record them (TG1), 22 the first
  * to set a transposed table (TG2), 23 the first to measure a table's columns by what they hold
- * (TG3), and 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
- * (the RV plan, RV-F).
+ * (TG3), 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
+ * (the RV plan, RV-F), and 25 the first to publish a gate's baseline as approved, without the notice
+ * and with its approval page (the WF2 plan, WF2-I, WF2-J).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -81,7 +82,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '24',
+  [PUBLISHING_SCHEMA_CURRENT]: '25',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -314,6 +315,7 @@ export function publishJob(deps: {
         layout,
         theme,
         revision,
+        approved,
         assets,
         bindings,
         boundAssets,
@@ -351,7 +353,10 @@ export function publishJob(deps: {
         faces,
         // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
         // exactly as a publish of the same request would be (PUB-006).
-        status: preview ? 'preview' : 'draft',
+        // An approved one - made from a baseline taken at a gate - says nothing of being a draft
+        // (PUB-004), and lists its approvals where its layout declares an approval page (PUB-089).
+        status: preview ? 'preview' : approved ? 'approved' : 'draft',
+        ...(approved ? { approvals: approved.approvals } : {}),
         // Told the formats, so it refuses what only the PDF's engine cannot set where a PDF is asked
         // for, and what Word cannot carry yet where Word is (Word 1, rulings R2 and R3): a request for
         // both fails if either would, before either output is made.

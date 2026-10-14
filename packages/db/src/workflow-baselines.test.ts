@@ -146,9 +146,7 @@ describe('a baseline and a publication at a gate (workflow.md; the WF2 plan, Tas
   });
 
   afterEach(() =>
-    as((trx) =>
-      defineWorkflow(trx, { kind: 'document', body: SEED_DOCUMENT_WORKFLOW, by: ada }),
-    ),
+    as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_DOCUMENT_WORKFLOW, by: ada })),
   );
 
   afterAll(async () => {
@@ -218,7 +216,9 @@ describe('a baseline and a publication at a gate (workflow.md; the WF2 plan, Tas
   });
 
   it('LIF-050 requests a publication from the baseline as a gate requiring one passes, and where one permits it on asking alone', async () => {
-    await as((trx) => defineWorkflow(trx, { kind: 'document', body: publishing('required'), by: ada }));
+    await as((trx) =>
+      defineWorkflow(trx, { kind: 'document', body: publishing('required'), by: ada }),
+    );
     const required = await document('Required');
     await submit(required);
     await approve(required);
@@ -227,7 +227,9 @@ describe('a baseline and a publication at a gate (workflow.md; the WF2 plan, Tas
       { baseline_id: baseline!.id, requested_by: grace, formats: ['pdf', 'docx'] },
     ]);
 
-    await as((trx) => defineWorkflow(trx, { kind: 'document', body: publishing('permitted'), by: ada }));
+    await as((trx) =>
+      defineWorkflow(trx, { kind: 'document', body: publishing('permitted'), by: ada }),
+    );
     const quiet = await document('Not asked');
     await submit(quiet);
     await approve(quiet);

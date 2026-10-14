@@ -25,11 +25,13 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-052** | A rejection returns it to the gate's declared `reject.to`, the rework path in the definition                                                                         |
 | **LIF-074** | `gate.rejected`, an event of its own                                                                                                                                 |
 | **LIF-075** | `workflow.transitioned` and `approval.given`, each an event of its own                                                                                               |
+| **LIF-013** | Passing a gate designates a revision, and a document's gate may take a baseline                                                                                      |
+| **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                    |
+| **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                    |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
-whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-013 also
-asks a gate to take a baseline, WF2b's. LIF-040's approved revision served to references waits for
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-040's approved revision served to references waits for
 phase 4's "latest approved"; the designation and the move to draft on a save are here. VER-012 to
 VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below.
 
@@ -140,3 +142,21 @@ and `gates`, each with its count, what it needs, whether the caller approved and
 asking why. Who decided what, newest first, is listed under each Versions panel.
 `GET /v1/{components|documents}/{id}/approvals` reads it, on `read`. Administration > Workflows makes a
 transition a gate and sets its approvers, its author rule and where a rejection returns.
+
+## A baseline and a publication at a gate
+
+**A baseline** (WF2-H; VER-059): a document's gate with `baseline` takes one as it passes, by the
+approver who passed it, named "Revision N" for the revision it designates, `baseline.gate` its
+transition (0097 widened 0072's check). It is made before anything is recorded, so a gate whose
+baseline cannot be made - a part the approver may not read, a failure a publish would record -
+records nothing and refuses the approval (`gate_baseline_refused`).
+
+**A publication** (WF2-I; LIF-050, PUB-004): `publication: 'required'` requests one of that baseline
+as the gate passes, in every format its layout makes; `'permitted'` offers **Approve and publish** to
+an approver who may also publish (`publish: true`). A publication from a gate's baseline records
+`approval: 'approved'` and prints no notice; one from a person's baseline stays a draft. The document
+seed's **version 3** (0097), only where its newest was still the seed's version 2: Approve takes a
+baseline and permits a publication.
+
+**The approval page** (WF2-J; PUB-089) is [publishing.md](publishing.md)'s: a layout's
+`matter.approvals`, listing each approval of the version published.

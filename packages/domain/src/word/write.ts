@@ -626,7 +626,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   // An approved publication says nothing of being a draft (PUB-004; WF2-I): no notice in any header.
   const notice = document.words.notice;
   const noticeXml =
-    notice === null ? '' : writer.paragraph(theme.roles.notice, writer.runs(notice, writer.words)).xml;
+    notice === null
+      ? ''
+      : writer.paragraph(theme.roles.notice, writer.runs(notice, writer.words)).xml;
   const coverFurniture: Furniture | null = document.front.cover
     ? {
         header: headerParts.add(
@@ -639,7 +641,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const header = (withSection: boolean) =>
     headerParts.add(
       'header',
-      (noticeXml + (writer.slots(format, format.head, withSection)?.xml ?? '')) ||
+      noticeXml + (writer.slots(format, format.head, withSection)?.xml ?? '') ||
         writer.paragraph(theme.roles.running, '').xml,
     );
   const footer = (withSection: boolean) =>

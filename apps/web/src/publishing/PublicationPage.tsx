@@ -60,6 +60,8 @@ interface Shown {
   readonly publishedAt: string;
   /** The baseline it was made from, or none (the BL plan). */
   readonly baseline: string | null;
+  /** Made from a baseline taken at a workflow gate (PUB-004; the WF2 plan, WF2-I). */
+  readonly approved: boolean;
   /** The PDF's engine and template; none for a publication in Word alone (Word 1, ruling R11). */
   readonly engine: string | null;
   readonly template: number | null;
@@ -148,6 +150,7 @@ function shownIn(data: unknown): Shown | undefined {
     publisher: typeof data.publisher.displayName === 'string' ? data.publisher.displayName : null,
     publishedAt: data.publishedAt,
     baseline: typeof data.baseline === 'string' ? data.baseline : null,
+    approved: data.approval === 'approved',
     engine,
     template,
     outputs,
@@ -261,7 +264,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         <div className={styles['facts']}>
           <Chip className={styles['mono']}>{`from ${shown.version}`}</Chip>
           <Chip>{formats}</Chip>
-          <Chip tone="warn">Not approved</Chip>
+          {shown.approved ? <Chip tone="ok">Approved</Chip> : <Chip tone="warn">Not approved</Chip>}
           <span className={styles['published']}>
             Published by {shown.publisher ?? 'somebody'} on{' '}
             {new Date(shown.publishedAt).toLocaleString(undefined, {

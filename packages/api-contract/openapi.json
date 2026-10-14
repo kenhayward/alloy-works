@@ -24967,6 +24967,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -24993,6 +25006,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -25964,6 +25979,10 @@
                     "description": "Why it is rejected: required for a rejection, kept with it",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "publish": {
+                    "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -26106,6 +26125,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -26132,6 +26164,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -26380,7 +26414,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication",
             "content": {
               "application/json": {
                 "schema": {
@@ -34388,6 +34422,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -34414,6 +34461,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -52627,6 +52676,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -52653,6 +52715,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -53419,6 +53483,10 @@
                     "description": "Why it is rejected: required for a rejection, kept with it",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "publish": {
+                    "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -53561,6 +53629,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -53587,6 +53668,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -53835,7 +53918,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication",
             "content": {
               "application/json": {
                 "schema": {
@@ -114948,6 +115031,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -114974,6 +115070,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -115647,6 +115745,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -115673,6 +115784,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -116535,6 +116648,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -116561,6 +116687,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -118089,6 +118217,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -118115,6 +118256,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -118788,6 +118931,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -118814,6 +118970,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -119676,6 +119834,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -119702,6 +119873,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -121395,9 +121568,10 @@
                             "type": "string",
                             "enum": [
                               "none",
-                              "baseline"
+                              "baseline",
+                              "approved"
                             ],
-                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
@@ -126116,6 +126290,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -126142,6 +126329,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -127561,6 +127750,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -127587,6 +127789,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -128260,6 +128464,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -128286,6 +128503,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -129148,6 +129367,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -129174,6 +129406,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -142013,9 +142247,10 @@
                             "type": "string",
                             "enum": [
                               "none",
-                              "baseline"
+                              "baseline",
+                              "approved"
                             ],
-                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
@@ -142375,9 +142610,10 @@
                       "type": "string",
                       "enum": [
                         "none",
-                        "baseline"
+                        "baseline",
+                        "approved"
                       ],
-                      "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                      "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                     },
                     "baseline": {
                       "description": "The baseline it was made from, or null",
@@ -161183,6 +161419,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -161209,6 +161458,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -164615,6 +164866,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -164641,6 +164905,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",

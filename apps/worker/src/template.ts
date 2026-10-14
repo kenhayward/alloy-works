@@ -14,6 +14,7 @@ import {
   PUBLISHING_SCHEMA_18,
   PUBLISHING_SCHEMA_19,
   PUBLISHING_SCHEMA_20,
+  PUBLISHING_SCHEMA_21,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -30,9 +31,9 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
  * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_21` beside the new schema, key template
  * 21's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
  * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14`, TB1.2 for
- * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19` and TG3 for `publishing/20`.
+ * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19`, TG3 for `publishing/20` and WF2b for `publishing/21`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/21' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/22' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -113,6 +114,9 @@ export const PUBLICATION_TEMPLATE = {
   // TG3 repointed `PUBLISHING_SCHEMA` at `publishing/21`, and the guard above asked for this row:
   // template 21, which sets a table's columns at the widths `assemble` gave them.
   21: { name: 'publication', version: 21, file: at(21) },
+  // WF2b repointed `PUBLISHING_SCHEMA` at `publishing/22`, and the guard above asked for this row:
+  // template 22, which prints no notice on an approved publication, and its approval page.
+  22: { name: 'publication', version: 22, file: at(22) },
 } as const;
 
 /**
@@ -146,7 +150,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_18]: 18,
   [PUBLISHING_SCHEMA_19]: 19,
   [PUBLISHING_SCHEMA_20]: 20,
-  [PUBLISHING_SCHEMA_CURRENT]: 21,
+  [PUBLISHING_SCHEMA_21]: 21,
+  [PUBLISHING_SCHEMA_CURRENT]: 22,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -160,6 +165,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_17
   | typeof PUBLISHING_SCHEMA_18
   | typeof PUBLISHING_SCHEMA_19
-  | typeof PUBLISHING_SCHEMA_20,
+  | typeof PUBLISHING_SCHEMA_20
+  | typeof PUBLISHING_SCHEMA_21,
   keyof typeof PUBLICATION_TEMPLATE
 >;

@@ -594,8 +594,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 21,
-      pipeline_version: '24',
+      template_version: 22,
+      pipeline_version: '25',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1091,7 +1091,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '24',
+      pipeline_version: '25',
       format: 'docx',
       standard: null,
       producer: 'word',
@@ -1124,12 +1124,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 21,
-      pipeline_version: '24',
+      template_version: 22,
+      pipeline_version: '25',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '21',
+      producer_version: '22',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
@@ -1231,7 +1231,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     );
     expect(await work()).toBe('done');
     const [pdf, docx] = await outputsOf(id);
-    expect(pdf).toMatchObject({ format: 'pdf', template_version: 21, pipeline_version: '24' });
+    expect(pdf).toMatchObject({ format: 'pdf', template_version: 22, pipeline_version: '25' });
     expect(docx!.report).toContainEqual({
       kind: 'table_reflowed',
       node,
@@ -1276,7 +1276,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '21',
+        producer_version: '22',
         report: [],
       }),
     ]);

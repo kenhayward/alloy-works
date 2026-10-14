@@ -5324,7 +5324,9 @@ describe('writeDocx: an approved publication (the WF2 plan, WF2-I, WF2-J)', () =
     const { docx } = written({ status: 'approved', approvals });
     const [cover] = sections(docx);
     expect(cover!.paragraphs.map(textOf)).toEqual(['The dosing report']);
-    for (const name of Object.keys(docx.files).filter((each) => /^word\/header\d+\.xml$/.test(each))) {
+    for (const name of Object.keys(docx.files).filter((each) =>
+      /^word\/header\d+\.xml$/.test(each),
+    )) {
       expect(kids(docx.xml(name), 'w:p').map(textOf)).not.toContain('Not approved');
     }
   });

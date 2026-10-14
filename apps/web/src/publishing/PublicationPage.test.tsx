@@ -75,6 +75,18 @@ describe('a publication at its own address', () => {
     );
   });
 
+  it('PUB-004 says an approved publication is approved, and never that it is not', async () => {
+    open(
+      json(200, {
+        ...record,
+        approval: 'approved',
+        baseline: 'bbbbbbbb-0000-4000-8000-000000000001',
+      }),
+    );
+    expect(await screen.findByText('Approved')).toBeInTheDocument();
+    expect(screen.queryByText('Not approved')).not.toBeInTheDocument();
+  });
+
   it('says it is not approved, who published which version, and offers its PDF', async () => {
     open(
       json(200, {

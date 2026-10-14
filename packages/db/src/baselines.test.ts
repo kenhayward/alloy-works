@@ -871,7 +871,7 @@ describe('baselines', () => {
     ).rejects.toMatchObject({ constraint: expect.stringMatching(/^baseline_pin/) });
   });
 
-  it('VER-058 records a baseline’s parts only in the transaction that made it, and no gate until LIF names one', async () => {
+  it('VER-058 records a baseline’s parts only in the transaction that made it, and a gate only by its transition key', async () => {
     const lone = await component(general, ada, 'Late');
     const document = await documentWith([]);
     const id = made(await make(document, 'Closed'));
@@ -892,7 +892,7 @@ describe('baselines', () => {
     await expect(
       queryAs(
         db.adminUrl,
-        `update ${production.role}.baseline set gate = 'approval' where id = $1`,
+        `update ${production.role}.baseline set gate = 'Not a key' where id = $1`,
         [id],
       ),
     ).rejects.toThrow(/baseline_gate/);

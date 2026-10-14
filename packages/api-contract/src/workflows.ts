@@ -190,6 +190,14 @@ export const GateView = z.object({
   reject: z
     .object({ name: z.string(), to: WorkflowStateView })
     .describe('What a rejection is called, and the state it returns to'),
+  publication: z
+    .enum(['none', 'permitted', 'required'])
+    .describe(
+      'Whether passing it may (permitted) or must (required) request an approved publication of its baseline',
+    ),
+  mayPublish: z
+    .boolean()
+    .describe('Where it permits one, whether the caller may ask for it as they approve'),
   count: z.int().min(0).describe('Approvals this round on the current version'),
   required: z.int().min(1).describe('Approvals it needs, each by a distinct person'),
   approvedByCaller: z.boolean().describe('Whether the caller has approved it this round'),
@@ -227,6 +235,12 @@ export const ApprovalBody = z.strictObject({
     .max(2000)
     .optional()
     .describe('Why it is rejected: required for a rejection, kept with it'),
+  publish: z
+    .boolean()
+    .optional()
+    .describe(
+      "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+    ),
 });
 export type ApprovalBody = z.infer<typeof ApprovalBody>;
 
@@ -294,7 +308,7 @@ const approvalResponses = (kind: 'component' | 'document') =>
     },
     409: {
       description:
-        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived',
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication',
       schema: TransitionRefusal,
     },
   }) as const;

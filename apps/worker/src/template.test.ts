@@ -28,6 +28,7 @@ import {
   PUBLISHING_SCHEMA_18,
   PUBLISHING_SCHEMA_19,
   PUBLISHING_SCHEMA_20,
+  PUBLISHING_SCHEMA_21,
   readTheme,
   SECOND_DEFAULT_CATALOGUES_BY_VERSION,
   THIRD_DEFAULT_THEME,
@@ -185,9 +186,10 @@ describe('the publication template', () => {
     // table's group headings set as headers of their level that repeat, and its subtotals (TG1),
     // re-pinned freely likewise. Template 20 reads `publishing/20`: template 19 with a transposed
     // table's values at their own alignment and wrap (TG2), re-pinned freely likewise. Template 21 reads
-    // `publishing/21`: template 20 with a table's columns at the widths `assemble` gave them (TG3),
-    // re-pinned freely likewise. Templates 1 to 20 are published versions and their rows never move
-    // again.
+    // `publishing/21`: template 20 with a table's columns at the widths `assemble` gave them (TG3).
+    // Template 22 reads `publishing/22`: template 21 printing no notice on an approved publication,
+    // and its approval page (WF2b), re-pinned freely likewise. Templates 1 to 21 are published versions
+    // and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -210,6 +212,7 @@ describe('the publication template', () => {
       19: 'f7b3235f264d48fdc51a439bcfb402184ab578f801821a34743a402eba488722',
       20: '657b3ab78c1afd860f6f460e5cb58b80fbfdc94feced6d37e2fdcc4044069c0a',
       21: '8cdd09b55cfd05d8516d393e4f31f170f2d7856d68de4a6fba3cfceca99f5aa8',
+      22: '923598e75b70fd191795b94ee4b04e539c578a7205027dde2e50e897e61ddbff',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -244,6 +247,7 @@ describe('the publication template', () => {
       'publishing/19': 19,
       'publishing/20': 20,
       'publishing/21': 21,
+      'publishing/22': 22,
     });
   });
 
@@ -252,7 +256,7 @@ describe('the publication template', () => {
     // dash before it. Templates 5 to 7 set the attribution themselves, so the parameter's name never
     // appears in any of them.
     for (const version of [
-      5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
     ] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
@@ -345,7 +349,8 @@ describe('the publication template', () => {
       18: PUBLISHING_SCHEMA_18,
       19: PUBLISHING_SCHEMA_19,
       20: PUBLISHING_SCHEMA_20,
-      21: PUBLISHING_SCHEMA,
+      21: PUBLISHING_SCHEMA_21,
+      22: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -475,6 +480,8 @@ describe('the pipeline version', () => {
     '22': '565c96ca0c27b5e2e247bd269afe745894c11b98d5c60ecd93144dfd48509702',
     '23': '74bac0eb10c86431ac614534287cbbbe108bf47b56f6c03da043138874fb0470',
     '24': '74bac0eb10c86431ac614534287cbbbe108bf47b56f6c03da043138874fb0470',
+    // `publishing/22` (WF2b): a draft's front carries `approvals: null`, so the same input digests anew.
+    '25': '4b953922c8473b9dda22f82dbe8ecbb542a351c259236911f8c43ef861712687',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
   // input is fixed at one: the default theme's 0.3, which '13' to '15' were pinned under. The default moving
@@ -494,7 +501,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/21': '24' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/22': '25' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -518,7 +525,7 @@ describe('the pipeline version', () => {
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('24');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('25');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

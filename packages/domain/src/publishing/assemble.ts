@@ -2264,7 +2264,9 @@ export function assemble(given: AssembleInput): Assembled {
         : { page: previewWords.notice, text: previewWords.sentence };
   // The approval page an approved publication sets, where its layout declares one and it has any.
   const approvals =
-    status === 'approved' && layout.matter.approvals !== undefined && (input.approvals ?? []).length > 0
+    status === 'approved' &&
+    layout.matter.approvals !== undefined &&
+    (input.approvals ?? []).length > 0
       ? { title: layout.matter.approvals.title, entries: [...(input.approvals ?? [])] }
       : null;
   return {
