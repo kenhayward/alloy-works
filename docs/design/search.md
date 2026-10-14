@@ -208,7 +208,15 @@ The total stays exact to the cap.
   spike did, and measures p95 for three kinds of user. Within it in one hand run at a million (2026-10-14,
   after #604, #605 and #608): worst p95 249.5 ms (the latest, title: terms alone, medium reader), every
   version 240.8 ms; the margin is under the run-to-run spread (the unchanged latest case moved 226 to
-  249.5 ms), so it is not yet claimed.
+  249.5 ms), so it is not yet claimed. #610 added field terms alone (a word rare in the field and common
+  elsewhere, and the field's own word), words beside a title or field term, and a common word beside a
+  field term rare in it, and gave the narrow and medium readers Status. In a run at a million after 0094,
+  those with a rare or narrowing term were at most 178.8 ms p95 (every version, broad, words and a field
+  term; before 0094 a common word with a rare field term took 70 s). Over it: a field's own common word
+  for the medium reader, 237 ms latest and 305 ms every version (264 ms in an earlier run; unchanged by
+  0094, the shape of title terms alone, 282 and 287 ms in the same run), and a field value filter for the
+  medium reader, about 465 ms, measured for the first time now medium reads Status. That run was slower
+  than earlier ones throughout (unchanged cases up to 332 ms).
 
 ## Searching words, in T1
 
