@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.167.0 - 2026-10-14 (PR #619)
+
+Workflow's second phase: gates, approvals and revisions, approved publications, and reviewed query definitions (ADR-0061).
+
+### Added
+
+- **Gates and approvals.** A workflow transition can be a gate: it passes once enough approvers, none of them its authors, approve the current version, and any approver can return it with a reason.
+- **Revisions.** Passing a gate designates a revision, shown beside the state; versions after it count under its number.
+- **Approved publications.** A document's gate can take a baseline as it passes and publish it. A publication made from it says Approved and prints no draft notice.
+- **An approval page.** A layout can declare one: an approved publication then lists who approved it, when, and at which gate.
+- **Query definitions are reviewed.** A query definition has a workflow of its own, approved at a gate as content is, shown on its page and set in Administration > Workflows.
+
 ## 0.166.0 - 2026-10-14 (PR #616)
 
 Workflow's first phase: definitions and states (ADR-0061), and the search fixes since 0.165.0.

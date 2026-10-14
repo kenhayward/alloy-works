@@ -71,3 +71,8 @@ LIF-052, LIF-074, LIF-075, VER-012 to VER-015, VER-059, PUB-004, PUB-089, DAT-12
 | The final review: the approval page listed approvals of earlier rounds, and an address where a person had no display name   | The round that passed alone, by display name                                                                            |
 | The final review: an approver without `publish` passes a gate taking a baseline or requiring a publication                  | Recorded as the gate's act in workflow.md; asking for a permitted one needs `publish`                                   |
 | The final review: Return was hidden from an approver who had approved                                                       | Shown; only Approve is withheld                                                                                         |
+
+## Built
+
+WF2a #617, and WF2b with WF2c and the close (0.167.0) #619, one PR rather than two (ADR-0039). LIF-005
+stays unclaimed, and a reference following the latest approved revision is phase 4's.
