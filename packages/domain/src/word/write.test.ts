@@ -5312,3 +5312,29 @@ describe('writeDocx: columns as wide as the table says (the TG plan, TG3)', () =
     expect(Math.abs(shared[2]! - room * 0.5)).toBeLessThanOrEqual(1);
   });
 });
+
+describe('writeDocx: an approved publication (the WF2 plan, WF2-I, WF2-J)', () => {
+  const approvals = [{ by: 'Grace', at: '2026-10-14', gate: 'Approve' }];
+  const withPage: Layout = {
+    ...defaultLayout,
+    matter: { ...defaultLayout.matter, approvals: { title: 'Approvals' } },
+  };
+
+  it('PUB-004 writes no notice in any header and no sentence beneath the title', () => {
+    const { docx } = written({ status: 'approved', approvals });
+    const [cover] = sections(docx);
+    expect(cover!.paragraphs.map(textOf)).toEqual(['The dosing report']);
+    for (const name of Object.keys(docx.files).filter((each) => /^word\/header\d+\.xml$/.test(each))) {
+      expect(kids(docx.xml(name), 'w:p').map(textOf)).not.toContain('Not approved');
+    }
+  });
+
+  it('PUB-089 writes the approval page its layout declares, each approval beneath its title', () => {
+    const { docx } = written({ layout: withPage, status: 'approved', approvals });
+    const [, front] = sections(docx);
+    expect(front!.paragraphs.slice(0, 2).map(textOf)).toEqual([
+      'Approvals',
+      'Grace, 2026-10-14, Approve',
+    ]);
+  });
+});

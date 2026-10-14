@@ -1491,6 +1491,19 @@ export async function recordPublication(
   }
 }
 
+/** The gate a baseline was taken at, or null for a person's (VER-059). */
+export async function baselineGate(
+  trx: TenantTransaction,
+  baselineId: string,
+): Promise<string | null> {
+  const row = await trx
+    .selectFrom('baseline')
+    .select('gate')
+    .where('id', '=', baselineId)
+    .executeTakeFirst();
+  return row?.gate ?? null;
+}
+
 async function insertPublication(
   trx: TenantTransaction,
   request: {
@@ -1512,6 +1525,9 @@ async function insertPublication(
 ): Promise<string> {
   // The PDF's engine and template are the publication's, as they always were; none without a PDF.
   const pdf = input.outputs.find((each) => each.format === 'pdf');
+  // A baseline taken at a gate makes an approved publication (PUB-004; the WF2 plan, WF2-I).
+  const gated =
+    request.baseline_id !== null && (await baselineGate(trx, request.baseline_id)) !== null;
   const artifact = await trx
     .insertInto('artifact')
     .values({ kind: 'publication', space_id: request.space_id })
@@ -1530,7 +1546,7 @@ async function insertPublication(
       // An environment short of 0073 has no column to name, and nothing made from a baseline.
       ...(request.baseline_id === null
         ? { approval: 'none' as const }
-        : { approval: 'baseline' as const, baseline_id: request.baseline_id }),
+        : { approval: gated ? ('approved' as const) : ('baseline' as const), baseline_id: request.baseline_id }),
       formats: request.formats,
       engine: pdf ? 'typst' : null,
       engine_version: pdf?.engineVersion ?? null,
@@ -2040,7 +2056,7 @@ export interface StoredPublication {
   readonly publisher: { readonly id: string; readonly displayName: string | null };
   readonly publishedAt: Date;
   /** `baseline` where it was made from one (0073), which `baseline` names; `none` otherwise. */
-  readonly approval: 'none' | 'baseline';
+  readonly approval: 'none' | 'baseline' | 'approved';
   readonly baseline: string | null;
   readonly formats: readonly PublishingFormat[];
   /** The PDF's engine and template, or none where the publication has no PDF (0027). */
@@ -2315,7 +2331,7 @@ function summaryOf(row: {
   document_version_id: string;
   title: string;
   published_at: Date;
-  approval: 'none' | 'baseline';
+  approval: 'none' | 'baseline' | 'approved';
   baseline_id: string | null;
   formats: PublishingFormat[];
   engine_version: string | null;

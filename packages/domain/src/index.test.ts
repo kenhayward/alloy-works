@@ -259,6 +259,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_18',
         'PUBLISHING_SCHEMA_19',
         'PUBLISHING_SCHEMA_20',
+        'PUBLISHING_SCHEMA_21',
         'assemble',
         'columnExtents',
         'columnWidths',
@@ -672,6 +673,7 @@ describe('the domain package', () => {
         // WF2: gates, and the seed's version 1 beside its version 2.
         'GATE_PUBLICATIONS',
         'SEED_WORKFLOW_1',
+        'SEED_DOCUMENT_WORKFLOW',
       ].sort(),
     );
   });

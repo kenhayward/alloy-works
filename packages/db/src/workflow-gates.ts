@@ -1,6 +1,13 @@
 import type { TransitionPermission, WorkflowKind } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
+import {
+  makeBaseline,
+  requestBaselinePublication,
+  type BaselinePublicationAnswer,
+  type MakeBaselineAnswer,
+} from './baselines.js';
+import { readLayout } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
@@ -31,6 +38,20 @@ export type GateAnswer =
       readonly standing: WorkflowStanding;
       /** The revision the artifact is at once passed; null where the gate designates none. */
       readonly revision: number | null;
+      /** The baseline the gate took, where it takes one (VER-059). */
+      readonly baseline: string | null;
+      /** The publication requested from it, where the gate asked for one (LIF-050). */
+      readonly request: string | null;
+    }
+  /** The gate takes a baseline, and none could be made: nothing is recorded (WF2-H). */
+  | {
+      readonly answer: 'baseline.refused';
+      readonly refusal: Exclude<MakeBaselineAnswer, { answer: 'made' }>;
+    }
+  /** The gate requests a publication, and none could be: nothing is recorded (WF2-I). */
+  | {
+      readonly answer: 'publication.refused';
+      readonly refusal: Exclude<BaselinePublicationAnswer, { answer: 'requested' }>;
     }
   | { readonly answer: 'rejected'; readonly standing: WorkflowStanding }
   | { readonly answer: 'artifact.missing' }
@@ -76,6 +97,8 @@ export async function decideGate(
     readonly decision: 'approved' | 'rejected';
     readonly reason?: string | undefined;
     readonly by: string;
+    /** Where the gate permits a publication, whether the approver asks for one as it passes. */
+    readonly publish?: boolean | undefined;
     readonly may: (permission: TransitionPermission) => boolean;
   },
 ): Promise<GateAnswer> {
@@ -146,6 +169,37 @@ export async function decideGate(
   if (gate.notAuthor && (await authorsSince(trx, input.artifactId)).has(input.by)) {
     return { answer: 'approval.author' };
   }
+  const passes = progress.count + 1 >= gate.approvals;
+  // A version is designated once: approved again unchanged, it keeps its revision (WF2-F).
+  const designating = passes && gate.designates && standing.revision?.versionId !== version;
+  const number = designating ? (standing.revision?.number ?? 0) + 1 : standing.revision?.number;
+
+  // The baseline and the publication the gate asks for are made first, so that a gate which cannot
+  // take them records nothing and stays where it was (WF2-H, WF2-I).
+  let baseline: string | null = null;
+  let request: string | null = null;
+  if (passes && gate.baseline && standing.kind === 'document') {
+    const made = await makeBaseline(trx, {
+      documentId: input.artifactId,
+      version,
+      name: number === undefined ? `${transition.name} ${new Date().toISOString()}` : `Revision ${number}`,
+      maker: input.by,
+      gate: transition.key,
+    });
+    if (made.answer !== 'made') return { answer: 'baseline.refused', refusal: made };
+    baseline = made.baseline;
+    if (gate.publication === 'required' || (gate.publication === 'permitted' && input.publish)) {
+      const requested = await requestBaselinePublication(trx, {
+        baseline,
+        formats: await layoutFormats(trx, baseline),
+        requester: input.by,
+      });
+      if (requested.answer !== 'requested') {
+        return { answer: 'publication.refused', refusal: requested };
+      }
+      request = requested.request.id;
+    }
+  }
   await trx
     .insertInto('workflow_approval')
     .values({
@@ -188,9 +242,7 @@ export async function decideGate(
     by: input.by,
   });
   let revision = standing.revision;
-  // A version is designated once: approved again unchanged, it keeps its revision (WF2-F).
-  if (gate.designates && revision?.versionId !== version) {
-    const number = (revision?.number ?? 0) + 1;
+  if (designating && number !== undefined) {
     await trx
       .insertInto('revision_designation')
       .values({
@@ -219,7 +271,22 @@ export async function decideGate(
     answer: 'passed',
     standing: (await workflowStanding(trx, input.artifactId))!,
     revision: gate.designates ? (revision?.number ?? null) : null,
+    baseline,
+    request,
   };
+}
+
+/** The formats a baseline's layout makes: the PDF, and Word where it has a Word page. */
+async function layoutFormats(trx: TenantTransaction, baseline: string): Promise<string[]> {
+  const row = await trx
+    .selectFrom('baseline as b')
+    .innerJoin('artifact_version as l', 'l.id', 'b.layout_version_id')
+    .select(['b.layout_id', 'b.layout_version_id', 'l.content'])
+    .where('b.id', '=', baseline)
+    .executeTakeFirstOrThrow();
+  const read = readLayout(row.content, { artifact: row.layout_id, version: row.layout_version_id });
+  if (!read.ok) return ['pdf'];
+  return read.layout.formats.docx === undefined ? ['pdf'] : ['pdf', 'docx'];
 }
 
 /** One approval or rejection, as an artifact's history lists it (LIF-008, LIF-051). */

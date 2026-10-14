@@ -111,7 +111,11 @@ export interface PublicationTable {
   document_kind: ColumnType<'document', never, never>;
   publisher: ColumnType<string, string, never>;
   published_at: ColumnType<Date, Date, never>;
-  approval: ColumnType<'none' | 'baseline', 'none' | 'baseline', never>;
+  approval: ColumnType<
+    'none' | 'baseline' | 'approved',
+    'none' | 'baseline' | 'approved',
+    never
+  >;
   /** The baseline its request was made from (0073), or none. */
   baseline_id: ColumnType<string | null, string | null | undefined, never>;
   /** The PDF first, as the request names them (0027). */

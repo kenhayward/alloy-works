@@ -11,7 +11,8 @@ export interface BaselineTable {
   made_by: ColumnType<string, string, never>;
   made_at: ColumnType<Date, never, never>;
   made_tx: ColumnType<string, never, never>;
-  gate: ColumnType<string | null, never, never>;
+  /** The gate it was made at, by its transition key (0097; VER-059); null for a person's. */
+  gate: ColumnType<string | null, string | null | undefined, never>;
   layout_id: ColumnType<string, string, never>;
   layout_version_id: ColumnType<string, string, never>;
   layout_kind: ColumnType<'layout', never, never>;

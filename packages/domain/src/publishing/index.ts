@@ -147,8 +147,12 @@ export {
   PUBLISHING_SCHEMA_19,
   // Frozen by TG3, which made `publishing/21`: the schema template 20 reads.
   PUBLISHING_SCHEMA_20,
+  // Frozen by WF2b, which made `publishing/22`: the schema template 21 reads.
+  PUBLISHING_SCHEMA_21,
 } from './published.js';
 export type {
+  PublishedApproval,
+  PublishedApprovals,
   PublishedBlock,
   PublishedBlock1,
   PublishedDocument,

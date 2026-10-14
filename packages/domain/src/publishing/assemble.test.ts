@@ -58,6 +58,7 @@ import {
   PUBLISHING_SCHEMA_18,
   PUBLISHING_SCHEMA_19,
   PUBLISHING_SCHEMA_20,
+  PUBLISHING_SCHEMA_21,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -983,7 +984,12 @@ describe('assemble', () => {
   it('PUB-079 publishes an empty document as the cover its layout declares, and refuses one whose layout declares nothing with something to show', () => {
     const empty = assemble(input({ outline: outline([]) }));
     expect(empty.ok).toBe(true);
-    expect(empty.ok && empty.document.front).toEqual({ cover: true, contents: null, lists: [] });
+    expect(empty.ok && empty.document.front).toEqual({
+      cover: true,
+      contents: null,
+      lists: [],
+      approvals: null,
+    });
     expect(empty.ok && empty.document.nodes).toEqual([]);
 
     const nothing = [
@@ -1013,6 +1019,7 @@ describe('assemble', () => {
       cover: false,
       contents: { depth: 3 },
       lists: [],
+      approvals: null,
     });
   });
 
@@ -1043,7 +1050,12 @@ describe('assemble', () => {
       // What a continued table's label adds (themes 2): the default layout's 0.5 says it.
       continued: '(continued)',
     });
-    expect(assembled.document.front).toEqual({ cover: true, contents: { depth: 3 }, lists: [] });
+    expect(assembled.document.front).toEqual({
+      cover: true,
+      contents: { depth: 3 },
+      lists: [],
+      approvals: null,
+    });
     expect(assembled.document.appendices).toEqual({ newPage: true });
     // The document's language is its own, whatever the layout's words are in.
     expect(assembled.document.language).toEqual({ lang: 'en', region: 'GB' });
@@ -1154,8 +1166,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/21, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/21');
+  it('assembles under a layout as publishing/22, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/22');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1741,8 +1753,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/21, and publishing/4 to publishing/20 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/21');
+  it('makes publishing/22, and publishing/4 to publishing/21 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/22');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1760,6 +1772,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_18).toBe('publishing/18');
     expect(PUBLISHING_SCHEMA_19).toBe('publishing/19');
     expect(PUBLISHING_SCHEMA_20).toBe('publishing/20');
+    expect(PUBLISHING_SCHEMA_21).toBe('publishing/21');
   });
 });
 
@@ -4578,11 +4591,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/21, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/22, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/21');
+    expect(assembled.document.schema).toBe('publishing/22');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -6903,5 +6916,56 @@ describe("a table's columns as wide as its style says (the TG plan, TG3)", () =>
       );
       expect(table).not.toHaveProperty('widths');
     }
+  });
+});
+
+describe('an approved publication, assembled (the WF2 plan, WF2-I, WF2-J)', () => {
+  const report = (over: Partial<UnderALayout> = {}) =>
+    input({
+      outline: outline([section('intro', 'Introduction', [reference('calib')])]),
+      occurrences: new Map([[id('calib'), component([paragraph('p1', text('Set the tray.'))])]]),
+      ...over,
+    });
+  const approvals = [
+    { by: 'Grace', at: '2026-10-14', gate: 'Approve' },
+    { by: 'Lin', at: '2026-10-14', gate: 'Approve' },
+  ];
+  const withPage = layoutWith((layout) => {
+    layout.matter.approvals = { title: 'Approvals' };
+  });
+
+  it('PUB-004 prints no notice and no sentence on a publication made from a baseline taken at a gate', () => {
+    const approved = assemble({ ...report(), status: 'approved', approvals });
+    if (!approved.ok) throw new Error(JSON.stringify(approved.failures));
+    expect(approved.document.status).toBe('approved');
+    expect(approved.document.words).toMatchObject({ notice: null, noticeSentence: null });
+    expect(JSON.stringify(approved.document)).not.toContain(DRAFT_NOTICE.page);
+    // Without an approval page in its layout, it lists none.
+    expect(approved.document.front.approvals).toBeNull();
+
+    const publish = assemble(report());
+    if (!publish.ok) throw new Error(JSON.stringify(publish.failures));
+    expect({
+      ...approved.document,
+      status: 'draft',
+      words: { ...approved.document.words, notice: 'n', noticeSentence: 's' },
+    }).toEqual({
+      ...publish.document,
+      words: { ...publish.document.words, notice: 'n', noticeSentence: 's' },
+    });
+  });
+
+  it('PUB-089 sets the approval page the layout declares, listing each approval of what is published, on an approved publication alone', () => {
+    const approved = assemble({
+      ...report({ layout: withPage }),
+      status: 'approved',
+      approvals,
+    });
+    if (!approved.ok) throw new Error(JSON.stringify(approved.failures));
+    expect(approved.document.front.approvals).toEqual({ title: 'Approvals', entries: approvals });
+
+    // A draft has nothing approved to show.
+    const draft = assemble(report({ layout: withPage }));
+    expect(draft.ok && draft.document.front.approvals).toBeNull();
   });
 });

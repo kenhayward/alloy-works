@@ -300,6 +300,19 @@ export const SEED_WORKFLOW: WorkflowBody = {
   ],
 };
 
+/**
+ * The document seed's version 3 (the WF2 plan, WF2-H, WF2-I): its Approve also takes a baseline, from
+ * which its approver may publish an approved publication.
+ */
+export const SEED_DOCUMENT_WORKFLOW: WorkflowBody = {
+  ...SEED_WORKFLOW,
+  transitions: SEED_WORKFLOW.transitions.map((each) =>
+    each.gate === undefined
+      ? each
+      : { ...each, gate: { ...each.gate, baseline: true, publication: 'permitted' as const } },
+  ),
+};
+
 /** The initial state of a body that parsed. */
 export function initialState(body: WorkflowBody): WorkflowState {
   const found = body.states.find((each) => each.initial);

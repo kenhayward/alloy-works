@@ -74,6 +74,8 @@ export async function makeBaseline(
     readonly version: string;
     readonly name: string;
     readonly maker: string;
+    /** The gate it is made at, by its transition key (VER-059); none for a person's. */
+    readonly gate?: string;
   },
 ): Promise<MakeBaselineAnswer> {
   const name = input.name.normalize('NFC');
@@ -150,6 +152,7 @@ export async function makeBaseline(
       template_id: template?.template_id ?? null,
       template_version_id: template?.template_version_id ?? null,
       digest: sha256Hex(baselineDigestInput(pins)),
+      ...(input.gate === undefined ? {} : { gate: input.gate }),
     })
     .onConflict((conflict) => conflict.columns(['document_id', 'name_key']).doNothing())
     .returning('id')
