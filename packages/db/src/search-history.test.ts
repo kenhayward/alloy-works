@@ -220,8 +220,9 @@ describe('search over every version from one row a place (SV3b)', () => {
   const search = (query: string, options: SearchOptions & { scope?: 'latest' | 'all' } = {}) =>
     tenant((trx) => searchWords(trx, ada, query, options)).then(resultsOf);
 
-  /** A text Stage and a person Steward on a Register type, made once. */
-  let registry: Promise<{ stage: string; steward: string; type: string }> | undefined;
+  /** A text Stage and Remark and a person Steward on a Register type, made once. */
+  let registry:
+    Promise<{ stage: string; steward: string; remark: string; type: string }> | undefined;
   const register = () =>
     (registry ??= (async () => {
       const defined = (kind: 'field' | 'metadataSchema' | 'componentType', body: object) =>
@@ -246,18 +247,25 @@ describe('search over every version from one row a place (SV3b)', () => {
         multiplicity: 'one',
         validation: {},
       });
+      const remark = await defined('field', {
+        name: 'Remark',
+        dataType: 'text',
+        multiplicity: 'one',
+        validation: {},
+      });
       const schema = await defined('metadataSchema', {
         name: 'Registry',
         entries: [
           { field: stage, required: false, fixed: false },
           { field: steward, required: false, fixed: false },
+          { field: remark, required: false, fixed: false },
         ],
       });
       const type = await defined('componentType', {
         name: 'Register',
         assignments: [{ schema, requires: [] }],
       });
-      return { stage, steward, type };
+      return { stage, steward, remark, type };
     })());
 
   const registered = async (title: string) => {
@@ -483,6 +491,52 @@ describe('search over every version from one row a place (SV3b)', () => {
     expect(await found('stage:pending', 'all')).toEqual([staged.artifactId]);
     expect(await found('dibbler stage:pending', 'all')).toEqual([staged.artifactId]);
     expect(await found('dibbler -stage:pending', 'all')).toEqual([]);
+  });
+
+  it('SCH-003 under every version matches a field term as its exact test does, a phrase, a hyphenated word and a negation included, on either road, its index narrowing words or not', async () => {
+    const { stage, remark } = await register();
+    const valued = async (title: string, ...values: Record<string, unknown>[]) => {
+      let version = await registered(title);
+      for (const each of values) version = await revise(version, { values: each });
+      return version.artifactId;
+    };
+    // A phrase in one field, a word of it in another of the same version, either way round.
+    const woylie = await valued('Woylie register', { [stage]: 'Red apple', [remark]: 'Apple' });
+    const boodie = await valued('Boodie register', { [stage]: 'Apple', [remark]: 'Red apple' });
+    // A hyphenated word, and a word, held only by an earlier version.
+    const ningbing = await valued(
+      'Ningbing register',
+      { [stage]: 'Half-done' },
+      { [stage]: 'Done' },
+    );
+    const wambenger = await valued(
+      'Wambenger register',
+      { [stage]: 'Pending' },
+      { [stage]: 'Settled' },
+    );
+    for (const [query, expected] of [
+      ['stage:"red apple"', [woylie]],
+      ['woylie stage:"red apple"', [woylie]],
+      ['remark:"red apple"', [boodie]],
+      ['boodie remark:"red apple"', [boodie]],
+      ['stage:half-done', [ningbing]],
+      ['ningbing stage:half-done', [ningbing]],
+      ['wambenger stage:-pending', [wambenger]],
+    ] as const) {
+      for (const road of ['walk', 'indexes'] as const) {
+        for (const narrows of [true, false]) {
+          const found = (await search(query, { scope: 'all', probe: { road, narrows } })).items.map(
+            (each) => each.artifactId,
+          );
+          expect({ query, road, narrows, found }).toEqual({
+            query,
+            road,
+            narrows,
+            found: expected,
+          });
+        }
+      }
+    }
   });
 
   it('SCH-003 under every version matches a place by its words over all its versions together: two words in two versions find it, -word excludes a place any version held it in, and a phrase held only by an earlier version is lost once one of its words reappears in the newest', async () => {

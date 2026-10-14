@@ -9,6 +9,11 @@ set constraints all immediate;
 
 alter table search_history add column fields_vector tsvector not null default '';
 
+-- One version's places together, each kept whole: `||` shifts the right operand's positions, so each
+-- place's phrases stand as written. The fold, which drops a newer place's words from the older, would
+-- break one place's phrase on a word another holds.
+create aggregate search_history_concat(tsvector) (sfunc = tsvector_concat, stype = tsvector);
+
 -- Each version's field places together, then each place's over its versions, oldest first, as
 -- `rebuildHistory` folds them. A version with no field folds nothing, so only those with one are read.
 update search_history h set fields_vector = f.fields_vector
@@ -17,7 +22,7 @@ from (
          search_history_agg(t.vector order by t.revision_no, t.version_no) as fields_vector
   from (
     select e.artifact_id, e.node, v.revision_no, v.version_no,
-           search_history_agg(s.vector order by s.place) as vector
+           search_history_concat(s.vector order by s.place) as vector
     from search_entry e
     join search_text s on s.entry_id = e.id and s.place like 'field:%'
     join artifact_version v on v.id = e.version_id
@@ -25,7 +30,7 @@ from (
     group by e.id, e.artifact_id, e.node, v.revision_no, v.version_no
     union all
     select e.artifact_id, e.node, v.revision_no, v.version_no,
-           search_history_agg(s.vector order by s.place)
+           search_history_concat(s.vector order by s.place)
     from search_earlier e
     join search_earlier_text s on s.entry_id = e.id and s.place like 'field:%'
     join artifact_version v on v.id = e.version_id

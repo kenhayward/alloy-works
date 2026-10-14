@@ -69,7 +69,7 @@ const columnsOf = (titled: boolean, fielded: boolean) =>
   ]);
 /** One version's fields' words together, from its places in `texts`, or none. */
 const fieldsOf = (texts: string) =>
-  sql`coalesce((select search_history_agg(f.vector order by f.place) from ${sql.table(texts)} f
+  sql`coalesce((select search_history_concat(f.vector order by f.place) from ${sql.table(texts)} f
                 where f.entry_id = e.id and f.place like 'field:%'), ''::tsvector)`;
 const kinds = sql`(${sql.join(HISTORY_KINDS.map((kind) => sql.lit(kind)))})`;
 

@@ -135,7 +135,10 @@ wanted term under three characters is looked for as a word alone, since no trigr
 terms are found through `search_text`'s word index, title terms through titles' own (0092), whose
 statistics count titles alone, and under every version through history's titles (0093; #608); field
 terms through fields' own, every field together, and under every version history's (0094; #610). A
-scoped term beside words is found through its place's index too (#610). On the
+scoped term beside words is found through its place's index too, where under a quarter of the rows
+hold it (#610). Under every version these indexes are asked for the term's lexemes alone, a phrase's
+joined by `&`, and not at all for a term that excludes, since a folded vector keeps every word but not
+every phrase; the places' test then decides, exactly. On the
 indexes road the per-place tests run on the candidates newest first until 1,001 pass, never on every
 match (#608). The filters are written so their columns' indexes serve them and the
 estimate counts them (#605).

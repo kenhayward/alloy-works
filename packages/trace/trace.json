@@ -23713,31 +23713,31 @@
     {
       "id": "LIF-020",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 397,
+      "line": 405,
       "kind": "title"
     },
     {
       "id": "SCH-003",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 376,
+      "line": 384,
       "kind": "title"
     },
     {
       "id": "SCH-010",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 530,
+      "line": 584,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 530,
+      "line": 584,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "packages/db/src/search-history.test.ts",
-      "line": 412,
+      "line": 420,
       "kind": "title"
     },
     {

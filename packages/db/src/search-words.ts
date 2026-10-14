@@ -41,6 +41,8 @@ export interface SearchProbe {
   /** How many of the newest rows a walk reads before it falls back; every row for a forced walk. */
   readonly reads?: number;
   readonly explain?: boolean;
+  /** Whether a scoped term's index narrows the words beside it, rather than the planner's reckoning. */
+  readonly narrows?: boolean;
   readonly seen?: (event: {
     readonly statement: 'results' | 'facets' | 'page';
     readonly road?: SearchRoad;
@@ -557,11 +559,41 @@ export async function searchWords(
     place === 'title'
       ? sql`(case when s.place = 'title' then s.vector end)`
       : sql`(case when s.place like 'field:%' then s.vector end)`;
+  // Under every version the driver reads words folded over versions (and a version's fields
+  // together), which keep every lexeme but not every phrase, and hold any word an excluding term
+  // refuses: it asks for the term's lexemes alone, a phrase's as `&`, and an excluding term has none, so
+  // the places' test alone decides (#610's review).
+  const lexemesOf = async (words: string) => {
+    const { rows } = await sql<{ c: string; q: string }>`
+      select c, websearch_to_tsquery(c::regconfig, ${words})::text as q
+      from unnest(${configurations}::text[]) c`.execute(trx);
+    const asked = rows.map(({ c, q }) => {
+      // Operators outside the quoted lexemes, which may hold any character.
+      const parts = q.split(/('(?:[^']|'')*')/u);
+      const outside = parts.filter((_, i) => i % 2 === 0).join(' ');
+      const rewritten = parts
+        .map((part, i) => (i % 2 === 0 ? part.replace(/<(?:-|\d+)>/gu, '&') : part))
+        .join('');
+      return { c, q: rewritten, excludes: outside.includes('!') };
+    });
+    return asked.some((each) => each.excludes) ? undefined : asked;
+  };
+  const asked = history && wanted !== undefined ? await lexemesOf(wanted.words) : undefined;
   const scopedDriver =
     wanted === undefined
       ? undefined
       : history
-        ? matches('e', wanted.words, own === false ? undefined : own)
+        ? asked === undefined
+          ? undefined
+          : asked.length === 0
+            ? sql<SqlBool>`false`
+            : sql<SqlBool>`(${sql.join(
+                asked.map(
+                  ({ c, q }) => sql`(e.configuration = ${c}::regconfig
+                    and ${own === false ? sql`e.vector` : own} @@ ${q}::tsquery)`,
+                ),
+                sql` or `,
+              )})`
         : sql<SqlBool>`e.id in (
             select s.entry_id from ${texts} s
             where ${field ? sql`s.place = ${wanted.place} and ` : sql``}${matches(
@@ -587,7 +619,7 @@ export async function searchWords(
   const driver =
     scopedDriver === undefined || parsed.words === ''
       ? scopedDriver
-      : (scope === 'latest' || history) && (await narrows(scopedDriver))
+      : (scope === 'latest' || history) && (options.probe?.narrows ?? (await narrows(scopedDriver)))
         ? scopedDriver
         : undefined;
   // The term the latest's driver finds is not tested again: the same rows, but the planner would
