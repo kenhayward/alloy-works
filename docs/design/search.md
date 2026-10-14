@@ -203,9 +203,10 @@ The total stays exact to the cap.
   page from meaning search.
 - **The plan test**: search runs with custom plans, since a regression here is otherwise invisible.
 - **The budget** (SCH-033): the conformance suite generates a tenant of a million components, as the
-  spike did, and measures p95 for three kinds of user. **Met** after #604, #605 and #608: every case
-  at a million is within it, the latest (worst p95 249.5ms, title terms alone for a medium reader) and
-  every version (worst 241ms), with little to spare in the worst few.
+  spike did, and measures p95 for three kinds of user. Within it in one hand run at a million (2026-10-14,
+  after #604, #605 and #608): worst p95 249.5 ms (the latest, title: terms alone, medium reader), every
+  version 240.8 ms; the margin is under the run-to-run spread (the unchanged latest case moved 226 to
+  249.5 ms), so it is not yet claimed.
 
 ## Searching words, in T1
 

@@ -74,6 +74,21 @@ function nodesIn(plan: unknown): string[] {
   return types;
 }
 
+/** The width the planner reckons of each sort in a JSON plan. */
+function sortWidthsIn(plan: unknown): number[] {
+  const widths: number[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) node.forEach(walk);
+    else if (node !== null && typeof node === 'object') {
+      const record = node as Record<string, unknown>;
+      if (record['Node Type'] === 'Sort') widths.push(Number(record['Plan Width']));
+      Object.values(record).forEach(walk);
+    }
+  };
+  walk(plan);
+  return widths;
+}
+
 const ZERO_CHANGED = ['today', 'week', 'month', 'year', 'earlier'].map((value) => ({
   value,
   label: value,
@@ -359,6 +374,36 @@ describe('search bounded at scale (SV3)', () => {
     expect(top[0]).toEqual(['Limit', 'Subquery Scan', 'Sort']);
   });
 
+  it('sorts the candidates whose places it tests by narrow rows, never their words', async () => {
+    for (const [query, scope] of [
+      ['title:yak', 'all'],
+      ['yak title:yak', 'latest'],
+    ] as const) {
+      const widths: number[] = [];
+      await service.withTenant(production, (trx) =>
+        searchWords(trx, ada, query, {
+          scope,
+          probe: {
+            road: 'indexes',
+            explain: true,
+            seen: (event) => {
+              if (event.statement === 'results' && event.plan !== undefined) {
+                widths.push(...sortWidthsIn(event.plan));
+              }
+            },
+          },
+        }),
+      );
+      // One sort a scan, each of ids, a node, a flag and two times: under a hundred bytes; with
+      // every column, hundreds.
+      expect({ query, sorts: widths.length > 0 }).toEqual({ query, sorts: true });
+      expect({ query, widths: widths.filter((width) => width >= 100) }).toEqual({
+        query,
+        widths: [],
+      });
+    }
+  });
+
   it("finds title terms alone under every version through history's titles, not every place's words", async () => {
     // A title few places hold: a tiny table's other indexes cost no more for one most hold.
     const { results } = await plans('title:herds', 'indexes', {}, 'all');
@@ -477,6 +522,14 @@ describe('search bounded at scale (SV3)', () => {
 
   it('returns the same page, total and facets on either road under every version for title terms alone, every page, filtered and not', async () => {
     await bothRoads('all', 'title:yak');
+  });
+
+  it('returns the same page, total and facets on either road for words and a scoped term, every page, filtered and not', async () => {
+    await bothRoads('latest', 'yak title:yak');
+  });
+
+  it('returns the same page, total and facets on either road under every version for words and a scoped term, every page, filtered and not', async () => {
+    await bothRoads('all', 'yak title:yak');
   });
 
   const nothingFor = async (scope: 'latest' | 'all', road?: SearchRoad) => {

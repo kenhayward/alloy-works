@@ -802,6 +802,10 @@ export async function searchWords(
         select e.id, ${at} from (select * from ${candidates} c order by changed_at desc, id desc
                                  limit ${reads}) e
         where ${where} order by e.changed_at desc, e.id desc limit ${N + 1}`;
+      // What the places' tests and the answer read, alone: a sort of every column could spill.
+      const narrow = sql.raw(
+        `e.id, e.artifact_id, e.node, e.changed_at${scope === 'latest' ? '' : ', e.current'}`,
+      );
       // Ordered by an expression no index holds, so the planner finds the matches by their indexes;
       // the places' tests then run in that order until N + 1 pass, not on every candidate (#608).
       const indexes =
@@ -811,7 +815,7 @@ export async function searchWords(
             order by e.changed_at + interval '0 s' desc, e.id desc limit ${N + 1}`
           : sql`
             select e.id, ${at}
-            from (select e.*, e.changed_at + interval '0 s' as sort_at from ${candidates} e
+            from (select ${narrow}, e.changed_at + interval '0 s' as sort_at from ${candidates} e
                   where ${candidateWhere} order by sort_at desc, e.id desc offset 0) e
             where ${held} order by e.sort_at desc, e.id desc limit ${N + 1}`;
       if (road === 'walk') {
