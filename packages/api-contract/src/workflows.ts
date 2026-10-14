@@ -111,6 +111,12 @@ export const WorkflowStateView = z
   .describe('Its workflow state now, named by the definition deciding its next move');
 export type WorkflowStateView = z.infer<typeof WorkflowStateView>;
 
+/** A component's or a document's own state, on its view and a move's answer (WF-F). */
+export const WorkflowStandingView = WorkflowStateView.extend({
+  approved: z.boolean().describe('Whether it counts as approved: a save starts a new draft'),
+}).describe('Its workflow state now, named by the definition deciding its next move');
+export type WorkflowStandingView = z.infer<typeof WorkflowStandingView>;
+
 /** A transition the reader may take now. */
 export const TransitionView = z.object({
   key: z.string(),
@@ -137,7 +143,7 @@ export const TransitionBody = z.strictObject({
 export type TransitionBody = z.infer<typeof TransitionBody>;
 
 export const TransitionAnswer = z.object({
-  state: WorkflowStateView,
+  state: WorkflowStandingView,
   transitions: z.array(TransitionView).describe('The transitions the caller may take from it now'),
 });
 export type TransitionAnswer = z.infer<typeof TransitionAnswer>;

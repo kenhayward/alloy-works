@@ -24858,11 +24858,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -25198,7 +25203,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -33250,11 +33256,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -33307,7 +33318,8 @@
                 "example": {
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": []
                 }
@@ -51352,11 +51364,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -51541,7 +51558,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -112644,11 +112662,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -112833,7 +112856,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -113206,11 +113230,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -113964,11 +113993,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -115388,11 +115422,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -115577,7 +115616,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -115950,11 +115990,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -116708,11 +116753,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -123018,11 +123068,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -123075,7 +123130,8 @@
                 "example": {
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": []
                 }
@@ -124326,11 +124382,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -124515,7 +124576,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -124888,11 +124950,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -125646,11 +125713,16 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
                             }
                           },
                           "required": [
                             "key",
-                            "name"
+                            "name",
+                            "approved"
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
@@ -157551,11 +157623,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -157891,7 +157968,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,
@@ -160846,11 +160924,16 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
                         }
                       },
                       "required": [
                         "key",
-                        "name"
+                        "name",
+                        "approved"
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
@@ -161035,7 +161118,8 @@
                   "mayRetire": false,
                   "state": {
                     "key": "example",
-                    "name": "example"
+                    "name": "example",
+                    "approved": false
                   },
                   "transitions": [],
                   "onHold": false,

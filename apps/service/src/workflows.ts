@@ -80,7 +80,7 @@ export async function workflowView(
   const standing = await workflowStanding(trx, id);
   if (!standing) throw new Error(`${id} has no workflow state`);
   return {
-    state: { key: standing.state.key, name: standing.state.name },
+    state: { ...standing.state },
     transitions: transitionsOffered(standing, facts, await isArchived(trx, id)),
   };
 }
@@ -110,7 +110,7 @@ export function workflowHandlers() {
       switch (answer.answer) {
         case 'moved':
           return {
-            state: { key: answer.standing.state.key, name: answer.standing.state.name },
+            state: { ...answer.standing.state },
             transitions: transitionsOffered(answer.standing, facts, false),
           };
         case 'artifact.missing':

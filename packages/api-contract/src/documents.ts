@@ -9,7 +9,7 @@ import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } fro
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 import { parameterRefusal, TemplateRefusal } from './templates.js';
-import { TransitionView, WorkflowStateView } from './workflows.js';
+import { TransitionView, WorkflowStandingView, WorkflowStateView } from './workflows.js';
 import { templateParameterSchema } from '@alloy-works/domain';
 
 /** A document, by the id its artifact carries - lowercase, unlike `ComponentParams`. */
@@ -232,7 +232,7 @@ export const DocumentView = z.object({
       'Archived: left out of ordinary listings and search, and still read, referenced and published',
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
-  state: WorkflowStateView,
+  state: WorkflowStandingView,
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),
