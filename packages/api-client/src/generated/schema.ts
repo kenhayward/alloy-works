@@ -2467,6 +2467,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/query-definitions/{id}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a query definition's approvals and rejections
+         * @description Lists every approval and rejection of a query definition at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the definition.
+         */
+        get: operations["listQueryDefinitionApprovals"];
+        put?: never;
+        /**
+         * Approve or reject a query definition at a gate
+         * @description Approves or rejects a query definition at a gate from its state, against the version the approver saw, needing approve on the definition, so that a change to a query is reviewed as content is. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision; a rejection needs a reason. Audited.
+         */
+        post: operations["decideQueryDefinitionGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/query-definitions/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a query definition along a workflow transition
+         * @description Moves a query definition along a transition from its state, named as the caller saw it, needing the transition's permission on the definition and a reason where the transition asks for one. Saving an approved definition moves it back to the initial state on its own. Audited.
+         */
+        post: operations["transitionQueryDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/query-definitions/{id}/uses": {
         parameters: {
             query?: never;
@@ -46749,7 +46793,19 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayRun": false,
-                     *       "mayUse": false
+                     *       "mayUse": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -46995,6 +47051,66 @@ export interface operations {
                         mayRun: boolean;
                         /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                         mayUse: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                     };
                 };
             };
@@ -47040,6 +47156,667 @@ export interface operations {
             };
             /** @description No such query definition in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listQueryDefinitionApprovals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every decision at its gates, newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "approvals": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every approval and rejection, newest first */
+                        approvals: {
+                            transition: string;
+                            /** @enum {string} */
+                            decision: "approved" | "rejected";
+                            /** @description A rejection's reason; null for an approval */
+                            reason: string | null;
+                            by: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            };
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * Format: uuid
+                             * @description The version decided
+                             */
+                            versionId: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not read this query definition */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideQueryDefinitionGate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "decision": "approved"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The gate, by its transition key */
+                    transition: string;
+                    /**
+                     * Format: uuid
+                     * @description The version the approver saw: refused, as version_moved, where it has been replaced since
+                     */
+                    version: string;
+                    /** @enum {string} */
+                    decision: "approved" | "rejected";
+                    /** @description Why it is rejected: required for a rejection, kept with it */
+                    reason?: string;
+                    /** @description Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish */
+                    publish?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Decided; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the query definition but may not approve it, or is one of its authors where the gate refuses them (approval_author) */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    transitionQueryDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "from": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The transition to take, by key */
+                    transition: string;
+                    /** @description The state the caller saw it in: refused, as state_moved, where it has moved since */
+                    from: string;
+                    /** @description Why, recorded with the move; required where the transition says so */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The transitions the caller may take from it now; a gate is decided, not taken */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the query definition but lacks the permission the transition needs */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                    };
+                };
+            };
+            /** @description The query definition has been deleted */
+            410: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -47549,7 +48326,19 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayRun": false,
-                     *       "mayUse": false
+                     *       "mayUse": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -47795,6 +48584,66 @@ export interface operations {
                         mayRun: boolean;
                         /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                         mayUse: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                     };
                 };
             };
@@ -48078,6 +48927,66 @@ export interface operations {
                             mayRun: boolean;
                             /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                             mayUse: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                         };
                     };
                 };
@@ -48422,6 +49331,66 @@ export interface operations {
                             mayRun: boolean;
                             /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                             mayUse: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                         };
                     };
                 };
@@ -54303,7 +55272,19 @@ export interface operations {
                      *       },
                      *       "mayEdit": false,
                      *       "mayRun": false,
-                     *       "mayUse": false
+                     *       "mayUse": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example",
+                     *         "approved": false
+                     *       },
+                     *       "transitions": [],
+                     *       "gates": [],
+                     *       "revision": {
+                     *         "number": 1,
+                     *         "versionId": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -54549,6 +55530,66 @@ export interface operations {
                         mayRun: boolean;
                         /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                         mayUse: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                            /** @description Whether it counts as approved: a save starts a new draft */
+                            approved: boolean;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                        /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                        gates: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to once passed */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description What a rejection is called, and the state it returns to */
+                            reject: {
+                                name: string;
+                                /** @description Its workflow state now, named by the definition deciding its next move */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                            };
+                            /**
+                             * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                             * @enum {string}
+                             */
+                            publication: "none" | "permitted" | "required";
+                            /** @description Where it permits one, whether the caller may ask for it as they approve */
+                            mayPublish: boolean;
+                            /** @description Approvals this round on the current version */
+                            count: number;
+                            /** @description Approvals it needs, each by a distinct person */
+                            required: number;
+                            /** @description Whether the caller has approved it this round */
+                            approvedByCaller: boolean;
+                            /** @description Whether the caller may approve or reject it now */
+                            mayDecide: boolean;
+                        }[];
+                        /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                        revision: {
+                            number: number;
+                            /** Format: uuid */
+                            versionId: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
                     };
                 };
             };
@@ -54832,6 +55873,66 @@ export interface operations {
                             mayRun: boolean;
                             /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                             mayUse: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                         };
                     };
                 };
@@ -55176,6 +56277,66 @@ export interface operations {
                             mayRun: boolean;
                             /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
                             mayUse: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers (DAT-121) */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
                         };
                     };
                 };
@@ -58739,7 +59900,7 @@ export interface operations {
                             /** @description The version in force: the newest */
                             definition: {
                                 /** @enum {string} */
-                                kind: "component" | "document";
+                                kind: "component" | "document" | "queryDefinition";
                                 /** @description Its version: 1 is the seed, and each save the next */
                                 version: number;
                                 body: {
@@ -58950,7 +60111,7 @@ export interface operations {
                      * @description The kind it is the workflow of
                      * @enum {string}
                      */
-                    kind: "component" | "document";
+                    kind: "component" | "document" | "queryDefinition";
                     /** @description The version the edit began from; refused if another has been saved since */
                     basedOn?: number;
                 };
@@ -58984,7 +60145,7 @@ export interface operations {
                      */
                     "application/json": {
                         /** @enum {string} */
-                        kind: "component" | "document";
+                        kind: "component" | "document" | "queryDefinition";
                         /** @description Its version: 1 is the seed, and each save the next */
                         version: number;
                         body: {
@@ -59143,7 +60304,7 @@ export interface operations {
                 "X-Request-Id"?: string;
             };
             path: {
-                kind: "component" | "document";
+                kind: "component" | "document" | "queryDefinition";
                 version: number;
             };
             cookie?: never;
@@ -59175,7 +60336,7 @@ export interface operations {
                      */
                     "application/json": {
                         /** @enum {string} */
-                        kind: "component" | "document";
+                        kind: "component" | "document" | "queryDefinition";
                         /** @description Its version: 1 is the seed, and each save the next */
                         version: number;
                         body: {

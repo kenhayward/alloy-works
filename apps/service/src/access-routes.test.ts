@@ -1028,6 +1028,20 @@ describe('routes that check a permission', () => {
       payload: { definition: aQueryDefinition(readings) },
     }),
     getQueryDefinition: () => ({ url: `/v1/query-definitions/${dailyReadings}`, status: 404 }),
+    listQueryDefinitionApprovals: () => ({
+      url: `/v1/query-definitions/${dailyReadings}/approvals`,
+      status: 404,
+    }),
+    transitionQueryDefinition: () => ({
+      url: `/v1/query-definitions/${dailyReadings}/transitions`,
+      status: 404,
+      payload: { transition: 'submit', from: 'draft' },
+    }),
+    decideQueryDefinitionGate: () => ({
+      url: `/v1/query-definitions/${dailyReadings}/approvals`,
+      status: 404,
+      payload: { transition: 'approve', version: MISSING, decision: 'approved' },
+    }),
     recordQueryDefinitionVersion: () => ({
       url: `/v1/query-definitions/${dailyReadings}/versions`,
       status: 404,

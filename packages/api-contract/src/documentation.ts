@@ -325,6 +325,9 @@ const operationTags = {
     'decideDocumentGate',
     'listComponentApprovals',
     'listDocumentApprovals',
+    'transitionQueryDefinition',
+    'decideQueryDefinitionGate',
+    'listQueryDefinitionApprovals',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -639,6 +642,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  transitionQueryDefinition:
+    "Moves a query definition along a transition from its state, named as the caller saw it, needing the transition's permission on the definition and a reason where the transition asks for one. Saving an approved definition moves it back to the initial state on its own. Audited.",
+  decideQueryDefinitionGate:
+    'Approves or rejects a query definition at a gate from its state, against the version the approver saw, needing approve on the definition, so that a change to a query is reviewed as content is. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision; a rejection needs a reason. Audited.',
+  listQueryDefinitionApprovals:
+    'Lists every approval and rejection of a query definition at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the definition.',
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:

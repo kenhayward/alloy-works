@@ -3,7 +3,7 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
 /** A workflow's kind: one for components, one for documents (the WF1 plan, WF-A). */
-export const WorkflowKindParam = z.enum(['component', 'document']);
+export const WorkflowKindParam = z.enum(['component', 'document', 'queryDefinition']);
 
 const Key = z
   .string()
@@ -289,7 +289,7 @@ const forbidden = {
   schema: ErrorBody,
 } as const;
 
-const approvalResponses = (kind: 'component' | 'document') =>
+const approvalResponses = (kind: 'component' | 'document' | 'query definition') =>
   ({
     200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
     400: {
@@ -313,7 +313,7 @@ const approvalResponses = (kind: 'component' | 'document') =>
     },
   }) as const;
 
-const transitionResponses = (kind: 'component' | 'document') =>
+const transitionResponses = (kind: 'component' | 'document' | 'query definition') =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
     400: {
@@ -454,6 +454,43 @@ export const workflowRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may not read this document', schema: ErrorBody },
       404: { description: 'No such document the caller may read', schema: ErrorBody },
+    },
+  },
+  transitionQueryDefinition: {
+    operationId: 'transitionQueryDefinition',
+    method: 'POST',
+    path: '/v1/query-definitions/{id}/transitions',
+    summary: 'Move a query definition along a workflow transition',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: TransitionBody,
+    responses: transitionResponses('query definition'),
+  },
+  decideQueryDefinitionGate: {
+    operationId: 'decideQueryDefinitionGate',
+    method: 'POST',
+    path: '/v1/query-definitions/{id}/approvals',
+    summary: 'Approve or reject a query definition at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('query definition'),
+  },
+  listQueryDefinitionApprovals: {
+    operationId: 'listQueryDefinitionApprovals',
+    method: 'GET',
+    path: '/v1/query-definitions/{id}/approvals',
+    summary: "List a query definition's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this query definition', schema: ErrorBody },
+      404: { description: 'No such query definition the caller may read', schema: ErrorBody },
     },
   },
   transitionDocument: {

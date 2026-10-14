@@ -7,7 +7,7 @@ import { Shown, useListing } from './listing.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-type Kind = 'component' | 'document';
+type Kind = 'component' | 'document' | 'queryDefinition';
 type Permission = 'edit' | 'approve';
 
 interface State {
@@ -58,6 +58,7 @@ type Edited<T> = T & { readonly label: string };
 const KINDS: Readonly<Record<Kind, { heading: string; one: string }>> = {
   component: { heading: 'Components', one: 'Component' },
   document: { heading: 'Documents', one: 'Document' },
+  queryDefinition: { heading: 'Query definitions', one: 'Query definition' },
 };
 
 const PERMISSIONS: Readonly<Record<Permission, string>> = { edit: 'Edit', approve: 'Approve' };

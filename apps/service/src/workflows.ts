@@ -146,7 +146,7 @@ export async function workflowView(
  */
 export function workflowHandlers() {
   const moving =
-    (kind: 'component' | 'document') =>
+    (kind: 'component' | 'document' | 'queryDefinition') =>
     async (
       request: FastifyRequest,
       { trx, principalId, facts, target }: Authorised,
@@ -202,7 +202,7 @@ export function workflowHandlers() {
     };
 
   const deciding =
-    (kind: 'component' | 'document') =>
+    (kind: 'component' | 'document' | 'queryDefinition') =>
     async (
       request: FastifyRequest,
       { trx, principalId, facts, target }: Authorised,
@@ -353,6 +353,9 @@ export function workflowHandlers() {
 
     transitionComponent: moving('component'),
     transitionDocument: moving('document'),
+    transitionQueryDefinition: moving('queryDefinition'),
+    decideQueryDefinitionGate: deciding('queryDefinition'),
+    listQueryDefinitionApprovals: approvals,
     decideComponentGate: deciding('component'),
     decideDocumentGate: deciding('document'),
     listComponentApprovals: approvals,

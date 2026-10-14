@@ -27,6 +27,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised, type Caller } from '../access.js';
+import { workflowView } from '../workflows.js';
 import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
@@ -73,6 +74,8 @@ async function definitionView(
     mayEdit: decide('edit', facts).allowed && mayRun,
     mayRun,
     mayUse: atConnection !== undefined && decide('use_connection', atConnection).allowed,
+    // Reviewed and approved as content is (DAT-121; the WF2 plan, WF2-K).
+    ...(await workflowView(trx, stored.id, facts, caller.principalId)),
   };
 }
 

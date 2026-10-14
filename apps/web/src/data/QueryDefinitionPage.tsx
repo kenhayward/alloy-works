@@ -42,6 +42,14 @@ import { connectionLink, queryDefinitionLink } from './links.js';
 import { useDefinitionPlaces, type Place } from './places.js';
 import { Icon } from '../editor/Icon.js';
 import { Chip } from '../parts/Chip.js';
+import {
+  readStanding,
+  RevisionChip,
+  standingIn,
+  TransitionButtons,
+  type Standing,
+} from '../lifecycle/Workflow.js';
+import { StateLozenge } from '../states/Lozenge.js';
 import { DetailPage } from '../parts/DetailPage.js';
 import { IconButton } from '../parts/IconButton.js';
 import type { PanelTab } from '../parts/PanelTabs.js';
@@ -73,6 +81,8 @@ interface DefinitionView {
   } | null;
   readonly mayEdit: boolean;
   readonly mayRun: boolean;
+  /** Where it stands in its workflow (DAT-121), read by `standingIn`. */
+  readonly state?: unknown;
 }
 
 function isDefinitionView(value: unknown): value is DefinitionView {
@@ -795,6 +805,11 @@ export function QueryDefinitionPage({
   const [typed, setTyped] = useState<Readonly<Record<string, string>>>({});
   const [sampled, setSampled] = useState<Sampled | string[] | null>(null);
   const [saved, setSaved] = useState<string[] | null>(null);
+  // Its workflow standing as a move or a decision answered it, until its view is read again (DAT-121).
+  const [standingNow, setStandingNow] = useState<Standing | undefined>(undefined);
+  const [workflowSaid, setWorkflowSaid] = useState('');
+  const viewed = typeof view === 'object' && view !== null ? view.version.id : null;
+  useEffect(() => setStandingNow(undefined), [viewed]);
   const [busy, setBusy] = useState<string | null>(null);
   const [uses, setUses] = useState<DefinitionUses | 'failed' | null>(null);
   const working = useRef(false);
@@ -901,6 +916,8 @@ export function QueryDefinitionPage({
   }
 
   const shown = view;
+  // Where it stands in its workflow, as its view says, and as a move or a decision since answered.
+  const standing = shown === null ? undefined : standingIn(shown);
   const mayEdit = isNew || (shown !== null && shown.mayEdit);
   const mayRun = isNew || (shown !== null && shown.mayRun);
   // A built query the builder cannot show opens read-only, saying why (D4-D).
@@ -1313,6 +1330,8 @@ export function QueryDefinitionPage({
           <>
             <Chip className={styles['mono']}>{`Version ${shown.version.number}`}</Chip>
             <Chip>{`In ${shown.space.name}`}</Chip>
+            {standing && <StateLozenge state={standing.state} />}
+            <RevisionChip revision={standing?.revision} />
             {retired && <Chip tone="warn">Retired</Chip>}
             {shown.definition.description !== '' && (
               <span className={styles['described']}>{shown.definition.description}</span>
@@ -1341,6 +1360,27 @@ export function QueryDefinitionPage({
               Save version
             </button>
           )}
+          {/* Reviewed and approved as content is (DAT-121; the WF2 plan, WF2-K). */}
+          {standing && shown !== null && (
+            <TransitionButtons
+              client={client}
+              kind="queryDefinition"
+              id={shown.id}
+              title={shown.definition.title}
+              standing={standingNow ?? standing}
+              versionId={shown.version.id}
+              onMoved={(now, said) => {
+                setStandingNow(now);
+                setWorkflowSaid(said);
+              }}
+              onNotice={setWorkflowSaid}
+              onStale={() => {
+                void readStanding(client, 'queryDefinition', shown.id).then((now) => {
+                  if (now) setStandingNow(now);
+                });
+              }}
+            />
+          )}
           {mayEdit && shown !== null && (
             <RowActions
               subject={shown.definition.title}
@@ -1351,7 +1391,7 @@ export function QueryDefinitionPage({
         </>
       }
       strip={strip}
-      notice={<Status lines={saved} />}
+      notice={<Status lines={workflowSaid === '' ? saved : [...(saved ?? []), workflowSaid]} />}
       label="Query definition"
       tabs={tabs}
       chosen={tab}

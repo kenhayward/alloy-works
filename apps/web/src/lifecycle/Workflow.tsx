@@ -8,7 +8,7 @@ import styles from './Hold.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-export type Movable = 'component' | 'document';
+export type Movable = 'component' | 'document' | 'queryDefinition';
 
 /** A transition the reader may take, as a view offers it. */
 export interface Offered {
@@ -130,7 +130,9 @@ export async function readStanding(
     const { data } =
       kind === 'component'
         ? await client.GET('/v1/components/{id}', params)
-        : await client.GET('/v1/documents/{id}', params);
+        : kind === 'document'
+          ? await client.GET('/v1/documents/{id}', params)
+          : await client.GET('/v1/query-definitions/{id}', params);
     return standingIn(data);
   } catch {
     return undefined;
@@ -150,7 +152,9 @@ async function move(
     const { data, error } =
       kind === 'component'
         ? await client.POST('/v1/components/{id}/transitions', options)
-        : await client.POST('/v1/documents/{id}/transitions', options);
+        : kind === 'document'
+          ? await client.POST('/v1/documents/{id}/transitions', options)
+          : await client.POST('/v1/query-definitions/{id}/transitions', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
@@ -185,7 +189,9 @@ async function decideGate(
     const { data, error } =
       kind === 'component'
         ? await client.POST('/v1/components/{id}/approvals', options)
-        : await client.POST('/v1/documents/{id}/approvals', options);
+        : kind === 'document'
+          ? await client.POST('/v1/documents/{id}/approvals', options)
+          : await client.POST('/v1/query-definitions/{id}/approvals', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;

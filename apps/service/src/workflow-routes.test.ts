@@ -154,6 +154,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(workflows.map((each) => [each.definition.kind, each.definition.version])).toEqual([
       ['component', 2],
       ['document', 3],
+      ['queryDefinition', 1],
     ]);
     expect(workflows[0]!.definition).toMatchObject({ body: SEED_WORKFLOW, by: null });
     expect(workflows[1]!.definition).toMatchObject({ body: SEED_DOCUMENT_WORKFLOW, by: null });
