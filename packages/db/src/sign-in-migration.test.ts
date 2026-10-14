@@ -101,6 +101,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0089_search_threads',
       '0090_search_at_scale',
       '0091_search_history',
+      '0092_search_scoped',
     ]);
 
     const read = async () =>

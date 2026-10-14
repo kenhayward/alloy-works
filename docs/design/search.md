@@ -132,7 +132,9 @@ matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M 
 reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else
 find the matches by the **indexes** and sort the newest out of them. Both return the same rows. A
 wanted term under three characters is looked for as a word alone, since no trigram holds it; scoped
-terms alone are found through `search_text`'s word index.
+terms alone are found through `search_text`'s word index, title terms through titles' own (0092), whose
+statistics count titles alone. The filters are written so their columns' indexes serve them and the
+estimate counts them (#605).
 
 **Ranking may use statistics from the whole tenant (SCH-032).** Postgres's own ranking uses none. This
 is permission for a better ranking later, not a description of today's. The road leaves a residual in
@@ -199,9 +201,10 @@ The total stays exact to the cap.
   page from meaning search.
 - **The plan test**: search runs with custom plans, since a regression here is otherwise invisible.
 - **The budget** (SCH-033): the conformance suite generates a tenant of a million components, as the
-  spike did, and measures p95 for three kinds of user. **Not yet met**: SV3b's run at a million missed
-  it on both the latest and every version for the medium reader, whose readable set alone takes about
-  200ms, and for a few broad cases.
+  spike did, and measures p95 for three kinds of user. **Not yet met**: after #604 and #605 the latest
+  is within it in every case at a million (worst p95 226ms), but every version is not for title terms
+  alone (p95 435ms medium, 268ms broad): each candidate place probes every version's title, as history
+  holds no title words of its own ([#608](https://github.com/kenhayward/alloy-works/issues/608)).
 
 ## Searching words, in T1
 

@@ -126,6 +126,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0089_search_threads',
       '0090_search_at_scale',
       '0091_search_history',
+      '0092_search_scoped',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

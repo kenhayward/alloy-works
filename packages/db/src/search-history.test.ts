@@ -770,7 +770,7 @@ describe('migration 0091, which keeps one row a place over every version', () =>
       expect(resultsOf(unfolded).items).toMatchObject([{ artifactId: artifact }]);
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0091_search_history']);
+      expect(report.tenants[id]).toEqual(['0091_search_history', '0092_search_scoped']);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(migrated).toHaveLength(1);
       await service.withTenant(tenant, (trx) => rebuildHistory(trx, artifact));

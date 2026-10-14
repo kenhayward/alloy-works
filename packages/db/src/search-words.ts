@@ -46,6 +46,10 @@ export interface SearchProbe {
     readonly road?: SearchRoad;
     /** The table a road scanned: every version scans two. */
     readonly scan?: string;
+    /** The matches the planner reckoned when it chose the road; none for a road forced. */
+    readonly estimate?: number;
+    /** The rows the road was chosen, and a walk's reads sized, by; none for a road forced. */
+    readonly rows?: number;
     readonly plan?: unknown;
   }) => void;
 }
@@ -228,15 +232,21 @@ const rangeStart: Record<Exclude<ChangedRange, 'earlier'>, RawBuilder<Date>> = {
   year: sql`date_trunc('year', now())`,
 };
 
-/** A dimension's filter over a row, compared as text so an identifier of no shape matches nothing. */
+/**
+ * A dimension's filter over a row, written so the column's index serves it (#605): an identifier of no
+ * shape matches nothing, as it did compared as text.
+ */
 function among(
   alias: string,
   column: string,
   values: readonly string[] | undefined,
+  ids: boolean,
 ): RawBuilder<SqlBool> {
-  return values === undefined || values.length === 0
-    ? sql<SqlBool>`true`
-    : sql<SqlBool>`${sql.ref(`${alias}.${column}`)}::text = any(${[...values]}::text[])`;
+  if (values === undefined || values.length === 0) return sql<SqlBool>`true`;
+  const ref = sql.ref(`${alias}.${column}`);
+  return ids
+    ? sql<SqlBool>`${ref} = any(${values.filter((each) => UUID.test(each))}::uuid[])`
+    : sql<SqlBool>`${ref} = any(${[...values]}::text[])`;
 }
 
 function changedFilter(alias: string, changed: SearchFilters['changed']): RawBuilder<SqlBool> {
@@ -469,14 +479,17 @@ export async function searchWords(
     )}
     order by c`.execute(trx);
   const configurations = inUse.map((row) => row.c);
-  /** `alias`'s words matching `words`, a constant tsquery per configuration, so an index serves it. */
-  const matches = (alias: string, words: string) =>
+  /**
+   * `alias`'s words, or `vector` over it, matching `words`: a constant tsquery per configuration, so an
+   * index serves it.
+   */
+  const matches = (alias: string, words: string, vector?: RawBuilder<unknown>) =>
     configurations.length === 0
       ? sql<SqlBool>`false`
       : sql<SqlBool>`(${sql.join(
           configurations.map(
             (c) => sql`(${sql.ref(`${alias}.configuration`)} = ${c}::regconfig
-              and ${sql.ref(`${alias}.vector`)} @@ websearch_to_tsquery(${c}::regconfig, ${words}))`,
+              and ${vector ?? sql.ref(`${alias}.vector`)} @@ websearch_to_tsquery(${c}::regconfig, ${words}))`,
           ),
           sql` or `,
         )})`;
@@ -529,22 +542,31 @@ export async function searchWords(
     sql<SqlBool>`(case when e.current then ${heldAt('e', sql`search_text`, place, words)}
       when e.node is null then ${heldByVersions(place, words, sql<SqlBool>`x.node is null`)}
       else ${heldByVersions(place, words, sql<SqlBool>`x.node = e.node`)} end)`;
-  const places = scopedTerms.map(({ place, words, excluded }) => {
-    const holds = history ? heldOverVersions(place, words) : heldAt('e', texts, place, words);
-    return excluded ? sql<SqlBool>`not ${holds}` : holds;
-  });
   // A query of scoped terms alone is found through its places' index (SV3-A); under every version,
   // through the row's own words, which hold every place's in every version: a superset, the places'
-  // test above then exact.
-  const wanted = scopedTerms.find((term) => !term.excluded);
+  // test below then exact. A title through its own index, whose statistics count titles alone (0092;
+  // #605); a field through every place's.
+  const wanted = parsed.words === '' ? scopedTerms.find((term) => !term.excluded) : undefined;
   const driver =
     wanted === undefined
       ? undefined
       : history
         ? matches('e', wanted.words)
-        : sql<SqlBool>`e.id in (
-            select s.entry_id from ${texts} s
-            where s.place = ${wanted.place} and ${matches('s', wanted.words)})`;
+        : wanted.place === 'title'
+          ? sql<SqlBool>`e.id in (
+              select s.entry_id from ${texts} s
+              where ${matches('s', wanted.words, sql`(case when s.place = 'title' then s.vector end)`)})`
+          : sql<SqlBool>`e.id in (
+              select s.entry_id from ${texts} s
+              where s.place = ${wanted.place} and ${matches('s', wanted.words)})`;
+  // The term the latest's driver finds is not tested again: the same rows, but the planner would
+  // reckon the two independent and the matches far fewer than they are (#605).
+  const places = scopedTerms
+    .filter((term) => history || term !== wanted)
+    .map(({ place, words, excluded }) => {
+      const holds = history ? heldOverVersions(place, words) : heldAt('e', texts, place, words);
+      return excluded ? sql<SqlBool>`not ${holds}` : holds;
+    });
 
   // Nothing any configuration can search for - punctuation, and nothing else - is no query at all.
   const { rows: lexemes } = await sql<{
@@ -652,10 +674,10 @@ export async function searchWords(
   };
   const flagsOver = (alias: string) =>
     [
-      ['f_kind', among(alias, 'kind', filters.kinds)],
-      ['f_space', among(alias, 'space_id', filters.spaces)],
-      ['f_type', among(alias, 'component_type', filters.componentTypes)],
-      ['f_owner', among(alias, 'owner', filters.owners)],
+      ['f_kind', among(alias, 'kind', filters.kinds, false)],
+      ['f_space', among(alias, 'space_id', filters.spaces, true)],
+      ['f_type', among(alias, 'component_type', filters.componentTypes, true)],
+      ['f_owner', among(alias, 'owner', filters.owners, true)],
       ['f_changed', changedFilter(alias, filters.changed)],
       ...fieldFilters.map(
         ({ field, values, flag }) => [flag, valueFilter(alias, field, values)] as const,
@@ -737,6 +759,12 @@ export async function searchWords(
       return Number(sized[0]?.rows ?? -1);
     };
     const N = SEARCH_RANK_BOUND;
+    /** The rows of `candidates` matching `where`, as the planner reckons them. */
+    const planned = async (candidates: RawBuilder<unknown>, where: RawBuilder<SqlBool>) => {
+      const { rows: plan } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
+        explain (format json) select 1 from ${candidates} e where ${where}`.execute(trx);
+      return Number(plan[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0);
+    };
     /** The newest N + 1 rows of one scan matching `where`, with when each changed, in microseconds. */
     const newestOf = async (
       statement: 'results' | 'facets',
@@ -750,10 +778,10 @@ export async function searchWords(
       // The rows a walk reads at most: every row for a road forced, so it answers alone, unless a
       // test sets how many.
       let reads: number = options.probe?.reads ?? Number.MAX_SAFE_INTEGER;
+      let estimate: { estimate: number; rows: number } | undefined;
       if (road === undefined) {
-        const { rows: estimate } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
-          explain (format json) select 1 from ${candidates} e where ${where}`.execute(trx);
-        const matches = Number(estimate[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0);
+        const matches = await planned(candidates, where);
+        estimate = { estimate: matches, rows };
         road = rows > 0 && matches > Math.sqrt(N * rows) ? 'walk' : 'indexes';
         if (road === 'walk') reads = Math.ceil((4 * (N + 1) * rows) / matches);
       }
@@ -771,32 +799,38 @@ export async function searchWords(
         await explained(statement, walk);
         const { rows: walked } = await sql<{ id: string; at: string }>`${walk}`.execute(trx);
         if (walked.length > N || reads === Number.MAX_SAFE_INTEGER) {
-          seen?.({ statement, road, scan: relation });
+          seen?.({ statement, road, scan: relation, ...estimate });
           return walked;
         }
         // Too few among the rows read: the indexes road answers instead.
-        seen?.({ statement, road, scan: relation });
+        seen?.({ statement, road, scan: relation, ...estimate });
         road = 'indexes';
       }
       await explained(statement, indexes);
       const { rows: found } = await sql<{ id: string; at: string }>`${indexes}`.execute(trx);
-      seen?.({ statement, road, scan: relation });
+      seen?.({ statement, road, scan: relation, ...estimate });
       return found;
     };
     const sizes = await Promise.all(scans.map((scan) => sizeOf(scan.relation)));
+    // A change filter bounded below alone holds the newest rows, the first a walk reads: the results'
+    // walk is sized to them, not to the table (#605).
+    const { changed } = filters;
+    const recent =
+      changed !== undefined &&
+      ('within' in changed
+        ? changed.within !== 'earlier'
+        : calendarDate(changed.from) !== undefined && calendarDate(changed.to) === undefined);
     /** The newest N + 1 over every scan, in the one order, `changed_at desc, id desc`. */
     const newest = async (statement: 'results' | 'facets', where: RawBuilder<SqlBool>) => {
       const found: { id: string; at: string }[] = [];
       for (const [index, scan] of scans.entries()) {
+        const indexesOnly = 'indexesOnly' in scan;
+        const rows =
+          statement === 'results' && recent && !indexesOnly && options.probe?.road === undefined
+            ? Math.min(sizes[index]!, await planned(scan.from, changedFilter('e', changed)))
+            : sizes[index]!;
         found.push(
-          ...(await newestOf(
-            statement,
-            where,
-            scan.from,
-            sizes[index]!,
-            scan.relation,
-            'indexesOnly' in scan,
-          )),
+          ...(await newestOf(statement, where, scan.from, rows, scan.relation, indexesOnly)),
         );
       }
       return found
@@ -810,26 +844,35 @@ export async function searchWords(
     const flags = flagsOver('e').map(
       ([, predicate]) => sql<SqlBool>`coalesce(${predicate}, false)`,
     );
+    // Bare, so an index on a filtered column serves the results and the planner counts them (#605).
     const results = await newest(
       'results',
-      sql<SqlBool>`${matching} and ${sql.join(flags, sql` and `)}`,
+      sql<SqlBool>`${matching} and ${sql.join(
+        flagsOver('e').map(([, predicate]) => predicate),
+        sql` and `,
+      )}`,
     );
-    const anyFilter =
-      byField.size > 0 ||
-      filters.changed !== undefined ||
-      [filters.kinds, filters.spaces, filters.componentTypes, filters.owners].some(
+    const inForce =
+      byField.size +
+      (filters.changed === undefined ? 0 : 1) +
+      [filters.kinds, filters.spaces, filters.componentTypes, filters.owners].filter(
         (each) => each !== undefined && each.length > 0,
-      );
-    const facets = anyFilter
-      ? await newest(
-          'facets',
-          sql<SqlBool>`${matching}
-            and (${sql.join(
-              flags.map((flag) => sql`(not ${flag})::int`),
-              sql` + `,
-            )}) <= 1`,
-        )
-      : results;
+      ).length;
+    // Under one filter, every match fails at most it: the facets are the matches', so estimated as
+    // they are rather than as a sum the planner cannot read (#605).
+    const facets =
+      inForce === 0
+        ? results
+        : await newest(
+            'facets',
+            inForce === 1
+              ? matching
+              : sql<SqlBool>`${matching}
+                  and (${sql.join(
+                    flags.map((flag) => sql`(not ${flag})::int`),
+                    sql` + `,
+                  )}) <= 1`,
+          );
     bounded = {
       results,
       facets: [...new Set([...results.slice(0, N), ...facets.slice(0, N)])],
