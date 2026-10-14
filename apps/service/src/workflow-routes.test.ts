@@ -5,6 +5,7 @@ import type {
   DocumentList,
   DocumentView,
   SearchAnswerView,
+  ApprovalsView,
   TransitionAnswer,
   WorkflowDefinitionView,
   WorkflowsView,
@@ -25,7 +26,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
-import { SEED_WORKFLOW } from '@alloy-works/domain';
+import { SEED_WORKFLOW, SEED_WORKFLOW_1 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -71,6 +72,13 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     who: string,
     body: { transition: string; from: string; reason?: string },
   ) => call('POST', `/v1/${kind}/${id}/transitions`, who, body);
+
+  const approve = (
+    kind: 'components' | 'documents',
+    id: string,
+    who: string,
+    body: { transition: string; version: string; decision: string; reason?: string },
+  ) => call('POST', `/v1/${kind}/${id}/approvals`, who, body);
 
   const component = (id: string, who: string) =>
     call('GET', `/v1/components/${id}`, who).then((answer) => answer.json<ComponentView>());
@@ -144,8 +152,8 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(listed.statusCode, listed.body).toBe(200);
     const { workflows } = listed.json<WorkflowsView>();
     expect(workflows.map((each) => [each.definition.kind, each.definition.version])).toEqual([
-      ['component', 1],
-      ['document', 1],
+      ['component', 2],
+      ['document', 2],
     ]);
     expect(workflows[0]!.definition).toMatchObject({ body: SEED_WORKFLOW, by: null });
     expect((await call('GET', '/v1/workflows', 'grace')).statusCode).toBe(403);
@@ -179,27 +187,33 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(saved.statusCode, saved.body).toBe(200);
     expect(saved.json<WorkflowDefinitionView>()).toMatchObject({
       kind: 'document',
-      version: 2,
+      version: 3,
       by: { id: ids.ada },
     });
     const first = await call('GET', '/v1/workflows/document/versions/1', 'ada');
-    expect(first.json<WorkflowDefinitionView>()).toMatchObject({ version: 1, body: SEED_WORKFLOW });
+    expect(first.json<WorkflowDefinitionView>()).toMatchObject({
+      version: 1,
+      body: SEED_WORKFLOW_1,
+    });
     expect((await call('GET', '/v1/workflows/document/versions/9', 'ada')).statusCode).toBe(404);
     expect(
       (await call('POST', '/v1/workflows', 'grace', { kind: 'document', ...renamed })).statusCode,
     ).toBe(403);
-    // Back to the seed, as version 3.
+    // Back to the seed, as version 4.
     expect(
       (await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...SEED_WORKFLOW }))
         .statusCode,
     ).toBe(200);
   });
 
-  it('LIF-002 LIF-061 offers, and takes, only the transitions the reader may: submit to whoever edits, return and approve to whoever approves, a reason asked for', async () => {
-    const { id } = await made('components', 'Dosing');
+  it('LIF-002 LIF-061 offers, and takes, only the transitions the reader may: submit to whoever edits, the gate to whoever approves, a reason asked for', async () => {
+    const created = await made('components', 'Dosing');
+    const { id } = created;
     expect(await component(id, 'ada')).toMatchObject({
       state: { key: 'draft', name: 'Draft' },
       transitions: [{ key: 'submit', name: 'Submit', to: { key: 'in_review', name: 'In review' } }],
+      gates: [],
+      revision: null,
     });
     expect((await component(id, 'grace')).transitions).toEqual([]);
     expect((await component(id, 'ivy')).transitions).toEqual([]);
@@ -208,39 +222,59 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(refused.statusCode).toBe(403);
     const submitted = await move('components', id, 'ada', { transition: 'submit', from: 'draft' });
     expect(submitted.statusCode, submitted.body).toBe(200);
+    const gate = {
+      key: 'approve',
+      name: 'Approve',
+      to: { key: 'approved', name: 'Approved' },
+      reject: { name: 'Return', to: { key: 'draft', name: 'Draft' } },
+      count: 0,
+      required: 1,
+      approvedByCaller: false,
+    };
     expect(submitted.json<TransitionAnswer>()).toEqual({
       state: { key: 'in_review', name: 'In review', approved: false },
       transitions: [],
+      gates: [{ ...gate, mayDecide: false }],
+      revision: null,
     });
-    expect((await component(id, 'grace')).transitions.map((each) => each.key)).toEqual([
-      'return',
-      'approve',
-    ]);
-    expect(
-      (await move('components', id, 'ada', { transition: 'approve', from: 'in_review' }))
-        .statusCode,
-    ).toBe(403);
+    expect((await component(id, 'grace')).gates).toEqual([{ ...gate, mayDecide: true }]);
+    const gated = await move('components', id, 'grace', {
+      transition: 'approve',
+      from: 'in_review',
+    });
+    expect(gated.statusCode).toBe(409);
+    expect(gated.json()).toMatchObject({ code: 'transition_gated' });
     const stale = await move('components', id, 'grace', { transition: 'submit', from: 'draft' });
     expect(stale.statusCode).toBe(409);
     expect(stale.json()).toMatchObject({
       code: 'state_moved',
       state: { key: 'in_review', name: 'In review' },
     });
-    const bare = await move('components', id, 'grace', { transition: 'return', from: 'in_review' });
+    expect(
+      (
+        await approve('components', id, 'grace', {
+          transition: 'approve',
+          version: created.version.id,
+          decision: 'approved',
+        })
+      ).statusCode,
+    ).toBe(200);
+
+    const bare = await move('components', id, 'ada', { transition: 'reopen', from: 'approved' });
     expect(bare.statusCode).toBe(400);
     expect(bare.json()).toMatchObject({ code: 'reason_required', rule: 'LIF-061' });
-    const long = await move('components', id, 'grace', {
-      transition: 'return',
-      from: 'in_review',
+    const long = await move('components', id, 'ada', {
+      transition: 'reopen',
+      from: 'approved',
       reason: 'x'.repeat(2001),
     });
     expect(long.statusCode).toBe(400);
-    const returned = await move('components', id, 'grace', {
-      transition: 'return',
-      from: 'in_review',
+    const reopened = await move('components', id, 'ada', {
+      transition: 'reopen',
+      from: 'approved',
       reason: 'Name the dose.',
     });
-    expect(returned.statusCode, returned.body).toBe(200);
+    expect(reopened.statusCode, reopened.body).toBe(200);
     const kept = await tenantDb.withTenant(tenant, (trx) =>
       trx
         .selectFrom('workflow_transition')
@@ -250,7 +284,81 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
         .limit(1)
         .executeTakeFirstOrThrow(),
     );
-    expect(kept).toEqual({ reason: 'Name the dose.', by: ids.grace });
+    expect(kept).toEqual({ reason: 'Name the dose.', by: ids.ada });
+  });
+
+  it('LIF-008 LIF-010 LIF-013 approves at a gate by an approver who is not its author, designating a revision, and lists who decided what', async () => {
+    const created = await made('documents', 'Dosing record');
+    await move('documents', created.id, 'ada', { transition: 'submit', from: 'draft' });
+    const decision = {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'approved',
+    } as const;
+    // Ada, its author, may not approve it; grant her Approver to show it is the author rule.
+    await tenantDb.withTenant(tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Approver'))!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'space', id: clinical },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      }),
+    );
+    const own = await approve('documents', created.id, 'ada', decision);
+    expect(own.statusCode).toBe(403);
+    expect(own.json()).toMatchObject({ code: 'approval_author', rule: 'LIF-010' });
+    expect((await approve('documents', created.id, 'ivy', decision)).statusCode).toBe(403);
+    const passed = await approve('documents', created.id, 'grace', decision);
+    expect(passed.statusCode, passed.body).toBe(200);
+    expect(passed.json<TransitionAnswer>()).toMatchObject({
+      state: { key: 'approved', name: 'Approved', approved: true },
+      gates: [],
+      revision: { number: 1, versionId: created.version.id },
+    });
+    const listed = await call('GET', `/v1/documents/${created.id}/approvals`, 'ivy');
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json<ApprovalsView>().approvals).toEqual([
+      {
+        transition: 'approve',
+        decision: 'approved',
+        reason: null,
+        by: { id: ids.grace, name: expect.any(String) },
+        at: expect.any(String),
+        versionId: created.version.id,
+      },
+    ]);
+  });
+
+  it('LIF-051 LIF-052 rejects at a gate with a reason, back to its declared state, and refuses a decision on a replaced version', async () => {
+    const created = await made('components', 'Dose by weight');
+    await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' });
+    const stale = await approve('components', created.id, 'grace', {
+      transition: 'approve',
+      version: randomUUID(),
+      decision: 'approved',
+    });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json()).toMatchObject({ code: 'version_moved' });
+    const bare = await approve('components', created.id, 'grace', {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'rejected',
+    });
+    expect(bare.statusCode).toBe(400);
+    expect(bare.json()).toMatchObject({ code: 'reason_required' });
+    const rejected = await approve('components', created.id, 'grace', {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'rejected',
+      reason: 'Give the weight bands.',
+    });
+    expect(rejected.statusCode, rejected.body).toBe(200);
+    expect(rejected.json<TransitionAnswer>().state.key).toBe('draft');
+    const listed = await call('GET', `/v1/components/${created.id}/approvals`, 'ada');
+    expect(listed.json<ApprovalsView>().approvals).toMatchObject([
+      { decision: 'rejected', reason: 'Give the weight bands.', by: { id: ids.grace } },
+    ]);
   });
 
   it('answers a document at the component route as absent, and refuses moving an archived one', async () => {
@@ -279,7 +387,11 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
   it('moves an approved component saved in the editor back to draft, audited', async () => {
     const created = await made('components', 'Approved dose');
     await move('components', created.id, 'ada', { transition: 'submit', from: 'draft' });
-    await move('components', created.id, 'grace', { transition: 'approve', from: 'in_review' });
+    await approve('components', created.id, 'grace', {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'approved',
+    });
     const opened = await component(created.id, 'ada');
     // Its view says it is approved, for the editor to say a save starts a draft (WF-F).
     expect(opened.state).toEqual({ key: 'approved', name: 'Approved', approved: true });
@@ -343,7 +455,8 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const opened = await call('GET', `/v1/documents/${document.id}`, 'grace');
     expect(opened.json<DocumentView>()).toMatchObject({
       state: { key: 'in_review', name: 'In review' },
-      transitions: [{ key: 'return' }, { key: 'approve' }],
+      transitions: [],
+      gates: [{ key: 'approve', mayDecide: true }],
     });
     const components = (
       await call('GET', `/v1/components?spaces=${clinical}&limit=100`, 'ada')

@@ -41,6 +41,7 @@ describe('the rule behind a refusal', () => {
       ['deletion.refused', 'deletion_refused', 'LIF-023'],
       ['reference.deleted', 'reference_deleted', 'VER-044'],
       ['reason.required', 'reason_required', 'LIF-061'],
+      ['approval.author', 'approval_author', 'LIF-010'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -189,6 +190,10 @@ describe('the rule behind a refusal', () => {
       // A reason too long, and a save begun from a version since replaced.
       'reason.invalid',
       'workflow.behind',
+      // The WF2 plan's (WF2-C): a gate taken as a move, a version replaced, an approval given twice.
+      'transition.gated',
+      'version.moved',
+      'approval.given',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

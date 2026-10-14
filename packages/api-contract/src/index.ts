@@ -80,6 +80,10 @@ export {
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
+  ApprovalBody,
+  ApprovalsView,
+  ApprovalView,
+  GateView,
   TransitionAnswer,
   TransitionBody,
   TransitionParams,
@@ -90,6 +94,7 @@ export {
   WorkflowKindParam,
   DefineWorkflowBody,
   WorkflowRefusal,
+  WorkflowRevisionView,
   WorkflowStandingView,
   WorkflowStateView,
   WorkflowsView,

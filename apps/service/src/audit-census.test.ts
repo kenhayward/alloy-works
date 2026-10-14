@@ -197,6 +197,22 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   // A move along a transition (WF-F); a save of an approved one, above, writes it too.
   transitionComponent: writes('workflow.transitioned'),
   transitionDocument: writes('workflow.transitioned'),
+  // A decision at a gate (WF2-C to WF2-G): an approval, the gate passing and its revision, or a
+  // rejection returning it.
+  decideComponentGate: writes(
+    'approval.given',
+    'gate.rejected',
+    'revision.designated',
+    'workflow.transitioned',
+  ),
+  decideDocumentGate: writes(
+    'approval.given',
+    'gate.rejected',
+    'revision.designated',
+    'workflow.transitioned',
+  ),
+  listComponentApprovals: read,
+  listDocumentApprovals: read,
   placeHold: writes('hold.applied'),
   releaseHold: writes('hold.removed'),
   createAssetUpload: { none: 'upload' },

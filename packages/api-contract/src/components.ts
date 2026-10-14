@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
-import { TransitionView, WorkflowStandingView, WorkflowStateView } from './workflows.js';
+import {
+  GateView,
+  TransitionView,
+  WorkflowRevisionView,
+  WorkflowStandingView,
+  WorkflowStateView,
+} from './workflows.js';
 
 /** A component, by the id its artifact carries. */
 export const ComponentParams = z.object({ id: z.uuid() });
@@ -267,6 +273,8 @@ export const ComponentView = z.object({
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),
+  gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
+  revision: WorkflowRevisionView,
   onHold: z
     .boolean()
     .describe(

@@ -1,10 +1,12 @@
 import type { TransitionPermission, WorkflowKind } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { isArchived } from './archival.js';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
 import {
+  gatesStored,
   latestRevision,
   latestVersionId,
   MAX_REASON,
@@ -218,4 +220,45 @@ export async function decideGate(
     standing: (await workflowStanding(trx, input.artifactId))!,
     revision: gate.designates ? (revision?.number ?? null) : null,
   };
+}
+
+/** One approval or rejection, as an artifact's history lists it (LIF-008, LIF-051). */
+export interface Approval {
+  readonly transition: string;
+  readonly decision: 'approved' | 'rejected';
+  readonly reason: string | null;
+  readonly by: { readonly id: string; readonly name: string | null };
+  readonly at: Date;
+  readonly versionId: string;
+}
+
+/** Every approval and rejection of an artifact at its gates, newest first; none before 0096. */
+export async function listApprovals(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<Approval[]> {
+  if (!UUID.test(artifactId) || !(await gatesStored(trx))) return [];
+  const rows = await trx
+    .selectFrom('workflow_approval as a')
+    .innerJoin('principal as p', 'p.id', 'a.by')
+    .select([
+      'a.transition',
+      'a.decision',
+      'a.reason',
+      'a.by',
+      'a.at',
+      'a.version_id',
+      sql<string | null>`coalesce(p.display_name, p.email)`.as('by_name'),
+    ])
+    .where('a.artifact_id', '=', artifactId)
+    .orderBy('a.id', 'desc')
+    .execute();
+  return rows.map((row) => ({
+    transition: row.transition,
+    decision: row.decision,
+    reason: row.reason,
+    by: { id: row.by, name: row.by_name },
+    at: row.at,
+    versionId: row.version_id,
+  }));
 }

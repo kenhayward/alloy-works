@@ -27,6 +27,27 @@ const WorkflowStateBody = z.strictObject({
     .describe('Counts as approved: saving one in it moves it to the initial state'),
 });
 
+/** A transition that is a gate (the WF2 plan, WF2-A). */
+const GateBody = z.strictObject({
+  approvals: z.int().min(1).max(10).describe('How many distinct approvers it needs'),
+  notAuthor: z
+    .boolean()
+    .default(false)
+    .describe('Whether whoever recorded a version since the last revision is refused'),
+  reject: z
+    .strictObject({ name: Name, to: Key.describe('The state a rejection returns it to') })
+    .describe('What a rejection is called, and where it returns'),
+  designates: z.boolean().default(true).describe('Whether passing it designates a revision'),
+  baseline: z
+    .boolean()
+    .default(false)
+    .describe("A document's gate: whether passing takes a baseline"),
+  publication: z
+    .enum(['none', 'permitted', 'required'])
+    .default('none')
+    .describe("A document's gate: whether passing may, or must, request an approved publication"),
+});
+
 const WorkflowTransitionBody = z.strictObject({
   key: Key,
   name: Name,
@@ -39,6 +60,9 @@ const WorkflowTransitionBody = z.strictObject({
     .boolean()
     .default(false)
     .describe('Whether taking it needs a reason, recorded with it'),
+  gate: GateBody.optional().describe(
+    'Present for a gate: decided by approvers, never taken as a move; its permission is approve',
+  ),
 });
 
 /** A definition's body: every state reachable from the initial one, keys unique. */
@@ -71,6 +95,16 @@ export const WorkflowDefinitionView = z.object({
         to: z.string(),
         permission: z.enum(['edit', 'approve']),
         reasonRequired: z.boolean(),
+        gate: z
+          .object({
+            approvals: z.int(),
+            notAuthor: z.boolean(),
+            reject: z.object({ name: z.string(), to: z.string() }),
+            designates: z.boolean(),
+            baseline: z.boolean(),
+            publication: z.enum(['none', 'permitted', 'required']),
+          })
+          .optional(),
       }),
     ),
   }),
@@ -148,11 +182,69 @@ export const TransitionBody = z.strictObject({
 });
 export type TransitionBody = z.infer<typeof TransitionBody>;
 
+/** A gate from its state, how far it has got, and whether the caller may decide it (WF2-L). */
+export const GateView = z.object({
+  key: z.string(),
+  name: z.string(),
+  to: WorkflowStateView.describe('The state it moves to once passed'),
+  reject: z
+    .object({ name: z.string(), to: WorkflowStateView })
+    .describe('What a rejection is called, and the state it returns to'),
+  count: z.int().min(0).describe('Approvals this round on the current version'),
+  required: z.int().min(1).describe('Approvals it needs, each by a distinct person'),
+  approvedByCaller: z.boolean().describe('Whether the caller has approved it this round'),
+  mayDecide: z.boolean().describe('Whether the caller may approve or reject it now'),
+});
+export type GateView = z.infer<typeof GateView>;
+
+/** An artifact's latest revision (VER-012, VER-015). */
+export const WorkflowRevisionView = z
+  .object({ number: z.int().min(1), versionId: z.uuid(), at: z.iso.datetime() })
+  .nullable()
+  .describe('Its latest revision, a version designated as a gate passed; null for revision 0');
+export type WorkflowRevisionView = z.infer<typeof WorkflowRevisionView>;
+
 export const TransitionAnswer = z.object({
   state: WorkflowStandingView,
-  transitions: z.array(TransitionView).describe('The transitions the caller may take from it now'),
+  transitions: z
+    .array(TransitionView)
+    .describe('The transitions the caller may take from it now; a gate is decided, not taken'),
+  gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
+  revision: WorkflowRevisionView,
 });
 export type TransitionAnswer = z.infer<typeof TransitionAnswer>;
+
+export const ApprovalBody = z.strictObject({
+  transition: Key.describe('The gate, by its transition key'),
+  version: z
+    .uuid()
+    .describe(
+      'The version the approver saw: refused, as version_moved, where it has been replaced since',
+    ),
+  decision: z.enum(['approved', 'rejected']),
+  reason: z
+    .string()
+    .max(2000)
+    .optional()
+    .describe('Why it is rejected: required for a rejection, kept with it'),
+});
+export type ApprovalBody = z.infer<typeof ApprovalBody>;
+
+/** One approval or rejection at a gate (LIF-008, LIF-051). */
+export const ApprovalView = z.object({
+  transition: z.string(),
+  decision: z.enum(['approved', 'rejected']),
+  reason: z.string().nullable().describe("A rejection's reason; null for an approval"),
+  by: z.object({ id: z.uuid(), name: z.string().nullable() }),
+  at: z.iso.datetime(),
+  versionId: z.uuid().describe('The version decided'),
+});
+export type ApprovalView = z.infer<typeof ApprovalView>;
+
+export const ApprovalsView = z.object({
+  approvals: z.array(ApprovalView).describe('Every approval and rejection, newest first'),
+});
+export type ApprovalsView = z.infer<typeof ApprovalsView>;
 
 /** A body refused, each problem by its rule and where. */
 export const WorkflowRefusal = ErrorBody.extend({
@@ -182,6 +274,30 @@ const forbidden = {
   description: 'The caller may not administer this environment',
   schema: ErrorBody,
 } as const;
+
+const approvalResponses = (kind: 'component' | 'document') =>
+  ({
+    200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
+    400: {
+      description:
+        'reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters',
+      schema: ErrorBody,
+    },
+    401: unauthenticated,
+    403: {
+      description: `The caller may read the ${kind} but may not approve it, or is one of its authors where the gate refuses them (approval_author)`,
+      schema: ErrorBody,
+    },
+    404: {
+      description: `No such ${kind} in this environment, or none the caller may read`,
+      schema: ErrorBody,
+    },
+    409: {
+      description:
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived',
+      schema: TransitionRefusal,
+    },
+  }) as const;
 
 const transitionResponses = (kind: 'component' | 'document') =>
   ({
@@ -273,6 +389,56 @@ export const workflowRoutes = {
     params: TransitionParams,
     body: TransitionBody,
     responses: transitionResponses('component'),
+  },
+  decideComponentGate: {
+    operationId: 'decideComponentGate',
+    method: 'POST',
+    path: '/v1/components/{id}/approvals',
+    summary: 'Approve or reject a component at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('component'),
+  },
+  decideDocumentGate: {
+    operationId: 'decideDocumentGate',
+    method: 'POST',
+    path: '/v1/documents/{id}/approvals',
+    summary: 'Approve or reject a document at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('document'),
+  },
+  listComponentApprovals: {
+    operationId: 'listComponentApprovals',
+    method: 'GET',
+    path: '/v1/components/{id}/approvals',
+    summary: "List a component's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      404: { description: 'No such component the caller may read', schema: ErrorBody },
+    },
+  },
+  listDocumentApprovals: {
+    operationId: 'listDocumentApprovals',
+    method: 'GET',
+    path: '/v1/documents/{id}/approvals',
+    summary: "List a document's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      404: { description: 'No such document the caller may read', schema: ErrorBody },
+    },
   },
   transitionDocument: {
     operationId: 'transitionDocument',
