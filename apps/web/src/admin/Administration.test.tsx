@@ -731,6 +731,21 @@ describe("Administration's menu", () => {
     ).toBeInTheDocument();
   });
 
+  it('opens Workflows, under the environment', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/workflows': () => json(200, { workflows: [] }),
+    });
+    render(<Administration client={client} about={null} />);
+    expect(
+      within(screen.getByRole('list', { name: 'Environment' }))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toContain('#/admin/workflows');
+    await userEvent.click(section('Workflows'));
+    expect(await screen.findByRole('heading', { name: 'Workflows', level: 1 })).toBeInTheDocument();
+  });
+
   it('opens Legal holds, counted from its listing', async () => {
     const { client } = service({
       ...everything,

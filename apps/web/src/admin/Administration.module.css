@@ -671,3 +671,16 @@
 .setting input {
   width: 120px;
 }
+
+/* Workflows: each kind's states and transitions, edited in place and saved as its next version. */
+.workflow + .workflow {
+  margin-top: var(--space-32);
+}
+
+.workflow .table {
+  margin-bottom: var(--space-12);
+}
+
+.workflow .table input:not([type]) {
+  width: 100%;
+}
