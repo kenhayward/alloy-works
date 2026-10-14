@@ -137,8 +137,9 @@ export function workflowHandlers() {
             false,
           );
         case 'reason.required':
-        case 'reason.invalid':
           throw refused(400, 'reason.required', 'This transition needs a reason.');
+        case 'reason.invalid':
+          throw refused(400, 'reason.invalid', 'A reason is at most 2,000 characters.');
       }
     };
 
@@ -167,8 +168,20 @@ export function workflowHandlers() {
       request: FastifyRequest,
       { trx, principalId }: Authorised,
     ): Promise<WorkflowDefinitionView> => {
-      const { kind, ...body } = request.body as DefineWorkflowBody;
-      const answer = await defineWorkflow(trx, { kind, body, by: principalId });
+      const { kind, basedOn, ...body } = request.body as DefineWorkflowBody;
+      const answer = await defineWorkflow(trx, {
+        kind,
+        body,
+        by: principalId,
+        ...(basedOn === undefined ? {} : { basedOn }),
+      });
+      if (answer.answer === 'behind') {
+        throw refused(
+          409,
+          'workflow.behind',
+          `Version ${answer.version} was saved since this edit began. Read it again before saving.`,
+        );
+      }
       if (answer.answer === 'invalid') {
         throw refused(400, 'workflow.invalid', 'This workflow cannot be saved as it is.', {
           problems: answer.problems.map((each) => ({ ...each })),

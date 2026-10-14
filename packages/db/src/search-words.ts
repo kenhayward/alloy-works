@@ -1298,9 +1298,7 @@ export async function searchWords(
       spaces: capped(row.spaces),
       componentTypes: capped(row.component_types),
       owners: capped(row.owners),
-      states: capped(
-        row.states.map((each) => ({ ...each, label: stateLabel(each.value) })),
-      ),
+      states: capped(row.states.map((each) => ({ ...each, label: stateLabel(each.value) }))),
       changed: capped(row.changed),
       fields: [...fields.values()].map((each) => ({
         field: each.field,

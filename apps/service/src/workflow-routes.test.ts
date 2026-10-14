@@ -158,6 +158,13 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       transitions: [],
     });
     expect(invalid.statusCode).toBe(400);
+    const behind = await call('POST', '/v1/workflows', 'ada', {
+      kind: 'document',
+      basedOn: 999,
+      ...SEED_WORKFLOW,
+    });
+    expect(behind.statusCode).toBe(409);
+    expect(behind.json()).toMatchObject({ code: 'workflow_behind' });
     expect(invalid.json()).toMatchObject({
       code: 'workflow_invalid',
       problems: [{ rule: 'initial_not_one', path: 'states' }],
@@ -222,6 +229,12 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const bare = await move('components', id, 'grace', { transition: 'return', from: 'in_review' });
     expect(bare.statusCode).toBe(400);
     expect(bare.json()).toMatchObject({ code: 'reason_required', rule: 'LIF-061' });
+    const long = await move('components', id, 'grace', {
+      transition: 'return',
+      from: 'in_review',
+      reason: 'x'.repeat(2001),
+    });
+    expect(long.statusCode).toBe(400);
     const returned = await move('components', id, 'grace', {
       transition: 'return',
       from: 'in_review',

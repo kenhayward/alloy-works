@@ -7,14 +7,14 @@ decisions, WF-A to WF-K, are the detail. Approvals, gates and revisions are phas
 
 ## Requirements owned
 
-| Requirement | How                                                                                                |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed        |
-| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason        |
-| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                    |
-| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`               |
-| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row |
-| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                   |
+| Requirement | How                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed; "per artifact type" read as per kind, as LIF-019's is (Ken, 2026-10-14) |
+| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason                                                                          |
+| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                                                                                      |
+| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                 |
+| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                   |
+| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                     |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
@@ -35,9 +35,9 @@ review to Approved, `approve`), Reopen (Approved to Draft, `edit`, reason). Retu
 **The body** (`packages/domain/src/workflow/`): states with a key, a name, `initial` and `approved`;
 transitions with a key, a name, `from`, `to`, `permission` (`edit` or `approve`) and
 `reasonRequired`. Refused, each problem named (`workflow_invalid`): a key used twice, not one initial
-state, a transition naming no state or moving to its own, a state unreachable from the initial one.
+state, an initial state that counts as approved (every save would leave and re-enter it), a transition naming no state or moving to its own, a state unreachable from the initial one.
 
-**Saved** by `POST /v1/workflows { kind, states, transitions }`, `administer` at the tenant, under the kind's advisory lock,
+**Saved** by `POST /v1/workflows { kind, basedOn?, states, transitions }` (`workflow_behind`, 409, where another version was saved since `basedOn`), `administer` at the tenant, under the kind's advisory lock,
 so two saves take turns and make two versions; the body in force again changes nothing. Audited as
 `workflow.defined` `{ kind, version }`. `GET /v1/workflows` lists each kind's definition in force and
 how many of the kind, deleted ones aside, sit in each state.

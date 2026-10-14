@@ -91,7 +91,11 @@ async function move(
     return {
       refused: refusal(error, 'Try again.'),
       stale:
-        code === 'state_moved' || code === 'transition_unknown' || code === 'artifact_archived',
+        code === 'state_moved' ||
+        code === 'transition_unknown' ||
+        code === 'artifact_archived' ||
+        // A permission tightened since the view was read (WF-E).
+        code === 'forbidden',
     };
   } catch {
     return { refused: 'Try again.', stale: false };

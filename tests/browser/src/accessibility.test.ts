@@ -847,7 +847,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('LIF-061 passes axe on a document’s workflow state, its transitions and the reason Return asks for', async ({
+  it('passes axe on a document’s workflow state, its transitions and the reason Return asks for', async ({
     task,
   }) => {
     const document = await makeDocument(api(), 'Workflow', ['Introduction']);

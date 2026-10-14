@@ -131,6 +131,61 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
   });
 
+  it('keeps another person’s outline change when the state it moved to answers first', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    const streams: FollowOptions[] = [];
+    // Each read of the document from here on waits until the next one has answered.
+    let holding = false;
+    let release: () => void = () => undefined;
+    const fetch: typeof globalThis.fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : String(input), 'http://x');
+      if (holding && url.pathname === `/v1/documents/${DOCUMENT}`) {
+        holding = false;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        await gate;
+      } else if (url.pathname === `/v1/documents/${DOCUMENT}`) {
+        const answered = await fake.fetch(input, init);
+        release();
+        return answered;
+      }
+      return fake.fetch(input, init);
+    };
+    render(
+      <StrictMode>
+        <DocumentPage
+          client={client(fetch)}
+          id={DOCUMENT}
+          follow={(options) => {
+            streams.push(options);
+            return () => undefined;
+          }}
+        />
+      </StrictMode>,
+    );
+    await screen.findByRole('treeitem', { name: /Method/ });
+    fake.theirs({
+      operation: 'insert',
+      parent: null,
+      position: 1,
+      node: { type: 'section', title: [{ type: 'text', value: 'Scope', marks: [] }] },
+    });
+    fake.moved(IN_REVIEW);
+    holding = true;
+    act(() => {
+      for (const each of streams) each.onEvent!('outline', { document: DOCUMENT });
+    });
+    act(() => {
+      for (const each of streams) {
+        each.onEvent!('workflow', {
+          artifact: DOCUMENT,
+          state: { key: 'in_review', name: 'In review' },
+        });
+      }
+    });
+    await waitFor(() => expect(screen.getByText('In review')).toBeInTheDocument());
+    expect(await screen.findByRole('treeitem', { name: /Scope/ })).toBeInTheDocument();
+  });
+
   it('shows a placed component’s state in the Part panel, and none for one the reader may not read', async () => {
     const placed = outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]);
     const readable = service(placed, {

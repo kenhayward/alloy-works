@@ -123,6 +123,16 @@ describe('moving along a workflow transition (the WF1 plan, WF-F)', () => {
     expect(moved).toEqual([]);
   });
 
+  it('reads the state again where the permission a transition needs was tightened meanwhile', async () => {
+    const { client } = service(() =>
+      json(403, { code: 'forbidden', message: 'This needs the approve permission.', traceId: 't' }),
+    );
+    const { stale } = place(client);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(stale()).toBe(1));
+  });
+
   it('offers nothing where the reader may take no transition', () => {
     const { client } = service(() => json(500, {}));
     place(client, { state: { key: 'draft', name: 'Draft', approved: false }, transitions: [] });

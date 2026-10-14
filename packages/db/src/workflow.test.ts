@@ -428,6 +428,26 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
     await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
   });
 
+  it('refuses a save based on a version another has since replaced, saving nothing', async () => {
+    const before = (await as((trx) => newestDefinition(trx, 'component'))).version;
+    const renamed: WorkflowBody = {
+      ...SEED_WORKFLOW,
+      states: SEED_WORKFLOW.states.map((each) =>
+        each.key === 'draft' ? { ...each, name: 'Working' } : each,
+      ),
+    };
+    const saved = await as((trx) =>
+      defineWorkflow(trx, { kind: 'component', body: renamed, by: grace, basedOn: before }),
+    );
+    expect(saved).toMatchObject({ answer: 'defined', definition: { version: before + 1 } });
+    const behind = await as((trx) =>
+      defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada, basedOn: before }),
+    );
+    expect(behind).toEqual({ answer: 'behind', version: before + 1 });
+    expect((await as((trx) => newestDefinition(trx, 'component'))).version).toBe(before + 1);
+    await as((trx) => defineWorkflow(trx, { kind: 'component', body: SEED_WORKFLOW, by: ada }));
+  });
+
   it('never moves a component under the document workflow', async () => {
     const made = await component();
     const documents = await as((trx) => newestDefinition(trx, 'document'));

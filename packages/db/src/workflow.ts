@@ -156,7 +156,8 @@ export async function listWorkflows(trx: TenantTransaction): Promise<WorkflowSum
 
 export type DefineAnswer =
   | { readonly answer: 'defined' | 'unchanged'; readonly definition: WorkflowDefinition }
-  | { readonly answer: 'invalid'; readonly problems: readonly WorkflowProblem[] };
+  | { readonly answer: 'invalid'; readonly problems: readonly WorkflowProblem[] }
+  | { readonly answer: 'behind'; readonly version: number };
 
 /**
  * Saves a kind's definition as its next version (LIF-001, LIF-002, LIF-007), under the kind's lock so
@@ -165,7 +166,13 @@ export type DefineAnswer =
  */
 export async function defineWorkflow(
   trx: TenantTransaction,
-  input: { readonly kind: WorkflowKind; readonly body: unknown; readonly by: string },
+  input: {
+    readonly kind: WorkflowKind;
+    readonly body: unknown;
+    readonly by: string;
+    /** The version the edit began from: refused if another has replaced it since. */
+    readonly basedOn?: number;
+  },
 ): Promise<DefineAnswer> {
   const parsed = parseWorkflowBody(input.body);
   if (!parsed.ok) return { answer: 'invalid', problems: parsed.problems };
@@ -173,6 +180,9 @@ export async function defineWorkflow(
     trx,
   );
   const newest = await newestDefinition(trx, input.kind);
+  if (input.basedOn !== undefined && input.basedOn !== newest.version) {
+    return { answer: 'behind', version: newest.version };
+  }
   if (JSON.stringify(newest.body) === JSON.stringify(parsed.body)) {
     return { answer: 'unchanged', definition: newest };
   }

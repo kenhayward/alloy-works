@@ -96,6 +96,12 @@ export type WorkflowsView = z.infer<typeof WorkflowsView>;
 /** A kind's next version: which kind, and its body. */
 export const DefineWorkflowBody = WorkflowBody.extend({
   kind: WorkflowKindParam.describe('The kind it is the workflow of'),
+  basedOn: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe('The version the edit began from; refused if another has been saved since'),
 });
 export type DefineWorkflowBody = z.infer<typeof DefineWorkflowBody>;
 
@@ -181,7 +187,8 @@ const transitionResponses = (kind: 'component' | 'document') =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
     400: {
-      description: 'reason_required: the transition needs a reason, and none was given',
+      description:
+        'reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters',
       schema: ErrorBody,
     },
     401: unauthenticated,
@@ -250,6 +257,10 @@ export const workflowRoutes = {
       },
       401: unauthenticated,
       403: forbidden,
+      409: {
+        description: 'workflow_behind: another version was saved since the one the edit began from',
+        schema: ErrorBody,
+      },
     },
   },
   transitionComponent: {

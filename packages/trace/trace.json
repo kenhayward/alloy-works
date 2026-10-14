@@ -19135,7 +19135,7 @@
       "owns": [
         {
           "id": "LIF-001",
-          "howItIsMet": "Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed"
+          "howItIsMet": "Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed; \"per artifact type\" read as per kind, as LIF-019's is (Ken, 2026-10-14)"
         },
         {
           "id": "LIF-002",
@@ -20928,13 +20928,13 @@
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 224,
+      "line": 231,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 191,
+      "line": 198,
       "kind": "title"
     },
     {
@@ -24144,7 +24144,7 @@
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 579,
+      "line": 599,
       "kind": "title"
     },
     {
@@ -26152,12 +26152,6 @@
       "kind": "title"
     },
     {
-      "id": "LIF-001",
-      "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 57,
-      "kind": "title"
-    },
-    {
       "id": "LIF-002",
       "file": "packages/domain/src/workflow/workflow.test.ts",
       "line": 27,
@@ -26166,7 +26160,7 @@
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 126,
+      "line": 137,
       "kind": "title"
     },
     {
@@ -26431,12 +26425,6 @@
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 516,
-      "kind": "title"
-    },
-    {
-      "id": "LIF-061",
-      "file": "tests/browser/src/accessibility.test.ts",
-      "line": 850,
       "kind": "title"
     },
     {

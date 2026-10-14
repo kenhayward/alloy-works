@@ -132,6 +132,7 @@ describe("Administration's Workflows", () => {
     expect(sent).toEqual([
       {
         kind: 'component',
+        basedOn: 1,
         states: [
           { key: 'draft', name: 'Draft', initial: true, approved: false },
           { key: 'in_review', name: 'Reviewing', initial: false, approved: false },

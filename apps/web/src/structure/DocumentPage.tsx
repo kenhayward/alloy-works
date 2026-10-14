@@ -1235,7 +1235,7 @@ export function DocumentPage({
     };
   }, [client, wantsPeople]);
 
-  /** Shows a document, and remembers it as the latest one the page holds (written only here). */
+  /** Shows a document, and remembers it as the latest one the page holds (here, and restand's standing). */
   const show = useCallback((document: Opened) => {
     latest.current = document;
     outlineGeneration.current += 1;
@@ -1259,9 +1259,14 @@ export function DocumentPage({
   // Its state read again, with what the reader may take from it, as its stream says it moved (WF-G).
   const restand = useCallback(() => {
     void readStanding(client, 'document', id).then((standing) => {
-      if (standing && latest.current?.id === id) show({ ...latest.current, standing });
+      // Only the standing: an outline read in flight still lands (the WF1 final review, finding 1).
+      if (standing && latest.current?.id === id) {
+        const document = { ...latest.current, standing };
+        latest.current = document;
+        setLoaded({ state: 'open', document });
+      }
     });
-  }, [client, id, show]);
+  }, [client, id]);
   const heardState = live.states.get(id);
   useEffect(() => {
     if (heardState !== undefined) restand();

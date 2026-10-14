@@ -171,6 +171,7 @@ function KindWorkflow({
       const { data, error } = await client.POST('/v1/workflows', {
         body: {
           kind,
+          basedOn: version,
           states: states.map(({ label: _, ...each }) => each),
           transitions: transitions.map(({ label: _, ...each }) => each),
         },
