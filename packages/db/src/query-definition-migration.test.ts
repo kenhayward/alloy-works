@@ -180,6 +180,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0090_search_at_scale',
       '0091_search_history',
       '0092_search_scoped',
+      '0093_search_history_titles',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

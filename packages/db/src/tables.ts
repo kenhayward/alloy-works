@@ -516,6 +516,8 @@ export interface SearchHistoryTable {
   configuration: SearchConfiguration;
   body: string;
   vector: ColumnType<string, string, string>;
+  /** Every version's titles' words, folded as `vector` is (0093; #608). */
+  title_vector: ColumnType<string, string, string>;
   archived: ColumnType<boolean, boolean | undefined, boolean>;
   deleted: ColumnType<boolean, boolean | undefined, boolean>;
 }

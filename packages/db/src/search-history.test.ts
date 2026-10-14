@@ -60,7 +60,8 @@ function resultsOf(answer: SearchAnswer | 'baseline_not_found' | undefined) {
 const historyOf = (trx: TenantTransaction, artifact: string) =>
   sql<Record<string, unknown>>`
     select kind, node, version_id, space_id, title, owner, changed_at, component_type,
-           field_values, configuration::text, body, vector::text, archived, deleted
+           field_values, configuration::text, body, vector::text, title_vector::text, archived,
+           deleted
     from search_history where artifact_id = ${artifact}
     order by node nulls first`
     .execute(trx)
@@ -770,7 +771,11 @@ describe('migration 0091, which keeps one row a place over every version', () =>
       expect(resultsOf(unfolded).items).toMatchObject([{ artifactId: artifact }]);
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0091_search_history', '0092_search_scoped']);
+      expect(report.tenants[id]).toEqual([
+        '0091_search_history',
+        '0092_search_scoped',
+        '0093_search_history_titles',
+      ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(migrated).toHaveLength(1);
       await service.withTenant(tenant, (trx) => rebuildHistory(trx, artifact));
@@ -781,6 +786,111 @@ describe('migration 0091, which keeps one row a place over every version', () =>
       expect(resultsOf(after).items).toMatchObject([
         { artifactId: artifact, version: { latest: false } },
       ]);
+    } finally {
+      await service.close();
+    }
+  });
+});
+
+describe("migration 0093, which keeps every version's titles in history", () => {
+  let db: TestDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0093-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 93;
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await rm(before, { recursive: true, force: true });
+    await db.drop();
+  });
+
+  it('SCH-003 folds, in the run that applies it, every title a place held into its history', async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Demonstration' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const service = beforeTheLogDatabase(db.serviceUrl);
+    try {
+      // Folded before 0093, without titles; renamed once, so only an earlier version held the first.
+      const { ada, artifact } = await service.withTenant(tenant, async (trx) => {
+        const ada = (
+          await trx
+            .insertInto('principal')
+            .values({
+              issuer: 'https://idp.example',
+              subject: 'ada',
+              email: null,
+              display_name: 'Ada',
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id;
+        const space = await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow();
+        const made = await createComponent(trx, {
+          spaceId: space.id,
+          title: 'Bilby census',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        const substance = substanceOf(made.version) as Extract<
+          ReturnType<typeof substanceOf>,
+          { kind: 'component' }
+        >;
+        const next = await recordVersion(trx, {
+          artifactId: made.version.artifactId,
+          openedFrom: made.version.id,
+          author: ada,
+          substance: {
+            ...substance,
+            content: { ...(substance.content as ContentDocument), title: 'Dunnart census' },
+          } as never,
+        });
+        if (next.answer !== 'recorded') throw new Error(next.answer);
+        await grant(trx, {
+          roleId: (await findRole(trx, 'Author'))!.id,
+          subject: { principal: ada },
+          level: { kind: 'space', id: space.id },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+        return { ada, artifact: made.version.artifactId };
+      });
+
+      const report = await migrate(db.migratorUrl);
+      expect(report.tenants[id]).toEqual(['0093_search_history_titles']);
+      const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
+      expect(String(migrated[0]?.title_vector)).toMatch(/'bilbi'.*'dunnart'|'dunnart'.*'bilbi'/u);
+      await service.withTenant(tenant, (trx) => rebuildHistory(trx, artifact));
+      expect(await service.withTenant(tenant, (trx) => historyOf(trx, artifact))).toEqual(migrated);
+      for (const query of ['title:bilby', 'title:dunnart']) {
+        const found = await service.withTenant(tenant, (trx) =>
+          searchWords(trx, ada, query, { scope: 'all' }),
+        );
+        expect({ query, items: resultsOf(found).items }).toMatchObject({
+          query,
+          items: [{ artifactId: artifact }],
+        });
+      }
     } finally {
       await service.close();
     }

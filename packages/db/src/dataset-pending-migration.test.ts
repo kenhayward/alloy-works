@@ -182,6 +182,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0090_search_at_scale',
       '0091_search_history',
       '0092_search_scoped',
+      '0093_search_history_titles',
     ]);
     const kept = await queryAs(
       db.adminUrl,
