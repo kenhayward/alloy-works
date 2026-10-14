@@ -80,6 +80,22 @@ export {
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {
+  TransitionAnswer,
+  TransitionBody,
+  TransitionParams,
+  TransitionRefusal,
+  TransitionView,
+  WorkflowBody,
+  WorkflowDefinitionView,
+  WorkflowKindParam,
+  DefineWorkflowBody,
+  WorkflowRefusal,
+  WorkflowStateView,
+  WorkflowsView,
+  WorkflowVersionParams,
+  workflowRoutes,
+} from './workflows.js';
+export {
   Erased,
   ErasureParams,
   ErasureRefusalView,
@@ -302,6 +318,7 @@ export {
   ScopedSnapshot,
   streamEvents,
   type StreamEventName,
+  WorkflowEvent,
 } from './events.js';
 export { StreamQuery } from './schemas.js';
 export { PresenceBody, PresenceParams } from './presence.js';

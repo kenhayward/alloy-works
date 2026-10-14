@@ -671,6 +671,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a component along a workflow transition
+         * @description Moves a component along a transition from its state, named as the caller saw it, needing the transition's permission on the component and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved component moves it back to the initial state on its own. Audited.
+         */
+        post: operations["transitionComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -1613,6 +1633,26 @@ export interface paths {
          * @description Starts a thread on a document, anchored to a node of its outline as it stands in the version named, with its first comment. A thread on a component placed in it is started on the component.
          */
         post: operations["startDocumentThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a document along a workflow transition
+         * @description Moves a document along a transition from its state, named as the caller saw it, needing the transition's permission on the document and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved document moves it back to the initial state on its own. Audited.
+         */
+        post: operations["transitionDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3338,6 +3378,50 @@ export interface paths {
          * @description Revokes one of the caller’s personal tokens. The next request presenting it is refused.
          */
         delete: operations["revokeToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each kind's workflow in force, and how many are in each state
+         * @description Returns each kind's workflow in force - one for components, one for documents - its states and transitions, and how many of the kind are in each state now. Needs administer at the environment.
+         */
+        get: operations["listWorkflows"];
+        put?: never;
+        /**
+         * Save a kind's workflow as its next version
+         * @description Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.
+         */
+        post: operations["defineWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workflows/{kind}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One version of a kind's workflow, every one kept
+         * @description Returns one version of a kind's workflow. Every version is kept, so the rules a component or a document moved under can be read again. Needs administer at the environment.
+         */
+        get: operations["getWorkflowVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -9436,6 +9520,11 @@ export interface operations {
                                 id: string;
                                 name: string | null;
                             } | null;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -9569,6 +9658,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -9626,6 +9720,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -12721,6 +12831,225 @@ export interface operations {
             };
             /** @description No such component in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    transitionComponent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "from": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The transition to take, by key */
+                    transition: string;
+                    /** @description The state the caller saw it in: refused, as state_moved, where it has moved since */
+                    from: string;
+                    /** @description Why, recorded with the move; required where the transition says so */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The transitions the caller may take from it now */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description reason_required: the transition needs a reason, and none was given */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but lacks the permission the transition needs */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                    };
+                };
+            };
+            /** @description The component has been deleted */
+            410: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -18736,6 +19065,11 @@ export interface operations {
                              * @enum {string}
                              */
                             publishing: "published" | "changedSince" | "neverPublished";
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -18876,6 +19210,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -18983,6 +19322,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34090,6 +34445,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -34197,6 +34557,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34337,6 +34713,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34573,6 +34965,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34953,6 +35361,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -35060,6 +35473,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35200,6 +35629,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35436,6 +35881,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -37639,6 +38100,225 @@ export interface operations {
             };
         };
     };
+    transitionDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "transition": "example",
+                 *       "from": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The transition to take, by key */
+                    transition: string;
+                    /** @description The state the caller saw it in: refused, as state_moved, where it has moved since */
+                    from: string;
+                    /** @description Why, recorded with the move; required where the transition says so */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; where it stands now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The transitions the caller may take from it now */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description reason_required: the transition needs a reason, and none was given */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but lacks the permission the transition needs */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description state_moved: where it is now */
+                        state?: {
+                            key: string;
+                            name: string;
+                        };
+                    };
+                };
+            };
+            /** @description The document has been deleted */
+            410: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     unarchiveDocument: {
         parameters: {
             query?: never;
@@ -37953,6 +38633,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -38060,6 +38745,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -38200,6 +38901,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -38436,6 +39153,22 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                            };
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -47982,6 +48715,7 @@ export interface operations {
                 space?: string;
                 type?: string;
                 owner?: string;
+                state?: string;
                 changed?: "today" | "week" | "month" | "year" | "earlier";
                 changedFrom?: string;
                 changedTo?: string;
@@ -48086,6 +48820,11 @@ export interface operations {
                                 /** @description Whether it is resolved, as it is now */
                                 resolved: boolean;
                             } | null;
+                            /** @description A component's or a document's workflow state now, a section's its document's; null for anything else */
+                            state: {
+                                key: string;
+                                name: string;
+                            } | null;
                         }[];
                         /** @description Every declared dimension, each counted with the other filters in force and its own left out */
                         facets: {
@@ -48117,6 +48856,16 @@ export interface operations {
                                 capped: boolean;
                             }[];
                             owners: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                /** @description How many it would leave, up to 1,000 */
+                                count: number;
+                                /** @description Whether more than the count, which is then a lower bound */
+                                capped: boolean;
+                            }[];
+                            /** @description Each workflow state a result is in now, by key; a section's its document's */
+                            states: {
                                 /** @description What to filter by to leave these */
                                 value: string;
                                 label: string;
@@ -50288,6 +51037,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -50345,6 +51099,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -51321,6 +52091,11 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "transitions": [],
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -51428,6 +52203,22 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Its workflow state now, named by the definition deciding its next move */
+                        state: {
+                            key: string;
+                            name: string;
+                        };
+                        /** @description The workflow transitions the caller may take from its state now, in order */
+                        transitions: {
+                            key: string;
+                            name: string;
+                            /** @description The state it moves to */
+                            to: {
+                                key: string;
+                                name: string;
+                            };
+                            reasonRequired: boolean;
+                        }[];
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -56323,6 +57114,507 @@ export interface operations {
                 };
             };
             /** @description No such token of the caller's in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listWorkflows: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Each kind's workflow */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "workflows": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Each kind's workflow, components first */
+                        workflows: {
+                            /** @description The version in force: the newest */
+                            definition: {
+                                /** @enum {string} */
+                                kind: "component" | "document";
+                                /** @description Its version: 1 is the seed, and each save the next */
+                                version: number;
+                                body: {
+                                    states: {
+                                        key: string;
+                                        name: string;
+                                        initial: boolean;
+                                        approved: boolean;
+                                    }[];
+                                    transitions: {
+                                        key: string;
+                                        name: string;
+                                        from: string;
+                                        to: string;
+                                        /** @enum {string} */
+                                        permission: "edit" | "approve";
+                                        reasonRequired: boolean;
+                                    }[];
+                                };
+                                /** @description Who saved it; null for the seed */
+                                by: {
+                                    id: string;
+                                    /** @description Their display name, or address; null where neither is known */
+                                    name: string | null;
+                                } | null;
+                                /** @description When it was saved */
+                                at: string;
+                            };
+                            /** @description How many of the kind, deleted ones aside, are in each state now, by key */
+                            counts: {
+                                [key: string]: number;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    defineWorkflow: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "states": [
+                 *         {
+                 *           "key": "example",
+                 *           "name": "example"
+                 *         }
+                 *       ],
+                 *       "transitions": [],
+                 *       "kind": "component"
+                 *     }
+                 */
+                "application/json": {
+                    states: {
+                        /** @description A stable key: lower case, digits and underscores, starting with a letter */
+                        key: string;
+                        /** @description As people read it; trimmed and NFC */
+                        name: string;
+                        /**
+                         * @description Where a new one starts, and a save of an approved one returns to; exactly one
+                         * @default false
+                         */
+                        initial?: boolean;
+                        /**
+                         * @description Counts as approved: saving one in it moves it to the initial state
+                         * @default false
+                         */
+                        approved?: boolean;
+                    }[];
+                    transitions: {
+                        /** @description A stable key: lower case, digits and underscores, starting with a letter */
+                        key: string;
+                        /** @description As people read it; trimmed and NFC */
+                        name: string;
+                        /** @description The state it moves from, by key */
+                        from: string;
+                        /** @description The state it moves to, by key; never the one it moves from */
+                        to: string;
+                        /**
+                         * @description What the caller needs on the component or document to take it
+                         * @enum {string}
+                         */
+                        permission: "edit" | "approve";
+                        /**
+                         * @description Whether taking it needs a reason, recorded with it
+                         * @default false
+                         */
+                        reasonRequired?: boolean;
+                    }[];
+                    /**
+                     * @description The kind it is the workflow of
+                     * @enum {string}
+                     */
+                    kind: "component" | "document";
+                };
+            };
+        };
+        responses: {
+            /** @description Saved, or the same as the version in force, which changes nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "kind": "component",
+                     *       "version": -9007199254740991,
+                     *       "body": {
+                     *         "states": [],
+                     *         "transitions": []
+                     *       },
+                     *       "by": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "at": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "component" | "document";
+                        /** @description Its version: 1 is the seed, and each save the next */
+                        version: number;
+                        body: {
+                            states: {
+                                key: string;
+                                name: string;
+                                initial: boolean;
+                                approved: boolean;
+                            }[];
+                            transitions: {
+                                key: string;
+                                name: string;
+                                from: string;
+                                to: string;
+                                /** @enum {string} */
+                                permission: "edit" | "approve";
+                                reasonRequired: boolean;
+                            }[];
+                        };
+                        /** @description Who saved it; null for the seed */
+                        by: {
+                            id: string;
+                            /** @description Their display name, or address; null where neither is known */
+                            name: string | null;
+                        } | null;
+                        /** @description When it was saved */
+                        at: string;
+                    };
+                };
+            };
+            /** @description workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description workflow_invalid: each problem, by rule and where in the body */
+                        problems?: {
+                            rule: string;
+                            path: string;
+                            message: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getWorkflowVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                kind: "component" | "document";
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "kind": "component",
+                     *       "version": -9007199254740991,
+                     *       "body": {
+                     *         "states": [],
+                     *         "transitions": []
+                     *       },
+                     *       "by": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "at": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "component" | "document";
+                        /** @description Its version: 1 is the seed, and each save the next */
+                        version: number;
+                        body: {
+                            states: {
+                                key: string;
+                                name: string;
+                                initial: boolean;
+                                approved: boolean;
+                            }[];
+                            transitions: {
+                                key: string;
+                                name: string;
+                                from: string;
+                                to: string;
+                                /** @enum {string} */
+                                permission: "edit" | "approve";
+                                reasonRequired: boolean;
+                            }[];
+                        };
+                        /** @description Who saved it; null for the seed */
+                        by: {
+                            id: string;
+                            /** @description Their display name, or address; null where neither is known */
+                            name: string | null;
+                        } | null;
+                        /** @description When it was saved */
+                        at: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such version of that kind */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

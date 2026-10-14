@@ -40,6 +40,16 @@ export const SearchQuery = z.object({
   space: ids.optional().describe('Only in these spaces, by id, separated by commas'),
   type: ids.optional().describe('Only components of these types, by id, separated by commas'),
   owner: ids.optional().describe('Only what these people made, by id, separated by commas'),
+  state: z
+    .string()
+    .regex(
+      /^[a-z][a-z0-9_]{0,63}(?:,[a-z][a-z0-9_]{0,63}){0,49}$/,
+      'Expected state keys, separated by commas',
+    )
+    .optional()
+    .describe(
+      "Only components and documents in these workflow states now, by key, separated by commas; a section by its document's",
+    ),
   changed: z
     .enum(['today', 'week', 'month', 'year', 'earlier'])
     .optional()
@@ -133,6 +143,12 @@ export const SearchResultView = z.object({
     })
     .nullable()
     .describe('The thread a thread result is; null for anything else'),
+  state: z
+    .object({ key: z.string(), name: z.string() })
+    .nullable()
+    .describe(
+      "A component's or a document's workflow state now, a section's its document's; null for anything else",
+    ),
 });
 export type SearchResultView = z.infer<typeof SearchResultView>;
 
@@ -149,6 +165,9 @@ export const SearchFacetsView = z
     spaces: z.array(FacetValueView),
     componentTypes: z.array(FacetValueView),
     owners: z.array(FacetValueView),
+    states: z
+      .array(FacetValueView)
+      .describe("Each workflow state a result is in now, by key; a section's its document's"),
     changed: z
       .array(FacetValueView)
       .describe('Each declared range, in order: today, week, month, year, earlier'),

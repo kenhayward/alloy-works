@@ -40,6 +40,7 @@ describe('the rule behind a refusal', () => {
       ['round.closed', 'round_closed', 'COL-057'],
       ['deletion.refused', 'deletion_refused', 'LIF-023'],
       ['reference.deleted', 'reference_deleted', 'VER-044'],
+      ['reason.required', 'reason_required', 'LIF-061'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -179,6 +180,12 @@ describe('the rule behind a refusal', () => {
       'hold.released',
       // A deleted component or document, answered 410 (the DL plan, DL-B): a state, not a rule.
       'artifact.deleted',
+      // The WF1 plan's (WF-F, WF-K): a body that does not validate, an artifact moved since it was
+      // read, a transition not from its state, an archived one. Guards of the design's own.
+      'workflow.invalid',
+      'state.moved',
+      'transition.unknown',
+      'artifact.archived',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

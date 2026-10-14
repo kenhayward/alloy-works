@@ -107,6 +107,7 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'token.used': 'API token used',
   'tool.used': 'Tool used',
   'webhook.changed': 'Webhook changed',
+  'workflow.defined': 'Workflow saved',
   'workflow.transitioned': 'Workflow moved on',
 };
 

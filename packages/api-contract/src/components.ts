@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
+import { TransitionView, WorkflowStateView } from './workflows.js';
 
 /** A component, by the id its artifact carries. */
 export const ComponentParams = z.object({ id: z.uuid() });
@@ -210,6 +211,7 @@ export const ComponentList = z.object({
         .object({ id: z.string(), name: z.string().nullable() })
         .nullable()
         .describe('Who made its latest version; null for a version nobody authored'),
+      state: WorkflowStateView,
     }),
   ),
   next: nextCursor,
@@ -261,6 +263,10 @@ export const ComponentView = z.object({
       'Archived: left out of ordinary listings and search, and still read, referenced and edited',
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
+  state: WorkflowStateView,
+  transitions: z
+    .array(TransitionView)
+    .describe('The workflow transitions the caller may take from its state now, in order'),
   onHold: z
     .boolean()
     .describe(

@@ -46,6 +46,7 @@ import {
 } from '@alloy-works/db/testing';
 import {
   DEFINITION_SCHEMA_VERSION,
+  SEED_WORKFLOW,
   TEMPLATE_SCHEMA_VERSION,
   definitionsFor,
   tokenScopes,
@@ -225,6 +226,18 @@ const OTHER_TENANT_IDS: Readonly<
   previewRestore: async (tenant, db) => componentVersionIn(tenant, db),
   getComponentVersion: async (tenant, db) => componentVersionIn(tenant, db),
   getDocumentVersion: async (tenant, db) => documentVersionIn(tenant, db),
+  // A version environment B has made and this one has not.
+  getWorkflowVersion: async (tenant, db) => {
+    await db.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('workflow_definition')
+        .values({ kind: 'component', version_no: 2, body: JSON.stringify(SEED_WORKFLOW), by: null })
+        .execute(),
+    );
+    return { kind: 'component', version: '2' };
+  },
+  transitionComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  transitionDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   unarchiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   archiveDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -427,6 +440,15 @@ const VALID_INPUT: Readonly<
   placeHold: { payload: { target: { space: SESSION }, reason: 'Elsewhere' } },
   releaseHold: { payload: { reason: 'Elsewhere' } },
   setRetention: { payload: { kind: null, space: SESSION, days: 5 } },
+  defineWorkflow: {
+    payload: {
+      kind: 'component',
+      states: [{ key: 'draft', name: 'Draft', initial: true }],
+      transitions: [],
+    },
+  },
+  transitionComponent: { payload: { transition: 'submit', from: 'draft' } },
+  transitionDocument: { payload: { transition: 'submit', from: 'draft' } },
   requestAuditExport: { payload: {} },
   beatPresence: {
     payload: { viewer: SESSION, document: SESSION, component: null, mode: 'read' },

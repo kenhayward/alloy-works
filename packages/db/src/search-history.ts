@@ -57,15 +57,22 @@ export const historyTitled = (trx: TenantTransaction) => historyHas(trx, 'title_
  */
 export const historyFielded = (trx: TenantTransaction) => historyHas(trx, 'fields_vector');
 
+/** Whether history holds its artifact's workflow state yet (0095; WF-H). */
+const historyStated = (trx: TenantTransaction) => historyHas(trx, 'workflow_state');
+
 const COLUMNS = sql.raw(
   'artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values, configuration, body, vector, archived, deleted',
 );
-/** Every column, each place's titles from 0093 and its fields' words from 0094. */
-const columnsOf = (titled: boolean, fielded: boolean) =>
+/**
+ * Every column, each place's titles from 0093, its fields' words from 0094 and its artifact's workflow
+ * state from 0095.
+ */
+const columnsOf = (titled: boolean, fielded: boolean, stated = false) =>
   sql.join([
     COLUMNS,
     ...(titled ? [sql`title_vector`] : []),
     ...(fielded ? [sql`fields_vector`] : []),
+    ...(stated ? [sql`workflow_state`] : []),
   ]);
 /** One version's fields' words together, from its places in `texts`, or none. */
 const fieldsOf = (texts: string) =>
@@ -92,10 +99,11 @@ export async function foldHistory(
   }
   const titled = await historyTitled(trx);
   const fielded = await historyFielded(trx);
+  const stated = await historyStated(trx);
   // A version's title place, or none, which folds nothing; and its fields' places, likewise.
   await sql`
-    insert into search_history (${columnsOf(titled, fielded)})
-    select ${columnsOf(titled, fielded)} from (
+    insert into search_history (${columnsOf(titled, fielded, stated)})
+    select ${columnsOf(titled, fielded, stated)} from (
       select e.*, coalesce(s.vector, ''::tsvector) as title_vector,
              ${fielded ? fieldsOf('search_text') : sql`null`} as fields_vector
       from search_entry e left join search_text s on s.entry_id = e.id and s.place = 'title'
@@ -109,6 +117,7 @@ export async function foldHistory(
       vector = search_history_fold(search_history.vector, excluded.vector),
       ${titled ? sql`title_vector = search_history_fold(search_history.title_vector, excluded.title_vector),` : sql``}
       ${fielded ? sql`fields_vector = search_history_fold(search_history.fields_vector, excluded.fields_vector),` : sql``}
+      ${stated ? sql`workflow_state = excluded.workflow_state,` : sql``}
       archived = excluded.archived, deleted = excluded.deleted`.execute(trx);
 }
 
@@ -123,6 +132,7 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
     artifactId === undefined ? sql`true` : sql`${sql.ref(`${alias}.artifact_id`)} = ${artifactId}`;
   const titled = await historyTitled(trx);
   const fielded = await historyFielded(trx);
+  const stated = await historyStated(trx);
   await sql`delete from search_history h where ${which('h')}`.execute(trx);
   await sql`
     with places as (
@@ -144,10 +154,17 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
       left join search_earlier_text s on s.entry_id = e.id and s.place = 'title'
       where e.kind in ${kinds} and ${which('e')}
     )
-    insert into search_history (${columnsOf(titled, fielded)})
+    insert into search_history (${columnsOf(titled, fielded, stated)})
     select n.artifact_id, n.kind, n.node, n.version_id, n.space_id, n.title, n.owner, n.changed_at,
            n.component_type, n.field_values, n.configuration, f.body, f.vector, n.archived, n.deleted
            ${titled ? sql`, f.title_vector` : sql``} ${fielded ? sql`, f.fields_vector` : sql``}
+           ${
+             // Its artifact's state now, whichever version holds the place newest (WF-H).
+             stated
+               ? sql`, (select t.to_state from workflow_transition t
+                        where t.artifact_id = n.artifact_id order by t.id desc limit 1)`
+               : sql``
+           }
     from (select distinct on (artifact_id, node) * from places
           order by artifact_id, node, revision_no desc, version_no desc) n
     join (select artifact_id, node,

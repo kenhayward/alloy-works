@@ -825,3 +825,11 @@ own sketch plan when its turn comes.
 | TC  | [Closing T3](2026-10-13-tc-t3-close.md)                                                                     | The 22 T3 rows not `Covered` at 0.163.0: the T3 audit (cited, tested, split or moved), then annotations and notices, search reaching further, and what references a node; the T3 close                                                          | Built                    |
 | SV  | [Search reaches further](2026-10-13-sv-search-reaches-further.md)                                           | SCH-003, SCH-058, SCH-071: earlier versions and baselines searchable on request, a result linking to its version; threads indexed by message, filtered by what they are on                                                                      | Built                    |
 | SV3 | [Search at scale](2026-10-13-sv3-search-at-scale.md)                                                        | SCH-033 at a million components on both paths: words through their index, definitions indexed, ranking and facets bounded by a chosen road; every version from one `search_history` row a place; #602                                           | Built (PRs #603, #606)   |
+
+## T9
+
+The workflow, in [ADR-0061](../decisions/0061-t9s-order.md)'s order.
+
+| #   | Plan                                                                                 | Builds                                                                                                                                                        | Status   |
+| --- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| WF1 | [Workflow definitions and states](2026-10-14-wf1-workflow-definitions-and-states.md) | LIF-001, LIF-002, LIF-005, LIF-007, LIF-061, SCH-060: a state per artifact, per-kind workflows a tenant edits as versions, transitions by permission, audited | Building |

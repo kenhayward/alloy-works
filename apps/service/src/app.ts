@@ -93,6 +93,7 @@ import { archivalHandlers } from './archival.js';
 import { deletedListingHandlers, deletionHandlers } from './deletion.js';
 import { holdHandlers } from './holds.js';
 import { retentionHandlers } from './retention.js';
+import { workflowHandlers } from './workflows.js';
 import { erasureHandlers } from './erasure.js';
 import { suggestionHandlers } from './suggestions.js';
 import { changesHandlers } from './changes.js';
@@ -546,6 +547,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...deletedListingHandlers(db, tenantOf, principalOf),
     ...holdHandlers(),
     ...retentionHandlers(),
+    ...workflowHandlers(),
     ...erasureHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),

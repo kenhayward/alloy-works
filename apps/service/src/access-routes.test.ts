@@ -1189,6 +1189,29 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { kind: null, space: MISSING, days: 5 },
     }),
+    // A workflow is an administrator's of the whole environment (WF-J): refused before its kind's
+    // versions are looked for. A move is decided on reading the artifact first (WF-F).
+    listWorkflows: () => ({ url: '/v1/workflows', status: 403 }),
+    getWorkflowVersion: () => ({ url: '/v1/workflows/component/versions/9', status: 403 }),
+    defineWorkflow: () => ({
+      url: '/v1/workflows',
+      status: 403,
+      payload: {
+        kind: 'component',
+        states: [{ key: 'draft', name: 'Draft', initial: true }],
+        transitions: [],
+      },
+    }),
+    transitionComponent: () => ({
+      url: `/v1/components/${dosing}/transitions`,
+      status: 404,
+      payload: { transition: 'submit', from: 'draft' },
+    }),
+    transitionDocument: () => ({
+      url: `/v1/documents/${MISSING}/transitions`,
+      status: 404,
+      payload: { transition: 'submit', from: 'draft' },
+    }),
     placeHold: () => ({
       url: '/v1/holds',
       status: 403,

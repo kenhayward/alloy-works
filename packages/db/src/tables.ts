@@ -463,6 +463,11 @@ export interface SearchEntryTable {
   archived: Generated<boolean>;
   /** Its artifact deleted (0085): left out of search, and set by the acts and by indexing. */
   deleted: Generated<boolean>;
+  /**
+   * Its artifact's workflow state (0095; WF-H), a section's its document's; null for every other kind,
+   * and none before 0095. Set by indexing and by a move.
+   */
+  workflow_state: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /**
@@ -522,6 +527,39 @@ export interface SearchHistoryTable {
   fields_vector: ColumnType<string, string, string>;
   archived: ColumnType<boolean, boolean | undefined, boolean>;
   deleted: ColumnType<boolean, boolean | undefined, boolean>;
+  /** Its artifact's workflow state now (0095; WF-H). */
+  workflow_state: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+/** A kind's workflow definition, a version per save, inserted and never changed (0095; WF-B). */
+export interface WorkflowDefinitionTable {
+  id: Generated<string>;
+  kind: 'component' | 'document';
+  version_no: number;
+  body: ColumnType<unknown, string, never>;
+  /** Null for the seed. */
+  by: string | null;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** One move of a component or a document, inserted and never changed (0095; WF-D). */
+export interface WorkflowTransitionTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  /** The version current at the move; null for a creation's, made before its first version. */
+  version_id: string | null;
+  /** Null for a creation's and a save's of an approved artifact. */
+  transition: string | null;
+  from_state: string | null;
+  to_state: string;
+  definition_id: string;
+  reason: string | null;
+  /** Null where 0095 wrote it for an author unknown. */
+  by: string | null;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
 }
 
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
@@ -815,6 +853,8 @@ export interface TenantTables {
   legal_hold: LegalHoldTable;
   legal_hold_release: LegalHoldReleaseTable;
   retention_keep: RetentionKeepTable;
+  workflow_definition: WorkflowDefinitionTable;
+  workflow_transition: WorkflowTransitionTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

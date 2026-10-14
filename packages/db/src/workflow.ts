@@ -1,0 +1,489 @@
+import {
+  decidingDefinition,
+  initialState,
+  parseWorkflowBody,
+  transitionsFrom,
+  WORKFLOW_KINDS,
+  workflowBodySchema,
+  type TransitionPermission,
+  type WorkflowBody,
+  type WorkflowKind,
+  type WorkflowProblem,
+  type WorkflowTransition,
+} from '@alloy-works/domain';
+import { sql } from 'kysely';
+import { isArchived } from './archival.js';
+import { artifactPlace, recordEvent } from './audit.js';
+import { isDeleted } from './deletion.js';
+import { notifyTenant } from './realtime.js';
+import { historyStored } from './search-history.js';
+import type { TenantTransaction } from './tables.js';
+import { lockArtifact } from './versions.js';
+
+/**
+ * **Workflow** (workflow.md; the WF1 plan, WF-A to WF-K): each kind's definition, versioned, the
+ * newest in force; each component's and document's state, the latest of its insert-only moves; and
+ * the moves themselves, audited. Who may move an artifact is the caller's to decide from the
+ * transition's permission, which `moveArtifact` names; who may define, `administer`, likewise.
+ */
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+const storedKnown = new WeakMap<TenantTransaction, boolean>();
+
+/**
+ * Whether this tenant stores workflow yet (0095): a migration's test runs today's code on older
+ * schemas, where nothing is written or read.
+ */
+export async function workflowStored(trx: TenantTransaction): Promise<boolean> {
+  const known = storedKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('workflow_transition') is not null as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  storedKnown.set(trx, present);
+  return present;
+}
+
+/** One version of a kind's definition. */
+export interface WorkflowDefinition {
+  readonly id: string;
+  readonly kind: WorkflowKind;
+  readonly version: number;
+  readonly body: WorkflowBody;
+  /** Null for the seed. */
+  readonly by: { readonly id: string; readonly name: string | null } | null;
+  readonly at: Date;
+}
+
+const isKind = (kind: string): kind is WorkflowKind =>
+  (WORKFLOW_KINDS as readonly string[]).includes(kind);
+
+function definitionsQuery(trx: TenantTransaction) {
+  return trx
+    .selectFrom('workflow_definition as d')
+    .leftJoin('principal as p', 'p.id', 'd.by')
+    .select([
+      'd.id',
+      'd.kind',
+      'd.version_no',
+      'd.body',
+      'd.by',
+      'd.at',
+      sql<string | null>`coalesce(p.display_name, p.email)`.as('by_name'),
+    ]);
+}
+
+function definitionOf(row: {
+  id: string;
+  kind: WorkflowKind;
+  version_no: number;
+  body: unknown;
+  by: string | null;
+  at: Date;
+  by_name: string | null;
+}): WorkflowDefinition {
+  return {
+    id: row.id,
+    kind: row.kind,
+    version: row.version_no,
+    // Validated as it was saved; read by its shape alone.
+    body: workflowBodySchema.parse(row.body),
+    by: row.by === null ? null : { id: row.by, name: row.by_name },
+    at: row.at,
+  };
+}
+
+/** A kind's definition in force: its newest version. */
+export async function newestDefinition(
+  trx: TenantTransaction,
+  kind: WorkflowKind,
+): Promise<WorkflowDefinition> {
+  const row = await definitionsQuery(trx)
+    .where('d.kind', '=', kind)
+    .orderBy('d.version_no', 'desc')
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  return definitionOf(row);
+}
+
+/** One version of a kind's definition, every one kept (LIF-054); undefined for none. */
+export async function workflowVersion(
+  trx: TenantTransaction,
+  kind: WorkflowKind,
+  version: number,
+): Promise<WorkflowDefinition | undefined> {
+  if (!Number.isSafeInteger(version) || version < 1 || !(await workflowStored(trx))) {
+    return undefined;
+  }
+  const row = await definitionsQuery(trx)
+    .where('d.kind', '=', kind)
+    .where('d.version_no', '=', version)
+    .executeTakeFirst();
+  return row && definitionOf(row);
+}
+
+async function definitionById(trx: TenantTransaction, id: string): Promise<WorkflowDefinition> {
+  return definitionOf(await definitionsQuery(trx).where('d.id', '=', id).executeTakeFirstOrThrow());
+}
+
+/** A kind's workflow as Administration lists it: its definition in force and how many sit where. */
+export interface WorkflowSummary {
+  readonly definition: WorkflowDefinition;
+  /** Each state's key by how many of the kind, deleted ones aside, are in it now. */
+  readonly counts: Readonly<Record<string, number>>;
+}
+
+/** Each kind's workflow, components first (LIF-001). */
+export async function listWorkflows(trx: TenantTransaction): Promise<WorkflowSummary[]> {
+  if (!(await workflowStored(trx))) return [];
+  const { rows } = await sql<{ kind: WorkflowKind; state: string; n: number }>`
+    select t.kind, t.to_state as state, count(*)::int as n
+      from (select distinct on (artifact_id) artifact_id, kind, to_state
+              from workflow_transition order by artifact_id, id desc) t
+     where not coalesce((select d.act = 'deleted' from artifact_deletion d
+                          where d.artifact_id = t.artifact_id order by d.id desc limit 1), false)
+     group by t.kind, t.to_state`.execute(trx);
+  const summaries: WorkflowSummary[] = [];
+  for (const kind of WORKFLOW_KINDS) {
+    const counts: Record<string, number> = {};
+    for (const row of rows) if (row.kind === kind) counts[row.state] = row.n;
+    summaries.push({ definition: await newestDefinition(trx, kind), counts });
+  }
+  return summaries;
+}
+
+export type DefineAnswer =
+  | { readonly answer: 'defined' | 'unchanged'; readonly definition: WorkflowDefinition }
+  | { readonly answer: 'invalid'; readonly problems: readonly WorkflowProblem[] };
+
+/**
+ * Saves a kind's definition as its next version (LIF-001, LIF-002, LIF-007), under the kind's lock so
+ * two saves at once take turns; the same body again changes nothing. Audited as `workflow.defined`.
+ * An artifact in a state the new version drops keeps it, under the version it moved under (WF-E).
+ */
+export async function defineWorkflow(
+  trx: TenantTransaction,
+  input: { readonly kind: WorkflowKind; readonly body: unknown; readonly by: string },
+): Promise<DefineAnswer> {
+  const parsed = parseWorkflowBody(input.body);
+  if (!parsed.ok) return { answer: 'invalid', problems: parsed.problems };
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:workflow:${input.kind}`} || current_schema(), 0))`.execute(
+    trx,
+  );
+  const newest = await newestDefinition(trx, input.kind);
+  if (JSON.stringify(newest.body) === JSON.stringify(parsed.body)) {
+    return { answer: 'unchanged', definition: newest };
+  }
+  const row = await trx
+    .insertInto('workflow_definition')
+    .values({
+      kind: input.kind,
+      version_no: newest.version + 1,
+      body: JSON.stringify(parsed.body),
+      by: input.by,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await recordEvent(trx, {
+    kind: 'workflow.defined',
+    subject: { kind: 'workflow' },
+    space: null,
+    detail: { kind: input.kind, version: newest.version + 1 },
+  });
+  return { answer: 'defined', definition: await definitionById(trx, row.id) };
+}
+
+/** Where an artifact stands: its state, the definition deciding its next move, and the move's row. */
+export interface WorkflowStanding {
+  readonly kind: WorkflowKind;
+  readonly state: { readonly key: string; readonly name: string; readonly approved: boolean };
+  /** The definition its moves are decided under now (WF-E). */
+  readonly definition: WorkflowDefinition;
+  /** The transitions the definition declares from its state, whoever may take them. */
+  readonly transitions: readonly WorkflowTransition[];
+  /** The version current at its latest move; null for one made since and never moved. */
+  readonly version: string | null;
+}
+
+/** An artifact's state's key now, read alone: what indexing writes. */
+export async function stateKey(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<string | undefined> {
+  const row = await trx
+    .selectFrom('workflow_transition')
+    .select('to_state')
+    .where('artifact_id', '=', artifactId)
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return row?.to_state;
+}
+
+/** An artifact's standing now; undefined for anything but a component or a document, or before 0095. */
+export async function workflowStanding(
+  trx: TenantTransaction,
+  artifactId: string,
+): Promise<WorkflowStanding | undefined> {
+  if (!UUID.test(artifactId) || !(await workflowStored(trx))) return undefined;
+  const row = await trx
+    .selectFrom('workflow_transition')
+    .select(['kind', 'to_state', 'definition_id', 'version_id'])
+    .where('artifact_id', '=', artifactId)
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (!row) return undefined;
+  const newest = await newestDefinition(trx, row.kind);
+  const definition = decidingDefinition(
+    newest,
+    newest.id === row.definition_id ? newest : await definitionById(trx, row.definition_id),
+    row.to_state,
+  );
+  const state = definition.body.states.find((each) => each.key === row.to_state);
+  return {
+    kind: row.kind,
+    state: {
+      key: row.to_state,
+      name: state?.name ?? row.to_state,
+      approved: state?.approved ?? false,
+    },
+    definition,
+    transitions: transitionsFrom(definition.body, row.to_state),
+    version: row.version_id,
+  };
+}
+
+/**
+ * Each artifact's state by its id, named by the definition deciding it: for lists, in one statement
+ * and a definition read per version named. Those with none are left out.
+ */
+export async function workflowStates(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<ReadonlyMap<string, { readonly key: string; readonly name: string }>> {
+  const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
+  if (ids.length === 0 || !(await workflowStored(trx))) return new Map();
+  const { rows } = await sql<{
+    artifact_id: string;
+    kind: WorkflowKind;
+    to_state: string;
+    definition_id: string;
+  }>`select distinct on (artifact_id) artifact_id, kind, to_state, definition_id
+       from workflow_transition where artifact_id = any(${ids}::uuid[])
+      order by artifact_id, id desc`.execute(trx);
+  const definitions = new Map<string, WorkflowDefinition>();
+  const newest = new Map<WorkflowKind, WorkflowDefinition>();
+  const states = new Map<string, { key: string; name: string }>();
+  for (const row of rows) {
+    if (!newest.has(row.kind)) newest.set(row.kind, await newestDefinition(trx, row.kind));
+    const latest = newest.get(row.kind)!;
+    let recorded = row.definition_id === latest.id ? latest : definitions.get(row.definition_id);
+    if (!recorded) {
+      recorded = await definitionById(trx, row.definition_id);
+      definitions.set(recorded.id, recorded);
+    }
+    const definition = decidingDefinition(latest, recorded, row.to_state);
+    const state = definition.body.states.find((each) => each.key === row.to_state);
+    states.set(row.artifact_id, { key: row.to_state, name: state?.name ?? row.to_state });
+  }
+  return states;
+}
+
+/** The name each state key has in the definitions in force, components' first: search's facet's. */
+export async function stateNames(trx: TenantTransaction): Promise<ReadonlyMap<string, string>> {
+  const names = new Map<string, string>();
+  if (!(await workflowStored(trx))) return names;
+  for (const kind of WORKFLOW_KINDS) {
+    for (const each of (await newestDefinition(trx, kind)).body.states) {
+      if (!names.has(each.key)) names.set(each.key, each.name);
+    }
+  }
+  return names;
+}
+
+/** Sets search's copy of the state on the artifact's rows, current and history (WF-H). */
+async function setSearchState(
+  trx: TenantTransaction,
+  artifactId: string,
+  state: string,
+): Promise<void> {
+  await trx
+    .updateTable('search_entry')
+    .set({ workflow_state: state })
+    .where('artifact_id', '=', artifactId)
+    .where('kind', 'in', ['component', 'document', 'section'])
+    .execute();
+  if (await historyStored(trx)) {
+    await trx
+      .updateTable('search_history')
+      .set({ workflow_state: state })
+      .where('artifact_id', '=', artifactId)
+      .execute();
+  }
+}
+
+/**
+ * The first row of a component or a document (WF-D): its kind's initial state, under its definition in
+ * force, before its first version is indexed. Called by `createArtifact` alone.
+ */
+export async function startWorkflow(
+  trx: TenantTransaction,
+  artifact: { readonly id: string; readonly kind: string; readonly by: string | null },
+): Promise<void> {
+  if (!isKind(artifact.kind) || !(await workflowStored(trx))) return;
+  const definition = await newestDefinition(trx, artifact.kind);
+  await trx
+    .insertInto('workflow_transition')
+    .values({
+      artifact_id: artifact.id,
+      kind: artifact.kind,
+      to_state: initialState(definition.body).key,
+      definition_id: definition.id,
+      by: artifact.by,
+    })
+    .execute();
+}
+
+/** Writes a move's row, search's copy, the audit event and the stream's word of it. */
+async function moved(
+  trx: TenantTransaction,
+  standing: WorkflowStanding,
+  move: {
+    readonly artifactId: string;
+    readonly version: string | null;
+    readonly transition: string | null;
+    readonly to: string;
+    readonly reason: string | null;
+    readonly by: string | null;
+    readonly approved?: string;
+  },
+): Promise<void> {
+  await trx
+    .insertInto('workflow_transition')
+    .values({
+      artifact_id: move.artifactId,
+      kind: standing.kind,
+      version_id: move.version,
+      transition: move.transition,
+      from_state: standing.state.key,
+      to_state: move.to,
+      definition_id: standing.definition.id,
+      reason: move.reason,
+      by: move.by,
+    })
+    .execute();
+  await setSearchState(trx, move.artifactId, move.to);
+  const place = await artifactPlace(trx, move.artifactId);
+  await recordEvent(
+    trx,
+    {
+      kind: 'workflow.transitioned',
+      subject: { kind: standing.kind, id: move.artifactId, version: place.version },
+      space: place.space,
+      detail: {
+        kind: standing.kind,
+        transition: move.transition,
+        from: standing.state.key,
+        to: move.to,
+        definition: standing.definition.version,
+        reason: move.reason !== null,
+        ...(move.approved === undefined ? {} : { approved: move.approved }),
+      },
+    },
+    place.labels,
+  );
+  await notifyTenant(trx, { kind: 'workflow', artifact: move.artifactId });
+}
+
+/**
+ * A save of an approved component or document starts a draft (WF-F; LIF-040): it moves to its
+ * definition's initial state in the save's transaction, naming the version that was approved, which is
+ * unchanged. A save in any other state leaves it. Called by the chain for every version it records
+ * after the first, under the artifact's lock.
+ */
+export async function draftOnSave(
+  trx: TenantTransaction,
+  version: { readonly artifactId: string; readonly id: string; readonly author: string | null },
+  approved: string,
+): Promise<void> {
+  const standing = await workflowStanding(trx, version.artifactId);
+  if (!standing?.state.approved) return;
+  await moved(trx, standing, {
+    artifactId: version.artifactId,
+    version: version.id,
+    transition: null,
+    to: initialState(standing.definition.body).key,
+    reason: null,
+    by: version.author,
+    approved,
+  });
+}
+
+export type MoveAnswer =
+  | { readonly answer: 'moved'; readonly standing: WorkflowStanding }
+  | { readonly answer: 'artifact.missing' }
+  | { readonly answer: 'transition.unknown' }
+  | { readonly answer: 'state.moved'; readonly standing: WorkflowStanding }
+  | { readonly answer: 'artifact.archived' }
+  | { readonly answer: 'permission.refused'; readonly permission: TransitionPermission }
+  | { readonly answer: 'reason.required' | 'reason.invalid' };
+
+/** A reason as kept: trimmed, NFC, at most 2000 characters; none where it is empty. */
+const MAX_REASON = 2000;
+
+/**
+ * Moves a component or a document along a transition (WF-F), under its lock: refused, by name, where it
+ * moved meanwhile from the state the caller saw, is archived (WF-K), lacks a required reason, or the
+ * caller may not take the transition, which `may` decides on its permission; a deleted one is missing.
+ * The transition is taken from the definition deciding the artifact's state (WF-E).
+ */
+export async function moveArtifact(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly kind: WorkflowKind;
+    readonly transition: string;
+    /** The state the caller saw. */
+    readonly from: string;
+    readonly reason?: string | undefined;
+    readonly by: string;
+    readonly may: (permission: TransitionPermission) => boolean;
+  },
+): Promise<MoveAnswer> {
+  if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
+  await lockArtifact(trx, input.artifactId);
+  const standing = await workflowStanding(trx, input.artifactId);
+  if (!standing || standing.kind !== input.kind || (await isDeleted(trx, input.artifactId))) {
+    return { answer: 'artifact.missing' };
+  }
+  if (standing.state.key !== input.from) return { answer: 'state.moved', standing };
+  const transition = standing.transitions.find((each) => each.key === input.transition);
+  if (!transition) return { answer: 'transition.unknown' };
+  if (await isArchived(trx, input.artifactId)) return { answer: 'artifact.archived' };
+  if (!input.may(transition.permission)) {
+    return { answer: 'permission.refused', permission: transition.permission };
+  }
+  const reason = input.reason?.normalize('NFC').trim() ?? '';
+  if (reason.length > MAX_REASON) return { answer: 'reason.invalid' };
+  if (transition.reasonRequired && reason === '') return { answer: 'reason.required' };
+  const latest = await trx
+    .selectFrom('artifact_version')
+    .select('id')
+    .where('artifact_id', '=', input.artifactId)
+    .orderBy('revision_no', 'desc')
+    .orderBy('version_no', 'desc')
+    .limit(1)
+    .executeTakeFirstOrThrow();
+  await moved(trx, standing, {
+    artifactId: input.artifactId,
+    version: latest.id,
+    transition: transition.key,
+    to: transition.to,
+    reason: reason === '' ? null : reason,
+    by: input.by,
+  });
+  return { answer: 'moved', standing: (await workflowStanding(trx, input.artifactId))! };
+}

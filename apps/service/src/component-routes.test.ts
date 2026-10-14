@@ -267,6 +267,16 @@ describe('finding and opening components through the service', () => {
         unsaved: null,
         // No session named, so no sequence of one.
         sequence: null,
+        // Made a moment ago, so in its workflow's initial state; its author may submit it.
+        state: { key: 'draft', name: 'Draft' },
+        transitions: [
+          {
+            key: 'submit',
+            name: 'Submit',
+            to: { key: 'in_review', name: 'In review' },
+            reasonRequired: false,
+          },
+        ],
         // The starter type, Topic, assigns no schema: no fields, and no values.
         type: { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic' },
         fields: [],

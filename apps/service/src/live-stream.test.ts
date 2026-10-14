@@ -337,6 +337,27 @@ describe("a document's stream: its locks and outline, to whoever may read them (
     }
   });
 
+  it("tells a document's stream that it, or a component in it the viewer may read, moved to another workflow state, and nothing of one she may not", async () => {
+    const graces = stream('grace', `?document=${report}`);
+    const submit = (kind: 'components' | 'documents', id: string) =>
+      call('POST', `/v1/${kind}/${id}/transitions`, 'ada', { transition: 'submit', from: 'draft' });
+    const inReview = { key: 'in_review', name: 'In review' };
+    try {
+      await nextOf(graces, 'snapshot');
+      // The first she may not read: had it been sent, it would be the next frame.
+      expect((await submit('components', closed)).statusCode).toBe(200);
+      expect((await submit('components', open)).statusCode).toBe(200);
+      expect((await nextOf(graces, 'workflow')).data).toEqual({ artifact: open, state: inReview });
+      expect((await submit('documents', report)).statusCode).toBe(200);
+      expect((await nextOf(graces, 'workflow')).data).toEqual({
+        artifact: report,
+        state: inReview,
+      });
+    } finally {
+      graces.close();
+    }
+  });
+
   it('tells a person, on each session stream they hold, that a notification waits for them, and nobody else', async () => {
     const graces = stream('grace', `?document=${report}`);
     const environment = stream('grace', '');

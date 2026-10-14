@@ -3,6 +3,7 @@ import { deletionRoutes } from './deletion.js';
 import { holdRoutes } from './holds.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
+import { workflowRoutes } from './workflows.js';
 import { assetRoutes } from './assets.js';
 import { auditRoutes } from './audit.js';
 import { bindingRoutes } from './bindings.js';
@@ -345,6 +346,7 @@ type Routes = typeof ownRoutes &
   typeof holdRoutes &
   typeof deletionRoutes &
   typeof retentionRoutes &
+  typeof workflowRoutes &
   typeof erasureRoutes;
 
 export const routes: Routes = {
@@ -385,6 +387,7 @@ export const routes: Routes = {
   ...holdRoutes,
   ...deletionRoutes,
   ...retentionRoutes,
+  ...workflowRoutes,
   ...erasureRoutes,
 } as const satisfies Record<string, RouteContract>;
 

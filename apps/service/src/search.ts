@@ -63,6 +63,7 @@ function view(answer: SearchAnswer): SearchAnswerView {
       spaces: answer.facets.spaces.map((each) => ({ ...each })),
       componentTypes: answer.facets.componentTypes.map((each) => ({ ...each })),
       owners: answer.facets.owners.map((each) => ({ ...each })),
+      states: answer.facets.states.map((each) => ({ ...each })),
       changed: answer.facets.changed.map((each) => ({ ...each })),
       fields: answer.facets.fields.map((each) => ({
         ...each,
@@ -84,6 +85,7 @@ function view(answer: SearchAnswer): SearchAnswerView {
       version: each.version === null ? null : { ...each.version },
       baseline: each.baseline === null ? null : { ...each.baseline },
       thread: each.thread === null ? null : { ...each.thread },
+      state: each.state === null ? null : { ...each.state },
     })),
   };
 }
@@ -109,11 +111,13 @@ export function filtersOf(query: SearchQuery): SearchFilters {
   const spaces = list(query.space);
   const componentTypes = list(query.type);
   const owners = list(query.owner);
+  const states = list(query.state);
   return {
     ...(kinds === undefined ? {} : { kinds }),
     ...(spaces === undefined ? {} : { spaces }),
     ...(componentTypes === undefined ? {} : { componentTypes }),
     ...(owners === undefined ? {} : { owners }),
+    ...(states === undefined ? {} : { states }),
     ...(changed === undefined ? {} : { changed }),
     ...(values.length === 0
       ? {}
@@ -174,6 +178,7 @@ export function searchHandlers(
             spaces: [],
             componentTypes: [],
             owners: [],
+            states: [],
             changed: [],
             fields: [],
           },

@@ -107,7 +107,10 @@ select c, 1 + floor(random() * ${SPACES})::int as space, 1 + floor(random() * 20
        array[random(), random(), random(), random()]::real[] as u,
        pg_temp.words(3 + 0 * c) as title, pg_temp.words(25 + (c % 31)) as base,
        now() - power(random(), 2) * interval '730 days' as t_latest,
-       random() < 0.01 as archived, random() < 0.002 as deleted, c % 50 = 0 as foreign_language
+       random() < 0.01 as archived, random() < 0.002 as deleted, c % 50 = 0 as foreign_language,
+       -- A workflow state: in review at 1%, approved at 10%; by hash, so the random stream is kept.
+       case when (hashtext('wf' || c) & 1023) < 10 then 'in_review'
+            when (hashtext('wf' || c) & 1023) < 113 then 'approved' else 'draft' end as wf
 from generate_series(1, ${COMPONENTS}) c;
 create temporary table ver as
 select c.c, j, pg_temp.uid('cv' || c.c || '.', j) as vid,
@@ -125,7 +128,8 @@ create temporary table doc as
 select d, 1 + floor(random() * ${SPACES})::int as space, 1 + floor(random() * 500)::int as owner,
        pg_temp.versions(0.05, 20, 60, 0.75, 15) as nv, 10 + floor(random() * 21)::int as nsec,
        pg_temp.words(4 + 0 * d) as title, now() - power(random(), 2) * interval '730 days' as t_latest,
-       random() < 0.01 as archived
+       random() < 0.01 as archived,
+       case when (hashtext('wfd' || d) & 1023) < 10 then 'in_review' else 'draft' end as wf
 from generate_series(1, ${DOCUMENTS}) d;
 create temporary table docver as
 select d.d, j, pg_temp.uid('dv' || d.d || '.', j) as vid,
@@ -160,6 +164,30 @@ select v.vid, pg_temp.uid('d', d.d), 'document', 0, v.j, pg_temp.uid('p', d.owne
        '{"schemaVersion": 1}', pg_temp.hash(v.vid::text), '{}', '[]', pg_temp.hash('d' || v.vid)
 from doc d join docver v using (d);
 
+-- Each one's workflow (0095): drafted under the seed, then moved to its state.
+insert into workflow_transition (artifact_id, kind, version_id, to_state, definition_id, by)
+select pg_temp.uid('c', c), 'component', pg_temp.uid('cv' || c || '.', 1), 'draft', d.id,
+       pg_temp.uid('p', owner)
+from comp, workflow_definition d where d.kind = 'component' and d.version_no = 1
+union all
+select pg_temp.uid('d', d.d), 'document', pg_temp.uid('dv' || d.d || '.', 1), 'draft', w.id,
+       pg_temp.uid('p', d.owner)
+from doc d, workflow_definition w where w.kind = 'document' and w.version_no = 1;
+insert into workflow_transition (artifact_id, kind, version_id, transition, from_state, to_state,
+  definition_id, by)
+select pg_temp.uid('c', c), 'component', pg_temp.uid('cv' || c || '.', nv), 'submit', 'draft',
+       'in_review', d.id, pg_temp.uid('p', owner)
+from comp, workflow_definition d where d.kind = 'component' and d.version_no = 1 and wf <> 'draft'
+union all
+select pg_temp.uid('d', d.d), 'document', pg_temp.uid('dv' || d.d || '.', nv), 'submit', 'draft',
+       'in_review', w.id, pg_temp.uid('p', d.owner)
+from doc d, workflow_definition w where w.kind = 'document' and w.version_no = 1 and wf <> 'draft';
+insert into workflow_transition (artifact_id, kind, version_id, transition, from_state, to_state,
+  definition_id, by)
+select pg_temp.uid('c', c), 'component', pg_temp.uid('cv' || c || '.', nv), 'approve', 'in_review',
+       'approved', d.id, pg_temp.uid('p', owner)
+from comp, workflow_definition d where d.kind = 'component' and d.version_no = 1 and wf = 'approved';
+
 -- An entry's values: the boolean for life, the reviewer and the status as the version had them.
 create function pg_temp.component_values(c int, owner int, status text) returns jsonb
 language sql immutable as $$
@@ -176,27 +204,27 @@ select pg_temp.uid('ce' || c.c || '.', v.j) as id, pg_temp.uid('c', c.c) as arti
        (case when c.foreign_language then 'simple' else 'english' end)::regconfig as configuration,
        c.base || ' ' || v.extra as block,
        v.status || case when v.status_planted then ' lumenfold' else '' end as status,
-       c.archived, c.deleted, v.j = c.nv as current
+       c.archived, c.deleted, v.j = c.nv as current, c.wf
 from comp c join ver v on v.c = c.c
 union all
 select pg_temp.uid('de' || d.d || '.', v.j), pg_temp.uid('d', d.d), 'document', null, v.vid,
        pg_temp.uid('s', d.space), d.title, pg_temp.uid('p', d.owner), v.changed_at, null,
        jsonb_build_object(pg_temp.uid('f', 3)::text, 'Draft'), 'english', null, 'Draft', d.archived,
-       false, v.j = d.nv
+       false, v.j = d.nv, d.wf
 from doc d join docver v on v.d = d.d
 union all
 select pg_temp.uid('se' || d.d || '.' || s.k || '.', v.j), pg_temp.uid('d', d.d), 'section', 'n' || s.k,
        v.vid, pg_temp.uid('s', d.space), s.title, pg_temp.uid('p', d.owner), v.changed_at, null, '{}',
-       'english', s.base || ' ' || x.extra, null, d.archived, false, v.j = d.nv
+       'english', s.base || ' ' || x.extra, null, d.archived, false, v.j = d.nv, d.wf
 from doc d join docver v on v.d = d.d join sec s on s.d = d.d
 join secver x on x.d = d.d and x.k = s.k and x.j = v.j;
 
 insert into search_entry (id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at,
-  component_type, field_values, configuration, body, vector, archived, deleted)
+  component_type, field_values, configuration, body, vector, archived, deleted, workflow_state)
 select id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type,
        field_values, configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, ''),
        to_tsvector(configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, '')),
-       archived, deleted
+       archived, deleted, wf
 from place where current;
 insert into search_text (entry_id, place, body, configuration)
 select id, 'title', title, configuration from place where current
@@ -591,6 +619,13 @@ describe('search at scale', () => {
         filters: { values: [{ field: status, value: 'Review' }] },
         // Every reader may read Status: the broad at the tenant, the others by a grant on it.
         truth: `e.field_values ->> '${status}' = 'Review'`,
+      },
+      // A rare state (WF-H): one in a hundred in review.
+      {
+        name: '65%, in review',
+        query: 'lumenfold',
+        filters: { states: ['in_review'] },
+        truth: `e.workflow_state = 'in_review'`,
       },
       {
         name: '65%, changed today',

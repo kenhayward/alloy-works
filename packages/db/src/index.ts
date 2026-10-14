@@ -459,6 +459,22 @@ export {
   type KeptKind,
 } from './keeps.js';
 export {
+  defineWorkflow,
+  listWorkflows,
+  moveArtifact,
+  newestDefinition,
+  stateNames,
+  workflowStanding,
+  workflowStates,
+  workflowStored,
+  workflowVersion,
+  type DefineAnswer,
+  type MoveAnswer,
+  type WorkflowDefinition,
+  type WorkflowStanding,
+  type WorkflowSummary,
+} from './workflow.js';
+export {
   createDocument,
   editOutline,
   recordDocumentValues,

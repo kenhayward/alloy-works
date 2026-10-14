@@ -43,6 +43,7 @@ import {
   type TenantTransaction,
   type ValuesRefused,
   type PublishingState,
+  workflowStates,
 } from '@alloy-works/db';
 import {
   conditions,
@@ -54,6 +55,7 @@ import {
   templateDefinitionSchema,
   walkOutline,
   withholdComponents,
+  type AccessFacts,
   type Contribution,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -63,6 +65,7 @@ import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { PARAMETER_WORDS } from './templates.js';
 import { refused } from './wire-codes.js';
+import { stateOf, workflowView } from './workflows.js';
 
 /** Who a document is being shown to, in the transaction their permission was decided in. */
 interface Viewer {
@@ -80,6 +83,8 @@ interface Viewer {
   readonly mayReview: boolean;
   /** Whether they may suggest to the components they may (the SG plan). */
   readonly maySuggest: boolean;
+  /** Their facts on the document: which workflow transitions they may take (WF-G). */
+  readonly facts: AccessFacts;
 }
 
 /**
@@ -191,6 +196,7 @@ async function documentView(
     // Told only to whoever may retire it or administer the environment (AH-G).
     onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
     mayHold: viewer.mayHold,
+    ...(await workflowView(viewer.trx, document.id, viewer.facts)),
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
@@ -336,13 +342,16 @@ export function documentHandlers(
       const asked = pageAsked('documents', query);
       const spaces = query.spaces?.split(',');
       const publishing = query.publishing?.split(',') as PublishingState[] | undefined;
-      const listed = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableDocuments(trx, principalOf(request).principalId, asked, {
+      const { listed, states } = await db.withTenant(tenantOf(request), async (trx) => {
+        const listed = await listReadableDocuments(trx, principalOf(request).principalId, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(publishing === undefined ? {} : { publishing }),
           ...(query.archived === undefined ? {} : { archived: query.archived }),
-        }),
-      );
+        });
+        // Each one's workflow state now (WF-G).
+        const states = await workflowStates(trx, listed?.items.map((item) => item.id) ?? []);
+        return { listed, states };
+      });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map((item) => ({
@@ -354,6 +363,7 @@ export function documentHandlers(
           sections: item.sections,
           components: item.components,
           publishing: item.publishing,
+          state: stateOf(states, item.id),
         })),
         next: cursorFor('documents', asked.sort, asked.order, listed.snapshot, listed.next),
         total: listed.total,
@@ -417,6 +427,7 @@ export function documentHandlers(
           mayPublish: decide('publish', facts).allowed,
           mayRetire: decide('retire', facts).allowed,
           mayHold: administersTenant(facts),
+          facts,
           mayComment: decide('comment', facts).allowed,
           mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
           maySuggest: decide('suggest', facts).allowed,
@@ -439,6 +450,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
         mayHold: administersTenant(facts),
+        facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -647,6 +659,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
         mayHold: administersTenant(facts),
+        facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -691,6 +704,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
         mayHold: administersTenant(facts),
+        facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,
@@ -777,6 +791,7 @@ export function documentHandlers(
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
         mayHold: administersTenant(facts),
+        facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
         maySuggest: decide('suggest', facts).allowed,

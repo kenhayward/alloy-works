@@ -32,6 +32,8 @@ export type TenantEvent =
   | { readonly kind: 'presence_left'; readonly viewer: string; readonly document: string }
   // A notification made for its recipient (COL-063): told on their own streams that one waits.
   | { readonly kind: 'inbox'; readonly recipient: string }
+  // A component or a document moved to another workflow state (WF-G): the stream reads the state.
+  | { readonly kind: 'workflow'; readonly artifact: string }
   | { readonly kind: 'credential_ended'; readonly session: string }
   | { readonly kind: 'credential_ended'; readonly token: string };
 
