@@ -292,14 +292,15 @@ export async function workflowStates(
   return states;
 }
 
-/** The name each state key has in the definitions in force, components' first: search's facet's. */
-export async function stateNames(trx: TenantTransaction): Promise<ReadonlyMap<string, string>> {
-  const names = new Map<string, string>();
+/** The name each state key has in each kind's definition in force: search's. */
+export async function stateNames(
+  trx: TenantTransaction,
+): Promise<ReadonlyMap<WorkflowKind, ReadonlyMap<string, string>>> {
+  const names = new Map<WorkflowKind, ReadonlyMap<string, string>>();
   if (!(await workflowStored(trx))) return names;
   for (const kind of WORKFLOW_KINDS) {
-    for (const each of (await newestDefinition(trx, kind)).body.states) {
-      if (!names.has(each.key)) names.set(each.key, each.name);
-    }
+    const { states } = (await newestDefinition(trx, kind)).body;
+    names.set(kind, new Map(states.map((each) => [each.key, each.name])));
   }
   return names;
 }

@@ -600,6 +600,32 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       }
     });
 
+    it("names each result by its own kind's workflow, and a facet by both where they differ", async () => {
+      const word = unique();
+      const placed = await component(`${word} part`);
+      const made = await document(`${word} guide`);
+      await move(placed, 'submit', 'draft');
+      await move(made, 'submit', 'draft');
+      const checking: WorkflowBody = {
+        ...SEED_WORKFLOW,
+        states: SEED_WORKFLOW.states.map((each) =>
+          each.key === 'in_review' ? { ...each, name: 'Checking' } : each,
+        ),
+      };
+      await as((trx) => defineWorkflow(trx, { kind: 'document', body: checking, by: grace }));
+      try {
+        const found = await search(word);
+        expect(
+          Object.fromEntries(found.items.map((item) => [item.kind, item.state?.name])),
+        ).toEqual({ component: 'In review', document: 'Checking' });
+        expect(found.facets.states).toEqual([
+          { value: 'in_review', label: 'In review or Checking', count: 2, capped: false },
+        ]);
+      } finally {
+        await as((trx) => defineWorkflow(trx, { kind: 'document', body: SEED_WORKFLOW, by: ada }));
+      }
+    });
+
     it('SCH-060 finds a section by its document state', async () => {
       const word = unique();
       const made = await document(`${word} guide`);
