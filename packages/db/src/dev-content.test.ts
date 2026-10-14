@@ -82,6 +82,8 @@ describe('the development content', () => {
         expect(decide('edit', facts!).allowed, subject).toBe(true);
         // Decision N: somebody in a development environment may publish what they author.
         expect(decide('publish', facts!).allowed, subject).toBe(true);
+        // And review and approve, so a workflow can be walked through to Approved (WF1b).
+        expect(decide('approve', facts!).allowed, subject).toBe(true);
       }
       const alice = await trx
         .insertInto('principal')
@@ -92,8 +94,8 @@ describe('the development content', () => {
       expect(decide('read', facts!).allowed).toBe(false);
 
       const grants = await trx.selectFrom('access_grant').select('id').execute();
-      // Author, Publisher and Designer on General, for each of Ada and Grace.
-      expect(grants).toHaveLength(6);
+      // Author, Publisher, Approver and Designer on General, for each of Ada and Grace.
+      expect(grants).toHaveLength(8);
     });
   });
 

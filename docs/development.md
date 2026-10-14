@@ -109,7 +109,7 @@ grant that lets anyone administer the environment.
 
 It also makes something to edit without creating one by hand: in each environment, a component called
 "Install the printer" in General, and Ada, through her invitation, and Grace, made as a principal before
-she first signs in, allowed Author and Publisher on General; Grace makes the grants and the component's versions, since
+she first signs in, allowed Author, Publisher, Approver and Designer on General; Grace makes the grants and the component's versions, since
 a principal still waiting on an invitation could be withdrawn. Alice and Ivy are given nothing. Sign in as
 Ada, open "Install the printer", type, and **Save version**. To see the lock from the other side, sign in
 as Grace in a private window - the stand-in remembers who signed in last in a window - and start typing in

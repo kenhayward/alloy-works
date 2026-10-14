@@ -94,8 +94,8 @@ async function generalSpace(trx: TenantTransaction): Promise<{ id: string }> {
  *
  * - the component "Install the printer", at 0.1, over the environment's default component type;
  * - Ada, through her invitation where one waits, and Grace, as a principal by the identity the stand-in
- *   gives her, each allowed Author and Publisher on General, so either can edit and publish and each
- *   can see the other's lock.
+ *   gives her, each allowed Author, Publisher and Approver on General, so either can edit, approve
+ *   and publish and each can see the other's lock.
  *   Grace authors the component: a principal still waiting on an invitation must be able to go when
  *   the invitation is withdrawn, which one that authored a version cannot.
  *
@@ -109,8 +109,9 @@ export async function seedDevelopmentContent(
   const grace = await person(trx, input.issuer, 'grace', 'Grace');
   const general = await generalSpace(trx);
   // Author, and Publisher: an environment granting nobody a role that holds `publish` is one where
-  // nothing can be published (the first publishing plan, decision N).
-  for (const name of ['Author', 'Publisher']) {
+  // nothing can be published (the first publishing plan, decision N). Approver, so the workflow can be
+  // walked through to Approved (the WF1 plan, WF-C).
+  for (const name of ['Author', 'Publisher', 'Approver']) {
     const role = await findRole(trx, name);
     if (!role) throw new Error(`This environment has no ${name} role to grant`);
     for (const principal of [ada, grace]) {
