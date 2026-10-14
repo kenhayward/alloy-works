@@ -847,7 +847,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('passes axe on a document’s workflow state, its transitions and the reason Return asks for', async ({
+  it('passes axe on a document’s workflow state, its gate and the reason Return asks for', async ({
     task,
   }) => {
     const document = await makeDocument(api(), 'Workflow', ['Introduction']);
@@ -862,8 +862,13 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [chip('Draft'), page.getByRole('button', { name: 'Submit', exact: true })],
       });
       await page.getByRole('button', { name: 'Submit', exact: true }).click();
-      await check('a document in review, Return and Approve offered', {
-        shows: [chip('In review'), page.getByRole('button', { name: 'Return', exact: true })],
+      await check('a document at its gate, its count, Approve and Return offered', {
+        shows: [
+          chip('In review'),
+          page.getByText('0 of 1 approval'),
+          page.getByRole('button', { name: 'Approve', exact: true }),
+          page.getByRole('button', { name: 'Return', exact: true }),
+        ],
       });
       await page.getByRole('button', { name: 'Return', exact: true }).click();
       const asking = page.getByRole('dialog', { name: /^Return / });

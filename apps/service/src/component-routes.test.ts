@@ -277,6 +277,9 @@ describe('finding and opening components through the service', () => {
             reasonRequired: false,
           },
         ],
+        // No gate from draft, and never designated: revision 0.
+        gates: [],
+        revision: null,
         // The starter type, Topic, assigns no schema: no fields, and no values.
         type: { id: STARTER_COMPONENT_TYPE_ID, name: 'Topic' },
         fields: [],
