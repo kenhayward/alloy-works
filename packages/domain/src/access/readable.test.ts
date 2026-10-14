@@ -178,3 +178,125 @@ describe('the readable set', () => {
     }
   });
 });
+
+/** readableSet as it stood before #604, kept as the oracle: every grant to every decision. */
+function everyGrantToEveryDecision(facts: ReadableFacts): ReadableSet {
+  const asked = (chain: readonly Level[]) =>
+    decide('read', { ...facts, chain, grants: facts.grants }).allowed;
+  const tenant = asked([{ kind: 'tenant' }]);
+  const spaces = facts.spaces.filter((id) => asked([{ kind: 'space', id }, { kind: 'tenant' }]));
+  const excluded: string[] = [];
+  const included: string[] = [];
+  for (const [id, spaceId] of facts.artifacts) {
+    const contained = spaceId === null ? tenant : spaces.includes(spaceId);
+    const allowed = asked(chainFor(id, spaceId));
+    if (contained && !allowed) excluded.push(id);
+    if (!contained && allowed) included.push(id);
+  }
+  return { tenant, spaces, excluded, included };
+}
+
+/** A larger tenant than `generated`: more spaces, artifacts and grants, and expiries past the cap. */
+function wider(seed: number): ReadableFacts {
+  const next = random(seed);
+  const spaces = Array.from({ length: 1 + Math.floor(next() * 6) }, (_, index) => `space-${index}`);
+  const artifacts = new Map<string, string | null>(
+    Array.from({ length: Math.floor(next() * 12) }, (_, index) => [
+      `artifact-${index}`,
+      next() < 0.2 ? null : pick(next, spaces),
+    ]),
+  );
+  const levels: Level[] = [
+    { kind: 'tenant' },
+    ...spaces.map((id) => ({ kind: 'space', id }) as const),
+    ...[...artifacts.keys()].map((id) => ({ kind: 'artifact', id }) as const),
+  ];
+  const day = 24 * 60 * 60 * 1000;
+  const grants = Array.from({ length: Math.floor(next() * 25) }, (_, index): AccessGrant => ({
+    id: `grant-${index}`,
+    role: pick(next, ROLES),
+    subject: pick(next, [
+      { principal: ADA },
+      { principal: GRACE },
+      { group: MEMBER_OF },
+      { group: NOT_MEMBER_OF },
+    ]),
+    level: pick(next, levels),
+    effect: pick(next, ['allow', 'deny'] as const),
+    expiresAt: pick(next, [
+      null,
+      new Date(NOW.getTime() - 1000),
+      new Date(NOW.getTime() + 1000),
+      new Date(NOW.getTime() + 100 * day),
+    ]),
+  }));
+  return {
+    principal: { id: ADA, kind: pick(next, ['user', 'external'] as PrincipalKind[]) },
+    groups: [MEMBER_OF],
+    spaces,
+    artifacts,
+    grants,
+    now: NOW,
+    externalCapDays: 90,
+  };
+}
+
+describe('the readable set at scale', () => {
+  it('equals every grant given to every decision, over five thousand generated tenants', () => {
+    for (let seed = 1; seed <= 5000; seed += 1) {
+      const facts = wider(seed);
+      expect(readableSet(facts), `seed ${seed}`).toEqual(everyGrantToEveryDecision(facts));
+    }
+  });
+
+  it('reads each grant a bounded number of times, not once per artifact a grant names', () => {
+    // 200 spaces, 20 of them allowed; 1,000 artifacts denied inside those and 80 allowed outside.
+    const reader = (id: string, effect: 'allow' | 'deny', level: Level): AccessGrant => ({
+      id,
+      role: ROLES[0]!,
+      subject: { principal: ADA },
+      level,
+      effect,
+      expiresAt: null,
+    });
+    const spaces = Array.from({ length: 200 }, (_, index) => `space-${index}`);
+    const artifacts = new Map<string, string | null>();
+    const grants: AccessGrant[] = spaces
+      .slice(0, 20)
+      .map((id, index) => reader(`grant-space-${index}`, 'allow', { kind: 'space', id }));
+    for (let index = 0; index < 1080; index += 1) {
+      const id = `artifact-${index}`;
+      const denied = index < 1000;
+      artifacts.set(id, spaces[denied ? index % 20 : 20 + (index % 180)]!);
+      grants.push(
+        reader(`grant-artifact-${index}`, denied ? 'deny' : 'allow', { kind: 'artifact', id }),
+      );
+    }
+    let reads = 0;
+    const counted = grants.map(
+      (grant) =>
+        new Proxy(grant, {
+          get(target, key, receiver) {
+            if (key === 'subject') reads += 1;
+            return Reflect.get(target, key, receiver) as unknown;
+          },
+        }),
+    );
+
+    const set = readableSet({
+      principal: { id: ADA, kind: 'user' },
+      groups: [],
+      spaces,
+      artifacts,
+      grants: counted,
+      now: NOW,
+      externalCapDays: 90,
+    });
+
+    expect(set.excluded).toHaveLength(1000);
+    expect(set.included).toHaveLength(80);
+    // A decision reads a grant once, and again if it reaches; each artifact's chain holds at most
+    // two grants here (its own and its space's), so a few times (grants + artifacts x 2) is ample.
+    expect(reads).toBeLessThan(4 * (grants.length + artifacts.size * 2));
+  });
+});

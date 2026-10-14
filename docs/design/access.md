@@ -573,6 +573,11 @@ The predicate is `((space_id = any(spaces) or (space_id is null and tenant)) and
 or id = any(included)`. search.md and relationships.md described the set as the first half only; both now
 say all of it.
 
+Each `decide` is given only the grants on its own chain (the artifact, its space, the tenant), indexed
+once: `decide` reads no grant off its chain, so the answer is the same, and the cost is linear in grants
+and artifacts rather than their product (#604; a property test holds it to every grant given to every
+decision).
+
 ### Modes
 
 `modesFor(answers)` turns the caller's answers on a document into the modes CNT-104 names:

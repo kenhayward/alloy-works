@@ -298,6 +298,8 @@ describe('the facts a decision reads', () => {
       expect(batch === undefined, id).toBe(one === undefined);
       if (one === undefined || batch === undefined) return;
       expect(batch.chain, id).toEqual(one.chain);
+      // The same grants in the same order, so the access page's reasons read alike.
+      expect(batch.grants, id).toEqual(one.grants);
       for (const permission of permissions) {
         expect(decide(permission, batch).allowed, `${id} ${permission}`).toBe(
           decide(permission, one).allowed,
