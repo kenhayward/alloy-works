@@ -104,7 +104,11 @@ describe('a query definition reviewed as content is (workflow.md)', () => {
         limits: { ...defaultLimits },
         retired: false,
       };
-      const made = await createQueryDefinition(trx, { author: ada, spaceId: space, definition: body });
+      const made = await createQueryDefinition(trx, {
+        author: ada,
+        spaceId: space,
+        definition: body,
+      });
       if (made.answer !== 'created') throw new Error(made.answer);
       definition = made.definition;
     });

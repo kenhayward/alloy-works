@@ -28,6 +28,7 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-013** | Passing a gate designates a revision, and a document's gate may take a baseline                                                                                      |
 | **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                    |
 | **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                    |
+| **DAT-121** | Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft                                                               |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
@@ -37,7 +38,7 @@ VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built belo
 
 ## Definitions
 
-**Per kind** (WF-A): one workflow for components, one for documents. A **definition** is an
+**Per kind** (WF-A): one workflow for components, one for documents, and since WF2 one for query definitions. A **definition** is an
 insert-only `workflow_definition` row (0095): kind, version, body, who and when; the newest per kind
 is in force. Version 1 of each is seeded, by nobody: Draft (initial), In review, Approved (approved);
 Submit (Draft to In review, `edit`), Return (In review to Draft, `approve`, reason), Approve (In
@@ -160,3 +161,12 @@ baseline and permits a publication.
 
 **The approval page** (WF2-J; PUB-089) is [publishing.md](publishing.md)'s: a layout's
 `matter.approvals`, listing each approval of the version published.
+
+## Query definitions
+
+**Their own workflow** (WF2-K; DAT-121): `queryDefinition` is a third kind (0098 widened every table's
+check), seeded at version 1 as the component seed's version 2, Approve a gate; every query definition
+there was starts in draft. A definition moves, is approved and is rejected as content is, by
+`/v1/query-definitions/{id}/transitions` and `/approvals`, its view carrying its state, gates and
+revision, its page showing them beside its version. A version saved after approval starts a draft.
+Which version a binding resolves stays its newest, approved or not, until phase 4's "latest approved".

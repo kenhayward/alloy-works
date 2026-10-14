@@ -19212,6 +19212,10 @@
         {
           "id": "VER-059",
           "howItIsMet": "A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate"
+        },
+        {
+          "id": "DAT-121",
+          "howItIsMet": "Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft"
         }
       ]
     }
@@ -19634,13 +19638,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 378,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 391,
+      "line": 399,
       "kind": "title"
     },
     {
@@ -19904,7 +19908,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1205,
+      "line": 1214,
       "kind": "title"
     },
     {
@@ -20978,61 +20982,61 @@
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 293,
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 313,
+      "line": 314,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 293,
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 336,
+      "line": 337,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 385,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 385,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 163,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 268,
+      "line": 269,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 210,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 336,
+      "line": 337,
       "kind": "title"
     },
     {
@@ -21260,7 +21264,7 @@
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1061,
+      "line": 1093,
       "kind": "title"
     },
     {
@@ -21272,7 +21276,13 @@
     {
       "id": "DAT-119",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1785,
+      "line": 1817,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-121",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 693,
       "kind": "title"
     },
     {
@@ -24306,6 +24316,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-121",
+      "file": "packages/db/src/workflow-definitions.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-gates.test.ts",
       "line": 163,
@@ -24380,7 +24396,7 @@
     {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 214,
+      "line": 215,
       "kind": "title"
     },
     {
@@ -24410,7 +24426,7 @@
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 224,
+      "line": 227,
       "kind": "title"
     },
     {
@@ -24422,13 +24438,13 @@
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 252,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 619,
+      "line": 622,
       "kind": "title"
     },
     {
