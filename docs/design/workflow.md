@@ -16,8 +16,9 @@ decisions, WF-A to WF-K, are the detail. Approvals, gates and revisions are phas
 | **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row |
 | **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                   |
 
-**Not claimed:** LIF-005, one state shown wherever the artifact appears, waits for WF1b's interface;
-the views carry it already. LIF-036 asks for a component approvable on its own, and LIF-075 for an
+**Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
+the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-036 asks for a component approvable on its own, and LIF-075 for an
 approval's own event: both need phase 2's approvals. `workflow.transitioned` is emitted here and
 [audit.md](audit.md) lists it. LIF-040's approved revision staying designated waits for phase 2's
 designation; the move to draft on a save is here.
@@ -69,10 +70,22 @@ parameters, a restore, an accepted suggestion) moves an artifact in a state mark
 initial state in the save's transaction, with no transition key, audited naming the version that was
 approved. A save in any other state leaves it.
 
-**Shown** (WF-G): a component's and a document's view carry `state { key, name }` and the transitions
-the reader may take (none while archived); both lists and search results carry the state. A
-`workflow` stream event, `{ artifact, state }`, reaches a document's or a component's stream for the
-artifact itself or a component in it the viewer may read, and nobody else (`stream.ts`).
+**Shown** (WF-G): a component's and a document's view carry `state { key, name, approved }` and the
+transitions the reader may take (none while archived); both lists and search results carry
+`{ key, name }`. A `workflow` stream event, `{ artifact, state }`, reaches a document's or a
+component's stream for the artifact itself or a component in it the viewer may read, and nobody else
+(`stream.ts`).
+
+**In the interface** (WF1b): a lozenge (`StateLozenge`; the seed's three in their tones, any other
+state neutral) in the document and component headers beside Archived, both lists, the space pane,
+search results, beside the component Add component would place, and in the Part panel for a placed
+component the reader may read (from the listing of what they may, so never another). Each transition
+offered is a header button sending the state it was seen in; a reason asked for first where required;
+a refusal said in the service's words, the state read again where it moved. A page reads its state
+again on the `workflow` event; a placed component's comes from the event itself. Before the first
+save of an approved one, the page says a save starts a new draft. Home's attention carries no state
+and shows none; the inbox, the relationships panel and baselines stay out (WF-G).
+Administration > Workflows edits each kind's states and transitions and saves the next version.
 
 ## Search
 
