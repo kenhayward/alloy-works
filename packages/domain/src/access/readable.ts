@@ -39,29 +39,55 @@ export interface ReadableSet {
 /**
  * The readable set, computed by `decide` itself rather than by a second statement of the rules, so
  * the two cannot disagree: an artifact is in the set exactly when `decide` allows `read` on it.
+ *
+ * Each decision is given only the grants made on its chain: `decide` reads a grant only where its
+ * level is on the chain, so the rest cannot change the answer, and indexing them once keeps the set
+ * linear in grants and artifacts rather than their product (#604).
  */
 export function readableSet(facts: ReadableFacts): ReadableSet {
-  const asked = (chain: readonly Level[]) =>
+  const atTenant: AccessGrant[] = [];
+  const atSpace = new Map<string, AccessGrant[]>();
+  const atArtifact = new Map<string, AccessGrant[]>();
+  for (const grant of facts.grants) {
+    const { level } = grant;
+    if (level.kind === 'tenant') atTenant.push(grant);
+    else {
+      const index = level.kind === 'space' ? atSpace : atArtifact;
+      const made = index.get(level.id);
+      if (made) made.push(grant);
+      else index.set(level.id, [grant]);
+    }
+  }
+  const on = (index: Map<string, AccessGrant[]>, id: string) => index.get(id) ?? [];
+  const asked = (chain: readonly Level[], grants: readonly AccessGrant[]) =>
     decide('read', {
       principal: facts.principal,
       groups: facts.groups,
       chain,
-      grants: facts.grants,
+      grants,
       now: facts.now,
       externalCapDays: facts.externalCapDays,
     }).allowed;
-  const tenant = asked([{ kind: 'tenant' }]);
-  const spaces = facts.spaces.filter((id) => asked([{ kind: 'space', id }, { kind: 'tenant' }]));
+  const tenant = asked([{ kind: 'tenant' }], atTenant);
+  const spaces = facts.spaces.filter((id) =>
+    asked([{ kind: 'space', id }, { kind: 'tenant' }], [...on(atSpace, id), ...atTenant]),
+  );
+  const readable = new Set(spaces);
 
   const excluded: string[] = [];
   const included: string[] = [];
   for (const [id, spaceId] of facts.artifacts) {
-    const contained = spaceId === null ? tenant : spaces.includes(spaceId);
-    const allowed = asked([
-      { kind: 'artifact', id },
-      ...(spaceId === null ? [] : [{ kind: 'space', id: spaceId } as const]),
-      { kind: 'tenant' },
-    ]);
+    const contained = spaceId === null ? tenant : readable.has(spaceId);
+    const allowed =
+      spaceId === null
+        ? asked(
+            [{ kind: 'artifact', id }, { kind: 'tenant' }],
+            [...on(atArtifact, id), ...atTenant],
+          )
+        : asked(
+            [{ kind: 'artifact', id }, { kind: 'space', id: spaceId }, { kind: 'tenant' }],
+            [...on(atArtifact, id), ...on(atSpace, spaceId), ...atTenant],
+          );
     if (contained && !allowed) excluded.push(id);
     if (!contained && allowed) included.push(id);
   }

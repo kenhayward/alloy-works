@@ -274,12 +274,15 @@ export async function loadFactsFor(
   const grants =
     levels.length === 0 ? [] : await grantsReaching(trx, principalId, who.groups, now, levels);
   const externalCapDays = await externalCapOf(trx);
-  const on = (level: Level, chain: readonly Level[]) =>
-    chain.some(
-      (link) =>
-        link.kind === level.kind &&
-        ('id' in link ? link.id : null) === ('id' in level ? level.id : null),
-    );
+  // Each grant's position under its level, so an artifact takes its chain's grants in load order
+  // without a pass over every grant (#604).
+  const key = (level: Level) => (level.kind === 'tenant' ? 'tenant' : `${level.kind}:${level.id}`);
+  const at = new Map<string, number[]>();
+  grants.forEach((grant, position) => {
+    const made = at.get(key(grant.level));
+    if (made) made.push(position);
+    else at.set(key(grant.level), [position]);
+  });
   return new Map(
     [...chains].map(([id, chain]) => [
       id,
@@ -287,7 +290,10 @@ export async function loadFactsFor(
         principal: who.principal,
         groups: who.groups,
         chain,
-        grants: grants.filter((reached) => on(reached.level, chain)),
+        grants: chain
+          .flatMap((link) => at.get(key(link)) ?? [])
+          .sort((a, b) => a - b)
+          .map((position) => grants[position]!),
         now,
         externalCapDays,
       },
