@@ -625,6 +625,7 @@ describe('search bounded at scale (SV3)', () => {
               spaces: [],
               componentTypes: [],
               owners: [],
+              states: [],
               changed: ZERO_CHANGED,
               fields: [],
             },

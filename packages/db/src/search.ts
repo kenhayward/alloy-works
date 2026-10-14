@@ -24,6 +24,7 @@ import { foldHistory, rebuildHistory } from './search-history.js';
 import { indexEveryThread, vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, lockArtifact, readVersion, type StoredVersion } from './versions.js';
+import { stateKey, workflowStored } from './workflow.js';
 
 /**
  * Search's projection, written (docs/design/search.md, "Written with the version"; SCH-066): an
@@ -225,6 +226,8 @@ interface Placing {
   readonly archived?: boolean;
   /** Its artifact deleted; undefined before 0085 stores deletion. */
   readonly deleted?: boolean;
+  /** Its artifact's workflow state; undefined before 0095 stores workflow, null for other kinds. */
+  readonly workflowState?: string | null;
 }
 
 /**
@@ -266,6 +269,7 @@ async function write(
         body: bodyOf(draft),
         ...(placing.archived === undefined ? {} : { archived: placing.archived }),
         ...(placing.deleted === undefined ? {} : { deleted: placing.deleted }),
+        ...(placing.workflowState === undefined ? {} : { workflow_state: placing.workflowState }),
       })),
     )
     .execute();
@@ -386,6 +390,7 @@ interface ArtifactFacts {
   readonly hidden: boolean;
   readonly archived?: boolean;
   readonly deleted?: boolean;
+  readonly workflowState?: string | null;
 }
 
 async function artifactFacts(
@@ -424,6 +429,15 @@ async function artifactFacts(
     // As the acts left it, so an edit of an archived artifact does not bring it back (AH-D).
     ...((await archivalStored(trx)) ? { archived: await isArchived(trx, artifactId) } : {}),
     ...((await deletionStored(trx)) ? { deleted: await isDeleted(trx, artifactId) } : {}),
+    // As its moves left it, a section's its document's (WF-H).
+    ...((await workflowStored(trx))
+      ? {
+          workflowState:
+            kind === 'component' || kind === 'document'
+              ? ((await stateKey(trx, artifactId)) ?? null)
+              : null,
+        }
+      : {}),
   };
 }
 
@@ -437,6 +451,7 @@ function placingOf(version: StoredVersion, facts: ArtifactFacts): Placing {
     componentType: version.definitions.find((each) => each.kind === 'componentType')?.id ?? null,
     ...(facts.archived === undefined ? {} : { archived: facts.archived }),
     ...(facts.deleted === undefined ? {} : { deleted: facts.deleted }),
+    ...(facts.workflowState === undefined ? {} : { workflowState: facts.workflowState }),
   };
 }
 

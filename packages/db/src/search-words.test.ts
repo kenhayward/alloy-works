@@ -311,6 +311,7 @@ describe('searching words', () => {
               spaces: [],
               componentTypes: [],
               owners: [],
+              states: [],
               changed: ['today', 'week', 'month', 'year', 'earlier'].map((value) => ({
                 value,
                 label: value,

@@ -13,6 +13,7 @@ import { isDeleted } from './deletion.js';
 import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './search-history.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
+import { stateNames, workflowStored } from './workflow.js';
 
 /**
  * A search by words (search.md, "One query"; SCH-016, SCH-017, SCH-039, SCH-046, SCH-059): one
@@ -111,6 +112,11 @@ export interface SearchResult {
     readonly on: 'component' | 'document';
     readonly resolved: boolean;
   } | null;
+  /**
+   * Its artifact's workflow state now, a section's its document's (WF-H); null for every kind with
+   * none.
+   */
+  readonly state: { readonly key: string; readonly name: string } | null;
 }
 
 /**
@@ -148,6 +154,8 @@ export interface SearchFilters {
   readonly spaces?: readonly string[];
   readonly componentTypes?: readonly string[];
   readonly owners?: readonly string[];
+  /** Workflow states, by key (SCH-060): the artifact's state now, a section's its document's. */
+  readonly states?: readonly string[];
   readonly changed?:
     { readonly within: ChangedRange } | { readonly from?: string; readonly to?: string };
   readonly values?: readonly { readonly field: string; readonly value: string }[];
@@ -169,6 +177,8 @@ export interface SearchFacets {
   readonly spaces: readonly FacetValue[];
   readonly componentTypes: readonly FacetValue[];
   readonly owners: readonly FacetValue[];
+  /** Each workflow state a result is in, by key, named as the definitions in force name it. */
+  readonly states: readonly FacetValue[];
   /** Each declared range, in order, whether or not anything changed within it. */
   readonly changed: readonly FacetValue[];
   /** Each field the reader may read whose data type facets, with its commonest values. */
@@ -377,6 +387,17 @@ export async function searchWords(
   // Every version from one row a place from 0091 (SV3-L); before it, the union of every version's.
   const history = scope === 'all' && (await historyStored(trx));
   const threadOf = threaded ? sql`thread_id` : sql`null::uuid as thread_id`;
+  // Workflow states from 0095 (WF-H): on current rows and history; an earlier version's row reads its
+  // artifact's state now, so a baseline filters on the current state.
+  const stated = await workflowStored(trx);
+  const stateOf = (table: string) =>
+    !stated
+      ? sql`null::text as workflow_state`
+      : table === 'search_earlier' || table === 'x'
+        ? sql`(select t.to_state from workflow_transition t
+               where t.artifact_id = ${sql.ref(`${table}.artifact_id`)}
+               order by t.id desc limit 1) as workflow_state`
+        : sql`workflow_state`;
   // A baseline is read as its document is (BL-H): one the reader may not read, or none, is not found.
   let baseline: { id: string; name: string; document: string; documentVersion: string } | undefined;
   if (typeof scope === 'object') {
@@ -414,23 +435,31 @@ export async function searchWords(
   // A thread is current, so in every version's search, and pinned by no baseline (SV-C).
   const source =
     scope === 'latest'
-      ? threaded
+      ? threaded && stated
         ? sql`search_entry`
-        : sql`(select *, null::uuid as thread_id from search_entry)`
+        : sql`(select ${sql.join([
+            sql`*`,
+            ...(threaded ? [] : [sql`null::uuid as thread_id`]),
+            ...(stated ? [] : [sql`null::text as workflow_state`]),
+          ])} from search_entry)`
       : history
-        ? sql`(select ${ENTRY_COLUMNS}, null::uuid as thread_id, false as current from search_history
+        ? sql`(select ${ENTRY_COLUMNS}, ${stateOf('search_history')}, null::uuid as thread_id,
+                      false as current from search_history
                union all
-               select ${ENTRY_COLUMNS}, thread_id, true as current from search_entry)`
+               select ${ENTRY_COLUMNS}, ${stateOf('search_entry')}, thread_id, true as current
+               from search_entry)`
         : baseline === undefined
-          ? sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry
+          ? sql`(select ${ENTRY_COLUMNS}, ${stateOf('search_entry')}, ${threadOf}, true as current
+               from search_entry
                union all
-               select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier
-                where kind <> 'asset')`
-          : sql`(select ${ENTRY_COLUMNS}, ${threadOf}, true as current from search_entry x
+               select ${ENTRY_COLUMNS}, ${stateOf('search_earlier')}, null::uuid, false as current
+               from search_earlier where kind <> 'asset')`
+          : sql`(select ${ENTRY_COLUMNS}, ${stateOf('search_entry')}, ${threadOf}, true as current
+                from search_entry x
                 where ${pinnedBy(baseline)} ${threaded ? sql`and x.thread_id is null` : sql``}
                union all
-               select ${ENTRY_COLUMNS}, null::uuid, false as current from search_earlier x
-                where ${pinnedBy(baseline)})`;
+               select ${ENTRY_COLUMNS}, ${stateOf('x')}, null::uuid, false as current
+               from search_earlier x where ${pinnedBy(baseline)})`;
   const texts =
     scope === 'latest'
       ? sql`search_text`
@@ -748,6 +777,12 @@ export async function searchWords(
       ['f_space', among(alias, 'space_id', filters.spaces, true)],
       ['f_type', among(alias, 'component_type', filters.componentTypes, true)],
       ['f_owner', among(alias, 'owner', filters.owners, true)],
+      [
+        'f_state',
+        stated
+          ? among(alias, 'workflow_state', filters.states, false)
+          : sql<SqlBool>`${(filters.states ?? []).length === 0}::boolean`,
+      ],
       ['f_changed', changedFilter(alias, filters.changed)],
       ...fieldFilters.map(
         ({ field, values, flag }) => [flag, valueFilter(alias, field, values)] as const,
@@ -769,7 +804,9 @@ export async function searchWords(
   const fieldFacetScope = sql.join(
     [
       sql.raw(
-        ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_changed'].map((f) => `b.${f}`).join(' and '),
+        ['f_kind', 'f_space', 'f_type', 'f_owner', 'f_state', 'f_changed']
+          .map((f) => `b.${f}`)
+          .join(' and '),
       ),
       ...fieldFilters.map(
         ({ field, flag }) => sql`(${sql.raw(`b.${flag}`)} or ev.field::text = ${field})`,
@@ -944,9 +981,13 @@ export async function searchWords(
     const inForce =
       byField.size +
       (filters.changed === undefined ? 0 : 1) +
-      [filters.kinds, filters.spaces, filters.componentTypes, filters.owners].filter(
-        (each) => each !== undefined && each.length > 0,
-      ).length;
+      [
+        filters.kinds,
+        filters.spaces,
+        filters.componentTypes,
+        filters.owners,
+        filters.states,
+      ].filter((each) => each !== undefined && each.length > 0).length;
     // Under one filter, every match fails at most it: the facets are the matches', so estimated as
     // they are rather than as a sum the planner cannot read (#605).
     const facets =
@@ -976,13 +1017,15 @@ export async function searchWords(
     bounded === undefined
       ? sql`
           select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
-                 e.component_type, e.field_values, e.version_id, e.thread_id, e.current, ${rank}
+                 e.component_type, e.field_values, e.version_id, e.thread_id, e.current,
+                 e.workflow_state, ${rank}
           from ${source} e
           where ${matching}`
       : sql`
           select e.id, e.kind, e.artifact_id, e.node, e.title, e.space_id, e.changed_at, e.owner,
                  e.component_type, e.field_values, e.version_id, e.thread_id,
-                 ${scope === 'latest' ? sql`true` : sql`e.current`} as current, ${rank}
+                 ${scope === 'latest' ? sql`true` : sql`e.current`} as current, e.workflow_state,
+                 ${rank}
           from ${source} e
           where e.id = any(${bounded.facets}::uuid[]) and ${readableRow} and ${shown}`;
   const matched =
@@ -1028,11 +1071,13 @@ export async function searchWords(
       thread_id: string | null;
       thread_on: 'component' | 'document' | null;
       resolved: boolean;
+      workflow_state: string | null;
     }[];
     kinds: FacetRow[];
     spaces: FacetRow[];
     component_types: FacetRow[];
     owners: FacetRow[];
+    states: FacetRow[];
     changed: FacetRow[];
     fields: (FacetRow & { field: string; name: string; data_type: string })[] | null;
   }>`
@@ -1081,7 +1126,7 @@ export async function searchWords(
                 sp.name as space_name, p.changed_at, best.place, best.passage,
                 coalesce(named.version_id, p.version_id) as version_id,
                 coalesce(named.current, p.current) as current, av.revision_no, av.version_no,
-                p.thread_id, th.on_kind as thread_on, th.resolved
+                p.thread_id, th.on_kind as thread_on, th.resolved, p.workflow_state
          from (select * from results order by rank desc, changed_at desc, id
                limit ${limit} offset ${offset}) p
          left join space sp on sp.id = p.space_id
@@ -1125,6 +1170,9 @@ export async function searchWords(
                       from flagged b join principal pr on pr.id = b.owner
                       where ${allBut('f_owner')}
                       group by b.owner, pr.display_name, pr.email`)} as owners,
+      ${facetJson(sql`select b.workflow_state as value, b.workflow_state as label, ${counted}::int as n
+                      from flagged b where ${allBut('f_state')} and b.workflow_state is not null
+                      group by b.workflow_state`)} as states,
       (select json_build_array(
          json_build_object('value', 'today', 'label', 'today',
                            'n', ${counted} filter (where b.changed_at >= ${rangeStart.today})),
@@ -1167,6 +1215,10 @@ export async function searchWords(
   const total = bounded === undefined ? Number(row.total) : bounded.results.length;
   const facetsBounded = bounded?.facetsBounded ?? false;
   const capped = (each: readonly FacetRow[] | null) => cappedOf(each, facetsBounded);
+  const stateNamed =
+    row.states.length === 0 && row.items.every((item) => item.workflow_state === null)
+      ? new Map<string, string>()
+      : await stateNames(trx);
   const placed =
     baseline !== undefined && row.items.some((item) => item.kind === 'component')
       ? await firstPinnedNodes(trx, baseline)
@@ -1226,12 +1278,22 @@ export async function searchWords(
         item.thread_id === null || item.thread_on === null
           ? null
           : { id: item.thread_id, on: item.thread_on, resolved: item.resolved === true },
+      state:
+        item.workflow_state === null
+          ? null
+          : {
+              key: item.workflow_state,
+              name: stateNamed.get(item.workflow_state) ?? item.workflow_state,
+            },
     })),
     facets: {
       kinds: capped(row.kinds),
       spaces: capped(row.spaces),
       componentTypes: capped(row.component_types),
       owners: capped(row.owners),
+      states: capped(
+        row.states.map((each) => ({ ...each, label: stateNamed.get(each.value) ?? each.value })),
+      ),
       changed: capped(row.changed),
       fields: [...fields.values()].map((each) => ({
         field: each.field,

@@ -48,6 +48,7 @@ import { indexVersion } from './search.js';
 import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
+import { draftOnSave, startWorkflow } from './workflow.js';
 
 /** A version as the chain holds it. `content` is exactly what was written, never migrated. */
 /**
@@ -422,6 +423,9 @@ export async function createArtifact(
     )
     .returning('id')
     .executeTakeFirstOrThrow();
+  // A component or a document is in its workflow's initial state from the moment it exists, so its
+  // first version is indexed in it (WF-D).
+  await startWorkflow(trx, { id: artifact.id, kind: substance.kind, by: input.author });
   const version = await insertVersion(
     trx,
     artifact.id,
@@ -851,6 +855,10 @@ async function record(
     digests,
     restoredFrom,
   );
+  // Every save of an approved component or document starts a draft, whatever saved it (WF-F).
+  if (substance.kind === 'component' || substance.kind === 'document') {
+    await draftOnSave(trx, version, current.id);
+  }
   // And a definition renamed holds its new name, the old one freed.
   if (isDefinition(substance)) {
     await trx
