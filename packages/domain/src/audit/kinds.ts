@@ -304,12 +304,33 @@ export const auditKindSpecs = {
     z.strictObject({ labels: z.int().nonnegative() }),
     'packages/db/migrations/tenant/0087_erasure.sql',
   ),
+  // A component or a document moved from one workflow state to another (the WF1 plan, WF-I): by a
+  // transition, or by a save of an approved one to the initial state, naming the version approved.
+  // Whether a reason was given, never the reason, which is a value: the transition's row keeps it.
+  'workflow.transitioned': kind(
+    ['LIF-075', 'LIF-061'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      transition: AuditName.nullable(),
+      from: AuditName,
+      to: AuditName,
+      definition: z.int().positive(),
+      reason: z.boolean(),
+      approved: Id.optional(),
+    }),
+    'packages/db/src/workflow.ts',
+  ),
+  // A kind's workflow definition saved as a new version (WF-I): about the workflow settings.
+  'workflow.defined': kind(
+    ['LIF-007', 'LIF-067'],
+    z.strictObject({ kind: z.enum(['component', 'document']), version: z.int().positive() }),
+    'packages/db/src/workflow.ts',
+  ),
   // Declared now, emitted by the design that builds the act, which gives its detail a shape.
-  'workflow.transitioned': kind(['LIF-068'], empty, LATER),
-  'approval.given': kind(['LIF-068'], empty, LATER),
-  'approval.rejected': kind(['LIF-068', 'LIF-053'], empty, LATER),
+  'approval.given': kind(['LIF-075'], empty, LATER),
+  'approval.rejected': kind(['LIF-075', 'LIF-053'], empty, LATER),
   'gate.rejected': kind(['LIF-053', 'LIF-074'], empty, LATER),
-  'revision.designated': kind(['LIF-068'], empty, LATER),
+  'revision.designated': kind(['LIF-013', 'VER-014'], empty, LATER),
   // A baseline made, and one superseded by a later one (the BL plan): about the document version it
   // pins, the subject; its name is the document's content, never the log's.
   'baseline.made': kind(

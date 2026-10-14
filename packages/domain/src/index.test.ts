@@ -660,6 +660,15 @@ describe('the domain package', () => {
         'SEVENTH_DEFAULT_CATALOGUE_VERSIONS',
         'SEVENTH_DEFAULT_THEME',
         'SEVENTH_DEFAULT_THEME_VERSION',
+        // WF1: a kind's workflow, validated, the seed, and the definition deciding a move.
+        'WORKFLOW_KINDS',
+        'TRANSITION_PERMISSIONS',
+        'workflowBodySchema',
+        'parseWorkflowBody',
+        'SEED_WORKFLOW',
+        'initialState',
+        'decidingDefinition',
+        'transitionsFrom',
       ].sort(),
     );
   });
