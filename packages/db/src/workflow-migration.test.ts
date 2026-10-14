@@ -146,6 +146,7 @@ describe('migration 0095, which gives every component and document a workflow st
         expect((await listWorkflows(trx)).map((each) => each.definition.body)).toEqual([
           SEED_WORKFLOW,
           SEED_DOCUMENT_WORKFLOW,
+          SEED_WORKFLOW,
         ]);
         // Backfilled under version 1; the newest, 0096's and 0097's, has draft, so it now decides (WF-E).
         for (const [version, newest] of [
@@ -257,10 +258,12 @@ describe('migration 0096, which seeds a gate where a workflow was never edited',
       expect(await newest(tenants[0]!)).toEqual([
         [2, SEED_WORKFLOW],
         [3, SEED_DOCUMENT_WORKFLOW],
+        [1, SEED_WORKFLOW],
       ]);
       expect(await newest(tenants[1]!)).toEqual([
         [2, SEED_WORKFLOW],
         [2, renamed],
+        [1, SEED_WORKFLOW],
       ]);
       await service.withTenant(tenants[1]!, async (trx) => {
         expect((await workflowVersion(trx, 'document', 1))?.body).toEqual(SEED_WORKFLOW_1);

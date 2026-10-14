@@ -864,7 +864,11 @@ async function record(
     restoredFrom,
   );
   // Every save of an approved component or document starts a draft, whatever saved it (WF-F).
-  if (substance.kind === 'component' || substance.kind === 'document') {
+  if (
+    substance.kind === 'component' ||
+    substance.kind === 'document' ||
+    substance.kind === 'queryDefinition'
+  ) {
     await draftOnSave(trx, version, current.id);
   }
   // And a definition renamed holds its new name, the old one freed.

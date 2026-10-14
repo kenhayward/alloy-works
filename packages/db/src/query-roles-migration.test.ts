@@ -165,6 +165,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0095_workflow',
       '0096_workflow_gates',
       '0097_workflow_publishing',
+      '0098_workflow_query_definitions',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -207,6 +208,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0095_workflow',
       '0096_workflow_gates',
       '0097_workflow_publishing',
+      '0098_workflow_query_definitions',
     ]);
 
     expect(await queryRoles(development)).toEqual([

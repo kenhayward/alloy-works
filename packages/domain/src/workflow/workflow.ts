@@ -7,8 +7,8 @@ import { z } from 'zod';
  * caller's.
  */
 
-/** The kinds a workflow is declared for, one each (WF-A). */
-export const WORKFLOW_KINDS = ['component', 'document'] as const;
+/** The kinds a workflow is declared for, one each (WF-A); query definitions since WF2 (DAT-121). */
+export const WORKFLOW_KINDS = ['component', 'document', 'queryDefinition'] as const;
 export type WorkflowKind = (typeof WORKFLOW_KINDS)[number];
 
 /** What a transition needs on the artifact: editing it, or approving it (WF-C). */
