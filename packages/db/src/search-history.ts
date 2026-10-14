@@ -3,9 +3,9 @@ import type { TenantTransaction } from './tables.js';
 
 /**
  * Every version from one row a place (0091; the SV3 plan, SV3-I to SV3-N): a component's, a document's
- * and each section's words, and from 0093 its titles' (#608), over every version, the rest the newest
- * version's. Folded as a version is
- * written, rebuilt where a fold cannot take a word back out (erasure) and by the reindex.
+ * and each section's words, from 0093 its titles' (#608) and from 0094 its fields' (#610), over every
+ * version, the rest the newest version's. Folded as a version is written, rebuilt where a fold cannot
+ * take a word back out (erasure) and by the reindex.
  */
 
 /** The kinds history holds: those whose earlier versions are kept, but assets (SV3-I). */
@@ -28,29 +28,49 @@ export async function historyStored(trx: TenantTransaction): Promise<boolean> {
   return present;
 }
 
-const titledKnown = new WeakMap<TenantTransaction, boolean>();
+const columnsKnown = new WeakMap<TenantTransaction, Map<string, boolean>>();
 
-/**
- * Whether history holds each place's titles yet (0093; #608): before then, which only a test migrated
- * to an earlier point reads, title terms under every version are found by the row's own words.
- */
-export async function historyTitled(trx: TenantTransaction): Promise<boolean> {
-  const known = titledKnown.get(trx);
-  if (known !== undefined) return known;
+/** Whether history has `column` yet: a schema only a test migrated to an earlier point lacks it. */
+async function historyHas(trx: TenantTransaction, column: string): Promise<boolean> {
+  const known = columnsKnown.get(trx) ?? new Map<string, boolean>();
+  columnsKnown.set(trx, known);
+  const was = known.get(column);
+  if (was !== undefined) return was;
   const { rows } = await sql<{ present: boolean }>`
     select exists (select 1 from pg_attribute
-                   where attrelid = to_regclass('search_history') and attname = 'title_vector'
+                   where attrelid = to_regclass('search_history') and attname = ${column}
                      and not attisdropped) as present`.execute(trx);
   const present = rows[0]?.present === true;
-  titledKnown.set(trx, present);
+  known.set(column, present);
   return present;
 }
+
+/**
+ * Whether history holds each place's titles yet (0093; #608): before then, title terms under every
+ * version are found by the row's own words.
+ */
+export const historyTitled = (trx: TenantTransaction) => historyHas(trx, 'title_vector');
+
+/**
+ * Whether history holds each place's fields' words yet (0094; #610): before then, field terms under
+ * every version are found by the row's own words.
+ */
+export const historyFielded = (trx: TenantTransaction) => historyHas(trx, 'fields_vector');
 
 const COLUMNS = sql.raw(
   'artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type, field_values, configuration, body, vector, archived, deleted',
 );
-/** Every column, and each place's titles from 0093. */
-const columnsOf = (titled: boolean) => (titled ? sql`${COLUMNS}, title_vector` : COLUMNS);
+/** Every column, each place's titles from 0093 and its fields' words from 0094. */
+const columnsOf = (titled: boolean, fielded: boolean) =>
+  sql.join([
+    COLUMNS,
+    ...(titled ? [sql`title_vector`] : []),
+    ...(fielded ? [sql`fields_vector`] : []),
+  ]);
+/** One version's fields' words together, from its places in `texts`, or none. */
+const fieldsOf = (texts: string) =>
+  sql`coalesce((select search_history_agg(f.vector order by f.place) from ${sql.table(texts)} f
+                where f.entry_id = e.id and f.place like 'field:%'), ''::tsvector)`;
 const kinds = sql`(${sql.join(HISTORY_KINDS.map((kind) => sql.lit(kind)))})`;
 
 /**
@@ -71,11 +91,13 @@ export async function foldHistory(
     return;
   }
   const titled = await historyTitled(trx);
-  // A version's title place, or none, which folds nothing.
+  const fielded = await historyFielded(trx);
+  // A version's title place, or none, which folds nothing; and its fields' places, likewise.
   await sql`
-    insert into search_history (${columnsOf(titled)})
-    select ${columnsOf(titled)} from (
-      select e.*, coalesce(s.vector, ''::tsvector) as title_vector
+    insert into search_history (${columnsOf(titled, fielded)})
+    select ${columnsOf(titled, fielded)} from (
+      select e.*, coalesce(s.vector, ''::tsvector) as title_vector,
+             ${fielded ? fieldsOf('search_text') : sql`null`} as fields_vector
       from search_entry e left join search_text s on s.entry_id = e.id and s.place = 'title'
       where e.artifact_id = ${artifactId} and e.kind in ${kinds}) e
     on conflict on constraint search_history_once do update set
@@ -86,6 +108,7 @@ export async function foldHistory(
       body = search_history_body(search_history.body, excluded.body),
       vector = search_history_fold(search_history.vector, excluded.vector),
       ${titled ? sql`title_vector = search_history_fold(search_history.title_vector, excluded.title_vector),` : sql``}
+      ${fielded ? sql`fields_vector = search_history_fold(search_history.fields_vector, excluded.fields_vector),` : sql``}
       archived = excluded.archived, deleted = excluded.deleted`.execute(trx);
 }
 
@@ -99,12 +122,14 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
   const which = (alias: string) =>
     artifactId === undefined ? sql`true` : sql`${sql.ref(`${alias}.artifact_id`)} = ${artifactId}`;
   const titled = await historyTitled(trx);
+  const fielded = await historyFielded(trx);
   await sql`delete from search_history h where ${which('h')}`.execute(trx);
   await sql`
     with places as (
       select e.artifact_id, e.kind, e.node, e.version_id, e.space_id, e.title, e.owner,
              e.changed_at, e.component_type, e.field_values, e.configuration, e.body, e.vector,
              coalesce(s.vector, ''::tsvector) as title_vector,
+             ${fielded ? fieldsOf('search_text') : sql`null::tsvector`} as fields_vector,
              e.archived, e.deleted, v.revision_no, v.version_no
       from search_entry e join artifact_version v on v.id = e.version_id
       left join search_text s on s.entry_id = e.id and s.place = 'title'
@@ -113,21 +138,23 @@ export async function rebuildHistory(trx: TenantTransaction, artifactId?: string
       select e.artifact_id, e.kind, e.node, e.version_id, e.space_id, e.title, e.owner,
              e.changed_at, e.component_type, e.field_values, e.configuration, e.body, e.vector,
              coalesce(s.vector, ''::tsvector),
+             ${fielded ? fieldsOf('search_earlier_text') : sql`null::tsvector`},
              e.archived, e.deleted, v.revision_no, v.version_no
       from search_earlier e join artifact_version v on v.id = e.version_id
       left join search_earlier_text s on s.entry_id = e.id and s.place = 'title'
       where e.kind in ${kinds} and ${which('e')}
     )
-    insert into search_history (${columnsOf(titled)})
+    insert into search_history (${columnsOf(titled, fielded)})
     select n.artifact_id, n.kind, n.node, n.version_id, n.space_id, n.title, n.owner, n.changed_at,
            n.component_type, n.field_values, n.configuration, f.body, f.vector, n.archived, n.deleted
-           ${titled ? sql`, f.title_vector` : sql``}
+           ${titled ? sql`, f.title_vector` : sql``} ${fielded ? sql`, f.fields_vector` : sql``}
     from (select distinct on (artifact_id, node) * from places
           order by artifact_id, node, revision_no desc, version_no desc) n
     join (select artifact_id, node,
                  search_history_body_agg(body order by revision_no, version_no) as body,
                  search_history_agg(vector order by revision_no, version_no) as vector,
-                 search_history_agg(title_vector order by revision_no, version_no) as title_vector
+                 search_history_agg(title_vector order by revision_no, version_no) as title_vector,
+                 search_history_agg(fields_vector order by revision_no, version_no) as fields_vector
           from places group by artifact_id, node) f
       on f.artifact_id = n.artifact_id and coalesce(f.node, '') = coalesce(n.node, '')`.execute(
     trx,

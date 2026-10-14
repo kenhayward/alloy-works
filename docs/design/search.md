@@ -132,8 +132,10 @@ matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M 
 reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else
 find the matches by the **indexes** and sort the newest out of them. Both return the same rows. A
 wanted term under three characters is looked for as a word alone, since no trigram holds it; scoped
-terms alone are found through `search_text`'s word index, title terms through titles' own (0092), whose
-statistics count titles alone, and under every version through history's titles (0093; #608). On the
+terms are found through `search_text`'s word index, title terms through titles' own (0092), whose
+statistics count titles alone, and under every version through history's titles (0093; #608); field
+terms through fields' own, every field together, and under every version history's (0094; #610). A
+scoped term beside words is found through its place's index too (#610). On the
 indexes road the per-place tests run on the candidates newest first until 1,001 pass, never on every
 match (#608). The filters are written so their columns' indexes serve them and the
 estimate counts them (#605).
@@ -385,8 +387,9 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
 SV3-I to SV3-N):
 
 - **`search_history`** (0091): one row per component, document and section that any version held.
-  Its vector and body hold every version's words, and `title_vector` (0093) every version's titles',
-  folded alike, which title terms alone are found through; everything else - title, owner, changed, component
+  Its vector and body hold every version's words, `title_vector` (0093) every version's titles' and
+  `fields_vector` (0094) every version's fields', all fields together, folded alike, which title and
+  field terms are found through; everything else - title, owner, changed, component
   type, values, configuration, flags - is the newest version holding the place's, so filters and facets
   read each place's newest values. A place gone from the
   newest version keeps its row as its last version left it, found under every version only. Assets,

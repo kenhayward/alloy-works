@@ -244,6 +244,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0091_search_history',
       '0092_search_scoped',
       '0093_search_history_titles',
+      '0094_search_history_fields',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

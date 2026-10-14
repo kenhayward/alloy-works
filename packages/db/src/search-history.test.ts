@@ -60,8 +60,8 @@ function resultsOf(answer: SearchAnswer | 'baseline_not_found' | undefined) {
 const historyOf = (trx: TenantTransaction, artifact: string) =>
   sql<Record<string, unknown>>`
     select kind, node, version_id, space_id, title, owner, changed_at, component_type,
-           field_values, configuration::text, body, vector::text, title_vector::text, archived,
-           deleted
+           field_values, configuration::text, body, vector::text, title_vector::text,
+           fields_vector::text, archived, deleted
     from search_history where artifact_id = ${artifact}
     order by node nulls first`
     .execute(trx)
@@ -433,9 +433,9 @@ describe('search over every version from one row a place (SV3b)', () => {
         });
       }
       const [history] = await tenant((trx) => historyOf(trx, artifact));
-      expect(`${String(history!.body)} ${String(history!.vector)}`).not.toMatch(
-        new RegExp(subject, 'iu'),
-      );
+      expect(
+        `${String(history!.body)} ${String(history!.vector)} ${String(history!.fields_vector)}`,
+      ).not.toMatch(new RegExp(subject, 'iu'));
     }
   });
 
@@ -474,6 +474,15 @@ describe('search over every version from one row a place (SV3b)', () => {
     // A row every version reads from the current set: a field, by its own title.
     const { stage } = await register();
     expect(await found('title:stage', 'all')).toContain(stage);
+    // A field's term, held only by an earlier version's value (#610).
+    const staged = await registered('Dibbler ledger');
+    await revise(await revise(staged, { values: { [stage]: 'Pending' } }), {
+      values: { [stage]: 'Settled' },
+    });
+    expect(await found('stage:pending', 'latest')).toEqual([]);
+    expect(await found('stage:pending', 'all')).toEqual([staged.artifactId]);
+    expect(await found('dibbler stage:pending', 'all')).toEqual([staged.artifactId]);
+    expect(await found('dibbler -stage:pending', 'all')).toEqual([]);
   });
 
   it('SCH-003 under every version matches a place by its words over all its versions together: two words in two versions find it, -word excludes a place any version held it in, and a phrase held only by an earlier version is lost once one of its words reappears in the newest', async () => {
@@ -775,6 +784,7 @@ describe('migration 0091, which keeps one row a place over every version', () =>
         '0091_search_history',
         '0092_search_scoped',
         '0093_search_history_titles',
+        '0094_search_history_fields',
       ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(migrated).toHaveLength(1);
@@ -877,12 +887,149 @@ describe("migration 0093, which keeps every version's titles in history", () => 
       });
 
       const report = await migrate(db.migratorUrl);
-      expect(report.tenants[id]).toEqual(['0093_search_history_titles']);
+      expect(report.tenants[id]).toEqual([
+        '0093_search_history_titles',
+        '0094_search_history_fields',
+      ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(String(migrated[0]?.title_vector)).toMatch(/'bilbi'.*'dunnart'|'dunnart'.*'bilbi'/u);
       await service.withTenant(tenant, (trx) => rebuildHistory(trx, artifact));
       expect(await service.withTenant(tenant, (trx) => historyOf(trx, artifact))).toEqual(migrated);
       for (const query of ['title:bilby', 'title:dunnart']) {
+        const found = await service.withTenant(tenant, (trx) =>
+          searchWords(trx, ada, query, { scope: 'all' }),
+        );
+        expect({ query, items: resultsOf(found).items }).toMatchObject({
+          query,
+          items: [{ artifactId: artifact }],
+        });
+      }
+    } finally {
+      await service.close();
+    }
+  });
+});
+
+describe("migration 0094, which keeps every version's fields' words in history", () => {
+  let db: TestDatabase;
+  let before: string;
+
+  beforeAll(async () => {
+    db = await freshDatabase();
+    await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0094-'));
+    await cp(new URL('../migrations/', import.meta.url), before, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) < 94;
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await rm(before, { recursive: true, force: true });
+    await db.drop();
+  });
+
+  it("SCH-003 folds, in the run that applies it, every field's words a place held into its history", async () => {
+    const id = db.newTenantId();
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const tenant = await provisionTenant(db.adminUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id, name: 'Demonstration' },
+      hostnames: [`${id}.alloy.test`],
+    });
+    await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
+    const service = beforeTheLogDatabase(db.serviceUrl);
+    try {
+      // Folded before 0094, without fields' words; a Stage of Pending, then Settled.
+      const { ada, artifact } = await service.withTenant(tenant, async (trx) => {
+        const ada = (
+          await trx
+            .insertInto('principal')
+            .values({
+              issuer: 'https://idp.example',
+              subject: 'ada',
+              email: null,
+              display_name: 'Ada',
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id;
+        const space = await trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow();
+        const defined = async (
+          kind: 'field' | 'metadataSchema' | 'componentType',
+          body: object,
+        ) => {
+          const made = await createDefinition(trx, {
+            kind,
+            author: ada,
+            definition: { schemaVersion: DEFINITION_SCHEMA_VERSION, ...body },
+          });
+          if (made.answer !== 'created') throw new Error(made.answer);
+          return made.definition.id;
+        };
+        const stage = await defined('field', {
+          name: 'Stage',
+          dataType: 'text',
+          multiplicity: 'one',
+          validation: {},
+        });
+        const schema = await defined('metadataSchema', {
+          name: 'Registry',
+          entries: [{ field: stage, required: false, fixed: false }],
+        });
+        const type = await defined('componentType', {
+          name: 'Register',
+          assignments: [{ schema, requires: [] }],
+        });
+        const made = await createComponent(trx, {
+          spaceId: space.id,
+          componentTypeId: type,
+          title: 'Quoll register',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        let version = made.version;
+        for (const value of ['Pending', 'Settled']) {
+          const substance = substanceOf(version) as Extract<
+            ReturnType<typeof substanceOf>,
+            { kind: 'component' }
+          >;
+          const next = await recordVersion(trx, {
+            artifactId: version.artifactId,
+            openedFrom: version.id,
+            author: ada,
+            substance: { ...substance, values: { [stage]: value } } as never,
+          });
+          if (next.answer !== 'recorded') throw new Error(next.answer);
+          version = next.version;
+        }
+        // At the tenant, so she reads the field too.
+        await grant(trx, {
+          roleId: (await findRole(trx, 'Reader'))!.id,
+          subject: { principal: ada },
+          level: { kind: 'tenant' },
+          effect: 'allow',
+          grantedBy: ada,
+        });
+        return { ada, artifact: made.version.artifactId };
+      });
+
+      const report = await migrate(db.migratorUrl);
+      expect(report.tenants[id]).toEqual(['0094_search_history_fields']);
+      const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
+      expect(String(migrated[0]?.fields_vector)).toMatch(/'pend'.*'settl'|'settl'.*'pend'/u);
+      await service.withTenant(tenant, (trx) => rebuildHistory(trx, artifact));
+      expect(await service.withTenant(tenant, (trx) => historyOf(trx, artifact))).toEqual(migrated);
+      for (const query of ['stage:pending', 'stage:settled']) {
         const found = await service.withTenant(tenant, (trx) =>
           searchWords(trx, ada, query, { scope: 'all' }),
         );

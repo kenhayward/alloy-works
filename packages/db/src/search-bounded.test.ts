@@ -226,6 +226,27 @@ describe('search bounded at scale (SV3)', () => {
       await sql`
         update search_entry set changed_at = now() - interval '3 years'
         where artifact_id = ${old.artifactId}`.execute(trx);
+      // Each Approved yak in the herd says so, in its words and in the field's own place.
+      await sql`
+        update search_entry set body = body || ' Approved',
+                                vector = to_tsvector('english', body || ' Approved')
+        where artifact_id = ${herd.artifactId} and (field_values ->> ${approved}::text)::boolean`.execute(
+        trx,
+      );
+      await sql`
+        insert into search_text (entry_id, place, body, configuration)
+        select id, ${`field:${approved}`}, 'Approved', configuration from search_entry
+        where artifact_id = ${herd.artifactId} and (field_values ->> ${approved}::text)::boolean`.execute(
+        trx,
+      );
+      // Ivy reads the Approved field by a grant on it, so she may scope to it.
+      await grant(trx, {
+        roleId: reader!.id,
+        subject: { principal: ivy },
+        level: { kind: 'artifact', id: approved },
+        effect: 'allow',
+        grantedBy: ada,
+      });
       await sql`
         insert into search_text (entry_id, place, body, configuration)
         select id, 'title', title, configuration from search_entry
@@ -411,6 +432,31 @@ describe('search bounded at scale (SV3)', () => {
     expect(results).not.toContain('search_history_vector');
   });
 
+  it("finds field terms alone through fields' own index, the latest and every version", async () => {
+    // Herding is in every yak's words and no field.
+    expect((await plans('approved:herding', 'indexes')).results).toContain('search_text_fields');
+    const { results } = await plans('approved:herding', 'indexes', {}, 'all');
+    expect(results).toContain('search_history_fields');
+    expect(results).not.toContain('search_history_vector');
+  });
+
+  it("finds a scoped term beside words through its place's index too, under every version", async () => {
+    // Yak is in every herd row; no field holds herding: found by the field, not by every yak.
+    expect((await plans('yak approved:herding', 'indexes', {}, 'all')).results).toContain(
+      'search_history_fields',
+    );
+    expect((await plans('yak title:herding', 'indexes', {}, 'all')).results).toContain(
+      'search_history_title',
+    );
+  });
+
+  it('tests a scoped term most places hold on the candidates beside words, not through its index', async () => {
+    // Approved is in half the herd's fields: its bitmap would cost more than testing the newest.
+    expect((await plans('yak approved:approved', 'indexes', {}, 'all')).results).not.toContain(
+      'search_history_fields',
+    );
+  });
+
   it('finds a kind filtered for through its index, the latest and every version', async () => {
     expect((await plans('yak', 'indexes', { kinds: ['section'] })).results).toContain(
       'search_entry_kind',
@@ -473,6 +519,12 @@ describe('search bounded at scale (SV3)', () => {
     expect(await estimated('title:yak', {}, 'results', 'all')).toBeGreaterThan(500);
   });
 
+  it('reckons a query of field terms alone under every version by fields alone', async () => {
+    // Herding is in every yak's words and no field: reckoned by every place's words, over a thousand.
+    expect(await estimated('approved:herding', {}, 'results', 'all')).toBeLessThan(20);
+    expect(await estimated('approved:approved', {}, 'results', 'all')).toBeGreaterThan(250);
+  });
+
   it('reckons a filtered search as matching as few as it does, choosing its road by them', async () => {
     // One yak section in Archive; filters the planner could not read, it reckoned hundreds.
     expect(await estimated('yak', { kinds: ['section'], spaces: [archive] })).toBeLessThan(20);
@@ -532,13 +584,30 @@ describe('search bounded at scale (SV3)', () => {
     await bothRoads('all', 'yak title:yak');
   });
 
+  it('returns the same page, total and facets on either road for field terms alone, the latest and every version, every page, filtered and not', async () => {
+    await bothRoads('latest', 'approved:approved');
+    await bothRoads('all', 'approved:approved');
+  });
+
+  it('returns the same page, total and facets on either road for words and a field term, the latest and every version, every page, filtered and not', async () => {
+    await bothRoads('latest', 'yak approved:approved');
+    await bothRoads('all', 'yak approved:approved');
+  });
+
   const nothingFor = async (scope: 'latest' | 'all', road?: SearchRoad) => {
     for (const filters of [
       {},
       { spaces: [quality, archive] },
       { kinds: ['section' as const], values: [{ field: approved, value: 'true' }] },
     ] satisfies SearchFilters[]) {
-      for (const query of ['yak', 'title:yak', 'yak -herding', 'yak or quagga']) {
+      for (const query of [
+        'yak',
+        'title:yak',
+        'approved:approved',
+        'yak approved:approved',
+        'yak -herding',
+        'yak or quagga',
+      ]) {
         const options = { scope, filters, ...(road === undefined ? {} : { probe: { road } }) };
         // Not vacuous: Ada, who may read them, finds them.
         expect((await search(ada, query, options)).count).toBeGreaterThan(0);
