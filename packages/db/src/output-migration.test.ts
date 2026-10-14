@@ -247,6 +247,8 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0094_search_history_fields',
       '0095_workflow',
       '0096_workflow_gates',
+      '0097_workflow_publishing',
+      '0098_workflow_query_definitions',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

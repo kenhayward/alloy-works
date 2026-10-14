@@ -7,8 +7,8 @@ import { z } from 'zod';
  * caller's.
  */
 
-/** The kinds a workflow is declared for, one each (WF-A). */
-export const WORKFLOW_KINDS = ['component', 'document'] as const;
+/** The kinds a workflow is declared for, one each (WF-A); query definitions since WF2 (DAT-121). */
+export const WORKFLOW_KINDS = ['component', 'document', 'queryDefinition'] as const;
 export type WorkflowKind = (typeof WORKFLOW_KINDS)[number];
 
 /** What a transition needs on the artifact: editing it, or approving it (WF-C). */
@@ -298,6 +298,19 @@ export const SEED_WORKFLOW: WorkflowBody = {
     },
     SEED_WORKFLOW_1.transitions[3]!,
   ],
+};
+
+/**
+ * The document seed's version 3 (the WF2 plan, WF2-H, WF2-I): its Approve also takes a baseline, from
+ * which its approver may publish an approved publication.
+ */
+export const SEED_DOCUMENT_WORKFLOW: WorkflowBody = {
+  ...SEED_WORKFLOW,
+  transitions: SEED_WORKFLOW.transitions.map((each) =>
+    each.gate === undefined
+      ? each
+      : { ...each, gate: { ...each.gate, baseline: true, publication: 'permitted' as const } },
+  ),
 };
 
 /** The initial state of a body that parsed. */

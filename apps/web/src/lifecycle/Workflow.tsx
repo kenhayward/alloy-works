@@ -8,7 +8,7 @@ import styles from './Hold.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
 
-export type Movable = 'component' | 'document';
+export type Movable = 'component' | 'document' | 'queryDefinition';
 
 /** A transition the reader may take, as a view offers it. */
 export interface Offered {
@@ -27,6 +27,10 @@ export interface Gate {
     readonly name: string;
     readonly to: { readonly key: string; readonly name: string };
   };
+  /** Whether passing it may, or must, request an approved publication (LIF-050). */
+  readonly publication?: 'none' | 'permitted' | 'required';
+  /** Where it permits one, whether the caller may ask for it as they approve. */
+  readonly mayPublish?: boolean;
   readonly count: number;
   readonly required: number;
   readonly approvedByCaller: boolean;
@@ -68,6 +72,11 @@ function gatesIn(value: unknown): Gate[] {
         name: each.name,
         to: { key: each.to.key, name: each.to.name },
         reject: { name: reject.name, to: { key: reject.to.key, name: reject.to.name } },
+        publication:
+          each.publication === 'permitted' || each.publication === 'required'
+            ? each.publication
+            : 'none',
+        mayPublish: each.mayPublish === true,
         count: each.count,
         required: each.required,
         approvedByCaller: each.approvedByCaller === true,
@@ -121,7 +130,9 @@ export async function readStanding(
     const { data } =
       kind === 'component'
         ? await client.GET('/v1/components/{id}', params)
-        : await client.GET('/v1/documents/{id}', params);
+        : kind === 'document'
+          ? await client.GET('/v1/documents/{id}', params)
+          : await client.GET('/v1/query-definitions/{id}', params);
     return standingIn(data);
   } catch {
     return undefined;
@@ -141,7 +152,9 @@ async function move(
     const { data, error } =
       kind === 'component'
         ? await client.POST('/v1/components/{id}/transitions', options)
-        : await client.POST('/v1/documents/{id}/transitions', options);
+        : kind === 'document'
+          ? await client.POST('/v1/documents/{id}/transitions', options)
+          : await client.POST('/v1/query-definitions/{id}/transitions', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
@@ -168,6 +181,7 @@ async function decideGate(
     version: string;
     decision: 'approved' | 'rejected';
     reason?: string;
+    publish?: boolean;
   },
 ): Promise<Moved> {
   const options = { params: { path: { id } }, body };
@@ -175,7 +189,9 @@ async function decideGate(
     const { data, error } =
       kind === 'component'
         ? await client.POST('/v1/components/{id}/approvals', options)
-        : await client.POST('/v1/documents/{id}/approvals', options);
+        : kind === 'document'
+          ? await client.POST('/v1/documents/{id}/approvals', options)
+          : await client.POST('/v1/query-definitions/{id}/approvals', options);
     const moved = standingIn(data);
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
@@ -237,14 +253,22 @@ export function TransitionButtons({
   const [asking, setAsking] = useState<Offered | null>(null);
   const [rejecting, setRejecting] = useState<Gate | null>(null);
 
-  /** Approves or rejects at `gate`, answering what to say where it was refused (WF2-L). */
-  const decideAt = async (gate: Gate, reason?: string): Promise<string | undefined> => {
+  /**
+   * Approves or rejects at `gate`, and asks for its publication where `publish` says (LIF-050),
+   * answering what to say where it was refused (WF2-L).
+   */
+  const decideAt = async (
+    gate: Gate,
+    reason?: string,
+    publish = false,
+  ): Promise<string | undefined> => {
     setBusy(true);
     const answer = await decideGate(client, kind, id, {
       transition: gate.key,
       version: versionId,
       decision: reason === undefined ? 'approved' : 'rejected',
       ...(reason === undefined ? {} : { reason }),
+      ...(publish ? { publish } : {}),
     });
     setBusy(false);
     if ('moved' in answer) {
@@ -303,21 +327,39 @@ export function TransitionButtons({
       {(standing.gates ?? []).map((gate) => (
         <span key={gate.key} className={styles['gate']}>
           <span className={styles['muted']}>{progressOf(gate)}</span>
-          {gate.mayDecide && !gate.approvedByCaller && (
+          {gate.mayDecide && (
             <>
-              <button
-                type="button"
-                className={className}
-                disabled={busy}
-                title={`Approve, towards ${gate.to.name}`}
-                onClick={() => {
-                  void decideAt(gate).then((refused) => {
-                    if (refused !== undefined) onNotice(refused);
-                  });
-                }}
-              >
-                {gate.name}
-              </button>
+              {!gate.approvedByCaller && (
+                <button
+                  type="button"
+                  className={className}
+                  disabled={busy}
+                  title={`Approve, towards ${gate.to.name}`}
+                  onClick={() => {
+                    void decideAt(gate).then((refused) => {
+                      if (refused !== undefined) onNotice(refused);
+                    });
+                  }}
+                >
+                  {gate.name}
+                </button>
+              )}
+              {/* Any approver may return it, one who approved it among them (WF2-E). */}
+              {!gate.approvedByCaller && gate.publication === 'permitted' && gate.mayPublish && (
+                <button
+                  type="button"
+                  className={className}
+                  disabled={busy}
+                  title={`Approve, and publish once ${gate.to.name}`}
+                  onClick={() => {
+                    void decideAt(gate, undefined, true).then((refused) => {
+                      if (refused !== undefined) onNotice(refused);
+                    });
+                  }}
+                >
+                  {`${gate.name} and publish`}
+                </button>
+              )}
               <button
                 type="button"
                 className={className}

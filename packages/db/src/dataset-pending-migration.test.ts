@@ -186,6 +186,8 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0094_search_history_fields',
       '0095_workflow',
       '0096_workflow_gates',
+      '0097_workflow_publishing',
+      '0098_workflow_query_definitions',
     ]);
     const kept = await queryAs(
       db.adminUrl,

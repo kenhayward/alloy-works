@@ -28,7 +28,9 @@ export function ApprovalsList({ client, kind, id }: { client: Client; kind: Mova
     void (
       kind === 'component'
         ? client.GET('/v1/components/{id}/approvals', params)
-        : client.GET('/v1/documents/{id}/approvals', params)
+        : kind === 'document'
+          ? client.GET('/v1/documents/{id}/approvals', params)
+          : client.GET('/v1/query-definitions/{id}/approvals', params)
     )
       .then(({ data }) => {
         if (!current || !data) return;

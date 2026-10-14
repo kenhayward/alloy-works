@@ -17538,6 +17538,14 @@
       "document": "publishing.md",
       "owns": [
         {
+          "id": "PUB-004",
+          "howItIsMet": "An approved publication is made from a baseline taken as a workflow gate passed ([workflow.md](workflow.md), WF2-H): its record says `approval: 'approved'` (0097), and `publishing/22`, template 22 and Word print no notice and no sentence of being a draft. A person's baseline still publishes a draft, and the live document only ever does"
+        },
+        {
+          "id": "PUB-089",
+          "howItIsMet": "A layout's `matter.approvals { title }` (added at schema 7 in place, as `words.note` was) declares an approval page: an approved publication opens its front matter with it, the title then each approval of the version published, who, on which day and at which gate, a tagged list in the PDF and paragraphs in Word; a draft sets none"
+        },
+        {
           "id": "PUB-098",
           "howItIsMet": "The order is stated under [The order](#the-order): resolve occurrences, conditions over content, contributions, number, references, generated matter, checks, projection. `order.test.ts` tests each adjacent pair: swapped where the code lets a test swap them, the output differing; refused at compile time where the types forbid it; and, where `assemble` runs the last stages in its own order - after the Word numbering check, the checks of the title, the language, a preview's words and the layout's words, then the references, one walk that checks and projects each block, then the contents, the check for something to publish, which reads it, and the lists - that check shown reading generation's answer, and a projection returned only where every check passed"
         },
@@ -19192,6 +19200,22 @@
         {
           "id": "LIF-075",
           "howItIsMet": "`workflow.transitioned` and `approval.given`, each an event of its own"
+        },
+        {
+          "id": "LIF-013",
+          "howItIsMet": "Passing a gate designates a revision, and a document's gate may take a baseline"
+        },
+        {
+          "id": "LIF-050",
+          "howItIsMet": "A document's gate may permit or require an approved publication of its baseline; the request is audited as any is"
+        },
+        {
+          "id": "VER-059",
+          "howItIsMet": "A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate"
+        },
+        {
+          "id": "DAT-121",
+          "howItIsMet": "Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft"
         }
       ]
     }
@@ -19614,13 +19638,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 378,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 391,
+      "line": 399,
       "kind": "title"
     },
     {
@@ -19884,7 +19908,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1205,
+      "line": 1214,
       "kind": "title"
     },
     {
@@ -20958,49 +20982,61 @@
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 290,
+      "line": 294,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 310,
+      "line": 314,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 290,
+      "line": 294,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-050",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 337,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 333,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 333,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 162,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 265,
+      "line": 269,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 209,
+      "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "VER-059",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 337,
       "kind": "title"
     },
     {
@@ -21136,9 +21172,21 @@
       "kind": "title"
     },
     {
+      "id": "LIF-050",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 206,
+      "kind": "title"
+    },
+    {
       "id": "LIF-052",
       "file": "apps/web/src/admin/Workflows.test.tsx",
       "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "VER-059",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 206,
       "kind": "title"
     },
     {
@@ -21216,7 +21264,7 @@
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1061,
+      "line": 1093,
       "kind": "title"
     },
     {
@@ -21228,7 +21276,13 @@
     {
       "id": "DAT-119",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 1785,
+      "line": 1817,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-121",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 693,
       "kind": "title"
     },
     {
@@ -21726,25 +21780,31 @@
     {
       "id": "LIF-009",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 171,
+      "line": 173,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-050",
+      "file": "apps/web/src/lifecycle/Workflow.test.tsx",
+      "line": 242,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 197,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 111,
+      "line": 113,
       "kind": "title"
     },
     {
       "id": "VER-015",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 239,
+      "line": 267,
       "kind": "title"
     },
     {
@@ -21760,6 +21820,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-004",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 78,
+      "kind": "title"
+    },
+    {
       "id": "PUB-045",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
       "line": 52,
@@ -21768,7 +21834,7 @@
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 385,
+      "line": 397,
       "kind": "title"
     },
     {
@@ -22672,6 +22738,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-004",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 643,
+      "kind": "title"
+    },
+    {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
       "line": 303,
@@ -22699,6 +22771,12 @@
       "id": "PUB-088",
       "file": "apps/worker/src/layout.test.ts",
       "line": 537,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-089",
+      "file": "apps/worker/src/layout.test.ts",
+      "line": 650,
       "kind": "title"
     },
     {
@@ -24220,6 +24298,36 @@
       "kind": "title"
     },
     {
+      "id": "LIF-013",
+      "file": "packages/db/src/workflow-baselines.test.ts",
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-050",
+      "file": "packages/db/src/workflow-baselines.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-089",
+      "file": "packages/db/src/workflow-baselines.test.ts",
+      "line": 222,
+      "kind": "title"
+    },
+    {
+      "id": "VER-059",
+      "file": "packages/db/src/workflow-baselines.test.ts",
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-121",
+      "file": "packages/db/src/workflow-definitions.test.ts",
+      "line": 122,
+      "kind": "title"
+    },
+    {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-gates.test.ts",
       "line": 163,
@@ -24268,6 +24376,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-075",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
       "id": "VER-012",
       "file": "packages/db/src/workflow-gates.test.ts",
       "line": 293,
@@ -24294,55 +24408,55 @@
     {
       "id": "LIF-003",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 210,
+      "line": 215,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 59,
+      "line": 60,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 59,
+      "line": 60,
       "kind": "title"
     },
     {
       "id": "LIF-001",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 201,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 201,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 219,
+      "line": 227,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 201,
+      "line": 204,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 241,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 608,
+      "line": 622,
       "kind": "title"
     },
     {
@@ -25176,7 +25290,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 679,
+      "line": 681,
       "kind": "title"
     },
     {
@@ -25404,169 +25518,181 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2217,
+      "line": 2230,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2844,
+      "line": 2857,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2802,
+      "line": 2815,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4032,
+      "line": 4045,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3848,
+      "line": 3861,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1277,
+      "line": 1289,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 650,
+      "line": 651,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-004",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 6937,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6633,
+      "line": 6646,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2217,
+      "line": 2230,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 708,
+      "line": 709,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 983,
+      "line": 984,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 787,
+      "line": 788,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-089",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 6958,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5916,
+      "line": 5929,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 876,
+      "line": 877,
       "kind": "title"
     },
     {
       "id": "STR-024",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 903,
+      "line": 904,
       "kind": "title"
     },
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3824,
+      "line": 3837,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3548,
+      "line": 3561,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3931,
+      "line": 3944,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3442,
+      "line": 3455,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3471,
+      "line": 3484,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3494,
+      "line": 3507,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1963,
+      "line": 1976,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5123,
+      "line": 5136,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5123,
+      "line": 5136,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5147,
+      "line": 5160,
       "kind": "title"
     },
     {
       "id": "TAB-026",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2689,
+      "line": 2702,
       "kind": "title"
     },
     {
       "id": "TAB-034",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1986,
+      "line": 1999,
       "kind": "title"
     },
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6850,
+      "line": 6863,
       "kind": "title"
     },
     {
@@ -26236,6 +26362,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-004",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 5323,
+      "kind": "title"
+    },
+    {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 639,
@@ -26281,6 +26413,12 @@
       "id": "PUB-069",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 1141,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-089",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 5334,
       "kind": "title"
     },
     {

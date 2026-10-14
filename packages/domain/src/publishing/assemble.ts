@@ -95,6 +95,7 @@ import {
   type PublishedRun,
   type PublishedTableNote,
   type PublishedTitleRun,
+  type PublishedApproval,
 } from './published.js';
 
 /**
@@ -169,7 +170,13 @@ export interface AssembleInput {
    * none, for a request made before layouts - fails a preview `preview_words_missing`. Omitted, it is
    * `draft`, and a publish is made byte for byte as it was before previews.
    */
-  readonly status?: 'draft' | 'preview';
+  readonly status?: 'draft' | 'preview' | 'approved';
+  /**
+   * Each approval of what is published, for the approval page an approved publication sets where its
+   * layout declares one (PUB-089; the WF2 plan, WF2-J). An `approved` publication is made from a
+   * baseline taken at a gate (PUB-004), and prints no notice and no sentence of being a draft.
+   */
+  readonly approvals?: readonly PublishedApproval[];
 }
 
 /** `assemble`'s input once through the binding stage: every occurrence's content `Bound`. */
@@ -698,7 +705,12 @@ export function assemble(given: AssembleInput): Assembled {
     const { notice, sentence: noticeSentence } =
       status === 'preview'
         ? (previewWords ?? { notice: null, sentence: null })
-        : { notice: layout.words.notice, sentence: layout.words.noticeSentence };
+        : status === 'approved'
+          ? { notice: null, sentence: null }
+          : { notice: layout.words.notice, sentence: layout.words.noticeSentence };
+    if (layout.matter.approvals !== undefined && status === 'approved') {
+      checkWords(layout.matter.approvals.title, roles('contents'), (next) => failures.push(next));
+    }
     const listTitles = layout.matter.lists.map((list) => list.title);
     // A relative reference prints the layout's words for above and below (cross-references 2, R2),
     // where it has them: asked here of running text's family whether or not a reference prints one,
@@ -2245,9 +2257,18 @@ export function assemble(given: AssembleInput): Assembled {
   const { words } = layout;
   // A preview reaching here has its words, or it failed above: the notice and sentence it is set with.
   const notice =
-    previewWords === null
-      ? { page: words.notice, text: words.noticeSentence }
-      : { page: previewWords.notice, text: previewWords.sentence };
+    status === 'approved'
+      ? { page: null, text: null }
+      : previewWords === null
+        ? { page: words.notice, text: words.noticeSentence }
+        : { page: previewWords.notice, text: previewWords.sentence };
+  // The approval page an approved publication sets, where its layout declares one and it has any.
+  const approvals =
+    status === 'approved' &&
+    layout.matter.approvals !== undefined &&
+    (input.approvals ?? []).length > 0
+      ? { title: layout.matter.approvals.title, entries: [...(input.approvals ?? [])] }
+      : null;
   return {
     ok: true,
     numbering,
@@ -2281,7 +2302,7 @@ export function assemble(given: AssembleInput): Assembled {
       // Every paragraph, table and image style the theme holds, not only those used (themes 1, ruling
       // R6; themes 2, ruling R5).
       theme: projectTypst(theme!),
-      front: { cover, contents: shownContents, lists },
+      front: { cover, contents: shownContents, lists, approvals },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
     },

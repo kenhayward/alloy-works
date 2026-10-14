@@ -145,6 +145,12 @@ export interface Layout {
     appendices: { newPage: boolean };
     /** In the order they are set, after the contents; an empty list of one is not set (decision K). */
     lists: LayoutList[];
+    /**
+     * An approval page (PUB-089; the WF2 plan, WF2-J), under this title in the layout's language,
+     * listing each approval of what an approved publication publishes. Added at 7 in place, as
+     * `words.note` was: optional, and a layout without one sets none.
+     */
+    approvals?: { title: string } | undefined;
   };
   /**
    * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
@@ -307,6 +313,7 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
           (lists) => new Set(lists.map((list) => list.sequence)).size === lists.length,
           'A layout lists each sequence once',
         ),
+      approvals: z.strictObject({ title: words }).optional(),
     }),
     formats: z.strictObject({
       pdf: pageFormatSchema(pageSide),

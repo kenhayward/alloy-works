@@ -1,5 +1,11 @@
 import { queryDefinitionSchema } from '@alloy-works/domain';
 import { z } from 'zod';
+import {
+  GateView,
+  TransitionView,
+  WorkflowRevisionView,
+  WorkflowStandingView,
+} from './workflows.js';
 import { SpaceParams, VersionSummary } from './components.js';
 import { QueryDefinitionUsesView } from './bindings.js';
 import { SqlRefusal } from './connections.js';
@@ -60,6 +66,12 @@ export const QueryDefinitionView = z.object({
     .describe(
       'Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query',
     ),
+  state: WorkflowStandingView,
+  transitions: z
+    .array(TransitionView)
+    .describe('The workflow transitions the caller may take from its state now, in order'),
+  gates: z.array(GateView).describe('Each gate from its state, decided by its approvers (DAT-121)'),
+  revision: WorkflowRevisionView,
 });
 export type QueryDefinitionView = z.infer<typeof QueryDefinitionView>;
 

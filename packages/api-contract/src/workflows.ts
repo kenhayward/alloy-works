@@ -3,7 +3,7 @@ import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
 /** A workflow's kind: one for components, one for documents (the WF1 plan, WF-A). */
-export const WorkflowKindParam = z.enum(['component', 'document']);
+export const WorkflowKindParam = z.enum(['component', 'document', 'queryDefinition']);
 
 const Key = z
   .string()
@@ -190,6 +190,14 @@ export const GateView = z.object({
   reject: z
     .object({ name: z.string(), to: WorkflowStateView })
     .describe('What a rejection is called, and the state it returns to'),
+  publication: z
+    .enum(['none', 'permitted', 'required'])
+    .describe(
+      'Whether passing it may (permitted) or must (required) request an approved publication of its baseline',
+    ),
+  mayPublish: z
+    .boolean()
+    .describe('Where it permits one, whether the caller may ask for it as they approve'),
   count: z.int().min(0).describe('Approvals this round on the current version'),
   required: z.int().min(1).describe('Approvals it needs, each by a distinct person'),
   approvedByCaller: z.boolean().describe('Whether the caller has approved it this round'),
@@ -227,6 +235,12 @@ export const ApprovalBody = z.strictObject({
     .max(2000)
     .optional()
     .describe('Why it is rejected: required for a rejection, kept with it'),
+  publish: z
+    .boolean()
+    .optional()
+    .describe(
+      "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+    ),
 });
 export type ApprovalBody = z.infer<typeof ApprovalBody>;
 
@@ -275,7 +289,7 @@ const forbidden = {
   schema: ErrorBody,
 } as const;
 
-const approvalResponses = (kind: 'component' | 'document') =>
+const approvalResponses = (kind: 'component' | 'document' | 'query definition') =>
   ({
     200: { description: 'Decided; where it stands now', schema: TransitionAnswer },
     400: {
@@ -294,12 +308,12 @@ const approvalResponses = (kind: 'component' | 'document') =>
     },
     409: {
       description:
-        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived',
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded',
       schema: TransitionRefusal,
     },
   }) as const;
 
-const transitionResponses = (kind: 'component' | 'document') =>
+const transitionResponses = (kind: 'component' | 'document' | 'query definition') =>
   ({
     200: { description: 'Moved; where it stands now', schema: TransitionAnswer },
     400: {
@@ -440,6 +454,43 @@ export const workflowRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may not read this document', schema: ErrorBody },
       404: { description: 'No such document the caller may read', schema: ErrorBody },
+    },
+  },
+  transitionQueryDefinition: {
+    operationId: 'transitionQueryDefinition',
+    method: 'POST',
+    path: '/v1/query-definitions/{id}/transitions',
+    summary: 'Move a query definition along a workflow transition',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: TransitionBody,
+    responses: transitionResponses('query definition'),
+  },
+  decideQueryDefinitionGate: {
+    operationId: 'decideQueryDefinitionGate',
+    method: 'POST',
+    path: '/v1/query-definitions/{id}/approvals',
+    summary: 'Approve or reject a query definition at a gate',
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    body: ApprovalBody,
+    responses: approvalResponses('query definition'),
+  },
+  listQueryDefinitionApprovals: {
+    operationId: 'listQueryDefinitionApprovals',
+    method: 'GET',
+    path: '/v1/query-definitions/{id}/approvals',
+    summary: "List a query definition's approvals and rejections",
+    tenantScoped: true,
+    access: read,
+    params: TransitionParams,
+    responses: {
+      200: { description: 'Every decision at its gates, newest first', schema: ApprovalsView },
+      401: unauthenticated,
+      403: { description: 'The caller may not read this query definition', schema: ErrorBody },
+      404: { description: 'No such query definition the caller may read', schema: ErrorBody },
     },
   },
   transitionDocument: {

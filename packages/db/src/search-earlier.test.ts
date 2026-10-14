@@ -694,6 +694,8 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0094_search_history_fields',
         '0095_workflow',
         '0096_workflow_gates',
+        '0097_workflow_publishing',
+        '0098_workflow_query_definitions',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

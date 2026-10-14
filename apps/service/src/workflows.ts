@@ -83,11 +83,14 @@ export function gatesOffered(
   return standing.gates.map((progress) => {
     const transition = standing.transitions.find((each) => each.key === progress.transition)!;
     const approvedByCaller = progress.approvedBy.includes(principalId);
+    const publication = transition.gate!.publication;
     return {
       key: transition.key,
       name: transition.name,
       to: named(transition.to),
       reject: { name: transition.gate!.reject.name, to: named(transition.gate!.reject.to) },
+      publication,
+      mayPublish: publication === 'permitted' && decide('publish', facts).allowed,
       count: progress.count,
       required: progress.required,
       approvedByCaller,
@@ -143,7 +146,7 @@ export async function workflowView(
  */
 export function workflowHandlers() {
   const moving =
-    (kind: 'component' | 'document') =>
+    (kind: 'component' | 'document' | 'queryDefinition') =>
     async (
       request: FastifyRequest,
       { trx, principalId, facts, target }: Authorised,
@@ -199,13 +202,23 @@ export function workflowHandlers() {
     };
 
   const deciding =
-    (kind: 'component' | 'document') =>
+    (kind: 'component' | 'document' | 'queryDefinition') =>
     async (
       request: FastifyRequest,
       { trx, principalId, facts, target }: Authorised,
     ): Promise<TransitionAnswer> => {
       const { id } = request.params as TransitionParams;
       const body = request.body as ApprovalBody;
+      // Asking for a publication is publishing, decided as a publish is (LIF-050).
+      if (body.publish === true && !decide('publish', facts).allowed) {
+        throw refusedBy(
+          new AppError(403, 'forbidden', 'Publishing it needs the publish permission.'),
+          decide('publish', facts),
+          facts,
+          target,
+          false,
+        );
+      }
       const answer = await decideGate(trx, {
         artifactId: id,
         kind,
@@ -214,9 +227,18 @@ export function workflowHandlers() {
         decision: body.decision,
         reason: body.reason,
         by: principalId,
+        publish: body.publish,
         may: (permission) => decide(permission, facts).allowed,
       });
       switch (answer.answer) {
+        case 'baseline.refused':
+          throw refused(
+            409,
+            'gate.baseline_refused',
+            answer.refusal.answer === 'baseline.unresolved'
+              ? `This gate takes a baseline, and ${answer.refusal.failures.length === 1 ? 'one part' : `${answer.refusal.failures.length} parts`} of the document cannot be published as it stands, so nothing was approved.`
+              : 'This gate takes a baseline, and none can be made of the document as it stands, so nothing was approved.',
+          );
         case 'approved':
         case 'passed':
         case 'rejected':
@@ -327,6 +349,9 @@ export function workflowHandlers() {
 
     transitionComponent: moving('component'),
     transitionDocument: moving('document'),
+    transitionQueryDefinition: moving('queryDefinition'),
+    decideQueryDefinitionGate: deciding('queryDefinition'),
+    listQueryDefinitionApprovals: approvals,
     decideComponentGate: deciding('component'),
     decideDocumentGate: deciding('document'),
     listComponentApprovals: approvals,

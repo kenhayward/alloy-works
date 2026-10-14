@@ -301,6 +301,11 @@ const OTHER_TENANT_IDS: Readonly<
   getPendingResult: async (tenant, db) => ({ id: await pendingIn(tenant, db) }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
+  transitionQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
+  decideQueryDefinitionGate: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
+  listQueryDefinitionApprovals: async (tenant, db) => ({
+    id: await queryDefinitionIdIn(tenant, db),
+  }),
   recordQueryDefinitionVersion: async (tenant, db) => ({
     id: await queryDefinitionIdIn(tenant, db),
   }),
@@ -457,6 +462,10 @@ const VALID_INPUT: Readonly<
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   decideDocumentGate: {
+    payload: { transition: 'approve', version: SESSION, decision: 'approved' },
+  },
+  transitionQueryDefinition: { payload: { transition: 'submit', from: 'draft' } },
+  decideQueryDefinitionGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   requestAuditExport: { payload: {} },

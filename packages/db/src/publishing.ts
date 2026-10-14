@@ -36,6 +36,8 @@ import {
   validate,
   type DefinitionOf,
   type HeldDataset,
+  workflowBodySchema,
+  type PublishedApproval,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -929,8 +931,17 @@ export interface PublicationInputs {
    * queued under a layout, and every request made since names one).
    */
   readonly theme: { readonly versionId: string; readonly theme: ResolvedTheme } | null;
-  /** The document's version as `revision.version` (VER-009): what a running foot's `revision` shows. */
+  /**
+   * The document's version as `revision.version` (VER-009): what a running foot's `revision` shows; for
+   * an approved publication, the revision its gate designated.
+   */
   readonly revision: string;
+  /**
+   * Where it is made from a baseline taken at a gate (PUB-004; the WF2 plan, WF2-I): approved, with
+   * each approval of the version that baseline pins, in the order given, for its approval page
+   * (PUB-089). Null for a draft.
+   */
+  readonly approved: { readonly approvals: readonly PublishedApproval[] } | null;
   /**
    * Every image the request recorded, by asset version: where its bytes are and what `assemble` sizes
    * and describes it from. One the publisher could not read is not here; the request says why.
@@ -1288,6 +1299,7 @@ export async function publicationInputs(
       boundAssets.set(row.id, { object, format, width, height, alternative });
     }
   }
+  const approved = await gateApprovals(trx, request.baseline_id);
   return {
     request: {
       id: request.id,
@@ -1312,10 +1324,69 @@ export async function publicationInputs(
     refused: request.failures as PublishFailure[],
     layout,
     theme,
-    revision: `${request.revision_no}.${request.version_no}`,
+    revision:
+      approved?.revision === undefined
+        ? `${request.revision_no}.${request.version_no}`
+        : String(approved.revision),
+    approved: approved && { approvals: approved.approvals },
     assets,
     bindings,
     boundAssets,
+  };
+}
+
+/**
+ * A gate's baseline's approvals and revision (WF2-I, WF2-J): each approval at its gate of the version it
+ * pins in the round that passed it, the first by each person, who on which day under the gate's name, and the revision designated;
+ * null for a person's baseline or none.
+ */
+async function gateApprovals(
+  trx: TenantTransaction,
+  baselineId: string | null,
+): Promise<{ approvals: PublishedApproval[]; revision: number | undefined } | null> {
+  if (baselineId === null) return null;
+  const baseline = await trx
+    .selectFrom('baseline')
+    .select(['gate', 'document_version_id', 'made_at'])
+    .where('id', '=', baselineId)
+    .executeTakeFirst();
+  if (!baseline || baseline.gate === null) return null;
+  // The round that passed: the latest to approve this version at this gate by the time the baseline
+  // was made, in the transaction that passed it, so a later round does not displace it. A name is a display name
+  // alone, never an address, since a publication leaves the environment (the WF2 final review, 4).
+  const { rows } = await sql<{ by_name: string | null; at: Date; body: unknown }>`
+    select distinct on (a.by) p.display_name as by_name, a.at, d.body
+      from workflow_approval a
+      join principal p on p.id = a.by
+      join workflow_definition d on d.id = a.definition_id
+     where a.version_id = ${baseline.document_version_id} and a.transition = ${baseline.gate}
+       and a.decision = 'approved'
+       and a.round = (select l.round from workflow_approval l
+                       where l.version_id = ${baseline.document_version_id}
+                         and l.transition = ${baseline.gate} and l.decision = 'approved'
+                         and l.at <= ${baseline.made_at}
+                       order by l.id desc limit 1)
+     order by a.by, a.id`.execute(trx);
+  const named = (body: unknown) => {
+    const parsed = workflowBodySchema.safeParse(body);
+    return parsed.success
+      ? (parsed.data.transitions.find((each) => each.key === baseline.gate)?.name ?? baseline.gate!)
+      : baseline.gate!;
+  };
+  const designated = await trx
+    .selectFrom('revision_designation')
+    .select('revision_no')
+    .where('version_id', '=', baseline.document_version_id)
+    .executeTakeFirst();
+  return {
+    approvals: rows
+      .sort((a, b) => a.at.getTime() - b.at.getTime())
+      .map((row) => ({
+        by: row.by_name ?? 'Someone',
+        at: row.at.toISOString().slice(0, 10),
+        gate: named(row.body),
+      })),
+    revision: designated?.revision_no,
   };
 }
 
@@ -1491,6 +1562,19 @@ export async function recordPublication(
   }
 }
 
+/** The gate a baseline was taken at, or null for a person's (VER-059). */
+export async function baselineGate(
+  trx: TenantTransaction,
+  baselineId: string,
+): Promise<string | null> {
+  const row = await trx
+    .selectFrom('baseline')
+    .select('gate')
+    .where('id', '=', baselineId)
+    .executeTakeFirst();
+  return row?.gate ?? null;
+}
+
 async function insertPublication(
   trx: TenantTransaction,
   request: {
@@ -1512,6 +1596,9 @@ async function insertPublication(
 ): Promise<string> {
   // The PDF's engine and template are the publication's, as they always were; none without a PDF.
   const pdf = input.outputs.find((each) => each.format === 'pdf');
+  // A baseline taken at a gate makes an approved publication (PUB-004; the WF2 plan, WF2-I).
+  const gated =
+    request.baseline_id !== null && (await baselineGate(trx, request.baseline_id)) !== null;
   const artifact = await trx
     .insertInto('artifact')
     .values({ kind: 'publication', space_id: request.space_id })
@@ -1530,7 +1617,10 @@ async function insertPublication(
       // An environment short of 0073 has no column to name, and nothing made from a baseline.
       ...(request.baseline_id === null
         ? { approval: 'none' as const }
-        : { approval: 'baseline' as const, baseline_id: request.baseline_id }),
+        : {
+            approval: gated ? ('approved' as const) : ('baseline' as const),
+            baseline_id: request.baseline_id,
+          }),
       formats: request.formats,
       engine: pdf ? 'typst' : null,
       engine_version: pdf?.engineVersion ?? null,
@@ -2040,7 +2130,7 @@ export interface StoredPublication {
   readonly publisher: { readonly id: string; readonly displayName: string | null };
   readonly publishedAt: Date;
   /** `baseline` where it was made from one (0073), which `baseline` names; `none` otherwise. */
-  readonly approval: 'none' | 'baseline';
+  readonly approval: 'none' | 'baseline' | 'approved';
   readonly baseline: string | null;
   readonly formats: readonly PublishingFormat[];
   /** The PDF's engine and template, or none where the publication has no PDF (0027). */
@@ -2315,7 +2405,7 @@ function summaryOf(row: {
   document_version_id: string;
   title: string;
   published_at: Date;
-  approval: 'none' | 'baseline';
+  approval: 'none' | 'baseline' | 'approved';
   baseline_id: string | null;
   formats: PublishingFormat[];
   engine_version: string | null;

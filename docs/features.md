@@ -1036,6 +1036,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is the next version, in force at once, refused naming each problem; every version is kept. Saving
   is audited. Through the API, `GET` and `POST /v1/workflows` and
   `GET /v1/workflows/{kind}/versions/{n}`.
+- **Gates and approvals.** A transition can be a gate: by default **Approve**, which one approver who
+  recorded no version since the last revision passes, and any approver may **Return** with a reason.
+  Its header says how many approvals it has of how many, and offers **Approve** and **Return** to
+  whoever may approve; a save during review starts the count again. Passing designates a revision,
+  shown as **Revision N** beside the state, and versions after it count under its number. Who decided
+  what is listed under the Versions tab. Every approval, rejection and revision is audited. In
+  Administration > Workflows, a transition's gate sets its approvers, whether its authors are refused,
+  and what a rejection is called and returns to. Through the API,
+  `POST` and `GET /v1/{components|documents|query-definitions}/{id}/approvals`.
+- **Approved publications.** A document's gate takes a baseline, named for its revision, as it passes,
+  and may publish it: **Approve and publish** for an approver who may publish, or always where the
+  gate says so. A publication made from it says **Approved** and prints no draft notice, and where its
+  layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
+- **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
+  its page beside its version, and its own section in Administration > Workflows.
 - **Erasure.** An administrator of the environment erases a person from Administration > **People**,
   under More actions: never themselves, a service, or somebody erased already. The dialog says first
   what goes, what stays and any grant naming them, which must be removed before. Their name becomes
@@ -1628,9 +1643,8 @@ Named explicitly so nobody has to read the source to find out:
   default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search by meaning, no taxonomy, no approvals, gates or revisions: a workflow's state moves to
-  Approved, and nothing yet designates the version approved. A publication of a baseline still says
-  it is not approved, until an approval can approve one. Conditional text
+- No search by meaning, no taxonomy. A reference cannot yet follow a component's latest approved
+  revision, and no layout the product seeds declares an approval page. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread
   is seen by whoever may read what it is on.

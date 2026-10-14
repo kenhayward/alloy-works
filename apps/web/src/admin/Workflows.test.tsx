@@ -203,6 +203,30 @@ describe("Administration's Workflows", () => {
     });
   });
 
+  it("VER-059 LIF-050 sets whether a document's gate takes a baseline and publishes it, which a component's offers neither", async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    expect(
+      within(components()).queryByRole('checkbox', { name: 'Approve takes a baseline' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(documents).getByRole('checkbox', { name: 'Approve takes a baseline' }),
+    );
+    await userEvent.selectOptions(
+      within(documents).getByRole('combobox', { name: 'Approve publishes' }),
+      'required',
+    );
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    expect(await within(documents).findByText('Saved as version 3.')).toBeInTheDocument();
+    const saved = sent[0] as { transitions: { key: string; gate?: object }[] };
+    expect(saved.transitions.find((each) => each.key === 'approve')?.gate).toMatchObject({
+      baseline: true,
+      publication: 'required',
+    });
+  });
+
   it('removes a state with the transitions to and from it, and says each problem the service finds', async () => {
     const { client, sent } = service(() =>
       json(400, {

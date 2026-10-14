@@ -26,7 +26,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from '@alloy-works/db/testing';
-import { SEED_WORKFLOW, SEED_WORKFLOW_1 } from '@alloy-works/domain';
+import { SEED_DOCUMENT_WORKFLOW, SEED_WORKFLOW, SEED_WORKFLOW_1 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -153,9 +153,11 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const { workflows } = listed.json<WorkflowsView>();
     expect(workflows.map((each) => [each.definition.kind, each.definition.version])).toEqual([
       ['component', 2],
-      ['document', 2],
+      ['document', 3],
+      ['queryDefinition', 1],
     ]);
     expect(workflows[0]!.definition).toMatchObject({ body: SEED_WORKFLOW, by: null });
+    expect(workflows[1]!.definition).toMatchObject({ body: SEED_DOCUMENT_WORKFLOW, by: null });
     expect((await call('GET', '/v1/workflows', 'grace')).statusCode).toBe(403);
   });
 
@@ -187,7 +189,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(saved.statusCode, saved.body).toBe(200);
     expect(saved.json<WorkflowDefinitionView>()).toMatchObject({
       kind: 'document',
-      version: 3,
+      version: 4,
       by: { id: ids.ada },
     });
     const first = await call('GET', '/v1/workflows/document/versions/1', 'ada');
@@ -199,9 +201,9 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(
       (await call('POST', '/v1/workflows', 'grace', { kind: 'document', ...renamed })).statusCode,
     ).toBe(403);
-    // Back to the seed, as version 4.
+    // Back to the seed, as version 5.
     expect(
-      (await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...SEED_WORKFLOW }))
+      (await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...SEED_DOCUMENT_WORKFLOW }))
         .statusCode,
     ).toBe(200);
   });
@@ -227,6 +229,8 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       name: 'Approve',
       to: { key: 'approved', name: 'Approved' },
       reject: { name: 'Return', to: { key: 'draft', name: 'Draft' } },
+      publication: 'none',
+      mayPublish: false,
       count: 0,
       required: 1,
       approvedByCaller: false,
@@ -327,6 +331,55 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
         at: expect.any(String),
         versionId: created.version.id,
       },
+    ]);
+  });
+
+  it('LIF-050 VER-059 approves a document at a gate taking its baseline, and publishes it where the approver asks and may publish', async () => {
+    const created = await made('documents', 'Dosing summary');
+    await move('documents', created.id, 'ada', { transition: 'submit', from: 'draft' });
+    const decision = {
+      transition: 'approve',
+      version: created.version.id,
+      decision: 'approved',
+      publish: true,
+    } as const;
+    // Grace approves and may not publish: asking to is refused, and nothing is approved.
+    expect((await approve('documents', created.id, 'grace', decision)).statusCode).toBe(403);
+    expect(
+      (
+        await call('GET', `/v1/documents/${created.id}`, 'grace').then((answer) =>
+          answer.json<DocumentView>(),
+        )
+      ).gates,
+    ).toMatchObject([{ key: 'approve', publication: 'permitted', mayPublish: false, count: 0 }]);
+    await tenantDb.withTenant(tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Publisher'))!.id,
+        subject: { principal: ids.grace! },
+        level: { kind: 'space', id: clinical },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      }),
+    );
+    const passed = await approve('documents', created.id, 'grace', decision);
+    expect(passed.statusCode, passed.body).toBe(200);
+    const taken = await tenantDb.withTenant(tenant, async (trx) => ({
+      baselines: await trx
+        .selectFrom('baseline')
+        .select(['id', 'name', 'gate'])
+        .where('document_id', '=', created.id)
+        .execute(),
+      requests: await trx
+        .selectFrom('publication_request')
+        .select(['baseline_id', 'requested_by'])
+        .where('document_id', '=', created.id)
+        .execute(),
+    }));
+    expect(taken.baselines).toEqual([
+      { id: expect.any(String), name: 'Revision 1', gate: 'approve' },
+    ]);
+    expect(taken.requests).toEqual([
+      { baseline_id: taken.baselines[0]!.id, requested_by: ids.grace },
     ]);
   });
 

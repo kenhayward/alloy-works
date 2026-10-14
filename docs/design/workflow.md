@@ -25,17 +25,20 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-052** | A rejection returns it to the gate's declared `reject.to`, the rework path in the definition                                                                         |
 | **LIF-074** | `gate.rejected`, an event of its own                                                                                                                                 |
 | **LIF-075** | `workflow.transitioned` and `approval.given`, each an event of its own                                                                                               |
+| **LIF-013** | Passing a gate designates a revision, and a document's gate may take a baseline                                                                                      |
+| **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                    |
+| **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                    |
+| **DAT-121** | Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft                                                               |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
-whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-013 also
-asks a gate to take a baseline, WF2b's. LIF-040's approved revision served to references waits for
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-040's approved revision served to references waits for
 phase 4's "latest approved"; the designation and the move to draft on a save are here. VER-012 to
 VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below.
 
 ## Definitions
 
-**Per kind** (WF-A): one workflow for components, one for documents. A **definition** is an
+**Per kind** (WF-A): one workflow for components, one for documents, and since WF2 one for query definitions. A **definition** is an
 insert-only `workflow_definition` row (0095): kind, version, body, who and when; the newest per kind
 is in force. Version 1 of each is seeded, by nobody: Draft (initial), In review, Approved (approved);
 Submit (Draft to In review, `edit`), Return (In review to Draft, `approve`, reason), Approve (In
@@ -137,6 +140,40 @@ and `gates`, each with its count, what it needs, whether the caller approved and
 
 **In the interface** (WF2-L): a header shows **Revision N** beside the state, and at a gate its count
 ("1 of 2 approvals") with **Approve** and the rejection's name for whoever may decide, a rejection
-asking why. Who decided what, newest first, is listed under each Versions panel.
+asking why. Who decided what, newest first, is listed under a component's and a document's Versions panel; a query definition's is read through the API.
 `GET /v1/{components|documents}/{id}/approvals` reads it, on `read`. Administration > Workflows makes a
 transition a gate and sets its approvers, its author rule and where a rejection returns.
+
+## A baseline and a publication at a gate
+
+**A baseline** (WF2-H; VER-059): a document's gate with `baseline` takes one as it passes, by the
+approver who passed it, named "Revision N" for the revision it designates, `baseline.gate` its
+transition (0097 widened 0072's check). It is made before anything is recorded, so a gate whose
+baseline cannot be made - a part the approver may not read, a failure a publish would record -
+records nothing and refuses the approval (`gate_baseline_refused`).
+
+**A publication** (WF2-I; LIF-050, PUB-004): `publication: 'required'` requests one of that baseline
+as the gate passes, in every format its layout makes; `'permitted'` offers **Approve and publish** to
+an approver who may also publish (`publish: true`). A publication from a gate's baseline records
+`approval: 'approved'` and prints no notice; one from a person's baseline stays a draft. The document
+seed's **version 3** (0097), only where its newest was still the seed's version 2: Approve takes a
+baseline and permits a publication.
+
+**The gate's acts** (the WF2 final review, 3): a baseline a gate takes, and a publication it requires,
+are the gate's, as its definition, set by an administrator, declares: an approver passes such a gate
+without `publish`. Asking for a publication a gate only permits is publishing, and needs `publish`.
+Passed again on an unchanged version, a gate keeps the baseline it took of it; a name a person's
+baseline holds first gives the gate's "Revision N (2)". The approval page lists the round that passed
+alone, by display name, never an address.
+
+**The approval page** (WF2-J; PUB-089) is [publishing.md](publishing.md)'s: a layout's
+`matter.approvals`, listing each approval of the version published.
+
+## Query definitions
+
+**Their own workflow** (WF2-K; DAT-121): `queryDefinition` is a third kind (0098 widened every table's
+check), seeded at version 1 as the component seed's version 2, Approve a gate; every query definition
+there was starts in draft. A definition moves, is approved and is rejected as content is, by
+`/v1/query-definitions/{id}/transitions` and `/approvals`, its view carrying its state, gates and
+revision, its page showing them beside its version. A version saved after approval starts a draft.
+Which version a binding resolves stays its newest, approved or not, until phase 4's "latest approved".

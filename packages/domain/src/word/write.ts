@@ -623,20 +623,26 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
   // pages must leave the section out, each part named in the order it is made.
   const headerParts = new PartNames();
-  const noticeParagraph = writer.paragraph(
-    theme.roles.notice,
-    writer.runs(document.words.notice, writer.words),
-  );
+  // An approved publication says nothing of being a draft (PUB-004; WF2-I): no notice in any header.
+  const notice = document.words.notice;
+  const noticeXml =
+    notice === null
+      ? ''
+      : writer.paragraph(theme.roles.notice, writer.runs(notice, writer.words)).xml;
   const coverFurniture: Furniture | null = document.front.cover
     ? {
-        header: headerParts.add('header', noticeParagraph.xml),
+        header: headerParts.add(
+          'header',
+          noticeXml === '' ? writer.paragraph(theme.roles.running, '').xml : noticeXml,
+        ),
         footer: headerParts.add('footer', writer.paragraph(theme.roles.running, '').xml),
       }
     : null;
   const header = (withSection: boolean) =>
     headerParts.add(
       'header',
-      noticeParagraph.xml + (writer.slots(format, format.head, withSection)?.xml ?? ''),
+      noticeXml + (writer.slots(format, format.head, withSection)?.xml ?? '') ||
+        writer.paragraph(theme.roles.running, '').xml,
     );
   const footer = (withSection: boolean) =>
     headerParts.add(
@@ -673,12 +679,12 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   const opening = (): Paragraph[] => {
     if (opened) return [];
     opened = true;
+    const sentence = document.words.noticeSentence;
     return [
       writer.paragraph(theme.roles.title, writer.runs(document.title, writer.document)),
-      writer.paragraph(
-        theme.roles.noticeSentence,
-        writer.runs(document.words.noticeSentence, writer.words),
-      ),
+      ...(sentence === null
+        ? []
+        : [writer.paragraph(theme.roles.noticeSentence, writer.runs(sentence, writer.words))]),
     ];
   };
   if (coverFurniture !== null) {
@@ -691,12 +697,27 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     });
   }
   const contents = document.front.contents;
+  // The approval page (PUB-089; WF2-J), heading the front matter: its title, then each approval.
+  const approvals = document.front.approvals;
+  const approvalPage: Paragraph[] =
+    approvals === null
+      ? []
+      : [
+          writer.paragraph(theme.roles.contents, writer.runs(approvals.title, writer.words)),
+          ...approvals.entries.map((each) =>
+            writer.paragraph(
+              theme.roles.contentsEntry,
+              writer.runs(`${each.by}, ${each.at}, ${each.gate}`, writer.document),
+            ),
+          ),
+        ];
   // The contents and the lists after it, in one section, as the PDF sets them in its front segment;
   // the lists' entries are written once the nodes are, being the captions Word's fields number.
   let front: Body[] | null = null;
-  if (contents !== null || generated.length > 0) {
+  if (contents !== null || generated.length > 0 || approvalPage.length > 0) {
     front = [
       ...opening(),
+      ...approvalPage,
       ...(contents === null
         ? []
         : [

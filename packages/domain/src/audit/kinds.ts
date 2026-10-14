@@ -310,7 +310,7 @@ export const auditKindSpecs = {
   'workflow.transitioned': kind(
     ['LIF-075', 'LIF-061'],
     z.strictObject({
-      kind: z.enum(['component', 'document']),
+      kind: z.enum(['component', 'document', 'queryDefinition']),
       transition: AuditName.nullable(),
       from: AuditName,
       to: AuditName,
@@ -323,7 +323,10 @@ export const auditKindSpecs = {
   // A kind's workflow definition saved as a new version (WF-I): about the workflow settings.
   'workflow.defined': kind(
     ['LIF-007', 'LIF-067'],
-    z.strictObject({ kind: z.enum(['component', 'document']), version: z.int().positive() }),
+    z.strictObject({
+      kind: z.enum(['component', 'document', 'queryDefinition']),
+      version: z.int().positive(),
+    }),
     'packages/db/src/workflow.ts',
   ),
   // An approval at a gate, counted towards its passing (the WF2 plan, WF2-C, WF2-G): about the
@@ -331,7 +334,7 @@ export const auditKindSpecs = {
   'approval.given': kind(
     ['LIF-075', 'LIF-008'],
     z.strictObject({
-      kind: z.enum(['component', 'document']),
+      kind: z.enum(['component', 'document', 'queryDefinition']),
       transition: AuditName,
       count: z.int().positive(),
       required: z.int().positive(),
@@ -343,7 +346,7 @@ export const auditKindSpecs = {
   'gate.rejected': kind(
     ['LIF-074', 'LIF-053', 'LIF-051'],
     z.strictObject({
-      kind: z.enum(['component', 'document']),
+      kind: z.enum(['component', 'document', 'queryDefinition']),
       transition: AuditName,
       to: AuditName,
     }),
@@ -353,7 +356,7 @@ export const auditKindSpecs = {
   'revision.designated': kind(
     ['LIF-013', 'VER-014'],
     z.strictObject({
-      kind: z.enum(['component', 'document']),
+      kind: z.enum(['component', 'document', 'queryDefinition']),
       transition: AuditName,
       revision: z.int().positive(),
     }),

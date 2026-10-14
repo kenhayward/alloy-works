@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
+  SEED_DOCUMENT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   type BlockNode,
@@ -48,8 +49,10 @@ const para = (id: string, value: string): BlockNode => ({
   style: 'body',
   content: words(value),
 });
-/** WF1's workflow, without a gate: what these tests move under, as version 3 of each kind. */
+/** WF1's workflow, without a gate: what these tests move under, as each kind's newest. */
 const PLAIN = SEED_WORKFLOW_1;
+/** PLAIN's version for each kind: after the seed's 2 components', after its 3 documents'. */
+const plainVersion = { component: 3, document: 4 } as const;
 
 const base = { numbered: true, matter: 'body' as const, pageBreak: 'none' as const, values: {} };
 
@@ -204,11 +207,16 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       definitions.map((summary) => [summary.definition.kind, summary.definition.version]),
     ).toEqual([
       ['component', 2],
-      ['document', 2],
+      ['document', 3],
+      ['queryDefinition', 1],
     ]);
     for (const summary of definitions) {
-      expect(summary.definition.body).toEqual(SEED_WORKFLOW);
+      expect(summary.definition.body).toEqual(
+        summary.definition.kind === 'document' ? SEED_DOCUMENT_WORKFLOW : SEED_WORKFLOW,
+      );
       expect(summary.definition.by).toBeNull();
+      // A query definition's workflow began at the gated seed (0098); the others at WF1's.
+      if (summary.definition.kind === 'queryDefinition') continue;
       const first = await service.withTenant(other, (trx) =>
         workflowVersion(trx, summary.definition.kind, 1),
       );
@@ -222,7 +230,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
       expect(standing).toMatchObject({
         kind: made.kind,
         state: { key: 'draft', name: 'Draft', approved: false },
-        definition: { version: 3 },
+        definition: { version: plainVersion[made.kind as 'component' | 'document'] },
       });
       const rows = await as((trx) =>
         trx
@@ -233,7 +241,13 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
           .execute(),
       );
       expect(rows).toEqual([
-        { transition: null, from_state: null, to_state: 'draft', by: ada, version_no: 3 },
+        {
+          transition: null,
+          from_state: null,
+          to_state: 'draft',
+          by: ada,
+          version_no: plainVersion[made.kind as 'component' | 'document'],
+        },
       ]);
     }
   });
@@ -293,7 +307,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
         transition: 'submit',
         from: 'draft',
         to: 'in_review',
-        definition: 3,
+        definition: 4,
         reason: false,
       },
       {
@@ -301,7 +315,7 @@ describe('workflow states and transitions (workflow.md; the WF1 plan, Task 1)', 
         transition: 'return',
         from: 'in_review',
         to: 'draft',
-        definition: 3,
+        definition: 4,
         reason: true,
       },
     ]);

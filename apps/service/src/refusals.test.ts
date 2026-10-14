@@ -194,6 +194,8 @@ describe('the rule behind a refusal', () => {
       'transition.gated',
       'version.moved',
       'approval.given',
+      // The WF2 plan's (WF2-H, WF2-I): a gate whose baseline or publication cannot be made.
+      'gate.baseline_refused',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

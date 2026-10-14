@@ -619,3 +619,41 @@ describe('template 4 lays out the page', () => {
     }
   }, 120_000);
 });
+
+describe('an approved publication, compiled by template 22 (the WF2 plan, WF2-I, WF2-J)', () => {
+  const approvals = [
+    { by: 'Grace', at: '2026-10-14', gate: 'Approve' },
+    { by: 'Lin', at: '2026-10-14', gate: 'Approve' },
+  ];
+  const withPage = parseLayout({
+    ...defaultLayout,
+    matter: { ...defaultLayout.matter, approvals: { title: 'Approvals' } },
+  });
+  const approved = async (layout: Layout) => {
+    const made = assemble({ ...inputOf(FIXTURE, layout), status: 'approved', approvals });
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const pdf = await typst.compile(
+      PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
+      JSON.stringify(made.document),
+      at,
+    );
+    return { pdf, read: await readPdf(pdf) };
+  };
+
+  it('PUB-004 says nothing of being a draft on any page, nor to assistive technology', async () => {
+    const { read } = await approved(defaultLayout);
+    expect(spoken(read.artifactText.flat())).not.toContain(NOTICE);
+    expect(spoken(read.taggedText.flat())).not.toContain(NOTICE_SENTENCE);
+    expect(spoken(read.taggedText.flat())).not.toContain(NOTICE);
+  }, 120_000);
+
+  it('PUB-089 opens the front matter with the approval page its layout declares, each approval an item of its list, and passes veraPDF', async () => {
+    const { pdf, read } = await approved(withPage);
+    const tagged = spoken(read.taggedText.flat());
+    expect(tagged).toContain('Approvals');
+    expect(tagged).toContain('Grace, 2026-10-14, Approve');
+    expect(tagged).toContain('Lin, 2026-10-14, Approve');
+    expect(tagged.indexOf('Approvals')).toBeLessThan(tagged.indexOf('Contents'));
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+  }, 120_000);
+});

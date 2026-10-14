@@ -43,7 +43,13 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/21';
+export const PUBLISHING_SCHEMA = 'publishing/22';
+
+/**
+ * The document as it stood before an approved publication printed no notice and an approval page,
+ * frozen by WF2b for the reason `publishing/16` is: `apps/worker/templates/publication/21/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_21 = 'publishing/21';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -770,6 +776,21 @@ export interface PublishedPdfFormat {
  * the maths face's family; and the style each place and each role is set in. Every face, size, weight,
  * colour, rule, fill and space a template sets comes from here.
  */
+/** One approval of what an approved publication publishes: who, on which day, at which gate. */
+export interface PublishedApproval {
+  readonly by: string;
+  /** The day, as an ISO date. */
+  readonly at: string;
+  /** The gate's name, as its workflow names it. */
+  readonly gate: string;
+}
+
+/** The approval page: the layout's title, and each approval in the order they were given. */
+export interface PublishedApprovals {
+  readonly title: string;
+  readonly entries: readonly PublishedApproval[];
+}
+
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
   readonly title: string;
@@ -780,13 +801,14 @@ export interface PublishedDocument {
    * with the layout's words for a preview as its `words.notice` and `words.noticeSentence` (PUB-005),
    * so the template, which prints those, prints a preview's with no change of its own.
    */
-  readonly status: 'draft' | 'preview';
+  readonly status: 'draft' | 'preview' | 'approved';
   readonly revision: string;
   readonly words: {
     readonly language: PublishedLanguage;
     readonly contents: string;
-    readonly notice: string;
-    readonly noticeSentence: string;
+    /** Null on an approved publication, which says nothing of being a draft (PUB-004; WF2-I). */
+    readonly notice: string | null;
+    readonly noticeSentence: string | null;
     readonly continued: string | null;
   };
   readonly format: PublishedPdfFormat;
@@ -796,6 +818,8 @@ export interface PublishedDocument {
     readonly contents: { readonly depth: number } | null;
     /** The lists the layout declares that have an entry, in its order; an empty one is not set. */
     readonly lists: readonly PublishedGeneratedList[];
+    /** The approval page (PUB-089), on an approved publication whose layout declares one. */
+    readonly approvals: PublishedApprovals | null;
   };
   readonly appendices: { readonly newPage: boolean };
   readonly nodes: readonly PublishedNode[];

@@ -24967,6 +24967,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -24993,6 +25006,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -25964,6 +25979,10 @@
                     "description": "Why it is rejected: required for a rejection, kept with it",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "publish": {
+                    "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -26106,6 +26125,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -26132,6 +26164,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -26380,7 +26414,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -34388,6 +34422,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -34414,6 +34461,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -52627,6 +52676,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -52653,6 +52715,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -53419,6 +53483,10 @@
                     "description": "Why it is rejected: required for a rejection, kept with it",
                     "type": "string",
                     "maxLength": 2000
+                  },
+                  "publish": {
+                    "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -53561,6 +53629,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -53587,6 +53668,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -53835,7 +53918,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -114948,6 +115031,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -114974,6 +115070,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -115647,6 +115745,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -115673,6 +115784,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -116535,6 +116648,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -116561,6 +116687,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -118089,6 +118217,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -118115,6 +118256,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -118788,6 +118931,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -118814,6 +118970,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -119676,6 +119834,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -119702,6 +119873,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -121395,9 +121568,10 @@
                             "type": "string",
                             "enum": [
                               "none",
-                              "baseline"
+                              "baseline",
+                              "approved"
                             ],
-                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
@@ -126116,6 +126290,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -126142,6 +126329,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -127561,6 +127750,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -127587,6 +127789,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -128260,6 +128464,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -128286,6 +128503,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -129148,6 +129367,19 @@
                                 ],
                                 "description": "What a rejection is called, and the state it returns to"
                               },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
                               "count": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -129174,6 +129406,8 @@
                               "name",
                               "to",
                               "reject",
+                              "publication",
+                              "mayPublish",
                               "count",
                               "required",
                               "approvedByCaller",
@@ -142013,9 +142247,10 @@
                             "type": "string",
                             "enum": [
                               "none",
-                              "baseline"
+                              "baseline",
+                              "approved"
                             ],
-                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                            "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                           },
                           "baseline": {
                             "description": "The baseline it was made from, or null",
@@ -142375,9 +142610,10 @@
                       "type": "string",
                       "enum": [
                         "none",
-                        "baseline"
+                        "baseline",
+                        "approved"
                       ],
-                      "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names. Neither is approved until a lifecycle gate designates it"
+                      "description": "`none`: a draft of the document as it was; `baseline`: made from the baseline `baseline` names, a draft still; `approved`: made from a baseline taken as a workflow gate passed, and printed without the draft notice"
                     },
                     "baseline": {
                       "description": "The baseline it was made from, or null",
@@ -145574,6 +145810,205 @@
                     "mayUse": {
                       "type": "boolean",
                       "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "approved"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
+                    "gates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to once passed"
+                          },
+                          "reject": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "Its workflow state now, named by the definition deciding its next move"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "to"
+                            ],
+                            "description": "What a rejection is called, and the state it returns to"
+                          },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals this round on the current version"
+                          },
+                          "required": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals it needs, each by a distinct person"
+                          },
+                          "approvedByCaller": {
+                            "type": "boolean",
+                            "description": "Whether the caller has approved it this round"
+                          },
+                          "mayDecide": {
+                            "type": "boolean",
+                            "description": "Whether the caller may approve or reject it now"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reject",
+                          "publication",
+                          "mayPublish",
+                          "count",
+                          "required",
+                          "approvedByCaller",
+                          "mayDecide"
+                        ]
+                      },
+                      "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "number",
+                            "versionId",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                     }
                   },
                   "required": [
@@ -145584,7 +146019,11 @@
                     "connection",
                     "mayEdit",
                     "mayRun",
-                    "mayUse"
+                    "mayUse",
+                    "state",
+                    "transitions",
+                    "gates",
+                    "revision"
                   ]
                 },
                 "example": {
@@ -145639,7 +146078,19 @@
                   },
                   "mayEdit": false,
                   "mayRun": false,
-                  "mayUse": false
+                  "mayUse": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example",
+                    "approved": false
+                  },
+                  "transitions": [],
+                  "gates": [],
+                  "revision": {
+                    "number": 1,
+                    "versionId": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  }
                 }
               }
             },
@@ -145736,6 +146187,1559 @@
           },
           "404": {
             "description": "No such query definition in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/query-definitions/{id}/approvals": {
+      "get": {
+        "operationId": "listQueryDefinitionApprovals",
+        "summary": "List a query definition's approvals and rejections",
+        "description": "Lists every approval and rejection of a query definition at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the definition.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every decision at its gates, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "transition": {
+                            "type": "string"
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "reason": {
+                            "description": "A rejection's reason; null for an approval",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "description": "The version decided"
+                          }
+                        },
+                        "required": [
+                          "transition",
+                          "decision",
+                          "reason",
+                          "by",
+                          "at",
+                          "versionId"
+                        ]
+                      },
+                      "description": "Every approval and rejection, newest first"
+                    }
+                  },
+                  "required": [
+                    "approvals"
+                  ]
+                },
+                "example": {
+                  "approvals": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not read this query definition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such query definition the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "decideQueryDefinitionGate",
+        "summary": "Approve or reject a query definition at a gate",
+        "description": "Approves or rejects a query definition at a gate from its state, against the version the approver saw, needing approve on the definition, so that a change to a query is reviewed as content is. The gate passes once enough distinct approvers approve, none of them an author where the gate says so, and designates a revision; a rejection needs a reason. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transition": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The gate, by its transition key"
+                  },
+                  "version": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "The version the approver saw: refused, as version_moved, where it has been replaced since"
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "reason": {
+                    "description": "Why it is rejected: required for a rejection, kept with it",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "publish": {
+                    "description": "Where the gate permits a publication and this approval passes it, request one of the gate's baseline; needs publish",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "transition",
+                  "version",
+                  "decision"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "transition": "example",
+                "version": "00000000-0000-4000-8000-000000000001",
+                "decision": "approved"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided; where it stands now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "approved"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The transitions the caller may take from it now; a gate is decided, not taken"
+                    },
+                    "gates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to once passed"
+                          },
+                          "reject": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "Its workflow state now, named by the definition deciding its next move"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "to"
+                            ],
+                            "description": "What a rejection is called, and the state it returns to"
+                          },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals this round on the current version"
+                          },
+                          "required": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals it needs, each by a distinct person"
+                          },
+                          "approvedByCaller": {
+                            "type": "boolean",
+                            "description": "Whether the caller has approved it this round"
+                          },
+                          "mayDecide": {
+                            "type": "boolean",
+                            "description": "Whether the caller may approve or reject it now"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reject",
+                          "publication",
+                          "mayPublish",
+                          "count",
+                          "required",
+                          "approvedByCaller",
+                          "mayDecide"
+                        ]
+                      },
+                      "description": "Each gate from its state, decided by its approvers"
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "number",
+                            "versionId",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "transitions",
+                    "gates",
+                    "revision"
+                  ]
+                },
+                "example": {
+                  "state": {
+                    "key": "example",
+                    "name": "example",
+                    "approved": false
+                  },
+                  "transitions": [],
+                  "gates": [],
+                  "revision": {
+                    "number": 1,
+                    "versionId": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "reason_required: a rejection needs a reason; reason_invalid: a reason over 2,000 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the query definition but may not approve it, or is one of its authors where the gate refuses them (approval_author)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such query definition in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "state": {
+                      "description": "state_moved: where it is now",
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/query-definitions/{id}/transitions": {
+      "post": {
+        "operationId": "transitionQueryDefinition",
+        "summary": "Move a query definition along a workflow transition",
+        "description": "Moves a query definition along a transition from its state, named as the caller saw it, needing the transition's permission on the definition and a reason where the transition asks for one. Saving an approved definition moves it back to the initial state on its own. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transition": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The transition to take, by key"
+                  },
+                  "from": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The state the caller saw it in: refused, as state_moved, where it has moved since"
+                  },
+                  "reason": {
+                    "description": "Why, recorded with the move; required where the transition says so",
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "transition",
+                  "from"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "transition": "example",
+                "from": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved; where it stands now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "approved"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The transitions the caller may take from it now; a gate is decided, not taken"
+                    },
+                    "gates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to once passed"
+                          },
+                          "reject": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "Its workflow state now, named by the definition deciding its next move"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "to"
+                            ],
+                            "description": "What a rejection is called, and the state it returns to"
+                          },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals this round on the current version"
+                          },
+                          "required": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals it needs, each by a distinct person"
+                          },
+                          "approvedByCaller": {
+                            "type": "boolean",
+                            "description": "Whether the caller has approved it this round"
+                          },
+                          "mayDecide": {
+                            "type": "boolean",
+                            "description": "Whether the caller may approve or reject it now"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reject",
+                          "publication",
+                          "mayPublish",
+                          "count",
+                          "required",
+                          "approvedByCaller",
+                          "mayDecide"
+                        ]
+                      },
+                      "description": "Each gate from its state, decided by its approvers"
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "number",
+                            "versionId",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "transitions",
+                    "gates",
+                    "revision"
+                  ]
+                },
+                "example": {
+                  "state": {
+                    "key": "example",
+                    "name": "example",
+                    "approved": false
+                  },
+                  "transitions": [],
+                  "gates": [],
+                  "revision": {
+                    "number": 1,
+                    "versionId": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "reason_required: the transition needs a reason, and none was given; reason_invalid: a reason over 2,000 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the query definition but lacks the permission the transition needs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such query definition in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "state": {
+                      "description": "state_moved: where it is now",
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The query definition has been deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -148435,6 +150439,205 @@
                     "mayUse": {
                       "type": "boolean",
                       "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "approved"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
+                    "gates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to once passed"
+                          },
+                          "reject": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "Its workflow state now, named by the definition deciding its next move"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "to"
+                            ],
+                            "description": "What a rejection is called, and the state it returns to"
+                          },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals this round on the current version"
+                          },
+                          "required": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals it needs, each by a distinct person"
+                          },
+                          "approvedByCaller": {
+                            "type": "boolean",
+                            "description": "Whether the caller has approved it this round"
+                          },
+                          "mayDecide": {
+                            "type": "boolean",
+                            "description": "Whether the caller may approve or reject it now"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reject",
+                          "publication",
+                          "mayPublish",
+                          "count",
+                          "required",
+                          "approvedByCaller",
+                          "mayDecide"
+                        ]
+                      },
+                      "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "number",
+                            "versionId",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                     }
                   },
                   "required": [
@@ -148445,7 +150648,11 @@
                     "connection",
                     "mayEdit",
                     "mayRun",
-                    "mayUse"
+                    "mayUse",
+                    "state",
+                    "transitions",
+                    "gates",
+                    "revision"
                   ]
                 },
                 "example": {
@@ -148500,7 +150707,19 @@
                   },
                   "mayEdit": false,
                   "mayRun": false,
-                  "mayUse": false
+                  "mayUse": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example",
+                    "approved": false
+                  },
+                  "transitions": [],
+                  "gates": [],
+                  "revision": {
+                    "number": 1,
+                    "versionId": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  }
                 }
               }
             },
@@ -149726,6 +151945,205 @@
                         "mayUse": {
                           "type": "boolean",
                           "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                        },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name",
+                            "approved"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
+                        "gates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to once passed"
+                              },
+                              "reject": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "Its workflow state now, named by the definition deciding its next move"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "to"
+                                ],
+                                "description": "What a rejection is called, and the state it returns to"
+                              },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals this round on the current version"
+                              },
+                              "required": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals it needs, each by a distinct person"
+                              },
+                              "approvedByCaller": {
+                                "type": "boolean",
+                                "description": "Whether the caller has approved it this round"
+                              },
+                              "mayDecide": {
+                                "type": "boolean",
+                                "description": "Whether the caller may approve or reject it now"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reject",
+                              "publication",
+                              "mayPublish",
+                              "count",
+                              "required",
+                              "approvedByCaller",
+                              "mayDecide"
+                            ]
+                          },
+                          "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                        },
+                        "revision": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "number",
+                                "versionId",
+                                "at"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                         }
                       },
                       "required": [
@@ -149736,7 +152154,11 @@
                         "connection",
                         "mayEdit",
                         "mayRun",
-                        "mayUse"
+                        "mayUse",
+                        "state",
+                        "transitions",
+                        "gates",
+                        "revision"
                       ]
                     }
                   },
@@ -151084,6 +153506,205 @@
                         "mayUse": {
                           "type": "boolean",
                           "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                        },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name",
+                            "approved"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
+                        "gates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to once passed"
+                              },
+                              "reject": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "Its workflow state now, named by the definition deciding its next move"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "to"
+                                ],
+                                "description": "What a rejection is called, and the state it returns to"
+                              },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals this round on the current version"
+                              },
+                              "required": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals it needs, each by a distinct person"
+                              },
+                              "approvedByCaller": {
+                                "type": "boolean",
+                                "description": "Whether the caller has approved it this round"
+                              },
+                              "mayDecide": {
+                                "type": "boolean",
+                                "description": "Whether the caller may approve or reject it now"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reject",
+                              "publication",
+                              "mayPublish",
+                              "count",
+                              "required",
+                              "approvedByCaller",
+                              "mayDecide"
+                            ]
+                          },
+                          "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                        },
+                        "revision": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "number",
+                                "versionId",
+                                "at"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                         }
                       },
                       "required": [
@@ -151094,7 +153715,11 @@
                         "connection",
                         "mayEdit",
                         "mayRun",
-                        "mayUse"
+                        "mayUse",
+                        "state",
+                        "transitions",
+                        "gates",
+                        "revision"
                       ]
                     }
                   },
@@ -161183,6 +163808,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -161209,6 +163847,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -164615,6 +167255,19 @@
                             ],
                             "description": "What a rejection is called, and the state it returns to"
                           },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
                           "count": {
                             "type": "integer",
                             "minimum": 0,
@@ -164641,6 +167294,8 @@
                           "name",
                           "to",
                           "reject",
+                          "publication",
+                          "mayPublish",
                           "count",
                           "required",
                           "approvedByCaller",
@@ -167577,6 +170232,205 @@
                     "mayUse": {
                       "type": "boolean",
                       "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "approved": {
+                          "type": "boolean",
+                          "description": "Whether it counts as approved: a save starts a new draft"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "approved"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
+                    "gates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to once passed"
+                          },
+                          "reject": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "Its workflow state now, named by the definition deciding its next move"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "to"
+                            ],
+                            "description": "What a rejection is called, and the state it returns to"
+                          },
+                          "publication": {
+                            "type": "string",
+                            "enum": [
+                              "none",
+                              "permitted",
+                              "required"
+                            ],
+                            "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                          },
+                          "mayPublish": {
+                            "type": "boolean",
+                            "description": "Where it permits one, whether the caller may ask for it as they approve"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals this round on the current version"
+                          },
+                          "required": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991,
+                            "description": "Approvals it needs, each by a distinct person"
+                          },
+                          "approvedByCaller": {
+                            "type": "boolean",
+                            "description": "Whether the caller has approved it this round"
+                          },
+                          "mayDecide": {
+                            "type": "boolean",
+                            "description": "Whether the caller may approve or reject it now"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reject",
+                          "publication",
+                          "mayPublish",
+                          "count",
+                          "required",
+                          "approvedByCaller",
+                          "mayDecide"
+                        ]
+                      },
+                      "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            }
+                          },
+                          "required": [
+                            "number",
+                            "versionId",
+                            "at"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                     }
                   },
                   "required": [
@@ -167587,7 +170441,11 @@
                     "connection",
                     "mayEdit",
                     "mayRun",
-                    "mayUse"
+                    "mayUse",
+                    "state",
+                    "transitions",
+                    "gates",
+                    "revision"
                   ]
                 },
                 "example": {
@@ -167642,7 +170500,19 @@
                   },
                   "mayEdit": false,
                   "mayRun": false,
-                  "mayUse": false
+                  "mayUse": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example",
+                    "approved": false
+                  },
+                  "transitions": [],
+                  "gates": [],
+                  "revision": {
+                    "number": 1,
+                    "versionId": "00000000-0000-4000-8000-000000000001",
+                    "at": "2026-01-01T00:00:00.000Z"
+                  }
                 }
               }
             },
@@ -168868,6 +171738,205 @@
                         "mayUse": {
                           "type": "boolean",
                           "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                        },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name",
+                            "approved"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
+                        "gates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to once passed"
+                              },
+                              "reject": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "Its workflow state now, named by the definition deciding its next move"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "to"
+                                ],
+                                "description": "What a rejection is called, and the state it returns to"
+                              },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals this round on the current version"
+                              },
+                              "required": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals it needs, each by a distinct person"
+                              },
+                              "approvedByCaller": {
+                                "type": "boolean",
+                                "description": "Whether the caller has approved it this round"
+                              },
+                              "mayDecide": {
+                                "type": "boolean",
+                                "description": "Whether the caller may approve or reject it now"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reject",
+                              "publication",
+                              "mayPublish",
+                              "count",
+                              "required",
+                              "approvedByCaller",
+                              "mayDecide"
+                            ]
+                          },
+                          "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                        },
+                        "revision": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "number",
+                                "versionId",
+                                "at"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                         }
                       },
                       "required": [
@@ -168878,7 +171947,11 @@
                         "connection",
                         "mayEdit",
                         "mayRun",
-                        "mayUse"
+                        "mayUse",
+                        "state",
+                        "transitions",
+                        "gates",
+                        "revision"
                       ]
                     }
                   },
@@ -170226,6 +173299,205 @@
                         "mayUse": {
                           "type": "boolean",
                           "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
+                        },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "approved": {
+                              "type": "boolean",
+                              "description": "Whether it counts as approved: a save starts a new draft"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name",
+                            "approved"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
+                        "gates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to once passed"
+                              },
+                              "reject": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "to": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ],
+                                    "description": "Its workflow state now, named by the definition deciding its next move"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "to"
+                                ],
+                                "description": "What a rejection is called, and the state it returns to"
+                              },
+                              "publication": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "permitted",
+                                  "required"
+                                ],
+                                "description": "Whether passing it may (permitted) or must (required) request an approved publication of its baseline"
+                              },
+                              "mayPublish": {
+                                "type": "boolean",
+                                "description": "Where it permits one, whether the caller may ask for it as they approve"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals this round on the current version"
+                              },
+                              "required": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "description": "Approvals it needs, each by a distinct person"
+                              },
+                              "approvedByCaller": {
+                                "type": "boolean",
+                                "description": "Whether the caller has approved it this round"
+                              },
+                              "mayDecide": {
+                                "type": "boolean",
+                                "description": "Whether the caller may approve or reject it now"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reject",
+                              "publication",
+                              "mayPublish",
+                              "count",
+                              "required",
+                              "approvedByCaller",
+                              "mayDecide"
+                            ]
+                          },
+                          "description": "Each gate from its state, decided by its approvers (DAT-121)"
+                        },
+                        "revision": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "number",
+                                "versionId",
+                                "at"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Its latest revision, a version designated as a gate passed; null for revision 0"
                         }
                       },
                       "required": [
@@ -170236,7 +173508,11 @@
                         "connection",
                         "mayEdit",
                         "mayRun",
-                        "mayUse"
+                        "mayUse",
+                        "state",
+                        "transitions",
+                        "gates",
+                        "revision"
                       ]
                     }
                   },
@@ -179787,7 +183063,8 @@
                                 "type": "string",
                                 "enum": [
                                   "component",
-                                  "document"
+                                  "document",
+                                  "queryDefinition"
                                 ]
                               },
                               "version": {
@@ -180329,7 +183606,8 @@
                     "type": "string",
                     "enum": [
                       "component",
-                      "document"
+                      "document",
+                      "queryDefinition"
                     ],
                     "description": "The kind it is the workflow of"
                   },
@@ -180372,7 +183650,8 @@
                       "type": "string",
                       "enum": [
                         "component",
-                        "document"
+                        "document",
+                        "queryDefinition"
                       ]
                     },
                     "version": {
@@ -180835,7 +184114,8 @@
               "type": "string",
               "enum": [
                 "component",
-                "document"
+                "document",
+                "queryDefinition"
               ]
             }
           },
@@ -180872,7 +184152,8 @@
                       "type": "string",
                       "enum": [
                         "component",
-                        "document"
+                        "document",
+                        "queryDefinition"
                       ]
                     },
                     "version": {

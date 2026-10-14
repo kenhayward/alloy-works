@@ -690,6 +690,38 @@ describe('the query definition page', () => {
     });
   });
 
+  it('DAT-121 shows a definition’s workflow state and its gate, and approves it against the version shown', async () => {
+    const user = userEvent.setup();
+    const gate = {
+      key: 'approve',
+      name: 'Approve',
+      to: { key: 'approved', name: 'Approved' },
+      reject: { name: 'Return', to: { key: 'draft', name: 'Draft' } },
+      publication: 'none',
+      mayPublish: false,
+      count: 0,
+      required: 1,
+      approvedByCaller: false,
+      mayDecide: true,
+    };
+    const { client, asked } = service({
+      held: {
+        ...view(),
+        state: { key: 'in_review', name: 'In review', approved: false },
+        transitions: [],
+        gates: [gate],
+        revision: null,
+      } as ReturnType<typeof view>,
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(await screen.findByText('In review')).toBeInTheDocument();
+    expect(screen.getByText('0 of 1 approval')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Approve' }));
+    expect(
+      asked.find((each) => each.path === `/v1/query-definitions/${DEFINITION}/approvals`)?.body,
+    ).toEqual({ transition: 'approve', version: FIRST, decision: 'approved' });
+  });
+
   it('retires a definition and reinstates it, each a version, from More actions', async () => {
     const user = userEvent.setup();
     const { client, asked } = service();

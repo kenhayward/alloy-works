@@ -3,6 +3,7 @@ export {
   GATE_PUBLICATIONS,
   initialState,
   parseWorkflowBody,
+  SEED_DOCUMENT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   TRANSITION_PERMISSIONS,

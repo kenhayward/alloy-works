@@ -7,7 +7,7 @@ import { Shown, useListing } from './listing.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-type Kind = 'component' | 'document';
+type Kind = 'component' | 'document' | 'queryDefinition';
 type Permission = 'edit' | 'approve';
 
 interface State {
@@ -58,6 +58,7 @@ type Edited<T> = T & { readonly label: string };
 const KINDS: Readonly<Record<Kind, { heading: string; one: string }>> = {
   component: { heading: 'Components', one: 'Component' },
   document: { heading: 'Documents', one: 'Document' },
+  queryDefinition: { heading: 'Query definitions', one: 'Query definition' },
 };
 
 const PERMISSIONS: Readonly<Record<Permission, string>> = { edit: 'Edit', approve: 'Approve' };
@@ -380,6 +381,7 @@ function KindWorkflow({
               </td>
               <td>
                 <GateCell
+                  kind={kind}
                   transition={transition}
                   stateOptions={stateOptions}
                   initial={states.find((each) => each.initial)?.key ?? transition.from}
@@ -435,11 +437,13 @@ function KindWorkflow({
  * by approvers, so making one sets what it needs to Approve.
  */
 function GateCell({
+  kind,
   transition,
   stateOptions,
   initial,
   onChange,
 }: {
+  kind: Kind;
   transition: Transition & { label: string };
   stateOptions: React.ReactNode;
   initial: string;
@@ -515,6 +519,45 @@ function GateCell({
           >
             {stateOptions}
           </select>
+          {/* A document's gate may take a baseline (VER-059) and publish it (LIF-050). */}
+          {kind === 'document' && (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label={`${label} takes a baseline`}
+                  checked={gate.baseline ?? false}
+                  onChange={(change) =>
+                    onChange({
+                      gate: {
+                        ...gate,
+                        baseline: change.target.checked,
+                        ...(change.target.checked ? {} : { publication: 'none' as const }),
+                      },
+                    })
+                  }
+                />
+                Takes a baseline
+              </label>
+              <select
+                aria-label={`${label} publishes`}
+                value={gate.publication ?? 'none'}
+                disabled={!(gate.baseline ?? false)}
+                onChange={(change) =>
+                  onChange({
+                    gate: {
+                      ...gate,
+                      publication: change.target.value as 'none' | 'permitted' | 'required',
+                    },
+                  })
+                }
+              >
+                <option value="none">Publishes nothing</option>
+                <option value="permitted">May publish</option>
+                <option value="required">Publishes</option>
+              </select>
+            </>
+          )}
         </>
       )}
     </div>
