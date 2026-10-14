@@ -132,8 +132,13 @@ matches (an `EXPLAIN`, never run): **walk** the `(changed_at, id)` index when M 
 reading at most 4 x 1,001 x rows / M rows and falling back when that finds fewer than 1,001; else
 find the matches by the **indexes** and sort the newest out of them. Both return the same rows. A
 wanted term under three characters is looked for as a word alone, since no trigram holds it; scoped
-terms alone are found through `search_text`'s word index, title terms through titles' own (0092), whose
-statistics count titles alone, and under every version through history's titles (0093; #608). On the
+terms are found through `search_text`'s word index, title terms through titles' own (0092), whose
+statistics count titles alone, and under every version through history's titles (0093; #608); field
+terms through fields' own, every field together, and under every version history's (0094; #610). A
+scoped term beside words is found through its place's index too, where under a quarter of the rows
+hold it (#610). Under every version these indexes are asked for the term's lexemes alone, a phrase's
+joined by `&`, and not at all for a term that excludes, since a folded vector keeps every word but not
+every phrase; the places' test then decides, exactly. On the
 indexes road the per-place tests run on the candidates newest first until 1,001 pass, never on every
 match (#608). The filters are written so their columns' indexes serve them and the
 estimate counts them (#605).
@@ -206,7 +211,15 @@ The total stays exact to the cap.
   spike did, and measures p95 for three kinds of user. Within it in one hand run at a million (2026-10-14,
   after #604, #605 and #608): worst p95 249.5 ms (the latest, title: terms alone, medium reader), every
   version 240.8 ms; the margin is under the run-to-run spread (the unchanged latest case moved 226 to
-  249.5 ms), so it is not yet claimed.
+  249.5 ms), so it is not yet claimed. #610 added field terms alone (a word rare in the field and common
+  elsewhere, and the field's own word), words beside a title or field term, and a common word beside a
+  field term rare in it, and gave the narrow and medium readers Status. In a run at a million after 0094,
+  those with a rare or narrowing term were at most 178.8 ms p95 (every version, broad, words and a field
+  term; before 0094 a common word with a rare field term took 70 s). Over it: a field's own common word
+  for the medium reader, 237 ms latest and 305 ms every version (264 ms in an earlier run; unchanged by
+  0094, the shape of title terms alone, 282 and 287 ms in the same run), and a field value filter for the
+  medium reader, about 465 ms, measured for the first time now medium reads Status. That run was slower
+  than earlier ones throughout (unchanged cases up to 332 ms).
 
 ## Searching words, in T1
 
@@ -385,8 +398,9 @@ Built in SV1 ([the SV plan](../plans/2026-10-13-sv-search-reaches-further.md), S
 SV3-I to SV3-N):
 
 - **`search_history`** (0091): one row per component, document and section that any version held.
-  Its vector and body hold every version's words, and `title_vector` (0093) every version's titles',
-  folded alike, which title terms alone are found through; everything else - title, owner, changed, component
+  Its vector and body hold every version's words, `title_vector` (0093) every version's titles' and
+  `fields_vector` (0094) every version's fields', all fields together, folded alike, which title and
+  field terms are found through; everything else - title, owner, changed, component
   type, values, configuration, flags - is the newest version holding the place's, so filters and facets
   read each place's newest values. A place gone from the
   newest version keeps its row as its last version left it, found under every version only. Assets,

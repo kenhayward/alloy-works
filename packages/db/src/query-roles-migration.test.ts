@@ -161,6 +161,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0091_search_history',
       '0092_search_scoped',
       '0093_search_history_titles',
+      '0094_search_history_fields',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -199,6 +200,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0091_search_history',
       '0092_search_scoped',
       '0093_search_history_titles',
+      '0094_search_history_fields',
     ]);
 
     expect(await queryRoles(development)).toEqual([

@@ -88,6 +88,8 @@ select pg_temp.uid('fv', f), pg_temp.uid('f', f), 'field', 0, 1, 1,
                           'multiplicity', 'one', 'validation', '{}'::jsonb),
        pg_temp.hash('f' || f), '{}', '[]', pg_temp.hash('fd' || f), now() - interval '2 years'
 from (values (1, 'Approved', 'boolean'), (2, 'Reviewer', 'user'), (3, 'Status', 'text')) x(f, n, t);
+insert into definition_name (artifact_id, kind, name_key)
+select pg_temp.uid('f', f), 'field', n from (values (1, 'approved'), (2, 'reviewer'), (3, 'status')) x(f, n);
 insert into artifact (id, kind) select pg_temp.uid('t', t), 'componentType' from generate_series(1, 20) t;
 insert into artifact_version (id, artifact_id, kind, revision_no, version_no, schema_version, content,
   content_hash, metadata_values, not_carried, version_digest, created_at)
@@ -112,7 +114,10 @@ select c.c, j, pg_temp.uid('cv' || c.c || '.', j) as vid,
        c.t_latest - (c.nv - j) * (1 + random() * 20) * interval '1 day' as changed_at,
        pg_temp.words(3 + 0 * j) || pg_temp.planted(c.u, j, c.nv)
          || case when c.foreign_language then ' kestrelia' else '' end as extra,
-       (array['Draft', 'Review', 'Approved', 'Retired'])[1 + (j + c.c) % 4] as status
+       (array['Draft', 'Review', 'Approved', 'Retired'])[1 + (j + c.c) % 4] as status,
+       -- A word common elsewhere, in about one status in ten thousand (#610); by hash, so the random
+       -- stream, and so everything else generated, is as it was.
+       (hashtext('sf' || c.c || '.' || j) & 65535) < 7 as status_planted
 from comp c, generate_series(1, c.nv) j;
 
 -- Documents: 1 to 15 versions, 5% with 20 to 60, each re-indexing every section.
@@ -169,42 +174,51 @@ select pg_temp.uid('ce' || c.c || '.', v.j) as id, pg_temp.uid('c', c.c) as arti
        c.title, pg_temp.uid('p', c.owner) as owner, v.changed_at, pg_temp.uid('t', c.ctype) as component_type,
        pg_temp.component_values(c.c, c.owner, v.status) as field_values,
        (case when c.foreign_language then 'simple' else 'english' end)::regconfig as configuration,
-       c.base || ' ' || v.extra as block, c.archived, c.deleted, v.j = c.nv as current
+       c.base || ' ' || v.extra as block,
+       v.status || case when v.status_planted then ' lumenfold' else '' end as status,
+       c.archived, c.deleted, v.j = c.nv as current
 from comp c join ver v on v.c = c.c
 union all
 select pg_temp.uid('de' || d.d || '.', v.j), pg_temp.uid('d', d.d), 'document', null, v.vid,
        pg_temp.uid('s', d.space), d.title, pg_temp.uid('p', d.owner), v.changed_at, null,
-       jsonb_build_object(pg_temp.uid('f', 3)::text, 'Draft'), 'english', null, d.archived, false,
-       v.j = d.nv
+       jsonb_build_object(pg_temp.uid('f', 3)::text, 'Draft'), 'english', null, 'Draft', d.archived,
+       false, v.j = d.nv
 from doc d join docver v on v.d = d.d
 union all
 select pg_temp.uid('se' || d.d || '.' || s.k || '.', v.j), pg_temp.uid('d', d.d), 'section', 'n' || s.k,
        v.vid, pg_temp.uid('s', d.space), s.title, pg_temp.uid('p', d.owner), v.changed_at, null, '{}',
-       'english', s.base || ' ' || x.extra, d.archived, false, v.j = d.nv
+       'english', s.base || ' ' || x.extra, null, d.archived, false, v.j = d.nv
 from doc d join docver v on v.d = d.d join sec s on s.d = d.d
 join secver x on x.d = d.d and x.k = s.k and x.j = v.j;
 
 insert into search_entry (id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at,
   component_type, field_values, configuration, body, vector, archived, deleted)
 select id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type,
-       field_values, configuration, title || coalesce(' ' || block, ''),
-       to_tsvector(configuration, title || coalesce(' ' || block, '')), archived, deleted
+       field_values, configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, ''),
+       to_tsvector(configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, '')),
+       archived, deleted
 from place where current;
 insert into search_text (entry_id, place, body, configuration)
 select id, 'title', title, configuration from place where current
 union all
-select id, 'block:b1', block, configuration from place where current and block is not null;
+select id, 'block:b1', block, configuration from place where current and block is not null
+union all
+select id, 'field:' || pg_temp.uid('f', 3), status, configuration from place where current and status is not null;
 insert into search_earlier (id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at,
   component_type, field_values, configuration, body, vector, archived, deleted)
 select id, artifact_id, kind, node, version_id, space_id, title, owner, changed_at, component_type,
-       field_values, configuration, title || coalesce(' ' || block, ''),
-       to_tsvector(configuration, title || coalesce(' ' || block, '')), archived, deleted
+       field_values, configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, ''),
+       to_tsvector(configuration, title || coalesce(' ' || block, '') || coalesce(' ' || status, '')),
+       archived, deleted
 from place where not current;
 insert into search_earlier_text (entry_id, place, body, configuration, vector)
 select id, 'title', title, configuration, to_tsvector(configuration, title) from place where not current
 union all
 select id, 'block:b1', block, configuration, to_tsvector(configuration, block)
-from place where not current and block is not null;
+from place where not current and block is not null
+union all
+select id, 'field:' || pg_temp.uid('f', 3), status, configuration, to_tsvector(configuration, status)
+from place where not current and status is not null;
 `;
 
 interface Reader {
@@ -222,8 +236,11 @@ interface Case {
   readonly filters?: SearchFilters;
   /** The same narrowing for ground truth, over `e`. */
   readonly truth?: string | ((reader: Reader) => string);
-  /** How the query's words match a row for ground truth, over `e`; the first word by default. */
-  readonly matches?: string;
+  /**
+   * How the query matches a row for ground truth, over `e`, each term apart: under every version a
+   * place matches when, for each, one of its versions does. The query as one word by default.
+   */
+  readonly matches?: readonly string[];
 }
 
 const percentile = (samples: readonly number[], p: number) => {
@@ -238,6 +255,13 @@ const uid = (prefix: string, n: number | string) => {
 };
 
 type Results = Extract<SearchAnswer, { outcome: 'results' }>;
+
+/** Ground truth over `e`: its words hold `word`, or its text holds it as a part of a word. */
+const wordIn = (word: string) =>
+  `(e.vector @@ plainto_tsquery(e.configuration, '${word}') or e.body ilike '%${word}%')`;
+/** Ground truth over `e`: its place `place` holds `word`, its places read from `TEXTS`. */
+const heldAt = (place: string, word: string) =>
+  `exists (select 1 from TEXTS s where s.entry_id = e.id and s.place = '${place}' and s.vector @@ plainto_tsquery(s.configuration, '${word}'))`;
 
 describe('search at scale', () => {
   let db: TestDatabase;
@@ -382,6 +406,9 @@ describe('search at scale', () => {
           await allow(medium.principal, { kind: 'space', id: uid('s', s) });
         for (const id of denied) await allow(medium.principal, { kind: 'artifact', id }, 'deny');
         for (const id of granted) await allow(medium.principal, { kind: 'artifact', id });
+        // A field is read at the tenant or by a grant on it: Status, so each reader may scope to it.
+        for (const principal of [narrow.principal, medium.principal])
+          await allow(principal, { kind: 'artifact', id: uid('f', 3) });
         const broad: Reader = {
           name: 'broad',
           principal: await person('broad'),
@@ -440,38 +467,40 @@ describe('search at scale', () => {
    */
   const truth = async (reader: Reader, each: Case, scope: 'latest' | 'all') => {
     const spaces = reader.spaces.map((s) => uid('s', s));
-    const word = each.query.replace(/^title:/u, '');
     const texts =
       scope === 'latest'
         ? `${schema}.search_text`
         : `(select entry_id, place, configuration, vector from ${schema}.search_text
             union all
             select entry_id, place, configuration, vector from ${schema}.search_earlier_text)`;
-    const matches = (
-      each.matches ??
-      `(e.vector @@ plainto_tsquery(e.configuration, $4) or e.body ilike '%' || $4 || '%')`
-    ).replace('TEXTS', texts);
+    const matches = (each.matches ?? [wordIn(each.query)]).map((one) =>
+      one.replaceAll('TEXTS', texts),
+    );
     const source =
       scope === 'latest'
         ? `${schema}.search_entry`
         : `(select h.* from ${schema}.search_history h
-            where exists (
+            where ${matches
+              .map(
+                (one) => `exists (
               select 1 from (select id, artifact_id, node, configuration, vector, body
                                from ${schema}.search_entry
                              union all
                              select id, artifact_id, node, configuration, vector, body
                                from ${schema}.search_earlier) e
               where e.artifact_id = h.artifact_id and coalesce(e.node, '') = coalesce(h.node, '')
-                and ${matches}))`;
+                and ${one})`,
+              )
+              .join(' and ')})`;
     const { rows } = await admin.query<{ artifact_id: string; node: string | null; kind: string }>(
       `select e.artifact_id, e.node, e.kind from ${source} e
        where ((e.space_id = any($1::uuid[]) and not e.artifact_id = any($2::uuid[]))
               or e.artifact_id = any($3::uuid[]))
          and not e.archived and not e.deleted
-         and ${scope === 'latest' ? matches : 'true'}
+         and ${scope === 'latest' ? matches.join(' and ') : 'true'}
          and ${typeof each.truth === 'function' ? each.truth(reader) : (each.truth ?? 'true')}
        order by e.changed_at desc, e.id desc`,
-      [spaces, reader.denied, reader.granted, word],
+      [spaces, reader.denied, reader.granted],
     );
     return rows;
   };
@@ -496,18 +525,41 @@ describe('search at scale', () => {
     return rows.length;
   };
 
+  const statusPlace = `field:${uid('f', 3)}`;
   const cases: Case[] = [
     ...WORDS.map(({ word, share }) => ({ name: `${word} (${share})`, query: word })),
     { name: 'a second configuration', query: 'kestrelia' },
     {
       name: 'a two-character term',
       query: 'ka',
-      matches: `e.vector @@ plainto_tsquery(e.configuration, $4)`,
+      matches: [`e.vector @@ plainto_tsquery(e.configuration, 'ka')`],
+    },
+    { name: 'scoped terms alone', query: 'title:kakaka', matches: [heldAt('title', 'kakaka')] },
+    // A field's terms (#610): a word common elsewhere and rare in the field, and the field's own word.
+    {
+      name: 'field terms alone, rare in the field',
+      query: 'status:lumenfold',
+      matches: [heldAt(statusPlace, 'lumenfold')],
     },
     {
-      name: 'scoped terms alone',
-      query: 'title:kakaka',
-      matches: `exists (select 1 from TEXTS s where s.entry_id = e.id and s.place = 'title' and s.vector @@ plainto_tsquery(s.configuration, $4))`,
+      name: 'field terms alone, common',
+      query: 'status:review',
+      matches: [heldAt(statusPlace, 'review')],
+    },
+    {
+      name: 'words and a title term',
+      query: 'meridianx title:kakaka',
+      matches: [wordIn('meridianx'), heldAt('title', 'kakaka')],
+    },
+    {
+      name: 'words and a field term',
+      query: 'meridianx status:review',
+      matches: [wordIn('meridianx'), heldAt(statusPlace, 'review')],
+    },
+    {
+      name: 'a common word and a field term rare in the field',
+      query: 'lumenfold status:lumenfold',
+      matches: [wordIn('lumenfold'), heldAt(statusPlace, 'lumenfold')],
     },
   ];
 
@@ -537,9 +589,8 @@ describe('search at scale', () => {
         name: '65%, a field value',
         query: 'lumenfold',
         filters: { values: [{ field: status, value: 'Review' }] },
-        // A field filters only for a reader who may read the field: at the tenant.
-        truth: (reader) =>
-          reader.name === 'broad' ? `e.field_values ->> '${status}' = 'Review'` : 'false',
+        // Every reader may read Status: the broad at the tenant, the others by a grant on it.
+        truth: `e.field_values ->> '${status}' = 'Review'`,
       },
       {
         name: '65%, changed today',

@@ -10,7 +10,7 @@ import {
 import { sql, type RawBuilder, type SqlBool } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
-import { HISTORY_KINDS, historyStored, historyTitled } from './search-history.js';
+import { HISTORY_KINDS, historyFielded, historyStored, historyTitled } from './search-history.js';
 import { vectorStored } from './search-threads.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -41,6 +41,8 @@ export interface SearchProbe {
   /** How many of the newest rows a walk reads before it falls back; every row for a forced walk. */
   readonly reads?: number;
   readonly explain?: boolean;
+  /** Whether a scoped term's index narrows the words beside it, rather than the planner's reckoning. */
+  readonly narrows?: boolean;
   readonly seen?: (event: {
     readonly statement: 'results' | 'facets' | 'page';
     readonly road?: SearchRoad;
@@ -542,29 +544,88 @@ export async function searchWords(
     sql<SqlBool>`(case when e.current then ${heldAt('e', sql`search_text`, place, words)}
       when e.node is null then ${heldByVersions(place, words, sql<SqlBool>`x.node is null`)}
       else ${heldByVersions(place, words, sql<SqlBool>`x.node = e.node`)} end)`;
-  // A query of scoped terms alone is found through its places' index (SV3-A); under every version,
-  // through the row's own words, which hold every place's in every version: a superset, the places'
-  // test below then exact. A title through its own index, whose statistics count titles alone (0092;
-  // #605), under every version through every version's titles (0093; #608); a field through every
-  // place's.
-  const wanted = parsed.words === '' ? scopedTerms.find((term) => !term.excluded) : undefined;
-  const titled = history && wanted?.place === 'title' && (await historyTitled(trx));
-  const driver =
+  // A scoped term is found through its places' index (SV3-A), and beside words where it narrows them
+  // (#610, below); under every version, through the row's own words, which hold every place's in every
+  // version: a superset, the places' test below then exact. A title through its own index, whose statistics count titles alone
+  // (0092; #605), under every version through every version's titles (0093; #608); a field through
+  // every field's (0094; #610), likewise.
+  const wanted = scopedTerms.find((term) => !term.excluded);
+  const field = wanted?.place.startsWith('field:') === true;
+  const own =
+    wanted?.place === 'title'
+      ? history && (await historyTitled(trx)) && sql`e.title_vector`
+      : field && history && (await historyFielded(trx)) && sql`e.fields_vector`;
+  const placeIndexed = (place: 'title' | 'field') =>
+    place === 'title'
+      ? sql`(case when s.place = 'title' then s.vector end)`
+      : sql`(case when s.place like 'field:%' then s.vector end)`;
+  // Under every version the driver reads words folded over versions (and a version's fields
+  // together), which keep every lexeme but not every phrase, and hold any word an excluding term
+  // refuses: it asks for the term's lexemes alone, a phrase's as `&`, and an excluding term has none, so
+  // the places' test alone decides (#610's review).
+  const lexemesOf = async (words: string) => {
+    const { rows } = await sql<{ c: string; q: string }>`
+      select c, websearch_to_tsquery(c::regconfig, ${words})::text as q
+      from unnest(${configurations}::text[]) c`.execute(trx);
+    const asked = rows.map(({ c, q }) => {
+      // Operators outside the quoted lexemes, which may hold any character.
+      const parts = q.split(/('(?:[^']|'')*')/u);
+      const outside = parts.filter((_, i) => i % 2 === 0).join(' ');
+      const rewritten = parts
+        .map((part, i) => (i % 2 === 0 ? part.replace(/<(?:-|\d+)>/gu, '&') : part))
+        .join('');
+      return { c, q: rewritten, excludes: outside.includes('!') };
+    });
+    return asked.some((each) => each.excludes) ? undefined : asked;
+  };
+  const asked = history && wanted !== undefined ? await lexemesOf(wanted.words) : undefined;
+  const scopedDriver =
     wanted === undefined
       ? undefined
       : history
-        ? matches('e', wanted.words, titled ? sql`e.title_vector` : undefined)
-        : wanted.place === 'title'
-          ? sql<SqlBool>`e.id in (
-              select s.entry_id from ${texts} s
-              where ${matches('s', wanted.words, sql`(case when s.place = 'title' then s.vector end)`)})`
-          : sql<SqlBool>`e.id in (
-              select s.entry_id from ${texts} s
-              where s.place = ${wanted.place} and ${matches('s', wanted.words)})`;
+        ? asked === undefined
+          ? undefined
+          : asked.length === 0
+            ? sql<SqlBool>`false`
+            : sql<SqlBool>`(${sql.join(
+                asked.map(
+                  ({ c, q }) => sql`(e.configuration = ${c}::regconfig
+                    and ${own === false ? sql`e.vector` : own} @@ ${q}::tsquery)`,
+                ),
+                sql` or `,
+              )})`
+        : sql<SqlBool>`e.id in (
+            select s.entry_id from ${texts} s
+            where ${field ? sql`s.place = ${wanted.place} and ` : sql``}${matches(
+              's',
+              wanted.words,
+              placeIndexed(field ? 'field' : 'title'),
+            )})`;
+  // Beside words, only where the planner reckons under a quarter of the rows hold the term: held by
+  // more, the places' test passes on enough of the newest candidates, and the term's bitmap costs more
+  // than it saves; held by fewer, it spares testing every candidate (#610).
+  const narrows = async (term: RawBuilder<SqlBool>) => {
+    const table = sql.table(history ? 'search_history' : 'search_entry');
+    const { rows: plan } = await sql<{ 'QUERY PLAN': { Plan: { 'Plan Rows': number } }[] }>`
+      explain (format json) select 1 from ${table} e where ${term}`.execute(trx);
+    const { rows: sized } = await sql<{ rows: number }>`
+      select reltuples::float8 as rows from pg_class where oid = ${history ? 'search_history' : 'search_entry'}::regclass`.execute(
+      trx,
+    );
+    return (
+      Number(plan[0]?.['QUERY PLAN'][0]?.Plan['Plan Rows'] ?? 0) < Number(sized[0]?.rows ?? 0) / 4
+    );
+  };
+  const driver =
+    scopedDriver === undefined || parsed.words === ''
+      ? scopedDriver
+      : (scope === 'latest' || history) && (options.probe?.narrows ?? (await narrows(scopedDriver)))
+        ? scopedDriver
+        : undefined;
   // The term the latest's driver finds is not tested again: the same rows, but the planner would
   // reckon the two independent and the matches far fewer than they are (#605).
   const places = scopedTerms
-    .filter((term) => history || term !== wanted)
+    .filter((term) => history || term !== wanted || driver === undefined)
     .map(({ place, words, excluded }) => {
       const holds = history ? heldOverVersions(place, words) : heldAt('e', texts, place, words);
       return excluded ? sql<SqlBool>`not ${holds}` : holds;
@@ -603,7 +664,12 @@ export async function searchWords(
           );
     return contains === null ? whole : sql<SqlBool>`(${whole} or (${contains}))`;
   };
-  const words = parsed.words === '' ? (driver ?? sql<SqlBool>`true`) : wordsOver('e');
+  const words =
+    parsed.words === ''
+      ? (driver ?? sql<SqlBool>`true`)
+      : driver === undefined
+        ? wordsOver('e')
+        : sql<SqlBool>`${wordsOver('e')} and ${driver}`;
   /** One version's row, `alias`, matching the whole query: the version a history row names (SV3-M). */
   const wholeOver = (alias: string, from: RawBuilder<unknown>) =>
     sql.join(
@@ -734,9 +800,9 @@ export async function searchWords(
             },
             {
               // Named, not excluded: the kind index then finds them, never the rows history holds.
-              // Their own words stand for titles, a superset the title test then makes exact.
-              from: sql`(select *, true as current, vector as title_vector from search_entry
-                         where kind in ${NOT_IN_HISTORY})`,
+              // Their own words stand for titles and fields, a superset the places' test makes exact.
+              from: sql`(select *, true as current, vector as title_vector, vector as fields_vector
+                         from search_entry where kind in ${NOT_IN_HISTORY})`,
               relation: 'search_entry',
               // Always by the indexes: a walk of the table's (changed_at, id) index would read the
               // current rows history stands for too, and a table's size says nothing of these kinds'.
