@@ -830,6 +830,6 @@ own sketch plan when its turn comes.
 
 The workflow, in [ADR-0061](../decisions/0061-t9s-order.md)'s order.
 
-| #   | Plan                                                                                 | Builds                                                                                                                                                        | Status                  |
-| --- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| WF1 | [Workflow definitions and states](2026-10-14-wf1-workflow-definitions-and-states.md) | LIF-001, LIF-002, LIF-007, LIF-054, LIF-061, SCH-060: a state per artifact, per-kind workflows a tenant edits as versions, transitions by permission, audited | Built (PRs #615, #WF1B) |
+| #   | Plan                                                                                 | Builds                                                                                                                                                        | Status                 |
+| --- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| WF1 | [Workflow definitions and states](2026-10-14-wf1-workflow-definitions-and-states.md) | LIF-001, LIF-002, LIF-007, LIF-054, LIF-061, SCH-060: a state per artifact, per-kind workflows a tenant edits as versions, transitions by permission, audited | Built (PRs #615, #616) |

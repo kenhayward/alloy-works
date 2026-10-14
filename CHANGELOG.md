@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.166.0 - 2026-10-14 (PR #WF1B)
+## 0.166.0 - 2026-10-14 (PR #616)
 
 Workflow's first phase: definitions and states (ADR-0061), and the search fixes since 0.165.0.
 

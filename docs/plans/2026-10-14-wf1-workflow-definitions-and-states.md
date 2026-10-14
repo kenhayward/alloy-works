@@ -78,6 +78,6 @@ workflow.md names their gap rather than claiming them.
 
 ## Built
 
-WF1a #615 and WF1b #WF1B, with the close (0.166.0). LIF-005 stays unclaimed: Home's attention, the
+WF1a #615 and WF1b #616, with the close (0.166.0). LIF-005 stays unclaimed: Home's attention, the
 inbox, the relationships panel and baselines show no state. LIF-036, LIF-040 and LIF-075 wait for
 phase 2.
