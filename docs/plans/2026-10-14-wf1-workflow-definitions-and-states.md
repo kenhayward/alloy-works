@@ -53,3 +53,15 @@ workflow.md names their gap rather than claiming them.
 - The final review hunts a state changed without a row, a transition past its permission, and a
   surface missing the state. `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the
   version (0.166.0) and the baseline.
+
+## Changed while building
+
+| Found                                                                                                                 | Change                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WF-I puts the reason in `workflow.transitioned`'s detail, but a detail holds names and codes, never a value (LIF-030) | `reason` is a boolean, whether one was given; the text is kept on the move's row alone                                                                                                   |
+| `createArtifact` writes the first row before the first version exists, to index it in its state                       | `version_id` is null on a creation's row alone; `by` is null for the seed definitions                                                                                                    |
+| A bound value revised writes `binding_revision` rows and cuts no version                                              | It moves nothing. Every path that cuts a component's or a document's version goes through `record` in `versions.ts`, where the move to draft is, so no save path can miss it             |
+| WF-D's rows could disagree with each other                                                                            | A trigger refuses a row whose `from` is not the state before it, the first having none                                                                                                   |
+| WF1b shows the state in both lists and search results, which the views did not carry                                  | Both list rows and each search result carry `state { key, name }` now                                                                                                                    |
+| LIF-068 is superseded by LIF-075                                                                                      | `workflow.transitioned` cites LIF-075 and LIF-061; `approval.*` LIF-075; `revision.designated` LIF-013 and VER-014. workflow.md claims neither LIF-075 nor LIF-040, both needing phase 2 |
+| A save's audit names "the version that was approved"                                                                  | `approved` is the version the save followed, the one in force while approved                                                                                                             |

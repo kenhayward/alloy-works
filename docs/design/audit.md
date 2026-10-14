@@ -112,33 +112,34 @@ audit_label (
 A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requirement it answers
 (LIF-063); a kind added is a code change and its check. **Emitted from AU1**, for acts that exist:
 
-| Kind                                                                    | Emitted by                                                                    | Requirement      |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------- |
-| `authentication.signed_in`, `.sign_in_failed`, `.signed_out`            | the sign-in routes, sign-out                                                  | IAM-013          |
-| `access.refused`                                                        | every refused authorisation of a signed-in principal                          | IAM-013, LIF-067 |
-| `access.granted`, `.revoked`                                            | grants made and removed                                                       | ADM-002, LIF-067 |
-| `group.member_added`, `.member_removed`                                 | group membership                                                              | ADM-002          |
-| `invitation.sent`, `.accepted`, `.withdrawn`                            | invitations                                                                   | ADM-002          |
-| `tenant.administrator_named`, `.administrator_claimed`                  | provisioning, the first sign-in                                               | IAM-060          |
-| `token.issued`, `.used`, `.revoked`                                     | API tokens; `used` at most once a minute per token                            | IAM-037          |
-| `space.made`, `.renamed`, `.archived`, `.restored`                      | SP1's acts                                                                    | ADM-002, ADM-049 |
-| `group.made`, `.deleted`; `settings.changed`                            | groups; the editing and data settings                                         | ADM-002          |
-| `tenant.invited`, `sign_in_route.configured`, `.closed`                 | the vendor's acts on an environment                                           | IAM-060, IAM-043 |
-| `content.version_cut`                                                   | every version of every artifact kind; never an iteration (VER-005)            | LIF-067          |
-| `connection.made`, `.changed`, `.credential_set`, `.tested`, `.retired` | connections                                                                   | DAT-007          |
-| `binding.resolved`, `.checked`, `.accepted`, `.confirmed`               | bindings                                                                      | LIF-067          |
-| `dataset.named`                                                         | a dataset's name                                                              | LIF-067          |
-| `asset.ingested`, `.refused`                                            | an image admitted by the worker; an upload refused, its file gone             | LIF-069, AST-037 |
-| `publication.requested`, `.produced`, `.failed`                         | publishing                                                                    | LIF-067          |
-| `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                                  | LIF-067          |
-| `audit.label_erased`                                                    | erasure of a person's labels                                                  | VER-038          |
-| `artifact.archived`, `.unarchived`                                      | archival ([lifecycle.md](lifecycle.md))                                       | LIF-073          |
-| `artifact.deleted`, `.undeleted`                                        | deletion, a tombstone, refused within a keep ([lifecycle.md](lifecycle.md))   | LIF-073          |
-| `hold.applied`, `.removed`                                              | legal holds ([lifecycle.md](lifecycle.md)), `{ hold }`, no reason             | LIF-073          |
-| `retention.changed`                                                     | a keep set or cleared ([lifecycle.md](lifecycle.md)), `{ kind, space, days }` | LIF-019, LIF-067 |
+| Kind                                                                    | Emitted by                                                                                                                                 | Requirement      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `authentication.signed_in`, `.sign_in_failed`, `.signed_out`            | the sign-in routes, sign-out                                                                                                               | IAM-013          |
+| `access.refused`                                                        | every refused authorisation of a signed-in principal                                                                                       | IAM-013, LIF-067 |
+| `access.granted`, `.revoked`                                            | grants made and removed                                                                                                                    | ADM-002, LIF-067 |
+| `group.member_added`, `.member_removed`                                 | group membership                                                                                                                           | ADM-002          |
+| `invitation.sent`, `.accepted`, `.withdrawn`                            | invitations                                                                                                                                | ADM-002          |
+| `tenant.administrator_named`, `.administrator_claimed`                  | provisioning, the first sign-in                                                                                                            | IAM-060          |
+| `token.issued`, `.used`, `.revoked`                                     | API tokens; `used` at most once a minute per token                                                                                         | IAM-037          |
+| `space.made`, `.renamed`, `.archived`, `.restored`                      | SP1's acts                                                                                                                                 | ADM-002, ADM-049 |
+| `group.made`, `.deleted`; `settings.changed`                            | groups; the editing and data settings                                                                                                      | ADM-002          |
+| `tenant.invited`, `sign_in_route.configured`, `.closed`                 | the vendor's acts on an environment                                                                                                        | IAM-060, IAM-043 |
+| `content.version_cut`                                                   | every version of every artifact kind; never an iteration (VER-005)                                                                         | LIF-067          |
+| `connection.made`, `.changed`, `.credential_set`, `.tested`, `.retired` | connections                                                                                                                                | DAT-007          |
+| `binding.resolved`, `.checked`, `.accepted`, `.confirmed`               | bindings                                                                                                                                   | LIF-067          |
+| `dataset.named`                                                         | a dataset's name                                                                                                                           | LIF-067          |
+| `asset.ingested`, `.refused`                                            | an image admitted by the worker; an upload refused, its file gone                                                                          | LIF-069, AST-037 |
+| `publication.requested`, `.produced`, `.failed`                         | publishing                                                                                                                                 | LIF-067          |
+| `export.produced`, `.downloaded`                                        | an audit export (AU2); others as they arrive                                                                                               | LIF-067          |
+| `audit.label_erased`                                                    | erasure of a person's labels                                                                                                               | VER-038          |
+| `artifact.archived`, `.unarchived`                                      | archival ([lifecycle.md](lifecycle.md))                                                                                                    | LIF-073          |
+| `artifact.deleted`, `.undeleted`                                        | deletion, a tombstone, refused within a keep ([lifecycle.md](lifecycle.md))                                                                | LIF-073          |
+| `hold.applied`, `.removed`                                              | legal holds ([lifecycle.md](lifecycle.md)), `{ hold }`, no reason                                                                          | LIF-073          |
+| `retention.changed`                                                     | a keep set or cleared ([lifecycle.md](lifecycle.md)), `{ kind, space, days }`                                                              | LIF-019, LIF-067 |
+| `workflow.transitioned`                                                 | a move ([workflow.md](workflow.md)), `{ kind, transition, from, to, definition, reason, approved? }`, whether a reason was given, never it | LIF-075, LIF-061 |
+| `workflow.defined`                                                      | a kind's workflow saved as a version ([workflow.md](workflow.md)), `{ kind, version }`                                                     | LIF-007, LIF-067 |
 
-**Declared now, emitted by the design that builds the act:** `workflow.transitioned`,
-`approval.given`, `approval.rejected`, `gate.rejected` (LIF-053: never `access.refused`),
+**Declared now, emitted by the design that builds the act:** `approval.given`, `approval.rejected`, `gate.rejected` (LIF-053: never `access.refused`),
 `revision.designated`,
 `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`

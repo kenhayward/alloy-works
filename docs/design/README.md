@@ -42,6 +42,7 @@ understand the storage layer, rather than something to be thrown away.
 | [collaboration.md](collaboration.md)                   | Who holds a component's lock, for how long, and how it passes from an idle holder to somebody who needs it                                                     |
 | [home.md](home.md)                                     | What waits on the person signed in that they may resolve, each with its one action, and nothing they may not read                                              |
 | [lifecycle.md](lifecycle.md)                           | Archival out of ordinary listings and search; legal holds; deletion as a tombstone, refused while anything depends on it; retention keeps; erasure of a person |
+| [workflow.md](workflow.md)                             | Each kind's workflow, declared and versioned per tenant; every component and document in one state, moved along a transition by whoever it permits             |
 
 ## Why these are not one per requirement area
 
