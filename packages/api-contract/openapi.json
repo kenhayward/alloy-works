@@ -60,6 +60,10 @@
       "description": "Ask named people to review a document by a date, and see who has reviewed it."
     },
     {
+      "name": "Workflow",
+      "description": "Declare each kind's workflow states and transitions, and move components and documents along them."
+    },
+    {
       "name": "Connections",
       "description": "Make connections to your own data sources, set their credentials, and test them."
     },
@@ -168,7 +172,8 @@
         "Threads",
         "Inbox",
         "Suggestions",
-        "Review rounds"
+        "Review rounds",
+        "Workflow"
       ]
     },
     {
@@ -24422,6 +24427,22 @@
                               }
                             ],
                             "description": "Who made its latest version; null for a version nobody authored"
+                          },
+                          "state": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "Its workflow state now, named by the definition deciding its next move"
                           }
                         },
                         "required": [
@@ -24432,7 +24453,8 @@
                           "type",
                           "language",
                           "changedAt",
-                          "changedBy"
+                          "changedBy",
+                          "state"
                         ]
                       }
                     },
@@ -24828,6 +24850,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -25088,6 +25166,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -25116,6 +25196,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "lock": {
@@ -32979,6 +33064,496 @@
           },
           "404": {
             "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/transitions": {
+      "post": {
+        "operationId": "transitionComponent",
+        "summary": "Move a component along a workflow transition",
+        "description": "Moves a component along a transition from its state, named as the caller saw it, needing the transition's permission on the component and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved component moves it back to the initial state on its own. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transition": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The transition to take, by key"
+                  },
+                  "from": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The state the caller saw it in: refused, as state_moved, where it has moved since"
+                  },
+                  "reason": {
+                    "description": "Why, recorded with the move; required where the transition says so",
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "transition",
+                  "from"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "transition": "example",
+                "from": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved; where it stands now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The transitions the caller may take from it now"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "transitions"
+                  ]
+                },
+                "example": {
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "reason_required: the transition needs a reason, and none was given",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the component but lacks the permission the transition needs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "state": {
+                      "description": "state_moved: where it is now",
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The component has been deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -50160,6 +50735,22 @@
                               "neverPublished"
                             ],
                             "description": "Whether the latest publication the caller may read is of the latest version, an earlier one, or there is none they may read"
+                          },
+                          "state": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "Its workflow state now, named by the definition deciding its next move"
                           }
                         },
                         "required": [
@@ -50170,7 +50761,8 @@
                           "changedAt",
                           "sections",
                           "components",
-                          "publishing"
+                          "publishing",
+                          "state"
                         ]
                       }
                     },
@@ -50752,6 +51344,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -50848,6 +51496,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -50889,6 +51539,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "mayPublish": false,
@@ -111981,6 +112636,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -112077,6 +112788,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -112118,6 +112831,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "mayPublish": false,
@@ -112480,6 +113198,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -112576,6 +113350,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -113180,6 +113956,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -113276,6 +114108,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -114546,6 +115380,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -114642,6 +115532,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -114683,6 +115575,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "mayPublish": false,
@@ -115045,6 +115942,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -115141,6 +116094,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -115745,6 +116700,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -115841,6 +116852,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -121902,6 +122915,496 @@
         }
       }
     },
+    "/v1/documents/{id}/transitions": {
+      "post": {
+        "operationId": "transitionDocument",
+        "summary": "Move a document along a workflow transition",
+        "description": "Moves a document along a transition from its state, named as the caller saw it, needing the transition's permission on the document and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved document moves it back to the initial state on its own. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transition": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The transition to take, by key"
+                  },
+                  "from": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "The state the caller saw it in: refused, as state_moved, where it has moved since"
+                  },
+                  "reason": {
+                    "description": "Why, recorded with the move; required where the transition says so",
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "transition",
+                  "from"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "transition": "example",
+                "from": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved; where it stands now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The transitions the caller may take from it now"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "transitions"
+                  ]
+                },
+                "example": {
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "reason_required: the transition needs a reason, and none was given",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but lacks the permission the transition needs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "state": {
+                      "description": "state_moved: where it is now",
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The document has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/unarchive": {
       "post": {
         "operationId": "unarchiveDocument",
@@ -122815,6 +124318,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -122911,6 +124470,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -122952,6 +124513,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "mayPublish": false,
@@ -123314,6 +124880,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -123410,6 +125032,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -124014,6 +125638,62 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "state": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name"
+                          ],
+                          "description": "Its workflow state now, named by the definition deciding its next move"
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ],
+                                "description": "The state it moves to"
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "to",
+                              "reasonRequired"
+                            ]
+                          },
+                          "description": "The workflow transitions the caller may take from its state now, in order"
+                        },
                         "onHold": {
                           "type": "boolean",
                           "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -124110,6 +125790,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "state",
+                        "transitions",
                         "onHold",
                         "mayHold",
                         "mayPublish",
@@ -150463,6 +152145,16 @@
             }
           },
           {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only components and documents in these workflow states now, by key, separated by commas; a section by its document's",
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,63}(?:,[a-z][a-z0-9_]{0,63}){0,49}$"
+            }
+          },
+          {
             "name": "changed",
             "in": "query",
             "required": false,
@@ -150827,6 +152519,29 @@
                                   }
                                 ],
                                 "description": "The thread a thread result is; null for anything else"
+                              },
+                              "state": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "A component's or a document's workflow state now, a section's its document's; null for anything else"
                               }
                             },
                             "required": [
@@ -150840,7 +152555,8 @@
                               "passage",
                               "version",
                               "baseline",
-                              "thread"
+                              "thread",
+                              "state"
                             ]
                           }
                         },
@@ -150971,6 +152687,38 @@
                                 ]
                               }
                             },
+                            "states": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "description": "What to filter by to leave these"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many it would leave, up to 1,000"
+                                  },
+                                  "capped": {
+                                    "type": "boolean",
+                                    "description": "Whether more than the count, which is then a lower bound"
+                                  }
+                                },
+                                "required": [
+                                  "value",
+                                  "label",
+                                  "count",
+                                  "capped"
+                                ]
+                              },
+                              "description": "Each workflow state a result is in now, by key; a section's its document's"
+                            },
                             "changed": {
                               "type": "array",
                               "items": {
@@ -151064,6 +152812,7 @@
                             "spaces",
                             "componentTypes",
                             "owners",
+                            "states",
                             "changed",
                             "fields"
                           ],
@@ -155794,6 +157543,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -156054,6 +157859,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "lock",
@@ -156082,6 +157889,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "lock": {
@@ -159026,6 +160838,62 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "Its workflow state now, named by the definition deciding its next move"
+                    },
+                    "transitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ],
+                            "description": "The state it moves to"
+                          },
+                          "reasonRequired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name",
+                          "to",
+                          "reasonRequired"
+                        ]
+                      },
+                      "description": "The workflow transitions the caller may take from its state now, in order"
+                    },
                     "onHold": {
                       "type": "boolean",
                       "description": "Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment"
@@ -159122,6 +160990,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "state",
+                    "transitions",
                     "onHold",
                     "mayHold",
                     "mayPublish",
@@ -159163,6 +161033,11 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "state": {
+                    "key": "example",
+                    "name": "example"
+                  },
+                  "transitions": [],
                   "onHold": false,
                   "mayHold": false,
                   "mayPublish": false,
@@ -173982,6 +175857,1246 @@
           },
           "404": {
             "description": "No such token of the caller's in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workflows": {
+      "get": {
+        "operationId": "listWorkflows",
+        "summary": "Each kind's workflow in force, and how many are in each state",
+        "description": "Returns each kind's workflow in force - one for components, one for documents - its states and transitions, and how many of the kind are in each state now. Needs administer at the environment.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each kind's workflow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workflows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "definition": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "component",
+                                  "document"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Its version: 1 is the seed, and each save the next"
+                              },
+                              "body": {
+                                "type": "object",
+                                "properties": {
+                                  "states": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "key": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "initial": {
+                                          "type": "boolean"
+                                        },
+                                        "approved": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "name",
+                                        "initial",
+                                        "approved"
+                                      ]
+                                    }
+                                  },
+                                  "transitions": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "key": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "from": {
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "type": "string"
+                                        },
+                                        "permission": {
+                                          "type": "string",
+                                          "enum": [
+                                            "edit",
+                                            "approve"
+                                          ]
+                                        },
+                                        "reasonRequired": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "name",
+                                        "from",
+                                        "to",
+                                        "permission",
+                                        "reasonRequired"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "states",
+                                  "transitions"
+                                ]
+                              },
+                              "by": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "Their display name, or address; null where neither is known",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "Who saved it; null for the seed"
+                              },
+                              "at": {
+                                "type": "string",
+                                "description": "When it was saved"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "version",
+                              "body",
+                              "by",
+                              "at"
+                            ],
+                            "description": "The version in force: the newest"
+                          },
+                          "counts": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "description": "How many of the kind, deleted ones aside, are in each state now, by key"
+                          }
+                        },
+                        "required": [
+                          "definition",
+                          "counts"
+                        ]
+                      },
+                      "description": "Each kind's workflow, components first"
+                    }
+                  },
+                  "required": [
+                    "workflows"
+                  ]
+                },
+                "example": {
+                  "workflows": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workflows/{kind}": {
+      "post": {
+        "operationId": "defineWorkflow",
+        "summary": "Save a kind's workflow as its next version",
+        "description": "Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "component",
+                "document"
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "states": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-z][a-z0-9_]*$",
+                          "description": "A stable key: lower case, digits and underscores, starting with a letter"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "description": "As people read it; trimmed and NFC"
+                        },
+                        "initial": {
+                          "default": false,
+                          "description": "Where a new one starts, and a save of an approved one returns to; exactly one",
+                          "type": "boolean"
+                        },
+                        "approved": {
+                          "default": false,
+                          "description": "Counts as approved: saving one in it moves it to the initial state",
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "transitions": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-z][a-z0-9_]*$",
+                          "description": "A stable key: lower case, digits and underscores, starting with a letter"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80,
+                          "description": "As people read it; trimmed and NFC"
+                        },
+                        "from": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-z][a-z0-9_]*$",
+                          "description": "The state it moves from, by key"
+                        },
+                        "to": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-z][a-z0-9_]*$",
+                          "description": "The state it moves to, by key; never the one it moves from"
+                        },
+                        "permission": {
+                          "type": "string",
+                          "enum": [
+                            "edit",
+                            "approve"
+                          ],
+                          "description": "What the caller needs on the component or document to take it"
+                        },
+                        "reasonRequired": {
+                          "default": false,
+                          "description": "Whether taking it needs a reason, recorded with it",
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name",
+                        "from",
+                        "to",
+                        "permission"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "states",
+                  "transitions"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "states": [
+                  {
+                    "key": "example",
+                    "name": "example"
+                  }
+                ],
+                "transitions": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved, or the same as the version in force, which changes nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "component",
+                        "document"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Its version: 1 is the seed, and each save the next"
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "initial": {
+                                "type": "boolean"
+                              },
+                              "approved": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "initial",
+                              "approved"
+                            ]
+                          }
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "string"
+                              },
+                              "permission": {
+                                "type": "string",
+                                "enum": [
+                                  "edit",
+                                  "approve"
+                                ]
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "from",
+                              "to",
+                              "permission",
+                              "reasonRequired"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "states",
+                        "transitions"
+                      ]
+                    },
+                    "by": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "description": "Their display name, or address; null where neither is known",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who saved it; null for the seed"
+                    },
+                    "at": {
+                      "type": "string",
+                      "description": "When it was saved"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "version",
+                    "body",
+                    "by",
+                    "at"
+                  ]
+                },
+                "example": {
+                  "kind": "component",
+                  "version": -9007199254740991,
+                  "body": {
+                    "states": [],
+                    "transitions": []
+                  },
+                  "by": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "at": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "workflow_invalid: a key used twice, not one initial state, a transition naming no state or moving to its own, or a state no transition reaches from the initial one; each problem named",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "problems": {
+                      "description": "workflow_invalid: each problem, by rule and where in the body",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workflows/{kind}/versions/{version}": {
+      "get": {
+        "operationId": "getWorkflowVersion",
+        "summary": "One version of a kind's workflow, every one kept",
+        "description": "Returns one version of a kind's workflow. Every version is kept, so the rules a component or a document moved under can be read again. Needs administer at the environment.",
+        "tags": [
+          "Workflow"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "component",
+                "document"
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "component",
+                        "document"
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Its version: 1 is the seed, and each save the next"
+                    },
+                    "body": {
+                      "type": "object",
+                      "properties": {
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "initial": {
+                                "type": "boolean"
+                              },
+                              "approved": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "initial",
+                              "approved"
+                            ]
+                          }
+                        },
+                        "transitions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "string"
+                              },
+                              "permission": {
+                                "type": "string",
+                                "enum": [
+                                  "edit",
+                                  "approve"
+                                ]
+                              },
+                              "reasonRequired": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name",
+                              "from",
+                              "to",
+                              "permission",
+                              "reasonRequired"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "states",
+                        "transitions"
+                      ]
+                    },
+                    "by": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "description": "Their display name, or address; null where neither is known",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Who saved it; null for the seed"
+                    },
+                    "at": {
+                      "type": "string",
+                      "description": "When it was saved"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "version",
+                    "body",
+                    "by",
+                    "at"
+                  ]
+                },
+                "example": {
+                  "kind": "component",
+                  "version": -9007199254740991,
+                  "body": {
+                    "states": [],
+                    "transitions": []
+                  },
+                  "by": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "at": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such version of that kind",
             "content": {
               "application/json": {
                 "schema": {

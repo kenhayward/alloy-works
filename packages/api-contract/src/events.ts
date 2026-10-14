@@ -65,6 +65,13 @@ export const OutlineEvent = z
   .object({ document: Id })
   .describe("The stream's document has a new version: read its outline again (STR-066)");
 
+export const WorkflowEvent = z
+  .object({
+    artifact: Id.describe('The component or the document'),
+    state: z.object({ key: z.string(), name: z.string() }),
+  })
+  .describe('A component or a document moved to another workflow state (LIF-005)');
+
 export const InboxEvent = z
   .object({})
   .describe(
@@ -110,6 +117,11 @@ export const streamEvents = {
   outline: {
     summary: "The document's outline changed; sent on its stream",
     schema: OutlineEvent,
+  },
+  workflow: {
+    summary:
+      "A component or a document moved to another workflow state, its own or a save's; sent on its stream, and on a document's stream for a component in it, to whoever may read it",
+    schema: WorkflowEvent,
   },
   inbox: {
     summary:

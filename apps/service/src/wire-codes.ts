@@ -127,6 +127,12 @@ const WIRE_CODES = {
   'deletion.refused': 'deletion_refused',
   'reference.deleted': 'reference_deleted',
   'erasure.refused': 'erasure_refused',
+  // Workflow (the WF1 plan, WF-F, WF-J).
+  'workflow.invalid': 'workflow_invalid',
+  'state.moved': 'state_moved',
+  'transition.unknown': 'transition_unknown',
+  'artifact.archived': 'artifact_archived',
+  'reason.required': 'reason_required',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -192,6 +198,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A deletion something depends on (lifecycle.md, DL-C), and a restore naming what is deleted.
   'deletion.refused': 'LIF-023',
   'reference.deleted': 'VER-044',
+  // A transition whose definition asks for a reason, taken without one (workflow.md).
+  'reason.required': 'LIF-061',
 };
 
 /** The wire's spelling of a store's dotted answer. */

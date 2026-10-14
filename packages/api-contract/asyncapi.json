@@ -24,6 +24,9 @@
         "outline": {
           "$ref": "#/components/messages/outline"
         },
+        "workflow": {
+          "$ref": "#/components/messages/workflow"
+        },
         "inbox": {
           "$ref": "#/components/messages/inbox"
         },
@@ -57,6 +60,9 @@
         },
         {
           "$ref": "#/channels/stream/messages/outline"
+        },
+        {
+          "$ref": "#/channels/stream/messages/workflow"
         },
         {
           "$ref": "#/channels/stream/messages/inbox"
@@ -439,6 +445,43 @@
           ],
           "additionalProperties": false,
           "description": "The stream's document has a new version: read its outline again (STR-066)"
+        }
+      },
+      "workflow": {
+        "name": "workflow",
+        "summary": "A component or a document moved to another workflow state, its own or a save's; sent on its stream, and on a document's stream for a component in it, to whoever may read it",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "artifact": {
+              "type": "string",
+              "description": "The component or the document"
+            },
+            "state": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "artifact",
+            "state"
+          ],
+          "additionalProperties": false,
+          "description": "A component or a document moved to another workflow state (LIF-005)"
         }
       },
       "inbox": {

@@ -44,6 +44,11 @@ export const documentationGroups = [
         description:
           'Ask named people to review a document by a date, and see who has reviewed it.',
       },
+      {
+        name: 'Workflow',
+        description:
+          "Declare each kind's workflow states and transitions, and move components and documents along them.",
+      },
     ],
   },
   {
@@ -310,6 +315,13 @@ const operationTags = {
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
+  Workflow: [
+    'listWorkflows',
+    'getWorkflowVersion',
+    'defineWorkflow',
+    'transitionComponent',
+    'transitionDocument',
+  ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
 
@@ -605,6 +617,16 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the deleted components and documents the caller may read but for their deletion, the latest deleted first in cursor pages, each with who deleted it, when, and whether the caller may undelete it (retire on it). Archived ones deleted are listed here, not among the archived.',
   getRetention:
     'Returns the retention keeps in force: each a minimum in days, for a kind, a space, or a kind in a space. Every keep reaching a component or a document applies, the longest winning, and refuses deleting it until that many days have passed since its latest version. Needs administer at the environment.',
+  listWorkflows:
+    "Returns each kind's workflow in force - one for components, one for documents - its states and transitions, and how many of the kind are in each state now. Needs administer at the environment.",
+  getWorkflowVersion:
+    "Returns one version of a kind's workflow. Every version is kept, so the rules a component or a document moved under can be read again. Needs administer at the environment.",
+  defineWorkflow:
+    "Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.",
+  transitionComponent:
+    "Moves a component along a transition from its state, named as the caller saw it, needing the transition's permission on the component and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved component moves it back to the initial state on its own. Audited.",
+  transitionDocument:
+    "Moves a document along a transition from its state, named as the caller saw it, needing the transition's permission on the document and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved document moves it back to the initial state on its own. Audited.",
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:

@@ -8,7 +8,15 @@ const results = (count: number, capped: boolean, facetsBounded: boolean): Search
   capped,
   facetsBounded,
   items: [],
-  facets: { kinds: [], spaces: [], componentTypes: [], owners: [], changed: [], fields: [] },
+  facets: {
+    kinds: [],
+    spaces: [],
+    componentTypes: [],
+    owners: [],
+    states: [],
+    changed: [],
+    fields: [],
+  },
 });
 
 describe('the sentence a search answers with', () => {

@@ -8,6 +8,7 @@ import {
   type TenantDatabase,
   type TenantEvent,
   type TenantListener,
+  workflowStanding,
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Credential } from './app.js';
@@ -105,6 +106,20 @@ export async function streamToViewer(options: {
       return;
     }
     const document = 'document' in scoped.scope ? scoped.scope.document : null;
+    // Its own state, or a component's it may read in its document (WF-G), read as it now stands.
+    if (
+      event.kind === 'workflow' &&
+      (event.artifact === document || components.has(event.artifact))
+    ) {
+      const standing = await db.withTenant(tenant, (trx) => workflowStanding(trx, event.artifact));
+      if (!gone && standing) {
+        send('workflow', {
+          artifact: event.artifact,
+          state: { key: standing.state.key, name: standing.state.name },
+        });
+      }
+      return;
+    }
     if (event.kind === 'presence' && event.document === document) {
       // Read as it now stands: a row silent past a minute, or gone, is absence (COL-055).
       const [shown] = await db.withTenant(tenant, (trx) =>

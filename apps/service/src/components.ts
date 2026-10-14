@@ -30,6 +30,7 @@ import {
   type VersionPosition,
   type Tenant,
   type TenantDatabase,
+  workflowStates,
 } from '@alloy-works/db';
 import { decide, type EffectiveField } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -38,6 +39,7 @@ import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+import { stateOf, workflowView } from './workflows.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PAGE = 50;
@@ -289,6 +291,8 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: false,
         mayRetire: decide('retire', facts).allowed,
+        // In its workflow's initial state, decided as `mayEdit` is, against the space.
+        ...(await workflowView(trx, answer.version.artifactId, facts)),
         // Nothing holds what was made a moment ago but its space's hold, told as a page would.
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) &&
@@ -308,13 +312,16 @@ export function componentHandlers(
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
       const types = query.types?.split(',');
-      const page = await db.withTenant(tenantOf(request), (trx) =>
-        listReadableComponents(trx, principal, asked, {
+      const { page, states } = await db.withTenant(tenantOf(request), async (trx) => {
+        const page = await listReadableComponents(trx, principal, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(types === undefined ? {} : { types }),
           ...(query.archived === undefined ? {} : { archived: query.archived }),
-        }),
-      );
+        });
+        // Each one's workflow state now (WF-G).
+        const states = await workflowStates(trx, page?.items.map((item) => item.id) ?? []);
+        return { page, states };
+      });
       if (!page) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: page.items.map((item) => ({
@@ -326,6 +333,7 @@ export function componentHandlers(
           language: item.language,
           changedAt: item.changedAt.toISOString(),
           changedBy: item.changedBy,
+          state: stateOf(states, item.id),
         })),
         next: cursorFor('components', asked.sort, asked.order, page.snapshot, page.next),
         total: page.total,
@@ -394,6 +402,7 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
         mayRetire: decide('retire', facts).allowed,
+        ...(await workflowView(trx, id, facts)),
         // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
         // confidential.
         onHold:
