@@ -201,9 +201,10 @@ The total stays exact to the cap.
   page from meaning search.
 - **The plan test**: search runs with custom plans, since a regression here is otherwise invisible.
 - **The budget** (SCH-033): the conformance suite generates a tenant of a million components, as the
-  spike did, and measures p95 for three kinds of user. **Not yet met**: SV3b's run at a million missed
-  it on both the latest and every version for the medium reader, whose readable set alone takes about
-  200ms, and for a few broad cases.
+  spike did, and measures p95 for three kinds of user. **Not yet met**: after #604 and #605 the latest
+  is within it in every case at a million (worst p95 226ms), but every version is not for title terms
+  alone (p95 435ms medium, 268ms broad): each candidate place probes every version's title, as history
+  holds no title words of its own.
 
 ## Searching words, in T1
 
