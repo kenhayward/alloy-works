@@ -176276,9 +176276,7 @@
             }
           }
         }
-      }
-    },
-    "/v1/workflows/{kind}": {
+      },
       "post": {
         "operationId": "defineWorkflow",
         "summary": "Save a kind's workflow as its next version",
@@ -176297,18 +176295,6 @@
           }
         ],
         "parameters": [
-          {
-            "name": "kind",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "component",
-                "document"
-              ]
-            }
-          },
           {
             "name": "X-Request-Id",
             "in": "header",
@@ -176426,11 +176412,20 @@
                       ],
                       "additionalProperties": false
                     }
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "component",
+                      "document"
+                    ],
+                    "description": "The kind it is the workflow of"
                   }
                 },
                 "required": [
                   "states",
-                  "transitions"
+                  "transitions",
+                  "kind"
                 ],
                 "additionalProperties": false
               },
@@ -176441,7 +176436,8 @@
                     "name": "example"
                   }
                 ],
-                "transitions": []
+                "transitions": [],
+                "kind": "component"
               }
             }
           }

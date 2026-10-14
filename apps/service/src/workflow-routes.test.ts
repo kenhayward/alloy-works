@@ -152,7 +152,8 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
   });
 
   it('LIF-001 LIF-054 saves a definition as a new version, refuses one that does not validate by name, and keeps every version', async () => {
-    const invalid = await call('POST', '/v1/workflows/document', 'ada', {
+    const invalid = await call('POST', '/v1/workflows', 'ada', {
+      kind: 'document',
       states: [{ key: 'draft', name: 'Draft' }],
       transitions: [],
     });
@@ -167,7 +168,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
         each.key === 'in_review' ? { ...each, name: 'With reviewers' } : each,
       ),
     };
-    const saved = await call('POST', '/v1/workflows/document', 'ada', renamed);
+    const saved = await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...renamed });
     expect(saved.statusCode, saved.body).toBe(200);
     expect(saved.json<WorkflowDefinitionView>()).toMatchObject({
       kind: 'document',
@@ -177,11 +178,14 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     const first = await call('GET', '/v1/workflows/document/versions/1', 'ada');
     expect(first.json<WorkflowDefinitionView>()).toMatchObject({ version: 1, body: SEED_WORKFLOW });
     expect((await call('GET', '/v1/workflows/document/versions/9', 'ada')).statusCode).toBe(404);
-    expect((await call('POST', '/v1/workflows/document', 'grace', renamed)).statusCode).toBe(403);
+    expect(
+      (await call('POST', '/v1/workflows', 'grace', { kind: 'document', ...renamed })).statusCode,
+    ).toBe(403);
     // Back to the seed, as version 3.
-    expect((await call('POST', '/v1/workflows/document', 'ada', SEED_WORKFLOW)).statusCode).toBe(
-      200,
-    );
+    expect(
+      (await call('POST', '/v1/workflows', 'ada', { kind: 'document', ...SEED_WORKFLOW }))
+        .statusCode,
+    ).toBe(200);
   });
 
   it('LIF-002 LIF-061 offers, and takes, only the transitions the reader may: submit to whoever edits, return and approve to whoever approves, a reason asked for', async () => {

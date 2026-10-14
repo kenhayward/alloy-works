@@ -36,7 +36,7 @@ transitions with a key, a name, `from`, `to`, `permission` (`edit` or `approve`)
 `reasonRequired`. Refused, each problem named (`workflow_invalid`): a key used twice, not one initial
 state, a transition naming no state or moving to its own, a state unreachable from the initial one.
 
-**Saved** by `POST /v1/workflows/{kind}`, `administer` at the tenant, under the kind's advisory lock,
+**Saved** by `POST /v1/workflows { kind, states, transitions }`, `administer` at the tenant, under the kind's advisory lock,
 so two saves take turns and make two versions; the body in force again changes nothing. Audited as
 `workflow.defined` `{ kind, version }`. `GET /v1/workflows` lists each kind's definition in force and
 how many of the kind, deleted ones aside, sit in each state.

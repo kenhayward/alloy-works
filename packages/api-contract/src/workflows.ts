@@ -93,8 +93,11 @@ export const WorkflowsView = z.object({
 });
 export type WorkflowsView = z.infer<typeof WorkflowsView>;
 
-export const WorkflowParams = z.object({ kind: WorkflowKindParam });
-export type WorkflowParams = z.infer<typeof WorkflowParams>;
+/** A kind's next version: which kind, and its body. */
+export const DefineWorkflowBody = WorkflowBody.extend({
+  kind: WorkflowKindParam.describe('The kind it is the workflow of'),
+});
+export type DefineWorkflowBody = z.infer<typeof DefineWorkflowBody>;
 
 export const WorkflowVersionParams = z.object({
   kind: WorkflowKindParam,
@@ -224,12 +227,11 @@ export const workflowRoutes = {
   defineWorkflow: {
     operationId: 'defineWorkflow',
     method: 'POST',
-    path: '/v1/workflows/{kind}',
+    path: '/v1/workflows',
     summary: "Save a kind's workflow as its next version",
     tenantScoped: true,
     access: administer,
-    params: WorkflowParams,
-    body: WorkflowBody,
+    body: DefineWorkflowBody,
     responses: {
       200: {
         description: 'Saved, or the same as the version in force, which changes nothing',

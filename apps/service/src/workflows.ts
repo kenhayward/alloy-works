@@ -4,7 +4,7 @@ import type {
   TransitionParams,
   TransitionView,
   WorkflowDefinitionView,
-  WorkflowParams,
+  DefineWorkflowBody,
   WorkflowsView,
   WorkflowVersionParams,
 } from '@alloy-works/api-contract';
@@ -167,8 +167,8 @@ export function workflowHandlers() {
       request: FastifyRequest,
       { trx, principalId }: Authorised,
     ): Promise<WorkflowDefinitionView> => {
-      const { kind } = request.params as WorkflowParams;
-      const answer = await defineWorkflow(trx, { kind, body: request.body, by: principalId });
+      const { kind, ...body } = request.body as DefineWorkflowBody;
+      const answer = await defineWorkflow(trx, { kind, body, by: principalId });
       if (answer.answer === 'invalid') {
         throw refused(400, 'workflow.invalid', 'This workflow cannot be saved as it is.', {
           problems: answer.problems.map((each) => ({ ...each })),

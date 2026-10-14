@@ -3396,22 +3396,6 @@ export interface paths {
          */
         get: operations["listWorkflows"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workflows/{kind}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
          * Save a kind's workflow as its next version
          * @description Saves a kind's workflow as its next version, in force at once: each state a key, a name, whether it is initial and whether it counts as approved; each transition a key, a name, the states it moves from and to, the permission it needs, edit or approve, and whether it needs a reason. Keys are unique, one state is initial, and every state is reachable from it. An artifact in a state the new version drops keeps it, and moves under the version it moved under. Saving the version in force changes nothing. Needs administer at the environment. Audited.
@@ -57310,9 +57294,7 @@ export interface operations {
                 /** @description Use the same key to retry this mutation without applying it twice. */
                 "Idempotency-Key"?: string;
             };
-            path: {
-                kind: "component" | "document";
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -57325,7 +57307,8 @@ export interface operations {
                  *           "name": "example"
                  *         }
                  *       ],
-                 *       "transitions": []
+                 *       "transitions": [],
+                 *       "kind": "component"
                  *     }
                  */
                 "application/json": {
@@ -57365,6 +57348,11 @@ export interface operations {
                          */
                         reasonRequired?: boolean;
                     }[];
+                    /**
+                     * @description The kind it is the workflow of
+                     * @enum {string}
+                     */
+                    kind: "component" | "document";
                 };
             };
         };
