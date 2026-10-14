@@ -3,6 +3,7 @@ import {
   decidingDefinition,
   parseWorkflowBody,
   SEED_WORKFLOW,
+  SEED_WORKFLOW_1,
   transitionsFrom,
   type WorkflowBody,
 } from './workflow.js';
@@ -25,21 +26,21 @@ const move = (key: string, from: string, to: string) => ({
 
 describe('a workflow definition (workflow.md)', () => {
   it('LIF-002 seeds draft, in review and approved, each transition declaring from, to and what it requires', () => {
-    const parsed = parseWorkflowBody(SEED_WORKFLOW);
-    expect(parsed).toEqual({ ok: true, body: SEED_WORKFLOW });
-    expect(SEED_WORKFLOW.states.map((each) => each.key)).toEqual([
+    const parsed = parseWorkflowBody(SEED_WORKFLOW_1);
+    expect(parsed).toEqual({ ok: true, body: SEED_WORKFLOW_1 });
+    expect(SEED_WORKFLOW_1.states.map((each) => each.key)).toEqual([
       'draft',
       'in_review',
       'approved',
     ]);
-    expect(SEED_WORKFLOW.states.filter((each) => each.initial).map((each) => each.key)).toEqual([
+    expect(SEED_WORKFLOW_1.states.filter((each) => each.initial).map((each) => each.key)).toEqual([
       'draft',
     ]);
-    expect(SEED_WORKFLOW.states.filter((each) => each.approved).map((each) => each.key)).toEqual([
+    expect(SEED_WORKFLOW_1.states.filter((each) => each.approved).map((each) => each.key)).toEqual([
       'approved',
     ]);
     expect(
-      SEED_WORKFLOW.transitions.map(({ key, from, to, permission, reasonRequired }) => [
+      SEED_WORKFLOW_1.transitions.map(({ key, from, to, permission, reasonRequired }) => [
         key,
         from,
         to,
@@ -52,6 +53,89 @@ describe('a workflow definition (workflow.md)', () => {
       ['approve', 'in_review', 'approved', 'approve', false],
       ['reopen', 'approved', 'draft', 'edit', true],
     ]);
+  });
+
+  it('LIF-003 LIF-009 LIF-010 seeds version 2 with Approve as a gate: one approver, not an author, rejecting to draft as Return', () => {
+    expect(parseWorkflowBody(SEED_WORKFLOW, 'document')).toEqual({ ok: true, body: SEED_WORKFLOW });
+    expect(SEED_WORKFLOW.states).toEqual(SEED_WORKFLOW_1.states);
+    expect(SEED_WORKFLOW.transitions.map((each) => each.key)).toEqual([
+      'submit',
+      'approve',
+      'reopen',
+    ]);
+    expect(SEED_WORKFLOW.transitions.find((each) => each.key === 'approve')).toMatchObject({
+      permission: 'approve',
+      gate: {
+        approvals: 1,
+        notAuthor: true,
+        reject: { name: 'Return', to: 'draft' },
+        designates: true,
+        baseline: false,
+        publication: 'none',
+      },
+    });
+  });
+
+  it('refuses a gate a permission alone could take, one rejecting to no state, and a baseline or publication on a component', () => {
+    const gate = (extra: object = {}) => ({
+      approvals: 2,
+      notAuthor: false,
+      reject: { name: 'Return', to: 'draft' },
+      designates: true,
+      baseline: false,
+      publication: 'none',
+      ...extra,
+    });
+    const body = (gated: object, permission: 'edit' | 'approve' = 'approve') => ({
+      states: [state('draft', { initial: true }), state('done', { approved: true })],
+      transitions: [{ ...move('approve', 'draft', 'done'), permission, gate: gated }],
+    });
+    expect(parseWorkflowBody(body(gate()), 'component')).toMatchObject({ ok: true });
+    expect(parseWorkflowBody(body(gate(), 'edit'), 'component')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'gate_permission', path: 'transitions.0.permission' }],
+    });
+    expect(
+      parseWorkflowBody(body(gate({ reject: { name: 'Return', to: 'lost' } })), 'component'),
+    ).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'state_unknown', path: 'transitions.0.gate.reject.to' }],
+    });
+    expect(parseWorkflowBody(body(gate({ baseline: true })), 'component')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'gate_kind', path: 'transitions.0.gate.baseline' }],
+    });
+    expect(parseWorkflowBody(body(gate({ baseline: true })), 'document')).toMatchObject({
+      ok: true,
+    });
+    expect(
+      parseWorkflowBody(body(gate({ publication: 'required' })), 'document'),
+    ).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'gate_publication', path: 'transitions.0.gate.publication' }],
+    });
+  });
+
+  it('reaches a state only a rejection leads to', () => {
+    const parsed = parseWorkflowBody({
+      states: [state('draft', { initial: true }), state('done'), state('rework')],
+      transitions: [
+        {
+          ...move('approve', 'draft', 'done'),
+          permission: 'approve',
+          gate: {
+            approvals: 1,
+            notAuthor: false,
+            reject: { name: 'Send back', to: 'rework' },
+            designates: false,
+            baseline: false,
+            publication: 'none',
+          },
+        },
+        move('again', 'rework', 'draft'),
+      ],
+    });
+    expect(parsed).toMatchObject({ ok: true });
   });
 
   it('refuses an initial state that counts as approved, which every save would leave and re-enter', () => {
@@ -122,11 +206,11 @@ describe('a workflow definition (workflow.md)', () => {
 });
 
 describe('the definition that decides a move (WF-E)', () => {
-  const recorded = { id: 'r', body: SEED_WORKFLOW };
-  const tightened = {
+  const recorded: { id: string; body: WorkflowBody } = { id: 'r', body: SEED_WORKFLOW_1 };
+  const tightened: { id: string; body: WorkflowBody } = {
     id: 'n',
     body: {
-      states: SEED_WORKFLOW.states.filter((each) => each.key !== 'in_review'),
+      states: SEED_WORKFLOW_1.states.filter((each) => each.key !== 'in_review'),
       transitions: [
         { ...move('approve', 'draft', 'approved'), permission: 'approve' as const },
         { ...move('reopen', 'approved', 'draft'), permission: 'approve' as const },
@@ -140,7 +224,7 @@ describe('the definition that decides a move (WF-E)', () => {
   });
 
   it('offers the transitions from a state', () => {
-    expect(transitionsFrom(SEED_WORKFLOW, 'in_review').map((each) => each.key)).toEqual([
+    expect(transitionsFrom(SEED_WORKFLOW_1, 'in_review').map((each) => each.key)).toEqual([
       'return',
       'approve',
     ]);
