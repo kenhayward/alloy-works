@@ -182,7 +182,7 @@ describe('gates, approvals and revisions (workflow.md; the WF2 plan, Task 1)', (
     ).toEqual({ answer: 'transition.gated' });
   });
 
-  it('LIF-008 LIF-009 LIF-036 passes a component’s gate at the second distinct approver, recording who, when, which version and which gate', async () => {
+  it('LIF-008 LIF-009 LIF-036 LIF-075 passes a component’s gate at the second distinct approver, recording who, when, which version and which gate', async () => {
     await define(gated(2));
     const made = await component();
     await submit(made);

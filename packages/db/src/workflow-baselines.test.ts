@@ -7,7 +7,9 @@ import {
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
+import { makeBaseline } from './baselines.js';
 import { createDocument, editOutline } from './documents.js';
+import { publicationInputs } from './publishing.js';
 import { grant } from './grants.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -176,6 +178,91 @@ describe('a baseline and a publication at a gate (workflow.md; the WF2 plan, Tas
       },
     ]);
     expect(await requests(made.artifactId)).toEqual([]);
+  });
+
+  it('passes a gate again on an unchanged version, reusing the baseline it took, and names a new one past a name taken', async () => {
+    const made = await document('Approved twice');
+    await submit(made);
+    await approve(made);
+    await as((trx) =>
+      moveArtifact(trx, {
+        artifactId: made.artifactId,
+        kind: 'document',
+        transition: 'reopen',
+        from: 'approved',
+        reason: 'One more look.',
+        by: ada,
+        may: () => true,
+      }),
+    );
+    await submit(made);
+    expect(await approve(made)).toMatchObject({ answer: 'passed', revision: 1 });
+    expect((await baselines(made.artifactId)).map((each) => each.name)).toEqual(['Revision 1']);
+
+    // A person's baseline holding the name the gate would give: the gate's takes the next.
+    const other = await document('Named first');
+    await as((trx) =>
+      makeBaseline(trx, {
+        documentId: other.artifactId,
+        version: other.id,
+        name: 'Revision 1',
+        maker: ada,
+      }),
+    );
+    await submit(other);
+    expect(await approve(other)).toMatchObject({ answer: 'passed' });
+    expect(
+      (await baselines(other.artifactId)).map((each) => [each.name, each.gate]).sort(),
+    ).toEqual([
+      ['Revision 1 (2)', 'approve'],
+      ['Revision 1', null],
+    ]);
+  });
+
+  it('PUB-089 lists for the approval page the approvals of the round that passed alone, each by its display name', async () => {
+    await as((trx) =>
+      defineWorkflow(trx, {
+        kind: 'document',
+        body: {
+          ...publishing('required'),
+          transitions: publishing('required').transitions.map((each) =>
+            each.gate === undefined
+              ? each
+              : { ...each, gate: { ...each.gate, approvals: 2, notAuthor: false } },
+          ),
+        },
+        by: ada,
+      }),
+    );
+    const made = await document('Two rounds');
+    const decide = (by: string, decision: 'approved' | 'rejected') =>
+      as((trx) =>
+        decideGate(trx, {
+          artifactId: made.artifactId,
+          kind: 'document',
+          transition: 'approve',
+          version: made.id,
+          decision,
+          ...(decision === 'rejected' ? { reason: 'Not yet.' } : {}),
+          by,
+          may: () => true,
+        }),
+      );
+    await submit(made);
+    await decide(grace, 'approved');
+    await decide(ada, 'rejected');
+    await submit(made);
+    await decide(ada, 'approved');
+    expect(await decide(grace, 'approved')).toMatchObject({ answer: 'passed' });
+    const [request] = await as((trx) =>
+      trx
+        .selectFrom('publication_request')
+        .select('id')
+        .where('document_id', '=', made.artifactId)
+        .execute(),
+    );
+    const inputs = await as((trx) => publicationInputs(trx, request!.id));
+    expect(inputs?.approved?.approvals.map((each) => each.by)).toEqual(['Ada', 'Grace']);
   });
 
   it('refuses the approval that would pass a gate whose baseline cannot be made, recording nothing', async () => {

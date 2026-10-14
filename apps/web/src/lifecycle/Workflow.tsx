@@ -327,22 +327,25 @@ export function TransitionButtons({
       {(standing.gates ?? []).map((gate) => (
         <span key={gate.key} className={styles['gate']}>
           <span className={styles['muted']}>{progressOf(gate)}</span>
-          {gate.mayDecide && !gate.approvedByCaller && (
+          {gate.mayDecide && (
             <>
-              <button
-                type="button"
-                className={className}
-                disabled={busy}
-                title={`Approve, towards ${gate.to.name}`}
-                onClick={() => {
-                  void decideAt(gate).then((refused) => {
-                    if (refused !== undefined) onNotice(refused);
-                  });
-                }}
-              >
-                {gate.name}
-              </button>
-              {gate.publication === 'permitted' && gate.mayPublish && (
+              {!gate.approvedByCaller && (
+                <button
+                  type="button"
+                  className={className}
+                  disabled={busy}
+                  title={`Approve, towards ${gate.to.name}`}
+                  onClick={() => {
+                    void decideAt(gate).then((refused) => {
+                      if (refused !== undefined) onNotice(refused);
+                    });
+                  }}
+                >
+                  {gate.name}
+                </button>
+              )}
+              {/* Any approver may return it, one who approved it among them (WF2-E). */}
+              {!gate.approvedByCaller && gate.publication === 'permitted' && gate.mayPublish && (
                 <button
                   type="button"
                   className={className}

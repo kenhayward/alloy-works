@@ -1337,7 +1337,7 @@ export async function publicationInputs(
 
 /**
  * A gate's baseline's approvals and revision (WF2-I, WF2-J): each approval at its gate of the version it
- * pins, the first by each person, who on which day under the gate's name, and the revision designated;
+ * pins in the round that passed it, the first by each person, who on which day under the gate's name, and the revision designated;
  * null for a person's baseline or none.
  */
 async function gateApprovals(
@@ -1347,17 +1347,25 @@ async function gateApprovals(
   if (baselineId === null) return null;
   const baseline = await trx
     .selectFrom('baseline')
-    .select(['gate', 'document_version_id'])
+    .select(['gate', 'document_version_id', 'made_at'])
     .where('id', '=', baselineId)
     .executeTakeFirst();
   if (!baseline || baseline.gate === null) return null;
+  // The round that passed: the latest to approve this version at this gate by the time the baseline
+  // was made, in the transaction that passed it, so a later round does not displace it. A name is a display name
+  // alone, never an address, since a publication leaves the environment (the WF2 final review, 4).
   const { rows } = await sql<{ by_name: string | null; at: Date; body: unknown }>`
-    select distinct on (a.by) coalesce(p.display_name, p.email) as by_name, a.at, d.body
+    select distinct on (a.by) p.display_name as by_name, a.at, d.body
       from workflow_approval a
       join principal p on p.id = a.by
       join workflow_definition d on d.id = a.definition_id
      where a.version_id = ${baseline.document_version_id} and a.transition = ${baseline.gate}
        and a.decision = 'approved'
+       and a.round = (select l.round from workflow_approval l
+                       where l.version_id = ${baseline.document_version_id}
+                         and l.transition = ${baseline.gate} and l.decision = 'approved'
+                         and l.at <= ${baseline.made_at}
+                       order by l.id desc limit 1)
      order by a.by, a.id`.execute(trx);
   const named = (body: unknown) => {
     const parsed = workflowBodySchema.safeParse(body);

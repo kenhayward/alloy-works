@@ -10396,7 +10396,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -20434,7 +20434,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47540,7 +47540,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

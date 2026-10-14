@@ -1,12 +1,7 @@
 import type { TransitionPermission, WorkflowKind } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
-import {
-  makeBaseline,
-  requestBaselinePublication,
-  type BaselinePublicationAnswer,
-  type MakeBaselineAnswer,
-} from './baselines.js';
+import { makeBaseline, requestBaselinePublication, type MakeBaselineAnswer } from './baselines.js';
 import { readLayout } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
@@ -47,11 +42,6 @@ export type GateAnswer =
   | {
       readonly answer: 'baseline.refused';
       readonly refusal: Exclude<MakeBaselineAnswer, { answer: 'made' }>;
-    }
-  /** The gate requests a publication, and none could be: nothing is recorded (WF2-I). */
-  | {
-      readonly answer: 'publication.refused';
-      readonly refusal: Exclude<BaselinePublicationAnswer, { answer: 'requested' }>;
     }
   | { readonly answer: 'rejected'; readonly standing: WorkflowStanding }
   | { readonly answer: 'artifact.missing' }
@@ -179,26 +169,45 @@ export async function decideGate(
   let baseline: string | null = null;
   let request: string | null = null;
   if (passes && gate.baseline && standing.kind === 'document') {
-    const made = await makeBaseline(trx, {
-      documentId: input.artifactId,
-      version,
-      name:
+    // Passed again on an unchanged version, the gate keeps the baseline it took of it.
+    const taken = await trx
+      .selectFrom('baseline')
+      .select('id')
+      .where('document_id', '=', input.artifactId)
+      .where('document_version_id', '=', version)
+      .where('gate', '=', transition.key)
+      .executeTakeFirst();
+    if (taken) baseline = taken.id;
+    else {
+      const named =
         number === undefined
           ? `${transition.name} ${new Date().toISOString()}`
-          : `Revision ${number}`,
-      maker: input.by,
-      gate: transition.key,
-    });
-    if (made.answer !== 'made') return { answer: 'baseline.refused', refusal: made };
-    baseline = made.baseline;
+          : `Revision ${number}`;
+      // A name a person's baseline took first: the gate's takes the next free one.
+      for (let attempt = 1; baseline === null; attempt += 1) {
+        const made = await makeBaseline(trx, {
+          documentId: input.artifactId,
+          version,
+          name: attempt === 1 ? named : `${named} (${attempt})`,
+          maker: input.by,
+          gate: transition.key,
+        });
+        if (made.answer === 'made') baseline = made.baseline;
+        else if (made.answer !== 'name.taken' || attempt >= 20) {
+          return { answer: 'baseline.refused', refusal: made };
+        }
+      }
+    }
     if (gate.publication === 'required' || (gate.publication === 'permitted' && input.publish)) {
       const requested = await requestBaselinePublication(trx, {
         baseline,
         formats: await layoutFormats(trx, baseline),
         requester: input.by,
       });
+      // In every format its own layout makes, of a baseline its approver could just make: never
+      // refused but by a broken store, which is thrown, so that nothing of the gate is recorded.
       if (requested.answer !== 'requested') {
-        return { answer: 'publication.refused', refusal: requested };
+        throw new Error(`A gate's publication was refused: ${requested.answer}`);
       }
       request = requested.request.id;
     }

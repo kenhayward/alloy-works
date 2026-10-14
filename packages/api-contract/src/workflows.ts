@@ -308,7 +308,7 @@ const approvalResponses = (kind: 'component' | 'document' | 'query definition') 
     },
     409: {
       description:
-        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; gate_publication_refused: likewise its publication',
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded',
       schema: TransitionRefusal,
     },
   }) as const;

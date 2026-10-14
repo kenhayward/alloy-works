@@ -57,3 +57,17 @@ LIF-052, LIF-074, LIF-075, VER-012 to VER-015, VER-059, PUB-004, PUB-089, DAT-12
 - The final review hunts an approval counted that should not be, a revision designated without a gate,
   an approved publication not from a gate's baseline, and a state or approval leaked to a reader.
   `features.md`, `README.md`, `architecture.md`, the CHANGELOG, the version (0.167.0), the baseline.
+
+## Changed while building
+
+| Found                                                                                                                       | Change                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Approve and Return were each a transition in version 1                                                                      | The seed's version 2 (0096) and, for documents, version 3 (0097), written only where a tenant never edited its workflow |
+| `approval.rejected` and `gate.rejected` named one act                                                                       | `approval.rejected` withdrawn                                                                                           |
+| An approved publication's notice cannot be omitted by template 21                                                           | `publishing/22` and template 22, pipeline 25; the approval page added to layouts at schema 7 in place                   |
+| A gate's publication refused after its baseline was made                                                                    | Thrown, so the transaction keeps nothing; a gate's own formats never refuse but by a broken store                       |
+| WF2b and WF2c as two PRs                                                                                                    | One, after WF2a merged (ADR-0039)                                                                                       |
+| The final review: approved again on an unchanged version, the gate's baseline name was taken, and the gate refused for good | The gate keeps the baseline it took of that version; a name taken by a person's gives "Revision N (2)"                  |
+| The final review: the approval page listed approvals of earlier rounds, and an address where a person had no display name   | The round that passed alone, by display name                                                                            |
+| The final review: an approver without `publish` passes a gate taking a baseline or requiring a publication                  | Recorded as the gate's act in workflow.md; asking for a permitted one needs `publish`                                   |
+| The final review: Return was hidden from an approver who had approved                                                       | Shown; only Approve is withheld                                                                                         |

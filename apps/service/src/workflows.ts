@@ -235,13 +235,9 @@ export function workflowHandlers() {
           throw refused(
             409,
             'gate.baseline_refused',
-            'This gate takes a baseline, and none can be made of the document as it stands, so nothing was approved.',
-          );
-        case 'publication.refused':
-          throw refused(
-            409,
-            'gate.publication_refused',
-            'This gate publishes its baseline, and its layout cannot make what is asked, so nothing was approved.',
+            answer.refusal.answer === 'baseline.unresolved'
+              ? `This gate takes a baseline, and ${answer.refusal.failures.length === 1 ? 'one part' : `${answer.refusal.failures.length} parts`} of the document cannot be published as it stands, so nothing was approved.`
+              : 'This gate takes a baseline, and none can be made of the document as it stands, so nothing was approved.',
           );
         case 'approved':
         case 'passed':

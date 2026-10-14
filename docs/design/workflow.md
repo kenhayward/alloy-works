@@ -140,7 +140,7 @@ and `gates`, each with its count, what it needs, whether the caller approved and
 
 **In the interface** (WF2-L): a header shows **Revision N** beside the state, and at a gate its count
 ("1 of 2 approvals") with **Approve** and the rejection's name for whoever may decide, a rejection
-asking why. Who decided what, newest first, is listed under each Versions panel.
+asking why. Who decided what, newest first, is listed under a component's and a document's Versions panel; a query definition's is read through the API.
 `GET /v1/{components|documents}/{id}/approvals` reads it, on `read`. Administration > Workflows makes a
 transition a gate and sets its approvers, its author rule and where a rejection returns.
 
@@ -158,6 +158,13 @@ an approver who may also publish (`publish: true`). A publication from a gate's 
 `approval: 'approved'` and prints no notice; one from a person's baseline stays a draft. The document
 seed's **version 3** (0097), only where its newest was still the seed's version 2: Approve takes a
 baseline and permits a publication.
+
+**The gate's acts** (the WF2 final review, 3): a baseline a gate takes, and a publication it requires,
+are the gate's, as its definition, set by an administrator, declares: an approver passes such a gate
+without `publish`. Asking for a publication a gate only permits is publishing, and needs `publish`.
+Passed again on an unchanged version, a gate keeps the baseline it took of it; a name a person's
+baseline holds first gives the gate's "Revision N (2)". The approval page lists the round that passed
+alone, by display name, never an address.
 
 **The approval page** (WF2-J; PUB-089) is [publishing.md](publishing.md)'s: a layout's
 `matter.approvals`, listing each approval of the version published.

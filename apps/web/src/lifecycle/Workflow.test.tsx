@@ -226,12 +226,13 @@ describe('deciding a gate (the WF2 plan, WF2-L)', () => {
     ]);
   });
 
-  it('offers no second approval to whoever approved, and no decision to whoever may not', () => {
+  it('offers no second approval to whoever approved, only Return, and no decision to whoever may not', () => {
     const { client } = service(() => json(500, {}));
     const gate = AT_GATE.gates![0]!;
     place(client, { ...AT_GATE, gates: [{ ...gate, approvedByCaller: true }] });
     expect(screen.getByText('1 of 2 approvals, yours among them')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // Whoever approved may still return it (WF2-E), and approves it no second time.
+    expect(screen.getAllByRole('button').map((each) => each.textContent)).toEqual(['Return']);
     cleanup();
     place(client, { ...AT_GATE, gates: [{ ...gate, mayDecide: false }] });
     expect(screen.getByText('1 of 2 approvals')).toBeInTheDocument();
