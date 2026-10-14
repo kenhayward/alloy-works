@@ -3,7 +3,8 @@
 Where a component or a document stands in its working life: one state of its kind's workflow, moved
 along declared transitions by whoever each permits ([ADR-0061](../decisions/0061-t9s-order.md), phase
 one). Built by [the WF1 plan](../plans/2026-10-14-wf1-workflow-definitions-and-states.md); its
-decisions, WF-A to WF-K, are the detail. Approvals, gates and revisions are phase 2's.
+decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
+[the WF2 plan](../plans/2026-10-14-wf2-gates-approvals-and-revisions.md)'s (WF2-A to WF2-L).
 
 ## Requirements owned
 
@@ -15,13 +16,22 @@ decisions, WF-A to WF-K, are the detail. Approvals, gates and revisions are phas
 | **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                 |
 | **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                   |
 | **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                     |
+| **LIF-003** | Gates, below: a transition needs a permission alone, or is a gate needing approvals by whoever may approve                                                           |
+| **LIF-008** | Each approval a row: who, when, the version, the gate (`workflow_approval`)                                                                                          |
+| **LIF-009** | A gate's `approvals`, each by a distinct person                                                                                                                      |
+| **LIF-010** | A gate's `notAuthor`: whoever recorded a version since the last revision is refused (`approval_author`)                                                              |
+| **LIF-036** | Both kinds have workflows and gates; a component passes its own                                                                                                      |
+| **LIF-051** | Any approver rejects, with a reason, kept with who, when, the version and the gate                                                                                   |
+| **LIF-052** | A rejection returns it to the gate's declared `reject.to`, the rework path in the definition                                                                         |
+| **LIF-074** | `gate.rejected`, an event of its own                                                                                                                                 |
+| **LIF-075** | `workflow.transitioned` and `approval.given`, each an event of its own                                                                                               |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
-whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-036 asks for a component approvable on its own, and LIF-075 for an
-approval's own event: both need phase 2's approvals. `workflow.transitioned` is emitted here and
-[audit.md](audit.md) lists it. LIF-040's approved revision staying designated waits for phase 2's
-designation; the move to draft on a save is here.
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-013 also
+asks a gate to take a baseline, WF2b's. LIF-040's approved revision served to references waits for
+phase 4's "latest approved"; the designation and the move to draft on a save are here. VER-012 to
+VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below.
 
 ## Definitions
 
@@ -94,3 +104,39 @@ Administration > Workflows edits each kind's states and transitions and saves th
 `search_earlier`: an earlier version's row reads its artifact's state when searched, so a baseline's
 search filters on the current state. `state=` filters by key and `facets.states` counts each, named
 by the definitions in force. Indexed on both tables (0095), on the bounded roads as #605's filters.
+
+## Gates
+
+**A gate is a transition with `gate`** (WF2-A; LIF-003): `{ approvals, notAuthor, reject { name, to },
+designates, baseline, publication }`, its permission `approve`. Validated beside the body: a gate's
+permission `approve`, its `reject.to` a state, a baseline or a publication on the document kind only, a
+publication only with a baseline. A rejection's state counts as reached. The seed's **version 2**
+(0096; WF2-B), written only where a kind's newest was still version 1: Approve a gate of one, not an
+author, rejecting to Draft as Return; Return no transition of its own. A plain move along a gate is
+refused (`transition_gated`).
+
+**Approvals** (WF2-C; LIF-008, LIF-009): `POST /v1/{components|documents}/{id}/approvals
+{ transition, version, decision, reason? }`, on `approve`, under `lockArtifact`. Each is a
+`workflow_approval` row (0096), insert-only, in the **round** that began with the move into the gate's
+from-state, against the version the approver saw (`version_moved` where it was replaced). One counts
+while it is in the round and for the current version alone, so a save during review starts the count
+again; a second by the same person is refused (`approval_given`). **Not its authors** (WF2-D;
+LIF-010): whoever recorded a version since its latest revision, or since it was made.
+
+**Passing and rejecting** (WF2-E): the approval that makes the count moves it along the gate in the
+same transaction, by that approver, and designates a revision where the gate says so. Any one approver
+rejects, with a reason, to `reject.to` (LIF-051, LIF-052). Audited (WF2-G): `approval.given`, then
+`workflow.transitioned`, then `revision.designated`; a rejection `gate.rejected` and the move.
+`approval.rejected` is withdrawn: a rejection is the gate's.
+
+**Revisions** (WF2-F; VER-012 to VER-015): `revision_designation` (0096), insert-only, a version
+designated once, numbered from 1 per artifact. A version recorded after one carries its number and
+counts again from 1 (VER-009), so versions read `revision.version`; none designated is revision 0.
+Approved again unchanged, a version keeps its revision. Views carry `revision { number, versionId, at }`
+and `gates`, each with its count, what it needs, whether the caller approved and may decide.
+
+**In the interface** (WF2-L): a header shows **Revision N** beside the state, and at a gate its count
+("1 of 2 approvals") with **Approve** and the rejection's name for whoever may decide, a rejection
+asking why. Who decided what, newest first, is listed under each Versions panel.
+`GET /v1/{components|documents}/{id}/approvals` reads it, on `read`. Administration > Workflows makes a
+transition a gate and sets its approvers, its author rule and where a rejection returns.

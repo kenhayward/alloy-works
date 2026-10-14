@@ -9,7 +9,13 @@ import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } fro
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 import { parameterRefusal, TemplateRefusal } from './templates.js';
-import { TransitionView, WorkflowStandingView, WorkflowStateView } from './workflows.js';
+import {
+  GateView,
+  TransitionView,
+  WorkflowRevisionView,
+  WorkflowStandingView,
+  WorkflowStateView,
+} from './workflows.js';
 import { templateParameterSchema } from '@alloy-works/domain';
 
 /** A document, by the id its artifact carries - lowercase, unlike `ComponentParams`. */
@@ -236,6 +242,8 @@ export const DocumentView = z.object({
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),
+  gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
+  revision: WorkflowRevisionView,
   onHold: z
     .boolean()
     .describe(

@@ -41,6 +41,24 @@ const State = z.strictObject({
   approved: z.boolean().default(false),
 });
 
+/** What a gate may do with a publication as it passes (LIF-050; the WF2 plan, WF2-I). */
+export const GATE_PUBLICATIONS = ['none', 'permitted', 'required'] as const;
+
+/**
+ * A transition that is a gate (LIF-003; the WF2 plan, WF2-A): it passes once `approvals` distinct
+ * approvers approve, none an author where `notAuthor` says so; any one may reject it, with a reason,
+ * to `reject.to`; passing designates a revision where `designates` says so, and for a document may
+ * take a baseline and request its publication.
+ */
+const Gate = z.strictObject({
+  approvals: z.number().int().min(1).max(10),
+  notAuthor: z.boolean().default(false),
+  reject: z.strictObject({ name: Name, to: Key }),
+  designates: z.boolean().default(true),
+  baseline: z.boolean().default(false),
+  publication: z.enum(GATE_PUBLICATIONS).default('none'),
+});
+
 const Transition = z.strictObject({
   key: Key,
   name: Name,
@@ -48,6 +66,7 @@ const Transition = z.strictObject({
   to: Key,
   permission: z.enum(TRANSITION_PERMISSIONS),
   reasonRequired: z.boolean().default(false),
+  gate: Gate.optional(),
 });
 
 export const workflowBodySchema = z.strictObject({
@@ -57,6 +76,7 @@ export const workflowBodySchema = z.strictObject({
 export type WorkflowBody = z.output<typeof workflowBodySchema>;
 export type WorkflowState = WorkflowBody['states'][number];
 export type WorkflowTransition = WorkflowBody['transitions'][number];
+export type WorkflowGate = NonNullable<WorkflowTransition['gate']>;
 
 export type WorkflowRule =
   | 'workflow_invalid'
@@ -65,7 +85,10 @@ export type WorkflowRule =
   | 'initial_approved'
   | 'state_unknown'
   | 'transition_to_itself'
-  | 'state_unreachable';
+  | 'state_unreachable'
+  | 'gate_permission'
+  | 'gate_kind'
+  | 'gate_publication';
 
 export interface WorkflowProblem {
   readonly rule: WorkflowRule;
@@ -76,10 +99,12 @@ export interface WorkflowProblem {
 /**
  * A body as a definition holds it, or why not: keys unique among states and among transitions, one
  * initial state, every transition between two states and never to its own, and every state reachable
- * from the initial one.
+ * from the initial one, a gate's rejection among the ways. A gate needs `approve`, rejects to a state,
+ * and takes a baseline or a publication only for a document, a publication only with a baseline.
  */
 export function parseWorkflowBody(
   input: unknown,
+  kind?: WorkflowKind,
 ): { ok: true; body: WorkflowBody } | { ok: false; problems: WorkflowProblem[] } {
   const parsed = workflowBodySchema.safeParse(input);
   if (!parsed.success) {
@@ -145,15 +170,51 @@ export function parseWorkflowBody(
         message: 'A transition moves to another state',
       });
     }
+    const gate = each.gate;
+    if (gate === undefined) return;
+    const at = `transitions.${index}`;
+    if (each.permission !== 'approve') {
+      problems.push({
+        rule: 'gate_permission',
+        path: `${at}.permission`,
+        message: 'A gate is taken by approvers, with the approve permission',
+      });
+    }
+    if (!keys.has(gate.reject.to)) {
+      problems.push({
+        rule: 'state_unknown',
+        path: `${at}.gate.reject.to`,
+        message: `No state has the key ${gate.reject.to}`,
+      });
+    }
+    for (const what of ['baseline', 'publication'] as const) {
+      const asked = what === 'baseline' ? gate.baseline : gate.publication !== 'none';
+      if (asked && kind !== undefined && kind !== 'document') {
+        problems.push({
+          rule: 'gate_kind',
+          path: `${at}.gate.${what}`,
+          message: `Only a document's gate takes a ${what}`,
+        });
+      }
+    }
+    if (gate.publication !== 'none' && !gate.baseline) {
+      problems.push({
+        rule: 'gate_publication',
+        path: `${at}.gate.publication`,
+        message: 'An approved publication is made from the baseline the gate takes',
+      });
+    }
   });
   if (problems.length === 0) {
     const reached = new Set([initial[0]!.key]);
     for (let grew = true; grew;) {
       grew = false;
       for (const each of body.transitions) {
-        if (reached.has(each.from) && !reached.has(each.to)) {
-          reached.add(each.to);
-          grew = true;
+        for (const to of [each.to, each.gate?.reject.to]) {
+          if (to !== undefined && reached.has(each.from) && !reached.has(to)) {
+            reached.add(to);
+            grew = true;
+          }
         }
       }
     }
@@ -174,7 +235,7 @@ export function parseWorkflowBody(
  * Every tenant's version 1, for each kind (WF-C): Return and Approve need `approve`, so whoever
  * reviews does both and an editor alone cannot approve.
  */
-export const SEED_WORKFLOW: WorkflowBody = {
+export const SEED_WORKFLOW_1: WorkflowBody = {
   states: [
     { key: 'draft', name: 'Draft', initial: true, approved: false },
     { key: 'in_review', name: 'In review', initial: false, approved: false },
@@ -213,6 +274,29 @@ export const SEED_WORKFLOW: WorkflowBody = {
       permission: 'edit',
       reasonRequired: true,
     },
+  ],
+};
+
+/**
+ * The seed's version 2 (the WF2 plan, WF2-B): Approve a gate of one approver, not an author, rejecting
+ * to Draft as Return and designating a revision; Return no transition of its own.
+ */
+export const SEED_WORKFLOW: WorkflowBody = {
+  states: SEED_WORKFLOW_1.states,
+  transitions: [
+    SEED_WORKFLOW_1.transitions[0]!,
+    {
+      ...SEED_WORKFLOW_1.transitions[2]!,
+      gate: {
+        approvals: 1,
+        notAuthor: true,
+        reject: { name: 'Return', to: 'draft' },
+        designates: true,
+        baseline: false,
+        publication: 'none',
+      },
+    },
+    SEED_WORKFLOW_1.transitions[3]!,
   ],
 };
 

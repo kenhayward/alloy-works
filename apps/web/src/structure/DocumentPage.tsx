@@ -34,6 +34,7 @@ import { ArchiveButton } from '../lifecycle/Archive.js';
 import {
   readStanding,
   standingIn,
+  RevisionChip,
   TransitionButtons,
   type Standing,
 } from '../lifecycle/Workflow.js';
@@ -1955,6 +1956,7 @@ export function DocumentPage({
             </button>
             <PeopleHere people={live.people} connected={live.connected} />
             {document.standing && <StateLozenge state={document.standing.state} />}
+            <RevisionChip revision={document.standing?.revision} />
             {document.archived && <Chip>Archived</Chip>}
             {document.onHold && <Chip>On hold</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
@@ -1967,6 +1969,7 @@ export function DocumentPage({
                   id={document.id}
                   title={document.outline.title}
                   standing={document.standing}
+                  versionId={document.version.id}
                   className={styles['toggle']}
                   onMoved={(standing, said) => {
                     if (latest.current?.id === document.id) show({ ...latest.current, standing });

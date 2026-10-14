@@ -1,4 +1,7 @@
 import type {
+  ApprovalBody,
+  ApprovalsView,
+  GateView,
   TransitionAnswer,
   TransitionBody,
   TransitionParams,
@@ -9,8 +12,10 @@ import type {
   WorkflowVersionParams,
 } from '@alloy-works/api-contract';
 import {
+  decideGate,
   defineWorkflow,
   isArchived,
+  listApprovals,
   listWorkflows,
   moveArtifact,
   workflowStanding,
@@ -52,13 +57,62 @@ export function transitionsOffered(
   const named = (key: string) =>
     standing.definition.body.states.find((each) => each.key === key)?.name ?? key;
   return standing.transitions
-    .filter((each) => decide(each.permission, facts).allowed)
+    .filter((each) => each.gate === undefined && decide(each.permission, facts).allowed)
     .map((each) => ({
       key: each.key,
       name: each.name,
       to: { key: each.to, name: named(each.to) },
       reasonRequired: each.reasonRequired,
     }));
+}
+
+/**
+ * Each gate from where it stands, how far it has got, and whether the caller may decide it now: by
+ * `approve`, never while archived (WF2-L).
+ */
+export function gatesOffered(
+  standing: WorkflowStanding,
+  facts: AccessFacts,
+  archived: boolean,
+  principalId: string,
+): GateView[] {
+  const named = (key: string) => ({
+    key,
+    name: standing.definition.body.states.find((each) => each.key === key)?.name ?? key,
+  });
+  return standing.gates.map((progress) => {
+    const transition = standing.transitions.find((each) => each.key === progress.transition)!;
+    const approvedByCaller = progress.approvedBy.includes(principalId);
+    return {
+      key: transition.key,
+      name: transition.name,
+      to: named(transition.to),
+      reject: { name: transition.gate!.reject.name, to: named(transition.gate!.reject.to) },
+      count: progress.count,
+      required: progress.required,
+      approvedByCaller,
+      mayDecide: !archived && decide(transition.permission, facts).allowed,
+    };
+  });
+}
+
+/** Where it stands, as a view and an answer give it to `principalId`. */
+function standingAnswer(
+  standing: WorkflowStanding,
+  facts: AccessFacts,
+  archived: boolean,
+  principalId: string,
+): TransitionAnswer {
+  return {
+    state: { ...standing.state },
+    transitions: transitionsOffered(standing, facts, archived),
+    gates: gatesOffered(standing, facts, archived, principalId),
+    revision: standing.revision && {
+      number: standing.revision.number,
+      versionId: standing.revision.versionId,
+      at: standing.revision.at.toISOString(),
+    },
+  };
 }
 
 /** An artifact's state from `workflowStates`, for a list: every component and document has one. */
@@ -76,13 +130,11 @@ export async function workflowView(
   trx: TenantTransaction,
   id: string,
   facts: AccessFacts,
+  principalId: string,
 ): Promise<TransitionAnswer> {
   const standing = await workflowStanding(trx, id);
   if (!standing) throw new Error(`${id} has no workflow state`);
-  return {
-    state: { ...standing.state },
-    transitions: transitionsOffered(standing, facts, await isArchived(trx, id)),
-  };
+  return standingAnswer(standing, facts, await isArchived(trx, id), principalId);
 }
 
 /**
@@ -109,10 +161,13 @@ export function workflowHandlers() {
       });
       switch (answer.answer) {
         case 'moved':
-          return {
-            state: { ...answer.standing.state },
-            transitions: transitionsOffered(answer.standing, facts, false),
-          };
+          return standingAnswer(answer.standing, facts, false, principalId);
+        case 'transition.gated':
+          throw refused(
+            409,
+            'transition.gated',
+            'This transition is a gate: its approvers approve or reject it.',
+          );
         case 'artifact.missing':
           throw notFound();
         case 'state.moved':
@@ -142,6 +197,86 @@ export function workflowHandlers() {
           throw refused(400, 'reason.invalid', 'A reason is at most 2,000 characters.');
       }
     };
+
+  const deciding =
+    (kind: 'component' | 'document') =>
+    async (
+      request: FastifyRequest,
+      { trx, principalId, facts, target }: Authorised,
+    ): Promise<TransitionAnswer> => {
+      const { id } = request.params as TransitionParams;
+      const body = request.body as ApprovalBody;
+      const answer = await decideGate(trx, {
+        artifactId: id,
+        kind,
+        transition: body.transition,
+        version: body.version,
+        decision: body.decision,
+        reason: body.reason,
+        by: principalId,
+        may: (permission) => decide(permission, facts).allowed,
+      });
+      switch (answer.answer) {
+        case 'approved':
+        case 'passed':
+        case 'rejected':
+          return standingAnswer(answer.standing, facts, false, principalId);
+        case 'artifact.missing':
+          throw notFound();
+        case 'state.moved':
+          throw refused(
+            409,
+            'state.moved',
+            `It has moved to ${answer.standing.state.name} since.`,
+            {
+              state: { key: answer.standing.state.key, name: answer.standing.state.name },
+            },
+          );
+        case 'version.moved':
+          throw refused(409, 'version.moved', 'A newer version was saved since. Read it first.');
+        case 'transition.unknown':
+          throw refused(409, 'transition.unknown', 'There is no such gate from its state.');
+        case 'artifact.archived':
+          throw refused(409, 'artifact.archived', 'It is archived, and moves once unarchived.');
+        case 'approval.given':
+          throw refused(409, 'approval.given', 'You have approved it already.');
+        case 'approval.author':
+          throw refused(
+            403,
+            'approval.author',
+            'You recorded a version of it since its last revision, and this gate needs another approver.',
+          );
+        case 'permission.refused':
+          throw refusedBy(
+            new AppError(403, 'forbidden', `This needs the ${answer.permission} permission.`),
+            decide(answer.permission, facts),
+            facts,
+            target,
+            false,
+          );
+        case 'reason.required':
+          throw refused(400, 'reason.required', 'A rejection needs a reason.');
+        case 'reason.invalid':
+          throw refused(400, 'reason.invalid', 'A reason is at most 2,000 characters.');
+      }
+    };
+
+  const approvals = async (
+    request: FastifyRequest,
+    { trx }: Authorised,
+  ): Promise<ApprovalsView> => {
+    const { id } = request.params as TransitionParams;
+    return {
+      approvals: (await listApprovals(trx, id)).map((each) => ({
+        transition: each.transition,
+        decision: each.decision,
+        reason: each.reason,
+        by: { ...each.by },
+        at: each.at.toISOString(),
+        versionId: each.versionId,
+      })),
+    };
+  };
 
   return {
     listWorkflows: async (
@@ -192,5 +327,9 @@ export function workflowHandlers() {
 
     transitionComponent: moving('component'),
     transitionDocument: moving('document'),
+    decideComponentGate: deciding('component'),
+    decideDocumentGate: deciding('document'),
+    listComponentApprovals: approvals,
+    listDocumentApprovals: approvals,
   };
 }

@@ -292,7 +292,7 @@ export function componentHandlers(
         archived: false,
         mayRetire: decide('retire', facts).allowed,
         // In its workflow's initial state, decided as `mayEdit` is, against the space.
-        ...(await workflowView(trx, answer.version.artifactId, facts)),
+        ...(await workflowView(trx, answer.version.artifactId, facts, principalId)),
         // Nothing holds what was made a moment ago but its space's hold, told as a page would.
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) &&
@@ -402,7 +402,7 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
         mayRetire: decide('retire', facts).allowed,
-        ...(await workflowView(trx, id, facts)),
+        ...(await workflowView(trx, id, facts, principalId)),
         // Told only to whoever may retire it or administer the environment (AH-G): a hold may be
         // confidential.
         onHold:

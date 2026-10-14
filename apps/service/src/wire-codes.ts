@@ -135,6 +135,11 @@ const WIRE_CODES = {
   'reason.required': 'reason_required',
   'reason.invalid': 'reason_invalid',
   'workflow.behind': 'workflow_behind',
+  // Gates (the WF2 plan, WF2-C to WF2-E).
+  'transition.gated': 'transition_gated',
+  'version.moved': 'version_moved',
+  'approval.given': 'approval_given',
+  'approval.author': 'approval_author',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -202,6 +207,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'reference.deleted': 'VER-044',
   // A transition whose definition asks for a reason, taken without one (workflow.md).
   'reason.required': 'LIF-061',
+  // An approval by one of its authors, at a gate that refuses them (workflow.md, WF2-D).
+  'approval.author': 'LIF-010',
 };
 
 /** The wire's spelling of a store's dotted answer. */

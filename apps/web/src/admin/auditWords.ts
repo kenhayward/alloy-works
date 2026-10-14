@@ -10,7 +10,6 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'access.refused': 'Refused',
   'access.revoked': 'Access removed',
   'approval.given': 'Approved',
-  'approval.rejected': 'Approval rejected',
   'artifact.archived': 'Archived',
   'artifact.deleted': 'Deleted',
   'artifact.unarchived': 'Unarchived',

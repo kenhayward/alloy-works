@@ -786,6 +786,8 @@ describe('routes that check a permission', () => {
     }),
     getComponent: () => ({ url: `/v1/components/${dosing}`, status: 404 }),
     listComponentVersions: () => ({ url: `/v1/components/${dosing}/versions`, status: 404 }),
+    listComponentApprovals: () => ({ url: `/v1/components/${dosing}/approvals`, status: 404 }),
+    listDocumentApprovals: () => ({ url: `/v1/documents/${MISSING}/approvals`, status: 404 }),
     createDocument: () => ({
       url: `/v1/spaces/${clinical}/documents`,
       status: 404,
@@ -1211,6 +1213,16 @@ describe('routes that check a permission', () => {
       url: `/v1/documents/${MISSING}/transitions`,
       status: 404,
       payload: { transition: 'submit', from: 'draft' },
+    }),
+    decideComponentGate: () => ({
+      url: `/v1/components/${dosing}/approvals`,
+      status: 404,
+      payload: { transition: 'approve', version: MISSING, decision: 'approved' },
+    }),
+    decideDocumentGate: () => ({
+      url: `/v1/documents/${MISSING}/approvals`,
+      status: 404,
+      payload: { transition: 'approve', version: MISSING, decision: 'approved' },
     }),
     placeHold: () => ({
       url: '/v1/holds',

@@ -24,6 +24,17 @@ interface Transition {
   readonly to: string;
   readonly permission: Permission;
   readonly reasonRequired: boolean;
+  readonly gate?: Gate | undefined;
+}
+
+/** A transition that is a gate (the WF2 plan, WF2-A). */
+interface Gate {
+  readonly approvals: number;
+  readonly notAuthor?: boolean;
+  readonly reject: { readonly name: string; readonly to: string };
+  readonly designates?: boolean;
+  readonly baseline?: boolean;
+  readonly publication?: 'none' | 'permitted' | 'required';
 }
 
 /** A kind's workflow in force, and how many are in each state now (workflow.md, "Definitions"). */
@@ -173,7 +184,9 @@ function KindWorkflow({
           kind,
           basedOn: version,
           states: states.map(({ label: _, ...each }) => each),
-          transitions: transitions.map(({ label: _, ...each }) => each),
+          transitions: transitions.map(({ label: _, gate, ...each }) =>
+            gate === undefined ? each : { ...each, gate },
+          ),
         },
       });
       if (data) {
@@ -298,6 +311,7 @@ function KindWorkflow({
             <th scope="col">To</th>
             <th scope="col">Needs</th>
             <th scope="col">Reason</th>
+            <th scope="col">Gate</th>
             <th scope="col">
               <span className={styles['hidden']}>Actions</span>
             </th>
@@ -365,6 +379,14 @@ function KindWorkflow({
                 />
               </td>
               <td>
+                <GateCell
+                  transition={transition}
+                  stateOptions={stateOptions}
+                  initial={states.find((each) => each.initial)?.key ?? transition.from}
+                  onChange={(change) => changeTransition(transition.key, change)}
+                />
+              </td>
+              <td>
                 <button
                   type="button"
                   aria-label={`Remove the transition ${transition.label}`}
@@ -404,5 +426,97 @@ function KindWorkflow({
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Whether a transition is a gate, and if so how many approvers it needs, whether its authors are
+ * refused, and what a rejection is called and returns to (the WF2 plan, WF2-A, WF2-L). A gate is taken
+ * by approvers, so making one sets what it needs to Approve.
+ */
+function GateCell({
+  transition,
+  stateOptions,
+  initial,
+  onChange,
+}: {
+  transition: Transition & { label: string };
+  stateOptions: React.ReactNode;
+  initial: string;
+  onChange: (change: Partial<Transition>) => void;
+}) {
+  const { gate, label } = transition;
+  return (
+    <div className={styles['gate']}>
+      <input
+        type="checkbox"
+        aria-label={`${label} is a gate`}
+        checked={gate !== undefined}
+        onChange={(change) => {
+          if (!change.target.checked) {
+            onChange({ gate: undefined });
+            return;
+          }
+          onChange({
+            permission: 'approve',
+            gate: {
+              approvals: 1,
+              notAuthor: true,
+              reject: { name: 'Return', to: initial },
+              designates: true,
+              baseline: false,
+              publication: 'none',
+            },
+          });
+        }}
+      />
+      {gate && (
+        <>
+          <label>
+            Approvers
+            <select
+              aria-label={`Approvers ${label} needs`}
+              value={gate.approvals}
+              onChange={(change) =>
+                onChange({ gate: { ...gate, approvals: Number(change.target.value) } })
+              }
+            >
+              {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              aria-label={`${label} refuses its authors`}
+              checked={gate.notAuthor ?? false}
+              onChange={(change) =>
+                onChange({ gate: { ...gate, notAuthor: change.target.checked } })
+              }
+            />
+            Not its authors
+          </label>
+          <input
+            aria-label={`Rejecting ${label} is called`}
+            value={gate.reject.name}
+            onChange={(change) =>
+              onChange({ gate: { ...gate, reject: { ...gate.reject, name: change.target.value } } })
+            }
+          />
+          <select
+            aria-label={`Rejecting ${label} returns to`}
+            value={gate.reject.to}
+            onChange={(change) =>
+              onChange({ gate: { ...gate, reject: { ...gate.reject, to: change.target.value } } })
+            }
+          >
+            {stateOptions}
+          </select>
+        </>
+      )}
+    </div>
   );
 }

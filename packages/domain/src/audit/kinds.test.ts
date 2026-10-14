@@ -50,7 +50,6 @@ describe('the audit kinds', () => {
       'workflow.transitioned',
       'workflow.defined',
       'approval.given',
-      'approval.rejected',
       'gate.rejected',
       'hold.applied',
       'hold.removed',

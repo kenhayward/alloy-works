@@ -669,6 +669,9 @@ describe('the domain package', () => {
         'initialState',
         'decidingDefinition',
         'transitionsFrom',
+        // WF2: gates, and the seed's version 1 beside its version 2.
+        'GATE_PUBLICATIONS',
+        'SEED_WORKFLOW_1',
       ].sort(),
     );
   });

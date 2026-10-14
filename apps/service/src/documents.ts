@@ -196,7 +196,7 @@ async function documentView(
     // Told only to whoever may retire it or administer the environment (AH-G).
     onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
     mayHold: viewer.mayHold,
-    ...(await workflowView(viewer.trx, document.id, viewer.facts)),
+    ...(await workflowView(viewer.trx, document.id, viewer.facts, viewer.principalId)),
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,

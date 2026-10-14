@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -17,10 +18,34 @@ export interface Offered {
   readonly reasonRequired: boolean;
 }
 
+/** A gate from its state, as a view offers it (the WF2 plan, WF2-L). */
+export interface Gate {
+  readonly key: string;
+  readonly name: string;
+  readonly to: { readonly key: string; readonly name: string };
+  readonly reject: {
+    readonly name: string;
+    readonly to: { readonly key: string; readonly name: string };
+  };
+  readonly count: number;
+  readonly required: number;
+  readonly approvedByCaller: boolean;
+  readonly mayDecide: boolean;
+}
+
+/** An artifact's latest revision; null for revision 0 (VER-015). */
+export type Revision = {
+  readonly number: number;
+  readonly versionId: string;
+  readonly at: string;
+} | null;
+
 /** Where a component or a document stands, as its view says (workflow.md, "Shown"). */
 export interface Standing {
   readonly state: { readonly key: string; readonly name: string; readonly approved: boolean };
   readonly transitions: readonly Offered[];
+  readonly gates?: readonly Gate[];
+  readonly revision?: Revision;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -29,11 +54,43 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const named = (value: unknown): value is Record<string, unknown> & { key: string; name: string } =>
   isRecord(value) && typeof value.key === 'string' && typeof value.name === 'string';
 
+/** A view's gates, checked rather than trusted. */
+function gatesIn(value: unknown): Gate[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((each: unknown) => {
+    if (!isRecord(each) || !named(each) || !named(each.to) || !isRecord(each.reject)) return [];
+    const reject = each.reject;
+    if (typeof reject.name !== 'string' || !named(reject.to)) return [];
+    if (typeof each.count !== 'number' || typeof each.required !== 'number') return [];
+    return [
+      {
+        key: each.key,
+        name: each.name,
+        to: { key: each.to.key, name: each.to.name },
+        reject: { name: reject.name, to: { key: reject.to.key, name: reject.to.name } },
+        count: each.count,
+        required: each.required,
+        approvedByCaller: each.approvedByCaller === true,
+        mayDecide: each.mayDecide === true,
+      },
+    ];
+  });
+}
+
+/** A view's revision, checked rather than trusted. */
+function revisionIn(value: unknown): Revision {
+  if (!isRecord(value) || typeof value.number !== 'number') return null;
+  if (typeof value.versionId !== 'string' || typeof value.at !== 'string') return null;
+  return { number: value.number, versionId: value.versionId, at: value.at };
+}
+
 /** A view's state and transitions, checked rather than trusted; undefined where it carries none. */
 export function standingIn(data: unknown): Standing | undefined {
   if (!isRecord(data) || !named(data.state)) return undefined;
   const transitions = Array.isArray(data.transitions) ? data.transitions : [];
   return {
+    gates: gatesIn(data.gates),
+    revision: revisionIn(data.revision),
     state: {
       key: data.state.key,
       name: data.state.name,
@@ -102,6 +159,51 @@ async function move(
   }
 }
 
+async function decideGate(
+  client: Client,
+  kind: Movable,
+  id: string,
+  body: {
+    transition: string;
+    version: string;
+    decision: 'approved' | 'rejected';
+    reason?: string;
+  },
+): Promise<Moved> {
+  const options = { params: { path: { id } }, body };
+  try {
+    const { data, error } =
+      kind === 'component'
+        ? await client.POST('/v1/components/{id}/approvals', options)
+        : await client.POST('/v1/documents/{id}/approvals', options);
+    const moved = standingIn(data);
+    if (moved) return { moved };
+    const code = (error as { code?: unknown } | undefined)?.code;
+    return {
+      refused: refusal(error, 'Try again.'),
+      stale:
+        code === 'state_moved' ||
+        code === 'version_moved' ||
+        code === 'approval_given' ||
+        code === 'transition_unknown' ||
+        code === 'artifact_archived' ||
+        code === 'forbidden',
+    };
+  } catch {
+    return { refused: 'Try again.', stale: false };
+  }
+}
+
+/** Its revision, where one was designated (VER-015): nothing for revision 0. */
+export function RevisionChip({ revision }: { revision: Revision | undefined }) {
+  if (!revision) return null;
+  return <Chip>Revision {revision.number}</Chip>;
+}
+
+/** How far a gate has got, in words. */
+const progressOf = (gate: Gate) =>
+  `${gate.count} of ${gate.required} approval${gate.required === 1 ? '' : 's'}${gate.approvedByCaller ? ', yours among them' : ''}`;
+
 /**
  * A button for each transition the view says the reader may take (WF-F), none otherwise: the move
  * sends the state it was seen in, asks for a reason first where the transition requires one, and says
@@ -113,6 +215,7 @@ export function TransitionButtons({
   id,
   title,
   standing,
+  versionId,
   onMoved,
   onNotice,
   onStale,
@@ -123,6 +226,8 @@ export function TransitionButtons({
   id: string;
   title: string;
   standing: Standing;
+  /** The version the reader sees: what an approval approves. */
+  versionId: string;
   onMoved: (standing: Standing, said: string) => void;
   onNotice: (said: string) => void;
   onStale: () => void;
@@ -130,6 +235,32 @@ export function TransitionButtons({
 }) {
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState<Offered | null>(null);
+  const [rejecting, setRejecting] = useState<Gate | null>(null);
+
+  /** Approves or rejects at `gate`, answering what to say where it was refused (WF2-L). */
+  const decideAt = async (gate: Gate, reason?: string): Promise<string | undefined> => {
+    setBusy(true);
+    const answer = await decideGate(client, kind, id, {
+      transition: gate.key,
+      version: versionId,
+      decision: reason === undefined ? 'approved' : 'rejected',
+      ...(reason === undefined ? {} : { reason }),
+    });
+    setBusy(false);
+    if ('moved' in answer) {
+      const now = answer.moved.state;
+      const said =
+        reason !== undefined
+          ? `Moved ${title} to ${now.name}.`
+          : now.key !== standing.state.key
+            ? `Approved ${title}. It is now ${now.name}.`
+            : `Approved ${title}. It needs more approvals.`;
+      onMoved(answer.moved, said);
+      return undefined;
+    }
+    if (answer.stale) onStale();
+    return `${title} was not ${reason === undefined ? 'approved' : 'returned'}. ${answer.refused}`;
+  };
 
   /** Moves along `transition`, answering what to say where it was refused. */
   const take = async (transition: Offered, reason?: string): Promise<string | undefined> => {
@@ -169,6 +300,50 @@ export function TransitionButtons({
           {transition.name}
         </button>
       ))}
+      {(standing.gates ?? []).map((gate) => (
+        <span key={gate.key} className={styles['gate']}>
+          <span className={styles['muted']}>{progressOf(gate)}</span>
+          {gate.mayDecide && !gate.approvedByCaller && (
+            <>
+              <button
+                type="button"
+                className={className}
+                disabled={busy}
+                title={`Approve, towards ${gate.to.name}`}
+                onClick={() => {
+                  void decideAt(gate).then((refused) => {
+                    if (refused !== undefined) onNotice(refused);
+                  });
+                }}
+              >
+                {gate.name}
+              </button>
+              <button
+                type="button"
+                className={className}
+                disabled={busy}
+                title={`Return to ${gate.reject.to.name}`}
+                onClick={() => setRejecting(gate)}
+              >
+                {gate.reject.name}
+              </button>
+            </>
+          )}
+        </span>
+      ))}
+      {rejecting && (
+        <ReasonDialog
+          heading={`${rejecting.reject.name} ${title}`}
+          explained={`It returns to ${rejecting.reject.to.name}.`}
+          submit={`${rejecting.reject.name} to ${rejecting.reject.to.name}`}
+          act={async (reason) => {
+            const refused = await decideAt(rejecting, reason);
+            if (refused === undefined) setRejecting(null);
+            return refused;
+          }}
+          onClose={() => setRejecting(null)}
+        />
+      )}
       {asking && (
         <ReasonDialog
           heading={`${asking.name} ${title}`}

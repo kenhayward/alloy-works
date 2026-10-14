@@ -472,8 +472,11 @@ export {
   type MoveAnswer,
   type WorkflowDefinition,
   type WorkflowStanding,
+  type GateProgress,
+  type Revision,
   type WorkflowSummary,
 } from './workflow.js';
+export { decideGate, listApprovals, type Approval, type GateAnswer } from './workflow-gates.js';
 export {
   createDocument,
   editOutline,

@@ -16,6 +16,7 @@ import {
   type RestoreRefusal,
 } from './restoreWords.js';
 import { VersionList, type ListedVersion } from './VersionList.js';
+import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from './VersionList.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -203,6 +204,7 @@ export function VersionsPanel({
           ? { onRestore: (version: ListedVersion) => void previewRestore(version) }
           : {})}
       />
+      <ApprovalsList client={client} kind="component" id={id} />
       {restoring && (
         <section aria-label={`Restore ${restoring.version.number}`} className={styles['compared']}>
           <h3 className={styles['heading']}>{`Restore ${restoring.version.number}`}</h3>

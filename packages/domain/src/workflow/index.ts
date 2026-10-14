@@ -1,8 +1,10 @@
 export {
   decidingDefinition,
+  GATE_PUBLICATIONS,
   initialState,
   parseWorkflowBody,
   SEED_WORKFLOW,
+  SEED_WORKFLOW_1,
   TRANSITION_PERMISSIONS,
   transitionsFrom,
   WORKFLOW_KINDS,
@@ -11,6 +13,7 @@ export {
 export type {
   TransitionPermission,
   WorkflowBody,
+  WorkflowGate,
   WorkflowKind,
   WorkflowProblem,
   WorkflowRule,

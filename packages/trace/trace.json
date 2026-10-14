@@ -19156,6 +19156,42 @@
         {
           "id": "SCH-060",
           "howItIsMet": "Search, below: a filter and a facet on the state's key, the artifact's state now"
+        },
+        {
+          "id": "LIF-003",
+          "howItIsMet": "Gates, below: a transition needs a permission alone, or is a gate needing approvals by whoever may approve"
+        },
+        {
+          "id": "LIF-008",
+          "howItIsMet": "Each approval a row: who, when, the version, the gate (`workflow_approval`)"
+        },
+        {
+          "id": "LIF-009",
+          "howItIsMet": "A gate's `approvals`, each by a distinct person"
+        },
+        {
+          "id": "LIF-010",
+          "howItIsMet": "A gate's `notAuthor`: whoever recorded a version since the last revision is refused (`approval_author`)"
+        },
+        {
+          "id": "LIF-036",
+          "howItIsMet": "Both kinds have workflows and gates; a component passes its own"
+        },
+        {
+          "id": "LIF-051",
+          "howItIsMet": "Any approver rejects, with a reason, kept with who, when, the version and the gate"
+        },
+        {
+          "id": "LIF-052",
+          "howItIsMet": "A rejection returns it to the gate's declared `reject.to`, the rework path in the definition"
+        },
+        {
+          "id": "LIF-074",
+          "howItIsMet": "`gate.rejected`, an event of its own"
+        },
+        {
+          "id": "LIF-075",
+          "howItIsMet": "`workflow.transitioned` and `approval.given`, each an event of its own"
         }
       ]
     }
@@ -19578,13 +19614,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 362,
+      "line": 378,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 375,
+      "line": 391,
       "kind": "title"
     },
     {
@@ -19848,7 +19884,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1195,
+      "line": 1205,
       "kind": "title"
     },
     {
@@ -20910,31 +20946,61 @@
     {
       "id": "LIF-001",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 142,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 142,
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-008",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 290,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-010",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 310,
+      "kind": "rule"
+    },
+    {
+      "id": "LIF-010",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 290,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-051",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 333,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-052",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 333,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 154,
+      "line": 162,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 231,
+      "line": 265,
       "kind": "rule"
     },
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 198,
+      "line": 209,
       "kind": "title"
     },
     {
@@ -21049,6 +21115,30 @@
       "id": "LIF-002",
       "file": "apps/web/src/admin/Workflows.test.tsx",
       "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-003",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-009",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-010",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-052",
+      "file": "apps/web/src/admin/Workflows.test.tsx",
+      "line": 160,
       "kind": "title"
     },
     {
@@ -21622,9 +21712,39 @@
       "kind": "title"
     },
     {
+      "id": "LIF-008",
+      "file": "apps/web/src/lifecycle/Approvals.test.tsx",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-051",
+      "file": "apps/web/src/lifecycle/Approvals.test.tsx",
+      "line": 21,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-009",
+      "file": "apps/web/src/lifecycle/Workflow.test.tsx",
+      "line": 171,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-051",
+      "file": "apps/web/src/lifecycle/Workflow.test.tsx",
+      "line": 197,
+      "kind": "title"
+    },
+    {
       "id": "LIF-061",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 84,
+      "line": 111,
+      "kind": "title"
+    },
+    {
+      "id": "VER-015",
+      "file": "apps/web/src/lifecycle/Workflow.test.tsx",
+      "line": 239,
       "kind": "title"
     },
     {
@@ -24100,51 +24220,129 @@
       "kind": "title"
     },
     {
+      "id": "LIF-003",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-008",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-009",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-010",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 227,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-036",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-051",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-052",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-074",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "VER-012",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 293,
+      "kind": "title"
+    },
+    {
+      "id": "VER-013",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 293,
+      "kind": "title"
+    },
+    {
+      "id": "VER-014",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 293,
+      "kind": "title"
+    },
+    {
+      "id": "VER-015",
+      "file": "packages/db/src/workflow-gates.test.ts",
+      "line": 293,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-003",
+      "file": "packages/db/src/workflow-migration.test.ts",
+      "line": 210,
+      "kind": "title"
+    },
+    {
       "id": "LIF-007",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 54,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow-migration.test.ts",
-      "line": 54,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "LIF-001",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 194,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "LIF-002",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 194,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 210,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "LIF-054",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 329,
+      "line": 201,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 232,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "packages/db/src/workflow.test.ts",
-      "line": 599,
+      "line": 608,
       "kind": "title"
     },
     {
@@ -24240,7 +24438,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 206,
+      "line": 205,
       "kind": "title"
     },
     {
@@ -24978,7 +25176,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 676,
+      "line": 679,
       "kind": "title"
     },
     {
@@ -26154,13 +26352,31 @@
     {
       "id": "LIF-002",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 27,
+      "line": 28,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-003",
+      "file": "packages/domain/src/workflow/workflow.test.ts",
+      "line": 58,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 137,
+      "line": 219,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-009",
+      "file": "packages/domain/src/workflow/workflow.test.ts",
+      "line": 58,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-010",
+      "file": "packages/domain/src/workflow/workflow.test.ts",
+      "line": 58,
       "kind": "title"
     },
     {
@@ -26418,7 +26634,7 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 878,
+      "line": 883,
       "kind": "title"
     },
     {

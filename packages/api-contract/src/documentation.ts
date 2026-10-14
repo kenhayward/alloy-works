@@ -321,6 +321,10 @@ const operationTags = {
     'defineWorkflow',
     'transitionComponent',
     'transitionDocument',
+    'decideComponentGate',
+    'decideDocumentGate',
+    'listComponentApprovals',
+    'listDocumentApprovals',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -627,6 +631,14 @@ const descriptions: Readonly<Record<string, string>> = {
     "Moves a component along a transition from its state, named as the caller saw it, needing the transition's permission on the component and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved component moves it back to the initial state on its own. Audited.",
   transitionDocument:
     "Moves a document along a transition from its state, named as the caller saw it, needing the transition's permission on the document and a reason where the transition asks for one, recorded with the move. Refused where it has moved since, is archived, or the transition is not one from its state. Saving an approved document moves it back to the initial state on its own. Audited.",
+  decideComponentGate:
+    "Approves or rejects a component at a gate from its state, against the version the approver saw, needing approve on the component. The gate passes once enough distinct approvers approve the current version this round, none of them an author where the gate says so, and then designates a revision. A rejection needs a reason and returns the component to the gate's declared state. Refused where it is not at the gate, the version was replaced, it is archived, or the caller approved it already. Audited.",
+  decideDocumentGate:
+    "Approves or rejects a document at a gate from its state, against the version the approver saw, needing approve on the document. The gate passes once enough distinct approvers approve the current version this round, none of them an author where the gate says so, and then designates a revision. A rejection needs a reason and returns the document to the gate's declared state. Refused where it is not at the gate, the version was replaced, it is archived, or the caller approved it already. Audited.",
+  listComponentApprovals:
+    'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
+  listDocumentApprovals:
+    'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:

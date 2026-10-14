@@ -105,6 +105,7 @@ import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import {
   readStanding,
   standingIn,
+  RevisionChip,
   TransitionButtons,
   type Standing,
 } from '../lifecycle/Workflow.js';
@@ -2251,6 +2252,7 @@ export function ComponentEditor({
               {session?.version.number ?? shown.version.number} · {shown.space.name}
             </span>
             {standing && <StateLozenge state={standing.state} />}
+            <RevisionChip revision={standing?.revision} />
             {archived && <Chip>Archived</Chip>}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
             {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
@@ -2261,6 +2263,7 @@ export function ComponentEditor({
                 id={componentId}
                 title={header.title}
                 standing={standing}
+                versionId={shown.version.id}
                 className={styles['archive']}
                 onMoved={(now, said) => {
                   setStandingNow(now);
