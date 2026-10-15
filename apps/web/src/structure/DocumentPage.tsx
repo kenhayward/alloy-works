@@ -1,4 +1,5 @@
 import type { FieldView } from '@alloy-works/api-client';
+import { TemplateLine, templateIn, type TemplateInfo } from './TemplateLine.js';
 import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
@@ -183,6 +184,8 @@ interface Opened {
   readonly parameters: Readonly<Record<string, unknown>>;
   /** Whether it was made from a template the reader may read, whose parameters it may then hold. */
   readonly templated: boolean;
+  /** The template it was made from, with what it requires and the departures from it (WF6-A). */
+  readonly template: TemplateInfo | null;
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -280,6 +283,7 @@ function documentIn(data: unknown): Read {
     values: isRecord(values) ? values : {},
     parameters: isRecord(parameters) ? parameters : {},
     templated: isRecord(template),
+    template: templateIn(template),
   };
 }
 
@@ -2097,6 +2101,9 @@ export function DocumentPage({
               {editing === null && <IdleBand />}
             </div>
           )}
+          {document.template && (
+            <TemplateLine template={document.template} className={styles['approvedNote']} />
+          )}
           <PreviewSaid preview={preview} />
           <UnheldFaces />
           {document.scheme === null && <p>This document's numbering could not be read.</p>}
@@ -2117,6 +2124,7 @@ export function DocumentPage({
             {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
             <OutlinePanel
               outline={document.outline}
+              requiredSections={document.template?.required ?? []}
               marks={outlineMarks}
               {...(referencesTo === undefined ? {} : { referencesTo })}
               head={

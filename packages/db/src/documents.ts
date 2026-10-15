@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { recordWaivers, requiredRemoved } from './waivers.js';
 import { latestRevisionsOf } from './workflow.js';
 import {
   applyOutlineOperation,
@@ -27,6 +28,7 @@ import {
   type OutlineRules,
   type TemplateParameter,
   type UnresolvedReference,
+  requiredKeys,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
@@ -616,6 +618,8 @@ export async function editOutline(
     held = rules.resolved.ok
       ? { changes: rules.changes, sectionFields: rules.resolved.section }
       : { changes: rules.changes };
+    // A section it requires goes only with a reason (TPL-029; WF6-B).
+    held = { ...held, required: requiredKeys(rules.definition) };
   }
   const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier, held);
   if (!applied.applied) {
@@ -638,6 +642,15 @@ export async function editOutline(
   });
   if (recorded.answer === 'recorded') {
     await recordRepoints(trx, recorded.version, read.outline, applied.outline);
+    // The reason a required section was removed for, kept on the document (TPL-029; WF6-B).
+    if (input.operation.operation === 'remove' && held.required !== undefined) {
+      await recordWaivers(trx, {
+        version: recorded.version,
+        keys: requiredRemoved(read.outline, applied.outline, held.required),
+        reason: input.operation.reason ?? '',
+        by: input.author,
+      });
+    }
   }
   return recorded;
 }
@@ -704,6 +717,9 @@ export interface RestoredOutline {
  * are stored as an outline act and `recordDocumentValues` store them: `writtenValues`, each field
  * left without a member given its default, a fixed one included (the RS final review).
  */
+const REQUIRED_RESTORE =
+  "This restore removes a section the document's template requires: remove it first, with a reason";
+
 export async function restoredOutline(
   trx: TenantTransaction,
   input: {
@@ -751,6 +767,13 @@ export async function restoredOutline(
   if (rules.bound) {
     for (const reason of outlineChangesRefused(latest.outline, restored.outline, rules.changes)) {
       refusals.push({ answer: 'outline.invalid', reason });
+    }
+    // A restore gives no reason: a section the template requires is removed first, with one
+    // (TPL-029; WF6-B).
+    if (
+      requiredRemoved(latest.outline, restored.outline, requiredKeys(rules.definition)).length > 0
+    ) {
+      refusals.push({ answer: 'outline.invalid', reason: REQUIRED_RESTORE });
     }
   }
   const valuesWritten = !same(latest.values, restored.values);

@@ -495,6 +495,13 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/dates.ts',
   ),
+  // A section the template requires removed with a reason (TPL-029; the WF6 plan, WF6-B): its key;
+  // the reason on the waiver's row, never here.
+  'section.waived': kind(
+    ['TPL-029'],
+    z.strictObject({ key: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/) }),
+    'packages/db/src/documents.ts',
+  ),
   // A review date passing unmet, and what the workflow declared it does (LIF-059; WF5-G).
   'review.lapsed': kind(
     ['LIF-059'],

@@ -51,6 +51,8 @@ refused while a required section is missing or a field its template applies is n
 | **TPL-066** | A parameter seeds its declared document field when the document is made, and supplies a binding's `{ document }` argument at resolve and check, a changed value marking the binding changed                                                                                          |
 | **TPL-068** | `feeds` declares the field a parameter seeds and whether it supplies arguments; one feeding nothing is `parameter_unused`                                                                                                                                                            |
 | **STR-060** | A section carries its title, as it does, and field values in its `values`, written by the outline act's `set`, each checked against the section-level fields of the document's template and refused by name where it is not one of them or does not pass                             |
+| **TPL-028** | The document's view lists its departures from its recorded template version, to a reader of the template: each section with no `origin` the template names, and each starting section none came from, a required one with the reason it was removed ([Governance](#governance))      |
+| **TPL-029** | The outline's `remove` of a subtree holding a section from a required starting section needs a `reason`, kept as a `section_waiver` row (0100) and audited `section.waived`; a restore removing one is refused ([Governance](#governance))                                           |
 
 ## What this document does not own
 
@@ -413,8 +415,9 @@ and I will review all live at the end"), each open to reversal at that review.
   copy would be a second theme nobody could change.
 - **The link as an outline member.** The outline is the document's to change (TPL-027); what it was
   made from is not, so it sits beside the document where no act reaches it.
-- **Checking required sections on removal.** Refusing the removal would stop an author restructuring
-  on the way to a version that has the section again; TPL-013 is about publishing, and is checked there.
+- **Refusing a required section's removal.** It would stop an author restructuring on the way to a
+  version that has the section again: TPL-029 asks for a reason instead, and the section is then no
+  longer missing at publish (WF6-B).
 - **Validating required fields on every write.** It would refuse every intermediate version of a
   document being filled in.
 
@@ -424,3 +427,18 @@ and I will review all live at the end"), each open to reversal at that review.
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
 | A template's own page and an editor for its starting outline                               | After T1, with TPL-026's API-first instantiation |
 | Whether a document may move to a later version of its template, and what that would change | Not in T1's requirements                         |
+
+## Governance
+
+**Departures** (the WF6 plan, WF6-A; TPL-028): `departures(definition, outline, waived)` in the
+domain compares the outline with its recorded template version by key, as TPL-013 does: each section
+with no `origin` the template names is added, each starting section none came from is missing, a
+required one with its reason. The document's view carries them under `template`, beside the required
+keys, only where the reader may read the template; the page says them under the document bar.
+
+**A required section removed with a reason** (WF6-B; TPL-029): the outline's `remove` takes an
+optional `reason`, and one that takes a section whose `origin` is a required key needs it. The reason
+is kept on an insert-only `section_waiver` row (0100) against the version that removed it, audited
+`section.waived { key }`, the reason on the row and never in the log, as a rejection's is. A waived key
+is not missing at publish (TPL-013) nor for a gate requiring `sections`. A restore gives no reason, so
+one that would remove a required section is refused: remove it first, with one.

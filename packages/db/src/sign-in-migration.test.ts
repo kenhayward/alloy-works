@@ -109,6 +109,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0097_workflow_publishing',
       '0098_workflow_query_definitions',
       '0099_workflow_dates',
+      '0100_section_waivers',
     ]);
 
     const read = async () =>

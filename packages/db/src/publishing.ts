@@ -39,6 +39,7 @@ import {
   workflowBodySchema,
   type PublishedApproval,
 } from '@alloy-works/domain';
+import { waivedKeys } from './waivers.js';
 import { latestRevisionsOf } from './workflow.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -764,7 +765,12 @@ export async function resolvePublishable(
   // version, and its values and its sections', against the fields resolved now (TE-K).
   const rules = await documentRules(trx, input.documentId);
   if (rules.bound) {
-    const sections = missingSections(rules.definition, read.outline);
+    // A required section removed with a reason is no longer missing (TPL-029; WF6-B).
+    const sections = missingSections(
+      rules.definition,
+      read.outline,
+      new Set((await waivedKeys(trx, input.documentId)).keys()),
+    );
     if (sections.length > 0) return { answer: 'section.required', sections };
     if (!rules.resolved.ok) {
       return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };

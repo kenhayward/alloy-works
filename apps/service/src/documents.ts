@@ -17,6 +17,7 @@ import {
   documentLayout,
   documentRules,
   documentTemplate,
+  waivedKeys,
   editOutline,
   isArchived,
   isHeld,
@@ -56,6 +57,8 @@ import {
   readOutline,
   resolve,
   templateDefinitionSchema,
+  departures,
+  requiredKeys,
   walkOutline,
   withholdComponents,
   type AccessFacts,
@@ -140,7 +143,11 @@ async function documentFields(viewer: Viewer, document: string) {
  * version names it - or null for a blank document, and for a template this viewer may not read, which
  * access.md makes indistinguishable from none.
  */
-async function templateView(viewer: Viewer, document: string): Promise<DocumentView['template']> {
+async function templateView(
+  viewer: Viewer,
+  document: string,
+  outline: unknown,
+): Promise<DocumentView['template']> {
   const link = await documentTemplate(viewer.trx, document);
   if (!link) return null;
   const facts = await loadFacts(viewer.trx, viewer.principalId, {
@@ -150,10 +157,18 @@ async function templateView(viewer: Viewer, document: string): Promise<DocumentV
   if (!facts || !decide('read', facts).allowed) return null;
   const version = await readVersion(viewer.trx, link.version);
   if (!version) throw new Error(`The template version ${link.version} a document names is gone`);
+  const definition = templateDefinitionSchema.parse(version.content);
+  const read = readOutline(outline, { artifact: document, version: version.id });
+  if (!read.ok) throw new Error(`The document ${document} does not read`);
   return {
     id: link.template,
-    name: templateDefinitionSchema.parse(version.content).name,
+    name: definition.name,
     version: { id: version.id, number: `${version.revision}.${version.version}` },
+    // What it requires, and how the document departs from it (TPL-028, TPL-029; WF6-A).
+    required: requiredKeys(definition),
+    departures: (({ added, missing }) => ({ added: [...added], missing: [...missing] }))(
+      departures(definition, read.outline, await waivedKeys(viewer.trx, document)),
+    ),
   };
 }
 
@@ -192,7 +207,7 @@ async function documentView(
     values: { ...version.values },
     parameters: { ...version.parameters },
     ...(await documentFields(viewer, document.id)),
-    template: await templateView(viewer, document.id),
+    template: await templateView(viewer, document.id, version.content),
     mayEdit: viewer.mayEdit,
     archived: await isArchived(viewer.trx, document.id),
     mayRetire: viewer.mayRetire,

@@ -57,6 +57,8 @@ export const outlineOperationSchema = z
     z.strictObject({
       operation: z.literal('remove'),
       node: nodeIdentifier,
+      /** Why, where it takes a section the template requires (TPL-029); kept on the document. */
+      reason: z.string().max(2000).optional(),
     }),
     z.strictObject({
       operation: z.literal('retitle'),
@@ -117,6 +119,8 @@ export type OutlineApplied =
 export interface OutlineRules {
   readonly changes?: { readonly add: boolean; readonly remove: boolean; readonly reorder: boolean };
   readonly sectionFields?: readonly EffectiveField[];
+  /** The template's required starting sections, by key: each removed only with a reason (TPL-029). */
+  readonly required?: readonly string[];
 }
 
 function refuse(reason: string): OutlineApplied {
@@ -127,6 +131,7 @@ function refuse(reason: string): OutlineApplied {
 const NOT_ADDED = "This document's template does not allow sections to be added";
 const NOT_REMOVED = "This document's template does not allow sections to be removed";
 const NOT_REORDERED = "This document's template does not allow sections to be reordered";
+const REASON_NEEDED = "A section this document's template requires is removed only with a reason";
 const VALUES_REFUSED = 'A value does not fit its field';
 const REFERENCE_VALUES = "A component reference holds no values: a component's are its own";
 
@@ -422,6 +427,19 @@ export function applyOutlineOperation(
 ): OutlineApplied {
   const refused = forbidden(outline, operation, rules.changes);
   if (refused) return refused;
+  // TPL-029: a section the template requires goes only with a reason, whatever carries it.
+  if (operation.operation === 'remove' && (rules.required?.length ?? 0) > 0) {
+    const node = findNode(outline.nodes, operation.node);
+    let required = false;
+    if (node !== undefined) {
+      walkOutline([node], (member) => {
+        if (member.type === 'section' && member.origin !== undefined) {
+          if (rules.required!.includes(member.origin)) required = true;
+        }
+      });
+    }
+    if (required && (operation.reason ?? '').trim() === '') return refuse(REASON_NEEDED);
+  }
   switch (operation.operation) {
     case 'insert':
       return insert(outline, operation, newIdentifier);

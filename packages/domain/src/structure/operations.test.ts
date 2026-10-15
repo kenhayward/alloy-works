@@ -740,6 +740,32 @@ describe("an outline held to its template's rules", () => {
     );
   });
 
+  it('TPL-029 removes a section its template requires only with a reason', () => {
+    const { outline: plain, allocate, introduction, method, reference } = shaped();
+    // Method came from the template's required starting section `method`.
+    const outline = {
+      ...plain,
+      nodes: plain.nodes.map((node) => (node.id === method ? { ...node, origin: 'method' } : node)),
+    };
+    const rules = { changes: { add: true, remove: true, reorder: true }, required: ['method'] };
+    const remove = (node: string, reason?: string) =>
+      applyOutlineOperation(
+        outline,
+        { operation: 'remove', node, ...(reason === undefined ? {} : { reason }) },
+        allocate,
+        rules,
+      );
+    const needed = refusal(
+      "A section this document's template requires is removed only with a reason",
+    );
+    expect(remove(method)).toEqual(needed);
+    expect(remove(method, '   ')).toEqual(needed);
+    expect(remove(method, 'Covered by the appendix.').applied).toBe(true);
+    // Neither a section the template does not require nor a component needs one.
+    expect(remove(introduction).applied).toBe(true);
+    expect(remove(reference).applied).toBe(true);
+  });
+
   it('holds a section carried inside a component reference, so a reference cannot take it past the rules', () => {
     const { outline, allocate, method, reference } = shaped();
     // Reordering allowed, removing not: the section is moved under the reference, which is allowed.

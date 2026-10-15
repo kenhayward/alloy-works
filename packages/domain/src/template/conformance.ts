@@ -33,6 +33,8 @@ function words(title: readonly InlineNode[]): string {
 export function missingSections(
   definition: TemplateDefinition,
   outline: OutlineDocument,
+  /** Required keys removed with a stated reason (TPL-029; the WF6 plan, WF6-B): no longer missing. */
+  waived: ReadonlySet<string> = new Set(),
 ): MissingSection[] {
   const origins = new Set<string>();
   walkOutline(outline.nodes, (node) => {
@@ -41,7 +43,7 @@ export function missingSections(
   const missing: MissingSection[] = [];
   const walk = (sections: readonly StartingSection[]) => {
     for (const each of sections) {
-      if (each.required && !origins.has(each.key)) {
+      if (each.required && !origins.has(each.key) && !waived.has(each.key)) {
         missing.push({ key: each.key, title: words(each.title) || each.key });
       }
       walk(each.children);
@@ -49,6 +51,75 @@ export function missingSections(
   };
   walk(definition.outline.sections);
   return missing;
+}
+
+/** Every required starting section's key, at any depth (TPL-013, TPL-029). */
+export function requiredKeys(definition: TemplateDefinition): string[] {
+  const keys: string[] = [];
+  const walk = (sections: readonly StartingSection[]) => {
+    for (const each of sections) {
+      if (each.required) keys.push(each.key);
+      walk(each.children);
+    }
+  };
+  walk(definition.outline.sections);
+  return keys;
+}
+
+/** How a document departs from its template (TPL-028; the WF6 plan, WF6-A). */
+export interface Departures {
+  /** Each section it has that its template does not: none came from it, or from a key it no longer names. */
+  readonly added: readonly { readonly node: string; readonly title: string }[];
+  /** Each starting section none of its sections came from, with the reason a required one was removed. */
+  readonly missing: readonly {
+    readonly key: string;
+    readonly title: string;
+    readonly required: boolean;
+    readonly reason: string | null;
+  }[];
+}
+
+/**
+ * TPL-028: what a document has that its template does not, in the outline's order, and what it lacks,
+ * in the template's, found by key as TPL-013 finds a section. `waived` is each required key removed
+ * with a reason, and the reason.
+ */
+export function departures(
+  definition: TemplateDefinition,
+  outline: OutlineDocument,
+  waived: ReadonlyMap<string, string>,
+): Departures {
+  const keys = new Set<string>();
+  const walkKeys = (sections: readonly StartingSection[]) => {
+    for (const each of sections) {
+      keys.add(each.key);
+      walkKeys(each.children);
+    }
+  };
+  walkKeys(definition.outline.sections);
+  const origins = new Set<string>();
+  const added: { node: string; title: string }[] = [];
+  walkOutline(outline.nodes, (node) => {
+    if (node.type !== 'section') return;
+    if (node.origin !== undefined && keys.has(node.origin)) origins.add(node.origin);
+    else added.push({ node: node.id, title: words(node.title) });
+  });
+  const missing: Departures['missing'][number][] = [];
+  const walk = (sections: readonly StartingSection[]) => {
+    for (const each of sections) {
+      if (!origins.has(each.key)) {
+        missing.push({
+          key: each.key,
+          title: words(each.title) || each.key,
+          required: each.required,
+          reason: each.required ? (waived.get(each.key) ?? null) : null,
+        });
+      }
+      walk(each.children);
+    }
+  };
+  walk(definition.outline.sections);
+  return { added, missing };
 }
 
 /**

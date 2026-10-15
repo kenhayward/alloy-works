@@ -638,6 +638,19 @@ export interface ReviewLapseTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** A section the template requires, removed with a reason (0100; the WF6 plan, WF6-B). */
+export interface SectionWaiverTable {
+  id: ColumnType<string, never, never>;
+  document_id: string;
+  document_kind: ColumnType<'document', never, never>;
+  key: string;
+  reason: string;
+  version_id: string;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
@@ -937,6 +950,7 @@ export interface TenantTables {
   revision_effective: RevisionEffectiveTable;
   revision_effected: RevisionEffectedTable;
   review_lapse: ReviewLapseTable;
+  section_waiver: SectionWaiverTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

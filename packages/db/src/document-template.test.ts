@@ -2,16 +2,18 @@ import {
   DEFINITION_SCHEMA_VERSION,
   TEMPLATE_SCHEMA_VERSION,
   type OutlineOperation,
+  type OutlineDocument,
   type SectionNode,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createDocument, editOutline, recordDocumentValues } from './documents.js';
+import { createDocument, editOutline, recordDocumentValues, restoredOutline } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { unmetConditions } from './workflow-conditions.js';
+import { waivedKeys } from './waivers.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
@@ -509,6 +511,27 @@ describe('a document made from a template', () => {
     ).toMatchObject({ answer: 'values.invalid', failures: [{ field: OWNER, rule: 'unknown' }] });
   });
 
+  /**
+   * A version of the document without one of its nodes, written as a document made before TPL-029
+   * could hold it: a required section is otherwise removed only with a reason, and is then no longer
+   * missing.
+   */
+  const dropped = (document: string, openedFrom: { id: string; content: unknown }, node: string) =>
+    service.withTenant(production, async (trx) => {
+      const outline = openedFrom.content as { nodes: SectionNode[] };
+      const answer = await recordVersion(trx, {
+        artifactId: document,
+        openedFrom: openedFrom.id,
+        author: ada,
+        substance: {
+          kind: 'document',
+          content: { ...outline, nodes: outline.nodes.filter((each) => each.id !== node) } as never,
+        },
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.version;
+    });
+
   const publish = (document: string, version: string) =>
     service.withTenant(production, (trx) =>
       requestPublication(trx, {
@@ -544,10 +567,7 @@ describe('a document made from a template', () => {
     const removed = await make(made.id);
     if (removed.answer !== 'created') throw new Error(removed.answer);
     const [introduction] = (removed.version.content as { nodes: SectionNode[] }).nodes;
-    const without = await act(removed.version.artifactId, removed.version.id, {
-      operation: 'remove',
-      node: introduction!.id,
-    });
+    const without = await dropped(removed.version.artifactId, removed.version, introduction!.id);
     expect(await publish(removed.version.artifactId, without.id)).toEqual({
       answer: 'section.required',
       sections: [{ key: 'introduction', title: 'Introduction' }],
@@ -570,6 +590,72 @@ describe('a document made from a template', () => {
     expect((await publish(kept.version.artifactId, moved.id)).answer).toBe('requested');
   });
 
+  it('TPL-029 removes a required section only with a reason, keeps the reason on the document, audited, and publishes without it', async () => {
+    const made = await template({
+      schemas: [],
+      outline: { sections: [{ ...section('introduction', 'Introduction'), required: true }] },
+    });
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const [introduction] = (document.version.content as { nodes: SectionNode[] }).nodes;
+    const remove = (reason?: string) =>
+      service.withTenant(production, (trx) =>
+        editOutline(trx, {
+          artifactId: document.version.artifactId,
+          openedFrom: document.version.id,
+          author: ada,
+          operation: {
+            operation: 'remove',
+            node: introduction!.id,
+            ...(reason === undefined ? {} : { reason }),
+          },
+        }),
+      );
+    expect(await remove()).toEqual({
+      answer: 'outline.invalid',
+      reason: "A section this document's template requires is removed only with a reason",
+    });
+    const removed = await remove('Covered by the cover letter.');
+    if (removed.answer !== 'recorded') throw new Error(removed.answer);
+    expect(
+      await service.withTenant(production, (trx) => waivedKeys(trx, document.version.artifactId)),
+    ).toEqual(new Map([['introduction', 'Covered by the cover letter.']]));
+    const { rows } = await service.withTenant(production, (trx) =>
+      sql<{ detail: unknown }>`select detail from audit_event where kind = 'section.waived'
+        and subject = ${document.version.artifactId}`.execute(trx),
+    );
+    expect(rows.map((row) => row.detail)).toEqual([{ key: 'introduction' }]);
+    // No longer missing at publish (TPL-013).
+    expect((await publish(document.version.artifactId, removed.version.id)).answer).toBe(
+      'requested',
+    );
+  });
+
+  it('TPL-029 refuses a restore that would remove a required section, which is removed first with a reason', async () => {
+    const made = await template({
+      schemas: [],
+      outline: { sections: [{ ...section('introduction', 'Introduction'), required: true }] },
+    });
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const outline = document.version.content as OutlineDocument;
+    const answer = await service.withTenant(production, (trx) =>
+      restoredOutline(trx, {
+        documentId: document.version.artifactId,
+        author: ada,
+        latest: { outline, values: {} },
+        restored: { outline: { ...outline, nodes: [] }, values: {} },
+      }),
+    );
+    expect(answer.refusals).toEqual([
+      {
+        answer: 'outline.invalid',
+        reason:
+          "This restore removes a section the document's template requires: remove it first, with a reason",
+      },
+    ]);
+  });
+
   it('LIF-004 holds a transition requiring sections while a required one is missing, naming it', async () => {
     const made = await template({
       schemas: [],
@@ -588,10 +674,7 @@ describe('a document made from a template', () => {
       );
     expect(await unmet(document.version.artifactId)).toEqual([]);
     const [introduction] = (document.version.content as { nodes: SectionNode[] }).nodes;
-    await act(document.version.artifactId, document.version.id, {
-      operation: 'remove',
-      node: introduction!.id,
-    });
+    await dropped(document.version.artifactId, document.version, introduction!.id);
     expect(await unmet(document.version.artifactId)).toEqual([
       { condition: 'sections', count: 1, names: ['Introduction'], unreadable: 0 },
     ]);

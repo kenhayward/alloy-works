@@ -20085,6 +20085,11 @@ export interface operations {
                      *         "version": {
                      *           "id": "example",
                      *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
                      *         }
                      *       },
                      *       "mayEdit": false,
@@ -20211,6 +20216,24 @@ export interface operations {
                             version: {
                                 id: string;
                                 number: string;
+                            };
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
                             };
                         } | null;
                         /** @description Whether the caller may restructure the outline */
@@ -35752,6 +35775,7 @@ export interface operations {
                         /** @constant */
                         operation: "remove";
                         node: string;
+                        reason?: string;
                     } | {
                         /** @constant */
                         operation: "retitle";
@@ -35999,6 +36023,11 @@ export interface operations {
                      *         "version": {
                      *           "id": "example",
                      *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
                      *         }
                      *       },
                      *       "mayEdit": false,
@@ -36125,6 +36154,24 @@ export interface operations {
                             version: {
                                 id: string;
                                 number: string;
+                            };
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
                             };
                         } | null;
                         /** @description Whether the caller may restructure the outline */
@@ -36342,6 +36389,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -36655,6 +36720,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -37115,6 +37198,11 @@ export interface operations {
                      *         "version": {
                      *           "id": "example",
                      *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
                      *         }
                      *       },
                      *       "mayEdit": false,
@@ -37241,6 +37329,24 @@ export interface operations {
                             version: {
                                 id: string;
                                 number: string;
+                            };
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
                             };
                         } | null;
                         /** @description Whether the caller may restructure the outline */
@@ -37458,6 +37564,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -37771,6 +37895,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -40661,6 +40803,11 @@ export interface operations {
                      *         "version": {
                      *           "id": "example",
                      *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
                      *         }
                      *       },
                      *       "mayEdit": false,
@@ -40787,6 +40934,24 @@ export interface operations {
                             version: {
                                 id: string;
                                 number: string;
+                            };
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
                             };
                         } | null;
                         /** @description Whether the caller may restructure the outline */
@@ -41004,6 +41169,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -41317,6 +41500,24 @@ export interface operations {
                                 version: {
                                     id: string;
                                     number: string;
+                                };
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
                                 };
                             } | null;
                             /** @description Whether the caller may restructure the outline */
@@ -55355,6 +55556,11 @@ export interface operations {
                      *         "version": {
                      *           "id": "example",
                      *           "number": "example"
+                     *         },
+                     *         "required": [],
+                     *         "departures": {
+                     *           "added": [],
+                     *           "missing": []
                      *         }
                      *       },
                      *       "mayEdit": false,
@@ -55481,6 +55687,24 @@ export interface operations {
                             version: {
                                 id: string;
                                 number: string;
+                            };
+                            /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                            required: string[];
+                            /** @description How the document departs from its template (TPL-028) */
+                            departures: {
+                                /** @description Each section the document has that its template does not */
+                                added: {
+                                    node: string;
+                                    title: string;
+                                }[];
+                                /** @description Each starting section none of its sections came from */
+                                missing: {
+                                    key: string;
+                                    title: string;
+                                    required: boolean;
+                                    /** @description Why a required one was removed, as its remover said */
+                                    reason: string | null;
+                                }[];
                             };
                         } | null;
                         /** @description Whether the caller may restructure the outline */
