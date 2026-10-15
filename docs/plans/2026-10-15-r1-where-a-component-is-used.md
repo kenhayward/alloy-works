@@ -48,3 +48,12 @@ the slice they serve.
 - Tests: the tab; the warning, approved apart, and none for pins alone; the browser walks. The final
   review hunts a name leaked to a non-reader and a reference a change reaches that the warning misses.
   The close: 0.172.0.
+
+## Built
+
+R1a #631, and R1b with the close (0.172.0) #632. The final review found a deleted document flagged as
+one the reader may not read, which made every save ask; and an outline that does not read dropped
+unflagged. Both are fixed. The browser walks found the warning asking about the very document a
+component was open in; that document is left out, as its author expects the version to reach it. Left for R2: the scan reads every document version per call, and runs on
+each Save version, so the index replaces it there; a version cut by giving back recovered changes is
+not warned of.
