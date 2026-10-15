@@ -262,7 +262,7 @@ describe('baselines over HTTP (baselines.md)', () => {
     expect(unsupported.json()).toMatchObject({ code: 'format_unsupported' });
   });
 
-  it('STR-047 shows the document as a baseline holds it, after the document has moved on, withholding what the reader may not read', async () => {
+  it('STR-047 LIF-005 shows the document as a baseline holds it, after the document has moved on, with its state now, withholding what the reader may not read', async () => {
     const [open, secret] = await tenantDb.withTenant(tenant, async (trx) => {
       const made = [];
       for (const [space, author, title] of [
@@ -319,6 +319,8 @@ describe('baselines over HTTP (baselines.md)', () => {
       texts: { node: string; title: string; version: { id: string } }[];
     }>();
     expect(body.version.id).toBe(document.id);
+    // The document's state now, the one part read at its latest (LIF-005).
+    expect(view.json<{ state: unknown }>().state).toEqual({ key: 'draft', name: 'Draft' });
     expect(body.outline.nodes.map((node) => [node.id, node.component])).toEqual([
       [SHOWN, open!.artifactId],
       [NODE, null],

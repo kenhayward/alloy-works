@@ -118,6 +118,11 @@ export type BaselineView = z.infer<typeof BaselineView>;
  */
 export const BaselinePageView = z.object({
   baseline: BaselineSummaryView,
+  state: z
+    .object({ key: z.string(), name: z.string() })
+    .describe(
+      "The document's workflow state now (LIF-005): the one part of this page read at its latest, said as now",
+    ),
   version: z
     .object({ id: LowercaseUuid, number: z.string() })
     .describe('The document version pinned'),

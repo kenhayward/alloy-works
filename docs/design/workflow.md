@@ -8,46 +8,46 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 
 ## Requirements owned
 
-| Requirement | How                                                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed; "per artifact type" read as per kind, as LIF-019's is (Ken, 2026-10-14) |
-| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason                                                                          |
-| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                                                                                      |
-| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                 |
-| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                   |
-| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                     |
-| **LIF-003** | Gates, below: a transition needs a permission alone, or is a gate needing approvals by whoever may approve                                                           |
-| **LIF-008** | Each approval a row: who, when, the version, the gate (`workflow_approval`)                                                                                          |
-| **LIF-009** | A gate's `approvals`, each by a distinct person                                                                                                                      |
-| **LIF-010** | A gate's `notAuthor`: whoever recorded a version since the last revision is refused (`approval_author`)                                                              |
-| **LIF-036** | Both kinds have workflows and gates; a component passes its own                                                                                                      |
-| **LIF-051** | Any approver rejects, with a reason, kept with who, when, the version and the gate                                                                                   |
-| **LIF-052** | A rejection returns it to the gate's declared `reject.to`, the rework path in the definition                                                                         |
-| **LIF-074** | `gate.rejected`, an event of its own                                                                                                                                 |
-| **LIF-075** | `workflow.transitioned` and `approval.given`, each an event of its own                                                                                               |
-| **LIF-013** | Passing a gate designates a revision, and a document's gate may take a baseline                                                                                      |
-| **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                    |
-| **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                    |
-| **DAT-121** | Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft                                                               |
-| **LIF-004** | What a transition requires, below: no unresolved suggestions, no open threads, no failed bindings, no missing required sections, checked as it is taken              |
-| **LIF-039** | A document's transition may require every component it assembles at an approved revision, naming each that is not                                                    |
-| **COL-066** | `suggestions`: none unresolved on a component, or on any component a document assembles                                                                              |
-| **DAT-123** | `revisions`: no value revised by hand standing in front of a binding's result                                                                                        |
-| **LIF-038** | A reference may track its component's latest approved revision, beside pinned and latest: [The latest approved revision](#the-latest-approved-revision)              |
-| **REU-050** | Each reference takes one of the three modes, shown on its label and in the outline                                                                                   |
-| **LIF-041** | A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them                  |
-| **LIF-015** | Dates, below: an effective date set apart from approval, an act (`artifact_dates`)                                                                                   |
-| **LIF-016** | A review-by day, set beside it with its owner                                                                                                                        |
-| **LIF-017** | Home's **Review due** for the owner, from the days the workflow's review policy says before the day                                                                  |
-| **LIF-018** | **Past review** on the artifact's header and in the lists, and on the label of every reference to it in a document                                                   |
-| **LIF-059** | The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed                                  |
-| **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                          |
+| Requirement | How                                                                                                                                                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LIF-001** | Definitions, below: per kind, per tenant, saved by an administrator, seeded but never fixed; "per artifact type" read as per kind, as LIF-019's is (Ken, 2026-10-14)                                                                                                  |
+| **LIF-002** | Each transition declares from, to, the permission it needs and whether it asks for a reason                                                                                                                                                                           |
+| **LIF-007** | Every save a new version; every move records the version that decided it (WF-E)                                                                                                                                                                                       |
+| **LIF-054** | Every version kept, insert-only, and read by `GET /v1/workflows/{kind}/versions/{n}`                                                                                                                                                                                  |
+| **LIF-061** | A transition may require a reason, refused without one (`reason_required`), kept on its move's row                                                                                                                                                                    |
+| **LIF-005** | One state at a time (the transition table's latest row), shown wherever the artifact appears: both headers, both lists, search, the picker, the Part panel, Home's attention, the inbox and a baseline's page (the document's state now) ([In the interface](#state)) |
+| **SCH-060** | Search, below: a filter and a facet on the state's key, the artifact's state now                                                                                                                                                                                      |
+| **LIF-003** | Gates, below: a transition needs a permission alone, or is a gate needing approvals by whoever may approve                                                                                                                                                            |
+| **LIF-008** | Each approval a row: who, when, the version, the gate (`workflow_approval`)                                                                                                                                                                                           |
+| **LIF-009** | A gate's `approvals`, each by a distinct person                                                                                                                                                                                                                       |
+| **LIF-010** | A gate's `notAuthor`: whoever recorded a version since the last revision is refused (`approval_author`)                                                                                                                                                               |
+| **LIF-036** | Both kinds have workflows and gates; a component passes its own                                                                                                                                                                                                       |
+| **LIF-051** | Any approver rejects, with a reason, kept with who, when, the version and the gate                                                                                                                                                                                    |
+| **LIF-052** | A rejection returns it to the gate's declared `reject.to`, the rework path in the definition                                                                                                                                                                          |
+| **LIF-074** | `gate.rejected`, an event of its own                                                                                                                                                                                                                                  |
+| **LIF-075** | `workflow.transitioned` and `approval.given`, each an event of its own                                                                                                                                                                                                |
+| **LIF-013** | Passing a gate designates a revision, and a document's gate may take a baseline                                                                                                                                                                                       |
+| **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                                                                                                                     |
+| **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                                                                                                                     |
+| **DAT-121** | Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft                                                                                                                                                                |
+| **LIF-004** | What a transition requires, below: no unresolved suggestions, no open threads, no failed bindings, no missing required sections, checked as it is taken                                                                                                               |
+| **LIF-039** | A document's transition may require every component it assembles at an approved revision, naming each that is not                                                                                                                                                     |
+| **COL-066** | `suggestions`: none unresolved on a component, or on any component a document assembles                                                                                                                                                                               |
+| **DAT-123** | `revisions`: no value revised by hand standing in front of a binding's result                                                                                                                                                                                         |
+| **LIF-038** | A reference may track its component's latest approved revision, beside pinned and latest: [The latest approved revision](#the-latest-approved-revision)                                                                                                               |
+| **REU-050** | Each reference takes one of the three modes, shown on its label and in the outline                                                                                                                                                                                    |
+| **LIF-041** | A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them                                                                                                                   |
+| **LIF-077** | A save of an approved component starts a draft (WF-F), its revision stays designated and effective, and every reference tracking the latest approved revision is served it ([The latest approved revision](#the-latest-approved-revision))                            |
+| **LIF-015** | Dates, below: an effective date set apart from approval, an act (`artifact_dates`)                                                                                                                                                                                    |
+| **LIF-016** | A review-by day, set beside it with its owner                                                                                                                                                                                                                         |
+| **LIF-017** | Home's **Review due** for the owner, from the days the workflow's review policy says before the day                                                                                                                                                                   |
+| **LIF-018** | **Past review** on the artifact's header and in the lists, and on the label of every reference to it in a document                                                                                                                                                    |
+| **LIF-059** | The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed                                                                                                                                   |
+| **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                                                                                                                           |
 
-**Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
-the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
-whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-040, below, is
-not claimed either. VER-012 to
-VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below.
+VER-012 to VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below. LIF-040
+was superseded by LIF-077, claimed below: a reference floating at latest takes a draft by its author's
+choice.
 
 ## Definitions
 
@@ -109,8 +109,9 @@ component the reader may read (from the listing of what they may, so never anoth
 offered is a header button sending the state it was seen in; a reason asked for first where required;
 a refusal said in the service's words, the state read again where it moved. A page reads its state
 again on the `workflow` event; a placed component's comes from the event itself. Before the first
-save of an approved one, the page says a save starts a new draft. Home's attention carries no state
-and shows none; the inbox, the relationships panel and baselines stay out (WF-G).
+save of an approved one, the page says a save starts a new draft. Home's attention, the inbox and a
+baseline's page show it too (LIF-005): the inbox only of what its reader may read, a baseline's page
+the document's state now, beside what it pins. No relationships panel exists yet; one shows it too.
 Administration > Workflows edits each kind's states and transitions and saves the next version.
 
 ## Search
@@ -230,9 +231,9 @@ of the same component and older than the one shown now: a publication that carri
 at the latest or pinned, has not been moved past (the final review). Never published, nothing has
 moved. A baseline's publication counts as the document's last, as a gate's approved one is.
 
-**LIF-040 is not claimed**: a save of an approved component starts a draft (WF-F) and leaves its
-revision designated and served to every reference tracking it; a reference at the latest takes the
-draft, by the mode its author chose, so "served to everything referencing it" holds only for those.
+**LIF-077** (LIF-040 superseded): a save of an approved component starts a draft and leaves its
+revision designated, and effective once its date passes (WF5), served to every reference tracking the
+latest approved revision; a reference at the latest takes the draft, by the mode its author chose.
 
 ## Dates
 

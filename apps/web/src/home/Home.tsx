@@ -1,4 +1,5 @@
 import type { AttentionView, createApiClient } from '@alloy-works/api-client';
+import { StateLozenge } from '../states/Lozenge.js';
 import { useEffect, useId, useState } from 'react';
 
 import { connectionLink } from '../data/links.js';
@@ -165,6 +166,8 @@ function WaitingItem({ item }: { item: Waiting }) {
           {words.detail}
         </span>
       </span>
+      {/* Its state now, wherever it appears (LIF-005); a connection has none. */}
+      {item.state && <StateLozenge state={item.state} />}
       <a
         className={styles['attentionAction']}
         href={words.href}

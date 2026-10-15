@@ -17,6 +17,10 @@ const Place = z.object({
     .string()
     .nullable()
     .describe('Its title, to a reader of it now alone; null to anybody else'),
+  state: z
+    .object({ key: z.string(), name: z.string() })
+    .nullable()
+    .describe('Its workflow state now (LIF-005), to a reader of it alone; null to anybody else'),
 });
 
 /** One notification (COL-063): what happened, by whom, where - never the text (COL-036). */
@@ -103,6 +107,10 @@ export const AttentionItemView = z.object({
     .date()
     .optional()
     .describe('A review’s: the day it is to be reviewed by (LIF-017)'),
+  state: z
+    .object({ key: z.string(), name: z.string() })
+    .nullable()
+    .describe("A component's or a document's workflow state now (LIF-005); null for a connection"),
   request: LowercaseUuid.optional().describe(
     'A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}`',
   ),

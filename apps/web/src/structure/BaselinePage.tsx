@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { StateLozenge } from '../states/Lozenge.js';
 import {
   layoutWordsSchema,
   numberingSchemeSchema,
@@ -32,6 +33,8 @@ type Client = ReturnType<typeof createApiClient>;
 
 interface Shown {
   readonly name: string;
+  /** The document's workflow state now (LIF-005); null from a service before it. */
+  readonly state: { readonly key: string; readonly name: string } | null;
   readonly madeBy: string;
   readonly madeAt: string;
   readonly digest: string;
@@ -88,6 +91,13 @@ function shownIn(data: unknown, document: string): Shown | undefined {
   }
   return {
     name: String(baseline.name),
+    state:
+      isRecord(data.state) &&
+      typeof data.state.key === 'string' &&
+      typeof data.state.name === 'string' &&
+      data.state.key !== ''
+        ? { key: data.state.key, name: data.state.name }
+        : null,
     madeBy:
       isRecord(baseline.madeBy) && typeof baseline.madeBy.name === 'string'
         ? baseline.madeBy.name
@@ -277,6 +287,12 @@ export function BaselinePage({
             {shown.superseded ? 'Superseded' : 'Current'}
           </Chip>
           <span className={styles['note']}>{`Made by ${shown.madeBy} on ${when}`}</span>
+          {/* The document's state now, the one thing here read at its latest (LIF-005). */}
+          {shown.state && (
+            <span className={styles['note']}>
+              The document now: <StateLozenge state={shown.state} />
+            </span>
+          )}
         </div>
         <p className={styles['note']}>
           The document as this baseline holds it. Nothing here changes as the document does.

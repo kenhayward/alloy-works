@@ -24,7 +24,11 @@ function service() {
       kind: 'mention',
       actor: { id: ADA, name: 'Ada' },
       thread: THREAD,
-      on: { id: COMPONENT, title: 'Install the printer' },
+      on: {
+        id: COMPONENT,
+        title: 'Install the printer',
+        state: { key: 'in_review', name: 'In review' },
+      },
       counts: null,
       at: '2026-10-12T10:00:00.000Z',
       read: false,
@@ -34,7 +38,7 @@ function service() {
       kind: 'reply',
       actor: { id: ADA, name: 'Ada' },
       thread: GONE,
-      on: { id: HIDDEN, title: null },
+      on: { id: HIDDEN, title: null, state: null },
       counts: null,
       at: '2026-10-12T09:00:00.000Z',
       read: false,
@@ -105,7 +109,7 @@ function service() {
 }
 
 describe('the inbox, from the account chip', () => {
-  it('COL-063 COL-036 lists what happened newest first, unread said, opens a thread as the reader may read it now, and marks it read', async () => {
+  it('COL-063 COL-036 LIF-005 lists what happened newest first, unread said, in the state of what it is on, opens a thread as the reader may read it now, and marks it read', async () => {
     const { client, asked } = service();
     render(<Inbox client={client} onClose={() => undefined} />);
     const list = await screen.findByRole('list', { name: 'Notifications' });
@@ -116,6 +120,9 @@ describe('the inbox, from the account chip', () => {
       'Your daily digest: 2 replies, 1 resolution, on Install the printer',
     ]);
     expect(screen.getByText('2 unread')).toBeInTheDocument();
+    // What it is on, in its state now; nothing of one its reader may no longer read (LIF-005).
+    expect(within(items[0]!).getByText('In review')).toBeInTheDocument();
+    expect(within(items[1]!).queryByText(/In review|Draft|Approved/)).toBeNull();
 
     await userEvent.click(within(items[0]!).getByRole('button', { name: 'Open' }));
     expect(await within(items[0]!).findByText('@Grace')).toBeInTheDocument();

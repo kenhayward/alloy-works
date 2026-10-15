@@ -552,7 +552,7 @@ describe('requesting and recording a publication', () => {
     });
   });
 
-  it('LIF-038 REU-050 resolves a reference tracking the latest approved revision to the version it designates, and moves as a newer one is', async () => {
+  it('LIF-038 REU-050 LIF-077 resolves a reference tracking the latest approved revision to the version it designates, keeps it through a draft, and moves as a newer one is', async () => {
     await service.withTenant(production, async (trx) => {
       const made = await component(trx, general, ada, 'Approved printer');
       const tracking = reference(made.artifactId, { kind: 'approved' });

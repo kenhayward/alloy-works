@@ -105,14 +105,15 @@ its own, and it stays approved while the report around it is still being polishe
 components one at a time and then approving the assembled document is not a convenience, it is the
 shape of the work.
 
-| ID          | Requirement                                                                                                                                                                                                                                                     | Tranche    | Status    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **LIF-036** | Workflow states, transitions and gates must be declarable for a component as well as for a document (LIF-001), and a component must be approvable on its own                                                                                                    | T9         | Specified |
-| **LIF-037** | A component's state must be independent of the state of any document using it: an approved component may sit in a draft document, and a document in review may assemble components at different states                                                          | Constraint | Specified |
-| **LIF-038** | Passing a component's gate must designate a component revision (LIF-013), and a document must be able to reference a component at **its latest approved revision** as well as pinned or floating at latest (**REU-050**, **STR-058**, **CNT-162**, **CNT-163**) | T9         | Specified |
-| **LIF-039** | A document's gate must be able to require that every component it assembles is at an approved revision, and must name any that are not (LIF-004)                                                                                                                | T9         | Specified |
-| **LIF-040** | Approving a component must not prevent work continuing on it. Editing an approved component must produce a new working version, leaving the approved revision designated, effective and served to everything referencing it                                     | Constraint | Specified |
-| **LIF-041** | Where a newer revision of a component is approved, every document referencing its latest approved revision must be able to see that the reference has moved before a publish carries it (**CNT-159**, **CNT-161**, **CNT-163**)                                 | T9         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                 | Tranche    | Status                |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **LIF-036** | Workflow states, transitions and gates must be declarable for a component as well as for a document (LIF-001), and a component must be approvable on its own                                                                                                                                                                                                | T9         | Specified             |
+| **LIF-037** | A component's state must be independent of the state of any document using it: an approved component may sit in a draft document, and a document in review may assemble components at different states                                                                                                                                                      | Constraint | Specified             |
+| **LIF-038** | Passing a component's gate must designate a component revision (LIF-013), and a document must be able to reference a component at **its latest approved revision** as well as pinned or floating at latest (**REU-050**, **STR-058**, **CNT-162**, **CNT-163**)                                                                                             | T9         | Specified             |
+| **LIF-039** | A document's gate must be able to require that every component it assembles is at an approved revision, and must name any that are not (LIF-004)                                                                                                                                                                                                            | T9         | Specified             |
+| **LIF-040** | Approving a component must not prevent work continuing on it. Editing an approved component must produce a new working version, leaving the approved revision designated, effective and served to everything referencing it                                                                                                                                 | Constraint | Superseded by LIF-077 |
+| **LIF-077** | Approving a component must not prevent work continuing on it. Editing an approved component must produce a new working version, leaving the approved revision designated and effective, and served to every reference that tracks the latest approved revision; a reference floating at latest takes the new working version, as its author chose (LIF-038) | Constraint | Specified             |
+| **LIF-041** | Where a newer revision of a component is approved, every document referencing its latest approved revision must be able to see that the reference has moved before a publish carries it (**CNT-159**, **CNT-161**, **CNT-163**)                                                                                                                             | T9         | Specified             |
 
 **LIF-038 is the requirement that makes the rest of this work.** A reference pinned to a revision is
 frozen and a reference floating at latest picks up drafts; neither is what a report needs from an
@@ -420,3 +421,15 @@ Ken agreed the order T9 is built in ([ADR-0061](../../decisions/0061-t9s-order.m
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 74, of which 3 superseded | 76, of which 4 superseded |
+
+### LIF-040 narrowed (LIF-077), 2026-10-15
+
+Ken agreed the redraft after T9's fourth phase (the WF4 plan).
+
+| What was found                                                                                                                                           | Change                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| LIF-040 served the approved revision "to everything referencing it", which a reference floating at latest contradicts by design: its author chose drafts | **LIF-040 superseded by LIF-077**: served to every reference tracking the latest approved revision |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 76, of which 4 superseded | 77, of which 5 superseded |

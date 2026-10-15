@@ -16,6 +16,7 @@ import {
   titlesFor,
   type Tenant,
   type TenantDatabase,
+  workflowStates,
 } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { notFound } from './access.js';
@@ -55,7 +56,16 @@ export function inboxHandlers(
             ...(each.counts?.artifacts ?? []),
           ]),
         );
-        const place = (id: string) => ({ id, title: titles.get(id) ?? null });
+        // Each place's state now, of what its reader may read alone (LIF-005).
+        const states = await workflowStates(trx, [...titles.keys()]);
+        const place = (id: string) => {
+          const state = titles.has(id) ? states.get(id) : undefined;
+          return {
+            id,
+            title: titles.get(id) ?? null,
+            state: state === undefined ? null : { key: state.key, name: state.name },
+          };
+        };
         // Of something its reader may no longer read, that it happened and when, and nothing more:
         // not who did it, nor the thread, nor in a digest which threads or where (the TH final review).
         const readable = await readableOf(

@@ -38,6 +38,7 @@ const waiting = {
       artifact: { id: REPORT, kind: 'document', title: 'The dosing report' },
       reason: 'glyph_missing',
       request: REQUEST,
+      state: { key: 'in_review', name: 'In review' },
     },
     {
       kind: 'changes_not_in_version',
@@ -50,6 +51,7 @@ const waiting = {
     {
       kind: 'connection_untested',
       artifact: { id: READINGS, kind: 'connection', title: 'Readings' },
+      state: null,
     },
   ],
   total: 6,
@@ -194,6 +196,17 @@ describe('Home', () => {
         href: `#/components/${PRINTER}`,
       },
     ]);
+  });
+
+  it('LIF-005 shows the state of each thing waiting that has one', async () => {
+    render(
+      <Home client={service({ ...everything, '/v1/me/attention': () => json(200, waiting) })} />,
+    );
+    const section = await screen.findByRole('region', { name: 'Needs your attention' });
+    const items = within(await within(section).findByRole('list')).getAllByRole('listitem');
+    expect(within(items[0]!).getByText('In review')).toBeInTheDocument();
+    // A connection has no workflow, and says no state.
+    expect(within(items[3]!).queryByText(/In review|Draft|Approved/)).toBeNull();
   });
 
   it('lists nothing of a kind it does not know, and the rest as ever', async () => {
