@@ -189,6 +189,8 @@ const operationTags = {
     'getDocument',
     'createDocument',
     'editOutline',
+    'previewPlacement',
+    'placeSection',
     'getDocumentTexts',
     'recordDocumentValues',
     'getDocumentParameters',
@@ -512,6 +514,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the latest document version, including its outline and whether the caller can restructure it.',
   createDocument:
     'Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.',
+  previewPlacement:
+    "Reports what placing another document's section here would pull in, placing nothing: how many references it makes, one per occurrence of a component in the section and its subsections, each component the caller may read once with its blocks and characters at its latest version and whether it has an approved revision, and how many the caller may not read. Send the source version it names back to place. Needs edit on this document and read on the other.",
+  placeSection:
+    "Places another document's section here as one act: a new section, titled as the caller says, holding one reference per occurrence the report counted, in order, each in the mode asked; pinned takes each component's latest version now. Nothing is shared with the found section and no value is copied. Refused where the section's document has moved since the report, where it places a component the caller may not reference, or where this document's template allows no section to be added. One version. Needs edit on this document and read on the other.",
   editOutline:
     'Applies one outline operation and records one new document version. Supply the version that was read to avoid overwriting concurrent work.',
   getDocumentTexts:

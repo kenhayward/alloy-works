@@ -174,6 +174,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getComponentUses: read,
   getArtifactImpact: read,
   getArtifactReferences: read,
+  previewPlacement: read,
+  placeSection: writes('content.version_cut', 'workflow.transitioned'),
   deleteComponent: writes('artifact.deleted'),
   undeleteComponent: writes('artifact.undeleted'),
   getDocumentDeletion: read,

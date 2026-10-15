@@ -114,6 +114,36 @@ describe('placing another document section (the R2 plan, R2-F)', () => {
     expect(ids).not.toContain('s'.repeat(26));
   });
 
+  it('places at the top after any front matter, which always comes first', () => {
+    const target = outline([
+      {
+        type: 'section',
+        id: 'f'.repeat(26),
+        title: title('Preface'),
+        ...base,
+        matter: 'front',
+        children: [],
+      },
+      { type: 'section', id: 'b'.repeat(26), title: title('Scope'), ...base, children: [] },
+    ]);
+    const placed = placeSection(
+      target,
+      {
+        parent: null,
+        position: 0,
+        title: title('Upkeep'),
+        references: [{ component: A, mode: { kind: 'latest' } }],
+      },
+      counter(),
+    );
+    if (!placed.applied) throw new Error(placed.reason);
+    expect(
+      placed.outline.nodes.map((each) =>
+        each.type === 'section' ? (each.title[0] as { value?: string }).value : '',
+      ),
+    ).toEqual(['Preface', 'Upkeep', 'Scope']);
+  });
+
   it('refuses where the template allows no section to be added, nothing to place, or too much', () => {
     const target = outline([]);
     const one = [{ component: A, mode: { kind: 'latest' as const } }];

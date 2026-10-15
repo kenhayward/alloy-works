@@ -68,6 +68,7 @@ import { useOwnViewAsk } from './OwnViewAsk.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { dataState } from './dataStates.js';
 import type { NodeMarks } from './OutlinePanel.js';
+import { PlaceSectionButton } from './PlaceSection.js';
 import { useLiveDocument, type LiveDocument } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions } from '@alloy-works/api-client';
@@ -2218,6 +2219,25 @@ export function DocumentPage({
               people={people}
               busy={busy}
               onOperation={(operation) => apply(operation, false)}
+              placeFrom={
+                // Another document's section placed here (REU-054; the R2 plan, R2-F).
+                <PlaceSectionButton
+                  client={client}
+                  documentId={document.id}
+                  openedFrom={document.version.id}
+                  onPlaced={(answer) => {
+                    const after = documentIn(answer);
+                    if (after === undefined || after === 'unreadable') {
+                      setAttempt((count) => count + 1);
+                      return;
+                    }
+                    show(after);
+                    // An act with no inverse here, as a removal is: the stack ends.
+                    setUndo([]);
+                    setNotice('Placed under a new section at the top of the outline.');
+                  }}
+                />
+              }
               notice={notice}
               onNotice={setNotice}
               canUndo={undo.length > 0}

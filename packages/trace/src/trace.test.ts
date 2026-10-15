@@ -861,6 +861,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1379 (2026-10-15): R2b's routes and Place from a document - REU-046, REU-054.
     // 1375 (2026-10-15): R2a's index, impact and placing a section - SCH-023, SCH-024, REL-017 to REL-020, REL-030, REU-046, REU-054.
     // 1361 (2026-10-15): R1b's Used in and its warning - REU-007, REU-008, REU-009.
     // 1357 (2026-10-15): R1a's uses and the gone component - REU-001, REU-003, REU-005, REU-007, REU-009, REU-010, REU-043.
@@ -902,7 +903,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1375);
+    expect(model.citations).toHaveLength(1379);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -997,6 +998,7 @@ describe('scanning the repository for test files', () => {
     // 86, from 82 (2026-10-14): admin/Workflows, lifecycle/Workflow, and the ComponentEditor and
     // DocumentPage workflow tests.
     // 90, from 89 (2026-10-15): reuse/UsedIn.test.tsx, citing REU-007 to REU-009.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(90);
+    // 91, from 90 (2026-10-15): structure/PlaceSection.test.tsx, citing REU-046 and REU-054.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(91);
   });
 });

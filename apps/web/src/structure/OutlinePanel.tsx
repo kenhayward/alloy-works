@@ -238,6 +238,8 @@ export interface OutlinePanelProps {
    * next - the version, the undo stack, what is announced.
    */
   readonly onOperation: (operation: OutlineOperation) => Promise<Answered>;
+  /** Place from a document, offered under the toolbar to whoever may edit (the R2 plan, R2-F). */
+  readonly placeFrom?: ReactNode;
   /**
    * The one status sentence, which the page announces through the status bar (interface slice 15).
    * The panel reads it to know what its own last word was.
@@ -393,6 +395,7 @@ export function OutlinePanel({
   editable,
   busy = false,
   onOperation,
+  placeFrom,
   notice,
   onNotice = () => {},
   canUndo = false,
@@ -1062,6 +1065,7 @@ export function OutlinePanel({
                 </span>
               </Toolbar>
             )}
+            {instead === undefined && editable && placeFrom}
             {instead === undefined && (
               <>
                 {editable && adding?.kind === 'section' && (

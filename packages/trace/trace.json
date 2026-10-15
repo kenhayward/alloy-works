@@ -19777,13 +19777,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 401,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 414,
+      "line": 416,
       "kind": "title"
     },
     {
@@ -20083,7 +20083,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1226,
+      "line": 1241,
       "kind": "title"
     },
     {
@@ -20528,6 +20528,18 @@
       "id": "IAM-040",
       "file": "apps/service/src/own-sessions.test.ts",
       "line": 33,
+      "kind": "title"
+    },
+    {
+      "id": "REU-046",
+      "file": "apps/service/src/placement-routes.test.ts",
+      "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "REU-054",
+      "file": "apps/service/src/placement-routes.test.ts",
+      "line": 63,
       "kind": "title"
     },
     {
@@ -22772,6 +22784,18 @@
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "REU-046",
+      "file": "apps/web/src/structure/PlaceSection.test.tsx",
+      "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "REU-054",
+      "file": "apps/web/src/structure/PlaceSection.test.tsx",
+      "line": 108,
       "kind": "title"
     },
     {
@@ -26755,7 +26779,7 @@
     {
       "id": "REU-046",
       "file": "packages/domain/src/structure/place.test.ts",
-      "line": 143,
+      "line": 173,
       "kind": "title"
     },
     {

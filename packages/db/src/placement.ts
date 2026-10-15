@@ -44,7 +44,7 @@ export interface PlacementReport {
     /** Whether it has an approved revision, which an `approved` reference takes. */
     readonly approved: boolean;
   }[];
-  /** How many distinct components it places that the author may not read: placing is refused then. */
+  /** How many distinct components it places that the author may not read, or are deleted: refused then. */
   readonly unreadable: number;
   readonly blocks: number;
   readonly characters: number;
