@@ -4,9 +4,13 @@ import { componentTypeDefinitionSchema, type ComponentTypeDefinition } from './c
 import { DEFINITION_SCHEMA_VERSION } from './definition.js';
 import { fieldDefinitionSchema, type FieldDefinition } from './field.js';
 import { metadataSchemaDefinitionSchema, type MetadataSchemaDefinition } from './schema.js';
+import { variableDefinitionSchema, type VariableDefinition } from '../reuse/variables.js';
 
-/** The three definition kinds, each an artifact kind versioned by the one mechanism (ADR-0024). */
-export const definitionKinds = ['field', 'metadataSchema', 'componentType'] as const;
+/**
+ * The definition kinds, each an artifact kind versioned by the one mechanism (ADR-0024): a variable
+ * the fourth (REU-018; the R5 plan, R5-A).
+ */
+export const definitionKinds = ['field', 'metadataSchema', 'componentType', 'variable'] as const;
 
 export type DefinitionKind = (typeof definitionKinds)[number];
 
@@ -14,6 +18,7 @@ export type DefinitionOf = {
   field: FieldDefinition;
   metadataSchema: MetadataSchemaDefinition;
   componentType: ComponentTypeDefinition;
+  variable: VariableDefinition;
 };
 
 /**
@@ -32,12 +37,14 @@ const chains: Record<DefinitionKind, MigrationChain> = {
     current: DEFINITION_SCHEMA_VERSION,
     migrations: {},
   },
+  variable: { subject: 'variable definition', current: DEFINITION_SCHEMA_VERSION, migrations: {} },
 };
 
 const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = {
   field: (value) => fieldDefinitionSchema.parse(value),
   metadataSchema: (value) => metadataSchemaDefinitionSchema.parse(value),
   componentType: (value) => componentTypeDefinitionSchema.parse(value),
+  variable: (value) => variableDefinitionSchema.parse(value),
 };
 
 /** A stored definition at the current definition schema version. A projection, never a rewrite. */

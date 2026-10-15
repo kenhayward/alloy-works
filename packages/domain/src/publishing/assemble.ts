@@ -46,6 +46,13 @@ import { listsNotInWord } from '../word/lists.js';
 import { numberingNotInWord } from '../word/numbering.js';
 
 import { bind, type Bound, type BoundTables, type PrintedValue, type Held } from './bind.js';
+import {
+  printTitleVariables,
+  printVariables,
+  type PrintedVariable,
+  type VariableContext,
+  type VariableDefinition,
+} from '../reuse/variables.js';
 import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
@@ -128,6 +135,15 @@ export interface AssembleInput {
    * `binding_unresolved` (DAT-087); omitted, every binding is.
    */
   readonly bindings?: ReadonlyMap<string, ReadonlyMap<string, Held>>;
+  /**
+   * The variable stage's input (REU-016 to REU-019; the R5 plan): the environment's declared variables
+   * by key, and the document's parameters and field values they resolve from. Omitted, every variable
+   * is `variable_unresolved`: never printed as its name, never blank.
+   */
+  readonly variables?: {
+    readonly definitions: ReadonlyMap<string, VariableDefinition>;
+    readonly context: VariableContext;
+  };
   readonly refused: readonly PublishFailure[];
   /**
    * The layout, whose scheme numbers the document (STR-013). **Null for a request made before
@@ -318,6 +334,8 @@ export type Assembled<
       readonly word: WordInput | null;
       /** Every value the binding stage set, in document order: what `provenance.json` records. */
       readonly values: readonly PrintedValue[];
+      /** Every variable printed, and the source of each (REU-038; R5-E). */
+      readonly variables: readonly PrintedVariable[];
     }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
@@ -413,6 +431,27 @@ export function assemble(given: AssembleInput): Assembled {
   const valueFormats = formatsFor(given.theme?.valueCatalogue ?? null, given.outline.language);
   const values: PrintedValue[] = [];
   const bindFailures: PublishFailure[] = [];
+  // Variables first of the printing stages (REU-017, REU-019; the R5 plan): each occurrence's in its
+  // text form, each section title's in its title form, so nothing later meets a variable.
+  const variableDefinitions = given.variables?.definitions ?? new Map<string, VariableDefinition>();
+  const variableContext = given.variables?.context ?? { parameters: {}, values: {} };
+  const printedVariables: PrintedVariable[] = [];
+  const titled = (nodes: readonly OutlineNode[]): OutlineNode[] =>
+    nodes.map((node) => {
+      const children = titled(node.children);
+      if (node.type !== 'section') return { ...node, children };
+      const stage = printTitleVariables(
+        node.id,
+        node.title,
+        variableDefinitions,
+        variableContext,
+        valueFormats,
+      );
+      printedVariables.push(...stage.printed);
+      bindFailures.push(...stage.failures);
+      return { ...node, title: stage.title, children };
+    });
+  const outline: OutlineDocument = { ...given.outline, nodes: titled(given.outline.nodes) };
   // A bound table is laid out under a layout alone (TB1-H): a request made before layouts has none of
   // its words, and its bound table is refused below by name, as any block it cannot set.
   const tables: BoundTables | undefined =
@@ -425,11 +464,21 @@ export function assemble(given: AssembleInput): Assembled {
         };
   const input: BoundInput = {
     ...given,
+    outline,
     occurrences: new Map(
       [...given.occurrences].map(([node, content]) => {
-        const stage = bind(
+        const variable = printVariables(
           node,
           condition(node, content),
+          variableDefinitions,
+          variableContext,
+          valueFormats,
+        );
+        printedVariables.push(...variable.printed);
+        bindFailures.push(...variable.failures);
+        const stage = bind(
+          node,
+          variable.content,
           given.bindings?.get(node) ?? new Map(),
           valueFormats,
           tables,
@@ -2208,6 +2257,7 @@ export function assemble(given: AssembleInput): Assembled {
       ok: true,
       numbering,
       values,
+      variables: printedVariables,
       word: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
@@ -2273,6 +2323,7 @@ export function assemble(given: AssembleInput): Assembled {
     ok: true,
     numbering,
     values,
+    variables: printedVariables,
     word:
       docx && docxFormat !== undefined
         ? {

@@ -6,7 +6,10 @@ import {
   componentTypeDefinitionSchema,
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
+  definitionKinds,
   nameKey,
+  variableDefinitionSchema,
+  type VariableDefinition,
   readDefinition,
   schemaConflicts,
   templateDefinitionSchema,
@@ -85,6 +88,7 @@ const parsers = {
   field: fieldDefinitionSchema,
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
+  variable: variableDefinitionSchema,
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
@@ -133,15 +137,10 @@ export async function readDefinitionLatest(
 ): Promise<StoredDefinition | undefined> {
   if (!UUID.test(id)) return undefined;
   const version = await latestVersion(trx, id);
-  if (
-    !version ||
-    (version.kind !== 'field' &&
-      version.kind !== 'metadataSchema' &&
-      version.kind !== 'componentType')
-  ) {
+  if (!version || !(definitionKinds as readonly string[]).includes(version.kind)) {
     return undefined;
   }
-  const kind = version.kind;
+  const kind = version.kind as DefinitionKind;
   const read = readDefinition(kind, version.content, { artifact: id, version: version.id });
   if (!read.ok)
     throw new Error(`The ${kind} ${id} at ${version.id} does not read: ${read.failure}`);
@@ -187,7 +186,7 @@ export async function listDefinitions(
     ])
     .select(sql<string>`latest.content ->> 'name'`.as('name'))
     .select(sortColumns([sql`latest.content ->> 'name'`]))
-    .where('a.kind', 'in', ['field', 'metadataSchema', 'componentType']);
+    .where('a.kind', 'in', [...definitionKinds]);
   const { rows, next } = await keysetPage<{
     id: string;
     kind: DefinitionKind;
@@ -332,6 +331,23 @@ async function refusal(
     if (failures.length > 0) return { answer: 'assignment.conflict', failures };
     return undefined;
   }
+  if (kind === 'variable') {
+    // A field it takes a value from is a field; its key is no other variable's (the R5 plan, R5-A).
+    const variable = candidate as VariableDefinition;
+    const field = variable.sources.field;
+    if (field !== undefined && (await readDefinitionLatest(trx, field))?.kind !== 'field') {
+      return { answer: 'definition.unresolved', missing: [field], requires: [] };
+    }
+    const keyed = (await latestOfKind(trx, 'variable')).find(
+      (each) => each.definition.key === variable.key && each.id !== self,
+    );
+    if (keyed) {
+      return {
+        answer: 'definition.name_taken',
+        holder: { id: keyed.id, name: keyed.definition.name },
+      };
+    }
+  }
   const holder = await nameHolder(trx, kind, candidate.name, self);
   if (holder) return { answer: 'definition.name_taken', holder };
   if (kind === 'metadataSchema' && self !== undefined) {
@@ -424,4 +440,15 @@ export async function recordDefinitionVersion(
     case 'artifact.missing':
       return { answer: 'definition.missing' };
   }
+}
+
+/**
+ * The environment's variables by key, each at its latest version (REU-018; the R5 plan, R5-A): what a
+ * publish resolves a content `variable` node by.
+ */
+export async function variablesByKey(
+  trx: TenantTransaction,
+): Promise<Map<string, VariableDefinition>> {
+  const stored = await latestOfKind(trx, 'variable');
+  return new Map(stored.map((each) => [each.definition.key, each.definition]));
 }

@@ -70,7 +70,8 @@ const numbering = {
 describe('publishedProvenance', () => {
   it('records each value: where, what was printed and from what, and the result it was taken from', () => {
     expect(publishedProvenance([value], datasets, numbering)).toEqual({
-      schemaVersion: 4,
+      schemaVersion: 5,
+      variables: [],
       values: [
         {
           node: NODE,
@@ -116,7 +117,7 @@ describe('publishedProvenance', () => {
       datasetVersion: VERSION,
     };
     const made = publishedProvenance([value, image], datasets, numbering);
-    expect(made.schemaVersion).toBe(4);
+    expect(made.schemaVersion).toBe(5);
     const [, recorded] = made.values;
     expect(recorded).toMatchObject({
       block: 'f1',
@@ -155,7 +156,7 @@ describe('publishedProvenance', () => {
       },
     };
     const made = publishedProvenance([value, table], datasets, numbering);
-    expect(made.schemaVersion).toBe(4);
+    expect(made.schemaVersion).toBe(5);
     const [, recorded] = made.values;
     expect(recorded).toEqual({
       node: NODE,
@@ -223,7 +224,7 @@ describe('publishedProvenance', () => {
       datasets,
       numbering,
     );
-    expect(made.schemaVersion).toBe(4);
+    expect(made.schemaVersion).toBe(5);
     expect(made.values[0]).toMatchObject({ printed: '4,300.00', value: '4200.5', revision });
     // A value no person revised carries none.
     expect(publishedProvenance([value], datasets, numbering).values[0]).not.toHaveProperty(
@@ -266,5 +267,32 @@ describe('publishedProvenance', () => {
     const text = new TextDecoder().decode(made);
     const keys = Object.keys(JSON.parse(text).values[0]);
     expect(keys).toEqual([...keys].sort());
+  });
+  it('records each variable printed at schema 5: where, its key, the source that supplied it, and what it printed', () => {
+    const made = publishedProvenance([], datasets, numbering, [
+      {
+        node: NODE,
+        block: 'p1',
+        key: 'review_date',
+        source: 'metadata',
+        value: '2026-11-03',
+        printed: '3/11/2026',
+      },
+    ]);
+    expect(made).toEqual({
+      schemaVersion: 5,
+      values: [],
+      variables: [
+        {
+          node: NODE,
+          number: '1',
+          block: 'p1',
+          key: 'review_date',
+          source: 'metadata',
+          value: '2026-11-03',
+          printed: '3/11/2026',
+        },
+      ],
+    });
   });
 });

@@ -512,7 +512,7 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
     const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
-    expect(provenance.schemaVersion).toBe(4);
+    expect(provenance.schemaVersion).toBe(5);
     expect(provenance.values).toMatchObject([
       {
         printed: '-4,300.00',
@@ -877,7 +877,7 @@ describe('publishing a document holding a value', () => {
       expect(await work()).toBe('done');
       const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
       const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
-      expect(provenance.schemaVersion).toBe(4);
+      expect(provenance.schemaVersion).toBe(5);
       expect(provenance.values).toMatchObject(
         [
           ['p1', 'i1', NORTH_SAYS],

@@ -319,6 +319,7 @@ export function publishJob(deps: {
         assets,
         bindings,
         boundAssets,
+        variables,
       } = read.inputs;
 
       // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
@@ -365,6 +366,8 @@ export function publishJob(deps: {
         occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
         // The binding stage's results, by node and binding: a preview takes and fails as a publish does.
         bindings: held,
+        // What its variables resolve by: the declared ones, and the document's parameters and values.
+        variables,
         refused,
         // The layout version the request was made under, never the latest; none for a request made
         // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
@@ -459,7 +462,7 @@ export function publishJob(deps: {
       // recorded a binding, as `recordPublication` counts them, even where a condition took every
       // bound block out before binding: it lists what printed, which may be nothing.
       const recordedABinding = [...bindings.values()].some((each) => each.size > 0);
-      if (!preview && recordedABinding) {
+      if (!preview && (recordedABinding || assembled.variables.length > 0)) {
         const datasets = new Map(
           [...bindings.values()].flatMap((each) =>
             [...each.values()].map(
@@ -468,7 +471,7 @@ export function publishJob(deps: {
           ),
         );
         const bytes = provenanceBytes(
-          publishedProvenance(assembled.values, datasets, assembled.numbering),
+          publishedProvenance(assembled.values, datasets, assembled.numbering, assembled.variables),
         );
         const stored = await keep(read.store, bytes, 'provenance');
         outputs.push({

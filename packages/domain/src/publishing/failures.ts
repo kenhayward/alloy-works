@@ -218,6 +218,9 @@ export const publishFailureCodes = [
   // resolve, from R4 (REU-015): a local override whose paragraph has changed or gone since it was made,
   // naming the node and, in `block`, the paragraph. Never applied, never dropped silently.
   'override_stale',
+  // bind, from R5 (REU-017): a variable naming no declared key, or resolving to nothing its type prints,
+  // naming the node, the block and in `detail` the key. Never printed as its name, never blank.
+  'variable_unresolved',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

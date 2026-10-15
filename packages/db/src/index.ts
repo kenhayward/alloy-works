@@ -626,6 +626,7 @@ export {
   placesOf,
   readDefinitionLatest,
   recordDefinitionVersion,
+  variablesByKey,
   type DefinitionAnswer,
   type DefinitionSummary,
   type StoredDefinition,

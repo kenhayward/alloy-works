@@ -409,6 +409,11 @@ describe('the domain package', () => {
         'valueFailures',
         // R2: the references a version holds, as the reference index keeps them.
         'referencesIn',
+        // R5: variables, declared, resolved and printed.
+        'printTitleVariables',
+        'printVariables',
+        'resolveVariable',
+        'variableDefinitionSchema',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',
