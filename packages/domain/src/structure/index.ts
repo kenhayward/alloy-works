@@ -88,3 +88,11 @@ export type { IncomingInput, IncomingReference } from './incoming.js';
 export { baselineDigestInput, baselineNameProblem } from './baseline.js';
 export type { BaselinePins, PinnedVersion } from './baseline.js';
 export { PLACE_MAX, contentSize, placeSection, referencesUnder } from './place.js';
+export {
+  OVERRIDES_MAX,
+  applyOverrides,
+  overrideSchema,
+  overridesRefusal,
+  overridesSchema,
+  type Override,
+} from './overrides.js';

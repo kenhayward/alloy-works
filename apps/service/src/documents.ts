@@ -54,6 +54,7 @@ import {
   workflowStates,
   placeFromSection,
   previewPlacement,
+  applyOutlineOverrides,
 } from '@alloy-works/db';
 import {
   conditions,
@@ -68,6 +69,8 @@ import {
   walkOutline,
   withholdComponents,
   type AccessFacts,
+  type ContentDocument,
+  type Override,
   type Contribution,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -617,6 +620,23 @@ export function documentHandlers(
           movedFrom.set(occurrence.node, was);
         }
       }
+      // Each node's overrides, as they stand against the version it shows (REU-015; the R4 plan, R4-D).
+      const overrideOf = new Map<string, readonly Override[]>();
+      walkOutline(outline.nodes, (node) => {
+        if (node.type === 'reference' && node.overrides) overrideOf.set(node.id, node.overrides);
+      });
+      const shownContents = new Map<string, ContentDocument>();
+      for (const occurrence of inputs.occurrences) {
+        const held = occurrence.version === null ? undefined : contents.get(occurrence.version);
+        if (held && overrideOf.has(occurrence.node)) {
+          shownContents.set(occurrence.node, held.content as ContentDocument);
+        }
+      }
+      const staleOf = new Set(
+        (await applyOutlineOverrides(trx, outline, shownContents)).stale.map(
+          (each) => `${each.node}/${each.block}`,
+        ),
+      );
       const editing = new Map(
         readable.map((component) => {
           const lock = locks.get(component);
@@ -670,12 +690,25 @@ export function documentHandlers(
               : { moved: { id: was, number: `${held.revision}.${held.version}` } };
           const past =
             component !== undefined && pastComponents.has(component) ? { pastReview: true } : {};
+          // Said only of a component the caller reads, as everything of it is.
+          const own = overrideOf.get(occurrence.node);
+          const overrides =
+            own === undefined || !shownContents.has(occurrence.node)
+              ? {}
+              : {
+                  overrides: own.map((each) => ({
+                    block: each.block,
+                    text: each.text.map((run) => ({ ...run })),
+                    stale: staleOf.has(`${occurrence.node}/${each.block}`),
+                  })),
+                };
           return {
             ...occurrence,
             ...newer,
             ...tracked,
             ...moved,
             ...past,
+            ...overrides,
             mayEdit: known?.mayEdit ?? false,
             mayComment: known?.mayComment ?? false,
             maySuggest: known?.maySuggest ?? false,

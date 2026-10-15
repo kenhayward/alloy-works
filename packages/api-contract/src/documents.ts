@@ -517,6 +517,22 @@ export const DocumentTextsView = z.object({
           .describe(
             "True where the component's review-by day has passed (LIF-018); absent otherwise, or where the caller may not read it",
           ),
+        overrides: z
+          .array(
+            z.object({
+              block: z.string(),
+              text: z.array(z.record(z.string(), z.unknown())),
+              stale: z
+                .boolean()
+                .describe(
+                  'Whether its paragraph has changed or gone since: then it is not applied',
+                ),
+            }),
+          )
+          .optional()
+          .describe(
+            "This document's local overrides of the component's paragraphs (REU-011): each paragraph's text here, applied where it is not stale; absent where none, or where the caller may not read the component",
+          ),
         moved: z
           .object({ id: z.string(), number: z.string() })
           .optional()

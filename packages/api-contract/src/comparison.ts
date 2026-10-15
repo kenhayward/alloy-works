@@ -127,9 +127,9 @@ export const ResolvedComparisonView = z.object({
         node: z.string(),
         title: z.string().describe("The component's title"),
         causes: z
-          .array(z.enum(['edited', 'data', 'definition']))
+          .array(z.enum(['edited', 'data', 'definition', 'overridden']))
           .describe(
-            'Why it prints differently: somebody edited it, its data changed, or a definition it was written against did',
+            "Why it prints differently: somebody edited it, its data changed, a definition it was written against did, or the document's local overrides of it did, which leave the component as it is",
           ),
         values: z.array(
           z.object({

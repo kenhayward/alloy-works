@@ -116,12 +116,23 @@ export function comparisonHandlers(
       const tenant = tenantOf(request);
       const definitionsOf = (version: StoredVersion) =>
         version.definitions.map((each) => each.version);
+      /** Each reference's local overrides, as one string to compare (REU-014; R4-F). */
+      const overridesOf = (outline: OutlineDocument) => {
+        const found = new Map<string, string>();
+        walkOutline(outline.nodes, (node) => {
+          if (node.type === 'reference' && node.overrides) {
+            found.set(node.id, JSON.stringify(node.overrides));
+          }
+        });
+        return found;
+      };
       /** Each readable node's resolution, its values taken from these bindings' states. */
       const nodesOf = async (
         occurrences: ReadonlyMap<string, string>,
         states: (
           contents: readonly { node: string; component: string; content: ContentDocument }[],
         ) => Promise<readonly BindingStateView[]>,
+        overrides: ReadonlyMap<string, string>,
       ) => {
         const read: {
           node: string;
@@ -161,6 +172,7 @@ export function comparisonHandlers(
               version: each.stored.id,
               definitions: definitionsOf(each.stored),
               values: values.get(each.node) ?? new Map(),
+              overrides: overrides.get(each.node) ?? '',
             },
           ]),
         );
@@ -187,6 +199,7 @@ export function comparisonHandlers(
                 occurrences: contents,
                 pinned: pinned.filter((each) => contents.some((one) => one.node === each.node)),
               }),
+            overridesOf(outlineOf(document, read.documentId)),
           ),
         };
         return { side, documentId: read.documentId };
@@ -218,6 +231,7 @@ export function comparisonHandlers(
               ),
             ),
             async () => live,
+            overridesOf(outlineOf(version, older.documentId)),
           ),
         };
       } else {

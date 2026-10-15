@@ -790,3 +790,4 @@ export {
   type StoredJob,
 } from './jobs.js';
 export { mayStillRead } from './jobs.js';
+export { applyOutlineOverrides, overrideOriginals } from './overrides.js';

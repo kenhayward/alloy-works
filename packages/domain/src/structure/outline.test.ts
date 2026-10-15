@@ -399,6 +399,14 @@ describe('the outline a document version holds', () => {
               matter: 'body',
               pageBreak: 'none',
               values: {},
+              // Every member a reference may hold (the R4 plan, R4-A).
+              overrides: [
+                {
+                  block: 'p1',
+                  against: COMPONENT,
+                  text: [{ type: 'text', value: 'Here', marks: [] }],
+                },
+              ],
               children: [],
             },
           ],

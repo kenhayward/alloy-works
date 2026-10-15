@@ -80,4 +80,12 @@ describe('resolved output compared', () => {
       compareResolved(side({}), side({}, { layout: 'layout-2', theme: 'theme-2' })).document,
     ).toEqual(['layout', 'theme']);
   });
+
+  it('REU-014 shows an override as an override: the same component version, its document differing, and no edit', () => {
+    const compared = compareResolved(
+      side({ n1: node('v1') }),
+      side({ n1: { ...node('v1'), overrides: '[{"block":"p1"}]' } }),
+    );
+    expect(compared.nodes).toEqual([{ node: 'n1', causes: ['overridden'], values: [] }]);
+  });
 });

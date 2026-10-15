@@ -11,6 +11,7 @@ import {
   outlineChangesRefused,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
+  overridesRefusal,
   readOutline,
   repointsBetween,
   type Repoint,
@@ -51,6 +52,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { overrideOriginals } from './overrides.js';
 import { indexTemplateOf } from './reference-index.js';
 import type { TenantTransaction } from './tables.js';
 import {
@@ -606,6 +608,31 @@ export async function editOutline(
   const target = targetOf(read.outline, input.operation);
   if (target && (await mayReference(trx, input.author, target)) !== 'ok') {
     return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
+  }
+  // Overrides name a paragraph of the reference's component at a version of it the author may read
+  // (REU-012; the R4 plan, R4-B).
+  if (input.operation.operation === 'set' && (input.operation.overrides?.length ?? 0) > 0) {
+    let node: OutlineNode | undefined;
+    walkOutline(read.outline.nodes, (each) => {
+      if (each.id === (input.operation as { node: string }).node) node = each;
+    });
+    if (node?.type === 'reference') {
+      const component = node.component;
+      const overrides = input.operation.overrides!;
+      for (const version of new Set(overrides.map((each) => each.against))) {
+        const answer = await mayReference(trx, input.author, {
+          component: node.component,
+          version,
+        });
+        if (answer !== 'ok') return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
+      }
+      const originals = await overrideOriginals(
+        trx,
+        overrides.map((each) => ({ component, version: each.against })),
+      );
+      const refused = overridesRefusal(overrides, originals);
+      if (refused) return { answer: 'outline.invalid', reason: refused };
+    }
   }
   // Held to the document's template (TPL-015, STR-060): its recorded version's changes always, and
   // its section-level fields where a section's values are written, which needs it to resolve now.

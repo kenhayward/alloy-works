@@ -435,7 +435,7 @@ describe('the component editor', () => {
                 id: host,
                 title: 'Printer manual',
                 state: { key: 'draft', name: 'Draft', approved: false },
-                references: [{ node: 'n1', mode: 'latest', version: null }],
+                references: [{ node: 'n1', mode: 'latest', version: null, overridden: false }],
               },
             ],
             unreadableDocuments: false,

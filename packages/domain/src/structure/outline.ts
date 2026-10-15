@@ -14,6 +14,7 @@ import {
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
+import { overridesSchema, type Override } from './overrides.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 
@@ -84,6 +85,8 @@ export type ReferenceNode = {
   readonly matter: OutlineMatter;
   readonly pageBreak: 'none' | 'page' | 'recto';
   readonly values: Record<string, unknown>;
+  /** Local overrides, this document's alone (REU-011, REU-012; the R4 plan, R4-A). */
+  readonly overrides?: readonly Override[] | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -173,6 +176,8 @@ export const referenceNodeSchema = z.strictObject({
   ...positional,
   component: artifactIdentifier,
   mode: referenceModeSchema,
+  // Additive at schema 1 (the R4 plan, R4-A): every reference stored before has none.
+  overrides: overridesSchema.optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -371,7 +376,10 @@ export function withholdComponents(
     if (node.type === 'section' || mayRead(node.component)) return { ...node, children };
     const mode =
       node.mode.kind === 'pinned' ? { kind: 'pinned' as const, version: null } : node.mode;
-    return { ...node, component: null, mode, children };
+    // Its overrides go with it: each names a version of the component, and its words (R4-A).
+    const { overrides: withheld, ...rest } = node;
+    void withheld;
+    return { ...rest, component: null, mode, children };
   };
   return { ...outline, nodes: outline.nodes.map(withhold) };
 }
@@ -543,6 +551,10 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
           ['matter', canonicalJson(node.matter)],
           ['mode', canonicalJson(node.mode)],
           ['numbered', canonicalJson(node.numbered)],
+          // Only where there are some, marks as a set: an outline stored before R4 digests as it did.
+          ...(node.overrides === undefined
+            ? []
+            : ([['overrides', canonicalJson(node.overrides, marksAsASet)]] as const)),
           ['pageBreak', canonicalJson(node.pageBreak)],
           ['type', canonicalJson(node.type)],
           ['values', canonicalJson(node.values)],

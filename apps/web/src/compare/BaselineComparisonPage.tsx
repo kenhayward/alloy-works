@@ -27,6 +27,8 @@ const NODE_CAUSES = {
   edited: 'Edited',
   data: 'Its data changed',
   definition: 'A definition it was written against changed',
+  // REU-014: the document's own difference, never a fork of the component.
+  overridden: 'Overridden in this document',
 } as const;
 
 interface Printed {

@@ -187,6 +187,12 @@ describe('the domain package', () => {
         'contentSize',
         'placeSection',
         'referencesUnder',
+        // R4: a reference's local overrides.
+        'OVERRIDES_MAX',
+        'applyOverrides',
+        'overrideSchema',
+        'overridesRefusal',
+        'overridesSchema',
         'outlineChangesRefused',
         'repointsBetween',
         // Front matter, promoted in the plan that adds it

@@ -19880,10 +19880,11 @@
                               "enum": [
                                 "edited",
                                 "data",
-                                "definition"
+                                "definition",
+                                "overridden"
                               ]
                             },
-                            "description": "Why it prints differently: somebody edited it, its data changed, or a definition it was written against did"
+                            "description": "Why it prints differently: somebody edited it, its data changed, a definition it was written against did, or the document's local overrides of it did, which leave the component as it is"
                           },
                           "values": {
                             "type": "array",
@@ -20313,7 +20314,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -20685,7 +20687,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -37733,12 +37736,17 @@
                                     }
                                   ],
                                   "description": "pinned: the version it pins; null otherwise"
+                                },
+                                "overridden": {
+                                  "type": "boolean",
+                                  "description": "Whether it carries local overrides in its document, which no other document has"
                                 }
                               },
                               "required": [
                                 "node",
                                 "mode",
-                                "version"
+                                "version",
+                                "overridden"
                               ]
                             },
                             "description": "Each place it places the component"
@@ -57754,7 +57762,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -58199,7 +58208,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -117650,6 +117660,345 @@
                               }
                             ]
                           },
+                          "overrides": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "block": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "against": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                },
+                                "text": {
+                                  "minItems": 1,
+                                  "maxItems": 2000,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "text"
+                                      },
+                                      "value": {
+                                        "type": "string"
+                                      },
+                                      "marks": {
+                                        "default": [],
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "emphasis"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "strong"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "underline"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "subscript"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "superscript"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "inlineCode"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "quotedPhrase"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "definedTerm"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "term": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "term"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "condition"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "axis": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "values": {
+                                                  "minItems": 1,
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "axis",
+                                                "values"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "suggestion"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "operation": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "insert",
+                                                    "delete",
+                                                    "replace"
+                                                  ]
+                                                },
+                                                "author": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "operation",
+                                                "author"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "comment"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "threadId": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "threadId"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "hyperlink"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "href": {
+                                                  "type": "string"
+                                                },
+                                                "title": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "href"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "language"
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "tag": {
+                                                  "type": "string",
+                                                  "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                                }
+                                              },
+                                              "required": [
+                                                "type",
+                                                "id",
+                                                "tag"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "value"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "block",
+                                "against",
+                                "text"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "values": {
                             "description": "A section's field values, whole: each a field its document's template applies to sections",
                             "type": "object",
@@ -129322,7 +129671,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -130708,7 +131058,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
@@ -134270,6 +134621,37 @@
                           "pastReview": {
                             "description": "True where the component's review-by day has passed (LIF-018); absent otherwise, or where the caller may not read it",
                             "type": "boolean"
+                          },
+                          "overrides": {
+                            "description": "This document's local overrides of the component's paragraphs (REU-011): each paragraph's text here, applied where it is not stale; absent where none, or where the caller may not read the component",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "block": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "stale": {
+                                  "type": "boolean",
+                                  "description": "Whether its paragraph has changed or gone since: then it is not applied"
+                                }
+                              },
+                              "required": [
+                                "block",
+                                "text",
+                                "stale"
+                              ]
+                            }
                           },
                           "moved": {
                             "description": "For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041)",
@@ -153306,7 +153688,8 @@
                               "table_too_wide",
                               "engine_failed",
                               "store_failed",
-                              "occurrence_gone"
+                              "occurrence_gone",
+                              "override_stale"
                             ]
                           },
                           "node": {
