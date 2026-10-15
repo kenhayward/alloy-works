@@ -1327,6 +1327,45 @@ describe('the symbol palette (W14.7)', () => {
     expect(view.state.selection.from).toBe(1 + 7);
   });
 
+  it('REU-018 places a declared variable, chosen from the Variable dialog, at the cursor', async () => {
+    // Beside the symbol palette, as its button stands beside Symbols (the R5 plan, R5b).
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () =>
+          json(200, opened({ content: blocksOf(para('b1', 'By ')) })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'GET /v1/definitions': () =>
+          json(200, {
+            items: [
+              {
+                id: '00000000-0000-4000-8000-0000000000a1',
+                kind: 'variable',
+                name: 'Review date',
+                key: 'review_date',
+                version: { id: '00000000-0000-4000-8000-0000000000a2', number: '0.1' },
+              },
+            ],
+            next: null,
+          }),
+        ...everySave,
+      },
+      quick,
+      true,
+    );
+    const view = await surface();
+    caretAt(view, 3);
+    await userEvent.click(screen.getByRole('button', { name: 'Variable' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Variable' });
+    await userEvent.click(await within(dialog).findByRole('button', { name: /Review date/ }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const [first] = fromEditor(view.state.doc).content as unknown as [{ content: unknown[] }];
+    expect(first.content).toEqual([
+      { type: 'text', value: 'By ', marks: [] },
+      { type: 'variable', name: 'review_date' },
+    ]);
+    await waitFor(() => expect(view.hasFocus()).toBe(true));
+  });
+
   it('dims what the typeface at the cursor lacks, pointing to an equation, and inserts only what it has', async () => {
     const { surface } = openWith(
       blocksOf(para('b1', 'Angle  is small.'), {

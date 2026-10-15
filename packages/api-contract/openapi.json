@@ -51905,8 +51905,8 @@
     "/v1/definitions": {
       "get": {
         "operationId": "listDefinitions",
-        "summary": "Every field, metadata schema and component type at its latest version",
-        "description": "Lists current field, metadata schema and component type definitions. A later version can change the current shape.",
+        "summary": "Every field, metadata schema, component type and variable at its latest version",
+        "description": "Lists current field, metadata schema, component type and variable definitions, each variable with the key text names it by. A later version can change the current shape.",
         "tags": [
           "Definitions"
         ],
@@ -51979,6 +51979,10 @@
                             "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                           },
                           "name": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "description": "A variable's key, which text names it by",
                             "type": "string"
                           },
                           "version": {

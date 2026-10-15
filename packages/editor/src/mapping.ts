@@ -129,7 +129,8 @@ function marksWithNoType(
     if (
       inline.type === 'crossReference' ||
       inline.type === 'equation' ||
-      inline.type === 'binding'
+      inline.type === 'binding' ||
+      inline.type === 'variable'
     ) {
       continue;
     }
@@ -253,6 +254,9 @@ function toRun(inline: InlineNode): Node[] {
         take,
       }),
     ];
+  }
+  if (inline.type === 'variable') {
+    return [editorSchema.nodes.variable!.create({ name: inline.name })];
   }
   if (inline.type === 'equation') {
     // The MathML as stored, and the LaTeX null where none was typed (ruling R4).
@@ -537,6 +541,10 @@ function runsOf(textblock: Node, id: string): unknown[] {
         mode: mode as string,
         take: take as object,
       });
+      return;
+    }
+    if (child.type.name === 'variable') {
+      runs.push({ type: 'variable', name: child.attrs.name as string });
       return;
     }
     if (child.type.name === 'equation') {

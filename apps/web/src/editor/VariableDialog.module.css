@@ -1,0 +1,31 @@
+/* The declared variables, one button each: the name, and the key text names it by. */
+.list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-12);
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: inherit;
+  text-align: start;
+}
+
+.choice:hover {
+  background: var(--accent-weak);
+}
+
+.key {
+  color: var(--muted);
+  font-size: var(--size-13);
+}

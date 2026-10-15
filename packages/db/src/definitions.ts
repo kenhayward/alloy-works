@@ -52,6 +52,8 @@ export interface DefinitionSummary {
   readonly id: string;
   readonly kind: DefinitionKind;
   readonly name: string;
+  /** A variable's key, which text names it by (the R5 plan, R5b); absent for every other kind. */
+  readonly key?: string;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
 }
 
@@ -185,6 +187,7 @@ export async function listDefinitions(
       'latest.version_no',
     ])
     .select(sql<string>`latest.content ->> 'name'`.as('name'))
+    .select(sql<string | null>`latest.content ->> 'key'`.as('key'))
     .select(sortColumns([sql`latest.content ->> 'name'`]))
     .where('a.kind', 'in', [...definitionKinds]);
   const { rows, next } = await keysetPage<{
@@ -194,12 +197,14 @@ export async function listDefinitions(
     revision_no: number;
     version_no: number;
     name: string;
+    key: string | null;
   }>(trx, inner, types, request.order ?? order, limit, request.after);
   return {
     items: rows.map((row) => ({
       id: row.id,
       kind: row.kind,
       name: row.name,
+      ...(row.kind === 'variable' && row.key !== null ? { key: row.key } : {}),
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
     })),
     next,

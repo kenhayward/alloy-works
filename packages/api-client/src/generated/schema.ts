@@ -1167,8 +1167,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Every field, metadata schema and component type at its latest version
-         * @description Lists current field, metadata schema and component type definitions. A later version can change the current shape.
+         * Every field, metadata schema, component type and variable at its latest version
+         * @description Lists current field, metadata schema, component type and variable definitions, each variable with the key text names it by. A later version can change the current shape.
          */
         get: operations["listDefinitions"];
         put?: never;
@@ -19903,6 +19903,8 @@ export interface operations {
                              */
                             kind: "field" | "metadataSchema" | "componentType" | "variable";
                             name: string;
+                            /** @description A variable's key, which text names it by */
+                            key?: string;
                             version: {
                                 id: string;
                                 number: string;

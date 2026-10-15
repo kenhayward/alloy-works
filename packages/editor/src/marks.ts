@@ -228,6 +228,16 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Shift and 6',
     prompts: true,
   },
+  // The R5 plan, R5b: beside Value, prompting as it does, for the declared variable only the author
+  // can choose (REU-018). On Footnote's and Reference's chord, with V.
+  {
+    kind: 'block',
+    action: 'variable',
+    label: 'Variable',
+    shortcut: 'Mod-Alt-v',
+    shortcutSaid: 'Ctrl or Cmd, Alt and V',
+    prompts: true,
+  },
   // Equations 1, ruling R6: prompting as Reference does, for the LaTeX only the author can type. On
   // Shift and E rather than a Ctrl-Alt chord, which AltGr types a character with on common layouts
   // (the euro sign on E among them). Checked for its plan: nothing in this registry or the renderer

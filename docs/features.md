@@ -1098,6 +1098,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   cancel, which stops a running report at its next depth and says how far it got. A succeeded report
   downloads as JSON Lines; a failed one keeps its error. A retry with the same `Idempotency-Key`
   answers the same job. Each job is its submitter's alone.
+- **Variables.** Declare a variable through the API (`POST /v1/definitions`, kind `variable`): its
+  key, its type, where its value comes from (the document's parameters, then its fields) and how it
+  prints in a title and in text. The editor's **Variable** button (Ctrl or Cmd, Alt and V) places one
+  chosen from those declared, shown by its key; a publish prints its value, records where it came
+  from, and fails by name where it has none. No page yet declares one, and a section title holding one
+  is not edited in the outline.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

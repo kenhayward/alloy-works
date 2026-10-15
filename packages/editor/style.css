@@ -756,3 +756,13 @@
 .aw-bound-table-current .aw-bound-table-body thead th.aw-bound-table-focused {
   box-shadow: inset 0 -2px 0 var(--accent);
 }
+
+/* A variable (the R5 plan, R5b): its key in the application's chip, as a binding on its own is; a
+ * publish prints its value in the paragraph's style. */
+.aw-variable {
+  padding: 0 0.3em;
+  border-radius: 3px;
+  background: var(--sunken);
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
