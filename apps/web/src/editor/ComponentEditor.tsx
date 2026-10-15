@@ -580,8 +580,14 @@ export function ComponentEditor({
   const [datesNow, setDatesNow] = useState<Dates | null>(null);
   // Asked before a version reaching other documents is saved (REU-008; the R1 plan, R1-D).
   const [reach, setReach] = useState<{ uses: Uses; act: string; go: () => void } | null>(null);
+  // One question at a time: a second press while the uses are read asks nothing more. Where they
+  // cannot be read, the save goes ahead unasked, as a warning is not a refusal (R1-D).
+  const askingReach = useRef(false);
   const askFirst = (act: string, go: () => void) => {
+    if (askingReach.current) return;
+    askingReach.current = true;
     void readUses(client, componentId).then((uses) => {
+      askingReach.current = false;
       if (uses && reachesAny(uses)) setReach({ uses, act, go });
       else go();
     });
