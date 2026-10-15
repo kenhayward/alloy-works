@@ -1,5 +1,6 @@
 import { archivalRoutes } from './archival.js';
 import { deletionRoutes } from './deletion.js';
+import { usesRoutes } from './uses.js';
 import { holdRoutes } from './holds.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -349,7 +350,8 @@ type Routes = typeof ownRoutes &
   typeof deletionRoutes &
   typeof retentionRoutes &
   typeof workflowRoutes &
-  typeof erasureRoutes;
+  typeof erasureRoutes &
+  typeof usesRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -392,6 +394,7 @@ export const routes: Routes = {
   ...retentionRoutes,
   ...workflowRoutes,
   ...erasureRoutes,
+  ...usesRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

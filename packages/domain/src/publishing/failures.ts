@@ -212,6 +212,9 @@ export const publishFailureCodes = [
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
+  // resolve, from R1 (REU-005, REU-043): a referenced component deleted, or none at all, told apart from
+  // `occurrence_unreadable`, one there the publisher may not read. Naming the node alone.
+  'occurrence_gone',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

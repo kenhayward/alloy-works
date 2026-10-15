@@ -17957,12 +17957,36 @@
           "howItIsMet": "The impact report runs in the background with no result cap, bounded by depth and filtered by permission"
         },
         {
+          "id": "REU-001",
+          "howItIsMet": "A reference names a component the author may read, from any space (`mayReference`); `GET /v1/components/{id}/uses` lists every document placing it"
+        },
+        {
+          "id": "REU-003",
+          "howItIsMet": "Each reference is its own outline node, so one component placed twice is two occurrences, each listed apart"
+        },
+        {
+          "id": "REU-005",
+          "howItIsMet": "A reference to a component deleted, or none at all, fails the publish `occurrence_gone`, naming its node"
+        },
+        {
+          "id": "REU-043",
+          "howItIsMet": "One there that the publisher may not read fails `occurrence_unreadable`, naming its node alone; only the gone are selected, so nothing of it is read"
+        },
+        {
+          "id": "REU-008",
+          "howItIsMet": "Save version reads the uses first, and asks before a version reaching any `latest` or `approved` reference, listing each document it reaches; working changes reach none"
+        },
+        {
+          "id": "REU-009",
+          "howItIsMet": "Each document in the uses carries whether its workflow state is approved, and the warning lists approved documents apart from drafts"
+        },
+        {
           "id": "REU-006",
           "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop"
         },
         {
           "id": "REU-007",
-          "howItIsMet": "Each reference row records the version it pins, or that it floats"
+          "howItIsMet": "Each reference is listed with its mode: `latest` takes every new version, `approved` each approved revision, `pinned` none"
         },
         {
           "id": "REU-010",
@@ -19745,13 +19769,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 398,
+      "line": 399,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 411,
+      "line": 412,
       "kind": "title"
     },
     {
@@ -19965,6 +19989,24 @@
       "kind": "title"
     },
     {
+      "id": "REU-001",
+      "file": "apps/service/src/component-uses-routes.test.ts",
+      "line": 22,
+      "kind": "title"
+    },
+    {
+      "id": "REU-003",
+      "file": "apps/service/src/component-uses-routes.test.ts",
+      "line": 22,
+      "kind": "title"
+    },
+    {
+      "id": "REU-010",
+      "file": "apps/service/src/component-uses-routes.test.ts",
+      "line": 43,
+      "kind": "title"
+    },
+    {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
       "line": 214,
@@ -20033,7 +20075,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1222,
+      "line": 1223,
       "kind": "title"
     },
     {
@@ -24227,49 +24269,61 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2593,
+      "line": 2628,
       "kind": "title"
     },
     {
       "id": "LIF-038",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 555,
+      "line": 589,
       "kind": "title"
     },
     {
       "id": "LIF-077",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 555,
+      "line": 589,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 336,
+      "line": 370,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 1032,
+      "line": 1067,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 428,
+      "line": 462,
+      "kind": "title"
+    },
+    {
+      "id": "REU-005",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 281,
+      "kind": "title"
+    },
+    {
+      "id": "REU-043",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 281,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 555,
+      "line": 589,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 890,
+      "line": 925,
       "kind": "title"
     },
     {
@@ -24666,6 +24720,24 @@
       "id": "COL-054",
       "file": "packages/db/src/threads.test.ts",
       "line": 274,
+      "kind": "title"
+    },
+    {
+      "id": "REU-007",
+      "file": "packages/db/src/uses.test.ts",
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "REU-009",
+      "file": "packages/db/src/uses.test.ts",
+      "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "REU-010",
+      "file": "packages/db/src/uses.test.ts",
+      "line": 221,
       "kind": "title"
     },
     {

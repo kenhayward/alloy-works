@@ -165,7 +165,7 @@ export function stateOf(
 ): { key: string; name: string } {
   const state = states.get(id);
   if (!state) throw new Error(`${id} has no workflow state`);
-  return { ...state };
+  return { key: state.key, name: state.name };
 }
 
 /** A component's or a document's state and the transitions `facts` permit, for its view. */

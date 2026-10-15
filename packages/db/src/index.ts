@@ -753,3 +753,9 @@ export {
   type AttentionItem,
   type AttentionKind,
 } from './attention.js';
+export {
+  componentUses,
+  type ComponentUses,
+  type UsingDocument,
+  type UsingReference,
+} from './uses.js';

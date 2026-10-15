@@ -251,6 +251,7 @@ const OTHER_TENANT_IDS: Readonly<
   archiveDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   unarchiveDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getComponentDeletion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  getComponentUses: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   deleteComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   undeleteComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getDocumentDeletion: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),

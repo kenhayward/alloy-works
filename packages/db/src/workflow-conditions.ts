@@ -147,7 +147,9 @@ export async function unmetConditions(
       const outcomes = await resolveOccurrences(trx, read.outline, input.principal);
       const unreadable = new Set(
         outcomes.flatMap((each) =>
-          each.outcome === 'unreadable' ? [references.get(each.node)!.component] : [],
+          each.outcome === 'unreadable' || each.outcome === 'gone'
+            ? [references.get(each.node)!.component]
+            : [],
         ),
       ).size;
       if (requires.includes('bindings') || requires.includes('revisions')) {

@@ -169,6 +169,7 @@ const operationTags = {
     'getComponentDeletion',
     'deleteComponent',
     'undeleteComponent',
+    'getComponentUses',
   ],
   Documents: [
     'listDocuments',
@@ -488,6 +489,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
   deleteComponent:
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
+  getComponentUses:
+    'Says where a component is used. Lists each document whose latest version places it, with each reference there: `latest` takes every new version of the component, `approved` every approved revision, and `pinned` one version, which no change reaches. Each document carries its workflow state and whether that state is approved, so a change reaching approved documents can be told apart from one reaching drafts. Lists the baselines and publications pinning a version of it apart, since no change reaches them. What the caller may not read, or is deleted, is never named or counted: each list says only whether there is more. Needs read on the component.',
   undeleteComponent:
     'Undeletes a component, everything it kept with it. Never refused by a legal hold or a retention keep. Undeleting one not deleted changes nothing. Needs retire on the component. Audited.',
   getDocumentDeletion:

@@ -1122,6 +1122,7 @@ describe('routes that check a permission', () => {
     archiveDocument: () => ({ url: `/v1/documents/${report}/archive`, status: 404 }),
     unarchiveDocument: () => ({ url: `/v1/documents/${report}/unarchive`, status: 404 }),
     getComponentDeletion: () => ({ url: `/v1/components/${dosing}/deletion`, status: 404 }),
+    getComponentUses: () => ({ url: `/v1/components/${dosing}/uses`, status: 404 }),
     deleteComponent: () => ({ url: `/v1/components/${dosing}/delete`, status: 404 }),
     undeleteComponent: () => ({ url: `/v1/components/${dosing}/undelete`, status: 404 }),
     getDocumentDeletion: () => ({ url: `/v1/documents/${report}/deletion`, status: 404 }),
