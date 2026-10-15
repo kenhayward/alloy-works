@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.172.0 - 2026-10-15 (PR #632)
+
+Reuse's first slice: where a component is used (the R1 plan); and workflow state wherever it appears (LIF-005).
+
+### Added
+
+- **State wherever it appears.** Home's attention, the inbox and a baseline's page show the workflow state of what they name, a baseline's page the document's state now.
+- **Used in.** A component's header lists each document placing it, how each reference follows it, and the baselines and publications that pin it.
+- **A warning before a version reaches other documents.** Save version, and Done editing with changes, ask first where the new version reaches a document, approved ones listed apart from drafts.
+
+### Changed
+
+- **A deleted component, named as such.** A publish placing a component that was deleted now says so, apart from one you may not read.
+
 ## 0.171.0 - 2026-10-15 (PR #628)
 
 Workflow's sixth phase: template governance (ADR-0061).

@@ -160,33 +160,44 @@ export async function componentUses(
 
   return {
     documents,
-    unreadableDocuments: shown.length < latest.length,
+    // An outline that does not read is flagged, never dropped silently: a version may reach it.
+    unreadableDocuments: outlines.length < shown.total,
     baselines: {
       named: seenBaselines.map(({ id, name, document }) => ({ id, name, document })),
-      unreadable: seenBaselines.length < baselines.length,
+      unreadable: seenBaselines.length < seenBaselines.total,
     },
     publications: {
       named: seenPublications.map(({ id, title }) => ({ id, title: title ?? '' })),
-      unreadable: seenPublications.length < publications.length,
+      unreadable: seenPublications.length < seenPublications.total,
     },
   };
 }
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Those `readable` may read and none deleted (DL-B): by `subject`'s identity where given. */
+/**
+ * Those `readable` may read, by `subject`'s identity where given, and `total`, how many are not
+ * deleted: a deleted one is neither named nor counted among the unreadable (DL-B), since nothing
+ * reaches it.
+ */
 async function readableAmong<
   T extends { readonly id: string; readonly space_id: string; readonly subject?: string },
->(trx: TenantTransaction, readable: ReadableSet | undefined, rows: readonly T[]): Promise<T[]> {
-  if (!readable) return [];
+>(
+  trx: TenantTransaction,
+  readable: ReadableSet | undefined,
+  rows: readonly T[],
+): Promise<T[] & { readonly total: number }> {
   const deleted = await deletedAmong(
     trx,
     rows.map((row) => row.subject ?? row.id),
   );
-  return rows.filter((row) => {
-    const id = row.subject ?? row.id;
-    return !deleted.has(id) && mayReadArtifact(readable, { id, spaceId: row.space_id });
-  });
+  const live = rows.filter((row) => !deleted.has(row.subject ?? row.id));
+  const shown = live.filter(
+    (row) =>
+      readable !== undefined &&
+      mayReadArtifact(readable, { id: row.subject ?? row.id, spaceId: row.space_id }),
+  );
+  return Object.assign(shown, { total: live.length });
 }
 
 /** Each pinned version's number, `revision.version`, among the component's own versions alone. */

@@ -101,6 +101,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { ReachDialog, reachesAny, readUses, UsedInButton, type Uses } from '../reuse/UsedIn.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import {
@@ -248,6 +249,11 @@ export interface ComponentEditorProps {
    * first when this author holds one, and is offered to a reader as the way out.
    */
   readonly onDone?: () => void;
+  /**
+   * The document it is open in, in place: a version it saves reaches that document as its author
+   * expects, so the warning before one (REU-008) names only the others.
+   */
+  readonly hostDocument?: string;
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
   /**
@@ -492,6 +498,7 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  hostDocument,
   openAt,
   linked = null,
   referenceContext = null,
@@ -577,6 +584,24 @@ export function ComponentEditor({
   const [standingNow, setStandingNow] = useState<Standing | null>(null);
   // Its dates as last saved here, over the view's (WF5-A).
   const [datesNow, setDatesNow] = useState<Dates | null>(null);
+  // Asked before a version reaching other documents is saved (REU-008; the R1 plan, R1-D).
+  const [reach, setReach] = useState<{ uses: Uses; act: string; go: () => void } | null>(null);
+  // One question at a time: a second press while the uses are read asks nothing more. Where they
+  // cannot be read, the save goes ahead unasked, as a warning is not a refusal (R1-D).
+  const askingReach = useRef(false);
+  const askFirst = (act: string, go: () => void) => {
+    if (askingReach.current) return;
+    askingReach.current = true;
+    void readUses(client, componentId).then((read) => {
+      askingReach.current = false;
+      const uses = read && {
+        ...read,
+        documents: read.documents.filter((each) => each.id !== hostDocument),
+      };
+      if (uses && reachesAny(uses)) setReach({ uses, act, go });
+      else go();
+    });
+  };
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
@@ -2267,6 +2292,12 @@ export function ComponentEditor({
                 onSaved={setDatesNow}
               />
             )}
+            <UsedInButton
+              client={client}
+              id={componentId}
+              title={header.title}
+              className={styles['archive']}
+            />
             {archived && <Chip>Archived</Chip>}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
             {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
@@ -2332,6 +2363,18 @@ export function ComponentEditor({
           </>
         )}
       </header>
+      {reach && (
+        <ReachDialog
+          uses={reach.uses}
+          title={header?.title ?? ''}
+          act={reach.act}
+          onConfirm={() => {
+            setReach(null);
+            reach.go();
+          }}
+          onCancel={() => setReach(null)}
+        />
+      )}
       {/* Before the first save of an approved one, what a save does (WF-F). */}
       {standing?.state.approved && shown.mayEdit && !drafting && (
         <p className={styles['approvedNote']}>
@@ -2377,13 +2420,18 @@ export function ComponentEditor({
                     label: 'Done editing',
                     icon: 'Done editing',
                     disabled: doneDisabled,
-                    onPress: () => void done(),
+                    // Done cuts a version where anything changed (CNT-070), so it asks first too.
+                    onPress: () =>
+                      session && (session.dirty || session.savedAt !== null)
+                        ? askFirst('Done editing', () => void done())
+                        : void done(),
                   },
                   {
                     label: 'Save version',
                     icon: 'Save version',
                     disabled: !mayCut || phase !== 'editing',
-                    onPress: () => void controls.current?.saveVersion(),
+                    onPress: () =>
+                      askFirst('Save version', () => void controls.current?.saveVersion()),
                   },
                   {
                     label: 'Saved text',

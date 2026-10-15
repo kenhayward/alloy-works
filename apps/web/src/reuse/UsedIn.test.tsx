@@ -1,0 +1,158 @@
+import { createApiClient } from '@alloy-works/api-client';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { ReachDialog, reachesAny, UsedInButton, type Uses } from './UsedIn.js';
+
+const STEP = 'cccccccc-0000-4000-8000-000000000001';
+const REPORT = 'dddddddd-0000-4000-8000-000000000001';
+const MANUAL = 'dddddddd-0000-4000-8000-000000000002';
+const NOTES = 'dddddddd-0000-4000-8000-000000000003';
+const ISSUE = 'bbbbbbbb-0000-4000-8000-000000000001';
+const PUBLICATION = 'eeeeeeee-0000-4000-8000-000000000001';
+
+const draft = { key: 'draft', name: 'Draft', approved: false };
+const approved = { key: 'approved', name: 'Approved', approved: true };
+
+const uses: Uses = {
+  documents: [
+    {
+      id: MANUAL,
+      title: 'Pump manual',
+      state: approved,
+      references: [{ node: 'n1', mode: 'latest', version: null }],
+    },
+    {
+      id: NOTES,
+      title: 'Pump notes',
+      state: draft,
+      references: [{ node: 'n2', mode: 'pinned', version: { id: 'v1', number: '0.1' } }],
+    },
+    {
+      id: REPORT,
+      title: 'Pump report',
+      state: draft,
+      references: [
+        { node: 'n3', mode: 'latest', version: null },
+        { node: 'n4', mode: 'approved', version: null },
+      ],
+    },
+  ],
+  unreadableDocuments: true,
+  baselines: { named: [{ id: ISSUE, name: 'Issue 1', document: REPORT }], unreadable: false },
+  publications: { named: [{ id: PUBLICATION, title: 'Pump report' }], unreadable: false },
+};
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+const clientAnswering = (answer: () => Response) =>
+  createApiClient({
+    baseUrl: 'http://uses.test',
+    fetch: vi.fn(async () => answer()) as unknown as typeof fetch,
+  });
+
+describe('where a component is used', () => {
+  it('REU-007 lists each document placing it, each reference saying how it follows the component, and what pins it apart', async () => {
+    render(
+      <UsedInButton client={clientAnswering(() => json(200, uses))} id={STEP} title="Calibrate" />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Used in' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Where Calibrate is used' });
+
+    const documents = within(dialog).getByRole('region', { name: 'Documents' });
+    // Each document and, within it, each of its references.
+    const items = within(documents).getAllByRole('listitem');
+    expect(within(documents).getByRole('link', { name: 'Pump report' })).toHaveAttribute(
+      'href',
+      `#/documents/${REPORT}`,
+    );
+    expect(items.map((each) => each.textContent)).toEqual(
+      expect.arrayContaining([
+        'Follows the latest version',
+        'Follows approved revisions',
+        'Pinned to version 0.1',
+      ]),
+    );
+    expect(within(documents).getByText('Documents you may not read place it too.')).toBeVisible();
+
+    const pinned = within(dialog).getByRole('region', {
+      name: 'Pinned, so no change reaches them',
+    });
+    expect(within(pinned).getByRole('link', { name: 'Baseline Issue 1' })).toHaveAttribute(
+      'href',
+      `#/documents/${REPORT}/baselines/${ISSUE}`,
+    );
+    expect(
+      within(pinned).getByRole('link', { name: 'Publication of Pump report' }),
+    ).toHaveAttribute('href', `#/publications/${PUBLICATION}`);
+  });
+
+  it('says so where nothing uses it, and where it could not be read', async () => {
+    const none: Uses = {
+      documents: [],
+      unreadableDocuments: false,
+      baselines: { named: [], unreadable: false },
+      publications: { named: [], unreadable: false },
+    };
+    const { unmount } = render(
+      <UsedInButton client={clientAnswering(() => json(200, none))} id={STEP} title="Calibrate" />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Used in' }));
+    expect(await screen.findByText('No document places it.')).toBeVisible();
+    expect(screen.getByText('No baseline or publication pins it.')).toBeVisible();
+    unmount();
+
+    render(
+      <UsedInButton client={clientAnswering(() => json(500, {}))} id={STEP} title="Calibrate" />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Used in' }));
+    expect(await screen.findByText('Where it is used could not be read.')).toBeVisible();
+  });
+});
+
+describe('the warning before a version reaches other documents', () => {
+  it('REU-008 REU-009 lists each document a version reaches, approved ones apart from drafts, and none only pinned', async () => {
+    const confirmed = vi.fn();
+    render(
+      <ReachDialog
+        uses={uses}
+        title="Calibrate"
+        act="Save version"
+        onConfirm={confirmed}
+        onCancel={() => undefined}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Save a version of Calibrate?' });
+    expect(within(dialog).getByText(/^It reaches 2 documents/)).toBeVisible();
+    const approvedOnes = within(dialog).getByRole('region', { name: 'Approved documents' });
+    expect(
+      within(approvedOnes)
+        .getAllByRole('link')
+        .map((each) => each.textContent),
+    ).toEqual(['Pump manual']);
+    const drafts = within(dialog).getByRole('region', { name: 'Drafts' });
+    expect(
+      within(drafts)
+        .getAllByRole('link')
+        .map((each) => each.textContent),
+    ).toEqual(['Pump report']);
+    // Pinned, it is reached by nothing.
+    expect(within(dialog).queryByRole('link', { name: 'Pump notes' })).toBeNull();
+    expect(within(dialog).getByText('Documents you may not read place it too.')).toBeVisible();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save version' }));
+    expect(confirmed).toHaveBeenCalledOnce();
+  });
+
+  it('asks nothing where only pins hold it, since no version reaches a pin', () => {
+    const pinnedOnly: Uses = {
+      ...uses,
+      documents: [uses.documents[1]!],
+      unreadableDocuments: false,
+    };
+    expect(reachesAny(pinnedOnly)).toBe(false);
+    expect(reachesAny({ ...pinnedOnly, unreadableDocuments: true })).toBe(true);
+    expect(reachesAny(uses)).toBe(true);
+  });
+});

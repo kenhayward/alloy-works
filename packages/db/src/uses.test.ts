@@ -232,17 +232,17 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
     expect(all.unreadableDocuments).toBe(false);
   });
 
-  it('lists a document by its latest version alone, and never a deleted one by name', async () => {
+  it('lists a document by its latest version alone, and a deleted one not at all', async () => {
     const { space, ada } = await fresh();
     const step = await component(space, ada, 'Purge the air');
     const dropped = await document(space, ada, 'Dropped it', [reference(step.artifactId)]);
     await as((trx) => outlined(trx, dropped, ada, []));
+    // Deleted while its latest version still places it: neither named nor flagged, since nothing a
+    // version does reaches it.
     const gone = await document(space, ada, 'Gone report', [reference(step.artifactId)]);
     await as(async (trx) => {
-      await outlined(trx, gone, ada, []);
       const answer = await deleteArtifact(trx, gone.artifactId, ada);
       if (answer?.answer !== 'deleted') throw new Error(answer?.answer);
-      // Its latest version placing it again cannot happen once deleted; its earlier did, and is no use.
     });
 
     expect(await uses(step.artifactId, ada)).toMatchObject({

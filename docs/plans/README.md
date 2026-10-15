@@ -843,6 +843,6 @@ The workflow, in [ADR-0061](../decisions/0061-t9s-order.md)'s order.
 
 The reuse, a slice at a time ([R1](2026-10-15-r1-where-a-component-is-used.md) sketches the order).
 
-| #   | Plan                                                                    | Builds                                                                                                                                                                             | Status   |
-| --- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| R1  | [Where a component is used](2026-10-15-r1-where-a-component-is-used.md) | REU-001, REU-003, REU-005, REU-007 to REU-009, REU-043: where a component is used, a warning before a version reaches a document, and a gone component told from an unreadable one | Building |
+| #   | Plan                                                                    | Builds                                                                                                                                                                             | Status                 |
+| --- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | [Where a component is used](2026-10-15-r1-where-a-component-is-used.md) | REU-001, REU-003, REU-005, REU-007 to REU-009, REU-043: where a component is used, a warning before a version reaches a document, and a gone component told from an unreadable one | Built (PRs #631, #632) |
