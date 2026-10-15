@@ -1,3 +1,4 @@
+import { variableDefinitionSchema } from '../reuse/variables.js';
 import { describe, expect, it } from 'vitest';
 
 import type { BlockNode } from '../content/model/blocks.js';
@@ -6967,5 +6968,62 @@ describe('an approved publication, assembled (the WF2 plan, WF2-I, WF2-J)', () =
     // A draft has nothing approved to show.
     const draft = assemble(report({ layout: withPage }));
     expect(draft.ok && draft.document.front.approvals).toBeNull();
+  });
+
+  it('REU-019 prints a variable in a section title by its title form and in text by its text form, recording each source, and fails one that does not resolve', () => {
+    const due = variableDefinitionSchema.parse({
+      schemaVersion: 1,
+      id: '00000000-0000-4000-8000-00000000a001',
+      name: 'Review date',
+      key: 'review_date',
+      type: { base: 'date' },
+      sources: { parameter: 'review' },
+      forms: {
+        title: { date: { order: 'ymd', separator: '-', pad: true } },
+        text: { date: { order: 'dmy', separator: '/', pad: false } },
+      },
+    });
+    const node = reference('due');
+    const published = assemble(
+      input({
+        outline: outline([
+          {
+            ...section('scope', 'Review'),
+            title: [text('Review of '), { type: 'variable', name: 'review_date' }],
+            children: [node],
+          },
+        ]),
+        occurrences: new Map([
+          [
+            node.id,
+            component([paragraph('p1', text('Due '), { type: 'variable', name: 'review_date' })]),
+          ],
+        ]),
+        variables: {
+          definitions: new Map([[due.key, due]]),
+          context: { parameters: { review: '2026-11-03' }, values: {} },
+        },
+      }),
+    );
+    if (!published.ok) throw new Error(JSON.stringify(published.failures));
+    expect(published.variables.map((each) => [each.node, each.source, each.printed])).toEqual([
+      [id('scope'), 'parameter', '2026-11-03'],
+      [node.id, 'parameter', '3/11/2026'],
+    ]);
+
+    const unresolved = assemble(
+      input({
+        outline: outline([node]),
+        occurrences: new Map([
+          [node.id, component([paragraph('p1', { type: 'variable', name: 'site' })])],
+        ]),
+      }),
+    );
+    expect(unresolved).toMatchObject({
+      ok: false,
+      failures: [
+        { stage: 'bind', code: 'variable_unresolved', node: node.id, block: 'p1', detail: 'site' },
+      ],
+    });
   });
 });

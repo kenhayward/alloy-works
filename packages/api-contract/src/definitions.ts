@@ -2,6 +2,7 @@ import {
   componentTypeDefinitionSchema,
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
+  variableDefinitionSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
@@ -12,7 +13,9 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
 export const DefinitionParams = z.object({ id: LowercaseUuid });
 export type DefinitionParams = z.infer<typeof DefinitionParams>;
 
-export const DefinitionKind = z.enum(['field', 'metadataSchema', 'componentType']);
+export const DefinitionKind = z
+  .enum(['field', 'metadataSchema', 'componentType', 'variable'])
+  .describe('variable: a value text may name, taken from the document that places it (REU-018)');
 
 /** An identifier a payload is checked with, and never stored: the service allocates the real one. */
 const PLACEHOLDER = '00000000-0000-4000-8000-000000000000';
@@ -21,6 +24,7 @@ const payloadSchemas = {
   field: fieldDefinitionSchema,
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
+  variable: variableDefinitionSchema,
 } as const;
 
 /**

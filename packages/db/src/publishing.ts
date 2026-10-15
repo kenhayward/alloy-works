@@ -14,6 +14,8 @@ import {
   unsupportedFormats,
   valueFailures,
   walkOutline,
+  type VariableContext,
+  type VariableDefinition,
   type ContentDocument,
   type DocumentParameters,
   type Layout,
@@ -65,6 +67,7 @@ import {
 } from './listing.js';
 import { lockBindings } from './datasets.js';
 import { applyOutlineOverrides } from './overrides.js';
+import { variablesByKey } from './definitions.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -1035,6 +1038,14 @@ export interface PublicationInputs {
     string,
     { readonly version: string; readonly content: ContentDocument }
   >;
+  /**
+   * What the document's variables resolve by (REU-016 to REU-019; the R5 plan): the environment's
+   * declared variables, and the document version's parameters and field values.
+   */
+  readonly variables: {
+    readonly definitions: ReadonlyMap<string, VariableDefinition>;
+    readonly context: VariableContext;
+  };
   readonly refused: readonly PublishFailure[];
   /**
    * The layout version the request was made under, as recorded on it - never the layout's latest - or
@@ -1310,6 +1321,9 @@ export async function publicationInputs(
       'v.content',
       'v.revision_no',
       'v.version_no',
+      'v.metadata_values',
+      // Read from the row whole, for an environment short of 0057.
+      sql<unknown>`to_jsonb(v) -> 'parameters'`.as('parameters'),
       'l.content as layout_content',
     ])
     .where('r.id', '=', requestId)
@@ -1450,6 +1464,14 @@ export async function publicationInputs(
     // Written only by requestPublication, whose failures are `PublishFailure`s it built itself - each
     // of the resolve stage, naming a node, and for an image the figure, and nothing else - so they are
     // read back without a parse.
+    // Read at the job, the definitions at their latest (R5-A); the values as the version holds them.
+    variables: {
+      definitions: await variablesByKey(trx),
+      context: {
+        parameters: (request.parameters ?? {}) as Record<string, unknown>,
+        values: (request.metadata_values ?? {}) as Record<string, unknown>,
+      },
+    },
     refused: request.failures as PublishFailure[],
     layout,
     theme,

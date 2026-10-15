@@ -1,4 +1,5 @@
 import type { Binding } from '../data/binding.js';
+import type { PrintedVariable, VariableSource } from '../reuse/variables.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
 import type { ParameterValues } from '../data/parameters.js';
 import type { Provenance } from '../data/provenance.js';
@@ -43,9 +44,10 @@ interface FromResult {
 
 /**
  * The version every new `provenance.json` is written at: 2 since a value gained an image arm (B6-I),
- * 3 since a bound table's (TB1-J), 4 since a value or a cell revised by hand carries its revision (RV-G).
+ * 3 since a bound table's (TB1-J), 4 since a value or a cell revised by hand carries its revision (RV-G),
+ * 5 since the variables printed are recorded with the source of each (REU-038; the R5 plan, R5-E).
  */
-export const PUBLISHED_PROVENANCE_VERSION = 4;
+export const PUBLISHED_PROVENANCE_VERSION = 5;
 
 /**
  * **`provenance.json`** (the B3 plan, B3-G; DAT-042, PUB-049): every value a publication printed,
@@ -86,6 +88,19 @@ export interface PublishedProvenance {
       })
     | (FromResult & { readonly table: PrintedTable })
   )[];
+  /**
+   * **At 5** (REU-038; the R5 plan, R5-E): each variable printed, where it stands, its key, the source
+   * that supplied it - the parameter set or the metadata, in that order - and the value it printed.
+   */
+  readonly variables: readonly {
+    readonly node: string;
+    readonly number: string | null;
+    readonly block: string | null;
+    readonly key: string;
+    readonly source: VariableSource;
+    readonly value: string | boolean;
+    readonly printed: string;
+  }[];
 }
 
 /** Each value's record, in the order the binding stage set them. Throws on a version not held. */
@@ -93,10 +108,20 @@ export function publishedProvenance(
   values: readonly PrintedValue[],
   datasets: ReadonlyMap<string, HeldDataset>,
   numbering: NumberingTable,
+  variables: readonly PrintedVariable[] = [],
 ): PublishedProvenance {
   const numbers = sectionNumbers(numbering);
   return {
     schemaVersion: PUBLISHED_PROVENANCE_VERSION,
+    variables: variables.map((each) => ({
+      node: each.node,
+      number: numbers.get(each.node) ?? null,
+      block: each.block,
+      key: each.key,
+      source: each.source,
+      value: each.value,
+      printed: each.printed,
+    })),
     values: values.map((each) => {
       const held = datasets.get(each.datasetVersion);
       if (held === undefined) {

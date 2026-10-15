@@ -1,5 +1,6 @@
 import {
   componentTypeDefinitionSchema,
+  variableDefinitionSchema,
   componentTypeOf,
   definitionKinds,
   fieldDefinitionSchema,
@@ -158,6 +159,7 @@ const definitionSchemas = {
   field: fieldDefinitionSchema,
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
+  variable: variableDefinitionSchema,
 } as const;
 
 /**

@@ -20,6 +20,7 @@ import {
   componentTypeDefinitionSchema,
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
+  variableDefinitionSchema,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -33,6 +34,7 @@ const parsers = {
   field: fieldDefinitionSchema,
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
+  variable: variableDefinitionSchema,
 } as const;
 
 function definitionView(stored: StoredDefinition): DefinitionView {
