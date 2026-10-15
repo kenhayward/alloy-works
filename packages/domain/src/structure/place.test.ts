@@ -138,7 +138,9 @@ describe('placing another document section (the R2 plan, R2-F)', () => {
     );
     if (!placed.applied) throw new Error(placed.reason);
     expect(
-      placed.outline.nodes.map((each) => ('title' in each ? each.title[0]!.value : '')),
+      placed.outline.nodes.map((each) =>
+        each.type === 'section' ? (each.title[0] as { value?: string }).value : '',
+      ),
     ).toEqual(['Preface', 'Upkeep', 'Scope']);
   });
 
