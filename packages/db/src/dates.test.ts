@@ -283,6 +283,7 @@ describe('effective and review-by dates (workflow.md; the WF5 plan, Task 1)', ()
         kind: 'review_due',
         artifact: { id: soon.artifactId, kind: 'component', title: 'Due soon' },
         reviewBy: day(new Date(now.getTime() + 5 * DAY)),
+        state: { key: 'draft', name: 'Draft' },
       },
     ]);
     expect(await waiting(ada)).toEqual([]);
@@ -332,6 +333,7 @@ describe('effective and review-by dates (workflow.md; the WF5 plan, Task 1)', ()
         kind: 'review_overdue',
         artifact: { id: escalated.artifactId, kind: 'component', title: 'Escalated' },
         reviewBy: yesterday,
+        state: { key: 'draft', name: 'Draft' },
       },
     ]);
     expect(await overdue(ada)).toEqual([]);
