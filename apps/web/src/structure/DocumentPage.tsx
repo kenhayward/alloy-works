@@ -2549,6 +2549,7 @@ export function DocumentPage({
                         <ComponentEditor
                           key={`draft:${component}`}
                           componentId={component}
+                          hostDocument={id}
                           client={client}
                           principalId={principalId}
                           {...(place.number === undefined ? {} : { number: place.number })}
@@ -2623,6 +2624,7 @@ export function DocumentPage({
                         <ComponentEditor
                           key={component}
                           componentId={component}
+                          hostDocument={id}
                           client={client}
                           principalId={principalId}
                           {...place}

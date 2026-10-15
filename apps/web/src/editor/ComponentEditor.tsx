@@ -249,6 +249,11 @@ export interface ComponentEditorProps {
    * first when this author holds one, and is offered to a reader as the way out.
    */
   readonly onDone?: () => void;
+  /**
+   * The document it is open in, in place: a version it saves reaches that document as its author
+   * expects, so the warning before one (REU-008) names only the others.
+   */
+  readonly hostDocument?: string;
   /** Where the text was clicked to open it, in characters: the focus and the caret go there. */
   readonly openAt?: number;
   /**
@@ -493,6 +498,7 @@ export function ComponentEditor({
   onTable,
   number,
   onDone,
+  hostDocument,
   openAt,
   linked = null,
   referenceContext = null,
@@ -586,8 +592,12 @@ export function ComponentEditor({
   const askFirst = (act: string, go: () => void) => {
     if (askingReach.current) return;
     askingReach.current = true;
-    void readUses(client, componentId).then((uses) => {
+    void readUses(client, componentId).then((read) => {
       askingReach.current = false;
+      const uses = read && {
+        ...read,
+        documents: read.documents.filter((each) => each.id !== hostDocument),
+      };
       if (uses && reachesAny(uses)) setReach({ uses, act, go });
       else go();
     });

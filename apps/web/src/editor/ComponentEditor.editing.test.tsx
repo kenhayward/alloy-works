@@ -421,6 +421,56 @@ describe('the component editor', () => {
     expect(cuts()).toHaveLength(1);
   });
 
+  it('asks nothing of the document it is open in, which a version reaches as its author expects', async () => {
+    const host = 'dddddddd-0000-4000-8000-000000000001';
+    const { asked, surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened()),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        'GET /v1/components/{id}/uses': () =>
+          json(200, {
+            documents: [
+              {
+                id: host,
+                title: 'Printer manual',
+                state: { key: 'draft', name: 'Draft', approved: false },
+                references: [{ node: 'n1', mode: 'latest', version: null }],
+              },
+            ],
+            unreadableDocuments: false,
+            baselines: { named: [], unreadable: false },
+            publications: { named: [], unreadable: false },
+          }),
+        'POST /v1/components/{id}/versions': () =>
+          json(200, {
+            outcome: 'cut',
+            version: {
+              id: 'v2',
+              number: '0.2',
+              author: ADA,
+              createdAt: '2026-09-16T09:05:00.000Z',
+              note: null,
+            },
+          }),
+      },
+      quick,
+      false,
+      { hostDocument: host },
+    );
+    const view = await surface();
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    await waitFor(() =>
+      expect(asked.map((each) => each.route)).toContain(
+        'PUT /v1/components/{id}/iterations/{session}/1',
+      ),
+    );
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Save version' }));
+    expect(await screen.findByText('Version 0.2 saved.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('puts the surface back and offers what was typed as text when somebody else holds the component', async () => {
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),
