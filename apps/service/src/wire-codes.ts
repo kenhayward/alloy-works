@@ -211,6 +211,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'reason.required': 'LIF-061',
   // An approval by one of its authors, at a gate that refuses them (workflow.md, WF2-D).
   'approval.author': 'LIF-010',
+  // A transition taken, or a gate approved, while what it requires is unmet (workflow.md, WF3-B).
+  'conditions.unmet': 'LIF-004',
 };
 
 /** The wire's spelling of a store's dotted answer. */

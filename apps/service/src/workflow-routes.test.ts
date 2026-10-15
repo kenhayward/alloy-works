@@ -452,6 +452,7 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
       expect(held.statusCode).toBe(409);
       expect(held.json()).toMatchObject({
         code: 'conditions_unmet',
+        rule: 'LIF-004',
         message: 'Not yet: 1 open thread.',
         unmet: [{ condition: 'threads', count: 1, names: [], unreadable: 0 }],
       });
