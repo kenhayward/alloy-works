@@ -182,6 +182,11 @@ describe('the domain package', () => {
         'walkOutline',
         'applyOutlineOperation',
         'outlineOperationSchema',
+        // R2: another document's section placed as references, and how much a component holds.
+        'PLACE_MAX',
+        'contentSize',
+        'placeSection',
+        'referencesUnder',
         'outlineChangesRefused',
         'repointsBetween',
         // Front matter, promoted in the plan that adds it
@@ -396,6 +401,8 @@ describe('the domain package', () => {
         'requiredKeys',
         'planTemplateMove',
         'valueFailures',
+        // R2: the references a version holds, as the reference index keeps them.
+        'referencesIn',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',

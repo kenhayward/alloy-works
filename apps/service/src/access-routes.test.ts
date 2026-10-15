@@ -1123,6 +1123,8 @@ describe('routes that check a permission', () => {
     unarchiveDocument: () => ({ url: `/v1/documents/${report}/unarchive`, status: 404 }),
     getComponentDeletion: () => ({ url: `/v1/components/${dosing}/deletion`, status: 404 }),
     getComponentUses: () => ({ url: `/v1/components/${dosing}/uses`, status: 404 }),
+    getArtifactImpact: () => ({ url: `/v1/artifacts/${dosing}/impact?depth=1`, status: 404 }),
+    getArtifactReferences: () => ({ url: `/v1/artifacts/${dosing}/references`, status: 404 }),
     deleteComponent: () => ({ url: `/v1/components/${dosing}/delete`, status: 404 }),
     undeleteComponent: () => ({ url: `/v1/components/${dosing}/undelete`, status: 404 }),
     getDocumentDeletion: () => ({ url: `/v1/documents/${report}/deletion`, status: 404 }),

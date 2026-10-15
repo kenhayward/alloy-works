@@ -111,6 +111,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0099_workflow_dates',
       '0100_section_waivers',
       '0101_template_moves',
+      '0102_reference_index',
     ]);
 
     const read = async () =>

@@ -109,6 +109,10 @@ export const documentationGroups = [
     name: 'Discovery and administration',
     tags: [
       { name: 'Search', description: 'Search content the caller may read.' },
+      {
+        name: 'Impact',
+        description: 'What a change to an artifact reaches, and what an artifact uses.',
+      },
       { name: 'Settings', description: 'Read and change environment settings.' },
       {
         name: 'Legal holds',
@@ -320,6 +324,7 @@ const operationTags = {
     'removeGrant',
   ],
   Search: ['search'],
+  Impact: ['getArtifactImpact', 'getArtifactReferences'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -489,6 +494,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
   deleteComponent:
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
+  getArtifactImpact:
+    'Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. Each is reached by references alone, so a change would break or change it. Needs read on the artifact.',
+  getArtifactReferences:
+    'Says what an artifact uses: what its latest version references, one hop forwards. A document references its components and its template version; a component its images and query definitions; a query definition its connection. Those the caller may read are named, and the answer says whether there is more. Needs read on the artifact.',
   getComponentUses:
     'Says where a component is used. Lists each document whose latest version places it, with each reference there: `latest` takes every new version of the component, `approved` every approved revision, and `pinned` one version, which no change reaches. Each document carries its workflow state and whether that state is approved, so a change reaching approved documents can be told apart from one reaching drafts. Lists the baselines and publications pinning a version of it apart, since no change reaches them. What the caller may not read, or is deleted, is never named or counted: each list says only whether there is more. Needs read on the component.',
   undeleteComponent:

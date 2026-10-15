@@ -45,6 +45,7 @@ import { checkNamedConnection, checkNotInUse } from './definition-references.js'
 import { isDeleted } from './deletion.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
+import { indexReferences } from './reference-index.js';
 import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
@@ -305,6 +306,8 @@ async function insertVersion(
   if (!stored) throw new Error(`Version ${row.id} was written and cannot be read back`);
   // Found by its words from the moment it exists, in its own transaction (search.md; SCH-066).
   await indexVersion(trx, stored);
+  // Its references, replacing its previous version's (the R2 plan, R2-A).
+  await indexReferences(trx, stored);
   await recordVersionCut(trx, stored, parent);
   return stored;
 }

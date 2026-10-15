@@ -652,6 +652,18 @@ export interface DocumentTemplateMoveTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** One reference in an artifact's latest version (0102; the R2 plan, R2-A). */
+export interface ReferenceTable {
+  id: ColumnType<string, never, never>;
+  from_id: string;
+  from_version: string;
+  node: string | null;
+  to_id: string;
+  to_kind: string;
+  mode: 'latest' | 'approved' | 'pinned';
+  to_version: string | null;
+}
+
 /** A section the template requires, removed with a reason (0100; the WF6 plan, WF6-B). */
 export interface SectionWaiverTable {
   id: ColumnType<string, never, never>;
@@ -966,6 +978,7 @@ export interface TenantTables {
   review_lapse: ReviewLapseTable;
   section_waiver: SectionWaiverTable;
   document_template_move: DocumentTemplateMoveTable;
+  reference: ReferenceTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;
