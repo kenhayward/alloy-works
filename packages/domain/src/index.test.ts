@@ -394,6 +394,7 @@ describe('the domain package', () => {
         // WF6: how a document departs from its template.
         'departures',
         'requiredKeys',
+        'planTemplateMove',
         'valueFailures',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',

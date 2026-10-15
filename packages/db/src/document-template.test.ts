@@ -14,6 +14,8 @@ import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { unmetConditions } from './workflow-conditions.js';
 import { waivedKeys } from './waivers.js';
+import { makeBaseline, readBaseline } from './baselines.js';
+import { moveDocumentTemplate, previewTemplateMove } from './template-move.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
@@ -654,6 +656,169 @@ describe('a document made from a template', () => {
           "This restore removes a section the document's template requires: remove it first, with a reason",
       },
     ]);
+  });
+
+  it('TPL-033 TPL-034 TPL-058 moves a document to its template’s newest version only when asked, after a preview that records nothing, carrying its values forward and audited', async () => {
+    const made = await template({});
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const id = document.version.artifactId;
+    const at = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
+      service.withTenant(production, work);
+    // Nothing newer: nothing to move to.
+    expect(
+      await at((trx) => previewTemplateMove(trx, { documentId: id, to: made.version.id })),
+    ).toEqual({ answer: 'template.current' });
+    await at((trx) =>
+      recordDocumentValues(trx, {
+        documentId: id,
+        openedFrom: document.version.id,
+        author: ada,
+        values: { [OWNER]: 'Ada' },
+      }),
+    );
+    // The newer version assigns no schema, and requires a Conclusion.
+    const newer = await at(async (trx) => {
+      const answer = await recordTemplateVersion(trx, {
+        templateId: made.id,
+        openedFrom: made.version.id,
+        definition: definition({
+          schemas: [],
+          outline: {
+            sections: [
+              section('introduction', 'Introduction'),
+              section('method', 'Method'),
+              { ...section('conclusion', 'Conclusion'), required: true },
+            ],
+          },
+        }),
+        author: ada,
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.template.version.id;
+    });
+    const latest = (await at((trx) => latestVersion(trx, id))) as { id: string };
+    const preview = await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer }));
+    expect(preview).toMatchObject({
+      answer: 'previewed',
+      template: made.id,
+      from: made.version.id,
+      to: newer,
+      latest: latest.id,
+      report: {
+        theme: null,
+        layout: null,
+        fields: expect.arrayContaining([
+          expect.objectContaining({ level: 'document', field: OWNER, change: 'removed' }),
+        ]),
+        notCarried: expect.arrayContaining([
+          { node: null, field: OWNER, name: expect.any(String), value: 'Ada' },
+        ]),
+        missing: [{ key: 'conclusion', title: 'Conclusion' }],
+      },
+    });
+    // The preview recorded nothing: the binding is the one it was made from.
+    expect(await at((trx) => documentTemplate(trx, id))).toEqual({
+      template: made.id,
+      version: made.version.id,
+    });
+    // Against the version the author saw: a stale one is refused.
+    expect(
+      await at((trx) =>
+        moveDocumentTemplate(trx, {
+          documentId: id,
+          latest: document.version.id,
+          to: newer,
+          by: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'version.precondition', current: latest.id });
+    const moved = await at((trx) =>
+      moveDocumentTemplate(trx, { documentId: id, latest: latest.id, to: newer, by: ada }),
+    );
+    expect(moved).toMatchObject({ answer: 'moved' });
+    expect(await at((trx) => documentTemplate(trx, id))).toEqual({
+      template: made.id,
+      version: newer,
+    });
+    expect(
+      ((await at((trx) => latestVersion(trx, id))) as { values: object }).values,
+    ).not.toHaveProperty(OWNER);
+    const { rows } = (await at((trx) =>
+      sql<{ detail: unknown }>`select detail from audit_event where kind = 'template.moved'
+        and subject = ${id}`.execute(trx),
+    )) as { rows: { detail: unknown }[] };
+    expect(rows.map((row) => row.detail)).toEqual([
+      { template: made.id, from: made.version.id, to: newer, notCarried: expect.any(Number) },
+    ]);
+    // Now at the newest: nothing more to move to.
+    expect(await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer }))).toEqual({
+      answer: 'template.current',
+    });
+  });
+
+  it('TPL-033 pins the version a document was moved to in a baseline made after the move', async () => {
+    const made = await template({});
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const id = document.version.artifactId;
+    const at = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
+      service.withTenant(production, work);
+    const valued = await at((trx) =>
+      recordDocumentValues(trx, {
+        documentId: id,
+        openedFrom: document.version.id,
+        author: ada,
+        values: { [OWNER]: 'Ada' },
+      }),
+    );
+    if (valued.answer !== 'recorded') throw new Error(valued.answer);
+    const newer = await at(async (trx) => {
+      const answer = await recordTemplateVersion(trx, {
+        templateId: made.id,
+        openedFrom: made.version.id,
+        definition: definition({ name: 'Report, revised' }),
+        author: ada,
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.template.version.id;
+    });
+    const moved = await at((trx) =>
+      moveDocumentTemplate(trx, { documentId: id, latest: valued.version.id, to: newer, by: ada }),
+    );
+    if (moved.answer !== 'moved') throw new Error(moved.answer);
+    const baseline = await at((trx) =>
+      makeBaseline(trx, {
+        documentId: id,
+        version: moved.version.id,
+        name: 'After the move',
+        maker: ada,
+      }),
+    );
+    if (baseline.answer !== 'made') throw new Error(baseline.answer);
+    const read = await at((trx) => readBaseline(trx, baseline.baseline, ada));
+    expect(read!.pins.template).toMatchObject({ version: newer });
+  });
+
+  it('refuses a move to a version that is not its template’s newest', async () => {
+    const made = await template({});
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const next = await service.withTenant(production, async (trx) => {
+      const answer = await recordTemplateVersion(trx, {
+        templateId: made.id,
+        openedFrom: made.version.id,
+        definition: definition({ name: 'Report, revised' }),
+        author: ada,
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.template.version.id;
+    });
+    expect(
+      await service.withTenant(production, (trx) =>
+        previewTemplateMove(trx, { documentId: document.version.artifactId, to: made.version.id }),
+      ),
+    ).toEqual({ answer: 'template.not_latest', latest: next });
   });
 
   it('LIF-004 holds a transition requiring sections while a required one is missing, naming it', async () => {

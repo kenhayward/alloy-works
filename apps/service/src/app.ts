@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { templateMoveHandlers } from './template-moves.js';
 import { datesHandlers } from './dates.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
@@ -550,6 +551,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...retentionHandlers(),
     ...workflowHandlers(),
     ...datesHandlers(),
+    ...templateMoveHandlers(),
     ...erasureHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),

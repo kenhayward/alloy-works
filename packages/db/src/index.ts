@@ -482,6 +482,13 @@ export { decideGate, listApprovals, type Approval, type GateAnswer } from './wor
 export { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 export { recordWaivers, requiredRemoved, waivedKeys } from './waivers.js';
 export {
+  moveDocumentTemplate,
+  previewTemplateMove,
+  type MoveAnswer as TemplateMoveAnswer,
+  type MovePreview,
+  type MoveRefusal,
+} from './template-move.js';
+export {
   datesStored,
   dayOf,
   localIso,

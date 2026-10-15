@@ -1683,6 +1683,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/template-move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What moving a document to its template's newest version would change
+         * @description Answers what moving a document to its template's newest version would change, recording nothing: the theme and the layout, each field assigned or no longer assigned and each made required or not, each value that would not be carried forward, and each section the newer version requires that the document lacks. Needs edit on the document and read on the template.
+         */
+        get: operations["previewTemplateMove"];
+        put?: never;
+        /**
+         * Move a document to its template's newest version
+         * @description Moves a document to its template's newest version, against the document version the preview was against: records a version with its values carried forward and binds it to the newer version. Never done but when asked. Needs edit on the document and read on the template. Audited.
+         */
+        post: operations["moveDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/texts": {
         parameters: {
             query?: never;
@@ -20086,6 +20110,10 @@ export interface operations {
                      *           "id": "example",
                      *           "number": "example"
                      *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
                      *         "required": [],
                      *         "departures": {
                      *           "added": [],
@@ -20217,6 +20245,11 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
                             /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                             required: string[];
                             /** @description How the document departs from its template (TPL-028) */
@@ -36024,6 +36057,10 @@ export interface operations {
                      *           "id": "example",
                      *           "number": "example"
                      *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
                      *         "required": [],
                      *         "departures": {
                      *           "added": [],
@@ -36155,6 +36192,11 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
                             /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                             required: string[];
                             /** @description How the document departs from its template (TPL-028) */
@@ -36390,6 +36432,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -36721,6 +36768,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -37199,6 +37251,10 @@ export interface operations {
                      *           "id": "example",
                      *           "number": "example"
                      *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
                      *         "required": [],
                      *         "departures": {
                      *           "added": [],
@@ -37330,6 +37386,11 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
                             /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                             required: string[];
                             /** @description How the document departs from its template (TPL-028) */
@@ -37565,6 +37626,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -37896,6 +37962,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -39628,6 +39699,445 @@ export interface operations {
             };
         };
     };
+    previewTemplateMove: {
+        parameters: {
+            query: {
+                to: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the move would change, recording nothing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "template": "example",
+                     *       "from": "example",
+                     *       "to": "example",
+                     *       "latest": "example",
+                     *       "report": {
+                     *         "theme": {
+                     *           "from": "example",
+                     *           "to": "example"
+                     *         },
+                     *         "layout": {
+                     *           "from": "example",
+                     *           "to": "example"
+                     *         },
+                     *         "fields": [],
+                     *         "notCarried": [],
+                     *         "missing": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        template: string;
+                        /** @description The template version the document is bound to now */
+                        from: string;
+                        /** @description The newest version, which the move binds it to */
+                        to: string;
+                        /** @description The document version the move is against: send it back to move */
+                        latest: string;
+                        report: {
+                            /** @description The theme it would be published under, where the newer version names another */
+                            theme: {
+                                from: string;
+                                to: string;
+                            } | null;
+                            /** @description The layout it would be published under, where the newer version names another */
+                            layout: {
+                                from: string;
+                                to: string;
+                            } | null;
+                            /** @description Each field the newer version assigns, no longer assigns, or makes required or not */
+                            fields: {
+                                /** @enum {string} */
+                                level: "document" | "section";
+                                field: string;
+                                name: string;
+                                /** @enum {string} */
+                                change: "added" | "removed" | "required" | "optional";
+                            }[];
+                            /** @description Each value the move would not carry forward, as a component type change names them */
+                            notCarried: {
+                                /** @description The section's node; null for the document's own */
+                                node: string | null;
+                                field: string;
+                                name: string;
+                                value: unknown;
+                            }[];
+                            /** @description Each section the newer version requires that the document lacks, to add or remove with a reason */
+                            missing: {
+                                key: string;
+                                title: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description template_unresolved: the newer version names what does not resolve */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a template the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description template_none: made blank; template_current: already at its newest version; template_not_latest: `to` is not the newest; artifact_archived; version_precondition: the document moved since */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    moveDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "latest": "00000000-0000-4000-8000-000000000001",
+                 *       "to": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The document version the preview was against: refused, version_precondition, where it is not the latest */
+                    latest: string & (unknown & unknown);
+                    /** @description The template's newest version, as the preview named it */
+                    to: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Moved; the document version now, and what changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "report": {
+                     *         "theme": {
+                     *           "from": "example",
+                     *           "to": "example"
+                     *         },
+                     *         "layout": {
+                     *           "from": "example",
+                     *           "to": "example"
+                     *         },
+                     *         "fields": [],
+                     *         "notCarried": [],
+                     *         "missing": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The document version now */
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        report: {
+                            /** @description The theme it would be published under, where the newer version names another */
+                            theme: {
+                                from: string;
+                                to: string;
+                            } | null;
+                            /** @description The layout it would be published under, where the newer version names another */
+                            layout: {
+                                from: string;
+                                to: string;
+                            } | null;
+                            /** @description Each field the newer version assigns, no longer assigns, or makes required or not */
+                            fields: {
+                                /** @enum {string} */
+                                level: "document" | "section";
+                                field: string;
+                                name: string;
+                                /** @enum {string} */
+                                change: "added" | "removed" | "required" | "optional";
+                            }[];
+                            /** @description Each value the move would not carry forward, as a component type change names them */
+                            notCarried: {
+                                /** @description The section's node; null for the document's own */
+                                node: string | null;
+                                field: string;
+                                name: string;
+                                value: unknown;
+                            }[];
+                            /** @description Each section the newer version requires that the document lacks, to add or remove with a reason */
+                            missing: {
+                                key: string;
+                                title: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description template_unresolved: the newer version names what does not resolve */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a template the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description template_none: made blank; template_current: already at its newest version; template_not_latest: `to` is not the newest; artifact_archived; version_precondition: the document moved since */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getDocumentTexts: {
         parameters: {
             query?: never;
@@ -40804,6 +41314,10 @@ export interface operations {
                      *           "id": "example",
                      *           "number": "example"
                      *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
                      *         "required": [],
                      *         "departures": {
                      *           "added": [],
@@ -40935,6 +41449,11 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
                             /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                             required: string[];
                             /** @description How the document departs from its template (TPL-028) */
@@ -41170,6 +41689,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -41501,6 +42025,11 @@ export interface operations {
                                     id: string;
                                     number: string;
                                 };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
                                 /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                                 required: string[];
                                 /** @description How the document departs from its template (TPL-028) */
@@ -55557,6 +56086,10 @@ export interface operations {
                      *           "id": "example",
                      *           "number": "example"
                      *         },
+                     *         "newest": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
                      *         "required": [],
                      *         "departures": {
                      *           "added": [],
@@ -55688,6 +56221,11 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                            newest: {
+                                id: string;
+                                number: string;
+                            } | null;
                             /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
                             required: string[];
                             /** @description How the document departs from its template (TPL-028) */

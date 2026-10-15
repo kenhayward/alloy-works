@@ -94,4 +94,76 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
       ),
     );
   });
+
+  it('TPL-033 TPL-034 offers the template’s newest version, says what the move changes first, and moves only when asked', async () => {
+    const NEWER = 'ee000000-0000-4000-8000-0000000000a2';
+    const fake = service(
+      outline([{ ...section(METHOD, 'Method'), origin: 'method' } as OutlineNode]),
+      { template: { ...TEMPLATE, newest: { id: NEWER, number: '0.4' } } },
+    );
+    const asked: { method: string; body: unknown }[] = [];
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url);
+      if (url.pathname === `/v1/documents/${DOCUMENT}/template-move`) {
+        asked.push({
+          method: request.method,
+          body: request.method === 'POST' ? await request.json() : url.searchParams.get('to'),
+        });
+        const report = {
+          theme: { from: 'a', to: 'b' },
+          layout: null,
+          fields: [{ level: 'document', field: 'f1', name: 'Reviewer', change: 'removed' }],
+          notCarried: [{ node: null, field: 'f1', name: 'Reviewer', value: 'Grace' }],
+          missing: [{ key: 'scope', title: 'Scope' }],
+        };
+        return request.method === 'GET'
+          ? new Response(
+              JSON.stringify({
+                template: TEMPLATE.id,
+                from: TEMPLATE.version.id,
+                to: NEWER,
+                latest: 'dddddddd-0000-4000-8000-000000000001',
+                report,
+              }),
+              { status: 200, headers: { 'content-type': 'application/json' } },
+            )
+          : new Response(JSON.stringify({ version: { id: 'v', number: '0.2' }, report }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            });
+      }
+      return fake.fetch(request);
+    }) as typeof fetch;
+    render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Move to version 0.4' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Move to Report, version 0.4' });
+    expect(
+      within(await within(dialog).findByRole('list', { name: 'What the move changes' }))
+        .getAllByRole('listitem')
+        .map((each) => each.textContent),
+    ).toEqual([
+      'Its theme changes.',
+      'Reviewer is no longer one of its fields.',
+      'Its value for Reviewer, Grace, is not carried forward.',
+      'Scope is required and missing: add it, or remove it with a reason.',
+    ]);
+    // Left there, nothing is moved.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Keep version 0.3' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(asked.filter((each) => each.method === 'POST')).toEqual([]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move to version 0.4' }));
+    const again = await screen.findByRole('dialog', { name: 'Move to Report, version 0.4' });
+    await within(again).findByRole('list', { name: 'What the move changes' });
+    await userEvent.click(within(again).getByRole('button', { name: 'Move' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.method === 'POST')).toEqual([
+        {
+          method: 'POST',
+          body: { latest: 'dddddddd-0000-4000-8000-000000000001', to: NEWER },
+        },
+      ]),
+    );
+  });
 });

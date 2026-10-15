@@ -1243,6 +1243,15 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null },
     }),
+    previewTemplateMove: () => ({
+      url: `/v1/documents/${MISSING}/template-move?to=${MISSING}`,
+      status: 404,
+    }),
+    moveDocumentTemplate: () => ({
+      url: `/v1/documents/${MISSING}/template-move`,
+      status: 404,
+      payload: { latest: MISSING, to: MISSING },
+    }),
     setDocumentDates: () => ({
       url: `/v1/documents/${MISSING}/dates`,
       status: 404,

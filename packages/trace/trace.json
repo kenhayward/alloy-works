@@ -18841,6 +18841,18 @@
         {
           "id": "TPL-029",
           "howItIsMet": "The outline's `remove` of a subtree holding a section from a required starting section needs a `reason`, kept as a `section_waiver` row (0100) and audited `section.waived`; a restore removing one is refused ([Governance](#governance))"
+        },
+        {
+          "id": "TPL-033",
+          "howItIsMet": "A document moves to its template's newest version only by `POST /v1/documents/{id}/template-move`, on edit and the template's read, against the document version its author previewed; insert-only `document_template_move` (0101), audited `template.moved`; never forced, refused at the newest already or to any other version ([Governance](#governance))"
+        },
+        {
+          "id": "TPL-034",
+          "howItIsMet": "`GET .../template-move?to=` answers what the move would change, recording nothing, from the resolution the move repeats; the page shows it before **Move**, and **Keep** leaves it ([Governance](#governance))"
+        },
+        {
+          "id": "TPL-058",
+          "howItIsMet": "The move brings the newer version's assignments forward and carries values by `carryForward`; the report names each field assigned, no longer assigned, or made required or not, at document and section level, and each value not carried, as MET-036 does. Fields resolve current (TE-K), so a changed schema or field applies without a move, which is therefore never needed for one ([Governance](#governance))"
         }
       ]
     },
@@ -19710,13 +19722,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 395,
+      "line": 398,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 408,
+      "line": 411,
       "kind": "title"
     },
     {
@@ -19992,7 +20004,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1218,
+      "line": 1222,
       "kind": "title"
     },
     {
@@ -20862,79 +20874,91 @@
     {
       "id": "TPL-013",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 528,
+      "line": 529,
       "kind": "rule"
     },
     {
       "id": "TPL-017",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 632,
+      "line": 685,
       "kind": "title"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 791,
+      "line": 844,
       "kind": "rule"
     },
     {
       "id": "TPL-018",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 785,
+      "line": 838,
       "kind": "title"
     },
     {
       "id": "TPL-020",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 947,
+      "line": 1000,
       "kind": "title"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 931,
+      "line": 984,
       "kind": "rule"
     },
     {
       "id": "TPL-021",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 922,
+      "line": 975,
       "kind": "title"
     },
     {
       "id": "TPL-026",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 773,
+      "line": 826,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-033",
+      "file": "apps/service/src/template-routes.test.ts",
+      "line": 552,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-034",
+      "file": "apps/service/src/template-routes.test.ts",
+      "line": 552,
       "kind": "title"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 814,
+      "line": 867,
       "kind": "rule"
     },
     {
       "id": "TPL-045",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 797,
+      "line": 850,
       "kind": "title"
     },
     {
       "id": "TPL-055",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 545,
+      "line": 546,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 650,
+      "line": 703,
       "kind": "rule"
     },
     {
       "id": "TPL-068",
       "file": "apps/service/src/template-routes.test.ts",
-      "line": 642,
+      "line": 695,
       "kind": "title"
     },
     {
@@ -22546,6 +22570,18 @@
       "kind": "title"
     },
     {
+      "id": "TPL-033",
+      "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
+      "line": 98,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-034",
+      "file": "apps/web/src/structure/DocumentPage.template.test.tsx",
+      "line": 98,
+      "kind": "title"
+    },
+    {
       "id": "LIF-061",
       "file": "apps/web/src/structure/DocumentPage.workflow.test.tsx",
       "line": 63,
@@ -23856,55 +23892,73 @@
     {
       "id": "LIF-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 659,
+      "line": 824,
       "kind": "title"
     },
     {
       "id": "STY-025",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 361,
+      "line": 363,
       "kind": "title"
     },
     {
       "id": "TPL-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 724,
+      "line": 889,
       "kind": "title"
     },
     {
       "id": "TPL-013",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 556,
+      "line": 558,
       "kind": "title"
     },
     {
       "id": "TPL-016",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 249,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "TPL-025",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 177,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "TPL-027",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 249,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "TPL-029",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 593,
+      "line": 595,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-033",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 661,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-034",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 661,
       "kind": "title"
     },
     {
       "id": "TPL-055",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 683,
+      "line": 848,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-058",
+      "file": "packages/db/src/document-template.test.ts",
+      "line": 661,
       "kind": "title"
     },
     {
@@ -25614,7 +25668,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 689,
+      "line": 690,
       "kind": "title"
     },
     {
@@ -26533,6 +26587,18 @@
       "id": "TPL-062",
       "file": "packages/domain/src/template/materialise.test.ts",
       "line": 118,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-034",
+      "file": "packages/domain/src/template/move.test.ts",
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-058",
+      "file": "packages/domain/src/template/move.test.ts",
+      "line": 74,
       "kind": "title"
     },
     {

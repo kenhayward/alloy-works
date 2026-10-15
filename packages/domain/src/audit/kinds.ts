@@ -513,7 +513,13 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/dates.ts',
   ),
-  'template.moved': kind(['TPL-033'], empty, LATER),
+  // A document moved to a newer version of its template (TPL-033; the WF6 plan, WF6-C): from which
+  // version to which, and how many values were not carried.
+  'template.moved': kind(
+    ['TPL-033'],
+    z.strictObject({ template: Id, from: Id, to: Id, notCarried: z.int().nonnegative() }),
+    'packages/db/src/template-move.ts',
+  ),
   'binding.revised': kind(['DAT-058', 'LIF-069'], Revised, 'apps/service/src/data/revisions.ts'),
   'relationship.made': kind(['LIF-070', 'REL-011'], empty, LATER),
   'relationship.changed': kind(['LIF-070', 'REL-033'], empty, LATER),

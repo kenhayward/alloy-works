@@ -227,6 +227,12 @@ export const DocumentView = z.object({
       id: z.string(),
       name: z.string(),
       version: z.object({ id: z.string(), number: z.string() }),
+      newest: z
+        .object({ id: z.string(), number: z.string() })
+        .nullable()
+        .describe(
+          'The template’s newest version, where it is newer than the one the document is bound to (TPL-033)',
+        ),
       required: z
         .array(z.string())
         .describe(

@@ -191,7 +191,14 @@ const operationTags = {
     'getContributions',
   ],
   Definitions: ['listDefinitions', 'createDefinition', 'getDefinition', 'recordDefinitionVersion'],
-  Templates: ['listTemplates', 'createTemplate', 'getTemplate', 'recordTemplateVersion'],
+  Templates: [
+    'listTemplates',
+    'createTemplate',
+    'getTemplate',
+    'recordTemplateVersion',
+    'previewTemplateMove',
+    'moveDocumentTemplate',
+  ],
   Connections: [
     'listConnections',
     'createConnection',
@@ -523,6 +530,10 @@ const descriptions: Readonly<Record<string, string>> = {
   createTemplate: 'Creates a template in the named space at its first version.',
   getTemplate: 'Opens the current template version and its starting document structure.',
   recordTemplateVersion: 'Records a new template version based on the version the caller opened.',
+  previewTemplateMove:
+    "Answers what moving a document to its template's newest version would change, recording nothing: the theme and the layout, each field assigned or no longer assigned and each made required or not, each value that would not be carried forward, and each section the newer version requires that the document lacks. Needs edit on the document and read on the template.",
+  moveDocumentTemplate:
+    "Moves a document to its template's newest version, against the document version the preview was against: records a version with its values carried forward and binds it to the newer version. Never done but when asked. Needs edit on the document and read on the template. Audited.",
   listConnections:
     'Lists the connections the caller may read, with whether each has a credential and how its last test went.',
   createConnection:
