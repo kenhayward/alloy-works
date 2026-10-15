@@ -32,3 +32,8 @@ LIF-039, COL-066, DAT-123).
   browser walks.
 - The final review hunts a condition passed that should not be, a title leaked, and a refusal that
   records. The close: 0.168.0.
+
+## Built
+
+#620, with the close (0.168.0). The final review found a component placed twice judged by one
+placement only; every placement is now judged.
