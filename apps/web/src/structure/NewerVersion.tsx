@@ -33,11 +33,14 @@ export function NewerVersion({
   component,
   pinned,
   newer,
+  said,
 }: {
   client: Client;
   component: string;
   pinned: VersionNamed;
   newer: VersionNamed;
+  /** What it says in place of a pin's sentence: a revision approved since the last publication (LIF-041). */
+  said?: string | undefined;
 }) {
   const [shown, setShown] = useState<Shown>(null);
   const compare = async () => {
@@ -61,7 +64,9 @@ export function NewerVersion({
   return (
     <>
       <p className={styles['newer']}>
-        <span>{`Version ${newer.number} is newer than the ${pinned.number} pinned here.`}</span>
+        <span>
+          {said ?? `Version ${newer.number} is newer than the ${pinned.number} pinned here.`}
+        </span>
         {shown === null || shown === 'failed' ? (
           <button type="button" onClick={() => void compare()}>
             {`Compare ${pinned.number} with ${newer.number}`}

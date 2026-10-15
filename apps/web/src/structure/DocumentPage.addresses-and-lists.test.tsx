@@ -704,10 +704,11 @@ describe('the address of every node', () => {
     });
 
     /**
-     * A document placing the printer at its latest, pinned to 0.1 and waiting on revisions, and a
-     * component the reader may not read. The texts route resolves each as the service does, from the
-     * outline as it now stands - the latest is 0.3 - and the versions route lists the printer's three,
-     * or answers as `versions` says for the cursor it was sent.
+     * A document placing the printer at its latest, pinned to 0.1 and at its latest approved revision,
+     * and a component the reader may not read. The texts route resolves each as the service does, from
+     * the outline as it now stands - the latest is 0.3, revision 1 is 0.2, and the last publication
+     * carried 0.1 - and the versions route lists the printer's three, or answers as `versions` says for
+     * the cursor it was sent.
      */
     const listedVersion = (id: string) => ({
       id,
@@ -741,17 +742,22 @@ describe('the address of every node', () => {
             for (const node of nodes) {
               if (node.type === 'reference') {
                 const version =
-                  node.component === null || node.mode.kind === 'approved'
+                  node.component === null
                     ? null
-                    : node.mode.kind === 'pinned'
-                      ? node.mode.version
-                      : V3;
+                    : node.mode.kind === 'approved'
+                      ? V2
+                      : node.mode.kind === 'pinned'
+                        ? node.mode.version
+                        : V3;
                 if (version !== null) resolved.add(version);
                 occurrences.push({
                   node: node.id,
                   version,
                   mayEdit: node.component !== null,
                   lock: null,
+                  ...(node.component !== null && node.mode.kind === 'approved'
+                    ? { revision: 1, moved: { id: V1, number: NUMBERS[V1] } }
+                    : {}),
                 });
               }
               walk(node.children);
@@ -786,15 +792,13 @@ describe('the address of every node', () => {
     const labelOf = (text: HTMLElement, node: string) =>
       text.querySelector<HTMLElement>(`[data-node="${node}"] [data-label]`)!;
 
-    it('CNT-162 shows in each label the version a reference resolves to, and whether it is pinned or at the latest', async () => {
+    it('CNT-162 CNT-163 REU-050 shows in each label the version a reference resolves to, and whether it is pinned, at the latest or at the latest approved revision, and which', async () => {
       const { text } = await openVersions({ document: false });
       await waitFor(() =>
         expect(labelOf(text, FOLLOWING)).toHaveTextContent('Version 0.3, latest'),
       );
       expect(labelOf(text, PINNED)).toHaveTextContent('Version 0.1, pinned');
-      // Approved resolves to nothing until revisions exist, and says so as the outline does (DV-G).
-      expect(labelOf(text, APPROVED)).toHaveTextContent('waiting on revisions');
-      expect(labelOf(text, APPROVED)).not.toHaveTextContent(/Version/);
+      expect(labelOf(text, APPROVED)).toHaveTextContent('Revision 1, latest approved');
       // A component the reader may not read shows neither which version nor how it is placed.
       const withheld = labelOf(text, WITHHELD);
       expect(withheld).toHaveTextContent('Not yours to read');
@@ -813,9 +817,10 @@ describe('the address of every node', () => {
       await userEvent.click(chooser);
       const menu = await within(label()).findByRole('menu');
       const items = await within(menu).findAllByRole('menuitemradio');
-      // Always the latest, then each version, newest first; never approved (DV-G).
+      // Always the latest, the latest approved revision, then each version, newest first.
       expect(items.map((each) => each.textContent)).toEqual([
         'Always the latest',
+        'Always the latest approved revision',
         expect.stringMatching(/^Version 0\.3/),
         expect.stringMatching(/^Version 0\.2/),
         expect.stringMatching(/^Version 0\.1/),
@@ -825,6 +830,8 @@ describe('the address of every node', () => {
       // The keyboard moves through it, and Escape closes it with the focus back on the version.
       await userEvent.keyboard('{ArrowDown}');
       expect(items[1]).toHaveFocus();
+      await userEvent.keyboard('{ArrowDown}');
+      expect(items[2]).toHaveFocus();
       await userEvent.keyboard('{Escape}');
       expect(within(label()).queryByRole('menu')).toBeNull();
       expect(chooser).toHaveFocus();
@@ -850,6 +857,46 @@ describe('the address of every node', () => {
         operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'latest' } },
       });
       await waitFor(() => expect(label()).toHaveTextContent('Version 0.3, latest'));
+    });
+
+    it('CNT-159 lets an author choose, from the document view, that a reference track the latest approved revision', async () => {
+      const { fake, text } = await openVersions({ document: true });
+      const label = () => labelOf(text, FOLLOWING);
+      await userEvent.click(await within(label()).findByRole('button', { name: /^Version 0\.3/ }));
+      const menu = await within(label()).findByRole('menu');
+      await userEvent.click(
+        within(menu).getByRole('menuitemradio', { name: 'Always the latest approved revision' }),
+      );
+      await waitFor(() => expect(fake.edits()).toHaveLength(1));
+      expect(fake.edits()[0]!.body).toMatchObject({
+        operation: { operation: 'set', node: FOLLOWING, mode: { kind: 'approved' } },
+      });
+      await waitFor(() => expect(label()).toHaveTextContent('Revision 1, latest approved'));
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Install the printer now shows its latest approved revision.',
+      );
+      // Chosen again, it is checked, and choosing it again does nothing.
+      await userEvent.click(within(label()).getByRole('button', { name: /^Revision 1/ }));
+      const again = await within(label()).findByRole('menu');
+      const approved = within(again).getByRole('menuitemradio', {
+        name: 'Always the latest approved revision',
+      });
+      expect(approved).toHaveAttribute('aria-checked', 'true');
+      await userEvent.click(approved);
+      expect(fake.edits()).toHaveLength(1);
+    });
+
+    it('LIF-041 says when a newer revision is approved than the last publication carried, and compares them', async () => {
+      const { text } = await openVersions({ document: false });
+      const placed = text.querySelector<HTMLElement>(`[data-node="${APPROVED}"]`)!;
+      expect(
+        await within(placed).findByText(
+          'Revision 1 is approved since the last publication, which carried 0.1.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(placed).getByRole('button', { name: 'Compare 0.1 with 0.2' }),
+      ).toBeInTheDocument();
     });
 
     it('CNT-158 offers the choice only in Authoring, and only to whoever may restructure the document', async () => {
@@ -898,7 +945,7 @@ describe('the address of every node', () => {
       const oldest = await within(menu).findByRole('menuitemradio', { name: /^Version 0\.1/ });
       await waitFor(() => expect(oldest).toHaveFocus());
       expect(within(menu).queryByRole('menuitem', { name: 'Older versions' })).toBeNull();
-      expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(4);
+      expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(5);
     });
   });
 

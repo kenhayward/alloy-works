@@ -1051,6 +1051,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
+- **The latest approved revision.** A reference can track its component's latest approved revision:
+  **Always the latest approved revision** in its label's list. The label says which revision it shows,
+  and publishing, previews and baselines take it. Where a newer revision is approved than the
+  document's last publication carried, the reference says so and offers **Compare**.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at
@@ -1648,8 +1652,7 @@ Named explicitly so nobody has to read the source to find out:
   default's.
 - No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
-- No search by meaning, no taxonomy. A reference cannot yet follow a component's latest approved
-  revision, and no layout the product seeds declares an approval page. Conditional text
+- No search by meaning, no taxonomy. No layout the product seeds declares an approval page. Conditional text
   and suggestion handling are described in the content model and neither runs.
 - No email, webhook or internal-only thread: a notification is in the inbox alone, and every thread
   is seen by whoever may read what it is on.

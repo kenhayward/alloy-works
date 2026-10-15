@@ -37,6 +37,8 @@ import {
   recordVersion,
   type StoredVersion,
 } from './versions.js';
+import { moveArtifact } from './workflow.js';
+import { decideGate } from './workflow-gates.js';
 
 const REVIEW = '5c4e0000-0000-4000-8000-0000000000aa';
 const STATUS = 'f1e1d000-0000-4000-8000-0000000000aa';
@@ -654,6 +656,60 @@ describe("restoring a document's earlier version (storage-and-versioning.md; the
         .map((each) => each.detail),
     ).toEqual([
       { node, component: printer.artifactId, from: { kind: 'approved' }, to: { kind: 'latest' } },
+    ]);
+  });
+
+  it('CNT-183 audits a reference set to track the latest approved revision with the version that revision is, from and to', async () => {
+    const printer = await component();
+    await work(async (trx) => {
+      await moveArtifact(trx, {
+        artifactId: printer.artifactId,
+        kind: 'component',
+        transition: 'submit',
+        from: 'draft',
+        by: grace,
+        may: () => true,
+      });
+      const passed = await decideGate(trx, {
+        artifactId: printer.artifactId,
+        kind: 'component',
+        transition: 'approve',
+        version: printer.id,
+        decision: 'approved',
+        by: grace,
+        may: () => true,
+      });
+      if (passed.answer !== 'passed') throw new Error(passed.answer);
+    });
+    const made = await blank();
+    const first = await act(made, {
+      operation: 'insert',
+      parent: null,
+      position: 0,
+      node: { type: 'reference', component: printer.artifactId, mode: { kind: 'latest' } },
+    });
+    const node = outline(first).nodes[0]!.id;
+    const second = await act(first, { operation: 'set', node, mode: { kind: 'approved' } });
+    const third = await act(second, { operation: 'set', node, mode: { kind: 'latest' } });
+    const repointed = async (version: { id: string }) =>
+      (await eventsOf(version.id))
+        .filter((each) => each.kind === 'reference.repointed')
+        .map((each) => each.detail);
+    expect(await repointed(second)).toEqual([
+      {
+        node,
+        component: printer.artifactId,
+        from: { kind: 'latest' },
+        to: { kind: 'approved', version: printer.id },
+      },
+    ]);
+    expect(await repointed(third)).toEqual([
+      {
+        node,
+        component: printer.artifactId,
+        from: { kind: 'approved', version: printer.id },
+        to: { kind: 'latest' },
+      },
     ]);
   });
 

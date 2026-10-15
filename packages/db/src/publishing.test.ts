@@ -46,6 +46,8 @@ import {
   testTenantDatabase,
 } from './testing/database.js';
 import { createArtifact, recordVersion, substanceOf, type StoredVersion } from './versions.js';
+import { moveArtifact } from './workflow.js';
+import { decideGate } from './workflow-gates.js';
 
 const ISSUER = 'https://idp.example';
 const nodeId = () => blockIdentifierFrom(randomBytes(16));
@@ -547,6 +549,77 @@ describe('requesting and recording a publication', () => {
       }
       const after = await trx.selectFrom('publication_request').select('id').execute();
       expect(after).toEqual(before);
+    });
+  });
+
+  it('LIF-038 REU-050 resolves a reference tracking the latest approved revision to the version it designates, and moves as a newer one is', async () => {
+    await service.withTenant(production, async (trx) => {
+      const made = await component(trx, general, ada, 'Approved printer');
+      const tracking = reference(made.artifactId, { kind: 'approved' });
+      const latest = reference(made.artifactId);
+      const outline = (await documentWith(trx, [section('Introduction', [tracking, latest])]))
+        .content as OutlineDocument;
+      // None approved yet: it resolves to nothing, as before revisions existed.
+      expect((await resolveOccurrences(trx, outline, ada))[0]).toEqual({
+        node: tracking.id,
+        outcome: 'unresolved',
+      });
+
+      const approve = async (version: StoredVersion) => {
+        const moved = await moveArtifact(trx, {
+          artifactId: version.artifactId,
+          kind: 'component',
+          transition: 'submit',
+          from: 'draft',
+          by: ada,
+          may: () => true,
+        });
+        if (moved.answer !== 'moved') throw new Error(moved.answer);
+        const passed = await decideGate(trx, {
+          artifactId: version.artifactId,
+          kind: 'component',
+          transition: 'approve',
+          version: version.id,
+          decision: 'approved',
+          by: grace,
+          may: () => true,
+        });
+        if (passed.answer !== 'passed') throw new Error(passed.answer);
+      };
+      await approve(made);
+      const substance = substanceOf(made);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const next = await recordVersion(trx, {
+        artifactId: made.artifactId,
+        openedFrom: made.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'b1',
+                style: 'body',
+                content: [{ type: 'text', value: 'Again.', marks: [] }],
+              },
+            ],
+          },
+        },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+      const draft = next.version;
+      // Edited since: the latest moves to the draft; the approved reference stays (LIF-040).
+      expect(await resolveOccurrences(trx, outline, ada)).toEqual([
+        { node: tracking.id, outcome: 'resolved', component: made.artifactId, version: made.id },
+        { node: latest.id, outcome: 'resolved', component: made.artifactId, version: draft.id },
+      ]);
+      // Approved again, it moves to the newer revision.
+      await approve(draft);
+      expect((await resolveOccurrences(trx, outline, ada))[0]).toMatchObject({
+        version: draft.id,
+      });
     });
   });
 

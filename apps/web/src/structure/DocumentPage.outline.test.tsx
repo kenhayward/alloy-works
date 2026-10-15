@@ -523,12 +523,12 @@ describe('the outline panel', () => {
     expect(undoable()).toBe(false);
   });
 
-  it('renders a reference whose mode is approved as waiting on revisions rather than a version', async () => {
+  it('REU-050 renders a reference tracking the latest approved revision as such', async () => {
     const fake = service(outline([reference(RESULTS, 'approved'), reference(SCOPE, 'latest')]));
     open(fake.fetch);
 
     expect(
-      await screen.findByRole('treeitem', { name: 'Install the printer, waiting on revisions' }),
+      await screen.findByRole('treeitem', { name: 'Install the printer, latest approved' }),
     ).toBeInTheDocument();
     expect(item('Install the printer, latest')).toBeInTheDocument();
     expect(screen.getByRole('tree')).not.toHaveTextContent(/version/i);

@@ -84,6 +84,32 @@ export async function latestRevision(
   return row ? { number: row.revision_no, versionId: row.version_id, at: row.at } : null;
 }
 
+/**
+ * Each of these artifacts' latest revision, where it has one: what a reference tracking the latest
+ * approved revision resolves to (LIF-038; the WF4 plan, WF4-A). The caller passes only those its
+ * reader may read.
+ */
+export async function latestRevisionsOf(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<Map<string, Revision>> {
+  if (artifactIds.length === 0 || !(await gatesStored(trx))) return new Map();
+  const rows = await trx
+    .selectFrom('revision_designation')
+    .distinctOn('artifact_id')
+    .select(['artifact_id', 'revision_no', 'version_id', 'at'])
+    .where('artifact_id', 'in', [...artifactIds])
+    .orderBy('artifact_id')
+    .orderBy('revision_no', 'desc')
+    .execute();
+  return new Map(
+    rows.map((row) => [
+      row.artifact_id,
+      { number: row.revision_no, versionId: row.version_id, at: row.at },
+    ]),
+  );
+}
+
 /** How far a gate from the artifact's state has got this round, on its current version (WF2-C). */
 export interface GateProgress {
   readonly transition: string;

@@ -105,12 +105,11 @@ export async function unmetConditions(
     if (!latest) return [];
     const read = readOutline(latest.content, { artifact: input.artifactId, version: latest.id });
     if (!read.ok) throw new Error(`The document ${input.artifactId} at ${latest.id} does not read`);
-    const references = new Map<string, { component: string; approved: boolean }>();
+    const references = new Map<string, { component: string }>();
     walkOutline(read.outline.nodes, (node) => {
       if (node.type === 'reference') {
         references.set(node.id, {
           component: node.component,
-          approved: node.mode.kind === 'approved',
         });
       }
     });
@@ -170,24 +169,20 @@ export async function unmetConditions(
 
 /**
  * The readable components a document assembles at a version that is no designated revision (LIF-039;
- * WF3-E), each placement judged, and each failing component named once by its latest title: an
- * `approved` reference is met where its component has any revision, an unresolved one never.
+ * WF3-E), each placement judged, and each failing component named once by its latest title. An
+ * `approved` reference resolves to its latest revision (WF4-F); one with none is unresolved, and fails.
  */
 async function notApproved(
   trx: TenantTransaction,
   outcomes: Awaited<ReturnType<typeof resolveOccurrences>>,
-  references: ReadonlyMap<string, { component: string; approved: boolean }>,
+  references: ReadonlyMap<string, { component: string }>,
 ): Promise<{ count: number; names: string[] }> {
-  const placed: { component: string; version: string | 'approved' | null }[] = [];
+  const placed: { component: string; version: string | null }[] = [];
   for (const each of outcomes) {
     if (each.outcome === 'resolved') {
       placed.push({ component: each.component, version: each.version });
     } else if (each.outcome === 'unresolved') {
-      const reference = references.get(each.node)!;
-      placed.push({
-        component: reference.component,
-        version: reference.approved ? 'approved' : null,
-      });
+      placed.push({ component: references.get(each.node)!.component, version: null });
     }
   }
   if (placed.length === 0) return { count: 0, names: [] };
@@ -199,12 +194,9 @@ async function notApproved(
   const failing = [
     ...new Set(
       placed
-        .filter(({ component, version }) =>
-          version === 'approved'
-            ? !designated.some((row) => row.artifact_id === component)
-            : !designated.some(
-                (row) => row.artifact_id === component && row.version_id === version,
-              ),
+        .filter(
+          ({ component, version }) =>
+            !designated.some((row) => row.artifact_id === component && row.version_id === version),
         )
         .map((each) => each.component),
     ),

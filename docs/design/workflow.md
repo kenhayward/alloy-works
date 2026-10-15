@@ -33,11 +33,14 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-039** | A document's transition may require every component it assembles at an approved revision, naming each that is not                                                    |
 | **COL-066** | `suggestions`: none unresolved on a component, or on any component a document assembles                                                                              |
 | **DAT-123** | `revisions`: no value revised by hand standing in front of a binding's result                                                                                        |
+| **LIF-038** | A reference may track its component's latest approved revision, beside pinned and latest: [The latest approved revision](#the-latest-approved-revision)              |
+| **REU-050** | Each reference takes one of the three modes, shown on its label and in the outline                                                                                   |
+| **LIF-041** | A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them                  |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
-whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-040's approved revision served to references waits for
-phase 4's "latest approved"; the designation and the move to draft on a save are here. VER-012 to
+whose items carry no state, nor the inbox, the relationships panel or baselines (WF-G). LIF-040, below, is
+not claimed either. VER-012 to
 VER-015 are [storage-and-versioning.md](storage-and-versioning.md)'s, built below.
 
 ## Definitions
@@ -180,7 +183,8 @@ check), seeded at version 1 as the component seed's version 2, Approve a gate; e
 there was starts in draft. A definition moves, is approved and is rejected as content is, by
 `/v1/query-definitions/{id}/transitions` and `/approvals`, its view carrying its state, gates and
 revision, its page showing them beside its version. A version saved after approval starts a draft.
-Which version a binding resolves stays its newest, approved or not, until phase 4's "latest approved".
+Which version a binding resolves stays its newest, approved or not: a binding has no mode to track an
+approved one, which WF4 left as it was.
 
 ## What a transition requires
 
@@ -203,5 +207,23 @@ are read as the person taking it, as a gate's baseline is: a component they may 
 unproven, so unmet, counted and never named. Sections and components not approved are named by title.
 
 **At an approved revision** (WF3-E): the version a reference resolves to is a designated revision; an
-`approved` reference, phase 4's to resolve, is met where its component has one. Every placement is
+`approved` reference resolves to its latest revision (WF4), so is met, and one with none is not. Every placement is
 judged, so a component placed twice passes only if both do (the final review).
+
+## The latest approved revision
+
+**Resolved** (the WF4 plan, WF4-A; LIF-038, REU-050): an `approved` reference takes the version its
+component's latest revision designates, in `resolveOccurrences` and `numberingInputs`, so every reader
+of a reference - publishing, previews, baselines, the view's texts, numbering, comparison, bindings -
+reads it, of a component the reader may read. None designated is unresolved, as it always was: a
+publish fails it `occurrence_unresolved`, and a transition requiring `components` fails it (WF4-F).
+
+**Moved** (WF4-E; LIF-041): the view's texts carry, for an `approved` occurrence, its `revision`, and
+`moved`, the version the document's latest publication not failed carried for that node, where it is
+of the same component and older than the one shown now: a publication that carried a newer version,
+at the latest or pinned, has not been moved past (the final review). Never published, nothing has
+moved. A baseline's publication counts as the document's last, as a gate's approved one is.
+
+**LIF-040 is not claimed**: a save of an approved component starts a draft (WF-F) and leaves its
+revision designated and served to every reference tracking it; a reference at the latest takes the
+draft, by the mode its author chose, so "served to everything referencing it" holds only for those.

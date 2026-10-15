@@ -6,6 +6,7 @@ import {
   type Contribution,
   type OutlineDocument,
 } from '@alloy-works/domain';
+import { latestRevisionsOf } from './workflow.js';
 import { readableComponents } from './documents.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -79,12 +80,23 @@ export async function numberingInputs(
         .map((each) => each.component),
     ),
   ];
-  const pinned = [
+  // An `approved` reference takes its component's latest revision (the WF4 plan, WF4-A), read with
+  // the pins, of a component the principal may read alone.
+  const revisions = await latestRevisionsOf(trx, [
     ...new Set(
-      references.flatMap((each) =>
+      references
+        .filter((each) => readable.has(each.component) && each.approved)
+        .map((each) => each.component),
+    ),
+  ]);
+  const approvedOf = (component: string) => revisions.get(component)?.versionId ?? null;
+  const pinned = [
+    ...new Set([
+      ...references.flatMap((each) =>
         readable.has(each.component) && each.pinned !== null ? [each.pinned] : [],
       ),
-    ),
+      ...[...revisions.values()].map((revision) => revision.versionId),
+    ]),
   ];
 
   // One row per component in `latest`, each its own head - a lateral join, as `listReadableDocuments`
@@ -140,11 +152,14 @@ export async function numberingInputs(
   const occurrences: OccurrenceResolution[] = [];
   const contributions = new Map<string, readonly Contribution[]>();
   for (const reference of references) {
-    // `approved` resolves to nothing until revisions exist, even where the same component is also
-    // placed at `latest` and its head was read for that occurrence.
-    const row =
-      !readable.has(reference.component) || reference.approved
-        ? undefined
+    // `approved` takes its latest revision, and nothing where none is designated.
+    const approved = reference.approved ? approvedOf(reference.component) : null;
+    const row = !readable.has(reference.component)
+      ? undefined
+      : reference.approved
+        ? approved === null
+          ? undefined
+          : pinOf.get(approved)
         : reference.pinned !== null
           ? pinOf.get(reference.pinned)
           : headOf.get(reference.component);

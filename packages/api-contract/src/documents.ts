@@ -396,6 +396,19 @@ export const DocumentTextsView = z.object({
           .describe(
             'How many suggestions wait on the component: 0 where the caller may not read it',
           ),
+        revision: z
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            'For a reference tracking the latest approved revision, which revision it shows (CNT-163); absent where none is approved',
+          ),
+        moved: z
+          .object({ id: z.string(), number: z.string() })
+          .optional()
+          .describe(
+            "For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041)",
+          ),
         lock: Lock.nullable().describe(
           'Who holds the component now and until when: null where nobody does, or where the caller may not read it',
         ),
