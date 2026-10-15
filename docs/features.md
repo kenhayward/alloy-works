@@ -1051,6 +1051,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
+- **Template governance.** A document made from a template says which template and version, and
+  lists how it departs from it: sections it has that the template does not, and those it lacks. A
+  section the template requires is removed only with a reason, kept and shown among the departures.
+  Where the template has a newer version, **Move to version N** first says what the move changes (the
+  theme or layout, each field added or removed, each value not carried forward, each newly required
+  section), and moves only when asked; the move is recorded.
 - **Effective and review-by dates.** A component's or document's header offers **Dates**: when a
   revision approved from now takes effect, a review-by day and the review's owner. A revision approved
   with a future effective date is served to references only from that instant, and its taking effect

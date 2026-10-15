@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.171.0 - 2026-10-15 (PR #628)
+
+Workflow's sixth phase: template governance (ADR-0061).
+
+### Added
+
+- **Departures from a template.** A document made from a template says which template and version, and lists the sections it has that the template does not, and those it lacks.
+- **Removing a required section.** A section the template requires is removed only with a reason, which is kept on the document and shown among its departures. It no longer stops a publish.
+- **Moving to a newer template version.** A document offers **Move to version N** where its template has a newer version. It first says what the move changes: the theme or layout, each field added or removed, each value not carried forward and each newly required section. The move happens only when asked, and is recorded.
+
 ## 0.170.0 - 2026-10-15 (PR #626)
 
 Workflow's fifth phase: effective and review-by dates (ADR-0061).

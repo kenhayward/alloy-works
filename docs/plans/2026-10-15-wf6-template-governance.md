@@ -43,3 +43,9 @@ version as an explicit, audited act, previewed with everything it will change an
   stale, unchanged, or to a version not the latest; the binding read after. The final review hunts a
   value lost unreported, a move by somebody who may not read the template, and a waiver dropped. The
   close: 0.171.0.
+
+## Built
+
+WF6a #627, and WF6b with the close (0.171.0) #628. The final review found a baseline made after a
+move pinning the version the document was made from; it now pins the one moved to, and a move takes
+the document's lock.
