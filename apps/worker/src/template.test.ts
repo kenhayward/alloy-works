@@ -482,6 +482,8 @@ describe('the pipeline version', () => {
     '24': '74bac0eb10c86431ac614534287cbbbe108bf47b56f6c03da043138874fb0470',
     // `publishing/22` (WF2b): a draft's front carries `approvals: null`, so the same input digests anew.
     '25': '4b953922c8473b9dda22f82dbe8ecbb542a351c259236911f8c43ef861712687',
+    // R5-E: a variable printed and recorded; an input holding none is made as '25' made it.
+    '26': '4b953922c8473b9dda22f82dbe8ecbb542a351c259236911f8c43ef861712687',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
   // input is fixed at one: the default theme's 0.3, which '13' to '15' were pinned under. The default moving
@@ -501,7 +503,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/22': '25' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/22': '26' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -525,7 +527,7 @@ describe('the pipeline version', () => {
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('25');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('26');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

@@ -69,8 +69,9 @@ import type { JobHandler } from '../worker.js';
  * the first to set a bound table's groups under their headings and record them (TG1), 22 the first
  * to set a transposed table (TG2), 23 the first to measure a table's columns by what they hold
  * (TG3), 24 the first to print a value revised by hand and write `provenance.json` at its schema 4
- * (the RV plan, RV-F), and 25 the first to publish a gate's baseline as approved, without the notice
- * and with its approval page (the WF2 plan, WF2-I, WF2-J).
+ * (the RV plan, RV-F), 25 the first to publish a gate's baseline as approved, without the notice
+ * and with its approval page (the WF2 plan, WF2-I, WF2-J), and 26 the first to print a variable and
+ * write `provenance.json` at its schema 5 (the R5 plan, R5-E).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -82,7 +83,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '25',
+  [PUBLISHING_SCHEMA_CURRENT]: '26',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */

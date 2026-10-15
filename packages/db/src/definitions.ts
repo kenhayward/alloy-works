@@ -343,6 +343,25 @@ async function refusal(
     if (field !== undefined && (await readDefinitionLatest(trx, field))?.kind !== 'field') {
       return { answer: 'definition.unresolved', missing: [field], requires: [] };
     }
+    // Its key is fixed once made: every variable node in text names it by that key.
+    if (self !== undefined) {
+      const held = (await readDefinitionLatest(trx, self))?.definition as
+        VariableDefinition | undefined;
+      if (held !== undefined && held.key !== variable.key) {
+        return {
+          answer: 'definition.invalid',
+          failures: [
+            {
+              code: 'metadata.fixed',
+              field: self,
+              rule: 'fixed',
+              schemas: [],
+              detail: `A variable keeps its key, ${held.key}`,
+            },
+          ],
+        };
+      }
+    }
     const keyed = (await latestOfKind(trx, 'variable')).find(
       (each) => each.definition.key === variable.key && each.id !== self,
     );
