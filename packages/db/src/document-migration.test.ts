@@ -174,6 +174,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0099_workflow_dates',
       '0100_section_waivers',
       '0101_template_moves',
+      '0102_reference_index',
     ]);
 
     // The component and its version are as they were.
@@ -339,6 +340,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0099_workflow_dates',
       '0100_section_waivers',
       '0101_template_moves',
+      '0102_reference_index',
     ]);
 
     const { rows } = await queryAs(

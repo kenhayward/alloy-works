@@ -10,6 +10,7 @@ import {
 import { artifactPlace, recordEvent } from './audit.js';
 import { isArchived } from './archival.js';
 import { isDeleted } from './deletion.js';
+import { indexTemplateOf } from './reference-index.js';
 import type { TenantTransaction } from './tables.js';
 import { documentTemplate, templateReferences } from './templates.js';
 import {
@@ -169,6 +170,7 @@ export async function moveDocumentTemplate(
       by: input.by,
     })
     .execute();
+  await indexTemplateOf(trx, input.documentId);
   const place = await artifactPlace(trx, input.documentId, version.id);
   await recordEvent(
     trx,

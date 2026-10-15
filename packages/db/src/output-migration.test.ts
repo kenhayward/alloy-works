@@ -252,6 +252,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0099_workflow_dates',
       '0100_section_waivers',
       '0101_template_moves',
+      '0102_reference_index',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

@@ -3,11 +3,11 @@ import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { deletedAmong } from './deletion.js';
 import { mayReadArtifact } from './queryDefinitions.js';
+import { referencesStored } from './reference-index.js';
 import type { TenantTransaction } from './tables.js';
 import { workflowStates } from './workflow.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const REFERENCES = `lax $.** ? (@.type == "reference" && @.component == $c)`;
 
 /** One reference to the component in a document's latest outline, and how it follows it (REU-007). */
 export interface UsingReference {
@@ -56,7 +56,7 @@ const NONE: ComponentUses = {
 };
 
 /**
- * Where a component is used (REU-006, REU-007; the R1 plan, R1-A to R1-C), computed when asked: the
+ * Where a component is used (REU-006, REU-007; the R1 plan, R1-B, R1-C), read from the reference index: the
  * documents whose latest version places it, each reference with its mode, and the baselines and
  * publications pinning a version of it. What `by` may not read, or is deleted, is never named, and
  * only whether there is any is said. The caller has decided `by` may read the component.
@@ -66,30 +66,21 @@ export async function componentUses(
   by: string,
   componentId: string,
 ): Promise<ComponentUses> {
-  if (!UUID.test(componentId)) return NONE;
+  if (!UUID.test(componentId) || !(await referencesStored(trx))) return NONE;
   const readable = await loadReadableSet(trx, by);
-  const c = JSON.stringify({ c: componentId });
 
-  // From the documents any version of which placed it, to those whose latest does.
+  // The documents whose latest versions place it, from the reference index (the R2 plan, R2-B).
   const { rows: latest } = await sql<{
     id: string;
     space_id: string;
     version_id: string;
     content: unknown;
   }>`
-    select latest.artifact_id as id, a.space_id, latest.id as version_id, latest.content
-      from (
-        select distinct on (v.artifact_id) v.artifact_id, v.id, v.content
-          from artifact_version v
-         where v.kind = 'document'
-           and v.artifact_id in (
-             select artifact_id from artifact_version
-              where kind = 'document'
-                and jsonb_path_exists(content, ${REFERENCES}::jsonpath, ${c}::jsonb))
-         order by v.artifact_id, v.revision_no desc, v.version_no desc
-      ) latest
-      join artifact a on a.id = latest.artifact_id
-     where jsonb_path_exists(latest.content, ${REFERENCES}::jsonpath, ${c}::jsonb)`.execute(trx);
+    select distinct a.id, a.space_id, v.id as version_id, v.content
+      from reference r
+      join artifact a on a.id = r.from_id and a.kind = 'document'
+      join artifact_version v on v.id = r.from_version
+     where r.to_id = ${componentId}`.execute(trx);
   const shown = await readableAmong(trx, readable, latest);
   const outlines = shown.flatMap((row) => {
     const read = readOutline(row.content, { artifact: row.id, version: row.version_id });

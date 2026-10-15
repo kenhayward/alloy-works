@@ -759,3 +759,19 @@ export {
   type UsingDocument,
   type UsingReference,
 } from './uses.js';
+export {
+  impact,
+  IMPACT_LIMIT,
+  IMPACT_MAX_DEPTH,
+  referencesFrom,
+  type Impact,
+  type Neighbours,
+  type Reached,
+} from './impact.js';
+export { indexReferences, indexTemplateOf, referencesStored } from './reference-index.js';
+export {
+  placeFromSection,
+  previewPlacement,
+  type PlacementAnswer,
+  type PlacementReport,
+} from './placement.js';

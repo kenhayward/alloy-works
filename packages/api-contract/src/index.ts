@@ -78,6 +78,7 @@ export {
   deletionRoutes,
 } from './deletion.js';
 export { ComponentUsesParams, ComponentUsesView, usesRoutes } from './uses.js';
+export { ArtifactParams, ImpactQuery, ImpactView, ReferencesView, impactRoutes } from './impact.js';
 export { HoldBody, HoldList, HoldParams, HoldView, ReleaseHoldBody, holdRoutes } from './holds.js';
 export { KeepView, RetentionBody, RetentionView, retentionRoutes } from './retention.js';
 export {

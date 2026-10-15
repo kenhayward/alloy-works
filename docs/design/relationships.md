@@ -61,7 +61,7 @@ answer beyond those bounds is a report produced in the background.
 | **SCH-024** | "What does this use" is the reference index read forwards, one hop                                                                                                                                                                                           |
 | **SCH-026** | Structural queries use the same permission test as traversal, which is the one search applies (ADR-0016)                                                                                                                                                     |
 
-**Where-used is computed when asked until R2** ([the R1 plan](../plans/2026-10-15-r1-where-a-component-is-used.md), R1-A): it reads each document's latest outline, as deletion's refusals do; the `reference` index below arrives with impact, whose budget needs it. **REU-052 is not claimed**: terms, bibliography entries, vocabulary values and styles do not exist yet.
+**Built so far** ([R1](../plans/2026-10-15-r1-where-a-component-is-used.md), [R2](../plans/2026-10-15-r2-impact-and-placing-a-section.md)): the reference index (0102), where-used and what an artifact uses read from it, and impact over references alone, walked a depth at a time in TypeScript rather than in one recursive statement (R2-D), which stays the route to REL-031's budget. Declared relationships, neighbours, shortest paths and the background report are not built, so impact's informational half is empty. **REU-052 is not claimed**: terms, bibliography entries, vocabulary values and styles do not exist yet.
 
 **REL-047 is not claimed here.** It asks a type to declare a stable identifier, whether it permits an
 artifact to relate to itself (REL-045), whether it is acyclic (REL-046), and the permission required
@@ -79,12 +79,12 @@ relationships against a schema or field change as well as a type change, is unde
 
 ## Tables
 
-| Table                        | One row per                                | Carries                                                                                            |
-| ---------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `relationship_type`          | Declared type                              | Name, inverse name, direction, cardinality, metadata schema, whether it is informational           |
-| `relationship_type_endpoint` | Kind permitted at one end of a type        | Type, end (from or to), artifact kind                                                              |
-| `relationship`               | Declared relationship                      | Type, from artifact and kind, to artifact and kind, pinned version or none, metadata, who and when |
-| `reference`                  | Reference in an artifact's current version | From artifact, to artifact, pinned version or none, where in the content it sits                   |
+| Table                        | One row per                               | Carries                                                                                            |
+| ---------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `relationship_type`          | Declared type                             | Name, inverse name, direction, cardinality, metadata schema, whether it is informational           |
+| `relationship_type_endpoint` | Kind permitted at one end of a type       | Type, end (from or to), artifact kind                                                              |
+| `relationship`               | Declared relationship                     | Type, from artifact and kind, to artifact and kind, pinned version or none, metadata, who and when |
+| `reference`                  | Reference in an artifact's latest version | From artifact and version, to artifact and kind, mode, pinned version or none, the node holding it |
 
 **What can be declared is enforced by the database where it can be.** `artifact` gains a unique key
 on `(id, kind)`, so `relationship` can carry a composite foreign key from `(from_id, from_kind)` to

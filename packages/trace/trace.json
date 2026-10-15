@@ -18393,6 +18393,14 @@
           "howItIsMet": "A document artifact's content is one `outline` document; its root holds one ordered array of nodes and there is nowhere to put a second"
         },
         {
+          "id": "REU-046",
+          "howItIsMet": "Placing another document's section reports first how many occurrences it makes, each component it places with its blocks and characters now, and how many the author may not read (`previewPlacement`; the R2 plan, R2-F)"
+        },
+        {
+          "id": "REU-054",
+          "howItIsMet": "A placement adds a new section of the author's, titled by them, holding one new reference per occurrence in the found section's subtree in the mode chosen; nothing is shared and no value copied; refused where the source moved since the report or a component is not the author's to reference"
+        },
+        {
           "id": "STR-002",
           "howItIsMet": "`node` is a closed discriminated union of `section` and `reference`. A third arm is a schema version with a migration"
         },
@@ -19769,13 +19777,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 399,
+      "line": 401,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 412,
+      "line": 414,
       "kind": "title"
     },
     {
@@ -20075,7 +20083,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1223,
+      "line": 1226,
       "kind": "title"
     },
     {
@@ -20376,6 +20384,24 @@
       "id": "API-008",
       "file": "apps/service/src/idempotency-routes.test.ts",
       "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "REL-017",
+      "file": "apps/service/src/impact-routes.test.ts",
+      "line": 51,
+      "kind": "title"
+    },
+    {
+      "id": "REL-020",
+      "file": "apps/service/src/impact-routes.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-023",
+      "file": "apps/service/src/impact-routes.test.ts",
+      "line": 20,
       "kind": "title"
     },
     {
@@ -24183,6 +24209,48 @@
       "kind": "title"
     },
     {
+      "id": "REL-017",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 369,
+      "kind": "title"
+    },
+    {
+      "id": "REL-018",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 412,
+      "kind": "title"
+    },
+    {
+      "id": "REL-019",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 399,
+      "kind": "title"
+    },
+    {
+      "id": "REL-020",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 399,
+      "kind": "title"
+    },
+    {
+      "id": "REL-030",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 445,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-023",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 369,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-024",
+      "file": "packages/db/src/impact.test.ts",
+      "line": 249,
+      "kind": "title"
+    },
+    {
       "id": "COL-015",
       "file": "packages/db/src/inbox.test.ts",
       "line": 147,
@@ -24258,6 +24326,18 @@
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "REU-046",
+      "file": "packages/db/src/placement.test.ts",
+      "line": 175,
+      "kind": "title"
+    },
+    {
+      "id": "REU-054",
+      "file": "packages/db/src/placement.test.ts",
+      "line": 214,
       "kind": "title"
     },
     {
@@ -25823,7 +25903,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 690,
+      "line": 697,
       "kind": "title"
     },
     {
@@ -26670,6 +26750,18 @@
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
       "line": 709,
+      "kind": "title"
+    },
+    {
+      "id": "REU-046",
+      "file": "packages/domain/src/structure/place.test.ts",
+      "line": 143,
+      "kind": "title"
+    },
+    {
+      "id": "REU-054",
+      "file": "packages/domain/src/structure/place.test.ts",
+      "line": 82,
       "kind": "title"
     },
     {

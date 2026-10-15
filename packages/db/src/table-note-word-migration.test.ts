@@ -136,6 +136,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0099_workflow_dates',
       '0100_section_waivers',
       '0101_template_moves',
+      '0102_reference_index',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

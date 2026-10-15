@@ -51,6 +51,7 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { indexTemplateOf } from './reference-index.js';
 import type { TenantTransaction } from './tables.js';
 import {
   documentRules,
@@ -76,7 +77,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * randomness from anywhere, so the store supplies it (STR-003's "never reused" is decision 3's
  * argument about 128 bits, not a counter's).
  */
-const newNodeIdentifier = () => blockIdentifierFrom(randomBytes(16));
+export const newNodeIdentifier = () => blockIdentifierFrom(randomBytes(16));
 
 export interface NewDocument {
   readonly spaceId: string;
@@ -270,6 +271,7 @@ export async function createDocument(
       template_version_id: template.version.id,
     })
     .execute();
+  await indexTemplateOf(trx, version.artifactId);
   return { answer: 'created', version };
 }
 
@@ -504,7 +506,7 @@ export async function readableComponents(
  * learn whether an identifier exists (access.md: a thing you may not read is indistinguishable from
  * one that does not exist).
  */
-const REFERENCE_REFUSED = 'The component is not one this outline can reference';
+export const REFERENCE_REFUSED = 'The component is not one this outline can reference';
 
 /**
  * What an operation would have the outline point at: an inserted reference's component and pinned
@@ -541,7 +543,7 @@ type ReferenceAnswer = 'ok' | 'refused' | { readonly deleted: true; readonly tit
  * author may read but for its deletion is answered deleted, with its last title (DL-F); under the
  * shared deletion lock, so it is not deleted between this and the version that records it (DL-D).
  */
-async function mayReference(
+export async function mayReference(
   trx: TenantTransaction,
   author: string,
   target: { readonly component: string; readonly version: string | null },
