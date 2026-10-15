@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.170.0 - 2026-10-15 (PR #626)
+
+Workflow's fifth phase: effective and review-by dates (ADR-0061).
+
+### Added
+
+- **Effective and review-by dates.** A component or document can carry an effective date, a review-by date and a review owner. A revision approved with a future effective date is served to references only once that date arrives, and its taking effect is recorded.
+- **Reviews.** The owner sees **Review due** on Home before the date. Content past review says so wherever it is used. A workflow can say what a lapsed review does: nothing more, a move to a state, or an escalation to a named person.
+
 ## 0.169.0 - 2026-10-15 (PR #621)
 
 Workflow's fourth phase: the latest approved revision (ADR-0061).

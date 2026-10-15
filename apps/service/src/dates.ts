@@ -1,5 +1,6 @@
 import type { DatesBody, DatesView, TransitionParams } from '@alloy-works/api-contract';
 import {
+  datesStored,
   dayOf,
   loadFactsFor,
   localIso,
@@ -40,6 +41,8 @@ async function effectiveFrom(
   id: string,
   now: Date,
 ): Promise<string | null> {
+  // A failed query would end the transaction: an older schema is asked first.
+  if (!(await datesStored(trx))) return null;
   const row = await trx
     .selectFrom('revision_effective')
     .select('effective_at')
@@ -47,8 +50,7 @@ async function effectiveFrom(
     .where('effective_at', '>', now)
     .orderBy('effective_at', 'desc')
     .limit(1)
-    .executeTakeFirst()
-    .catch(() => undefined);
+    .executeTakeFirst();
   return row ? row.effective_at.toISOString() : null;
 }
 

@@ -217,7 +217,14 @@ export async function recordEffected(
     .orderBy('e.effective_at')
     .execute();
   for (const row of due) {
-    await trx.insertInto('revision_effected').values({ version_id: row.version_id }).execute();
+    // Another sweep may have recorded it meanwhile: the first insert wins, and only it is audited.
+    const recorded = await trx
+      .insertInto('revision_effected')
+      .values({ version_id: row.version_id })
+      .onConflict((conflict) => conflict.column('version_id').doNothing())
+      .returning('version_id')
+      .executeTakeFirst();
+    if (!recorded) continue;
     const place = await artifactPlace(trx, row.artifact_id);
     const kind = row.kind === 'document' ? 'document' : 'component';
     await recordEvent(
@@ -272,8 +279,17 @@ export async function recordLapses(
     if ((await isDeleted(trx, row.artifact_id)) || (await isArchived(trx, row.artifact_id)))
       continue;
     const definition = await newestDefinition(trx, row.kind);
-    const lapse = reviewPolicy(definition.body).lapse;
-    await trx
+    const declared = reviewPolicy(definition.body).lapse;
+    const standing = await workflowStanding(trx, row.artifact_id);
+    // A move only to a state the definition deciding its next move has; otherwise shown alone (the
+    // WF5 final review): a state it does not know would leave it with no way on.
+    const lapse =
+      declared.kind === 'move' &&
+      !standing?.definition.body.states.some((state) => state.key === declared.to)
+        ? ({ kind: 'visibility' } as const)
+        : declared;
+    // Another sweep may have acted meanwhile: the first insert wins, and only it acts.
+    const recorded = await trx
       .insertInto('review_lapse')
       .values({
         artifact_id: row.artifact_id,
@@ -282,9 +298,11 @@ export async function recordLapses(
         action: lapse.kind,
         escalated_to: lapse.kind === 'escalate' ? lapse.to : null,
       })
-      .execute();
+      .onConflict((conflict) => conflict.columns(['artifact_id', 'review_by']).doNothing())
+      .returning('id')
+      .executeTakeFirst();
+    if (!recorded) continue;
     if (lapse.kind === 'move') {
-      const standing = await workflowStanding(trx, row.artifact_id);
       if (standing && standing.state.key !== lapse.to) {
         await moved(trx, standing, {
           artifactId: row.artifact_id,

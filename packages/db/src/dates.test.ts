@@ -342,4 +342,56 @@ describe('effective and review-by dates (workflow.md; the WF5 plan, Task 1)', ()
       (await as((trx) => readDates(trx, [escalated.artifactId]))).get(escalated.artifactId),
     ).toMatchObject({ owner: ada });
   });
+
+  it('acts on a lapse once when two sweeps run at once, and records a revision taking effect once', async () => {
+    const now = new Date();
+    const made = await component('Swept twice');
+    await date(made, { reviewBy: day(new Date(now.getTime() - DAY)), owner: ada });
+    const next = await edit(made);
+    await date(made, {
+      reviewBy: day(new Date(now.getTime() - DAY)),
+      owner: ada,
+      effective: new Date(now.getTime() + DAY),
+    });
+    await approve(next);
+    const later = new Date(now.getTime() + 2 * DAY);
+    const sweep = () =>
+      asSystem(async (trx) => ({
+        lapsed: await recordLapses(trx, later),
+        effected: await recordEffected(trx, later),
+      }));
+    const [first, second] = await Promise.all([sweep(), sweep()]);
+    expect(first.lapsed + second.lapsed).toBe(1);
+    expect(first.effected + second.effected).toBe(1);
+    expect(await events(made.artifactId, ['review.lapsed', 'revision.effective'])).toHaveLength(2);
+  });
+
+  it("moves a lapsed review only to a state the artifact's deciding definition has, else shows it alone", async () => {
+    const made = await component('Under an older workflow');
+    // The newest has no draft, so the seed still decides for one in draft (WF-E), and has no retired.
+    await define({
+      states: [
+        { key: 'open', name: 'Open', initial: true, approved: false },
+        { key: 'retired', name: 'Retired', initial: false, approved: false },
+      ],
+      transitions: [
+        {
+          key: 'retire',
+          name: 'Retire',
+          from: 'open',
+          to: 'retired',
+          permission: 'edit',
+          reasonRequired: false,
+        },
+      ],
+      review: { remind: 30, lapse: { kind: 'move', to: 'retired' } },
+    });
+    const now = new Date();
+    await date(made, { reviewBy: day(new Date(now.getTime() - DAY)) });
+    expect(await asSystem((trx) => recordLapses(trx, now))).toBe(1);
+    expect((await as((trx) => workflowStanding(trx, made.artifactId)))!.state.key).toBe('draft');
+    expect(await events(made.artifactId, ['review.lapsed'])).toEqual([
+      ['review.lapsed', 'system', expect.objectContaining({ action: 'visibility' })],
+    ]);
+  });
 });

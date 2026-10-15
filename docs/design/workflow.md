@@ -245,12 +245,16 @@ with the offset it was set in (LIF-062), a review-by day, and an owner who may r
 still to come records it in `revision_effective`, fixed; the version itself never changes, and any
 change is a new version, a draft through the gate again (WF-F). `latestRevisionsOf`, which every
 `approved` reference resolves through, takes the latest revision in effect, so a reference serves the
-revision before until the instant. The worker's `sweepDates` records `revision_effected` and
+revision before until the instant. One
+effective date governs every approval until it passes; to approve one to take effect at once, clear
+or change the date first (the final review). The worker's `sweepDates` records `revision_effected` and
 `revision.effective` once, as the system; serving does not wait for it.
 
 **Reviewed** (WF5-E to WF5-H; LIF-017, LIF-018, LIF-059): a body's optional `review { remind, lapse }`,
 absent 30 days and visibility alone (ADR-0061). Home tells the owner **Review due** from `remind`
 days before the day. Once the day has passed, `sweepDates` acts once per day passed (`review_lapse`,
 `review.lapsed`): nothing more, a move by nobody (`transition: null`), or **Review overdue** on the
-named person's Home while that day stands. **Past review** is computed when read, from the day, on
+named person's Home while that day stands. A move goes only to a state the definition deciding the
+artifact's next move has, else the lapse is shown alone. Two sweeps at once act once: the first
+`review_lapse` or `revision_effected` row wins. A review-by day passes at midnight UTC. **Past review** is computed when read, from the day, on
 the views, the lists and each occurrence in a document's texts.

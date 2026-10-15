@@ -327,7 +327,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                     </td>
                     <td className={styles['muted']}>{item.type ?? ''}</td>
                     <td className={styles['code']}>{item.version}</td>
-                    <td>{item.state && <StateLozenge state={item.state} />}</td>
+                    <td>
+                      {item.state && <StateLozenge state={item.state} />}
+                      {/* Past its review-by day (LIF-018; WF5-H). */}
+                      {item.pastReview === true && <Chip tone="warn">Past review</Chip>}
+                    </td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
                     </td>

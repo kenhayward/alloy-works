@@ -860,6 +860,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1327 (2026-10-15): WF5b's interface - dates, past review, the review policy, attention.
     // 1319 (2026-10-15): WF5a's dates - LIF-015 to LIF-018, LIF-059, LIF-060.
     // 1307 (2026-10-15): WF4's latest approved revision - LIF-038, LIF-041, REU-050, CNT-159, CNT-163, CNT-183.
     // 1297 (2026-10-15): WF3's conditions - LIF-004, LIF-039, COL-066 and DAT-123.
@@ -894,7 +895,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1319);
+    expect(model.citations).toHaveLength(1327);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -988,6 +989,6 @@ describe('scanning the repository for test files', () => {
     // 82, from 81 (2026-10-13): structure/DocumentPage.references.test.tsx, citing STR-074 and SCH-032.
     // 86, from 82 (2026-10-14): admin/Workflows, lifecycle/Workflow, and the ComponentEditor and
     // DocumentPage workflow tests.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(87);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(88);
   });
 });

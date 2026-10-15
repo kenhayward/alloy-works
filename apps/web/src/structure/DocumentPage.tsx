@@ -1,4 +1,5 @@
 import type { FieldView } from '@alloy-works/api-client';
+import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import {
   conditions,
@@ -146,6 +147,8 @@ interface Opened {
   readonly standing: Standing | null;
   /** Under a legal hold, told only to whoever may retire it or administer the environment. */
   readonly onHold: boolean;
+  /** Its effective and review-by dates (WF5-H); null from a view before them. */
+  readonly dates: Dates | null;
   /** Whether the reader may place a legal hold: an environment administrator. */
   readonly mayHold: boolean;
   /**
@@ -256,6 +259,7 @@ function documentIn(data: unknown): Read {
     mayRetire: mayRetire === true,
     standing: standingIn(data) ?? null,
     onHold: onHold === true,
+    dates: datesIn(data) ?? null,
     mayHold: mayHold === true,
     scheme: scheme?.success ? scheme.data : null,
     words: relativeWords,
@@ -640,6 +644,7 @@ export function DocumentPage({
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
   const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
   const [revisionByNode, setRevisionByNode] = useState<ReadonlyMap<string, number>>(new Map());
+  const [pastReviewNodes, setPastReviewNodes] = useState<ReadonlySet<string>>(new Set());
   const [textsAttempt, setTextsAttempt] = useState(0);
   // The version whose texts have been answered, or refused: until then the text is its headings alone,
   // and a node gone to now would be pushed down the page by every component above it as it fills in.
@@ -782,6 +787,14 @@ export function DocumentPage({
           ),
         );
         setResolved(numberOf);
+        // Which references' components are past review (LIF-018; WF5-H).
+        setPastReviewNodes(
+          new Set(
+            data.occurrences.flatMap((occurrence) =>
+              occurrence.pastReview === true ? [occurrence.node] : [],
+            ),
+          ),
+        );
         // Which revision each reference tracking the latest approved one shows (CNT-163).
         setRevisionByNode(
           new Map(
@@ -1989,6 +2002,7 @@ export function DocumentPage({
             <PeopleHere people={live.people} connected={live.connected} />
             {document.standing && <StateLozenge state={document.standing.state} />}
             <RevisionChip revision={document.standing?.revision} />
+            <DatesChips dates={document.dates ?? undefined} />
             {document.archived && <Chip>Archived</Chip>}
             {document.onHold && <Chip>On hold</Chip>}
             {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
@@ -2009,6 +2023,21 @@ export function DocumentPage({
                   }}
                   onNotice={setNotice}
                   onStale={restand}
+                />
+              )}
+              {/* Its dates, to whoever may edit it (the WF5 plan, WF5-A). */}
+              {document.mayEdit && !document.archived && document.dates && (
+                <DatesButton
+                  client={client}
+                  kind="document"
+                  id={document.id}
+                  title={document.outline.title}
+                  dates={document.dates}
+                  className={styles['toggle']}
+                  onSaved={(dates) => {
+                    if (latest.current?.id === document.id) show({ ...latest.current, dates });
+                    setNotice('Its dates are saved.');
+                  }}
                 />
               )}
               <ArchiveButton
@@ -2478,6 +2507,7 @@ export function DocumentPage({
                 marked={marked}
                 resolved={resolved}
                 revisions={revisionByNode}
+                pastReview={pastReviewNodes}
                 newer={{ client, byNode: newerByNode }}
                 // The version is chosen from the label in Authoring, by whoever may restructure the
                 // document (DV-F); anywhere else the label says it and offers nothing.

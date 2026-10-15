@@ -259,6 +259,33 @@ describe("Administration's Workflows", () => {
     expect(saved.transitions.find((each) => each.key === 'submit')).not.toHaveProperty('requires');
   });
 
+  it('LIF-059 LIF-017 declares how long before a review its owner is prompted, and what a lapsed review does', async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    const days = within(documents).getByRole('spinbutton', {
+      name: 'Days before a review its owner is prompted',
+    });
+    // None declared: 30 days, and shown alone.
+    expect(days).toHaveValue(30);
+    const lapse = within(documents).getByRole('combobox', { name: 'When a review lapses' });
+    expect(lapse).toHaveValue('visibility');
+    await userEvent.clear(days);
+    await userEvent.type(days, '14');
+    await userEvent.selectOptions(lapse, 'move');
+    await userEvent.selectOptions(
+      within(documents).getByRole('combobox', { name: 'A lapsed review moves it to' }),
+      'draft',
+    );
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    expect(await within(documents).findByText('Saved as version 3.')).toBeInTheDocument();
+    expect((sent[0] as { review?: unknown }).review).toEqual({
+      remind: 14,
+      lapse: { kind: 'move', to: 'draft' },
+    });
+  });
+
   it('removes a state with the transitions to and from it, and says each problem the service finds', async () => {
     const { client, sent } = service(() =>
       json(400, {

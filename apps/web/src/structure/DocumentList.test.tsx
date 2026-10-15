@@ -30,6 +30,7 @@ const row = (
   components: 128,
   publishing,
   state: { key: 'approved', name: 'Approved' },
+  pastReview: title === 'Operator manual',
 });
 
 function listed() {
@@ -110,7 +111,7 @@ describe('the documents list', () => {
       'Operator manual',
       'General',
       '1.12',
-      'Approved',
+      'ApprovedPast review',
       '46',
       '128',
       'Changed since',
@@ -177,12 +178,14 @@ describe('the documents list', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('shows each document’s workflow state as its lozenge', async () => {
+  it('LIF-018 shows each document’s workflow state as its lozenge, and past review where it is', async () => {
     render(<DocumentList client={listed()} onOpen={vi.fn()} />);
     const link = await screen.findByRole('link', { name: 'Operator manual' });
     expect(within(link.closest('tr')!).getByText('Approved')).toHaveAttribute(
       'data-kind',
       'approved',
     );
+    expect(within(link.closest('tr')!).getByText('Past review')).toBeInTheDocument();
+    expect(screen.getAllByText('Past review')).toHaveLength(1);
   });
 });
