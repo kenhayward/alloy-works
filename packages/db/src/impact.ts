@@ -26,8 +26,10 @@ export interface Reached {
 
 export interface Impact {
   readonly reached: readonly Reached[];
-  /** How many depths were walked: fewer than asked only where a step stopped it (R3-F). */
+  /** How many depths were walked: every one there was, unless a step stopped it. */
   readonly depths: number;
+  /** Whether a step stopped it before it had walked every depth there was (R3-F). */
+  readonly stopped: boolean;
   /** Whether an edge led to something the caller may not read: never what (REL-020). */
   readonly cut: boolean;
   /** Whether the walk stopped at the limit with more to say (REL-030). */
@@ -70,7 +72,7 @@ export async function impact(
   if (!Number.isInteger(depth) || depth < 1 || depth > IMPACT_MAX_DEPTH) {
     throw new Error(`An impact walk declares a depth from 1 to ${IMPACT_MAX_DEPTH}, not ${depth}`);
   }
-  const none: Impact = { reached: [], depths: 0, cut: false, more: false };
+  const none: Impact = { reached: [], depths: 0, stopped: false, cut: false, more: false };
   if (!UUID.test(id) || !(await referencesStored(trx))) return none;
   const readable = await loadReadableSet(trx, by);
   const seen = new Set([id]);
@@ -79,6 +81,7 @@ export async function impact(
   let more = false;
   let frontier = [id];
   let walked = 0;
+  let stopped = false;
   for (let at = 1; at <= depth && frontier.length > 0 && !more; at += 1) {
     const edges = await edgesInto(trx, frontier);
     const fresh = edges.filter((edge) => !seen.has(edge.from_id));
@@ -104,10 +107,13 @@ export async function impact(
     }
     frontier = next;
     walked = at;
-    if (step && !(await step(at, reached.length))) break;
+    if (step && !(await step(at, reached.length))) {
+      stopped = true;
+      break;
+    }
   }
   // A walk that ran out of artifacts before its depth has walked every depth there was.
-  if (frontier.length === 0 || more) walked = depth;
+  if (!stopped && (frontier.length === 0 || more)) walked = depth;
   const titles = await titlesOf(
     trx,
     reached.map((each) => each.id),
@@ -115,6 +121,7 @@ export async function impact(
   return {
     reached: reached.map((each) => ({ ...each, title: titles.get(each.id) ?? '' })),
     depths: walked,
+    stopped,
     cut,
     more,
   };
@@ -158,14 +165,26 @@ export async function referencesFrom(
 
 /** Each reference into these, from whatever holds it now, nearest-first order kept stable by id. */
 async function edgesInto(trx: TenantTransaction, targets: readonly string[]): Promise<Edge[]> {
-  return trx
-    .selectFrom('reference as r')
-    .innerJoin('artifact as a', 'a.id', 'r.from_id')
-    .select(['r.from_id', 'r.to_id', 'a.kind', 'a.space_id'])
-    .where('r.to_id', 'in', [...targets])
-    .orderBy('r.from_id')
-    .orderBy('r.to_id')
-    .execute();
+  const edges: Edge[] = [];
+  for (const part of chunks(targets)) {
+    edges.push(
+      ...(await trx
+        .selectFrom('reference as r')
+        .innerJoin('artifact as a', 'a.id', 'r.from_id')
+        .select(['r.from_id', 'r.to_id', 'a.kind', 'a.space_id'])
+        .where('r.to_id', 'in', [...part])
+        .orderBy('r.from_id')
+        .orderBy('r.to_id')
+        .execute()),
+    );
+  }
+  return edges;
+}
+
+/** At most this many identifiers a statement: a report's frontier may run past bind's limit. */
+const CHUNK = 10_000;
+function* chunks<T>(all: readonly T[]): Generator<readonly T[]> {
+  for (let at = 0; at < all.length; at += CHUNK) yield all.slice(at, at + CHUNK);
 }
 
 function readableBy(readable: ReadableSet | undefined, edge: Edge): boolean {
@@ -180,23 +199,26 @@ const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Each artifact's title or name, from its latest version, as the audit labels it. */
 async function titlesOf(trx: TenantTransaction, ids: readonly string[]) {
-  if (ids.length === 0) return new Map<string, string>();
-  const rows = await trx
-    .selectFrom('artifact_version as v')
-    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
-    .select(['v.artifact_id', 'a.kind', 'v.content'])
-    .distinctOn('v.artifact_id')
-    .where('v.artifact_id', 'in', [...ids])
-    .orderBy('v.artifact_id')
-    .orderBy('v.revision_no', 'desc')
-    .orderBy('v.version_no', 'desc')
-    .execute();
-  return new Map(
-    rows.map((row) => [
-      row.artifact_id,
-      (isLabelledKind(row.kind)
-        ? labelFor(row.kind, (row.content ?? {}) as Record<string, unknown>)
-        : undefined) ?? '',
-    ]),
-  );
+  const titles = new Map<string, string>();
+  for (const part of chunks(ids)) {
+    const rows = await trx
+      .selectFrom('artifact_version as v')
+      .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+      .select(['v.artifact_id', 'a.kind', 'v.content'])
+      .distinctOn('v.artifact_id')
+      .where('v.artifact_id', 'in', [...part])
+      .orderBy('v.artifact_id')
+      .orderBy('v.revision_no', 'desc')
+      .orderBy('v.version_no', 'desc')
+      .execute();
+    for (const row of rows) {
+      titles.set(
+        row.artifact_id,
+        (isLabelledKind(row.kind)
+          ? labelFor(row.kind, (row.content ?? {}) as Record<string, unknown>)
+          : undefined) ?? '',
+      );
+    }
+  }
+  return titles;
 }

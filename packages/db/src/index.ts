@@ -789,3 +789,4 @@ export {
   type JobState,
   type StoredJob,
 } from './jobs.js';
+export { mayStillRead } from './jobs.js';

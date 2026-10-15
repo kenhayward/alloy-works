@@ -1,5 +1,8 @@
 import { sql } from 'kysely';
+import { loadReadableSet } from './access-facts.js';
+import { deletedAmong } from './deletion.js';
 import { enqueueJob } from './queue.js';
+import { mayReadArtifact } from './queryDefinitions.js';
 import type { TenantTransaction } from './tables.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -210,4 +213,24 @@ export async function failJob(
   await sql`
     update api_job set state = 'failed', finished_at = now(), failure = ${JSON.stringify(failure)}::jsonb
      where id = ${id} and state in ('accepted', 'running')`.execute(trx);
+}
+
+/**
+ * Whether a job's requester may read its subject still, as it runs: access may have gone since they
+ * asked, and a report is the requester's reading of it (the R3 final review).
+ */
+export async function mayStillRead(
+  trx: TenantTransaction,
+  by: string,
+  id: string,
+): Promise<boolean> {
+  if (!UUID.test(id)) return false;
+  const row = await trx
+    .selectFrom('artifact')
+    .select(['id', 'space_id'])
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (!row || row.space_id === null || (await deletedAmong(trx, [id])).has(id)) return false;
+  const readable = await loadReadableSet(trx, by);
+  return readable !== undefined && mayReadArtifact(readable, { id, spaceId: row.space_id });
 }

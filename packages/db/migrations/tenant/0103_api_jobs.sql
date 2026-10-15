@@ -7,8 +7,9 @@ set constraints all immediate;
 create table api_job (
   id uuid primary key default gen_random_uuid(),
   kind text not null check (kind in ('impact_report')),
-  -- What it is about: an impact report's starting artifact.
-  subject_id uuid not null references artifact on delete cascade,
+  -- What it is about: an impact report's starting artifact. No foreign key: a job stays readable
+  -- after, whatever becomes of its subject (API-043).
+  subject_id uuid not null,
   parameters jsonb not null default '{}' check (jsonb_typeof(parameters) = 'object'),
   requested_by uuid not null references principal on delete restrict,
   requested_at timestamptz not null default now(),

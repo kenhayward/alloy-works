@@ -198,4 +198,35 @@ describe('an impact report, from the queue to the store', () => {
       result: null,
     });
   });
+
+  it('API-042 keeps nothing where a cancel arrives at the last depth', async () => {
+    const target = await component(shared, 'Flush');
+    await referencing(target, 1, shared);
+    const job = await as((trx) =>
+      submitImpactReport(trx, { by: ada, subject: target.artifactId, depth: 1 }),
+    );
+    await as((trx) => startJob(trx, job.id));
+    await as((trx) => cancelJob(trx, job.id, ada));
+
+    expect(await work()).toBe('done');
+    expect(await as((trx) => readJob(trx, job.id, ada))).toMatchObject({
+      state: 'cancelled',
+      outcome: { depthsWalked: 1, depthsAsked: 1 },
+      result: null,
+    });
+  });
+
+  it('API-043 fails a report whose requester may no longer read what it starts from, in an error shape', async () => {
+    const hidden = await component(restricted, 'Hidden');
+    const job = await as((trx) =>
+      submitImpactReport(trx, { by: ada, subject: hidden.artifactId, depth: 1 }),
+    );
+
+    expect(await work()).toBe('failed');
+    expect(await as((trx) => readJob(trx, job.id, ada))).toMatchObject({
+      state: 'failed',
+      failure: { code: 'subject_unreadable' },
+      result: null,
+    });
+  });
 });

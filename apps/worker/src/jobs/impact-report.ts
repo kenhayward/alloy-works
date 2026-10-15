@@ -2,11 +2,13 @@ import {
   failJob,
   finishJob,
   impact,
+  mayStillRead,
   progressJob,
   startJob,
   type TenantDatabase,
 } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
+import { JobRefused } from '../refusal.js';
 import type { JobHandler } from '../worker.js';
 
 /** No cap: a report is the complete answer, bounded by its depth alone (REL-032). */
@@ -31,6 +33,12 @@ export function impactReportJob(deps: {
       // Cancelled before it ran, or finished by an attempt before this one.
       if (!started) return;
       const depth = started.parameters.depth;
+      // Its requester may have lost the subject since they asked: a report is their reading of it.
+      const readable = await deps.db.withTenant(tenant, (trx) =>
+        mayStillRead(trx, started.requestedBy, started.subject),
+      );
+      if (!readable)
+        throw new JobRefused('subject_unreadable', 'The requester may no longer read the subject.');
       const walked = await deps.db.withTenant(tenant, (trx) =>
         impact(trx, started.requestedBy, started.subject, depth, UNCAPPED, (done) =>
           deps.db.withTenant(tenant, (step) =>
@@ -44,9 +52,14 @@ export function impactReportJob(deps: {
         reached: walked.reached.length,
         cut: walked.cut,
       };
-      const stopped = walked.depths < depth;
+      // Stopped by a cancel at a step, or one asked for since its last: nothing is kept.
+      const goOn =
+        !walked.stopped &&
+        (await deps.db.withTenant(tenant, (trx) =>
+          progressJob(trx, id, { done: walked.depths, of: depth, unit: 'depth' }),
+        ));
       let kept: { key: string; sha256: string; bytes: number } | null = null;
-      if (!stopped) {
+      if (goOn) {
         const lines = walked.reached.map((each) =>
           JSON.stringify({
             id: each.id,
