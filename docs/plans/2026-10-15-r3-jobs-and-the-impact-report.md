@@ -26,3 +26,7 @@ API-057, REL-032, REL-050).
 
 - 0103; `db`: `submitImpactReport`, `readJob`, `cancelJob`, the worker's `startJob`, `progressJob`, `finishJob`, `failJob`; `impact` gains no limit and a per-depth step. Worker `impact_report`. Contract, routes, documentation, census.
 - Tests: submit and read; a retry with the key answering the same job; another person's job not found; cancel before it runs, while it runs (stopping at the next depth, saying how far), and after; a failure readable in an error's shape; the report beyond 1,000, permission-filtered, cut said; download. The final review hunts a result reaching somebody other than its requester, and a running job a cancel cannot stop. The close: 0.174.0.
+
+## Built
+
+R3 with its close (0.174.0) #636. The final review found a cancel at the last depth keeping an orphaned object and reporting a full walk, now keeping nothing; a requester who lost the subject still getting a report, now refused subject_unreadable; lists past the bind limit, now chunked; and a job going with its subject, which it no longer does. A long walk holds one transaction and its results in memory: fine for a report bounded by depth, to measure against REL-031 with the graph view.
