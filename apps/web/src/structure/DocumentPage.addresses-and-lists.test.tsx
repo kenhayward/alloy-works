@@ -758,6 +758,10 @@ describe('the address of every node', () => {
                   ...(node.component !== null && node.mode.kind === 'approved'
                     ? { revision: 1, moved: { id: V1, number: NUMBERS[V1] } }
                     : {}),
+                  // The pinned placement's printer is past review, as the service says of a node.
+                  ...(node.component !== null && node.mode.kind === 'pinned'
+                    ? { pastReview: true }
+                    : {}),
                 });
               }
               walk(node.children);
@@ -792,13 +796,16 @@ describe('the address of every node', () => {
     const labelOf = (text: HTMLElement, node: string) =>
       text.querySelector<HTMLElement>(`[data-node="${node}"] [data-label]`)!;
 
-    it('CNT-162 CNT-163 REU-050 shows in each label the version a reference resolves to, and whether it is pinned, at the latest or at the latest approved revision, and which', async () => {
+    it('CNT-162 CNT-163 REU-050 LIF-018 shows in each label the version a reference resolves to, and whether it is pinned, at the latest or at the latest approved revision, and which', async () => {
       const { text } = await openVersions({ document: false });
       await waitFor(() =>
         expect(labelOf(text, FOLLOWING)).toHaveTextContent('Version 0.3, latest'),
       );
       expect(labelOf(text, PINNED)).toHaveTextContent('Version 0.1, pinned');
       expect(labelOf(text, APPROVED)).toHaveTextContent('Revision 1, latest approved');
+      // Past its review day, said on the label of the reference to it (LIF-018).
+      expect(labelOf(text, PINNED)).toHaveTextContent('Past review');
+      expect(labelOf(text, FOLLOWING)).not.toHaveTextContent('Past review');
       // A component the reader may not read shows neither which version nor how it is placed.
       const withheld = labelOf(text, WITHHELD);
       expect(withheld).toHaveTextContent('Not yours to read');

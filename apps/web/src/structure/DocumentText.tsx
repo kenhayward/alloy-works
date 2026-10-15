@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Chip } from '../parts/Chip.js';
 import {
   conditions,
   number,
@@ -435,6 +436,7 @@ export function DocumentText({
   marked = null,
   resolved,
   revisions,
+  pastReview,
   choosing,
   bindingStates = null,
   onProvenance,
@@ -483,6 +485,8 @@ export function DocumentText({
   resolved?: ReadonlyMap<string, string>;
   /** Which revision each reference tracking the latest approved one shows, by node (CNT-163). */
   revisions?: ReadonlyMap<string, number>;
+  /** The references whose component is past its review-by day, by node (LIF-018; WF5-H). */
+  pastReview?: ReadonlySet<string>;
   /**
    * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
    * reader who may restructure the document. Without it the label says the version and offers nothing.
@@ -662,6 +666,7 @@ export function DocumentText({
                         {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
                       </span>
                     )}
+                    {pastReview?.has(node.id) === true && <Chip tone="warn">Past review</Chip>}
                     <EditableState
                       state={editable?.get(node.id)}
                       openHere={openComponent !== null && openComponent === node.component}

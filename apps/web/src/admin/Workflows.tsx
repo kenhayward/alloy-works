@@ -28,6 +28,18 @@ interface Transition {
   readonly requires?: readonly Condition[] | undefined;
 }
 
+/** What a review day passing unmet does, and how long before it its owner is prompted (LIF-059). */
+interface Review {
+  readonly remind: number;
+  readonly lapse:
+    | { readonly kind: 'visibility' }
+    | { readonly kind: 'move'; readonly to: string }
+    | { readonly kind: 'escalate'; readonly to: string };
+}
+
+/** None declared: 30 days, and shown alone (ADR-0061). */
+const NO_REVIEW: Review = { remind: 30, lapse: { kind: 'visibility' } };
+
 /** What a transition may require before it is taken (LIF-004; the WF3 plan, WF3-A). */
 type Condition = 'suggestions' | 'threads' | 'bindings' | 'sections' | 'revisions' | 'components';
 
@@ -66,6 +78,7 @@ interface Listed {
     readonly body: {
       readonly states: readonly State[];
       readonly transitions: readonly Transition[];
+      readonly review?: Review | undefined;
     };
     readonly by: { readonly id: string; readonly name: string | null } | null;
     readonly at: string;
@@ -156,6 +169,9 @@ function KindWorkflow({
   const [transitions, setTransitions] = useState(() => labelled(body.transitions));
   const [newState, setNewState] = useState('');
   const [newTransition, setNewTransition] = useState('');
+  // The review policy, for a component's and a document's workflow (the WF5 plan, WF5-E).
+  const [review, setReview] = useState<Review | undefined>(body.review);
+  const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
   const [said, setSaid] = useState('');
   const [problems, setProblems] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -206,6 +222,7 @@ function KindWorkflow({
           kind,
           basedOn: version,
           states: states.map(({ label: _, ...each }) => each),
+          ...(review === undefined ? {} : { review }),
           transitions: transitions.map(({ label: _, gate, requires, ...each }) => ({
             ...each,
             ...(gate === undefined ? {} : { gate }),
@@ -463,6 +480,22 @@ function KindWorkflow({
           Add transition
         </button>
       </div>
+      {kind !== 'queryDefinition' && (
+        <ReviewPolicy
+          one={one}
+          review={review ?? NO_REVIEW}
+          states={states}
+          people={people}
+          onPeople={() => {
+            if (people.length > 0) return;
+            void client
+              .GET('/v1/people', { params: { query: { limit: '100' } } })
+              .then(({ data }) => data && setPeople(data.items))
+              .catch(() => undefined);
+          }}
+          onChange={setReview}
+        />
+      )}
       <div className={styles['toolbar']}>
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
           {`Save as version ${version + 1}`}
@@ -610,5 +643,103 @@ function GateCell({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * A kind's review policy (LIF-017, LIF-059; the WF5 plan, WF5-E): how many days before a review-by day
+ * its owner is prompted on Home, and what the day passing unmet does: shown alone, a move to a state,
+ * or an escalation to a person.
+ */
+function ReviewPolicy({
+  one,
+  review,
+  states,
+  people,
+  onPeople,
+  onChange,
+}: {
+  one: string;
+  review: Review;
+  states: readonly State[];
+  people: readonly { id: string; name: string }[];
+  onPeople: () => void;
+  onChange: (review: Review) => void;
+}) {
+  const { lapse } = review;
+  useEffect(() => {
+    if (lapse.kind === 'escalate') onPeople();
+  }, [lapse.kind, onPeople]);
+  return (
+    <fieldset className={styles['gate']}>
+      <legend>{`${one} reviews`}</legend>
+      <label>
+        Days before a review its owner is prompted
+        <input
+          type="number"
+          min={0}
+          max={365}
+          value={review.remind}
+          onChange={(change) =>
+            onChange({
+              ...review,
+              remind: Math.max(0, Math.min(365, Number(change.target.value) || 0)),
+            })
+          }
+        />
+      </label>
+      <label>
+        When a review lapses
+        <select
+          value={lapse.kind}
+          onChange={(change) => {
+            const kind = change.target.value;
+            onChange({
+              ...review,
+              lapse:
+                kind === 'move'
+                  ? { kind: 'move', to: states[0]?.key ?? '' }
+                  : kind === 'escalate'
+                    ? { kind: 'escalate', to: people[0]?.id ?? '' }
+                    : { kind: 'visibility' },
+            });
+          }}
+        >
+          <option value="visibility">Show it as past review</option>
+          <option value="move">Move it to a state</option>
+          <option value="escalate">Escalate to a person</option>
+        </select>
+      </label>
+      {lapse.kind === 'move' && (
+        <select
+          aria-label="A lapsed review moves it to"
+          value={lapse.to}
+          onChange={(change) =>
+            onChange({ ...review, lapse: { kind: 'move', to: change.target.value } })
+          }
+        >
+          {states.map((each) => (
+            <option key={each.key} value={each.key}>
+              {each.name}
+            </option>
+          ))}
+        </select>
+      )}
+      {lapse.kind === 'escalate' && (
+        <select
+          aria-label="A lapsed review is escalated to"
+          value={lapse.to}
+          onChange={(change) =>
+            onChange({ ...review, lapse: { kind: 'escalate', to: change.target.value } })
+          }
+        >
+          {people.map((each) => (
+            <option key={each.id} value={each.id}>
+              {each.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </fieldset>
   );
 }

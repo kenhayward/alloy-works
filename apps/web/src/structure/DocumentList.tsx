@@ -46,6 +46,8 @@ interface Listed {
   readonly publishing: Publishing | null;
   /** Its workflow state (WF-G); null from a service before it. */
   readonly state: { readonly key: string; readonly name: string } | null;
+  /** Past its review-by day (LIF-018; WF5-H); false from a service before it. */
+  readonly pastReview: boolean;
 }
 
 const stateIn = (value: unknown): Listed['state'] => {
@@ -68,8 +70,18 @@ function documentsIn(data: unknown): Listed[] | undefined {
   if (!Array.isArray(items)) return undefined;
   return items.flatMap((item: unknown) => {
     if (typeof item !== 'object' || item === null) return [];
-    const { id, title, space, version, changedAt, sections, components, publishing, state } =
-      item as Record<string, unknown>;
+    const {
+      id,
+      title,
+      space,
+      version,
+      changedAt,
+      sections,
+      components,
+      publishing,
+      state,
+      pastReview,
+    } = item as Record<string, unknown>;
     const { id: spaceId, name } =
       typeof space === 'object' && space !== null
         ? (space as { id?: unknown; name?: unknown })
@@ -93,6 +105,7 @@ function documentsIn(data: unknown): Listed[] | undefined {
         components: typeof components === 'number' ? components : null,
         publishing: isPublishing(publishing) ? publishing : null,
         state: stateIn(state),
+        pastReview: pastReview === true,
       },
     ];
   });
@@ -341,7 +354,10 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>{item.version}</td>
-                    <td>{item.state !== null && <StateLozenge state={item.state} />}</td>
+                    <td>
+                      {item.state !== null && <StateLozenge state={item.state} />}
+                      {item.pastReview && <Chip tone="warn">Past review</Chip>}
+                    </td>
                     <td className={styles['number']}>{item.sections ?? ''}</td>
                     <td className={styles['number']}>{item.components ?? ''}</td>
                     <td>

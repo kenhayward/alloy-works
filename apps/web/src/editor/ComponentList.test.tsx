@@ -24,6 +24,7 @@ const row = (id: string, title: string, space: string, by: { id: string; name: s
   changedAt: new Date(2025, 11, 3, 11, 0).toISOString(),
   changedBy: by,
   state: { key: 'in_review', name: 'In review' },
+  pastReview: title === 'Replace the toner',
 });
 
 const SPACES = [
@@ -139,7 +140,7 @@ describe('the components list', () => {
     expect(cells.slice(1, 6).map((cell) => cell.textContent)).toEqual([
       'Topic',
       '0.2',
-      'In review',
+      'In reviewPast review',
       '3 Dec 2025',
       'Grace',
     ]);
@@ -336,7 +337,7 @@ describe('the components list', () => {
     expect(cells[5]).toHaveTextContent('You');
   });
 
-  it('shows each component’s workflow state as its lozenge', async () => {
+  it('LIF-018 shows each component’s workflow state as its lozenge, and past review where it is', async () => {
     const { client } = service();
     render(<ComponentList client={client} principalId="p9" />);
     const link = await screen.findByRole('link', { name: 'Replace the toner' });
@@ -344,5 +345,8 @@ describe('the components list', () => {
       'data-kind',
       'inReview',
     );
+    // Past its review day (LIF-018), and only that one.
+    expect(within(link.closest('tr')!).getByText('Past review')).toBeInTheDocument();
+    expect(screen.getAllByText('Past review')).toHaveLength(1);
   });
 });

@@ -1,4 +1,5 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
+import { DatesButton, DatesChips, datesIn, type Dates } from '../lifecycle/Dates.js';
 import type { ContentDocument } from '@alloy-works/domain';
 import {
   bindingDigestInput,
@@ -574,6 +575,8 @@ export function ComponentEditor({
   const [archivedNow, setArchivedNow] = useState<boolean | null>(null);
   // Moved on this page, or heard moved on its stream, since it opened: shown over the GET's (WF-G).
   const [standingNow, setStandingNow] = useState<Standing | null>(null);
+  // Its dates as last saved here, over the view's (WF5-A).
+  const [datesNow, setDatesNow] = useState<Dates | null>(null);
   // A hold placed from this page since it opened: shown On hold without reading the view again.
   const [heldNow, setHeldNow] = useState(false);
   // Said through the application's status bar, its one live region, where there is one (interface
@@ -2253,6 +2256,17 @@ export function ComponentEditor({
             </span>
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
+            <DatesChips dates={datesNow ?? datesIn(shown)} />
+            {shown.mayEdit === true && !archived && (datesNow ?? datesIn(shown)) && (
+              <DatesButton
+                client={client}
+                kind="component"
+                id={componentId}
+                title={header.title}
+                dates={(datesNow ?? datesIn(shown))!}
+                onSaved={setDatesNow}
+              />
+            )}
             {archived && <Chip>Archived</Chip>}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
             {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
