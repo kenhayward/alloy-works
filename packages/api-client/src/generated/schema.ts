@@ -38769,7 +38769,7 @@ export interface operations {
                             /** @description Whether it has an approved revision, which an `approved` reference takes */
                             approved: boolean;
                         }[];
-                        /** @description How many components it places that the caller may not read: placing is refused then */
+                        /** @description How many components it places that the caller may not read, or that are deleted: placing is refused then */
                         unreadable: number;
                         /** @description Blocks in all, each occurrence counted */
                         blocks: number;

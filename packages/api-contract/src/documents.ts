@@ -101,7 +101,7 @@ export const PlacementReportView = z.object({
     .number()
     .int()
     .describe(
-      'How many components it places that the caller may not read: placing is refused then',
+      'How many components it places that the caller may not read, or that are deleted: placing is refused then',
     ),
   blocks: z.number().int().describe('Blocks in all, each occurrence counted'),
   characters: z.number().int().describe('Characters in all, each occurrence counted'),

@@ -71,6 +71,12 @@ export function placeSection(
   if (!Number.isInteger(input.position) || input.position < 0 || input.position > children.length) {
     return { applied: false, reason: 'The position is past the end of these children' };
   }
+  // At the top, after any front matter: the new section is body matter, which never precedes it.
+  const leadingFront = outline.nodes.findIndex((node) => node.matter !== 'front');
+  const at =
+    input.parent === null
+      ? Math.max(input.position, leadingFront < 0 ? outline.nodes.length : leadingFront)
+      : input.position;
   const base = { numbered: true, matter: 'body' as const, pageBreak: 'none' as const, values: {} };
   const section: OutlineNode = {
     ...base,
@@ -88,7 +94,7 @@ export function placeSection(
   };
   const splice = (nodes: readonly OutlineNode[]): OutlineNode[] =>
     input.parent === null
-      ? [...nodes.slice(0, input.position), section, ...nodes.slice(input.position)]
+      ? [...nodes.slice(0, at), section, ...nodes.slice(at)]
       : nodes.map((node) =>
           node.id === input.parent
             ? {

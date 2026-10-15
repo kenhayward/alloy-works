@@ -124033,7 +124033,7 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "How many components it places that the caller may not read: placing is refused then"
+                      "description": "How many components it places that the caller may not read, or that are deleted: placing is refused then"
                     },
                     "blocks": {
                       "type": "integer",

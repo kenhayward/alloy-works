@@ -86,7 +86,9 @@ select l.artifact_id, l.id, r ->> 'id', q.id, 'queryDefinition',
   cross join lateral jsonb_path_query(l.content, 'strict $.** ? (@.type == "binding")') r
   join artifact q on q.id = (r ->> 'query')::uuid and q.kind = 'queryDefinition'
   left join artifact_version p on p.id = (r ->> 'version')::uuid and p.artifact_id = q.id
- where l.kind = 'component';
+ where l.kind = 'component'
+   -- A pin to another artifact's version is written by nothing, as `indexReferences` writes none.
+   and (r ->> 'version' is null or p.id is not null);
 
 -- A query definition's connection.
 insert into reference (from_id, from_version, node, to_id, to_kind, mode, to_version)

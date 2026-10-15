@@ -1075,6 +1075,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   more. **Save version**, and **Done editing** with changes, ask first where the new version reaches a
   document, approved ones listed apart from drafts. A publish placing a component that was deleted says
   so, apart from one you may not read.
+- **Place from a document.** The outline offers **Place from a document**: choose another document
+  and one of its sections, and it says first how many references placing it makes and how much text
+  the components hold. Choose how each reference follows its component and a title, and the
+  section's components are placed under a new section of your own; nothing else is copied, and a
+  section placing a component you may not read is not offered to place.
+- **What a change reaches, through the API.** `GET /v1/artifacts/{id}/impact?depth=` walks from a
+  component, an image, a query definition, a connection or a template to whatever references it, and
+  on to what references those, to a depth from 1 to 10, nearest first and at most 1,000. Nothing you
+  may not read is named or walked past; the answer says only that the walk was cut there.
+  `GET /v1/artifacts/{id}/references` says what an artifact's latest version references.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

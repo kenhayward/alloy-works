@@ -1,5 +1,6 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
+import { PLACE_MAX } from '@alloy-works/domain';
 import { Modal } from '../layouts/Modal.js';
 import styles from './PlaceSection.module.css';
 import { sectionTitle, titleText } from './tree.js';
@@ -150,6 +151,12 @@ function PlaceDialog({
     };
   }, [client, from]);
 
+  // The section's own title, offered as the new one's, each time a section is chosen: never over
+  // what the author typed when the same section is reported again.
+  useEffect(() => {
+    setTitle(sections.find((each) => each.id === section)?.title ?? '');
+  }, [section, sections]);
+
   useEffect(() => {
     setReport(null);
     if (section === '') return;
@@ -161,14 +168,16 @@ function PlaceDialog({
       .then(({ data }) => {
         if (!current) return;
         setReport(data ?? null);
-        if (data) setTitle(sections.find((each) => each.id === section)?.title ?? '');
-        else setSaid('What the section places could not be read.');
+        if (!data) setSaid('What the section places could not be read.');
       })
       .catch(() => undefined);
     return () => {
       current = false;
     };
-  }, [client, documentId, from, section, sections, asked]);
+  }, [client, documentId, from, section, asked]);
+
+  // A word said of one section is not said of the next; after a refusal, of the same one again.
+  useEffect(() => setSaid(''), [from, section]);
 
   const place = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -206,7 +215,8 @@ function PlaceDialog({
     setSaid('The section could not be placed.');
   };
 
-  const refused = report !== null && report.unreadable > 0;
+  const tooMany = report !== null && report.occurrences > PLACE_MAX;
+  const refused = report !== null && (report.unreadable > 0 || tooMany);
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void place(event)}>
@@ -262,9 +272,14 @@ function PlaceDialog({
                 </li>
               ))}
             </ul>
-            {refused && (
+            {report.unreadable > 0 && (
               <p role="alert">
-                {`It places ${plural(report.unreadable, 'component', 'components')} you may not read, so it cannot be placed.`}
+                {`It places ${plural(report.unreadable, 'component', 'components')} you may not read or that ${report.unreadable === 1 ? 'was' : 'were'} deleted, so it cannot be placed.`}
+              </p>
+            )}
+            {tooMany && (
+              <p role="alert">
+                {`It places more than ${PLACE_MAX} references, so it cannot be placed in one go. Place its subsections one at a time.`}
               </p>
             )}
           </section>

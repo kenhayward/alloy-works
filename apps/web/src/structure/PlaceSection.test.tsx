@@ -46,7 +46,8 @@ const report = (unreadable = 0) => ({
   characters: 38,
 });
 
-function service(unreadable = 0) {
+function service(unreadable = 0, refuseFirst = false) {
+  let refused = !refuseFirst;
   const asked: { method: string; path: string; body: unknown }[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -73,7 +74,13 @@ function service(unreadable = 0) {
     if (pathname === `/v1/documents/${HANDBOOK}/placement` && request.method === 'GET') {
       return json(200, report(unreadable));
     }
-    if (pathname === `/v1/documents/${HANDBOOK}/placement`) return json(200, { placed: true });
+    if (pathname === `/v1/documents/${HANDBOOK}/placement`) {
+      if (!refused) {
+        refused = true;
+        return json(409, { code: 'source_moved', message: 'Moved.', traceId: 't' });
+      }
+      return json(200, { placed: true });
+    }
     return json(404, {});
   }) as unknown as typeof fetch;
   return { client: createApiClient({ baseUrl: 'http://place.test', fetch: fetching }), asked };
@@ -156,8 +163,37 @@ describe('Place from a document', () => {
     );
     const dialog = await choose();
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'It places 1 component you may not read, so it cannot be placed.',
+      'It places 1 component you may not read or that was deleted, so it cannot be placed.',
     );
     expect(within(dialog).getByRole('button', { name: 'Place' })).toBeDisabled();
+  });
+
+  it('reads the report again where the section moved since, keeping the title the author typed', async () => {
+    const { client, asked } = service(0, true);
+    const placed = vi.fn();
+    render(
+      <PlaceSectionButton
+        client={client}
+        documentId={HANDBOOK}
+        openedFrom={OPENED}
+        onPlaced={placed}
+      />,
+    );
+    const dialog = await choose();
+    await within(dialog).findByRole('region', { name: 'What it places' });
+    const named = within(dialog).getByRole('textbox', { name: 'New section title' });
+    await userEvent.clear(named);
+    await userEvent.type(named, 'Upkeep');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Place' }));
+
+    expect(await within(dialog).findByText(/Something changed since the report/)).toBeVisible();
+    await within(dialog).findByRole('region', { name: 'What it places' });
+    expect(named).toHaveValue('Upkeep');
+    const reports = asked.filter(
+      (each) => each.method === 'GET' && each.path.endsWith('/placement'),
+    );
+    expect(reports.length).toBe(2);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Place' }));
+    expect(placed).toHaveBeenCalledOnce();
   });
 });
