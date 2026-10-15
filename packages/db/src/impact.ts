@@ -26,6 +26,8 @@ export interface Reached {
 
 export interface Impact {
   readonly reached: readonly Reached[];
+  /** How many depths were walked: fewer than asked only where a step stopped it (R3-F). */
+  readonly depths: number;
   /** Whether an edge led to something the caller may not read: never what (REL-020). */
   readonly cut: boolean;
   /** Whether the walk stopped at the limit with more to say (REL-030). */
@@ -59,11 +61,16 @@ export async function impact(
   id: string,
   depth: number,
   limit = IMPACT_LIMIT,
+  /**
+   * After each depth, told how many it has walked and found: false stops the walk there. A
+   * background report records progress and hears a cancel here (the R3 plan, R3-F).
+   */
+  step?: (walked: number, reached: number) => Promise<boolean>,
 ): Promise<Impact> {
   if (!Number.isInteger(depth) || depth < 1 || depth > IMPACT_MAX_DEPTH) {
     throw new Error(`An impact walk declares a depth from 1 to ${IMPACT_MAX_DEPTH}, not ${depth}`);
   }
-  const none: Impact = { reached: [], cut: false, more: false };
+  const none: Impact = { reached: [], depths: 0, cut: false, more: false };
   if (!UUID.test(id) || !(await referencesStored(trx))) return none;
   const readable = await loadReadableSet(trx, by);
   const seen = new Set([id]);
@@ -71,6 +78,7 @@ export async function impact(
   let cut = false;
   let more = false;
   let frontier = [id];
+  let walked = 0;
   for (let at = 1; at <= depth && frontier.length > 0 && !more; at += 1) {
     const edges = await edgesInto(trx, frontier);
     const fresh = edges.filter((edge) => !seen.has(edge.from_id));
@@ -95,13 +103,18 @@ export async function impact(
       next.push(edge.from_id);
     }
     frontier = next;
+    walked = at;
+    if (step && !(await step(at, reached.length))) break;
   }
+  // A walk that ran out of artifacts before its depth has walked every depth there was.
+  if (frontier.length === 0 || more) walked = depth;
   const titles = await titlesOf(
     trx,
     reached.map((each) => each.id),
   );
   return {
     reached: reached.map((each) => ({ ...each, title: titles.get(each.id) ?? '' })),
+    depths: walked,
     cut,
     more,
   };

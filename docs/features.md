@@ -1085,6 +1085,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   on to what references those, to a depth from 1 to 10, nearest first and at most 1,000. Nothing you
   may not read is named or walked past; the answer says only that the walk was cut there.
   `GET /v1/artifacts/{id}/references` says what an artifact's latest version references.
+- **Jobs, and the complete impact report, through the API.** `POST /v1/artifacts/{id}/impact-reports`
+  asks for everything a change reaches, to a depth, with no cap: it is answered at once with a job to
+  follow at `/v1/jobs/{id}` - its state, when it started, how many depths it has walked - and to
+  cancel, which stops a running report at its next depth and says how far it got. A succeeded report
+  downloads as JSON Lines; a failed one keeps its error. A retry with the same `Idempotency-Key`
+  answers the same job. Each job is its submitter's alone.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

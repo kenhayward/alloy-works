@@ -253,6 +253,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0100_section_waivers',
       '0101_template_moves',
       '0102_reference_index',
+      '0103_api_jobs',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

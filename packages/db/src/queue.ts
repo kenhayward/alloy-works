@@ -8,9 +8,10 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * previews workers of their own (publishing.md, "Preview"). A `check_pdf` is veraPDF over a recorded
  * publication's PDF, its subject the publication, queued as the publication is recorded (W14.1, W-B).
  * An `audit_export` writes an export of the audit log, its subject the export (the AU2 plan, AU-N).
+ * An `impact_report` walks what a change reaches, uncapped, its subject the job (the R3 plan, R3-F).
  */
 export type JobKind =
-  'sample_pdf' | 'publish' | 'preview' | 'ingest' | 'check_pdf' | 'audit_export';
+  'sample_pdf' | 'publish' | 'preview' | 'ingest' | 'check_pdf' | 'audit_export' | 'impact_report';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

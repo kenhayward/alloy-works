@@ -175,6 +175,11 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getArtifactImpact: read,
   getArtifactReferences: read,
   previewPlacement: read,
+  // A job about what is recorded, its rows its requester's alone: no change to the tenant's content.
+  submitImpactReport: { none: 'derived' },
+  getJob: read,
+  cancelJob: { none: 'derived' },
+  downloadJob: read,
   placeSection: writes('content.version_cut', 'workflow.transitioned'),
   deleteComponent: writes('artifact.deleted'),
   undeleteComponent: writes('artifact.undeleted'),
@@ -328,6 +333,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     check_pdf: { none: 'derived' },
     // Asking for it was the event, and each download is (the AU2 plan, AU-N).
     audit_export: { none: 'derived' },
+    // A report of what is recorded, kept for its requester alone (the R3 plan, R3-F).
+    impact_report: { none: 'derived' },
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {
