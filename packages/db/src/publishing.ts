@@ -44,7 +44,7 @@ import { latestRevisionsOf } from './workflow.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
-import { isDeleted, shareDeletion } from './deletion.js';
+import { deletionStored, isDeleted, notDeletedAs, shareDeletion } from './deletion.js';
 import { readableComponents } from './documents.js';
 import { enqueueJob } from './queue.js';
 import { readableArtifacts } from './readable-artifacts.js';
@@ -91,6 +91,9 @@ export type OccurrenceOutcome =
       readonly version: string;
     }
   | { readonly node: string; readonly outcome: 'unreadable' }
+  // Deleted, or no component at all (REU-005; the R1 plan, R1-E): told apart from one there that the
+  // principal may not read, which says no more than that a component is at this place (REU-043).
+  | { readonly node: string; readonly outcome: 'gone' }
   | { readonly node: string; readonly outcome: 'unresolved' };
 
 /**
@@ -182,12 +185,18 @@ export async function resolveOccurrences(
           .where('id', 'in', pinned)
           .where('artifact_id', 'in', [...readable])
           .execute();
+  const gone = await goneComponents(
+    trx,
+    references.map((each) => each.component).filter((id) => !readable.has(id)),
+  );
   const headOf = new Map(heads.map((row) => [row.artifact_id, row.id]));
   const pinOf = new Map(pins.map((row) => [row.id, row.artifact_id]));
 
   return references.map((reference): OccurrenceOutcome => {
     const { node, component } = reference;
-    if (!readable.has(component)) return { node, outcome: 'unreadable' };
+    if (!readable.has(component)) {
+      return { node, outcome: gone.has(component) ? 'gone' : 'unreadable' };
+    }
     if (reference.approved) {
       // None designated yet: nothing to take.
       const revision = revisions.get(component);
@@ -205,6 +214,26 @@ export async function resolveOccurrences(
       ? { node, outcome: 'unresolved' }
       : { node, outcome: 'resolved', component, version: head };
   });
+}
+
+/**
+ * Which of these are gone: no component, or a deleted one (REU-005). Only the gone are returned, so no
+ * row of a component the principal may not read is ever selected here either.
+ */
+async function goneComponents(
+  trx: TenantTransaction,
+  ids: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const asked = [...new Set(ids)];
+  if (asked.length === 0) return new Set();
+  const malformed = asked.filter((id) => !UUID.test(id));
+  const deletion = (await deletionStored(trx)) ? sql`and ${notDeletedAs('a')}` : sql``;
+  const { rows } = await sql<{ id: string }>`
+    select g.id::text as id
+      from unnest(${asked.filter((id) => UUID.test(id))}::uuid[]) as g(id)
+     where not exists (select from artifact a
+                        where a.id = g.id and a.kind = 'component' ${deletion})`.execute(trx);
+  return new Set([...malformed, ...rows.map((row) => row.id)]);
 }
 
 /**
@@ -738,7 +767,9 @@ export async function resolvePublishable(
             code:
               each.outcome === 'unreadable'
                 ? ('occurrence_unreadable' as const)
-                : ('occurrence_unresolved' as const),
+                : each.outcome === 'gone'
+                  ? ('occurrence_gone' as const)
+                  : ('occurrence_unresolved' as const),
             node: each.node,
             block: null,
             detail: null,

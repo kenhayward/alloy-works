@@ -14,6 +14,7 @@ import { sql, type KyselyPlugin } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
+import { deleteArtifact } from './deletion.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID, defaultLayout } from './layouts.js';
@@ -274,6 +275,39 @@ describe('requesting and recording a publication', () => {
       expect(occurrences.map((each) => [each.node, each.version_id])).toEqual([
         [open.id, shared.id],
       ]);
+    });
+  });
+
+  it('REU-005 REU-043 fails a reference to a component that is gone apart from one the publisher may not read', async () => {
+    await service.withTenant(production, async (trx) => {
+      const deleted = await component(trx, general, ada, 'Retired procedure');
+      const answer = await deleteArtifact(trx, deleted.artifactId, ada);
+      if (answer?.answer !== 'deleted') throw new Error(answer?.answer);
+      const secret = await component(trx, quality, grace, 'Calibration');
+      const retired = reference(deleted.artifactId);
+      const never = reference(randomUUID());
+      const hidden = reference(secret.artifactId);
+      const version = await documentWith(trx, [section('Scope', [retired, never, hidden])]);
+
+      const id = await requested(trx, version, ada);
+      const row = await trx
+        .selectFrom('publication_request')
+        .select('failures')
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow();
+      expect(row.failures).toEqual([
+        { stage: 'resolve', code: 'occurrence_gone', node: retired.id, block: null, detail: null },
+        { stage: 'resolve', code: 'occurrence_gone', node: never.id, block: null, detail: null },
+        {
+          stage: 'resolve',
+          code: 'occurrence_unreadable',
+          node: hidden.id,
+          block: null,
+          detail: null,
+        },
+      ]);
+      // Of the one it may not read, its place alone.
+      expect(JSON.stringify(row)).not.toContain(secret.artifactId);
     });
   });
 
@@ -646,8 +680,9 @@ describe('requesting and recording a publication', () => {
         { node: hiddenPin.id, outcome: 'unreadable' },
         { node: crossPin.id, outcome: 'unresolved' },
         { node: approved.id, outcome: 'unresolved' },
-        // A component that does not exist is told apart from one that may not be read by nothing.
-        { node: missing.id, outcome: 'unreadable' },
+        // A component that does not exist is gone, told apart from one there that may not be read
+        // (REU-043).
+        { node: missing.id, outcome: 'gone' },
       ]);
       expect(asAda.rows.length).toBeGreaterThan(0);
       expect(JSON.stringify(asAda.rows)).not.toContain(secret.artifactId);
@@ -667,7 +702,7 @@ describe('requesting and recording a publication', () => {
         },
         { node: crossPin.id, outcome: 'unresolved' },
         { node: approved.id, outcome: 'unresolved' },
-        { node: missing.id, outcome: 'unreadable' },
+        { node: missing.id, outcome: 'gone' },
       ]);
       expect(JSON.stringify(asGrace.rows)).toContain(secret.id);
     });

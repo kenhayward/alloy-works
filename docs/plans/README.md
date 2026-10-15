@@ -838,3 +838,11 @@ The workflow, in [ADR-0061](../decisions/0061-t9s-order.md)'s order.
 | WF4 | [The latest approved revision](2026-10-15-wf4-the-latest-approved-revision.md)       | LIF-038, LIF-041, REU-050, CNT-159, CNT-163, CNT-183: a reference tracking its component's latest approved revision, resolved everywhere, shown, chosen, audited, and flagged when it moves past the last publication                        | Built (PR #621)        |
 | WF5 | [Effective and review-by dates](2026-10-15-wf5-dates.md)                             | LIF-015 to LIF-018, LIF-059, LIF-060: dates as acts, a future-effective revision served from its instant, owners prompted, past review shown, a lapse acted on as the workflow declares                                                      | Built (PRs #624, #626) |
 | WF6 | [Template governance](2026-10-15-wf6-template-governance.md)                         | TPL-028, TPL-029, TPL-033, TPL-034, TPL-058: departures listed, a required section removed only with a reason, and a document moved to its template's newest version, previewed and audited                                                  | Built (PRs #627, #628) |
+
+## T4
+
+The reuse, a slice at a time ([R1](2026-10-15-r1-where-a-component-is-used.md) sketches the order).
+
+| #   | Plan                                                                    | Builds                                                                                                                                                                             | Status   |
+| --- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| R1  | [Where a component is used](2026-10-15-r1-where-a-component-is-used.md) | REU-001, REU-003, REU-005, REU-007 to REU-009, REU-043: where a component is used, a warning before a version reaches a document, and a gone component told from an unreadable one | Building |

@@ -208,6 +208,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
   switch (failure.code) {
     case 'occurrence_unreadable':
       return 'A component you may not read is placed here. Only someone who may read every component can publish this document.';
+    // REU-005: told apart from one there the publisher may not read (REU-043).
+    case 'occurrence_gone':
+      return 'The component placed here is gone: it was deleted. Remove this reference, or place another component.';
     // MET-023: `detail` is the field's name and what is wrong with it, as the definitions word it -
     // never the value, which is the component's.
     case 'component_metadata_invalid':
@@ -494,6 +497,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
  */
 export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   occurrence_unreadable: 'It places a component you may not read.',
+  occurrence_gone: 'It places a component that was deleted.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

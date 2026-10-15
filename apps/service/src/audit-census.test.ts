@@ -171,6 +171,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   archiveDocument: writes('artifact.archived'),
   unarchiveDocument: writes('artifact.unarchived'),
   getComponentDeletion: read,
+  getComponentUses: read,
   deleteComponent: writes('artifact.deleted'),
   undeleteComponent: writes('artifact.undeleted'),
   getDocumentDeletion: read,

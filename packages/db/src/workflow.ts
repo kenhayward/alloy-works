@@ -416,7 +416,9 @@ export async function workflowStanding(
 export async function workflowStates(
   trx: TenantTransaction,
   artifactIds: readonly string[],
-): Promise<ReadonlyMap<string, { readonly key: string; readonly name: string }>> {
+): Promise<
+  ReadonlyMap<string, { readonly key: string; readonly name: string; readonly approved: boolean }>
+> {
   const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
   if (ids.length === 0 || !(await workflowStored(trx))) return new Map();
   const { rows } = await sql<{
@@ -429,7 +431,7 @@ export async function workflowStates(
       order by artifact_id, id desc`.execute(trx);
   const definitions = new Map<string, WorkflowDefinition>();
   const newest = new Map<WorkflowKind, WorkflowDefinition>();
-  const states = new Map<string, { key: string; name: string }>();
+  const states = new Map<string, { key: string; name: string; approved: boolean }>();
   for (const row of rows) {
     if (!newest.has(row.kind)) newest.set(row.kind, await newestDefinition(trx, row.kind));
     const latest = newest.get(row.kind)!;
@@ -440,7 +442,11 @@ export async function workflowStates(
     }
     const definition = decidingDefinition(latest, recorded, row.to_state);
     const state = definition.body.states.find((each) => each.key === row.to_state);
-    states.set(row.artifact_id, { key: row.to_state, name: state?.name ?? row.to_state });
+    states.set(row.artifact_id, {
+      key: row.to_state,
+      name: state?.name ?? row.to_state,
+      approved: state?.approved ?? false,
+    });
   }
   return states;
 }
