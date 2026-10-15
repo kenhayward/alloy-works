@@ -619,7 +619,9 @@ export async function lastPublishedOccurrences(
     .where('document_id', '=', documentId)
     .where('kind', '=', 'publish')
     .where('state', '!=', 'failed')
+    // `requested_at` is to the second: two in one second are told apart by their transaction (0074).
     .orderBy('requested_at', 'desc')
+    .orderBy(sql`made_tx`, 'desc')
     .orderBy('id', 'desc')
     .limit(1)
     .executeTakeFirst();

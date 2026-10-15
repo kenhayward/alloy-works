@@ -240,6 +240,8 @@ const OTHER_TENANT_IDS: Readonly<
   transitionDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   decideComponentGate: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   decideDocumentGate: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  setComponentDates: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  setDocumentDates: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   listComponentApprovals: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   listDocumentApprovals: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   archiveComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -465,6 +467,8 @@ const VALID_INPUT: Readonly<
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
   transitionQueryDefinition: { payload: { transition: 'submit', from: 'draft' } },
+  setComponentDates: { payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null } },
+  setDocumentDates: { payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null } },
   decideQueryDefinitionGate: {
     payload: { transition: 'approve', version: SESSION, decision: 'approved' },
   },
