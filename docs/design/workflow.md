@@ -220,7 +220,9 @@ publish fails it `occurrence_unresolved`, and a transition requiring `components
 
 **Moved** (WF4-E; LIF-041): the view's texts carry, for an `approved` occurrence, its `revision`, and
 `moved`, the version the document's latest publication not failed carried for that node, where it is
-not the one shown now. Never published, nothing has moved.
+of the same component and older than the one shown now: a publication that carried a newer version,
+at the latest or pinned, has not been moved past (the final review). Never published, nothing has
+moved. A baseline's publication counts as the document's last, as a gate's approved one is.
 
 **LIF-040 is not claimed**: a save of an approved component starts a draft (WF-F) and leaves its
 revision designated and served to every reference tracking it; a reference at the latest takes the

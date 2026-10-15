@@ -549,19 +549,37 @@ export function documentHandlers(
         ),
       );
       const published = approved.size === 0 ? new Map() : await lastPublishedOccurrences(trx, id);
-      const movedFrom = new Map<string, string>();
+      // Of the same component, and older than the revision shown: a publication that carried a newer
+      // version, at the latest or pinned, has not been moved past (the WF4 final review).
+      const candidates = new Map<string, string>();
       for (const occurrence of inputs.occurrences) {
         const was = published.get(occurrence.node);
         if (
           approved.has(occurrence.node) &&
           occurrence.version !== null &&
           was !== undefined &&
-          was !== occurrence.version
+          was.component === componentOf.get(occurrence.node) &&
+          was.version !== occurrence.version
+        ) {
+          candidates.set(occurrence.node, was.version);
+        }
+      }
+      const movedNumbers = await versionContents(trx, [...new Set(candidates.values())]);
+      const movedFrom = new Map<string, string>();
+      for (const occurrence of inputs.occurrences) {
+        const was = candidates.get(occurrence.node);
+        const before = was === undefined ? undefined : movedNumbers.get(was);
+        const now = occurrence.version === null ? undefined : contents.get(occurrence.version);
+        if (
+          was !== undefined &&
+          before !== undefined &&
+          now !== undefined &&
+          (before.revision < now.revision ||
+            (before.revision === now.revision && before.version < now.version))
         ) {
           movedFrom.set(occurrence.node, was);
         }
       }
-      const movedNumbers = await versionContents(trx, [...new Set(movedFrom.values())]);
       const editing = new Map(
         readable.map((component) => {
           const lock = locks.get(component);

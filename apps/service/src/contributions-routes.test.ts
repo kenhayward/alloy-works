@@ -592,6 +592,42 @@ describe('what each occurrence contributes, through the service', () => {
       revision: 2,
       moved: { id: tracked.version, number: '0.2' },
     });
+
+    // Published at the latest, a draft past the revision; then tracking the approved one again: the
+    // publication carried a newer version than the revision shown, so nothing has moved past it.
+    const draft = await tenantDb.withTenant(tenant, async (trx) => {
+      const substance = substanceOf((await readVersion(trx, second))!);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const recorded = await recordVersion(trx, {
+        artifactId: tracked.id,
+        openedFrom: second,
+        author: ids.grace!,
+        substance: {
+          ...substance,
+          content: { ...substance.content, content: [figure('a3', 'The draft tray')] } as never,
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version.id;
+    });
+    const repoint = async (mode: Json) => {
+      const set = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+        openedFrom: doc.version.id,
+        operation: { operation: 'set', node, mode },
+      });
+      expect(set.statusCode, set.body).toBe(200);
+      doc = set.json<DocumentBody>();
+    };
+    await repoint({ kind: 'latest' });
+    const atLatest = await call('grace', 'POST', `/v1/documents/${doc.id}/publications`, {
+      version: doc.version.id,
+      formats: ['pdf'],
+    });
+    expect(atLatest.statusCode, atLatest.body).toBe(200);
+    expect(draft).not.toBe(second);
+    await repoint({ kind: 'approved' });
+    expect(await occurrence()).toMatchObject({ version: second, revision: 2 });
+    expect((await occurrence()).moved).toBeUndefined();
   });
 
   it('answers an empty outline with no occurrences, and 404 for what is not a readable document', async () => {

@@ -605,14 +605,14 @@ async function bindingsHeld(
 }
 
 /**
- * The version each node of a document took in its latest publication not failed, queued or done:
- * what a reference tracking the latest approved revision is compared with (LIF-041; the WF4 plan,
- * WF4-E). Empty where it was never published.
+ * The component and version each node of a document took in its latest publication not failed,
+ * queued or done: what a reference tracking the latest approved revision is compared with (LIF-041;
+ * the WF4 plan, WF4-E). Empty where it was never published.
  */
 export async function lastPublishedOccurrences(
   trx: TenantTransaction,
   documentId: string,
-): Promise<Map<string, string>> {
+): Promise<Map<string, { readonly component: string; readonly version: string }>> {
   const last = await trx
     .selectFrom('publication_request')
     .select('id')
@@ -626,10 +626,12 @@ export async function lastPublishedOccurrences(
   if (!last) return new Map();
   const rows = await trx
     .selectFrom('publication_request_occurrence')
-    .select(['node', 'version_id'])
+    .select(['node', 'component_id', 'version_id'])
     .where('request_id', '=', last.id)
     .execute();
-  return new Map(rows.map((row) => [row.node, row.version_id]));
+  return new Map(
+    rows.map((row) => [row.node, { component: row.component_id, version: row.version_id }]),
+  );
 }
 
 /**
