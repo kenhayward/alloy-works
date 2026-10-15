@@ -137,6 +137,8 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
+// A variable, placed from the declared ones (the R5 plan, R5b).
+export { insertVariable, variablePlaceable, variableSelected } from './variables.js';
 export { fillBoundTable, moreRows, noteLabel } from './boundTableView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {

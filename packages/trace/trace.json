@@ -21913,6 +21913,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-018",
+      "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
+      "line": 1330,
+      "kind": "title"
+    },
+    {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
       "line": 350,
@@ -21957,13 +21963,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 216,
+      "line": 217,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 661,
+      "line": 662,
       "kind": "title"
     },
     {
@@ -22054,6 +22060,12 @@
       "id": "DAT-098",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
       "line": 330,
+      "kind": "title"
+    },
+    {
+      "id": "REU-018",
+      "file": "apps/web/src/editor/VariableDialog.test.tsx",
+      "line": 36,
       "kind": "title"
     },
     {
@@ -25065,7 +25077,7 @@
     {
       "id": "REU-018",
       "file": "packages/db/src/variables.test.ts",
-      "line": 63,
+      "line": 68,
       "kind": "title"
     },
     {
@@ -27609,19 +27621,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 197,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 636,
+      "line": 637,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 315,
+      "line": 316,
       "kind": "title"
     },
     {
@@ -27664,6 +27676,12 @@
       "id": "CNT-016",
       "file": "packages/editor/src/tables.test.ts",
       "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "REU-018",
+      "file": "packages/editor/src/variables.test.ts",
+      "line": 34,
       "kind": "title"
     },
     {

@@ -52,6 +52,8 @@ export interface DefinitionSummary {
   readonly id: string;
   readonly kind: DefinitionKind;
   readonly name: string;
+  /** A variable's key, which text names it by (the R5 plan, R5b); absent for every other kind. */
+  readonly key?: string;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
 }
 
@@ -185,6 +187,7 @@ export async function listDefinitions(
       'latest.version_no',
     ])
     .select(sql<string>`latest.content ->> 'name'`.as('name'))
+    .select(sql<string | null>`latest.content ->> 'key'`.as('key'))
     .select(sortColumns([sql`latest.content ->> 'name'`]))
     .where('a.kind', 'in', [...definitionKinds]);
   const { rows, next } = await keysetPage<{
@@ -194,12 +197,14 @@ export async function listDefinitions(
     revision_no: number;
     version_no: number;
     name: string;
+    key: string | null;
   }>(trx, inner, types, request.order ?? order, limit, request.after);
   return {
     items: rows.map((row) => ({
       id: row.id,
       kind: row.kind,
       name: row.name,
+      ...(row.kind === 'variable' && row.key !== null ? { key: row.key } : {}),
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
     })),
     next,
@@ -337,6 +342,25 @@ async function refusal(
     const field = variable.sources.field;
     if (field !== undefined && (await readDefinitionLatest(trx, field))?.kind !== 'field') {
       return { answer: 'definition.unresolved', missing: [field], requires: [] };
+    }
+    // Its key is fixed once made: every variable node in text names it by that key.
+    if (self !== undefined) {
+      const held = (await readDefinitionLatest(trx, self))?.definition as
+        VariableDefinition | undefined;
+      if (held !== undefined && held.key !== variable.key) {
+        return {
+          answer: 'definition.invalid',
+          failures: [
+            {
+              code: 'metadata.fixed',
+              field: self,
+              rule: 'fixed',
+              schemas: [],
+              detail: `A variable keeps its key, ${held.key}`,
+            },
+          ],
+        };
+      }
     }
     const keyed = (await latestOfKind(trx, 'variable')).find(
       (each) => each.definition.key === variable.key && each.id !== self,

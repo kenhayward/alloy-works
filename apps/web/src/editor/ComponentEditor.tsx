@@ -40,6 +40,7 @@ import {
   type BindingChoice,
   insertReference,
   insertSymbol,
+  insertVariable,
   textWhereAt,
   replaceFigureImage,
   replaceImageAsset,
@@ -134,6 +135,7 @@ import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js
 import { ReferenceDialog } from './ReferenceDialog.js';
 import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
+import { VariableDialog } from './VariableDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
@@ -715,6 +717,9 @@ export function ComponentEditor({
   // The view the palette gives the focus back to as it closes: where the cursor was, whether a
   // symbol went in or not (component-editor.md, "Accessibility"), never the button that opened it.
   const symbolsBack = useRef<EditorView | null>(null);
+  // The Variable dialog, as the palette is: open over the view it was asked from (the R5 plan, R5b).
+  const [variabling, setVariabling] = useState<EditorView | null>(null);
+  const variablesBack = useRef<EditorView | null>(null);
   // The paste report's, which comes and goes too: it is there from a paste with something to say
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
@@ -1023,6 +1028,22 @@ export function ComponentEditor({
     if (back !== null && !back.isDestroyed) back.focus();
   }, [symbolizing]);
 
+  /** Opens the Variable dialog over `editing`, as the palette opens (the R5 plan, R5b). */
+  const openVariables = (editing: EditorView): boolean => {
+    setVariabling(editing);
+    return true;
+  };
+  const closeVariables = () => {
+    variablesBack.current = variabling;
+    setVariabling(null);
+  };
+  useEffect(() => {
+    if (variabling !== null) return;
+    const back = variablesBack.current;
+    variablesBack.current = null;
+    if (back !== null && !back.isDestroyed) back.focus();
+  }, [variabling]);
+
   // Held in refs, not the effect's own dependency list (fix round 1, finding 5): a parent that does
   // not memoise its callback, or recreates its timing object, must not tear the session down and
   // rebuild the surface from the original content on every render. Read fresh at the moment the effect
@@ -1061,6 +1082,8 @@ export function ComponentEditor({
   openValueRef.current = openValue;
   const openSymbolsRef = useRef(openSymbols);
   openSymbolsRef.current = openSymbols;
+  const openVariablesRef = useRef(openVariables);
+  openVariablesRef.current = openVariables;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
@@ -1200,6 +1223,8 @@ export function ComponentEditor({
           if (name === 'symbol') return openSymbolsRef.current(into);
           // **Value** too (B2-A), in the footnote's text as in the component's.
           if (name === 'value') return openValueRef.current(into);
+          // **Variable** too (the R5 plan, R5b).
+          if (name === 'variable') return openVariablesRef.current(into);
           const command = EDITOR_COMMANDS.find(
             (each) => each.kind === 'mark' && each.mark === name,
           );
@@ -2026,6 +2051,7 @@ export function ComponentEditor({
     referring !== null ||
     equating !== null ||
     symbolizing !== null ||
+    variabling !== null ||
     valuing !== null ||
     formatting;
   const placeTables = (panels: ReactNode) => {
@@ -2459,7 +2485,8 @@ export function ComponentEditor({
             ((action === 'reference' && openReference(surface, view)) ||
               (action === 'equation' && openEquation(view)) ||
               (action === 'symbol' && openSymbols(view)) ||
-              (action === 'value' && openValue(view)))
+              (action === 'value' && openValue(view)) ||
+              (action === 'variable' && openVariables(view)))
           }
         />
         {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
@@ -3016,6 +3043,28 @@ export function ComponentEditor({
               closeSymbols();
             }}
             onCancel={closeSymbols}
+          />,
+          document.body,
+        )}
+      {variabling !== null &&
+        // Beside the article, as the palette is.
+        createPortal(
+          <VariableDialog
+            client={client}
+            onChoose={(key) => {
+              // As the palette asks: the phase as it is now, since the lock can be lost meanwhile.
+              const now = controls.current?.view().phase;
+              const into = variabling;
+              const placed =
+                shown.mayEdit &&
+                now !== undefined &&
+                isEditablePhase(now) &&
+                !into.isDestroyed &&
+                insertVariable(key)(into.state, into.dispatch.bind(into));
+              if (!placed) setNotice('The variable could not be placed where the cursor is.');
+              closeVariables();
+            }}
+            onCancel={closeVariables}
           />,
           document.body,
         )}

@@ -1237,3 +1237,61 @@ describe('the paragraph', () => {
     expect(empty.firstChild!.type.name).toBe('paragraph');
   });
 });
+
+describe('a variable through the mapping (the R5 plan, R5b)', () => {
+  const variable = { type: 'variable' as const, name: 'review_date' };
+
+  it('opens for editing a component holding a variable in a paragraph, a cell or a footnote, and stores it as it came', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p0',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Review by ', marks: [] },
+            variable,
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [variable] }],
+            },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'As at ', marks: [] }, variable],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [variable] }],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    const opened = openedDoc(stored);
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
+  });
+
+  it('is an inline atom with no marks, never in preformatted text, never guessed from an element', () => {
+    const node = editorSchema.nodes.variable!;
+    expect(editorSchema.nodes.preformatted!.contentMatch.matchType(node)).toBeNull();
+    expect(node.spec.marks).toBe('');
+    expect(node.isAtom && node.isInline).toBe(true);
+    expect(node.spec.parseDOM).toBeUndefined();
+    // Copied as plain text, its key: what the surface shows of it.
+    expect(node.spec.leafText?.(node.create({ name: 'review_date' }))).toBe('review_date');
+  });
+});

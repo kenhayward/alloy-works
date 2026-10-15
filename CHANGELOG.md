@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.176.0 - 2026-10-15 (PR #643)
+
+Reuse's fifth slice: variables (the R5 plan).
+
+### Added
+
+- **Variables, through the API.** Declare a variable as a definition: its key, its type, where its value comes from (the document's parameters, then its fields) and how it prints in a title and in text. A publish prints each variable the document's text holds, records where its value came from, and fails by name where one has no value.
+- **Place a variable in text.** The editor's **Variable** button places one of the declared variables, chosen from a list by name, and shows its key; a publish prints its value. The definitions listing names each variable's key.
+
 ## 0.175.0 - 2026-10-15 (PR #638)
 
 Reuse's fourth slice: local overrides (the R4 plan).

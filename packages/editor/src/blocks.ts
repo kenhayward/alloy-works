@@ -6,6 +6,7 @@ import { Selection, TextSelection, type Command, type EditorState } from 'prosem
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
 import { canPlaceBinding } from './bindings.js';
+import { canPlaceVariable } from './variables.js';
 import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
@@ -154,7 +155,8 @@ export type BlockAction =
   | 'reference'
   | 'equation'
   | 'symbol'
-  | 'value';
+  | 'value'
+  | 'variable';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -933,6 +935,10 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // Reference's kind (B2-A): what it binds is chosen in the renderer's Value dialog.
     case 'value':
       return canPlaceBinding;
+    // Value's kind (the R5 plan, R5b): which variable is the author's to choose from the declared
+    // ones, in the renderer's dialog, which runs `insertVariable` with the answer.
+    case 'variable':
+      return canPlaceVariable;
   }
 }
 

@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { DEFINITION_SCHEMA_VERSION } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createDefinition, variablesByKey } from './definitions.js';
+import {
+  createDefinition,
+  listDefinitions,
+  recordDefinitionVersion,
+  variablesByKey,
+} from './definitions.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantTransaction } from './tables.js';
@@ -80,6 +85,13 @@ describe('variable definitions (the R5 plan, R5-A)', () => {
       name: 'Review date',
       sources: { parameter: 'review', field: field.definition.id },
     });
+    // Listed with its key, which an author chooses it by and text names it by (R5b).
+    const listed = await as((trx) => listDefinitions(trx));
+    expect(listed.items.find((each) => each.kind === 'variable')).toMatchObject({
+      name: 'Review date',
+      key: 'review_date',
+    });
+    expect(listed.items.find((each) => each.kind === 'field')).not.toHaveProperty('key');
   });
 
   it('refuses a variable taking a value from what is no field, and a key another variable has', async () => {
@@ -106,5 +118,35 @@ describe('variable definitions (the R5 plan, R5-A)', () => {
         sources: { parameter: 'plant' },
       }),
     ).toMatchObject({ answer: 'definition.name_taken' });
+  });
+
+  it('keeps a variable its key in its next version, since text names it by that key', async () => {
+    const made = await define('variable', {
+      name: 'Line',
+      key: 'line',
+      type: { base: 'text' },
+      sources: { parameter: 'line' },
+    });
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const next = (key: string) =>
+      as((trx) =>
+        recordDefinitionVersion(trx, {
+          id: made.definition.id,
+          openedFrom: made.definition.version.id,
+          definition: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            name: 'Line',
+            key,
+            type: { base: 'text' },
+            sources: { parameter: 'line_name' },
+          },
+          author: ada,
+        }),
+      );
+    expect(await next('line_name')).toMatchObject({
+      answer: 'definition.invalid',
+      failures: [{ field: made.definition.id, rule: 'fixed' }],
+    });
+    expect((await next('line')).answer).toBe('recorded');
   });
 });

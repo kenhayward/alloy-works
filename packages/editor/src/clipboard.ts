@@ -24,6 +24,7 @@ export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json'
 const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
+const variableNode = editorSchema.nodes.variable!;
 const figureNode = editorSchema.nodes.figure!;
 const boundTableNode = editorSchema.nodes.boundTable!;
 
@@ -124,7 +125,7 @@ export type PasteOutcome =
  * renamed every pasted binding, and each whose original identifier nothing else holds after the paste
  * is given it back (`bindingsGivenBack`), so the report says how many kept theirs and how many were
  * copied, each copy to be resolved in a document. A binding stands in a footnote's text as a
- * reference does.
+ * reference does, and so does a variable (the R5 plan, R5b).
  */
 export function pasteInto(
   state: EditorState,
@@ -164,7 +165,8 @@ export function pasteInto(
           !child.isText &&
           child.type !== crossReferenceNode &&
           child.type !== equationNode &&
-          child.type !== bindingNode
+          child.type !== bindingNode &&
+          child.type !== variableNode
         ) {
           refused.add(child.type.name);
         }

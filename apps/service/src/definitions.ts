@@ -127,6 +127,7 @@ export function definitionHandlers(
           id: each.id,
           kind: each.kind,
           name: each.name,
+          ...(each.key === undefined ? {} : { key: each.key }),
           version: {
             id: each.version.id,
             number: `${each.version.revision}.${each.version.version}`,

@@ -289,7 +289,7 @@ describe('a bound table over the whole system', () => {
       schemaVersion: number;
       values: Json[];
     };
-    expect(provenance.schemaVersion).toBe(4);
+    expect(provenance.schemaVersion).toBe(5);
     expect(provenance.values).toMatchObject([
       {
         node,

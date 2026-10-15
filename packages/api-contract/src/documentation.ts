@@ -551,7 +551,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getPresentation:
     'Returns the environment’s default presentation used for a component outside a document.',
   listDefinitions:
-    'Lists current field, metadata schema and component type definitions. A later version can change the current shape.',
+    'Lists current field, metadata schema, component type and variable definitions, each variable with the key text names it by. A later version can change the current shape.',
   createDefinition:
     'Creates one definition at version 0.1. Its kind determines which field, schema or component type structure is required.',
   getDefinition:

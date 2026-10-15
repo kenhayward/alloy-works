@@ -49,6 +49,12 @@ const PATHS: Record<string, readonly string[]> = {
     'M5 4.2c0-.9 1.3-1.4 3-1.4s3 .5 3 1.4v5.6c0 .9-1.3 1.4-3 1.4s-3-.5-3-1.4z',
     'M5 4.2c0 .9 1.3 1.4 3 1.4s3-.5 3-1.4',
   ],
+  // Braces round an x: a name standing for a value (the R5 plan, R5b).
+  Variable: [
+    'M5.5 3C4 3 4 4 4 5.2S3.6 7.6 2.5 8c1.1.4 1.5 1.6 1.5 2.8S4 13 5.5 13',
+    'M10.5 3C12 3 12 4 12 5.2s.4 2.4 1.5 2.8c-1.1.4-1.5 1.6-1.5 2.8S12 13 10.5 13',
+    'M6.8 6.3l2.4 3.4M9.2 6.3l-2.4 3.4',
+  ],
   // A pi, its bar curling in at the left as a typeset one does: the letter word processors draw on
   // their equation button, where a root sign reads as the square root alone (equations 1).
   Equation: [
