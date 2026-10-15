@@ -113,6 +113,11 @@ export const documentationGroups = [
         name: 'Impact',
         description: 'What a change to an artifact reaches, and what an artifact uses.',
       },
+      {
+        name: 'Jobs',
+        description:
+          "Follow, cancel and download work that outlives a request: each job is its submitter's alone.",
+      },
       { name: 'Settings', description: 'Read and change environment settings.' },
       {
         name: 'Legal holds',
@@ -326,7 +331,8 @@ const operationTags = {
     'removeGrant',
   ],
   Search: ['search'],
-  Impact: ['getArtifactImpact', 'getArtifactReferences'],
+  Impact: ['getArtifactImpact', 'getArtifactReferences', 'submitImpactReport'],
+  Jobs: ['getJob', 'cancelJob', 'downloadJob'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -496,6 +502,14 @@ const descriptions: Readonly<Record<string, string>> = {
     'States what deleting a component leaves - its versions, iterations, threads, suggestions and audit events, all kept - and everything that refuses deleting it now: a baseline or a publication that placed any version, a queued publish or preview, a document whose latest version references it, a legal hold on it or its space, a retention keep yet to pass, saying until when, or a lock held. A dependant the caller may not read is never named or counted: the refusal says only that one exists. Needs retire on the component, and answers a deleted one too.',
   deleteComponent:
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
+  submitImpactReport:
+    'Asks for the complete report of what a change to an artifact reaches, to the depth asked, from 1 to 10, as a job: answered at once with the job, accepted, to follow with getJob. The report has no cap: it is bounded by its depth, and walks as the caller, so nothing they may not read is in it or walked past. Retried with the same Idempotency-Key, it answers the same job. Needs read on the artifact.',
+  getJob:
+    "Reads a job: its state (accepted, running, succeeded, failed or cancelled), when it was asked for, when it started and finished, how far it has got, whether a cancel was asked for, and how it ended: a failed job's error in an error's shape, or what a finished or cancelled report walked. Only whoever submitted it reads it; anybody else is answered 404.",
+  cancelJob:
+    'Cancels a job. One not yet started is cancelled at once, having done nothing; a running one is asked to stop, which it does at its next step, keeping nothing and saying how far it got. A finished one is refused, job_finished. Only whoever submitted it may cancel it.',
+  downloadJob:
+    "Hands out a link, good for five minutes, to a succeeded job's result: an impact report's is JSON Lines, one artifact a line, nearest first, with its kind, title, depth and the artifact it was reached through. Refused, job_not_ready, until it has succeeded. Only whoever submitted it may download it.",
   getArtifactImpact:
     'Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. Each is reached by references alone, so a change would break or change it. Needs read on the artifact.',
   getArtifactReferences:

@@ -1125,6 +1125,14 @@ describe('routes that check a permission', () => {
     getComponentUses: () => ({ url: `/v1/components/${dosing}/uses`, status: 404 }),
     getArtifactImpact: () => ({ url: `/v1/artifacts/${dosing}/impact?depth=1`, status: 404 }),
     getArtifactReferences: () => ({ url: `/v1/artifacts/${dosing}/references`, status: 404 }),
+    submitImpactReport: () => ({
+      url: `/v1/artifacts/${dosing}/impact-reports`,
+      status: 404,
+      payload: { depth: 1 },
+    }),
+    getJob: () => ({ url: `/v1/jobs/${MISSING}`, status: 404 }),
+    cancelJob: () => ({ url: `/v1/jobs/${MISSING}/cancel`, status: 404 }),
+    downloadJob: () => ({ url: `/v1/jobs/${MISSING}/download`, status: 404 }),
     placeSection: () => ({
       url: `/v1/documents/${report}/placement`,
       status: 404,

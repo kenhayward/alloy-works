@@ -17957,6 +17957,10 @@
           "howItIsMet": "The impact report runs in the background with no result cap, bounded by depth and filtered by permission"
         },
         {
+          "id": "REL-050",
+          "howItIsMet": "The report is a job (service-foundations.md, \"Jobs\"): its identity at once, pollable with its depth reached, cancellable at its next depth, failing in an error's shape"
+        },
+        {
           "id": "REU-001",
           "howItIsMet": "A reference names a component the author may read, from any space (`mayReference`); `GET /v1/components/{id}/uses` lists every document placing it"
         },
@@ -18225,6 +18229,26 @@
         {
           "id": "API-008",
           "howItIsMet": "A mutating request with an `Idempotency-Key` records its response per tenant, and a repeat returns the recorded response"
+        },
+        {
+          "id": "API-040",
+          "howItIsMet": "Work that can outlive a request is submitted where its subject is and answered at once with an `api_job`, accepted; the platform queue carries it by id (Jobs, below)"
+        },
+        {
+          "id": "API-041",
+          "howItIsMet": "`GET /v1/jobs/{id}`: its state of five, when it started, and its progress, `done` of `of` in a unit, written by the worker in its own transaction at each step"
+        },
+        {
+          "id": "API-042",
+          "howItIsMet": "`POST /v1/jobs/{id}/cancel`: an accepted job is cancelled at once, having done nothing; a running one stops at its next step, its outcome saying how far it got; a finished one is refused"
+        },
+        {
+          "id": "API-043",
+          "howItIsMet": "A failed job keeps `failure`, an error's members but its trace, and stays readable after, as every finished job does"
+        },
+        {
+          "id": "API-057",
+          "howItIsMet": "A submit route takes an `Idempotency-Key` as every permission-checked mutating route does (API-008): a retry answers the job the first made"
         },
         {
           "id": "SCH-022",
@@ -19777,13 +19801,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 403,
+      "line": 410,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 416,
+      "line": 423,
       "kind": "title"
     },
     {
@@ -20083,7 +20107,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1241,
+      "line": 1265,
       "kind": "title"
     },
     {
@@ -20444,6 +20468,36 @@
       "id": "IAM-072",
       "file": "apps/service/src/invitation-routes.test.ts",
       "line": 151,
+      "kind": "title"
+    },
+    {
+      "id": "API-040",
+      "file": "apps/service/src/jobs-routes.test.ts",
+      "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "API-041",
+      "file": "apps/service/src/jobs-routes.test.ts",
+      "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "API-042",
+      "file": "apps/service/src/jobs-routes.test.ts",
+      "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "API-043",
+      "file": "apps/service/src/jobs-routes.test.ts",
+      "line": 86,
+      "kind": "title"
+    },
+    {
+      "id": "API-057",
+      "file": "apps/service/src/jobs-routes.test.ts",
+      "line": 55,
       "kind": "title"
     },
     {
@@ -23129,6 +23183,30 @@
       "kind": "title"
     },
     {
+      "id": "API-042",
+      "file": "apps/worker/src/impact-report.test.ts",
+      "line": 183,
+      "kind": "title"
+    },
+    {
+      "id": "API-043",
+      "file": "apps/worker/src/impact-report.test.ts",
+      "line": 219,
+      "kind": "title"
+    },
+    {
+      "id": "REL-032",
+      "file": "apps/worker/src/impact-report.test.ts",
+      "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "REL-050",
+      "file": "apps/worker/src/impact-report.test.ts",
+      "line": 154,
+      "kind": "title"
+    },
+    {
       "id": "COL-035",
       "file": "apps/worker/src/inbox-sweep.test.ts",
       "line": 111,
@@ -24241,25 +24319,25 @@
     {
       "id": "REL-018",
       "file": "packages/db/src/impact.test.ts",
-      "line": 412,
+      "line": 414,
       "kind": "title"
     },
     {
       "id": "REL-019",
       "file": "packages/db/src/impact.test.ts",
-      "line": 399,
+      "line": 401,
       "kind": "title"
     },
     {
       "id": "REL-020",
       "file": "packages/db/src/impact.test.ts",
-      "line": 399,
+      "line": 401,
       "kind": "title"
     },
     {
       "id": "REL-030",
       "file": "packages/db/src/impact.test.ts",
-      "line": 445,
+      "line": 447,
       "kind": "title"
     },
     {
@@ -24314,6 +24392,30 @@
       "id": "COL-063",
       "file": "packages/db/src/inbox.test.ts",
       "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "API-040",
+      "file": "packages/db/src/jobs.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "API-041",
+      "file": "packages/db/src/jobs.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "API-042",
+      "file": "packages/db/src/jobs.test.ts",
+      "line": 118,
+      "kind": "title"
+    },
+    {
+      "id": "API-043",
+      "file": "packages/db/src/jobs.test.ts",
+      "line": 155,
       "kind": "title"
     },
     {

@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.174.0 - 2026-10-15 (PR #636)
+
+Reuse's third slice: jobs through the API, and the complete impact report (the R3 plan).
+
+### Added
+
+- **Jobs, and the complete impact report, through the API.** Ask for everything a change to an artifact reaches, with no cap, as a job: follow its state and progress, cancel it, and download its result once it has succeeded. Each job is yours alone.
+
 ## 0.173.0 - 2026-10-15 (PR #635)
 
 Reuse's second slice: impact, and placing another document's section (the R2 plan).

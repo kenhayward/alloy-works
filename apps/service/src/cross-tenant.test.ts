@@ -37,6 +37,7 @@ import {
   type Tenant,
   type TenantDatabase,
   requestAuditExport,
+  submitImpactReport,
 } from '@alloy-works/db';
 import {
   freshDatabase,
@@ -255,6 +256,10 @@ const OTHER_TENANT_IDS: Readonly<
   getArtifactImpact: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getArtifactReferences: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   previewPlacement: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  submitImpactReport: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  getJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
+  cancelJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
+  downloadJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
   placeSection: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   deleteComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   undeleteComponent: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
@@ -458,6 +463,7 @@ const VALID_INPUT: Readonly<
   compareBaselineResolved: { query: 'with=now' },
   previewTemplateMove: { query: `to=${SESSION}` },
   getArtifactImpact: { query: 'depth=1' },
+  submitImpactReport: { payload: { depth: 1 } },
   previewPlacement: { query: `from=${SESSION}&section=x` },
   listChangesSince: { query: `since=2000-01-01T00:00:00Z&space=${SESSION}` },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
@@ -1012,6 +1018,24 @@ const notificationIn = async (tenant: Tenant, db: TenantDatabase) => {
       .returning('id')
       .executeTakeFirstOrThrow();
     return made.id;
+  });
+};
+
+/** A job in environment B, an impact report a principal of its own asked for (the R3 plan). */
+const jobIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const subject = await componentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const by = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (await submitImpactReport(trx, { by: by.id, subject, depth: 1 })).id;
   });
 };
 

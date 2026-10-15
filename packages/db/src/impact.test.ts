@@ -383,6 +383,8 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
           hard: true,
         },
       ],
+      depths: 1,
+      stopped: false,
       cut: false,
       more: false,
     });
@@ -403,7 +405,7 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
     const behind = await document(general, 'Behind it', [reference(hidden.artifactId)]);
 
     const asAda = await as((trx) => impact(trx, ada, picture.artifactId, 3));
-    expect(asAda).toEqual({ reached: [], cut: true, more: false });
+    expect(asAda).toEqual({ reached: [], depths: 3, stopped: false, cut: true, more: false });
     const asGrace = await as((trx) => impact(trx, grace, picture.artifactId, 3));
     expect(asGrace.reached.map((each) => each.id)).toEqual([hidden.artifactId, behind.artifactId]);
     expect(asGrace.cut).toBe(false);

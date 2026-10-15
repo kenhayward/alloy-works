@@ -79,6 +79,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/artifacts/{id}/impact-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for the complete report of what a change to an artifact reaches, as a job
+         * @description Asks for the complete report of what a change to an artifact reaches, to the depth asked, from 1 to 10, as a job: answered at once with the job, accepted, to follow with getJob. The report has no cap: it is bounded by its depth, and walks as the caller, so nothing they may not read is in it or walked past. Retried with the same Idempotency-Key, it answers the same job. Needs read on the artifact.
+         */
+        post: operations["submitImpactReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts/{id}/references": {
         parameters: {
             query?: never;
@@ -2270,6 +2290,66 @@ export interface paths {
          * @description Withdraws an unaccepted invitation and removes the principal and grants created for it.
          */
         delete: operations["withdrawInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A job: its state, when it started, how far it has got, and how it ended
+         * @description Reads a job: its state (accepted, running, succeeded, failed or cancelled), when it was asked for, when it started and finished, how far it has got, whether a cancel was asked for, and how it ended: a failed job's error in an error's shape, or what a finished or cancelled report walked. Only whoever submitted it reads it; anybody else is answered 404.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a job
+         * @description Cancels a job. One not yet started is cancelled at once, having done nothing; a running one is asked to stop, which it does at its next step, keeping nothing and saying how far it got. A finished one is refused, job_finished. Only whoever submitted it may cancel it.
+         */
+        post: operations["cancelJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A link to a succeeded job's result
+         * @description Hands out a link, good for five minutes, to a succeeded job's result: an impact report's is JSON Lines, one artifact a line, nearest first, with its kind, title, depth and the artifact it was reached through. Refused, job_not_ready, until it has succeeded. Only whoever submitted it may download it.
+         */
+        get: operations["downloadJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6415,6 +6495,232 @@ export interface operations {
                 };
             };
             /** @description A depth missing, or not from 1 to 10 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an artifact the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    submitImpactReport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "depth": 1
+                 *     }
+                 */
+                "application/json": {
+                    /** @description How many hops to walk, 1 to 10 (REL-017) */
+                    depth: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted: the job, to follow */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "kind": "impact_report",
+                     *       "subject": "00000000-0000-4000-8000-000000000001",
+                     *       "parameters": {
+                     *         "depth": -9007199254740991
+                     *       },
+                     *       "state": "accepted",
+                     *       "requestedAt": "example",
+                     *       "startedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "progress": {
+                     *         "done": -9007199254740991,
+                     *         "of": -9007199254740991,
+                     *         "unit": "example"
+                     *       },
+                     *       "cancelRequested": false,
+                     *       "failure": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "outcome": {
+                     *         "depthsWalked": -9007199254740991,
+                     *         "depthsAsked": -9007199254740991,
+                     *         "reached": -9007199254740991,
+                     *         "cut": false
+                     *       },
+                     *       "result": {
+                     *         "bytes": -9007199254740991,
+                     *         "sha256": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        /**
+                         * @description impact_report: what a change to `subject` reaches
+                         * @enum {string}
+                         */
+                        kind: "impact_report";
+                        /** @description What it is about: an impact report starts from this artifact */
+                        subject: string & (unknown & unknown);
+                        /** @description What it was asked with */
+                        parameters: {
+                            depth: number;
+                        };
+                        /**
+                         * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
+                         * @enum {string}
+                         */
+                        state: "accepted" | "running" | "succeeded" | "failed" | "cancelled";
+                        requestedAt: string;
+                        /** @description When it first started; null while accepted */
+                        startedAt: string | null;
+                        finishedAt: string | null;
+                        /** @description How far it has got, as `done` of `of` in `unit`; null before its first step */
+                        progress: {
+                            done: number;
+                            of: number;
+                            unit: string;
+                        } | null;
+                        /** @description Whether a cancel was asked for while it ran */
+                        cancelRequested: boolean;
+                        /** @description A failed job's error, in an error's shape but its trace (API-043) */
+                        failure: {
+                            code: string;
+                            message: string;
+                            rule?: string;
+                        } | null;
+                        /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
+                        outcome: {
+                            depthsWalked: number;
+                            depthsAsked: number;
+                            reached: number;
+                            /** @description Whether the walk met something the requester may not read: never what */
+                            cut: boolean;
+                        } | null;
+                        /** @description A succeeded job's result, to download */
+                        result: {
+                            bytes: number;
+                            sha256: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description A depth not from 1 to 10 */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47651,6 +47957,481 @@ export interface operations {
                 };
             };
             /** @description invitation_accepted */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "kind": "impact_report",
+                     *       "subject": "00000000-0000-4000-8000-000000000001",
+                     *       "parameters": {
+                     *         "depth": -9007199254740991
+                     *       },
+                     *       "state": "accepted",
+                     *       "requestedAt": "example",
+                     *       "startedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "progress": {
+                     *         "done": -9007199254740991,
+                     *         "of": -9007199254740991,
+                     *         "unit": "example"
+                     *       },
+                     *       "cancelRequested": false,
+                     *       "failure": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "outcome": {
+                     *         "depthsWalked": -9007199254740991,
+                     *         "depthsAsked": -9007199254740991,
+                     *         "reached": -9007199254740991,
+                     *         "cut": false
+                     *       },
+                     *       "result": {
+                     *         "bytes": -9007199254740991,
+                     *         "sha256": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        /**
+                         * @description impact_report: what a change to `subject` reaches
+                         * @enum {string}
+                         */
+                        kind: "impact_report";
+                        /** @description What it is about: an impact report starts from this artifact */
+                        subject: string & (unknown & unknown);
+                        /** @description What it was asked with */
+                        parameters: {
+                            depth: number;
+                        };
+                        /**
+                         * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
+                         * @enum {string}
+                         */
+                        state: "accepted" | "running" | "succeeded" | "failed" | "cancelled";
+                        requestedAt: string;
+                        /** @description When it first started; null while accepted */
+                        startedAt: string | null;
+                        finishedAt: string | null;
+                        /** @description How far it has got, as `done` of `of` in `unit`; null before its first step */
+                        progress: {
+                            done: number;
+                            of: number;
+                            unit: string;
+                        } | null;
+                        /** @description Whether a cancel was asked for while it ran */
+                        cancelRequested: boolean;
+                        /** @description A failed job's error, in an error's shape but its trace (API-043) */
+                        failure: {
+                            code: string;
+                            message: string;
+                            rule?: string;
+                        } | null;
+                        /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
+                        outcome: {
+                            depthsWalked: number;
+                            depthsAsked: number;
+                            reached: number;
+                            /** @description Whether the walk met something the requester may not read: never what */
+                            cut: boolean;
+                        } | null;
+                        /** @description A succeeded job's result, to download */
+                        result: {
+                            bytes: number;
+                            sha256: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such job, or one somebody else submitted */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    cancelJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled, having done nothing, if it had not started; or asked to stop, which a running job does at its next step */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "kind": "impact_report",
+                     *       "subject": "00000000-0000-4000-8000-000000000001",
+                     *       "parameters": {
+                     *         "depth": -9007199254740991
+                     *       },
+                     *       "state": "accepted",
+                     *       "requestedAt": "example",
+                     *       "startedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "progress": {
+                     *         "done": -9007199254740991,
+                     *         "of": -9007199254740991,
+                     *         "unit": "example"
+                     *       },
+                     *       "cancelRequested": false,
+                     *       "failure": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "outcome": {
+                     *         "depthsWalked": -9007199254740991,
+                     *         "depthsAsked": -9007199254740991,
+                     *         "reached": -9007199254740991,
+                     *         "cut": false
+                     *       },
+                     *       "result": {
+                     *         "bytes": -9007199254740991,
+                     *         "sha256": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        /**
+                         * @description impact_report: what a change to `subject` reaches
+                         * @enum {string}
+                         */
+                        kind: "impact_report";
+                        /** @description What it is about: an impact report starts from this artifact */
+                        subject: string & (unknown & unknown);
+                        /** @description What it was asked with */
+                        parameters: {
+                            depth: number;
+                        };
+                        /**
+                         * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
+                         * @enum {string}
+                         */
+                        state: "accepted" | "running" | "succeeded" | "failed" | "cancelled";
+                        requestedAt: string;
+                        /** @description When it first started; null while accepted */
+                        startedAt: string | null;
+                        finishedAt: string | null;
+                        /** @description How far it has got, as `done` of `of` in `unit`; null before its first step */
+                        progress: {
+                            done: number;
+                            of: number;
+                            unit: string;
+                        } | null;
+                        /** @description Whether a cancel was asked for while it ran */
+                        cancelRequested: boolean;
+                        /** @description A failed job's error, in an error's shape but its trace (API-043) */
+                        failure: {
+                            code: string;
+                            message: string;
+                            rule?: string;
+                        } | null;
+                        /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
+                        outcome: {
+                            depthsWalked: number;
+                            depthsAsked: number;
+                            reached: number;
+                            /** @description Whether the walk met something the requester may not read: never what */
+                            cut: boolean;
+                        } | null;
+                        /** @description A succeeded job's result, to download */
+                        result: {
+                            bytes: number;
+                            sha256: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such job, or one somebody else submitted */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description job_finished: it has finished already */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    downloadJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A link to the result */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "download": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description A link to the result, JSON Lines, good for five minutes */
+                        download: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such job, or one somebody else submitted */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description job_not_ready: it has not succeeded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

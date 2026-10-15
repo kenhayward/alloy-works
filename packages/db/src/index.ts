@@ -775,3 +775,18 @@ export {
   type PlacementAnswer,
   type PlacementReport,
 } from './placement.js';
+export {
+  cancelJob,
+  failJob,
+  finishJob,
+  progressJob,
+  readJob,
+  startJob,
+  submitImpactReport,
+  type CancelAnswer,
+  type ImpactOutcome,
+  type JobFailure,
+  type JobState,
+  type StoredJob,
+} from './jobs.js';
+export { mayStillRead } from './jobs.js';
