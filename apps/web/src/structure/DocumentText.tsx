@@ -736,6 +736,12 @@ export function DocumentText({
             {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
                 (ADR-0056). */}
             {titled(node, depth)}
+            {editing === node.id && (overridesOf?.get(node.id) ?? []).length > 0 && (
+              <p className={styles['cannot']} role="note">
+                This document overrides some of this component&apos;s paragraphs. You are editing
+                the component itself, as every document has it.
+              </p>
+            )}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
               <NewerVersion
                 // A comparison shown is of the pair it was asked for: another pair starts afresh.

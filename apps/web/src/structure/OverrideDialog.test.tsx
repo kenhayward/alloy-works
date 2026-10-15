@@ -80,4 +80,34 @@ describe('overrides of a reference, on the page', () => {
       [text('Close the valve.')],
     ]);
   });
+
+  it('offers no paragraph holding more than text, which an override would take away', () => {
+    const noted = {
+      ...content,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [text('See the note.'), { type: 'footnote', id: 'f1', content: [] }],
+        },
+      ],
+    };
+    render(
+      <OverrideDialog
+        name="Flush the line"
+        content={noted}
+        version={V2}
+        overrides={[]}
+        current={[]}
+        busy={false}
+        onSave={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(
+      screen.getByText('This component has no paragraph of plain text to override.'),
+    ).toBeVisible();
+  });
 });

@@ -65,6 +65,9 @@ export function paragraphsOf(content: unknown): { readonly id: string; readonly 
     if (!isRecord(block) || block['type'] !== 'paragraph' || typeof block['id'] !== 'string') {
       return [];
     }
+    // Text alone: a paragraph holding a footnote, a reference, a value or an equation is not offered.
+    const inline = Array.isArray(block['content']) ? block['content'] : [];
+    if (!inline.every((node) => isRecord(node) && node['type'] === 'text')) return [];
     return [{ id: block['id'], text: wordsOf(block['content']) }];
   });
 }

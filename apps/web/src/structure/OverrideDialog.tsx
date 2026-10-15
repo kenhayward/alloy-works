@@ -73,9 +73,11 @@ export function OverrideDialog({
         <p className={styles['muted']}>
           Change a paragraph&apos;s words in this document alone. The component, and every other
           document, keeps its own. An overridden paragraph is plain text: its formatting is not
-          kept.
+          kept. A paragraph holding a footnote, a reference, a value or an equation is not offered.
         </p>
-        {paragraphs.length === 0 && <p>This component has no paragraph to override.</p>}
+        {paragraphs.length === 0 && (
+          <p>This component has no paragraph of plain text to override.</p>
+        )}
         {paragraphs.map((paragraph, at) => {
           const override = said.get(paragraph.id);
           return (

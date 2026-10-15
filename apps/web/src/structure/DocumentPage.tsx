@@ -1780,11 +1780,19 @@ export function DocumentPage({
       } catch {
         anchor = null;
       }
-      setProposed(anchor === null ? null : { node, anchor });
+      // Not in a paragraph overridden here: those words are this document's, not the component's,
+      // which a thread is on (the R4 final review).
+      const overriddenHere =
+        anchor !== null &&
+        'block' in anchor &&
+        (overridesByNode.get(node) ?? []).some(
+          (each) => !each.stale && each.block === (anchor as { block: string }).block,
+        );
+      setProposed(anchor === null || overriddenHere ? null : { node, anchor });
     };
     page.addEventListener('selectionchange', choose);
     return () => page.removeEventListener('selectionchange', choose);
-  }, [chosenMode, texts]);
+  }, [chosenMode, texts, overridesByNode]);
   const showBoundaries = (shown: boolean) => {
     setBoundaries(shown);
     try {
