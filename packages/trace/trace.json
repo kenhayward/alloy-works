@@ -16526,6 +16526,10 @@
           "howItIsMet": "`compareContent` (content), `compareOutlines` (structure) and `compareResolved` (resolved output), in `packages/domain`"
         },
         {
+          "id": "REU-014",
+          "howItIsMet": "Resolved comparison names `overridden` for a node whose document's overrides differ, apart from `edited`: the component is the same, so it is never a fork"
+        },
+        {
           "id": "VER-025",
           "howItIsMet": "Any two versions of a component (`GET /v1/components/{id}/comparison?from&to`); any two baselines of a document, or a baseline and the document as it resolves now (`GET /v1/baselines/{id}/comparison?with`)"
         },
@@ -17985,6 +17989,10 @@
           "howItIsMet": "Each document in the uses carries whether its workflow state is approved, and the warning lists approved documents apart from drafts"
         },
         {
+          "id": "REU-013",
+          "howItIsMet": "Each reference in where-used says whether it carries local overrides"
+        },
+        {
           "id": "REU-006",
           "howItIsMet": "\"Where is this used\" is the reference index read backwards, one hop"
         },
@@ -18423,6 +18431,18 @@
         {
           "id": "REU-054",
           "howItIsMet": "A placement adds a new section of the author's, titled by them, holding one new reference per occurrence in the found section's subtree in the mode chosen; nothing is shared and no value copied; refused where the source moved since the report or a component is not the author's to reference"
+        },
+        {
+          "id": "REU-011",
+          "howItIsMet": "A reference's `overrides` replace a paragraph's text of its component in this document alone, at most twenty: text runs and their marks, so no number, binding, footnote or cross-reference changes ([the R4 plan](../plans/2026-10-15-r4-local-overrides.md), R4-A)"
+        },
+        {
+          "id": "REU-012",
+          "howItIsMet": "Overrides are a member of the reference node, set by the outline's `set` whole; the component is never written"
+        },
+        {
+          "id": "REU-015",
+          "howItIsMet": "An override applies only where its paragraph is canonically as it stood at `against`; otherwise it is stale: the publish fails `override_stale`, naming node and block, and the texts say so beside it"
         },
         {
           "id": "STR-002",
@@ -20579,6 +20599,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-011",
+      "file": "apps/service/src/override-routes.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
+      "id": "REU-015",
+      "file": "apps/service/src/override-routes.test.ts",
+      "line": 24,
+      "kind": "title"
+    },
+    {
       "id": "IAM-040",
       "file": "apps/service/src/own-sessions.test.ts",
       "line": 33,
@@ -22231,19 +22263,19 @@
     {
       "id": "REU-007",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 56,
+      "line": 58,
       "kind": "title"
     },
     {
       "id": "REU-008",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 115,
+      "line": 117,
       "kind": "title"
     },
     {
       "id": "REU-009",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
-      "line": 115,
+      "line": 117,
       "kind": "title"
     },
     {
@@ -24455,6 +24487,30 @@
       "kind": "title"
     },
     {
+      "id": "REU-011",
+      "file": "packages/db/src/overrides.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "REU-012",
+      "file": "packages/db/src/overrides.test.ts",
+      "line": 190,
+      "kind": "title"
+    },
+    {
+      "id": "REU-013",
+      "file": "packages/db/src/overrides.test.ts",
+      "line": 240,
+      "kind": "title"
+    },
+    {
+      "id": "REU-015",
+      "file": "packages/db/src/overrides.test.ts",
+      "line": 210,
+      "kind": "title"
+    },
+    {
       "id": "REU-046",
       "file": "packages/db/src/placement.test.ts",
       "line": 175,
@@ -24961,13 +25017,13 @@
     {
       "id": "REU-009",
       "file": "packages/db/src/uses.test.ts",
-      "line": 186,
+      "line": 191,
       "kind": "title"
     },
     {
       "id": "REU-010",
       "file": "packages/db/src/uses.test.ts",
-      "line": 221,
+      "line": 226,
       "kind": "title"
     },
     {
@@ -25322,6 +25378,12 @@
       "id": "VER-051",
       "file": "packages/domain/src/compare/content.test.ts",
       "line": 220,
+      "kind": "title"
+    },
+    {
+      "id": "REU-014",
+      "file": "packages/domain/src/compare/resolved.test.ts",
+      "line": 84,
       "kind": "title"
     },
     {
@@ -26029,7 +26091,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 697,
+      "line": 703,
       "kind": "title"
     },
     {
@@ -26875,7 +26937,25 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 709,
+      "line": 717,
+      "kind": "title"
+    },
+    {
+      "id": "REU-011",
+      "file": "packages/domain/src/structure/overrides.test.ts",
+      "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "REU-012",
+      "file": "packages/domain/src/structure/overrides.test.ts",
+      "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "REU-015",
+      "file": "packages/domain/src/structure/overrides.test.ts",
+      "line": 46,
       "kind": "title"
     },
     {

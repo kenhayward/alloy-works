@@ -8646,8 +8646,8 @@ export interface operations {
                             node: string;
                             /** @description The component's title */
                             title: string;
-                            /** @description Why it prints differently: somebody edited it, its data changed, or a definition it was written against did */
-                            causes: ("edited" | "data" | "definition")[];
+                            /** @description Why it prints differently: somebody edited it, its data changed, a definition it was written against did, or the document's local overrides of it did, which leave the component as it is */
+                            causes: ("edited" | "data" | "definition" | "overridden")[];
                             values: {
                                 binding: string;
                                 older: string | null;
@@ -8808,7 +8808,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -8897,7 +8897,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -15130,6 +15130,8 @@ export interface operations {
                                     /** @description `revision.version`, as `0.2` */
                                     number: string;
                                 } | null;
+                                /** @description Whether it carries local overrides in its document, which no other document has */
+                                overridden: boolean;
                             }[];
                         }[];
                         /** @description Whether a document the caller may not read places it too: never how many, nor which */
@@ -22126,7 +22128,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -22268,7 +22270,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -36856,6 +36858,79 @@ export interface operations {
                             /** @constant */
                             kind: "approved";
                         };
+                        overrides?: {
+                            block: string;
+                            against: string;
+                            text: {
+                                /** @constant */
+                                type: "text";
+                                value: string;
+                                /** @default [] */
+                                marks?: ({
+                                    /** @constant */
+                                    type: "emphasis";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "strong";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "underline";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "subscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "superscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "inlineCode";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "quotedPhrase";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "definedTerm";
+                                    id: string;
+                                    term: string;
+                                } | {
+                                    /** @constant */
+                                    type: "condition";
+                                    id: string;
+                                    axis: string;
+                                    values: string[];
+                                } | {
+                                    /** @constant */
+                                    type: "suggestion";
+                                    id: string;
+                                    /** @enum {string} */
+                                    operation: "insert" | "delete" | "replace";
+                                    author: string;
+                                } | {
+                                    /** @constant */
+                                    type: "comment";
+                                    id: string;
+                                    threadId: string;
+                                } | {
+                                    /** @constant */
+                                    type: "hyperlink";
+                                    id: string;
+                                    href: string;
+                                    title?: string;
+                                } | {
+                                    /** @constant */
+                                    type: "language";
+                                    id: string;
+                                    tag: string;
+                                })[];
+                            }[];
+                        }[];
                         /** @description A section's field values, whole: each a field its document's template applies to sections */
                         values?: {
                             [key: string]: unknown;
@@ -40560,7 +40635,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -41054,7 +41129,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -42379,6 +42454,15 @@ export interface operations {
                             revision?: number;
                             /** @description True where the component's review-by day has passed (LIF-018); absent otherwise, or where the caller may not read it */
                             pastReview?: boolean;
+                            /** @description This document's local overrides of the component's paragraphs (REU-011): each paragraph's text here, applied where it is not stale; absent where none, or where the caller may not read the component */
+                            overrides?: {
+                                block: string;
+                                text: {
+                                    [key: string]: unknown;
+                                }[];
+                                /** @description Whether its paragraph has changed or gone since: then it is not applied */
+                                stale: boolean;
+                            }[];
                             /** @description For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041) */
                             moved?: {
                                 id: string;
@@ -49912,7 +49996,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */

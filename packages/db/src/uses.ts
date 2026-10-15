@@ -15,6 +15,8 @@ export interface UsingReference {
   /** `latest` sees each new version, `approved` each approved revision, `pinned` nothing (R1-C). */
   readonly mode: 'latest' | 'approved' | 'pinned';
   readonly version: { readonly id: string; readonly number: string } | null;
+  /** Whether it carries local overrides in its document (REU-013; the R4 plan, R4-E). */
+  readonly overridden: boolean;
 }
 
 export interface UsingDocument {
@@ -111,6 +113,7 @@ export async function componentUses(
           mode.kind === 'pinned'
             ? { id: mode.version, number: numbers.get(mode.version) ?? '' }
             : null,
+        overridden: (node.overrides?.length ?? 0) > 0,
       });
     });
     const state = states.get(id);

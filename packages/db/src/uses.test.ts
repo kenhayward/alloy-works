@@ -164,7 +164,12 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
           title: 'Pump manual',
           state: { key: 'draft', name: 'Draft', approved: false },
           references: [
-            { node: pinned.id, mode: 'pinned', version: { id: step.id, number: '0.1' } },
+            {
+              node: pinned.id,
+              mode: 'pinned',
+              version: { id: step.id, number: '0.1' },
+              overridden: false,
+            },
           ],
         },
         {
@@ -172,8 +177,8 @@ describe('where a component is used (relationships.md; the R1 plan, R1-B and R1-
           title: 'Pump report',
           state: { key: 'draft', name: 'Draft', approved: false },
           references: [
-            { node: floating.id, mode: 'latest', version: null },
-            { node: tracking.id, mode: 'approved', version: null },
+            { node: floating.id, mode: 'latest', version: null, overridden: false },
+            { node: tracking.id, mode: 'approved', version: null, overridden: false },
           ],
         },
       ],

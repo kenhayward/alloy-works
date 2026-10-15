@@ -14,6 +14,7 @@ import {
   type OutlineDocument,
   type OutlineNode,
 } from './outline.js';
+import { OVERRIDES_MAX, overrideSchema } from './overrides.js';
 
 // Reused rather than restated: every identifier and every switch an operation names is the same zod
 // schema the node itself carries (`sectionNodeSchema` and `referenceNodeSchema` share `positional`),
@@ -72,6 +73,15 @@ export const outlineOperationSchema = z
       matter: sectionNodeSchema.shape.matter.optional(),
       pageBreak: sectionNodeSchema.shape.pageBreak.optional(),
       mode: referenceModeSchema.optional(),
+      // A reference's local overrides, whole (REU-011; the R4 plan, R4-B): `[]` clears them.
+      overrides: z
+        .array(overrideSchema)
+        .max(OVERRIDES_MAX)
+        .refine(
+          (each) => new Set(each.map((one) => one.block)).size === each.length,
+          'A block is overridden once',
+        )
+        .optional(),
       // A section's field values, whole (STR-060): what they may hold is its document's template's,
       // which `applyOutlineOperation` is given as its rules and checks them against. Storable here,
       // as a title is, so a character Postgres cannot hold is the caller's mistake and not a 500.
@@ -95,6 +105,7 @@ export const outlineOperationSchema = z
       operation.matter !== undefined ||
       operation.pageBreak !== undefined ||
       operation.mode !== undefined ||
+      operation.overrides !== undefined ||
       operation.values !== undefined,
     'A set operation must name at least one switch',
   );
@@ -386,6 +397,9 @@ function set(
   if (operation.mode !== undefined && node.type !== 'reference') {
     return refuse('A mode belongs to a component reference, not a section');
   }
+  if (operation.overrides !== undefined && node.type !== 'reference') {
+    return refuse('An override belongs to a component reference, not a section');
+  }
   if (operation.values !== undefined) {
     if (node.type !== 'section') return refuse(REFERENCE_VALUES);
     const failures = checkWrittenValues(sectionFields, operation.values);
@@ -403,10 +417,14 @@ function set(
   if (operation.values !== undefined) {
     patch.values = writtenValues(sectionFields, operation.values);
   }
-  const result = replaceNode(outline.nodes, operation.node, {
-    ...node,
-    ...patch,
-  } as OutlineNode);
+  // Overrides whole, as values are; none at all is no member (R4-B).
+  let next = { ...node, ...patch } as OutlineNode;
+  if (operation.overrides !== undefined && next.type === 'reference') {
+    const { overrides: dropped, ...rest } = next;
+    void dropped;
+    next = operation.overrides.length === 0 ? rest : { ...rest, overrides: operation.overrides };
+  }
+  const result = replaceNode(outline.nodes, operation.node, next);
   return applyNodes(outline, result.nodes);
 }
 

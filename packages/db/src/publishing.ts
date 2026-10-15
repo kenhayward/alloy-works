@@ -64,6 +64,7 @@ import {
   type SortOf,
 } from './listing.js';
 import { lockBindings } from './datasets.js';
+import { applyOutlineOverrides } from './overrides.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -780,6 +781,20 @@ export async function resolvePublishable(
     trx,
     outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
   );
+  // An override that no longer stands fails loudly, by node and block (REU-015; the R4 plan, R4-C).
+  const stale = (
+    await applyOutlineOverrides(
+      trx,
+      read.outline,
+      new Map(resolved.map((each) => [each.node, each.content])),
+    )
+  ).stale.map(({ node, block }) => ({
+    stage: 'resolve' as const,
+    code: 'override_stale' as const,
+    node,
+    block,
+    detail: null,
+  }));
   // Decided from what the publisher may read, as everything here is: a component they may not read is
   // never read for a page, and fails the request as an unreadable occurrence instead.
   if (formats !== null && !formats.includes('pdf')) {
@@ -830,7 +845,7 @@ export async function resolvePublishable(
     layout,
     theme,
     resolved,
-    failures: [...failures, ...held, ...images.failures],
+    failures: [...failures, ...stale, ...held, ...images.failures],
     bindings: bindings.held,
     assets: images.assets,
   };
@@ -1358,6 +1373,18 @@ export async function publicationInputs(
       throw new Error(`The component ${row.component_id} at ${row.version_id} does not read`);
     }
     occurrences.set(row.node, { version: row.version_id, content: content.document });
+  }
+  // Each occurrence as this document shows it, its overrides applied where they stand (R4-D): one
+  // that does not stand was a failure when the request was made.
+  const shown = (
+    await applyOutlineOverrides(
+      trx,
+      read.outline,
+      new Map([...occurrences].map(([node, each]) => [node, each.content])),
+    )
+  ).contents;
+  for (const [node, each] of occurrences) {
+    occurrences.set(node, { ...each, content: shown.get(node) ?? each.content });
   }
   const images = await trx
     .selectFrom('publication_request_asset as q')

@@ -27,6 +27,7 @@ export function usesHandlers() {
             node: reference.node,
             mode: reference.mode,
             version: reference.version && { ...reference.version },
+            overridden: reference.overridden,
           })),
         })),
         unreadableDocuments: uses.unreadableDocuments,

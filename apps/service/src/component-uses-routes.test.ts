@@ -32,10 +32,10 @@ describe('where a component is used', () => {
     }>();
     expect(Object.fromEntries(body.documents.map((each) => [each.id, each.references]))).toEqual({
       [here.id]: [
-        { node: here.nodes[0], mode: 'latest', version: null },
-        { node: here.nodes[1], mode: 'latest', version: null },
+        { node: here.nodes[0], mode: 'latest', version: null, overridden: false },
+        { node: here.nodes[1], mode: 'latest', version: null, overridden: false },
       ],
-      [there.id]: [{ node: there.nodes[0], mode: 'latest', version: null }],
+      [there.id]: [{ node: there.nodes[0], mode: 'latest', version: null, overridden: false }],
     });
     expect(body.unreadableDocuments).toBe(false);
   });
@@ -53,7 +53,7 @@ describe('where a component is used', () => {
           id: here.id,
           title: 'The readings report',
           state: { key: 'draft', name: 'Draft', approved: false },
-          references: [{ node: here.nodes[0], mode: 'latest', version: null }],
+          references: [{ node: here.nodes[0], mode: 'latest', version: null, overridden: false }],
         },
       ],
       unreadableDocuments: true,

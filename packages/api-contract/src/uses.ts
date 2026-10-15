@@ -14,6 +14,9 @@ const UsingReference = z.object({
     .object({ id: LowercaseUuid, number: z.string().describe('`revision.version`, as `0.2`') })
     .nullable()
     .describe('pinned: the version it pins; null otherwise'),
+  overridden: z
+    .boolean()
+    .describe('Whether it carries local overrides in its document, which no other document has'),
 });
 
 const UsingDocument = z.object({

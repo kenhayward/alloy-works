@@ -20,6 +20,8 @@ export interface ResolvedNode {
   readonly definitions: readonly string[];
   /** Each binding it holds, by its identifier. */
   readonly values: ReadonlyMap<string, ResolvedValue>;
+  /** Its document's local overrides of it, as one string; empty where none (REU-014; R4-F). */
+  readonly overrides?: string;
 }
 
 /** A side as a publish would make it: the pins, or the document now. */
@@ -35,7 +37,7 @@ export interface ResolvedSide {
 }
 
 export type DocumentCause = 'layout' | 'theme' | 'template' | 'definition' | 'parameters';
-export type NodeCause = 'edited' | 'data' | 'definition';
+export type NodeCause = 'edited' | 'data' | 'definition' | 'overridden';
 
 export interface ResolvedComparison {
   /** What differs for the whole document. */
@@ -80,6 +82,8 @@ export function compareResolved(older: ResolvedSide, newer: ResolvedSide): Resol
       ...(was.version !== now.version ? (['edited'] as const) : []),
       ...(dataChanged ? (['data'] as const) : []),
       ...(!sameSet(was.definitions, now.definitions) ? (['definition'] as const) : []),
+      // An override is the document's, never a fork of the component (REU-014; the R4 plan, R4-F).
+      ...((was.overrides ?? '') !== (now.overrides ?? '') ? (['overridden'] as const) : []),
     ];
     const values = bindings.flatMap((binding) => {
       const before = was.values.get(binding)?.printed ?? null;

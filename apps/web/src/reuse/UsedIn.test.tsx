@@ -20,21 +20,23 @@ const uses: Uses = {
       id: MANUAL,
       title: 'Pump manual',
       state: approved,
-      references: [{ node: 'n1', mode: 'latest', version: null }],
+      references: [{ node: 'n1', mode: 'latest', version: null, overridden: false }],
     },
     {
       id: NOTES,
       title: 'Pump notes',
       state: draft,
-      references: [{ node: 'n2', mode: 'pinned', version: { id: 'v1', number: '0.1' } }],
+      references: [
+        { node: 'n2', mode: 'pinned', version: { id: 'v1', number: '0.1' }, overridden: false },
+      ],
     },
     {
       id: REPORT,
       title: 'Pump report',
       state: draft,
       references: [
-        { node: 'n3', mode: 'latest', version: null },
-        { node: 'n4', mode: 'approved', version: null },
+        { node: 'n3', mode: 'latest', version: null, overridden: false },
+        { node: 'n4', mode: 'approved', version: null, overridden: false },
       ],
     },
   ],
