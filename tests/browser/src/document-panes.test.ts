@@ -67,7 +67,16 @@ describe("the panes beside a document's text, in Chromium", () => {
       // Scrolled, the text moves and each pane stays under the header, at the same height.
       await page.mouse.move(700, 500);
       await page.mouse.wheel(0, 1200);
-      await expect.poll(async () => (await tops()).outline).toBeLessThan(start.outline);
+      // Until the scroll has settled, not merely begun: measured mid-scroll, the band above the
+      // panes has not yet reached the header, and every distance below is a moment's.
+      await expect
+        .poll(async () => {
+          const before = await tops();
+          await page.waitForTimeout(100);
+          const after = await tops();
+          return after.outline < start.outline && after.outline === before.outline;
+        })
+        .toBe(true);
       const scrolled = await tops();
       expect(scrolled.panels).toBe(scrolled.outline);
       const header = await page.evaluate(() =>
