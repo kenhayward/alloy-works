@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { OverrideView } from './overrides.js';
 import { Chip } from '../parts/Chip.js';
 import {
   conditions,
@@ -437,6 +438,8 @@ export function DocumentText({
   resolved,
   revisions,
   pastReview,
+  overridesOf,
+  onOverride,
   choosing,
   bindingStates = null,
   onProvenance,
@@ -487,6 +490,10 @@ export function DocumentText({
   revisions?: ReadonlyMap<string, number>;
   /** The references whose component is past its review-by day, by node (LIF-018; WF5-H). */
   pastReview?: ReadonlySet<string>;
+  /** Each reference's local overrides by node, and whether each stands (REU-011; the R4 plan, R4-G). */
+  overridesOf?: ReadonlyMap<string, readonly OverrideView[]>;
+  /** Asked to change a reference's overrides, by node: offered to whoever may edit the document. */
+  onOverride?: (node: string) => void;
   /**
    * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
    * reader who may restructure the document. Without it the label says the version and offers nothing.
@@ -667,6 +674,22 @@ export function DocumentText({
                       </span>
                     )}
                     {pastReview?.has(node.id) === true && <Chip tone="warn">Past review</Chip>}
+                    {(overridesOf?.get(node.id) ?? []).some((each) => !each.stale) && (
+                      <Chip>Overridden here</Chip>
+                    )}
+                    {(overridesOf?.get(node.id) ?? []).some((each) => each.stale) && (
+                      <Chip tone="warn">Override no longer applies</Chip>
+                    )}
+                    {onOverride && texts?.has(node.id) && editing !== node.id && (
+                      <button
+                        type="button"
+                        className={styles['open']}
+                        onClick={() => onOverride(node.id)}
+                        aria-label={`Overrides of ${nodeName(node, names)}`}
+                      >
+                        Overrides
+                      </button>
+                    )}
                     <EditableState
                       state={editable?.get(node.id)}
                       openHere={openComponent !== null && openComponent === node.component}
@@ -713,6 +736,12 @@ export function DocumentText({
             {/* Kept while it is edited in place: the band's strip names it, the sheet still sets it
                 (ADR-0056). */}
             {titled(node, depth)}
+            {editing === node.id && (overridesOf?.get(node.id) ?? []).length > 0 && (
+              <p className={styles['cannot']} role="note">
+                This document overrides some of this component&apos;s paragraphs. You are editing
+                the component itself, as every document has it.
+              </p>
+            )}
             {node.component !== null && editing !== node.id && newer?.byNode.has(node.id) && (
               <NewerVersion
                 // A comparison shown is of the pair it was asked for: another pair starts afresh.

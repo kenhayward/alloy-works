@@ -1085,6 +1085,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   on to what references those, to a depth from 1 to 10, nearest first and at most 1,000. Nothing you
   may not read is named or walked past; the answer says only that the walk was cut there.
   `GET /v1/artifacts/{id}/references` says what an artifact's latest version references.
+- **Local overrides.** A component's label in a document offers **Overrides** to whoever may edit the
+  document: change a paragraph's words in this document alone, as plain text, and the component and
+  every other document keep theirs. The label says **Overridden here**; a publish applies it while
+  the paragraph stands as it was, and once that paragraph changes the label says **Override no longer
+  applies** and the publish fails by name until the override is changed or removed. Where a component
+  is used marks the references overriding it, and comparing a baseline names an override as one,
+  never as an edit.
 - **Jobs, and the complete impact report, through the API.** `POST /v1/artifacts/{id}/impact-reports`
   asks for everything a change reaches, to a depth, with no cap: it is answered at once with a job to
   follow at `/v1/jobs/{id}` - its state, when it started, how many depths it has walked - and to

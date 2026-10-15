@@ -100,6 +100,15 @@ describe('a local override on a reference (the R4 plan, R4-A to R4-C)', () => {
     expect(overridesRefusal([{ ...override, block: 'h1' }], contents)).toMatch(/paragraph/);
     expect(overridesRefusal([{ ...override, block: 'p9' }], contents)).toMatch(/paragraph/);
     expect(overridesRefusal([{ ...override, against: V2 }], contents)).toMatch(/version/);
+    // A paragraph holding a footnote, a reference, a value or an equation is not overridden: its text
+    // alone would take them away.
+    const noted = content('Open the drain.');
+    (noted.content[0] as { content: unknown[] }).content.push({
+      type: 'footnote',
+      id: 'f1',
+      content: [],
+    });
+    expect(overridesRefusal([override], new Map([[V1, noted]]))).toMatch(/text alone/);
   });
 
   it('REU-012 is set on the reference by the outline, whole, and cleared by none', () => {

@@ -475,4 +475,43 @@ describe("a component's label", () => {
     // Room for the label but not its gap.
     expect(labelFits({ column: 900, text: 645, label: 250 })).toBe(false);
   });
+
+  it('REU-011 REU-015 marks a reference overridden here, says where an override no longer applies, and offers Overrides', async () => {
+    const asked: string[] = [];
+    render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={new Map([[PRINTER, 'Install the printer']])}
+        texts={new Map([[PRINTER_NODE, printerText]])}
+        overridesOf={
+          new Map([
+            [
+              PRINTER_NODE,
+              [
+                {
+                  block: 'b1',
+                  text: [{ type: 'text', value: 'Unbox it.', marks: [] }],
+                  stale: false,
+                },
+                {
+                  block: 'b2',
+                  text: [{ type: 'text', value: 'Plug it in.', marks: [] }],
+                  stale: true,
+                },
+              ],
+            ],
+          ])
+        }
+        onOverride={(node) => asked.push(node)}
+      />,
+    );
+    const text = screen.getByRole('region', { name: "The document's text" });
+    expect(within(text).getByText('Overridden here')).toBeInTheDocument();
+    expect(within(text).getByText('Override no longer applies')).toBeInTheDocument();
+    await userEvent.click(
+      within(text).getByRole('button', { name: 'Overrides of Install the printer' }),
+    );
+    expect(asked).toEqual([PRINTER_NODE]);
+  });
 });

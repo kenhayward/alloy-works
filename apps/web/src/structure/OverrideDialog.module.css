@@ -1,0 +1,47 @@
+/* A reference's overrides (the R4 plan, R4-G). */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.form h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.form p {
+  margin: 0;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.stale {
+  color: var(--warn);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+.paragraph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
