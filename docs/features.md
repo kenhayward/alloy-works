@@ -1068,6 +1068,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Always the latest approved revision** in its label's list. The label says which revision it shows,
   and publishing, previews and baselines take it. Where a newer revision is approved than the
   document's last publication carried, the reference says so and offers **Compare**.
+- **Where a component is used.** A component's header offers **Used in**: each document whose latest
+  version places it, in its workflow state, with each reference saying whether it follows the latest
+  version, approved revisions, or one pinned version; and apart, the baselines and publications that pin
+  it, which no change reaches. What you may not read is never named; the dialog says only that there is
+  more. **Save version**, and **Done editing** with changes, ask first where the new version reaches a
+  document, approved ones listed apart from drafts. A publish placing a component that was deleted says
+  so, apart from one you may not read.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at
@@ -1649,7 +1656,7 @@ Named explicitly so nobody has to read the source to find out:
   limits, which the API alone sets. An image column cannot yet be placed in a document: a binding
   takes text, numbers, dates and the rest, and an image from a result waits for bound images.
 - No document view that sets a document as it will publish: its page shows the outline you build
-  beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
+  beside the text in reading order, each component opening in place to be edited. No reading view. No transclusion of another document's section, and no local override of a reference.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
   quotations, preformatted text, tables and their notes, figures, images in a line of text,
   footnotes, cross-references and equations, and a Word document of all of that: no

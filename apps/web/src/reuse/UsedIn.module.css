@@ -1,0 +1,53 @@
+/* Where a component is used, and the warning before a version reaches it (the R1 plan, R1-B, R1-D). */
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.dialog h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.dialog h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--size-14);
+}
+
+.dialog p {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding-left: var(--space-16);
+}
+
+.list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.references {
+  flex-basis: 100%;
+  margin: 0;
+  padding-left: var(--space-16);
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
