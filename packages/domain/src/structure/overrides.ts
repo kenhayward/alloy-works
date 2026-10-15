@@ -53,8 +53,11 @@ export function overridesRefusal(
   for (const each of overrides) {
     const content = contents.get(each.against);
     if (!content) return 'An override names a version that is not the component’s';
-    if (!paragraphOf(content, each.block)) {
-      return 'An override replaces a paragraph of the component, and this is none';
+    const paragraph = paragraphOf(content, each.block);
+    if (!paragraph) return 'An override replaces a paragraph of the component, and this is none';
+    // Text alone: an override never takes a footnote, a reference, a value or an equation away.
+    if (!paragraph.content.every((inline) => inline.type === 'text')) {
+      return 'An override replaces a paragraph of text alone, and this holds more';
     }
   }
   return undefined;
