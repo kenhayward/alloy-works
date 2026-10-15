@@ -400,8 +400,8 @@ export function nodeName(node: OutlineViewNode, names: Names): string {
 const MODES = {
   latest: 'latest',
   pinned: 'pinned',
-  // Decision G: there is no revision to resolve `approved` to yet, so it names no version at all.
-  approved: 'waiting on revisions',
+  // Its component's latest approved revision (REU-050; the WF4 plan, WF4-B).
+  approved: 'latest approved',
 } as const;
 
 const STARTS = {

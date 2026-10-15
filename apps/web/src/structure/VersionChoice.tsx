@@ -16,9 +16,11 @@ export interface VersionsPage {
   readonly next: string | null;
 }
 
-/** What a reference may be set to from its label: pinned to a version, or the latest (never approved, DV-G). */
+/** What a reference may be set to from its label: pinned to a version, the latest, or the latest approved revision (CNT-159). */
 export type ChosenMode =
-  { readonly kind: 'pinned'; readonly version: string } | { readonly kind: 'latest' };
+  | { readonly kind: 'pinned'; readonly version: string }
+  | { readonly kind: 'latest' }
+  | { readonly kind: 'approved' };
 
 /** How the label and the list reach the service, given by the page only where the choice is offered. */
 export interface Choosing {
@@ -30,11 +32,19 @@ export interface Choosing {
 
 /**
  * What a reference's label says of its version (CNT-162): the number it resolves to, where the reader
- * is told one, and whether it is pinned there or follows the latest; and for approved, which resolves
- * to nothing until revisions exist, what the outline says of it (DV-G).
+ * is told one, and whether it is pinned there or follows the latest; and for one tracking the latest
+ * approved revision, which revision that is, or that none is approved (CNT-163; the WF4 plan, WF4-B).
  */
-export function versionSaid(mode: ReferenceViewNode['mode'], number: string | undefined): string {
-  if (mode.kind === 'approved') return 'waiting on revisions';
+export function versionSaid(
+  mode: ReferenceViewNode['mode'],
+  number: string | undefined,
+  revision?: number,
+): string {
+  if (mode.kind === 'approved') {
+    return revision === undefined
+      ? 'no approved revision'
+      : `Revision ${revision}, latest approved`;
+  }
   return number === undefined ? mode.kind : `Version ${number}, ${mode.kind}`;
 }
 
@@ -113,8 +123,8 @@ export function VersionChoice({
         setMore(null);
         setListed((was) => {
           if (page === null || was.state !== 'loaded') return { state: 'failed' };
-          // After Always the latest and every version already shown.
-          olderFrom.current = was.items.length + 1;
+          // After the two Always choices and every version already shown.
+          olderFrom.current = was.items.length + 2;
           return { state: 'loaded', items: [...was.items, ...page.items], next: page.next };
         });
       })
@@ -160,15 +170,15 @@ export function VersionChoice({
   const pick = async (mode: ChosenMode) => {
     const same =
       mode.kind === node.mode.kind &&
-      (mode.kind === 'latest' ||
+      (mode.kind !== 'pinned' ||
         (node.mode.kind === 'pinned' && node.mode.version === mode.version));
     close(true);
     if (!same) await choosing.choose(node.id, mode);
   };
 
   const checked = (mode: ChosenMode) =>
-    mode.kind === 'latest'
-      ? node.mode.kind === 'latest'
+    mode.kind !== 'pinned'
+      ? node.mode.kind === mode.kind
       : node.mode.kind === 'pinned' && node.mode.version === mode.version;
 
   return (
@@ -227,6 +237,15 @@ export function VersionChoice({
             onClick={() => void pick({ kind: 'latest' })}
           >
             Always the latest
+          </button>
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={checked({ kind: 'approved' })}
+            tabIndex={-1}
+            onClick={() => void pick({ kind: 'approved' })}
+          >
+            Always the latest approved revision
           </button>
           {listed.state === 'loading' && (
             <p className={styles['versionsSaid']}>Reading the versions...</p>

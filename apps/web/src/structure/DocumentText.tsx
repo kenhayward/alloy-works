@@ -434,6 +434,7 @@ export function DocumentText({
   boundaries = false,
   marked = null,
   resolved,
+  revisions,
   choosing,
   bindingStates = null,
   onProvenance,
@@ -480,6 +481,8 @@ export function DocumentText({
   marked?: string | null;
   /** The number of the version each occurrence resolves to, by node, where the reader is told one. */
   resolved?: ReadonlyMap<string, string>;
+  /** Which revision each reference tracking the latest approved one shows, by node (CNT-163). */
+  revisions?: ReadonlyMap<string, number>;
   /**
    * How a reference's version is chosen from its label (CNT-158): given only in Authoring, to a
    * reader who may restructure the document. Without it the label says the version and offers nothing.
@@ -647,12 +650,16 @@ export function DocumentText({
                         node={node}
                         component={node.component}
                         name={nodeName(node, names)}
-                        said={versionSaid(node.mode, resolved?.get(node.id))}
+                        said={versionSaid(
+                          node.mode,
+                          resolved?.get(node.id),
+                          revisions?.get(node.id),
+                        )}
                         choosing={choosing}
                       />
                     ) : (
                       <span className={styles['versionSaid']}>
-                        {versionSaid(node.mode, resolved?.get(node.id))}
+                        {versionSaid(node.mode, resolved?.get(node.id), revisions?.get(node.id))}
                       </span>
                     )}
                     <EditableState

@@ -17390,6 +17390,14 @@
           "howItIsMet": "In Authoring, where the reader may restructure the document, the label's version opens a list of the component's versions and **Always the latest**; choosing one is the outline's `set` of the reference's mode"
         },
         {
+          "id": "CNT-159",
+          "howItIsMet": "The same list offers **Always the latest approved revision**, so an author chooses which revision a reference takes - its latest approved, or a version pinned - from the document view (the WF4 plan, WF4-C)"
+        },
+        {
+          "id": "CNT-163",
+          "howItIsMet": "A reference tracking the latest approved revision is labelled \"Revision 2, latest approved\", or \"no approved revision\" where none is, and the outline says \"latest approved\" ([Versions](#versions); WF4-B)"
+        },
+        {
           "id": "STR-035",
           "howItIsMet": "The outline marks the node whose text is in view as the reader scrolls, and choosing any node - in the outline, a generated list or a link - scrolls the text to it ([Navigation](#navigation))"
         },
@@ -18532,6 +18540,10 @@
           "howItIsMet": "Changing which version a reference takes is audited `reference.repointed` `{ node, component, from, to }` (modes; `packages/db/src/documents.ts`, `recordRepoints`), in the transaction of the version recording it, so who and when are the event's own: the outline's `set` changing a reference's mode, and a document's restore for each reference it re-points. Insert, remove and move are not re-points, and a `latest` reference meeting a newer version is no act (the RS plan, RS-G)"
         },
         {
+          "id": "CNT-183",
+          "howItIsMet": "The same event says from which to which: a pinned side its version, and an `approved` side the version its latest revision then is (the WF4 plan, WF4-D)"
+        },
+        {
           "id": "IAM-073",
           "howItIsMet": "Numbering never reads a component the reader may not read (`numberingInputs`), so its occurrence is unknown and `number` answers `null` for each number it could have moved: every counter in its matter, until that counter next restarts, whatever it holds ([Who is shown what](#who-is-shown-what)). A section number depends on the outline alone"
         },
@@ -19232,6 +19244,18 @@
         {
           "id": "DAT-123",
           "howItIsMet": "`revisions`: no value revised by hand standing in front of a binding's result"
+        },
+        {
+          "id": "LIF-038",
+          "howItIsMet": "A reference may track its component's latest approved revision, beside pinned and latest: [The latest approved revision](#the-latest-approved-revision)"
+        },
+        {
+          "id": "REU-050",
+          "howItIsMet": "Each reference takes one of the three modes, shown on its label and in the outline"
+        },
+        {
+          "id": "LIF-041",
+          "howItIsMet": "A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them"
         }
       ]
     }
@@ -19910,15 +19934,27 @@
       "kind": "title"
     },
     {
+      "id": "CNT-163",
+      "file": "apps/service/src/contributions-routes.test.ts",
+      "line": 512,
+      "kind": "title"
+    },
+    {
       "id": "CNT-181",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 448,
+      "line": 450,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-041",
+      "file": "apps/service/src/contributions-routes.test.ts",
+      "line": 512,
       "kind": "title"
     },
     {
       "id": "SCH-032",
       "file": "apps/service/src/contributions-routes.test.ts",
-      "line": 448,
+      "line": 450,
       "kind": "title"
     },
     {
@@ -22108,13 +22144,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1441,
+      "line": 1488,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1598,
+      "line": 1645,
       "kind": "title"
     },
     {
@@ -22126,7 +22162,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2483,
+      "line": 2530,
       "kind": "title"
     },
     {
@@ -22144,19 +22180,31 @@
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-159",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 862,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 789,
+      "line": 795,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-163",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 795,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1981,
+      "line": 2028,
       "kind": "title"
     },
     {
@@ -22166,21 +22214,33 @@
       "kind": "title"
     },
     {
+      "id": "LIF-041",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 889,
+      "kind": "title"
+    },
+    {
+      "id": "REU-050",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 795,
+      "kind": "title"
+    },
+    {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 974,
+      "line": 1021,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2186,
+      "line": 2233,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2021,
+      "line": 2068,
       "kind": "title"
     },
     {
@@ -22192,7 +22252,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1023,
+      "line": 1070,
       "kind": "title"
     },
     {
@@ -22204,7 +22264,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1732,
+      "line": 1779,
       "kind": "title"
     },
     {
@@ -22289,6 +22349,12 @@
       "id": "LIF-024",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
       "line": 606,
+      "kind": "title"
+    },
+    {
+      "id": "REU-050",
+      "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
+      "line": 526,
       "kind": "title"
     },
     {
@@ -23596,31 +23662,37 @@
     {
       "id": "CNT-182",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 299,
+      "line": 301,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-183",
+      "file": "packages/db/src/document-restore.test.ts",
+      "line": 662,
       "kind": "title"
     },
     {
       "id": "VER-032",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 341,
+      "line": 343,
       "kind": "title"
     },
     {
       "id": "VER-033",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 364,
+      "line": 366,
       "kind": "title"
     },
     {
       "id": "VER-035",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 398,
+      "line": 400,
       "kind": "title"
     },
     {
       "id": "VER-044",
       "file": "packages/db/src/document-restore.test.ts",
-      "line": 455,
+      "line": 457,
       "kind": "title"
     },
     {
@@ -23884,31 +23956,43 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2520,
+      "line": 2593,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-038",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 555,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 334,
+      "line": 336,
       "kind": "title"
     },
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 959,
+      "line": 1032,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 426,
+      "line": 428,
+      "kind": "title"
+    },
+    {
+      "id": "REU-050",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 555,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 817,
+      "line": 890,
       "kind": "title"
     },
     {

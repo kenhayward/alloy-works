@@ -480,6 +480,9 @@ function announce(
       if (operation.mode?.kind === 'pinned') {
         return `${nodeName(node, names)} is now pinned to a version.`;
       }
+      if (operation.mode?.kind === 'approved') {
+        return `${nodeName(node, names)} now shows its latest approved revision.`;
+      }
       return `Changed ${nodeName(node, names)}.`;
     }
     case 'remove': {
@@ -636,6 +639,7 @@ export function DocumentPage({
   const [editable, setEditable] = useState<ReadonlyMap<string, Editable>>(new Map());
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
   const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
+  const [revisionByNode, setRevisionByNode] = useState<ReadonlyMap<string, number>>(new Map());
   const [textsAttempt, setTextsAttempt] = useState(0);
   // The version whose texts have been answered, or refused: until then the text is its headings alone,
   // and a node gone to now would be pushed down the page by every component above it as it fills in.
@@ -666,7 +670,10 @@ export function DocumentPage({
   // Each reference pinned below a newer version the reader may read, by node (CNT-181), from the same
   // answer: no request of its own.
   const [newerByNode, setNewerByNode] = useState<
-    ReadonlyMap<string, { readonly pinned: VersionNamed; readonly newer: VersionNamed }>
+    ReadonlyMap<
+      string,
+      { readonly pinned: VersionNamed; readonly newer: VersionNamed; readonly said?: string }
+    >
   >(new Map());
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
@@ -775,12 +782,37 @@ export function DocumentPage({
           ),
         );
         setResolved(numberOf);
+        // Which revision each reference tracking the latest approved one shows (CNT-163).
+        setRevisionByNode(
+          new Map(
+            data.occurrences.flatMap((occurrence) =>
+              occurrence.revision === undefined
+                ? []
+                : [[occurrence.node, occurrence.revision] as const],
+            ),
+          ),
+        );
         setNewerByNode(
           new Map(
             data.occurrences.flatMap((occurrence) => {
               const pinned = occurrence.version;
               const number = pinned === null ? undefined : numbers.get(pinned);
-              return occurrence.newer === undefined || pinned === null || number === undefined
+              if (pinned === null || number === undefined) return [];
+              // A newer revision approved than the last publication carried (LIF-041; WF4-E): the
+              // published one compared with the one it shows now.
+              if (occurrence.moved !== undefined && occurrence.revision !== undefined) {
+                return [
+                  [
+                    occurrence.node,
+                    {
+                      pinned: { id: occurrence.moved.id, number: occurrence.moved.number },
+                      newer: { id: pinned, number },
+                      said: `Revision ${occurrence.revision} is approved since the last publication, which carried ${occurrence.moved.number}.`,
+                    },
+                  ] as const,
+                ];
+              }
+              return occurrence.newer === undefined
                 ? []
                 : [
                     [
@@ -2445,6 +2477,7 @@ export function DocumentPage({
                 boundaries={boundaries}
                 marked={marked}
                 resolved={resolved}
+                revisions={revisionByNode}
                 newer={{ client, byNode: newerByNode }}
                 // The version is chosen from the label in Authoring, by whoever may restructure the
                 // document (DV-F); anywhere else the label says it and offers nothing.

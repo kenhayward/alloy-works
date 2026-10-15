@@ -16,14 +16,14 @@ audited `reference.repointed { node, component, from, to }` (RS-G).
 
 ## Decisions
 
-| ID    | Decision |
-| ----- | -------- |
+| ID    | Decision                                                                                                                                                                                                                                                                                                                                                                         |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | WF4-A | **Resolution**: an `approved` reference resolves to the version its component's latest revision designates, in `resolveOccurrences` and `numberingInputs`, so publishing, previews, baselines, the view's texts, numbering, comparison and bindings all read it. None designated is unresolved, as now: a publish fails it `occurrence_unresolved`. Readability as for `latest`. |
-| WF4-B | **Shown** (CNT-163, REU-050): the texts carry `revision` for an `approved` occurrence; its label reads "Revision 2, latest approved", "no approved revision" where none is, and the outline tree "latest approved". |
-| WF4-C | **Chosen** (CNT-159): the label's list offers **Always the latest approved revision** beside **Always the latest** and each version; each version that is a revision says so ("Revision 2"). |
-| WF4-D | **Audited** (CNT-183): `reference.repointed` as built; an `approved` side records the version it resolved to then, so "from which to which" names the revision (default). |
-| WF4-E | **Moved** (LIF-041) (default): an `approved` occurrence whose version is not the one the document's latest publication carried for that node says so, "Revision 3 is approved since the last publication, which carried version 2.1", with **Compare**, as a pinned one's newer version does (CNT-181). Never published: nothing to say. |
-| WF4-F | **What a gate requires** (WF3-E) needs no special case: an `approved` reference now resolves to a designated version, and one that resolves to none fails `components`. |
+| WF4-B | **Shown** (CNT-163, REU-050): the texts carry `revision` for an `approved` occurrence; its label reads "Revision 2, latest approved", "no approved revision" where none is, and the outline tree "latest approved".                                                                                                                                                              |
+| WF4-C | **Chosen** (CNT-159): the label's list offers **Always the latest approved revision** beside **Always the latest** and each version; each version that is a revision says so ("Revision 2").                                                                                                                                                                                     |
+| WF4-D | **Audited** (CNT-183): `reference.repointed` as built; an `approved` side records the version it resolved to then, so "from which to which" names the revision (default).                                                                                                                                                                                                        |
+| WF4-E | **Moved** (LIF-041) (default): an `approved` occurrence whose version is not the one the document's latest publication carried for that node says so, "Revision 3 is approved since the last publication, which carried version 2.1", with **Compare**, as a pinned one's newer version does (CNT-181). Never published: nothing to say.                                         |
+| WF4-F | **What a gate requires** (WF3-E) needs no special case: an `approved` reference now resolves to a designated version, and one that resolves to none fails `components`.                                                                                                                                                                                                          |
 
 ## Task: WF4
 
