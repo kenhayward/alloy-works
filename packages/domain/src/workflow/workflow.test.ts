@@ -114,6 +114,37 @@ describe('a workflow definition (workflow.md)', () => {
     });
   });
 
+  it('LIF-004 lets a transition require conditions, each once, and only those its kind has', () => {
+    const body = (requires: unknown) => ({
+      states: [state('draft', { initial: true }), state('done', { approved: true })],
+      transitions: [{ ...move('finish', 'draft', 'done'), requires }],
+    });
+    const all = ['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components'];
+    expect(parseWorkflowBody(body(all), 'document')).toMatchObject({
+      ok: true,
+      body: { transitions: [{ requires: all }] },
+    });
+    expect(parseWorkflowBody(body(['suggestions', 'threads']), 'component')).toMatchObject({
+      ok: true,
+    });
+    expect(parseWorkflowBody(body(['threads', 'bindings']), 'component')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.1' }],
+    });
+    expect(parseWorkflowBody(body(['threads']), 'queryDefinition')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.0' }],
+    });
+    expect(parseWorkflowBody(body(['threads', 'threads']), 'document')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'condition_duplicate', path: 'transitions.0.requires.1' }],
+    });
+    expect(parseWorkflowBody(body(['tidiness']), 'document')).toMatchObject({ ok: false });
+    // A body stored before WF3 has none, and reads as it was.
+    const plain = parseWorkflowBody(SEED_WORKFLOW, 'document');
+    expect(plain.ok && plain.body).toEqual(SEED_WORKFLOW);
+  });
+
   it('reaches a state only a rejection leads to', () => {
     const parsed = parseWorkflowBody({
       states: [state('draft', { initial: true }), state('done'), state('rework')],

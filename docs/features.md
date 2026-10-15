@@ -1051,6 +1051,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
+- **What a transition requires.** In Administration > Workflows, a transition can require no
+  unresolved suggestions and no open threads, and a document's also every binding resolved, no
+  required section missing, no value revised by hand outstanding and every component it assembles at
+  an approved revision. Taking it, or approving at a gate, is refused until they are met, saying what
+  is not: the sections and components by title, those the person may not read by count.
 - **Erasure.** An administrator of the environment erases a person from Administration > **People**,
   under More actions: never themselves, a service, or somebody erased already. The dialog says first
   what goes, what stays and any grant naming them, which must be removed before. Their name becomes

@@ -7,6 +7,7 @@ import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { lockArtifact } from './versions.js';
+import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import {
   gatesStored,
   latestRevision,
@@ -52,6 +53,8 @@ export type GateAnswer =
   | { readonly answer: 'permission.refused'; readonly permission: TransitionPermission }
   | { readonly answer: 'approval.author' }
   | { readonly answer: 'approval.given' }
+  /** What the gate's transition requires is not met: nothing is recorded (LIF-004; WF3-B). */
+  | { readonly answer: 'conditions.unmet'; readonly unmet: readonly UnmetCondition[] }
   | { readonly answer: 'reason.required' | 'reason.invalid' };
 
 /**
@@ -159,6 +162,14 @@ export async function decideGate(
   if (gate.notAuthor && (await authorsSince(trx, input.artifactId)).has(input.by)) {
     return { answer: 'approval.author' };
   }
+  // Every approval, not only the one that passes: a gate never collects approvals it cannot pass on.
+  const unmet = await unmetConditions(trx, {
+    artifactId: input.artifactId,
+    kind: standing.kind,
+    requires: transition.requires ?? [],
+    principal: input.by,
+  });
+  if (unmet.length > 0) return { answer: 'conditions.unmet', unmet };
   const passes = progress.count + 1 >= gate.approvals;
   // A version is designated once: approved again unchanged, it keeps its revision (WF2-F).
   const designating = passes && gate.designates && standing.revision?.versionId !== version;

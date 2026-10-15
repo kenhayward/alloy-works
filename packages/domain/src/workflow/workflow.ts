@@ -59,6 +59,28 @@ const Gate = z.strictObject({
   publication: z.enum(GATE_PUBLICATIONS).default('none'),
 });
 
+/**
+ * What a transition may require before it is taken (LIF-004; the WF3 plan, WF3-A): no unresolved
+ * suggestions, no open threads, no failed bindings, no missing required sections, no outstanding
+ * revisions, and every component assembled at an approved revision.
+ */
+export const TRANSITION_CONDITIONS = [
+  'suggestions',
+  'threads',
+  'bindings',
+  'sections',
+  'revisions',
+  'components',
+] as const;
+export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
+
+/** The conditions each kind's transitions may require: a query definition has none to require. */
+export const CONDITIONS_BY_KIND: Readonly<Record<WorkflowKind, readonly TransitionCondition[]>> = {
+  component: ['suggestions', 'threads'],
+  document: TRANSITION_CONDITIONS,
+  queryDefinition: [],
+};
+
 const Transition = z.strictObject({
   key: Key,
   name: Name,
@@ -67,6 +89,8 @@ const Transition = z.strictObject({
   permission: z.enum(TRANSITION_PERMISSIONS),
   reasonRequired: z.boolean().default(false),
   gate: Gate.optional(),
+  /** Absent in a body stored before WF3, and read as requiring nothing. */
+  requires: z.array(z.enum(TRANSITION_CONDITIONS)).max(TRANSITION_CONDITIONS.length).optional(),
 });
 
 export const workflowBodySchema = z.strictObject({
@@ -88,7 +112,9 @@ export type WorkflowRule =
   | 'state_unreachable'
   | 'gate_permission'
   | 'gate_kind'
-  | 'gate_publication';
+  | 'gate_publication'
+  | 'condition_kind'
+  | 'condition_duplicate';
 
 export interface WorkflowProblem {
   readonly rule: WorkflowRule;
@@ -170,9 +196,24 @@ export function parseWorkflowBody(
         message: 'A transition moves to another state',
       });
     }
+    const at = `transitions.${index}`;
+    (each.requires ?? []).forEach((condition, n) => {
+      if (each.requires!.indexOf(condition) !== n) {
+        problems.push({
+          rule: 'condition_duplicate',
+          path: `${at}.requires.${n}`,
+          message: `The transition already requires ${condition}`,
+        });
+      } else if (kind !== undefined && !CONDITIONS_BY_KIND[kind].includes(condition)) {
+        problems.push({
+          rule: 'condition_kind',
+          path: `${at}.requires.${n}`,
+          message: `A ${kind}'s transition cannot require ${condition}`,
+        });
+      }
+    });
     const gate = each.gate;
     if (gate === undefined) return;
-    const at = `transitions.${index}`;
     if (each.permission !== 'approve') {
       problems.push({
         rule: 'gate_permission',

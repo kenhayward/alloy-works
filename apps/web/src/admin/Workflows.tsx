@@ -25,7 +25,28 @@ interface Transition {
   readonly permission: Permission;
   readonly reasonRequired: boolean;
   readonly gate?: Gate | undefined;
+  readonly requires?: readonly Condition[] | undefined;
 }
+
+/** What a transition may require before it is taken (LIF-004; the WF3 plan, WF3-A). */
+type Condition = 'suggestions' | 'threads' | 'bindings' | 'sections' | 'revisions' | 'components';
+
+/** Each condition, as a transition's row offers it: "Submit requires no open threads". */
+const CONDITIONS: Readonly<Record<Condition, string>> = {
+  suggestions: 'no unresolved suggestions',
+  threads: 'no open threads',
+  bindings: 'every binding resolved',
+  sections: 'no required section missing',
+  revisions: 'no value revised by hand outstanding',
+  components: 'every component approved',
+};
+
+/** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
+const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
+  component: ['suggestions', 'threads'],
+  document: ['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components'],
+  queryDefinition: [],
+};
 
 /** A transition that is a gate (the WF2 plan, WF2-A). */
 interface Gate {
@@ -185,9 +206,11 @@ function KindWorkflow({
           kind,
           basedOn: version,
           states: states.map(({ label: _, ...each }) => each),
-          transitions: transitions.map(({ label: _, gate, ...each }) =>
-            gate === undefined ? each : { ...each, gate },
-          ),
+          transitions: transitions.map(({ label: _, gate, requires, ...each }) => ({
+            ...each,
+            ...(gate === undefined ? {} : { gate }),
+            ...(requires === undefined ? {} : { requires: [...requires] }),
+          })),
         },
       });
       if (data) {
@@ -313,6 +336,7 @@ function KindWorkflow({
             <th scope="col">Needs</th>
             <th scope="col">Reason</th>
             <th scope="col">Gate</th>
+            {CONDITIONS_OF[kind].length > 0 && <th scope="col">Requires</th>}
             <th scope="col">
               <span className={styles['hidden']}>Actions</span>
             </th>
@@ -388,6 +412,31 @@ function KindWorkflow({
                   onChange={(change) => changeTransition(transition.key, change)}
                 />
               </td>
+              {CONDITIONS_OF[kind].length > 0 && (
+                <td>
+                  <div className={styles['gate']}>
+                    {CONDITIONS_OF[kind].map((condition) => (
+                      <label key={condition}>
+                        <input
+                          type="checkbox"
+                          aria-label={`${transition.label} requires ${CONDITIONS[condition]}`}
+                          checked={transition.requires?.includes(condition) ?? false}
+                          onChange={(change) => {
+                            const was = transition.requires ?? [];
+                            const now = CONDITIONS_OF[kind].filter((each) =>
+                              each === condition ? change.target.checked : was.includes(each),
+                            );
+                            changeTransition(transition.key, {
+                              requires: now.length === 0 ? undefined : now,
+                            });
+                          }}
+                        />
+                        {`${CONDITIONS[condition][0]!.toUpperCase()}${CONDITIONS[condition].slice(1)}`}
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              )}
               <td>
                 <button
                   type="button"

@@ -674,6 +674,9 @@ describe('the domain package', () => {
         'GATE_PUBLICATIONS',
         'SEED_WORKFLOW_1',
         'SEED_DOCUMENT_WORKFLOW',
+        // WF3: what a transition may require, and what each kind's may.
+        'TRANSITION_CONDITIONS',
+        'CONDITIONS_BY_KIND',
       ].sort(),
     );
   });

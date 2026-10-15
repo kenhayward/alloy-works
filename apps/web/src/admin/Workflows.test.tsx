@@ -227,6 +227,38 @@ describe("Administration's Workflows", () => {
     });
   });
 
+  it("LIF-004 sets what a transition requires, from what its kind can: a document's any, a component's suggestions and threads", async () => {
+    const { client, sent } = service();
+    render(<Workflows client={client} />);
+    const documents = await screen.findByRole('region', { name: 'Documents' });
+    await within(documents).findByRole('table', { name: 'Document transitions' });
+    expect(
+      within(components()).queryByRole('checkbox', {
+        name: 'Approve requires every component approved',
+      }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(components()).getByRole('checkbox', {
+        name: 'Submit requires no unresolved suggestions',
+      }),
+    );
+    for (const name of [
+      'Approve requires every component approved',
+      'Approve requires no open threads',
+    ]) {
+      await userEvent.click(within(documents).getByRole('checkbox', { name }));
+    }
+    await userEvent.click(within(documents).getByRole('button', { name: 'Save as version 3' }));
+    expect(await within(documents).findByText('Saved as version 3.')).toBeInTheDocument();
+    const saved = sent[0] as { transitions: { key: string; requires?: string[] }[] };
+    // In the order the conditions are listed, whatever order they were ticked in.
+    expect(saved.transitions.find((each) => each.key === 'approve')?.requires).toEqual([
+      'threads',
+      'components',
+    ]);
+    expect(saved.transitions.find((each) => each.key === 'submit')).not.toHaveProperty('requires');
+  });
+
   it('removes a state with the transitions to and from it, and says each problem the service finds', async () => {
     const { client, sent } = service(() =>
       json(400, {

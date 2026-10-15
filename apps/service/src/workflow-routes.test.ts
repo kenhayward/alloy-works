@@ -17,6 +17,7 @@ import {
   findRole,
   grant,
   migrate,
+  startThread,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -412,6 +413,52 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     expect(listed.json<ApprovalsView>().approvals).toMatchObject([
       { decision: 'rejected', reason: 'Give the weight bands.', by: { id: ids.grace } },
     ]);
+  });
+
+  it('LIF-004 saves a transition requiring conditions, refuses one its kind cannot, and refuses taking it while one is unmet, saying what', async () => {
+    const requiring = (requires: string[]) => ({
+      kind: 'component',
+      ...SEED_WORKFLOW,
+      transitions: SEED_WORKFLOW.transitions.map((each) =>
+        each.key === 'submit' ? { ...each, requires } : each,
+      ),
+    });
+    const wrong = await call('POST', '/v1/workflows', 'ada', requiring(['sections']));
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json()).toMatchObject({
+      problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.0' }],
+    });
+    const saved = await call('POST', '/v1/workflows', 'ada', requiring(['threads']));
+    expect(saved.statusCode, saved.body).toBe(200);
+    expect(
+      saved.json<WorkflowDefinitionView>().body.transitions.find((each) => each.key === 'submit'),
+    ).toMatchObject({ requires: ['threads'] });
+    try {
+      const created = await made('components', 'Threaded dose');
+      const thread = await tenantDb.withTenant(tenant, (trx) =>
+        startThread(trx, {
+          on: created.id,
+          version: created.version.id,
+          anchor: { kind: 'component' },
+          parts: [{ text: 'Which tray?' }],
+          author: ids.grace!,
+        }),
+      );
+      expect(thread.answer).toBe('done');
+      const held = await move('components', created.id, 'ada', {
+        transition: 'submit',
+        from: 'draft',
+      });
+      expect(held.statusCode).toBe(409);
+      expect(held.json()).toMatchObject({
+        code: 'conditions_unmet',
+        rule: 'LIF-004',
+        message: 'Not yet: 1 open thread.',
+        unmet: [{ condition: 'threads', count: 1, names: [], unreadable: 0 }],
+      });
+    } finally {
+      await call('POST', '/v1/workflows', 'ada', { kind: 'component', ...SEED_WORKFLOW });
+    }
   });
 
   it('answers a document at the component route as absent, and refuses moving an archived one', async () => {

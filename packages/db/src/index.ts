@@ -477,6 +477,7 @@ export {
   type WorkflowSummary,
 } from './workflow.js';
 export { decideGate, listApprovals, type Approval, type GateAnswer } from './workflow-gates.js';
+export { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 export {
   createDocument,
   editOutline,

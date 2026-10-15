@@ -36,6 +36,7 @@ import { createTenant, type Tenant } from './provision.js';
 import { createQueryDefinition, type StoredQueryDefinition } from './queryDefinitions.js';
 import { publicationInputs } from './publishing.js';
 import { recordRevision } from './revisions.js';
+import { unmetConditions } from './workflow-conditions.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
@@ -507,6 +508,88 @@ describe('baselines', () => {
       );
     expect(await seen(ada)).toEqual([node.id]);
     expect(await seen(grace)).toEqual([node.id, hidden.id].sort());
+  });
+
+  it('LIF-004 DAT-123 holds a transition requiring bindings while one is unresolved, and revisions while a revision by hand stands', async () => {
+    const binding = {
+      type: 'binding',
+      id: 'k1',
+      query: query.id,
+      parameters: {},
+      mode: 'checked',
+      take: { key: { id: '1' }, column: 'depth' },
+    } as Binding;
+    const holder = await component(general, ada, 'Gated depths');
+    const bound = await revise(holder, [
+      { type: 'paragraph', id: 'p1', style: 'body', content: [binding] },
+    ] as ContentDocument['content']);
+    const node = reference(bound.artifactId);
+    const document = await documentWith([node]);
+    const unmet = () =>
+      tenant((trx) =>
+        unmetConditions(trx, {
+          artifactId: document.artifactId,
+          kind: 'document',
+          requires: ['bindings', 'revisions'],
+          principal: ada,
+        }),
+      );
+    expect(await unmet()).toEqual([{ condition: 'bindings', count: 1, names: [], unreadable: 0 }]);
+
+    const resolution = await tenant(async (trx) => {
+      const result = await recordDatasetVersion(trx, {
+        provenance: {
+          schemaVersion: 1,
+          queryDefinition: { artifact: query.id, version: query.version.id },
+          connection: { artifact: connection.id, version: connection.version.id },
+          parameters: {},
+          ran: { sql: 'select id, depth from sample.reading order by id' },
+          identity: { kind: 'service' },
+          at: '2026-10-15T09:15:00.000Z',
+          durationMs: 12,
+          rowCount: 1,
+          columns: [
+            { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+            { name: 'depth', from: { column: 'depth' }, type: { base: 'text' } },
+          ],
+          canonical: 1,
+          checksum: 'c'.repeat(64),
+          images: {},
+        },
+        author: ada,
+      });
+      return recordResolution(trx, {
+        document: document.artifactId,
+        node: node.id,
+        binding: 'k1',
+        digest: sha256Hex(bindingDigestInput(binding)),
+        version: result.version.id,
+        replaces: null,
+        act: 'resolve',
+        by: ada,
+      });
+    });
+    expect(await unmet()).toEqual([]);
+
+    const revised = (act: 'revise' | 'withdraw', replaces: string | null) =>
+      tenant((trx) =>
+        recordRevision(trx, {
+          document: document.artifactId,
+          node: node.id,
+          binding: 'k1',
+          cell: '',
+          resolution: resolution.id,
+          act,
+          value: act === 'revise' ? '12 m' : null,
+          reason: 'Measured again.',
+          replaces,
+          by: ada,
+        }),
+      );
+    const first = await revised('revise', null);
+    expect(await unmet()).toEqual([{ condition: 'revisions', count: 1, names: [], unreadable: 0 }]);
+    await revised('withdraw', first.id);
+    expect(await unmet()).toEqual([]);
   });
 
   it('DAT-062 pins the values revised by hand standing when a baseline is made, its digest over them, and publishes them, never one made since', async () => {

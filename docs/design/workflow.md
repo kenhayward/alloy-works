@@ -29,6 +29,10 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-050** | A document's gate may permit or require an approved publication of its baseline; the request is audited as any is                                                    |
 | **VER-059** | A document's gate with `baseline` takes one as it passes, named for its revision, naming the gate                                                                    |
 | **DAT-121** | Query definitions, below: a workflow of their own, gated as content's, a change after approval a draft                                                               |
+| **LIF-004** | What a transition requires, below: no unresolved suggestions, no open threads, no failed bindings, no missing required sections, checked as it is taken              |
+| **LIF-039** | A document's transition may require every component it assembles at an approved revision, naming each that is not                                                    |
+| **COL-066** | `suggestions`: none unresolved on a component, or on any component a document assembles                                                                              |
+| **DAT-123** | `revisions`: no value revised by hand standing in front of a binding's result                                                                                        |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
@@ -177,3 +181,27 @@ there was starts in draft. A definition moves, is approved and is rejected as co
 `/v1/query-definitions/{id}/transitions` and `/approvals`, its view carrying its state, gates and
 revision, its page showing them beside its version. A version saved after approval starts a draft.
 Which version a binding resolves stays its newest, approved or not, until phase 4's "latest approved".
+
+## What a transition requires
+
+**`requires`** (the WF3 plan; LIF-004): a transition, a gate or not, may name conditions, each at most
+once: `suggestions` (none unresolved, COL-066), `threads` (none open), `bindings` (every binding
+resolved and current, as a publish asks), `sections` (no required section missing, TPL-013),
+`revisions` (no value revised by hand outstanding, DAT-123) and `components` (every component
+assembled at an approved revision, LIF-039). A component's may require the first two; a document's
+any; a query definition's none, which has neither suggestions nor threads (`condition_kind`). A body
+stored before it has none.
+
+**Checked as it is taken** (WF3-B): a move, and every approval at a gate, so a gate never collects
+approvals it cannot pass on; a rejection and the draft a save starts never are. Refused
+`conditions_unmet`, nothing recorded, the refusal listing each condition with a count, and its message
+saying them ("Not yet: 1 open thread.").
+
+**Read as whom** (WF3-C, WF3-D): a document's suggestions and threads, its own and every assembled
+component's, are counted whoever may read them, and never shown. Bindings, revisions and components
+are read as the person taking it, as a gate's baseline is: a component they may not read leaves those
+unproven, so unmet, counted and never named. Sections and components not approved are named by title.
+
+**At an approved revision** (WF3-E): the version a reference resolves to is a designated revision; an
+`approved` reference, phase 4's to resolve, is met where its component has one. Every placement is
+judged, so a component placed twice passes only if both do (the final review).

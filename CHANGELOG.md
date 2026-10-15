@@ -3,6 +3,14 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.168.0 - 2026-10-15 (PR #620)
+
+Workflow's third phase: what a transition requires (ADR-0061).
+
+### Added
+
+- **What a transition requires.** In Administration > Workflows, a transition can require no unresolved suggestions and no open threads, and a document's also every binding resolved, no required section missing, no value revised by hand outstanding, and every component approved. Taking it, or approving at a gate, is refused until they are met, saying what is not.
+
 ## 0.167.0 - 2026-10-14 (PR #619)
 
 Workflow's second phase: gates, approvals and revisions, approved publications, and reviewed query definitions (ADR-0061).

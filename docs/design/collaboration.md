@@ -80,8 +80,8 @@ nothing since they lost the network, so what they typed is in their window's sto
 and offered when it next opens, not an iteration; and what they did save is recoverable **within the
 tenant's retention** after the taker's next cut (VER-003), not for ever.
 
-**COL-066 is not claimed:** the lifecycle gate requiring no unresolved suggestions is T9's LIF. COL-027,
-which held it with COL-065's reporting, was split by the T3 audit.
+**COL-066** is [workflow.md](workflow.md)'s: a transition requiring `suggestions`. COL-027, which held
+it with COL-065's reporting, was split by the T3 audit.
 
 **COL-067's limit**: a deleted component's threads are surfaced in the documents that once referenced
 it, and nowhere else; they are kept, and back where they were on undelete. A component only taken out

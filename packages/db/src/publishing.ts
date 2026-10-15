@@ -588,6 +588,23 @@ async function bindingsHeld(
   };
 }
 
+/**
+ * The bindings a document's latest version holds through the occurrences `principal` resolved, as a
+ * publish reads them: what a transition requiring `bindings` or `revisions` asks (the WF3 plan, WF3-D).
+ */
+export async function documentBindings(
+  trx: TenantTransaction,
+  documentId: string,
+  latest: StoredVersion,
+  outcomes: readonly OccurrenceOutcome[],
+): Promise<{ held: HeldBinding[]; unresolved: UnresolvedBinding[] }> {
+  const resolved = await readResolved(
+    trx,
+    outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
+  );
+  return bindingsHeld(trx, documentId, resolved, latest.parameters);
+}
+
 /** What a document resolves to for a publish or a baseline, as one principal (BL-A). */
 export interface Publishable {
   readonly answer: 'publishable';

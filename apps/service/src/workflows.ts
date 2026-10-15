@@ -21,6 +21,7 @@ import {
   workflowStanding,
   workflowVersion,
   type TenantTransaction,
+  type UnmetCondition,
   type WorkflowDefinition,
   type WorkflowStanding,
 } from '@alloy-works/db';
@@ -48,6 +49,45 @@ function definitionView(definition: WorkflowDefinition): WorkflowDefinitionView 
  * The transitions from where it stands that `facts` permit (WF-G): none for an archived one, which does
  * not move until unarchived (WF-K).
  */
+const counted = (count: number, one: string, many: string) =>
+  `${count.toLocaleString('en-GB')} ${count === 1 ? one : many}`;
+
+/** What a transition requires and is not met, said in a sentence (LIF-004; WF3-B). */
+export function unmetMessage(unmet: readonly UnmetCondition[]): string {
+  const parts = unmet.map((each) => {
+    const named = each.names.length > 0 ? `: ${each.names.join(', ')}` : '';
+    const said = {
+      suggestions: () => counted(each.count, 'unresolved suggestion', 'unresolved suggestions'),
+      threads: () => counted(each.count, 'open thread', 'open threads'),
+      bindings: () =>
+        counted(each.count, 'data binding not resolved', 'data bindings not resolved'),
+      sections: () =>
+        `${counted(each.count, 'required section missing', 'required sections missing')}${named}`,
+      revisions: () =>
+        counted(
+          each.count,
+          'value revised by hand outstanding',
+          'values revised by hand outstanding',
+        ),
+      components: () =>
+        `${counted(each.count, 'component not at an approved revision', 'components not at an approved revision')}${named}`,
+    }[each.condition]();
+    const unseen =
+      each.unreadable === 0
+        ? ''
+        : ` (${counted(each.unreadable, 'component', 'components')} you may not read, so unchecked)`;
+    // Nothing found, but not all of it could be looked at.
+    return each.count === 0
+      ? `${counted(each.unreadable, 'component', 'components')} you may not read, so not checked for ${each.condition}`
+      : `${said}${unseen}`;
+  });
+  return `Not yet: ${parts.join('; ')}.`;
+}
+
+function unmetRefusal(unmet: readonly UnmetCondition[]): AppError {
+  return refused(409, 'conditions.unmet', unmetMessage(unmet), { unmet });
+}
+
 export function transitionsOffered(
   standing: WorkflowStanding,
   facts: AccessFacts,
@@ -165,6 +205,8 @@ export function workflowHandlers() {
       switch (answer.answer) {
         case 'moved':
           return standingAnswer(answer.standing, facts, false, principalId);
+        case 'conditions.unmet':
+          throw unmetRefusal(answer.unmet);
         case 'transition.gated':
           throw refused(
             409,
@@ -231,6 +273,8 @@ export function workflowHandlers() {
         may: (permission) => decide(permission, facts).allowed,
       });
       switch (answer.answer) {
+        case 'conditions.unmet':
+          throw unmetRefusal(answer.unmet);
         case 'baseline.refused':
           throw refused(
             409,
