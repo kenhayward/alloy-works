@@ -10396,7 +10396,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10418,6 +10418,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -13608,7 +13622,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived */
+            /** @description state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived; conditions_unmet: what the transition requires is not met */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13630,6 +13644,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -20434,7 +20462,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -20456,6 +20484,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -39608,7 +39650,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived */
+            /** @description state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived; conditions_unmet: what the transition requires is not met */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -39630,6 +39672,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -47540,7 +47596,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded */
+            /** @description state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47562,6 +47618,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -47790,7 +47860,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived */
+            /** @description state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived; conditions_unmet: what the transition requires is not met */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -47812,6 +47882,20 @@ export interface operations {
                             key: string;
                             name: string;
                         };
+                        /** @description conditions_unmet: each condition not met, in the order the transition names them */
+                        unmet?: {
+                            /**
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @enum {string}
+                             */
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            /** @description How many stand in its way */
+                            count: number;
+                            /** @description The sections missing, or the components not approved, by title */
+                            names: string[];
+                            /** @description Components the caller may not read, which leave it unproven */
+                            unreadable: number;
+                        }[];
                     };
                 };
             };
@@ -59930,6 +60014,7 @@ export interface operations {
                                             /** @enum {string} */
                                             publication: "none" | "permitted" | "required";
                                         };
+                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                                     }[];
                                 };
                                 /** @description Who saved it; null for the seed */
@@ -60106,6 +60191,8 @@ export interface operations {
                              */
                             publication?: "none" | "permitted" | "required";
                         };
+                        /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
+                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                     }[];
                     /**
                      * @description The kind it is the workflow of
@@ -60175,6 +60262,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                             }[];
                         };
                         /** @description Who saved it; null for the seed */
@@ -60366,6 +60454,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                             }[];
                         };
                         /** @description Who saved it; null for the seed */

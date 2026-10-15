@@ -11,6 +11,7 @@ import { createDocument, editOutline, recordDocumentValues } from './documents.j
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
+import { unmetConditions } from './workflow-conditions.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
@@ -567,6 +568,33 @@ describe('a document made from a template', () => {
       position: 0,
     });
     expect((await publish(kept.version.artifactId, moved.id)).answer).toBe('requested');
+  });
+
+  it('LIF-004 holds a transition requiring sections while a required one is missing, naming it', async () => {
+    const made = await template({
+      schemas: [],
+      outline: { sections: [{ ...section('introduction', 'Introduction'), required: true }] },
+    });
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const unmet = (version: string) =>
+      service.withTenant(production, (trx) =>
+        unmetConditions(trx, {
+          artifactId: version,
+          kind: 'document',
+          requires: ['sections'],
+          principal: ada,
+        }),
+      );
+    expect(await unmet(document.version.artifactId)).toEqual([]);
+    const [introduction] = (document.version.content as { nodes: SectionNode[] }).nodes;
+    await act(document.version.artifactId, document.version.id, {
+      operation: 'remove',
+      node: introduction!.id,
+    });
+    expect(await unmet(document.version.artifactId)).toEqual([
+      { condition: 'sections', count: 1, names: ['Introduction'], unreadable: 0 },
+    ]);
   });
 
   it("TPL-055 refuses to publish a document whose fields, or any section's, do not satisfy its template, naming each failure", async () => {

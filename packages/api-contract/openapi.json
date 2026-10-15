@@ -26414,7 +26414,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -26451,6 +26451,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -34711,7 +34757,7 @@
             }
           },
           "409": {
-            "description": "state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived",
+            "description": "state_moved: the component is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived component does not move until unarchived; conditions_unmet: what the transition requires is not met",
             "content": {
               "application/json": {
                 "schema": {
@@ -34748,6 +34794,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -53918,7 +54010,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -53955,6 +54047,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -126579,7 +126717,7 @@
             }
           },
           "409": {
-            "description": "state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived",
+            "description": "state_moved: the document is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived document does not move until unarchived; conditions_unmet: what the transition requires is not met",
             "content": {
               "application/json": {
                 "schema": {
@@ -126616,6 +126754,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -147081,7 +147265,7 @@
             }
           },
           "409": {
-            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded",
+            "description": "state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -147118,6 +147302,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -147682,7 +147912,7 @@
             }
           },
           "409": {
-            "description": "state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived",
+            "description": "state_moved: the query definition is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived query definition does not move until unarchived; conditions_unmet: what the transition requires is not met",
             "content": {
               "application/json": {
                 "schema": {
@@ -147719,6 +147949,52 @@
                         "key",
                         "name"
                       ]
+                    },
+                    "unmet": {
+                      "description": "conditions_unmet: each condition not met, in the order the transition names them",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "condition": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many stand in its way"
+                          },
+                          "names": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The sections missing, or the components not approved, by title"
+                          },
+                          "unreadable": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Components the caller may not read, which leave it unproven"
+                          }
+                        },
+                        "required": [
+                          "condition",
+                          "count",
+                          "names",
+                          "unreadable"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -183178,6 +183454,21 @@
                                             "baseline",
                                             "publication"
                                           ]
+                                        },
+                                        "requires": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "suggestions",
+                                              "threads",
+                                              "bindings",
+                                              "sections",
+                                              "revisions",
+                                              "components"
+                                            ],
+                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                          }
                                         }
                                       },
                                       "required": [
@@ -183590,6 +183881,23 @@
                             "reject"
                           ],
                           "additionalProperties": false
+                        },
+                        "requires": {
+                          "description": "What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once",
+                          "maxItems": 6,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "suggestions",
+                              "threads",
+                              "bindings",
+                              "sections",
+                              "revisions",
+                              "components"
+                            ],
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                          }
                         }
                       },
                       "required": [
@@ -183765,6 +184073,21 @@
                                   "baseline",
                                   "publication"
                                 ]
+                              },
+                              "requires": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "suggestions",
+                                    "threads",
+                                    "bindings",
+                                    "sections",
+                                    "revisions",
+                                    "components"
+                                  ],
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                }
                               }
                             },
                             "required": [
@@ -184267,6 +184590,21 @@
                                   "baseline",
                                   "publication"
                                 ]
+                              },
+                              "requires": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "suggestions",
+                                    "threads",
+                                    "bindings",
+                                    "sections",
+                                    "revisions",
+                                    "components"
+                                  ],
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                }
                               }
                             },
                             "required": [

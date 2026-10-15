@@ -1,4 +1,5 @@
 export {
+  CONDITIONS_BY_KIND,
   decidingDefinition,
   GATE_PUBLICATIONS,
   initialState,
@@ -6,12 +7,14 @@ export {
   SEED_DOCUMENT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
+  TRANSITION_CONDITIONS,
   TRANSITION_PERMISSIONS,
   transitionsFrom,
   WORKFLOW_KINDS,
   workflowBodySchema,
 } from './workflow.js';
 export type {
+  TransitionCondition,
   TransitionPermission,
   WorkflowBody,
   WorkflowGate,

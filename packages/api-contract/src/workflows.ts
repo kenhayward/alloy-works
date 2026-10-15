@@ -48,6 +48,13 @@ const GateBody = z.strictObject({
     .describe("A document's gate: whether passing may, or must, request an approved publication"),
 });
 
+/** What a transition may require (LIF-004; the WF3 plan, WF3-A). */
+const TransitionCondition = z
+  .enum(['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components'])
+  .describe(
+    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision',
+  );
+
 const WorkflowTransitionBody = z.strictObject({
   key: Key,
   name: Name,
@@ -63,6 +70,13 @@ const WorkflowTransitionBody = z.strictObject({
   gate: GateBody.optional().describe(
     'Present for a gate: decided by approvers, never taken as a move; its permission is approve',
   ),
+  requires: z
+    .array(TransitionCondition)
+    .max(6)
+    .optional()
+    .describe(
+      "What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once",
+    ),
 });
 
 /** A definition's body: every state reachable from the initial one, keys unique. */
@@ -105,6 +119,7 @@ export const WorkflowDefinitionView = z.object({
             publication: z.enum(['none', 'permitted', 'required']),
           })
           .optional(),
+        requires: z.array(TransitionCondition).optional(),
       }),
     ),
   }),
@@ -271,6 +286,19 @@ export const WorkflowRefusal = ErrorBody.extend({
 /** A move refused because it moved since, saying where it is now. */
 export const TransitionRefusal = ErrorBody.extend({
   state: WorkflowStateView.optional().describe('state_moved: where it is now'),
+  unmet: z
+    .array(
+      z.object({
+        condition: TransitionCondition,
+        count: z.int().describe('How many stand in its way'),
+        names: z
+          .array(z.string())
+          .describe('The sections missing, or the components not approved, by title'),
+        unreadable: z.int().describe('Components the caller may not read, which leave it unproven'),
+      }),
+    )
+    .optional()
+    .describe('conditions_unmet: each condition not met, in the order the transition names them'),
 });
 
 const administer = {
@@ -308,7 +336,7 @@ const approvalResponses = (kind: 'component' | 'document' | 'query definition') 
     },
     409: {
       description:
-        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded',
+        'state_moved: it is not at the gate; version_moved: the version was replaced; approval_given: the caller approved it this round; transition_unknown: no such gate; artifact_archived; gate_baseline_refused: the baseline the gate takes cannot be made, so nothing was recorded; conditions_unmet: what the gate requires is not met, so nothing was recorded',
       schema: TransitionRefusal,
     },
   }) as const;
@@ -331,7 +359,7 @@ const transitionResponses = (kind: 'component' | 'document' | 'query definition'
       schema: ErrorBody,
     },
     409: {
-      description: `state_moved: the ${kind} is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived ${kind} does not move until unarchived`,
+      description: `state_moved: the ${kind} is no longer in the state named, which the answer gives; transition_unknown: no such transition from its state; artifact_archived: an archived ${kind} does not move until unarchived; conditions_unmet: what the transition requires is not met`,
       schema: TransitionRefusal,
     },
     410: { description: `The ${kind} has been deleted`, schema: ErrorBody },

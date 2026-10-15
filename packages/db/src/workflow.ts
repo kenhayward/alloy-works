@@ -11,6 +11,7 @@ import {
   type WorkflowProblem,
   type WorkflowTransition,
 } from '@alloy-works/domain';
+import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
 import { artifactPlace, recordEvent } from './audit.js';
@@ -535,6 +536,7 @@ export async function draftOnSave(
 }
 
 export type MoveAnswer =
+  | { readonly answer: 'conditions.unmet'; readonly unmet: readonly UnmetCondition[] }
   | { readonly answer: 'moved'; readonly standing: WorkflowStanding }
   | { readonly answer: 'artifact.missing' }
   | { readonly answer: 'transition.unknown' }
@@ -584,6 +586,14 @@ export async function moveArtifact(
   const reason = input.reason?.normalize('NFC').trim() ?? '';
   if (reason.length > MAX_REASON) return { answer: 'reason.invalid' };
   if (transition.reasonRequired && reason === '') return { answer: 'reason.required' };
+  // What it requires, met now, before anything is recorded (LIF-004; WF3-B).
+  const unmet = await unmetConditions(trx, {
+    artifactId: input.artifactId,
+    kind: standing.kind,
+    requires: transition.requires ?? [],
+    principal: input.by,
+  });
+  if (unmet.length > 0) return { answer: 'conditions.unmet', unmet };
   await moved(trx, standing, {
     artifactId: input.artifactId,
     version: await latestVersionId(trx, input.artifactId),
