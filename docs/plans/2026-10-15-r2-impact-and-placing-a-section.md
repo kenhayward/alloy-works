@@ -40,3 +40,10 @@ it pulls in (SCH-023, SCH-024, REL-017 to REL-020, REL-030, REU-046, REU-054).
 - Domain `place`; db preview and act; the route; the outline pane's **Place from a document**.
 - Tests: the report; the section and its references in order and mode; refusals; the page. The final
   review hunts a component placed that the author may not read, and a value copied. The close: 0.173.0.
+
+## Built
+
+R2a #634, and R2b with the close (0.173.0) #635. The final review found a placement
+refused in any document with front matter, which it now follows; the dialog writing over a title the
+author typed when it read the report again; and a deleted component named as one the author may not
+read. All are fixed. The document picker offers the first hundred documents; a search is for later.

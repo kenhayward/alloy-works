@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.173.0 - 2026-10-15 (PR #635)
+
+Reuse's second slice: impact, and placing another document's section (the R2 plan).
+
+### Added
+
+- **What a change reaches, through the API.** Ask what a change to a component, image, query definition, connection or template reaches, to a depth from 1 to 10: each document or component referencing it, then what references those. Nothing you may not read is named or walked past.
+- **What an artifact uses, through the API.** Ask what a document, component or query definition references now.
+- **Place from a document.** The outline offers **Place from a document**: choose another document and one of its sections, see how many references it makes and how much text the components hold, choose how each reference follows its component, and the section's components are placed here under a new section of your own. Nothing else is copied.
+
 ## 0.172.0 - 2026-10-15 (PR #632)
 
 Reuse's first slice: where a component is used (the R1 plan); and workflow state wherever it appears (LIF-005).
