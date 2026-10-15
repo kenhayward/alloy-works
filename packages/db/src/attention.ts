@@ -16,7 +16,7 @@ import { readableArtifactsAs } from './readable-artifacts.js';
 import { newestUncutIteration } from './recovery.js';
 import { iterationRetained } from './retention.js';
 import type { TenantTransaction } from './tables.js';
-import { newestDefinition } from './workflow.js';
+import { newestDefinition, workflowStates } from './workflow.js';
 
 /**
  * **What waits on a person** (home.md, Needs your attention; the HM plan, HM-A to HM-F): computed when
@@ -58,6 +58,8 @@ export interface AttentionItem {
   readonly request?: string;
   /** A review's: the day it is due by, `YYYY-MM-DD` (LIF-017). */
   readonly reviewBy?: string;
+  /** A component's or a document's workflow state now (LIF-005); null for a connection. */
+  readonly state: { readonly key: string; readonly name: string } | null;
 }
 
 /** The act that resolves each kind, decided before it is listed (HM-F). */
@@ -347,6 +349,11 @@ export async function whatWaits(
     trx,
     listed.map((each) => each.id),
   );
+  // Each one's state now (LIF-005): everything listed is the reader's to read.
+  const states = await workflowStates(
+    trx,
+    listed.map((each) => each.id),
+  );
   return {
     items: listed.map((each) => ({
       kind: each.kind,
@@ -358,6 +365,9 @@ export async function whatWaits(
       ...(each.reason === undefined ? {} : { reason: each.reason }),
       ...(each.request === undefined ? {} : { request: each.request }),
       ...(each.reviewBy === undefined ? {} : { reviewBy: each.reviewBy }),
+      state: ((state) => (state ? { key: state.key, name: state.name } : null))(
+        states.get(each.id),
+      ),
     })),
     total: found.length,
   };

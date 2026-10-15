@@ -293,7 +293,7 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
     await db?.drop();
   });
 
-  it('SCH-070 lists each kind with its reason and title, and clears each once the person does what it asks', async () => {
+  it('SCH-070 LIF-005 lists each kind with its reason, title and state, and clears each once the person does what it asks', async () => {
     const space = await fresh();
     const failing = await documentIn(space, 'The dosing report');
     const request = await publish('ada', failing, failing.version);
@@ -313,22 +313,28 @@ describe('what waits on the caller over HTTP (home.md, Needs your attention)', (
         artifact: { id: failing.id, kind: 'document', title: 'The dosing report' },
         reason: 'engine_failed',
         request,
+        state: { key: 'draft', name: 'Draft' },
       },
       {
         kind: 'changes_not_in_version',
         artifact: { id: discarded.id, kind: 'component', title: 'Clean the printer' },
+        state: { key: 'draft', name: 'Draft' },
       },
       {
         kind: 'changes_not_in_version',
         artifact: { id: cut.id, kind: 'component', title: 'Install the printer' },
+        state: { key: 'draft', name: 'Draft' },
       },
       {
         kind: 'published_earlier',
         artifact: { id: behind.id, kind: 'document', title: 'The audit, revised' },
+        state: { key: 'draft', name: 'Draft' },
       },
       {
         kind: 'connection_untested',
         artifact: { id: connection, kind: 'connection', title: 'Readings' },
+        // A connection has no workflow.
+        state: null,
       },
     ]);
 

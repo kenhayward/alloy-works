@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { StateLozenge } from '../states/Lozenge.js';
 import { useCallback, useEffect, useId, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
@@ -16,6 +17,8 @@ type Part = { readonly text: string } | { readonly mention: string };
 interface Place {
   readonly id: string;
   readonly title: string | null;
+  /** Its workflow state now, to a reader of it alone (LIF-005); absent from a service before it. */
+  readonly state?: { readonly key: string; readonly name: string } | null;
 }
 
 interface Notification {
@@ -225,6 +228,8 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
             {notifications.map((each) => (
               <li key={each.id} className={styles['row']} data-unread={!each.read}>
                 <span className={styles['said']}>{said(each)}</span>
+                {/* What it is on, in its state now, to a reader of it alone (LIF-005). */}
+                {each.on?.state && <StateLozenge state={each.on.state} />}
                 <span className={styles['muted']}>
                   {moment(each.at)}
                   {each.read ? '' : ', unread'}

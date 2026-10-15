@@ -25,6 +25,7 @@ import {
   type BaselineSummary,
   type Tenant,
   type TenantTransaction,
+  workflowStates,
 } from '@alloy-works/db';
 import {
   decide,
@@ -157,6 +158,8 @@ export function baselineHandlers(
       const { id } = request.params as BaselineParams;
       const read = await readBaseline(trx, id, principalId);
       if (!read) throw notFound();
+      // The document's state now (LIF-005): a reader of the baseline reads the document.
+      const now = (await workflowStates(trx, [read.documentId])).get(read.documentId);
       const versionOf = async (version: string) => {
         const found = await readVersion(trx, version);
         if (!found) throw new Error(`The version ${version} a baseline pins is gone`);
@@ -229,6 +232,7 @@ export function baselineHandlers(
       );
       return {
         baseline: summaryView(read),
+        state: { key: now?.key ?? '', name: now?.name ?? '' },
         version: { id: document.id, number: `${document.revision}.${document.version}` },
         outline: withholdComponents(outline.outline, (component) => readable.has(component)),
         layout: {

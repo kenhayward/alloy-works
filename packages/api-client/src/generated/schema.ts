@@ -8742,6 +8742,10 @@ export interface operations {
                      *           "at": "2026-01-01T00:00:00.000Z"
                      *         }
                      *       },
+                     *       "state": {
+                     *         "key": "example",
+                     *         "name": "example"
+                     *       },
                      *       "version": {
                      *         "id": "00000000-0000-4000-8000-000000000001",
                      *         "number": "example"
@@ -8783,6 +8787,11 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                        };
+                        /** @description The document's workflow state now (LIF-005): the one part of this page read at its latest, said as now */
+                        state: {
+                            key: string;
+                            name: string;
                         };
                         /** @description The document version pinned */
                         version: {
@@ -44774,6 +44783,11 @@ export interface operations {
                                 id: string & (unknown & unknown);
                                 /** @description Its title, to a reader of it now alone; null to anybody else */
                                 title: string | null;
+                                /** @description Its workflow state now (LIF-005), to a reader of it alone; null to anybody else */
+                                state: {
+                                    key: string;
+                                    name: string;
+                                } | null;
                             } | null;
                             /** @description A digest’s: how many of each kind, and on which threads and where, of those the caller may still read (COL-035) */
                             counts: {
@@ -44788,6 +44802,11 @@ export interface operations {
                                     id: string & (unknown & unknown);
                                     /** @description Its title, to a reader of it now alone; null to anybody else */
                                     title: string | null;
+                                    /** @description Its workflow state now (LIF-005), to a reader of it alone; null to anybody else */
+                                    state: {
+                                        key: string;
+                                        name: string;
+                                    } | null;
                                 }[];
                             } | null;
                             /** Format: date-time */
@@ -45930,6 +45949,11 @@ export interface operations {
                              * @description A review’s: the day it is to be reviewed by (LIF-017)
                              */
                             reviewBy?: string;
+                            /** @description A component's or a document's workflow state now (LIF-005); null for a connection */
+                            state: {
+                                key: string;
+                                name: string;
+                            } | null;
                             /** @description A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}` */
                             request?: string & (unknown & unknown);
                         }[];

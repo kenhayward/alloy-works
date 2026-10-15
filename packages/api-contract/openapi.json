@@ -20902,6 +20902,22 @@
                         "superseded"
                       ]
                     },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "name"
+                      ],
+                      "description": "The document's workflow state now (LIF-005): the one part of this page read at its latest, said as now"
+                    },
                     "version": {
                       "type": "object",
                       "properties": {
@@ -23585,6 +23601,7 @@
                   },
                   "required": [
                     "baseline",
+                    "state",
                     "version",
                     "outline",
                     "layout",
@@ -23610,6 +23627,10 @@
                       "principal": "00000000-0000-4000-8000-000000000001",
                       "at": "2026-01-01T00:00:00.000Z"
                     }
+                  },
+                  "state": {
+                    "key": "example",
+                    "name": "example"
                   },
                   "version": {
                     "id": "00000000-0000-4000-8000-000000000001",
@@ -140340,11 +140361,35 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "state": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "name"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Its workflow state now (LIF-005), to a reader of it alone; null to anybody else"
                                   }
                                 },
                                 "required": [
                                   "id",
-                                  "title"
+                                  "title",
+                                  "state"
                                 ]
                               },
                               {
@@ -140429,11 +140474,35 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "state": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "key": {
+                                                  "type": "string"
+                                                },
+                                                "name": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "key",
+                                                "name"
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "Its workflow state now (LIF-005), to a reader of it alone; null to anybody else"
                                         }
                                       },
                                       "required": [
                                         "id",
-                                        "title"
+                                        "title",
+                                        "state"
                                       ]
                                     }
                                   }
@@ -142972,6 +143041,29 @@
                             "format": "date",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
                           },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "key",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "A component's or a document's workflow state now (LIF-005); null for a connection"
+                          },
                           "request": {
                             "description": "A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}`",
                             "type": "string",
@@ -142987,7 +143079,8 @@
                         },
                         "required": [
                           "kind",
-                          "artifact"
+                          "artifact",
+                          "state"
                         ]
                       },
                       "description": "One per artifact, the most pressing kind first, newest first within it; at most 20"

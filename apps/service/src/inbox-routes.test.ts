@@ -166,7 +166,7 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
   const inbox = async (who: string, query = '') =>
     (await call('GET', `/v1/inbox${query}`, who)).json<InboxView>();
 
-  it('COL-015 COL-036 tells a person a comment names, by identifiers and a title they may read, never the text, and tells its author who could not be told', async () => {
+  it('COL-015 COL-036 LIF-005 tells a person a comment names, by identifiers, a title and a state they may read, never the text, and tells its author who could not be told', async () => {
     const { version, thread } = await mentioning('grace', 'alice');
     expect(thread.untold).toEqual([ids.alice]);
     const listed = await inbox('grace');
@@ -174,7 +174,11 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
       kind: 'mention',
       actor: { id: ids.ada },
       thread: thread.id,
-      on: { id: version.artifactId, title: 'Install the printer' },
+      on: {
+        id: version.artifactId,
+        title: 'Install the printer',
+        state: { key: 'draft', name: 'Draft' },
+      },
       counts: null,
       read: false,
     });
@@ -198,7 +202,7 @@ describe('the inbox over HTTP (collaboration.md, The inbox)', () => {
       kind: 'mention',
       actor: null,
       thread: null,
-      on: { id: version.artifactId, title: null },
+      on: { id: version.artifactId, title: null, state: null },
     });
   });
 

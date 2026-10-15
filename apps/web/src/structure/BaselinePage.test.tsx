@@ -27,6 +27,7 @@ const view = {
     digest: 'a'.repeat(64),
     superseded: null,
   },
+  state: { key: 'approved', name: 'Approved' },
   version: { id: 'eeeeeeee-0000-4000-8000-000000000001', number: '0.4' },
   outline: {
     schemaVersion: OUTLINE_SCHEMA_VERSION,
@@ -72,7 +73,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 describe('a baseline at its own address', () => {
-  it('STR-047 shows the document as the baseline holds it, at the node its address names, and nothing of a component the reader may not read', async () => {
+  it('STR-047 LIF-005 shows the document as the baseline holds it, at the node its address names, its state now, and nothing of a component the reader may not read', async () => {
     const asked: string[] = [];
     const scrolled = vi.fn();
     Element.prototype.scrollIntoView = scrolled;
@@ -96,6 +97,9 @@ describe('a baseline at its own address', () => {
     expect(await screen.findByText('Set the tray, as approved.')).toBeInTheDocument();
     expect(screen.getByText('Version 0.4')).toBeInTheDocument();
     expect(screen.getByText('Current')).toBeInTheDocument();
+    // The document's state now, said as now (LIF-005).
+    expect(screen.getByText('The document now:')).toBeInTheDocument();
+    expect(screen.getByText('Approved')).toBeInTheDocument();
     expect(document.querySelector(`[data-node="${SHOWN}"]`)).toHaveAttribute('data-marked', 'true');
     expect(scrolled).toHaveBeenCalled();
     expect(asked).toEqual(expect.arrayContaining([`/v1/baselines/${BASELINE}/view`]));
