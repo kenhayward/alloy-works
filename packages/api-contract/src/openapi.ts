@@ -99,10 +99,22 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
             openedFrom: '00000000-0000-4000-8000-000000000001',
             operation: { operation: 'remove', node: 'a'.repeat(26) },
           }
-        : // A credential is one secret or an S3 key pair, each optional alone (the D6 plan).
-          name === 'setConnectionCredentialBody'
-          ? { secret: 'an-invented-password' }
-          : value(root, new Set());
+        : // A placement's new section needs a title of some words (the R2 plan, R2-F).
+          name === 'placeSectionBody'
+          ? {
+              openedFrom: '00000000-0000-4000-8000-000000000001',
+              from: '00000000-0000-4000-8000-000000000002',
+              fromVersion: '00000000-0000-4000-8000-000000000003',
+              section: 'a'.repeat(26),
+              parent: null,
+              position: 0,
+              title: [{ type: 'text', value: 'Upkeep', marks: [] }],
+              mode: 'latest',
+            }
+          : // A credential is one secret or an S3 key pair, each optional alone (the D6 plan).
+            name === 'setConnectionCredentialBody'
+            ? { secret: 'an-invented-password' }
+            : value(root, new Set());
   const checked = schema.safeParse(candidate);
   if (!checked.success) {
     throw new Error(

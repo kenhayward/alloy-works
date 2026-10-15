@@ -35,6 +35,9 @@ export {
   DocumentValuesBody,
   DocumentView,
   OutlineOperationBody,
+  PlacementBody,
+  PlacementQuery,
+  PlacementReportView,
   OutlineRefusal,
 } from './documents.js';
 export {

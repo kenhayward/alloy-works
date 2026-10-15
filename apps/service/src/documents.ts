@@ -9,6 +9,9 @@ import type {
   DocumentView,
   OutlineOperationBody,
   SpaceParams,
+  PlacementBody,
+  PlacementQuery,
+  PlacementReportView,
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
 import { cursorFor, pageAsked } from './listing.js';
@@ -49,6 +52,8 @@ import {
   type ValuesRefused,
   type PublishingState,
   workflowStates,
+  placeFromSection,
+  previewPlacement,
 } from '@alloy-works/db';
 import {
   conditions,
@@ -922,6 +927,86 @@ export function documentHandlers(
           if (current.version.id !== body.openedFrom) throw stale(current);
           // A fixed message; the reason is one of the domain's own constants, never an exception's
           // text (operations.ts), so it is safe to carry as a member.
+          throw refused(
+            400,
+            'outline.invalid',
+            'This change does not apply to the outline as it stands.',
+            { reason: answer.reason },
+          );
+        }
+      }
+    },
+
+    // Another document's section placed here (REU-054; the R2 plan, R2-F), its report first (REU-046).
+    previewPlacement: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<PlacementReportView> => {
+      const { from, section } = request.query as PlacementQuery;
+      const answer = await previewPlacement(trx, { by: principalId, from, section });
+      if (answer.answer === 'missing') throw notFound();
+      return {
+        ...answer.report,
+        from: { ...answer.report.from, section: { ...answer.report.from.section } },
+        components: answer.report.components.map((each) => ({ ...each })),
+      } as PlacementReportView;
+    },
+
+    placeSection: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentView> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as PlacementBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
+        facts,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await placeFromSection(trx, {
+        documentId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        from: body.from,
+        fromVersion: body.fromVersion,
+        section: body.section,
+        parent: body.parent,
+        position: body.position,
+        title: body.title,
+        mode: body.mode,
+      });
+      switch (answer.answer) {
+        case 'recorded':
+          return documentView(viewer, document, answer.version);
+        case 'version.unchanged':
+          return documentView(viewer, document, answer.current);
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
+        case 'source.missing':
+          throw notFound();
+        case 'source.moved':
+          throw refused(
+            409,
+            'source.moved',
+            "The section's document has changed since it was reported. Read the report again.",
+          );
+        case 'values.invalid':
+        case 'template.unresolved':
+          return refusedValues(viewer, id, body.openedFrom, answer);
+        case 'outline.invalid': {
+          const current = await latestView(viewer, id);
+          if (current.version.id !== body.openedFrom) throw stale(current);
           throw refused(
             400,
             'outline.invalid',

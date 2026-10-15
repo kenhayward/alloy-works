@@ -1,6 +1,8 @@
 import {
   outlineMatterSchema,
   outlineOperationSchema,
+  PLACE_MAX,
+  sectionNodeSchema,
   storableEverywhere,
 } from '@alloy-works/domain';
 import { z } from 'zod';
@@ -59,6 +61,78 @@ export const OutlineOperationBody = z.strictObject({
   operation: outlineOperationSchema,
 });
 export type OutlineOperationBody = z.infer<typeof OutlineOperationBody>;
+
+/** Where a placement is found: another document's section (REU-054; the R2 plan, R2-F). */
+export const PlacementQuery = z.object({
+  from: LowercaseUuid.describe('The document the section is in'),
+  section: z.string().min(1).max(64).describe("The section's node"),
+});
+export type PlacementQuery = z.infer<typeof PlacementQuery>;
+
+/** What placing a section pulls in, reported before anything is placed (REU-046). */
+export const PlacementReportView = z.object({
+  from: z.object({
+    document: LowercaseUuid,
+    version: LowercaseUuid.describe("The source's latest version: send it back to place"),
+    section: z.object({
+      id: z.string(),
+      title: z.array(z.unknown()).describe("The section's title, as the outline holds it"),
+    }),
+  }),
+  occurrences: z
+    .number()
+    .int()
+    .describe('How many references placing it makes, one per occurrence'),
+  components: z
+    .array(
+      z.object({
+        id: LowercaseUuid,
+        title: z.string(),
+        occurrences: z.number().int(),
+        blocks: z.number().int().describe('Its top-level blocks at its latest version'),
+        characters: z.number().int().describe('The characters of its text at its latest version'),
+        approved: z
+          .boolean()
+          .describe('Whether it has an approved revision, which an `approved` reference takes'),
+      }),
+    )
+    .describe('Each component it places that the caller may read, once'),
+  unreadable: z
+    .number()
+    .int()
+    .describe(
+      'How many components it places that the caller may not read: placing is refused then',
+    ),
+  blocks: z.number().int().describe('Blocks in all, each occurrence counted'),
+  characters: z.number().int().describe('Characters in all, each occurrence counted'),
+});
+export type PlacementReportView = z.infer<typeof PlacementReportView>;
+
+/** Placing another document's section as references under a new section (REU-054; R2-F). */
+export const PlacementBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe(
+    'The version the outline was read at, which must be the latest',
+  ),
+  from: LowercaseUuid.describe('The document the section is in'),
+  fromVersion: LowercaseUuid.describe(
+    'The source version the report read: refused, source_moved, where it is not the latest',
+  ),
+  section: z.string().min(1).max(64).describe("The section's node"),
+  parent: z
+    .string()
+    .min(1)
+    .max(64)
+    .nullable()
+    .describe('Where the new section goes: a section, or null for the top'),
+  position: z.number().int().min(0),
+  title: sectionNodeSchema.shape.title.describe("The new section's title, the author's"),
+  mode: z
+    .enum(['latest', 'approved', 'pinned'])
+    .describe(
+      `Each reference's mode: pinned takes each component's latest version now. At most ${PLACE_MAX} references`,
+    ),
+});
+export type PlacementBody = z.infer<typeof PlacementBody>;
 
 /**
  * A document's own values, whole (templates.md, "Values"), from the version they were read at: each a
@@ -747,6 +821,62 @@ export const documentRoutes = {
       404: notFound,
       409: {
         description: 'version_precondition: the document has changed since it was read',
+        schema: OutlineRefusal,
+      },
+    },
+  },
+  previewPlacement: {
+    operationId: 'previewPlacement',
+    method: 'GET',
+    path: '/v1/documents/{id}/placement',
+    summary: "What placing another document's section here would pull in",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    query: PlacementQuery,
+    responses: {
+      200: { description: 'The report, placing nothing', schema: PlacementReportView },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such document the caller may edit, or no such section in a document the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  placeSection: {
+    operationId: 'placeSection',
+    method: 'POST',
+    path: '/v1/documents/{id}/placement',
+    summary: "Place another document's section here, as references under a new section",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: PlacementBody,
+    responses: {
+      200: { description: 'Placed: the document at its latest version', schema: DocumentView },
+      400: {
+        description:
+          'outline_invalid: the placement does not apply, a component it places is not one the caller may reference, or the template allows no section to be added',
+        schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: {
+        description:
+          'No such document the caller may edit, or no such section in a document the caller may read',
+        schema: ErrorBody,
+      },
+      409: {
+        description:
+          "version_precondition: the outline has changed since it was read; source_moved: the section's document has a newer version than the report read",
         schema: OutlineRefusal,
       },
     },

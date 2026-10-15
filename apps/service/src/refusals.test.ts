@@ -204,6 +204,8 @@ describe('the rule behind a refusal', () => {
       'template.none',
       'template.current',
       'template.not_latest',
+      // The R2 plan's (R2-F): the section's document moved since the report.
+      'source.moved',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

@@ -1,0 +1,56 @@
+/* Place from a document: the dialog and its report (the R2 plan, R2-F). */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.form h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.form h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--size-14);
+}
+
+.form p {
+  margin: 0;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-8);
+}
+
+.form .choice {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.report ul {
+  margin: var(--space-4) 0 0;
+  padding-left: var(--space-16);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
