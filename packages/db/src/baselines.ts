@@ -12,6 +12,7 @@ import {
   type BaselinePins,
   type PublishFailure,
 } from '@alloy-works/domain';
+import { documentTemplate } from './templates.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
@@ -92,11 +93,9 @@ export async function makeBaseline(
   if (found.answer !== 'publishable') return found;
   if (found.failures.length > 0) return { answer: 'baseline.unresolved', failures: found.failures };
 
-  const template = await trx
-    .selectFrom('document_template')
-    .select(['template_id', 'template_version_id'])
-    .where('document_id', '=', input.documentId)
-    .executeTakeFirst();
+  // The version it is bound to now: the one it was moved to, where it was (the WF6 final review).
+  const link = await documentTemplate(trx, input.documentId);
+  const template = link && { template_id: link.template, template_version_id: link.version };
   const versions = [
     found.latest.id,
     found.layout.versionId,

@@ -455,4 +455,8 @@ forward by node, and each section it requires that the document lacks. The move 
 with the carried values and outline (or none, where nothing the document holds changes), the move row
 and `template.moved { template, from, to, notCarried }`. The outline is not restructured: a newly
 required section is reported, to add or to remove with a reason (WF6-E). Only the newest version is
-moved to, by somebody who may edit the document and read the template.
+moved to, by somebody who may edit the document and read the template. The move takes the document's lock,
+so two at once take turns. A baseline made after a move pins the version moved to. The document's
+parameters are carried as they stand, the newer version's declarations governing them from then on,
+and the report names none. A waiver's reason stands for its key, latest first, until the key is
+waived again (the final review).

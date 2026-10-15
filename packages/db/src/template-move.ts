@@ -12,7 +12,13 @@ import { isArchived } from './archival.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
 import { documentTemplate, templateReferences } from './templates.js';
-import { latestVersion, readVersion, recordVersion, type StoredVersion } from './versions.js';
+import {
+  latestVersion,
+  lockArtifact,
+  readVersion,
+  recordVersion,
+  type StoredVersion,
+} from './versions.js';
 import { waivedKeys } from './waivers.js';
 
 /**
@@ -130,6 +136,8 @@ export async function moveDocumentTemplate(
     readonly by: string;
   },
 ): Promise<MoveAnswer> {
+  // Under its lock, so two moves at once take turns and the second finds it moved (the final review).
+  await lockArtifact(trx, input.documentId);
   const resolved = await resolveMove(trx, input);
   if ('refusal' in resolved) return resolved.refusal;
   const { latest, link, plan } = resolved;

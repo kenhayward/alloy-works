@@ -14,6 +14,7 @@ import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { unmetConditions } from './workflow-conditions.js';
 import { waivedKeys } from './waivers.js';
+import { makeBaseline, readBaseline } from './baselines.js';
 import { moveDocumentTemplate, previewTemplateMove } from './template-move.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -754,6 +755,49 @@ describe('a document made from a template', () => {
     expect(await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer }))).toEqual({
       answer: 'template.current',
     });
+  });
+
+  it('TPL-033 pins the version a document was moved to in a baseline made after the move', async () => {
+    const made = await template({});
+    const document = await make(made.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const id = document.version.artifactId;
+    const at = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
+      service.withTenant(production, work);
+    const valued = await at((trx) =>
+      recordDocumentValues(trx, {
+        documentId: id,
+        openedFrom: document.version.id,
+        author: ada,
+        values: { [OWNER]: 'Ada' },
+      }),
+    );
+    if (valued.answer !== 'recorded') throw new Error(valued.answer);
+    const newer = await at(async (trx) => {
+      const answer = await recordTemplateVersion(trx, {
+        templateId: made.id,
+        openedFrom: made.version.id,
+        definition: definition({ name: 'Report, revised' }),
+        author: ada,
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.template.version.id;
+    });
+    const moved = await at((trx) =>
+      moveDocumentTemplate(trx, { documentId: id, latest: valued.version.id, to: newer, by: ada }),
+    );
+    if (moved.answer !== 'moved') throw new Error(moved.answer);
+    const baseline = await at((trx) =>
+      makeBaseline(trx, {
+        documentId: id,
+        version: moved.version.id,
+        name: 'After the move',
+        maker: ada,
+      }),
+    );
+    if (baseline.answer !== 'made') throw new Error(baseline.answer);
+    const read = await at((trx) => readBaseline(trx, baseline.baseline, ada));
+    expect(read!.pins.template).toMatchObject({ version: newer });
   });
 
   it('refuses a move to a version that is not its template’s newest', async () => {
