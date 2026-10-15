@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { latestRevisionsOf } from './workflow.js';
 import {
   applyOutlineOperation,
   blockIdentifierFrom,
@@ -11,6 +12,7 @@ import {
   outlineDocumentSchema,
   readOutline,
   repointsBetween,
+  type Repoint,
   resolveTemplate,
   seededValues,
   walkOutline,
@@ -654,6 +656,16 @@ export async function recordRepoints(
   const repoints = repointsBetween(before, after);
   if (repoints.length === 0) return;
   const place = await artifactPlace(trx, version.artifactId, version.id);
+  // An `approved` side names the version its latest revision is, as it resolves now (WF4-D).
+  const revisions = await latestRevisionsOf(trx, [
+    ...new Set(repoints.map((each) => each.component)),
+  ]);
+  const named = (mode: Repoint['from'], component: string) => {
+    const revision = revisions.get(component);
+    return mode.kind === 'approved' && revision !== undefined
+      ? { kind: mode.kind, version: revision.versionId }
+      : { ...mode };
+  };
   for (const { node, component, from, to } of repoints) {
     await recordEvent(
       trx,
@@ -661,7 +673,7 @@ export async function recordRepoints(
         kind: 'reference.repointed',
         subject: { kind: 'document', id: version.artifactId, version: version.id },
         space: place.space,
-        detail: { node, component, from: { ...from }, to: { ...to } },
+        detail: { node, component, from: named(from, component), to: named(to, component) },
       },
       place.labels,
     );

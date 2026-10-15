@@ -30,6 +30,8 @@ import {
   recordDocumentValues,
   versionContents,
   latestVersionsOf,
+  latestRevisionsOf,
+  lastPublishedOccurrences,
   readableComponents,
   readDocument,
   readVersion,
@@ -520,10 +522,12 @@ export function documentHandlers(
       // the locks are each read once for the whole document, not once per component.
       const componentOf = new Map<string, string>();
       const pinned = new Set<string>();
+      const approved = new Set<string>();
       walkOutline(outline.nodes, (node) => {
         if (node.type !== 'reference') return;
         componentOf.set(node.id, node.component);
         if (node.mode.kind === 'pinned') pinned.add(node.id);
+        if (node.mode.kind === 'approved') approved.add(node.id);
       });
       const facts = await loadFactsFor(trx, principalId, [...componentOf.values()]);
       const readable = [...facts].flatMap(([component, known]) =>
@@ -535,6 +539,29 @@ export function documentHandlers(
       // Each readable component's latest version: what a reference pinned below it is told is newer
       // (CNT-181). Read only of components the caller may read, so none they may not is named (SCH-032).
       const latest = await latestVersionsOf(trx, readable);
+      // Which revision each reference tracking the latest approved one shows (CNT-163), and the
+      // version the last publication carried where a newer one is approved since (LIF-041; WF4-E):
+      // only of components the caller may read, which alone resolve.
+      const revisions = await latestRevisionsOf(
+        trx,
+        readable.filter((component) =>
+          [...approved].some((node) => componentOf.get(node) === component),
+        ),
+      );
+      const published = approved.size === 0 ? new Map() : await lastPublishedOccurrences(trx, id);
+      const movedFrom = new Map<string, string>();
+      for (const occurrence of inputs.occurrences) {
+        const was = published.get(occurrence.node);
+        if (
+          approved.has(occurrence.node) &&
+          occurrence.version !== null &&
+          was !== undefined &&
+          was !== occurrence.version
+        ) {
+          movedFrom.set(occurrence.node, was);
+        }
+      }
+      const movedNumbers = await versionContents(trx, [...new Set(movedFrom.values())]);
       const editing = new Map(
         readable.map((component) => {
           const lock = locks.get(component);
@@ -572,9 +599,25 @@ export function documentHandlers(
             newest.id !== occurrence.version
               ? { newer: newest }
               : {};
+          const revision =
+            approved.has(occurrence.node) && component !== undefined
+              ? revisions.get(component)
+              : undefined;
+          const tracked =
+            revision !== undefined && revision.versionId === occurrence.version
+              ? { revision: revision.number }
+              : {};
+          const was = movedFrom.get(occurrence.node);
+          const held = was === undefined ? undefined : movedNumbers.get(was);
+          const moved =
+            was === undefined || held === undefined
+              ? {}
+              : { moved: { id: was, number: `${held.revision}.${held.version}` } };
           return {
             ...occurrence,
             ...newer,
+            ...tracked,
+            ...moved,
             mayEdit: known?.mayEdit ?? false,
             mayComment: known?.mayComment ?? false,
             maySuggest: known?.maySuggest ?? false,

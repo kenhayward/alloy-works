@@ -38925,6 +38925,13 @@ export interface operations {
                             maySuggest: boolean;
                             /** @description How many suggestions wait on the component: 0 where the caller may not read it */
                             pendingSuggestions: number;
+                            /** @description For a reference tracking the latest approved revision, which revision it shows (CNT-163); absent where none is approved */
+                            revision?: number;
+                            /** @description For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041) */
+                            moved?: {
+                                id: string;
+                                number: string;
+                            };
                             /** @description Who holds the component now and until when: null where nobody does, or where the caller may not read it */
                             lock: {
                                 holder: {

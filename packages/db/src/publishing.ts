@@ -39,6 +39,7 @@ import {
   workflowBodySchema,
   type PublishedApproval,
 } from '@alloy-works/domain';
+import { latestRevisionsOf } from './workflow.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
@@ -133,6 +134,15 @@ export async function resolveOccurrences(
         .map((each) => each.component),
     ),
   ];
+  // An `approved` reference takes its component's latest revision (the WF4 plan, WF4-A), of a
+  // component the principal may read alone.
+  const revisions = await latestRevisionsOf(trx, [
+    ...new Set(
+      references
+        .filter((each) => readable.has(each.component) && each.approved)
+        .map((each) => each.component),
+    ),
+  ]);
   const pinned = [
     ...new Set(
       references.flatMap((each) =>
@@ -177,7 +187,13 @@ export async function resolveOccurrences(
   return references.map((reference): OccurrenceOutcome => {
     const { node, component } = reference;
     if (!readable.has(component)) return { node, outcome: 'unreadable' };
-    if (reference.approved) return { node, outcome: 'unresolved' };
+    if (reference.approved) {
+      // None designated yet: nothing to take.
+      const revision = revisions.get(component);
+      return revision === undefined
+        ? { node, outcome: 'unresolved' }
+        : { node, outcome: 'resolved', component, version: revision.versionId };
+    }
     if (reference.pinned !== null) {
       return pinOf.get(reference.pinned) === component
         ? { node, outcome: 'resolved', component, version: reference.pinned }
@@ -586,6 +602,34 @@ async function bindingsHeld(
     })),
     unresolved,
   };
+}
+
+/**
+ * The version each node of a document took in its latest publication not failed, queued or done:
+ * what a reference tracking the latest approved revision is compared with (LIF-041; the WF4 plan,
+ * WF4-E). Empty where it was never published.
+ */
+export async function lastPublishedOccurrences(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<Map<string, string>> {
+  const last = await trx
+    .selectFrom('publication_request')
+    .select('id')
+    .where('document_id', '=', documentId)
+    .where('kind', '=', 'publish')
+    .where('state', '!=', 'failed')
+    .orderBy('requested_at', 'desc')
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  if (!last) return new Map();
+  const rows = await trx
+    .selectFrom('publication_request_occurrence')
+    .select(['node', 'version_id'])
+    .where('request_id', '=', last.id)
+    .execute();
+  return new Map(rows.map((row) => [row.node, row.version_id]));
 }
 
 /**

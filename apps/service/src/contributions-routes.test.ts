@@ -5,7 +5,9 @@ import {
   createTenant,
   findRole,
   grant,
+  decideGate,
   migrate,
+  moveArtifact,
   readVersion,
   recordVersion,
   seedDevelopmentContent,
@@ -504,6 +506,91 @@ describe('what each occurrence contributes, through the service', () => {
     expect((await occurrences('grace')).find((each) => each.node === hidden)?.newer).toEqual({
       id: secretNewer,
       number: '0.3',
+    });
+  });
+
+  it('CNT-163 LIF-041 says which revision a reference tracking the latest approved one shows, and when a newer one is approved than the last publication carried', async () => {
+    const tracked = await componentWith(general, 'Approved tray', [figure('a1', 'The tray')]);
+    let doc = await create('The approved report');
+    const answer = await call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+      openedFrom: doc.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: tracked.id, mode: { kind: 'approved' } },
+      },
+    });
+    expect(answer.statusCode, answer.body).toBe(200);
+    doc = answer.json<DocumentBody>();
+    const node = doc.outline.nodes[0]!.id;
+    const approve = (version: string) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        await moveArtifact(trx, {
+          artifactId: tracked.id,
+          kind: 'component',
+          transition: 'submit',
+          from: 'draft',
+          by: ids.grace!,
+          may: () => true,
+        });
+        const passed = await decideGate(trx, {
+          artifactId: tracked.id,
+          kind: 'component',
+          transition: 'approve',
+          version,
+          decision: 'approved',
+          by: ids.alice!,
+          may: () => true,
+        });
+        if (passed.answer !== 'passed') throw new Error(passed.answer);
+      });
+    const occurrence = async () =>
+      (await call('grace', 'GET', `/v1/documents/${doc.id}/texts`))
+        .json<{
+          occurrences: {
+            node: string;
+            version: string | null;
+            revision?: number;
+            moved?: { id: string; number: string };
+          }[];
+        }>()
+        .occurrences.find((each) => each.node === node)!;
+    // None approved: nothing to show, and no revision.
+    expect(await occurrence()).toMatchObject({ version: null });
+    expect((await occurrence()).revision).toBeUndefined();
+
+    await approve(tracked.version);
+    expect(await occurrence()).toMatchObject({ version: tracked.version, revision: 1 });
+    // Published now, carrying revision 1.
+    const published = await call('grace', 'POST', `/v1/documents/${doc.id}/publications`, {
+      version: doc.version.id,
+      formats: ['pdf'],
+    });
+    expect(published.statusCode, published.body).toBe(200);
+    expect((await occurrence()).moved).toBeUndefined();
+
+    // A newer revision approved since: the reference has moved past what the publication carried.
+    const second = await tenantDb.withTenant(tenant, async (trx) => {
+      const substance = substanceOf((await readVersion(trx, tracked.version))!);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const recorded = await recordVersion(trx, {
+        artifactId: tracked.id,
+        openedFrom: tracked.version,
+        author: ids.grace!,
+        substance: {
+          ...substance,
+          content: { ...substance.content, content: [figure('a2', 'The new tray')] } as never,
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version.id;
+    });
+    await approve(second);
+    expect(await occurrence()).toMatchObject({
+      version: second,
+      revision: 2,
+      moved: { id: tracked.version, number: '0.2' },
     });
   });
 

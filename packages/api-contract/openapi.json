@@ -124749,6 +124749,28 @@
                             "maximum": 9007199254740991,
                             "description": "How many suggestions wait on the component: 0 where the caller may not read it"
                           },
+                          "revision": {
+                            "description": "For a reference tracking the latest approved revision, which revision it shows (CNT-163); absent where none is approved",
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "moved": {
+                            "description": "For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041)",
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          },
                           "lock": {
                             "anyOf": [
                               {
