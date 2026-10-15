@@ -41,4 +41,4 @@ REU-016 and REU-038 for the two sources this slice holds).
 
 ## Built
 
-R5a #641, and R5b with the close (0.176.0) #642. R5a's openapi.json was regenerated after CI caught the drift. The final review found the pipeline version unbumped for provenance schema 5 (now 26), a variable's key changeable by its next version, which would have left every node naming it unresolved (now refused), and a variable refused in a footnote's paste and taking marks beside it; all fixed. Left for R5c: a query result as a source, REU-037, and a page declaring variables; a section title holding a variable is not edited in the outline.
+R5a #641, and R5b with the close (0.176.0) #643. R5a's openapi.json was regenerated after CI caught the drift. The final review found the pipeline version unbumped for provenance schema 5 (now 26), a variable's key changeable by its next version, which would have left every node naming it unresolved (now refused), and a variable refused in a footnote's paste and taking marks beside it; all fixed. Left for R5c: a query result as a source, REU-037, and a page declaring variables; a section title holding a variable is not edited in the outline.
