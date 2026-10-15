@@ -203,4 +203,5 @@ are read as the person taking it, as a gate's baseline is: a component they may 
 unproven, so unmet, counted and never named. Sections and components not approved are named by title.
 
 **At an approved revision** (WF3-E): the version a reference resolves to is a designated revision; an
-`approved` reference, phase 4's to resolve, is met where its component has one.
+`approved` reference, phase 4's to resolve, is met where its component has one. Every placement is
+judged, so a component placed twice passes only if both do (the final review).

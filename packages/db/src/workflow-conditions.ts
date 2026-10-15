@@ -170,55 +170,61 @@ export async function unmetConditions(
 
 /**
  * The readable components a document assembles at a version that is no designated revision (LIF-039;
- * WF3-E), by title: an `approved` reference is met where its component has any revision.
+ * WF3-E), each placement judged, and each failing component named once by its latest title: an
+ * `approved` reference is met where its component has any revision, an unresolved one never.
  */
 async function notApproved(
   trx: TenantTransaction,
   outcomes: Awaited<ReturnType<typeof resolveOccurrences>>,
   references: ReadonlyMap<string, { component: string; approved: boolean }>,
 ): Promise<{ count: number; names: string[] }> {
-  const at = new Map<string, string | null>();
+  const placed: { component: string; version: string | 'approved' | null }[] = [];
   for (const each of outcomes) {
-    if (each.outcome === 'resolved') at.set(each.component, each.version);
-    else if (each.outcome === 'unresolved') {
+    if (each.outcome === 'resolved') {
+      placed.push({ component: each.component, version: each.version });
+    } else if (each.outcome === 'unresolved') {
       const reference = references.get(each.node)!;
-      if (!at.has(reference.component)) at.set(reference.component, null);
-      if (reference.approved) at.set(reference.component, 'approved');
+      placed.push({
+        component: reference.component,
+        version: reference.approved ? 'approved' : null,
+      });
     }
   }
-  if (at.size === 0) return { count: 0, names: [] };
+  if (placed.length === 0) return { count: 0, names: [] };
   const designated = await trx
     .selectFrom('revision_designation')
     .select(['artifact_id', 'version_id'])
-    .where('artifact_id', 'in', [...at.keys()])
+    .where('artifact_id', 'in', [...new Set(placed.map((each) => each.component))])
     .execute();
-  const failing = [...at].filter(([component, version]) =>
-    version === 'approved'
-      ? !designated.some((row) => row.artifact_id === component)
-      : !designated.some((row) => row.artifact_id === component && row.version_id === version),
-  );
+  const failing = [
+    ...new Set(
+      placed
+        .filter(({ component, version }) =>
+          version === 'approved'
+            ? !designated.some((row) => row.artifact_id === component)
+            : !designated.some(
+                (row) => row.artifact_id === component && row.version_id === version,
+              ),
+        )
+        .map((each) => each.component),
+    ),
+  ];
   if (failing.length === 0) return { count: 0, names: [] };
-  // Named by the version placed, or the latest where it resolved to none.
   const heads = await trx
     .selectFrom('artifact_version')
     .select(['id', 'artifact_id'])
     .distinctOn('artifact_id')
-    .where(
-      'artifact_id',
-      'in',
-      failing.map(([component]) => component),
-    )
+    .where('artifact_id', 'in', failing)
     .orderBy('artifact_id')
     .orderBy('revision_no', 'desc')
     .orderBy('version_no', 'desc')
     .execute();
-  const head = new Map(heads.map((row) => [row.artifact_id, row.id]));
-  const named = failing.map(([component, version]) =>
-    version === null || version === 'approved' ? head.get(component)! : version,
+  const titles = await titlesOf(
+    trx,
+    heads.map((row) => row.id),
   );
-  const titles = await titlesOf(trx, named);
   return {
     count: failing.length,
-    names: named.map((version) => titles.get(version) ?? '').sort((a, b) => a.localeCompare(b)),
+    names: heads.map((row) => titles.get(row.id) ?? '').sort((a, b) => a.localeCompare(b)),
   };
 }

@@ -99,7 +99,9 @@ describe('what a transition requires (workflow.md; the WF3 plan)', () => {
       return next.version;
     });
 
-  const documentOf = (components: readonly string[]) =>
+  const documentOf = (components: readonly string[]) => documentWith(components.map(reference));
+
+  const documentWith = (nodes: readonly ReferenceNode[]) =>
     as(async (trx) => {
       const made = await createDocument(trx, {
         spaceId: space,
@@ -111,7 +113,7 @@ describe('what a transition requires (workflow.md; the WF3 plan)', () => {
       if (made.answer !== 'created') throw new Error(made.answer);
       const outline: OutlineDocument = {
         ...(made.version.content as OutlineDocument),
-        nodes: components.map(reference),
+        nodes: [...nodes],
       };
       const recorded = await recordVersion(trx, {
         artifactId: made.version.artifactId,
@@ -325,6 +327,33 @@ describe('what a transition requires (workflow.md; the WF3 plan)', () => {
       answer: 'conditions.unmet',
       unmet: [{ condition: 'components', count: 1, names: ['Approved method'], unreadable: 0 }],
     });
+
+    // Placed twice, every placement is judged, in either order: pinned to its revision and as its
+    // latest, which is not; and as its latest beside an approved reference.
+    const first = await component('Placed twice');
+    await submit(first);
+    await decide(first);
+    await revise(first, 'Changed since.');
+    const pinned: ReferenceNode = {
+      ...reference(first.artifactId),
+      mode: { kind: 'pinned', version: first.id },
+    };
+    const approvedMode: ReferenceNode = {
+      ...reference(first.artifactId),
+      mode: { kind: 'approved' },
+    };
+    for (const nodes of [
+      [pinned, reference(first.artifactId)],
+      [reference(first.artifactId), pinned],
+      [reference(first.artifactId), approvedMode],
+    ]) {
+      const twice = await documentWith(nodes);
+      await submit(twice, 'document');
+      expect(await decide(twice, 'document')).toMatchObject({
+        answer: 'conditions.unmet',
+        unmet: [{ condition: 'components', count: 1, names: ['Placed twice'] }],
+      });
+    }
 
     const fresh = await component('Fresh method');
     await submit(fresh);
