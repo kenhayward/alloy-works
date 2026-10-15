@@ -216,6 +216,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'revision.designated',
     'workflow.transitioned',
   ),
+  // A document moved to its template's newest version, and what that move would change (WF6-C).
+  previewTemplateMove: read,
+  moveDocumentTemplate: writes('template.moved', 'content.version_cut'),
   // Dates set (WF5-A).
   setComponentDates: writes('dates.set'),
   setDocumentDates: writes('dates.set'),

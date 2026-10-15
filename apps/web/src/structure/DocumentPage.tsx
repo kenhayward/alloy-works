@@ -2102,7 +2102,23 @@ export function DocumentPage({
             </div>
           )}
           {document.template && (
-            <TemplateLine template={document.template} className={styles['approvedNote']} />
+            <TemplateLine
+              template={document.template}
+              className={styles['approvedNote']}
+              move={
+                document.mayEdit && !document.archived
+                  ? {
+                      client,
+                      document: document.id,
+                      onMoved: () => {
+                        setNotice('Moved to the template’s newest version.');
+                        // Read again whole: its version, values and template are new.
+                        setAttempt((count) => count + 1);
+                      },
+                    }
+                  : undefined
+              }
+            />
           )}
           <PreviewSaid preview={preview} />
           <UnheldFaces />

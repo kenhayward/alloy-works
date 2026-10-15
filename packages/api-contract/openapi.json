@@ -53210,6 +53210,29 @@
                                 "number"
                               ]
                             },
+                            "newest": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                            },
                             "required": {
                               "type": "array",
                               "items": {
@@ -53282,6 +53305,7 @@
                             "id",
                             "name",
                             "version",
+                            "newest",
                             "required",
                             "departures"
                           ]
@@ -53722,6 +53746,10 @@
                     "id": "example",
                     "name": "example",
                     "version": {
+                      "id": "example",
+                      "number": "example"
+                    },
+                    "newest": {
                       "id": "example",
                       "number": "example"
                     },
@@ -116263,6 +116291,29 @@
                                 "number"
                               ]
                             },
+                            "newest": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                            },
                             "required": {
                               "type": "array",
                               "items": {
@@ -116335,6 +116386,7 @@
                             "id",
                             "name",
                             "version",
+                            "newest",
                             "required",
                             "departures"
                           ]
@@ -116778,6 +116830,10 @@
                       "id": "example",
                       "number": "example"
                     },
+                    "newest": {
+                      "id": "example",
+                      "number": "example"
+                    },
                     "required": [],
                     "departures": {
                       "added": [],
@@ -117146,6 +117202,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -117218,6 +117297,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -118203,6 +118283,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -118275,6 +118378,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -119926,6 +120030,29 @@
                                 "number"
                               ]
                             },
+                            "newest": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                            },
                             "required": {
                               "type": "array",
                               "items": {
@@ -119998,6 +120125,7 @@
                             "id",
                             "name",
                             "version",
+                            "newest",
                             "required",
                             "departures"
                           ]
@@ -120441,6 +120569,10 @@
                       "id": "example",
                       "number": "example"
                     },
+                    "newest": {
+                      "id": "example",
+                      "number": "example"
+                    },
                     "required": [],
                     "departures": {
                       "added": [],
@@ -120809,6 +120941,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -120881,6 +121036,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -121866,6 +122022,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -121938,6 +122117,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -126835,6 +127015,1070 @@
         }
       }
     },
+    "/v1/documents/{id}/template-move": {
+      "get": {
+        "operationId": "previewTemplateMove",
+        "summary": "What moving a document to its template's newest version would change",
+        "description": "Answers what moving a document to its template's newest version would change, recording nothing: the theme and the layout, each field assigned or no longer assigned and each made required or not, each value that would not be carried forward, and each section the newer version requires that the document lacks. Needs edit on the document and read on the template.",
+        "tags": [
+          "Templates"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The template's newest version"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the move would change, recording nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "template": {
+                      "type": "string"
+                    },
+                    "from": {
+                      "type": "string",
+                      "description": "The template version the document is bound to now"
+                    },
+                    "to": {
+                      "type": "string",
+                      "description": "The newest version, which the move binds it to"
+                    },
+                    "latest": {
+                      "type": "string",
+                      "description": "The document version the move is against: send it back to move"
+                    },
+                    "report": {
+                      "type": "object",
+                      "properties": {
+                        "theme": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The theme it would be published under, where the newer version names another"
+                        },
+                        "layout": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The layout it would be published under, where the newer version names another"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "document",
+                                  "section"
+                                ]
+                              },
+                              "field": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "change": {
+                                "type": "string",
+                                "enum": [
+                                  "added",
+                                  "removed",
+                                  "required",
+                                  "optional"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "level",
+                              "field",
+                              "name",
+                              "change"
+                            ]
+                          },
+                          "description": "Each field the newer version assigns, no longer assigns, or makes required or not"
+                        },
+                        "notCarried": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "description": "The section's node; null for the document's own",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "value": {}
+                            },
+                            "required": [
+                              "node",
+                              "field",
+                              "name",
+                              "value"
+                            ]
+                          },
+                          "description": "Each value the move would not carry forward, as a component type change names them"
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "title"
+                            ]
+                          },
+                          "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
+                        }
+                      },
+                      "required": [
+                        "theme",
+                        "layout",
+                        "fields",
+                        "notCarried",
+                        "missing"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "template",
+                    "from",
+                    "to",
+                    "latest",
+                    "report"
+                  ]
+                },
+                "example": {
+                  "template": "example",
+                  "from": "example",
+                  "to": "example",
+                  "latest": "example",
+                  "report": {
+                    "theme": {
+                      "from": "example",
+                      "to": "example"
+                    },
+                    "layout": {
+                      "from": "example",
+                      "to": "example"
+                    },
+                    "fields": [],
+                    "notCarried": [],
+                    "missing": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "template_unresolved: the newer version names what does not resolve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read, or a template the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "template_none: made blank; template_current: already at its newest version; template_not_latest: `to` is not the newest; artifact_archived; version_precondition: the document moved since",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "moveDocumentTemplate",
+        "summary": "Move a document to its template's newest version",
+        "description": "Moves a document to its template's newest version, against the document version the preview was against: records a version with its values carried forward and binds it to the newer version. Never done but when asked. Needs edit on the document and read on the template. Audited.",
+        "tags": [
+          "Templates"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latest": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The document version the preview was against: refused, version_precondition, where it is not the latest"
+                  },
+                  "to": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The template's newest version, as the preview named it"
+                  }
+                },
+                "required": [
+                  "latest",
+                  "to"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "latest": "00000000-0000-4000-8000-000000000001",
+                "to": "00000000-0000-4000-8000-000000000001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved; the document version now, and what changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ],
+                      "description": "The document version now"
+                    },
+                    "report": {
+                      "type": "object",
+                      "properties": {
+                        "theme": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The theme it would be published under, where the newer version names another"
+                        },
+                        "layout": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The layout it would be published under, where the newer version names another"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "document",
+                                  "section"
+                                ]
+                              },
+                              "field": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "change": {
+                                "type": "string",
+                                "enum": [
+                                  "added",
+                                  "removed",
+                                  "required",
+                                  "optional"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "level",
+                              "field",
+                              "name",
+                              "change"
+                            ]
+                          },
+                          "description": "Each field the newer version assigns, no longer assigns, or makes required or not"
+                        },
+                        "notCarried": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "description": "The section's node; null for the document's own",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "value": {}
+                            },
+                            "required": [
+                              "node",
+                              "field",
+                              "name",
+                              "value"
+                            ]
+                          },
+                          "description": "Each value the move would not carry forward, as a component type change names them"
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "title"
+                            ]
+                          },
+                          "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
+                        }
+                      },
+                      "required": [
+                        "theme",
+                        "layout",
+                        "fields",
+                        "notCarried",
+                        "missing"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "report"
+                  ]
+                },
+                "example": {
+                  "version": {
+                    "id": "example",
+                    "number": "example"
+                  },
+                  "report": {
+                    "theme": {
+                      "from": "example",
+                      "to": "example"
+                    },
+                    "layout": {
+                      "from": "example",
+                      "to": "example"
+                    },
+                    "fields": [],
+                    "notCarried": [],
+                    "missing": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "template_unresolved: the newer version names what does not resolve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document the caller may read, or a template the caller may not read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "template_none: made blank; template_current: already at its newest version; template_not_latest: `to` is not the newest; artifact_archived; version_precondition: the document moved since",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}/texts": {
       "get": {
         "operationId": "getDocumentTexts",
@@ -130008,6 +131252,29 @@
                                 "number"
                               ]
                             },
+                            "newest": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                            },
                             "required": {
                               "type": "array",
                               "items": {
@@ -130080,6 +131347,7 @@
                             "id",
                             "name",
                             "version",
+                            "newest",
                             "required",
                             "departures"
                           ]
@@ -130523,6 +131791,10 @@
                       "id": "example",
                       "number": "example"
                     },
+                    "newest": {
+                      "id": "example",
+                      "number": "example"
+                    },
                     "required": [],
                     "departures": {
                       "added": [],
@@ -130891,6 +132163,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -130963,6 +132258,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -131948,6 +133244,29 @@
                                     "number"
                                   ]
                                 },
+                                "newest": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "number"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                                },
                                 "required": {
                                   "type": "array",
                                   "items": {
@@ -132020,6 +133339,7 @@
                                 "id",
                                 "name",
                                 "version",
+                                "newest",
                                 "required",
                                 "departures"
                               ]
@@ -170185,6 +171505,29 @@
                                 "number"
                               ]
                             },
+                            "newest": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The template’s newest version, where it is newer than the one the document is bound to (TPL-033)"
+                            },
                             "required": {
                               "type": "array",
                               "items": {
@@ -170257,6 +171600,7 @@
                             "id",
                             "name",
                             "version",
+                            "newest",
                             "required",
                             "departures"
                           ]
@@ -170697,6 +172041,10 @@
                     "id": "example",
                     "name": "example",
                     "version": {
+                      "id": "example",
+                      "number": "example"
+                    },
+                    "newest": {
                       "id": "example",
                       "number": "example"
                     },

@@ -391,3 +391,12 @@ export {
   roundRoutes,
   RoundView,
 } from './rounds.js';
+export {
+  TemplateMoveBody,
+  TemplateMoved,
+  TemplateMoveParams,
+  TemplateMovePreview,
+  TemplateMoveQuery,
+  TemplateMoveReport,
+  templateMoveRoutes,
+} from './template-moves.js';

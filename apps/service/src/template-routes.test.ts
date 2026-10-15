@@ -286,6 +286,7 @@ describe('templates through the service', () => {
       id: template.id,
       name: 'Protocol',
       version: { id: template.version.id, number: '0.1' },
+      newest: null,
       required: ['introduction'],
       departures: { added: [], missing: [] },
     };
@@ -546,6 +547,58 @@ describe('templates through the service', () => {
       message: "This document's values do not satisfy its template: Reviewer is required.",
       failures: [{ node: null, field: REVIEWER, rule: 'required' }],
     });
+  });
+
+  it('TPL-033 TPL-034 offers a document its template’s newest version, previews the move and moves it only when asked', async () => {
+    const template = (await make('ada', {}, 'Moving')).json<TemplateBody>();
+    const made = (await document('alice', template.id)).json<{
+      id: string;
+      version: { id: string };
+    }>();
+    const next = (await version('ada', template, 'Moving, revised')).json<TemplateBody>();
+    const view = async () =>
+      (await call('alice', 'GET', `/v1/documents/${made.id}`)).json<{
+        version: { id: string };
+        template: { version: { id: string }; newest: { id: string; number: string } | null };
+      }>();
+    expect((await view()).template.newest).toEqual({ id: next.version.id, number: '0.2' });
+
+    const preview = await call(
+      'alice',
+      'GET',
+      `/v1/documents/${made.id}/template-move?to=${next.version.id}`,
+    );
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(preview.json()).toMatchObject({
+      template: template.id,
+      from: template.version.id,
+      to: next.version.id,
+      latest: made.version.id,
+      report: { theme: null, layout: null, fields: [], notCarried: [], missing: [] },
+    });
+    // The preview recorded nothing.
+    expect((await view()).template.version.id).toBe(template.version.id);
+
+    const move = (latest: string) =>
+      call('alice', 'POST', `/v1/documents/${made.id}/template-move`, {
+        latest,
+        to: next.version.id,
+      });
+    expect((await move('00000000-0000-4000-8000-000000000001')).json()).toMatchObject({
+      code: 'version_precondition',
+    });
+    const moved = await move(made.version.id);
+    expect(moved.statusCode, moved.body).toBe(200);
+    const after = await view();
+    expect(after.template.version.id).toBe(next.version.id);
+    expect(after.template.newest).toBeNull();
+    const again = await call(
+      'alice',
+      'GET',
+      `/v1/documents/${made.id}/template-move?to=${next.version.id}`,
+    );
+    expect(again.statusCode).toBe(409);
+    expect(again.json()).toMatchObject({ code: 'template_current' });
   });
 
   it('answers a template the caller may not read as not found, and makes nothing', async () => {

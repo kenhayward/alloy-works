@@ -44,6 +44,7 @@ import {
   type StoredVersion,
   type Tenant,
   type TenantDatabase,
+  latestVersion,
   type TenantTransaction,
   type ValuesRefused,
   type PublishingState,
@@ -143,6 +144,14 @@ async function documentFields(viewer: Viewer, document: string) {
  * version names it - or null for a blank document, and for a template this viewer may not read, which
  * access.md makes indistinguishable from none.
  */
+/** A template's newest version, where it is not `bound`; null where it is. */
+async function newerVersion(trx: TenantTransaction, template: string, bound: string) {
+  const newest = await latestVersion(trx, template);
+  return newest && newest.id !== bound
+    ? { id: newest.id, number: `${newest.revision}.${newest.version}` }
+    : null;
+}
+
 async function templateView(
   viewer: Viewer,
   document: string,
@@ -164,6 +173,8 @@ async function templateView(
     id: link.template,
     name: definition.name,
     version: { id: version.id, number: `${version.revision}.${version.version}` },
+    // Its newest version, where the document may be moved to it (TPL-033; WF6-C).
+    newest: await newerVersion(viewer.trx, link.template, version.id),
     // What it requires, and how the document departs from it (TPL-028, TPL-029; WF6-A).
     required: requiredKeys(definition),
     departures: (({ added, missing }) => ({ added: [...added], missing: [...missing] }))(

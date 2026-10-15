@@ -638,6 +638,20 @@ export interface ReviewLapseTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** A document moved to a newer version of its template (0101; the WF6 plan, WF6-C). */
+export interface DocumentTemplateMoveTable {
+  id: ColumnType<string, never, never>;
+  document_id: string;
+  document_kind: ColumnType<'document', never, never>;
+  template_id: string;
+  from_version_id: string;
+  to_version_id: string;
+  version_id: string;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** A section the template requires, removed with a reason (0100; the WF6 plan, WF6-B). */
 export interface SectionWaiverTable {
   id: ColumnType<string, never, never>;
@@ -951,6 +965,7 @@ export interface TenantTables {
   revision_effected: RevisionEffectedTable;
   review_lapse: ReviewLapseTable;
   section_waiver: SectionWaiverTable;
+  document_template_move: DocumentTemplateMoveTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

@@ -144,11 +144,11 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `dates.set`                                                             | a component's or document's dates set ([workflow.md](workflow.md)), `{ kind, effectiveAt, reviewBy, owner }`                               | LIF-015, LIF-016 |
 | `revision.effective`                                                    | a revision approved to take effect later taking it, by the system, `{ kind, revision, version, effectiveAt }`                              | LIF-060          |
 | `section.waived`                                                        | a section the template requires removed with a reason ([templates.md](templates.md)), `{ key }`; the reason on its row                     | TPL-029          |
+| `template.moved`                                                        | a document moved to a newer version of its template ([templates.md](templates.md)), `{ template, from, to, notCarried }`                   | TPL-033          |
 | `review.lapsed`                                                         | a review date passing unmet, by the system, `{ kind, reviewBy, action, to? }`                                                              | LIF-059          |
 
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
-`lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `template.moved`
-(TPL-033), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`, and those the AU1 review
+`lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, `generation.*`, and those the AU1 review
 added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,
 `tenant.closed`, `webhook.changed`, `extension.changed`, `organisation.changed`, `import.restored`,
 `library.changed`, `line.merged`, `component.type_changed`, `theme.moved`,

@@ -144,6 +144,9 @@ const WIRE_CODES = {
   'conditions.unmet': 'conditions_unmet',
   'owner.invalid': 'owner_invalid',
   'dates.invalid': 'dates_invalid',
+  'template.none': 'template_none',
+  'template.current': 'template_current',
+  'template.not_latest': 'template_not_latest',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

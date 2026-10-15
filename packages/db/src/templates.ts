@@ -325,15 +325,40 @@ export async function listReadableTemplates(
   };
 }
 
+const movesKnown = new WeakMap<TenantTransaction, boolean>();
+
+/** Whether this schema has 0101's table: migration tests run this code on older ones. */
+async function movesStored(trx: TenantTransaction): Promise<boolean> {
+  const known = movesKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('document_template_move') is not null as present`.execute(trx);
+  const present = rows[0]?.present === true;
+  movesKnown.set(trx, present);
+  return present;
+}
+
 /**
- * The template, and the version of it, a document was made from (TPL-025), or undefined for a
- * document made blank. Everything a document takes from its template is read at this version, so a
- * template's later version changes nothing about it (TPL-027).
+ * The template, and the version of it, a document is bound to, or undefined for a document made
+ * blank: the version it was made from (TPL-025), or the one it was last moved to (TPL-033; WF6-C).
+ * Everything a document takes from its template is read at this version, so a template's later
+ * version changes nothing about it until it is moved (TPL-027).
  */
 export async function documentTemplate(
   trx: TenantTransaction,
   documentId: string,
 ): Promise<{ readonly template: string; readonly version: string } | undefined> {
+  if (await movesStored(trx)) {
+    const moved = await trx
+      .selectFrom('document_template_move')
+      .select(['template_id', 'to_version_id'])
+      .where('document_id', '=', documentId)
+      .orderBy('id', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    if (moved) return { template: moved.template_id, version: moved.to_version_id };
+  }
   const row = await trx
     .selectFrom('document_template')
     .select(['template_id', 'template_version_id'])

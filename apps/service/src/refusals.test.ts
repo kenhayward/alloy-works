@@ -200,6 +200,10 @@ describe('the rule behind a refusal', () => {
       // The WF5 plan's (WF5-A): an owner who may not read it, an effective date with no offset.
       'owner.invalid',
       'dates.invalid',
+      // The WF6 plan's (WF6-C): no template, already its newest, or not its newest.
+      'template.none',
+      'template.current',
+      'template.not_latest',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),
