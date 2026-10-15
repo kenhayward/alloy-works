@@ -415,6 +415,59 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     ]);
   });
 
+  it('LIF-015 LIF-016 LIF-018 sets dates on edit, refuses an owner who may not read it, and shows past review in the view, the list and every document placing it', async () => {
+    const created = await made('components', 'Dated dose');
+    const dates = (who: string, body: object) =>
+      call('PUT', `/v1/components/${created.id}/dates`, who, body);
+    const set = await dates('ada', {
+      effectiveAt: '2030-01-01T09:00:00+01:00',
+      reviewBy: '2020-01-01',
+      owner: ids.grace,
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toEqual({
+      effectiveAt: '2030-01-01T09:00:00.000+01:00',
+      reviewBy: '2020-01-01',
+      owner: { id: ids.grace, name: expect.any(String) },
+      pastReview: true,
+      effectiveFrom: null,
+    });
+    // A reader may not set them; an owner is somebody who may read it.
+    expect(
+      (await dates('ivy', { effectiveAt: null, reviewBy: null, owner: null })).statusCode,
+    ).toBe(403);
+    const stranger = await dates('ada', {
+      effectiveAt: null,
+      reviewBy: null,
+      owner: '00000000-0000-4000-8000-000000000001',
+    });
+    expect(stranger.statusCode).toBe(400);
+    expect(stranger.json()).toMatchObject({ code: 'owner_invalid' });
+
+    expect((await component(created.id, 'ivy')).dates).toMatchObject({
+      reviewBy: '2020-01-01',
+      pastReview: true,
+    });
+    const listed = (await call('GET', '/v1/components', 'ivy')).json<ComponentList>();
+    expect(listed.items.find((each) => each.id === created.id)?.pastReview).toBe(true);
+
+    const document = await made('documents', 'Placing the dose');
+    const placed = await call('POST', `/v1/documents/${document.id}/outline`, 'ada', {
+      openedFrom: document.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: created.id, mode: { kind: 'latest' } },
+      },
+    });
+    expect(placed.statusCode, placed.body).toBe(200);
+    const texts = (await call('GET', `/v1/documents/${document.id}/texts`, 'ivy')).json<{
+      occurrences: { pastReview?: boolean }[];
+    }>();
+    expect(texts.occurrences[0]?.pastReview).toBe(true);
+  });
+
   it('LIF-004 saves a transition requiring conditions, refuses one its kind cannot, and refuses taking it while one is unmet, saying what', async () => {
     const requiring = (requires: string[]) => ({
       kind: 'component',

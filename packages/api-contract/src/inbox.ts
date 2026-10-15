@@ -77,9 +77,16 @@ export type InboxPreferencesBody = z.infer<typeof InboxPreferencesBody>;
 /** One thing waiting on the caller that they may resolve (home.md, Needs your attention). */
 export const AttentionItemView = z.object({
   kind: z
-    .enum(['publish_failed', 'changes_not_in_version', 'published_earlier', 'connection_untested'])
+    .enum([
+      'publish_failed',
+      'review_overdue',
+      'changes_not_in_version',
+      'published_earlier',
+      'connection_untested',
+      'review_due',
+    ])
     .describe(
-      'What waits: your latest attempt to publish a document failed; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set',
+      'What waits: your latest attempt to publish a document failed; a review escalated to you is overdue; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set; a review you own falls due',
     ),
   artifact: z.object({
     id: LowercaseUuid,
@@ -92,6 +99,10 @@ export const AttentionItemView = z.object({
     .describe(
       'A failed publish’s: the code of its first failure, as the publication request names it',
     ),
+  reviewBy: z.iso
+    .date()
+    .optional()
+    .describe('A review’s: the day it is to be reviewed by (LIF-017)'),
   request: LowercaseUuid.optional().describe(
     'A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}`',
   ),

@@ -503,6 +503,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a component's effective and review-by dates
+         * @description Sets a component's dates as an act, needing edit: when a revision approved from now takes effect, which fixes it to that revision until then, the day it is to be reviewed by, and who is prompted to review it, somebody who may read it. Audited.
+         */
+        put: operations["setComponentDates"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/delete": {
         parameters: {
             query?: never;
@@ -1424,6 +1444,26 @@ export interface paths {
          */
         get: operations["getDocumentDataset"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a document's effective and review-by dates
+         * @description Sets a document's dates as an act, needing edit: when a revision approved from now takes effect, which fixes it to that revision until then, the day it is to be reviewed by, and who is prompted to review it, somebody who may read it. Audited.
+         */
+        put: operations["setDocumentDates"];
         post?: never;
         delete?: never;
         options?: never;
@@ -9617,6 +9657,8 @@ export interface operations {
                                 key: string;
                                 name: string;
                             };
+                            /** @description Whether its review-by day has passed (LIF-018) */
+                            pastReview: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -9762,6 +9804,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -9879,6 +9931,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -10854,6 +10923,202 @@ export interface operations {
             };
             /** @description No such component the caller may read, or a version that is not one of its versions */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setComponentDates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "effectiveAt": "2026-01-01T00:00:00.000Z",
+                 *       "reviewBy": "2026-01-01",
+                 *       "owner": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description When a revision approved from now takes effect, with the offset of its local time; null for as it is approved */
+                    effectiveAt: string | null;
+                    /** @description The day it is to be reviewed by; null for none */
+                    reviewBy: string | null;
+                    /** @description Who is prompted to review it: somebody who may read it; null for nobody */
+                    owner: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Its dates now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *       "reviewBy": "2026-01-01",
+                     *       "owner": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "pastReview": false,
+                     *       "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description When a revision approved from now takes effect, with the offset it was set in */
+                        effectiveAt: string | null;
+                        /** @description The day it is to be reviewed by */
+                        reviewBy: string | null;
+                        /** @description Who is prompted to review it */
+                        owner: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                        } | null;
+                        /** @description Whether its review-by day has passed */
+                        pastReview: boolean;
+                        /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                        effectiveFrom: string | null;
+                    };
+                };
+            };
+            /** @description owner_invalid: the owner is nobody who may read it */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description artifact_archived: an archived component keeps its dates */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -19683,6 +19948,8 @@ export interface operations {
                                 key: string;
                                 name: string;
                             };
+                            /** @description Whether its review-by day has passed (LIF-018) */
+                            pastReview: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -19834,6 +20101,16 @@ export interface operations {
                      *         "number": 1,
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
                      *       },
                      *       "onHold": false,
                      *       "mayHold": false,
@@ -20002,6 +20279,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -34515,6 +34809,202 @@ export interface operations {
             };
         };
     };
+    setDocumentDates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "effectiveAt": "2026-01-01T00:00:00.000Z",
+                 *       "reviewBy": "2026-01-01",
+                 *       "owner": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description When a revision approved from now takes effect, with the offset of its local time; null for as it is approved */
+                    effectiveAt: string | null;
+                    /** @description The day it is to be reviewed by; null for none */
+                    reviewBy: string | null;
+                    /** @description Who is prompted to review it: somebody who may read it; null for nobody */
+                    owner: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Its dates now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *       "reviewBy": "2026-01-01",
+                     *       "owner": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "name": "example"
+                     *       },
+                     *       "pastReview": false,
+                     *       "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description When a revision approved from now takes effect, with the offset it was set in */
+                        effectiveAt: string | null;
+                        /** @description The day it is to be reviewed by */
+                        reviewBy: string | null;
+                        /** @description Who is prompted to review it */
+                        owner: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string | null;
+                        } | null;
+                        /** @description Whether its review-by day has passed */
+                        pastReview: boolean;
+                        /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                        effectiveFrom: string | null;
+                    };
+                };
+            };
+            /** @description owner_invalid: the owner is nobody who may read it */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description artifact_archived: an archived document keeps its dates */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     deleteDocument: {
         parameters: {
             query?: never;
@@ -35526,6 +36016,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -35693,6 +36193,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -35893,6 +36410,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -36189,6 +36723,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -36581,6 +37132,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -36748,6 +37309,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -36948,6 +37526,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -37244,6 +37839,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -38927,6 +39539,8 @@ export interface operations {
                             pendingSuggestions: number;
                             /** @description For a reference tracking the latest approved revision, which revision it shows (CNT-163); absent where none is approved */
                             revision?: number;
+                            /** @description True where the component's review-by day has passed (LIF-018); absent otherwise, or where the caller may not read it */
+                            pastReview?: boolean;
                             /** @description For a reference tracking the latest approved revision, the version the document's last publication carried, where a newer revision is approved since (LIF-041) */
                             moved?: {
                                 id: string;
@@ -40064,6 +40678,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -40231,6 +40855,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -40431,6 +41072,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -40727,6 +41385,23 @@ export interface operations {
                                 /** Format: date-time */
                                 at: string;
                             } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
                             /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                             onHold: boolean;
                             /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -44507,10 +45182,10 @@ export interface operations {
                         /** @description One per artifact, the most pressing kind first, newest first within it; at most 20 */
                         items: {
                             /**
-                             * @description What waits: your latest attempt to publish a document failed; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set
+                             * @description What waits: your latest attempt to publish a document failed; a review escalated to you is overdue; a component holds changes of yours not in a version; a document was last published from an earlier version than its latest; a connection has not been tested since its credential was set; a review you own falls due
                              * @enum {string}
                              */
-                            kind: "publish_failed" | "changes_not_in_version" | "published_earlier" | "connection_untested";
+                            kind: "publish_failed" | "review_overdue" | "changes_not_in_version" | "published_earlier" | "connection_untested" | "review_due";
                             artifact: {
                                 id: string & (unknown & unknown);
                                 /** @enum {string} */
@@ -44520,6 +45195,11 @@ export interface operations {
                             };
                             /** @description A failed publish’s: the code of its first failure, as the publication request names it */
                             reason?: string;
+                            /**
+                             * Format: date
+                             * @description A review’s: the day it is to be reviewed by (LIF-017)
+                             */
+                            reviewBy?: string;
                             /** @description A failed publish’s: the publication request that failed, which you read with every failure at `GET /v1/publication-requests/{id}` */
                             request?: string & (unknown & unknown);
                         }[];
@@ -53560,6 +54240,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "lock": {
@@ -53677,6 +54367,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -54665,6 +55372,16 @@ export interface operations {
                      *         "versionId": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
+                     *       "dates": {
+                     *         "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *         "reviewBy": "2026-01-01",
+                     *         "owner": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "name": "example"
+                     *         },
+                     *         "pastReview": false,
+                     *         "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *       },
                      *       "onHold": false,
                      *       "mayHold": false,
                      *       "mayPublish": false,
@@ -54832,6 +55549,23 @@ export interface operations {
                             /** Format: date-time */
                             at: string;
                         } | null;
+                        /** @description Its effective and review-by dates, and its review's owner */
+                        dates: {
+                            /** @description When a revision approved from now takes effect, with the offset it was set in */
+                            effectiveAt: string | null;
+                            /** @description The day it is to be reviewed by */
+                            reviewBy: string | null;
+                            /** @description Who is prompted to review it */
+                            owner: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string | null;
+                            } | null;
+                            /** @description Whether its review-by day has passed */
+                            pastReview: boolean;
+                            /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                            effectiveFrom: string | null;
+                        };
                         /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
                         onHold: boolean;
                         /** @description Whether the caller may place a legal hold: an environment administrator */
@@ -60023,6 +60757,29 @@ export interface operations {
                                         };
                                         requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                                     }[];
+                                    /** @description Absent: 30 days, and shown alone */
+                                    review?: {
+                                        /** @description Days before the review-by day its owner is prompted */
+                                        remind: number;
+                                        /** @description What a review day passing unmet does: shown alone, a move, or an escalation */
+                                        lapse: {
+                                            /** @constant */
+                                            kind: "visibility";
+                                        } | {
+                                            /** @constant */
+                                            kind: "move";
+                                            /** @description The state it moves to */
+                                            to: string;
+                                        } | {
+                                            /** @constant */
+                                            kind: "escalate";
+                                            /**
+                                             * Format: uuid
+                                             * @description Who is prompted
+                                             */
+                                            to: string;
+                                        };
+                                    };
                                 };
                                 /** @description Who saved it; null for the seed */
                                 by: {
@@ -60201,6 +60958,29 @@ export interface operations {
                         /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
                         requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                     }[];
+                    /** @description Absent: 30 days, and shown alone */
+                    review?: {
+                        /** @description Days before the review-by day its owner is prompted */
+                        remind: number;
+                        /** @description What a review day passing unmet does: shown alone, a move, or an escalation */
+                        lapse: {
+                            /** @constant */
+                            kind: "visibility";
+                        } | {
+                            /** @constant */
+                            kind: "move";
+                            /** @description The state it moves to */
+                            to: string;
+                        } | {
+                            /** @constant */
+                            kind: "escalate";
+                            /**
+                             * Format: uuid
+                             * @description Who is prompted
+                             */
+                            to: string;
+                        };
+                    };
                     /**
                      * @description The kind it is the workflow of
                      * @enum {string}
@@ -60271,6 +61051,29 @@ export interface operations {
                                 };
                                 requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                             }[];
+                            /** @description Absent: 30 days, and shown alone */
+                            review?: {
+                                /** @description Days before the review-by day its owner is prompted */
+                                remind: number;
+                                /** @description What a review day passing unmet does: shown alone, a move, or an escalation */
+                                lapse: {
+                                    /** @constant */
+                                    kind: "visibility";
+                                } | {
+                                    /** @constant */
+                                    kind: "move";
+                                    /** @description The state it moves to */
+                                    to: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "escalate";
+                                    /**
+                                     * Format: uuid
+                                     * @description Who is prompted
+                                     */
+                                    to: string;
+                                };
+                            };
                         };
                         /** @description Who saved it; null for the seed */
                         by: {
@@ -60463,6 +61266,29 @@ export interface operations {
                                 };
                                 requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
                             }[];
+                            /** @description Absent: 30 days, and shown alone */
+                            review?: {
+                                /** @description Days before the review-by day its owner is prompted */
+                                remind: number;
+                                /** @description What a review day passing unmet does: shown alone, a move, or an escalation */
+                                lapse: {
+                                    /** @constant */
+                                    kind: "visibility";
+                                } | {
+                                    /** @constant */
+                                    kind: "move";
+                                    /** @description The state it moves to */
+                                    to: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "escalate";
+                                    /**
+                                     * Format: uuid
+                                     * @description Who is prompted
+                                     */
+                                    to: string;
+                                };
+                            };
                         };
                         /** @description Who saved it; null for the seed */
                         by: {

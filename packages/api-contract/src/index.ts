@@ -95,6 +95,8 @@ export {
   DefineWorkflowBody,
   WorkflowRefusal,
   WorkflowRevisionView,
+  DatesBody,
+  DatesView,
   WorkflowStandingView,
   WorkflowStateView,
   WorkflowsView,

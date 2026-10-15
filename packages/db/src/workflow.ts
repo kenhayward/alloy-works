@@ -11,6 +11,7 @@ import {
   type WorkflowProblem,
   type WorkflowTransition,
 } from '@alloy-works/domain';
+import { datesStored } from './dates.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
@@ -85,22 +86,36 @@ export async function latestRevision(
 }
 
 /**
- * Each of these artifacts' latest revision, where it has one: what a reference tracking the latest
- * approved revision resolves to (LIF-038; the WF4 plan, WF4-A). The caller passes only those its
- * reader may read.
+ * Each of these artifacts' latest revision in effect, where it has one: what a reference tracking the
+ * latest approved revision resolves to (LIF-038; the WF4 plan, WF4-A). One approved to take effect
+ * later is not, until its instant (WF5-C; LIF-060). The caller passes only those its reader may read.
  */
 export async function latestRevisionsOf(
   trx: TenantTransaction,
   artifactIds: readonly string[],
+  now: Date = new Date(),
 ): Promise<Map<string, Revision>> {
   if (artifactIds.length === 0 || !(await gatesStored(trx))) return new Map();
+  const dated = await datesStored(trx);
   const rows = await trx
-    .selectFrom('revision_designation')
-    .distinctOn('artifact_id')
-    .select(['artifact_id', 'revision_no', 'version_id', 'at'])
-    .where('artifact_id', 'in', [...artifactIds])
-    .orderBy('artifact_id')
-    .orderBy('revision_no', 'desc')
+    .selectFrom('revision_designation as d')
+    .distinctOn('d.artifact_id')
+    .select(['d.artifact_id', 'd.revision_no', 'd.version_id', 'd.at'])
+    .where('d.artifact_id', 'in', [...artifactIds])
+    .$if(dated, (query) =>
+      query.where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom('revision_effective as e')
+              .select('e.version_id')
+              .whereRef('e.version_id', '=', 'd.version_id')
+              .where('e.effective_at', '>', now),
+          ),
+        ),
+      ),
+    )
+    .orderBy('d.artifact_id')
+    .orderBy('d.revision_no', 'desc')
     .execute();
   return new Map(
     rows.map((row) => [

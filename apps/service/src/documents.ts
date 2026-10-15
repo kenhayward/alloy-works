@@ -10,6 +10,7 @@ import type {
   OutlineOperationBody,
   SpaceParams,
 } from '@alloy-works/api-contract';
+import { datesView, pastReviewOf } from './dates.js';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
@@ -199,6 +200,7 @@ async function documentView(
     onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
     mayHold: viewer.mayHold,
     ...(await workflowView(viewer.trx, document.id, viewer.facts, viewer.principalId)),
+    ...(await datesView(viewer.trx, document.id)),
     mayPublish: viewer.mayPublish,
     mayComment: viewer.mayComment,
     mayReview: viewer.mayReview,
@@ -344,7 +346,7 @@ export function documentHandlers(
       const asked = pageAsked('documents', query);
       const spaces = query.spaces?.split(',');
       const publishing = query.publishing?.split(',') as PublishingState[] | undefined;
-      const { listed, states } = await db.withTenant(tenantOf(request), async (trx) => {
+      const { listed, states, past } = await db.withTenant(tenantOf(request), async (trx) => {
         const listed = await listReadableDocuments(trx, principalOf(request).principalId, asked, {
           ...(spaces === undefined ? {} : { spaces }),
           ...(publishing === undefined ? {} : { publishing }),
@@ -352,7 +354,8 @@ export function documentHandlers(
         });
         // Each one's workflow state now (WF-G).
         const states = await workflowStates(trx, listed?.items.map((item) => item.id) ?? []);
-        return { listed, states };
+        const past = await pastReviewOf(trx, listed?.items.map((item) => item.id) ?? []);
+        return { listed, states, past };
       });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
@@ -366,6 +369,7 @@ export function documentHandlers(
           components: item.components,
           publishing: item.publishing,
           state: stateOf(states, item.id),
+          pastReview: past.has(item.id),
         })),
         next: cursorFor('documents', asked.sort, asked.order, listed.snapshot, listed.next),
         total: listed.total,
@@ -549,6 +553,8 @@ export function documentHandlers(
         ),
       );
       const published = approved.size === 0 ? new Map() : await lastPublishedOccurrences(trx, id);
+      // Each readable component past its review day (LIF-018; WF5-H).
+      const pastComponents = await pastReviewOf(trx, readable);
       // Of the same component, and older than the revision shown: a publication that carried a newer
       // version, at the latest or pinned, has not been moved past (the WF4 final review).
       const candidates = new Map<string, string>();
@@ -631,11 +637,14 @@ export function documentHandlers(
             was === undefined || held === undefined
               ? {}
               : { moved: { id: was, number: `${held.revision}.${held.version}` } };
+          const past =
+            component !== undefined && pastComponents.has(component) ? { pastReview: true } : {};
           return {
             ...occurrence,
             ...newer,
             ...tracked,
             ...moved,
+            ...past,
             mayEdit: known?.mayEdit ?? false,
             mayComment: known?.mayComment ?? false,
             maySuggest: known?.maySuggest ?? false,

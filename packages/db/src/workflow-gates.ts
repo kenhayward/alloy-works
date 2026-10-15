@@ -6,6 +6,7 @@ import { readLayout } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
+import { fixEffective } from './dates.js';
 import { lockArtifact } from './versions.js';
 import { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 import {
@@ -288,6 +289,10 @@ export async function decideGate(
       },
       place.labels,
     );
+    // An effective date still to come is the revision's, fixed (WF5-B; LIF-060).
+    if (standing.kind !== 'queryDefinition') {
+      await fixEffective(trx, { artifactId: input.artifactId, version });
+    }
     revision = await latestRevision(trx, input.artifactId);
   }
   return {

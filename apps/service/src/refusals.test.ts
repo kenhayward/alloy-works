@@ -197,6 +197,9 @@ describe('the rule behind a refusal', () => {
       'approval.given',
       // The WF2 plan's (WF2-H, WF2-I): a gate whose baseline or publication cannot be made.
       'gate.baseline_refused',
+      // The WF5 plan's (WF5-A): an owner who may not read it, an effective date with no offset.
+      'owner.invalid',
+      'dates.invalid',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

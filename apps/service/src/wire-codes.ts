@@ -142,6 +142,8 @@ const WIRE_CODES = {
   'approval.author': 'approval_author',
   'gate.baseline_refused': 'gate_baseline_refused',
   'conditions.unmet': 'conditions_unmet',
+  'owner.invalid': 'owner_invalid',
+  'dates.invalid': 'dates_invalid',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

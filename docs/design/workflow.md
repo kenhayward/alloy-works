@@ -36,6 +36,12 @@ decisions, WF-A to WF-K, are the detail. Gates, approvals and revisions are
 | **LIF-038** | A reference may track its component's latest approved revision, beside pinned and latest: [The latest approved revision](#the-latest-approved-revision)              |
 | **REU-050** | Each reference takes one of the three modes, shown on its label and in the outline                                                                                   |
 | **LIF-041** | A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them                  |
+| **LIF-015** | Dates, below: an effective date set apart from approval, an act (`artifact_dates`)                                                                                   |
+| **LIF-016** | A review-by day, set beside it with its owner                                                                                                                        |
+| **LIF-017** | Home's **Review due** for the owner, from the days the workflow's review policy says before the day                                                                  |
+| **LIF-018** | **Past review** on the artifact's header and in the lists, and on the label of every reference to it in a document                                                   |
+| **LIF-059** | The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed                                  |
+| **LIF-060** | A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system                          |
 
 **Not claimed:** LIF-005, one state shown wherever the artifact appears: the interface shows it in
 the headers, both lists, search, the picker and the Part panel (below), but not in Home's attention,
@@ -227,3 +233,24 @@ moved. A baseline's publication counts as the document's last, as a gate's appro
 **LIF-040 is not claimed**: a save of an approved component starts a draft (WF-F) and leaves its
 revision designated and served to every reference tracking it; a reference at the latest takes the
 draft, by the mode its author chose, so "served to everything referencing it" holds only for those.
+
+## Dates
+
+**Set as acts** (the WF5 plan, WF5-A; LIF-015, LIF-016): `PUT /v1/{components|documents}/{id}/dates`
+on edit inserts an `artifact_dates` row (0099), its latest the artifact's dates: an effective instant
+with the offset it was set in (LIF-062), a review-by day, and an owner who may read it. Audited
+`dates.set`. Components and documents only.
+
+**Effective** (WF5-B to WF5-D; LIF-060): a gate designating a revision while the effective instant is
+still to come records it in `revision_effective`, fixed; the version itself never changes, and any
+change is a new version, a draft through the gate again (WF-F). `latestRevisionsOf`, which every
+`approved` reference resolves through, takes the latest revision in effect, so a reference serves the
+revision before until the instant. The worker's `sweepDates` records `revision_effected` and
+`revision.effective` once, as the system; serving does not wait for it.
+
+**Reviewed** (WF5-E to WF5-H; LIF-017, LIF-018, LIF-059): a body's optional `review { remind, lapse }`,
+absent 30 days and visibility alone (ADR-0061). Home tells the owner **Review due** from `remind`
+days before the day. Once the day has passed, `sweepDates` acts once per day passed (`review_lapse`,
+`review.lapsed`): nothing more, a move by nobody (`transition: null`), or **Review overdue** on the
+named person's Home while that day stands. **Past review** is computed when read, from the day, on
+the views, the lists and each occurrence in a document's texts.

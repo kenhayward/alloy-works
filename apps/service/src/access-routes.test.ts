@@ -1238,6 +1238,16 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { transition: 'approve', version: MISSING, decision: 'approved' },
     }),
+    setComponentDates: () => ({
+      url: `/v1/components/${dosing}/dates`,
+      status: 404,
+      payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null },
+    }),
+    setDocumentDates: () => ({
+      url: `/v1/documents/${MISSING}/dates`,
+      status: 404,
+      payload: { effectiveAt: null, reviewBy: '2030-01-01', owner: null },
+    }),
     placeHold: () => ({
       url: '/v1/holds',
       status: 403,

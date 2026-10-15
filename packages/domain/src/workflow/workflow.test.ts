@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   decidingDefinition,
   parseWorkflowBody,
+  reviewPolicy,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
   transitionsFrom,
@@ -143,6 +144,30 @@ describe('a workflow definition (workflow.md)', () => {
     // A body stored before WF3 has none, and reads as it was.
     const plain = parseWorkflowBody(SEED_WORKFLOW, 'document');
     expect(plain.ok && plain.body).toEqual(SEED_WORKFLOW);
+  });
+
+  it('LIF-059 declares what a lapsed review does: visibility alone, a move to a state, or an escalation to a person', () => {
+    const body = (review: unknown) => ({ ...SEED_WORKFLOW, review });
+    const ada = '11111111-1111-4111-8111-111111111111';
+    for (const lapse of [
+      { kind: 'visibility' },
+      { kind: 'move', to: 'draft' },
+      { kind: 'escalate', to: ada },
+    ]) {
+      expect(parseWorkflowBody(body({ remind: 14, lapse }), 'document')).toMatchObject({
+        ok: true,
+        body: { review: { remind: 14, lapse } },
+      });
+    }
+    expect(
+      parseWorkflowBody(body({ remind: 14, lapse: { kind: 'move', to: 'lost' } })),
+    ).toMatchObject({ ok: false, problems: [{ rule: 'state_unknown', path: 'review.lapse.to' }] });
+    expect(parseWorkflowBody(body({ remind: 400, lapse: { kind: 'visibility' } })).ok).toBe(false);
+    expect(parseWorkflowBody(body({ remind: 7, lapse: { kind: 'escalate', to: 'Ada' } })).ok).toBe(
+      false,
+    );
+    // None declared: 30 days, and visibility alone (ADR-0061).
+    expect(reviewPolicy(SEED_WORKFLOW)).toEqual({ remind: 30, lapse: { kind: 'visibility' } });
   });
 
   it('reaches a state only a rejection leads to', () => {

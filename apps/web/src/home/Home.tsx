@@ -94,6 +94,30 @@ function wordsFor(item: Waiting) {
         action: 'Open',
         href: connectionLink(id),
       };
+    // A review (LIF-017, LIF-059): its day, as a day, whatever the reader's zone.
+    case 'review_due':
+    case 'review_overdue': {
+      const day = new Date(`${item.reviewBy ?? ''}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      });
+      const href = item.artifact.kind === 'document' ? `#/documents/${id}` : `#/components/${id}`;
+      return item.kind === 'review_due'
+        ? {
+            headline: `${title} is due for review`,
+            detail: `Review it by ${day}.`,
+            action: 'Open',
+            href,
+          }
+        : {
+            headline: `${title} is overdue for review`,
+            detail: `It was to be reviewed by ${day}.`,
+            action: 'Open',
+            href,
+          };
+    }
     default:
       return null;
   }
@@ -105,6 +129,8 @@ const MARKS: Readonly<Record<Waiting['kind'], readonly string[]>> = {
   changes_not_in_version: ['M8 6.6a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 1 0 0-2.8z'],
   published_earlier: ['M8 2a6 6 0 1 0 0 12A6 6 0 1 0 8 2z', 'M8 4.8V8l2.2 1.4'],
   connection_untested: ['M6 2v3.5M10 2v3.5', 'M4.5 5.5h7v2.5a3.5 3.5 0 0 1-7 0z', 'M8 11.5V14'],
+  review_due: ['M3 3.5h10v10H3z', 'M3 6.5h10', 'M6 2v3M10 2v3'],
+  review_overdue: ['M3 3.5h10v10H3z', 'M3 6.5h10', 'M8 8.5v2.5', 'M8 12.2v.2'],
 };
 
 /** One item: its mark, what waits and why, and its one link, described by both. */

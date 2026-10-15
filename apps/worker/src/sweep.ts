@@ -6,6 +6,8 @@ import {
   publicationsToCheckAgain,
   recordEvent,
   recordCheckGivenUp,
+  recordEffected,
+  recordLapses,
   sweepIterations,
   sweepNotifications,
   sweepPresence,
@@ -238,6 +240,37 @@ export async function foldNotificationDigests(
     }
   }
   return made;
+}
+
+/**
+ * Dates (the WF5 plan, WF5-D, WF5-G), in every tenant, as the system: each revision approved to take
+ * effect later whose instant has passed recorded as taking effect (LIF-060), and each review date
+ * passed unmet acted on as its workflow declares (LIF-059). Each tenant in its own transaction.
+ */
+export async function sweepDates(
+  db: TenantDatabase,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<{ readonly effected: number; readonly lapsed: number }> {
+  let effected = 0;
+  let lapsed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const done = await db.withTenant(
+        tenant,
+        async (trx) => ({
+          effected: await recordEffected(trx, now),
+          lapsed: await recordLapses(trx, now),
+        }),
+        { actorKind: 'system' },
+      );
+      effected += done.effected;
+      lapsed += done.lapsed;
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'the dates were not swept');
+    }
+  }
+  return { effected, lapsed };
 }
 
 /** Notifications past their 90 days (COL-062), in every tenant. */

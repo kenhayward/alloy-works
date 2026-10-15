@@ -212,6 +212,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0096_workflow_gates',
       '0097_workflow_publishing',
       '0098_workflow_query_definitions',
+      '0099_workflow_dates',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

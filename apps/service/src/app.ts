@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { datesHandlers } from './dates.js';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
 import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
 import cookie from '@fastify/cookie';
@@ -548,6 +549,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...holdHandlers(),
     ...retentionHandlers(),
     ...workflowHandlers(),
+    ...datesHandlers(),
     ...erasureHandlers(),
 
     getHealth: async () => ({ status: 'ok' }),

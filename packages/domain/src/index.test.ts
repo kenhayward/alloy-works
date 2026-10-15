@@ -677,6 +677,8 @@ describe('the domain package', () => {
         // WF3: what a transition may require, and what each kind's may.
         'TRANSITION_CONDITIONS',
         'CONDITIONS_BY_KIND',
+        // WF5: a workflow's review policy, and what it is where none is declared.
+        'reviewPolicy',
       ].sort(),
     );
   });

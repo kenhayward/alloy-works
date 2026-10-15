@@ -4,6 +4,7 @@ export {
   GATE_PUBLICATIONS,
   initialState,
   parseWorkflowBody,
+  reviewPolicy,
   SEED_DOCUMENT_WORKFLOW,
   SEED_WORKFLOW,
   SEED_WORKFLOW_1,
@@ -15,6 +16,7 @@ export {
 } from './workflow.js';
 export type {
   TransitionCondition,
+  ReviewPolicy,
   TransitionPermission,
   WorkflowBody,
   WorkflowGate,
