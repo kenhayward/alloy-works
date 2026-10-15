@@ -473,6 +473,39 @@ export const auditKindSpecs = {
     'packages/db/src/rounds.ts',
   ),
   'review.reopened': kind(['COL-057'], z.strictObject({ round: Id }), 'packages/db/src/rounds.ts'),
+  // A component's or document's dates set (LIF-015, LIF-016; the WF5 plan, WF5-A): what they now are.
+  'dates.set': kind(
+    ['LIF-015', 'LIF-016'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      effectiveAt: z.iso.datetime({ offset: true }).nullable(),
+      reviewBy: z.iso.date().nullable(),
+      owner: Id.nullable(),
+    }),
+    'packages/db/src/dates.ts',
+  ),
+  // A revision approved to take effect later taking it, by nobody (LIF-060; WF5-D).
+  'revision.effective': kind(
+    ['LIF-060'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      revision: z.int().positive(),
+      version: Id,
+      effectiveAt: z.iso.datetime({ offset: true }),
+    }),
+    'packages/db/src/dates.ts',
+  ),
+  // A review date passing unmet, and what the workflow declared it does (LIF-059; WF5-G).
+  'review.lapsed': kind(
+    ['LIF-059'],
+    z.strictObject({
+      kind: z.enum(['component', 'document']),
+      reviewBy: z.iso.date(),
+      action: z.enum(['visibility', 'move', 'escalate']),
+      to: z.union([AuditName, Id]).optional(),
+    }),
+    'packages/db/src/dates.ts',
+  ),
   'template.moved': kind(['TPL-033'], empty, LATER),
   'binding.revised': kind(['DAT-058', 'LIF-069'], Revised, 'apps/service/src/data/revisions.ts'),
   'relationship.made': kind(['LIF-070', 'REL-011'], empty, LATER),
@@ -497,7 +530,6 @@ export const auditKindSpecs = {
   'import.restored': kind(['IMP-048'], empty, LATER),
   'library.changed': kind(['LIB-056'], empty, LATER),
   'line.merged': kind(['LIF-045'], empty, LATER),
-  'revision.effective': kind(['LIF-060'], empty, LATER),
   'component.type_changed': kind(['MET-014'], empty, LATER),
   'theme.moved': kind(['STY-026', 'STY-066'], empty, LATER),
   'style.changed': kind(['STY-032'], empty, LATER),

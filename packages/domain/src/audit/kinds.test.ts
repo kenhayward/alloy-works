@@ -59,6 +59,8 @@ describe('the audit kinds', () => {
       'artifact.undeleted',
       'retention.changed',
       'revision.designated',
+      'dates.set',
+      'review.lapsed',
       'baseline.made',
       'baseline.superseded',
       'content.restored',

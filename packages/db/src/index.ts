@@ -481,6 +481,19 @@ export {
 export { decideGate, listApprovals, type Approval, type GateAnswer } from './workflow-gates.js';
 export { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
 export {
+  datesStored,
+  dayOf,
+  localIso,
+  readDates,
+  readLocalInstant,
+  recordEffected,
+  recordLapses,
+  setDates,
+  type ArtifactDates,
+  type LocalInstant,
+  type SetDatesAnswer,
+} from './dates.js';
+export {
   createDocument,
   editOutline,
   recordDocumentValues,

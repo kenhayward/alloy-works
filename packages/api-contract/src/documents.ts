@@ -13,6 +13,7 @@ import {
   GateView,
   TransitionView,
   WorkflowRevisionView,
+  DatesView,
   WorkflowStandingView,
   WorkflowStateView,
 } from './workflows.js';
@@ -159,6 +160,7 @@ export const DocumentList = z.object({
           'Whether the latest publication the caller may read is of the latest version, an earlier one, or there is none they may read',
         ),
       state: WorkflowStateView,
+      pastReview: z.boolean().describe('Whether its review-by day has passed (LIF-018)'),
     }),
   ),
   next: nextCursor,
@@ -244,6 +246,7 @@ export const DocumentView = z.object({
     .describe('The workflow transitions the caller may take from its state now, in order'),
   gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
   revision: WorkflowRevisionView,
+  dates: DatesView,
   onHold: z
     .boolean()
     .describe(
@@ -402,6 +405,12 @@ export const DocumentTextsView = z.object({
           .optional()
           .describe(
             'For a reference tracking the latest approved revision, which revision it shows (CNT-163); absent where none is approved',
+          ),
+        pastReview: z
+          .boolean()
+          .optional()
+          .describe(
+            "True where the component's review-by day has passed (LIF-018); absent otherwise, or where the caller may not read it",
           ),
         moved: z
           .object({ id: z.string(), number: z.string() })

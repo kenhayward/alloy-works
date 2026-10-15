@@ -211,6 +211,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'revision.designated',
     'workflow.transitioned',
   ),
+  // Dates set (WF5-A).
+  setComponentDates: writes('dates.set'),
+  setDocumentDates: writes('dates.set'),
   listComponentApprovals: read,
   listDocumentApprovals: read,
   transitionQueryDefinition: writes('workflow.transitioned'),
@@ -322,6 +325,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepStalePresence: { none: 'presence' },
     foldNotificationDigests: { none: 'inbox' },
     sweepOldNotifications: { none: 'inbox' },
+    sweepDates: writes('revision.effective', 'review.lapsed', 'workflow.transitioned'),
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {

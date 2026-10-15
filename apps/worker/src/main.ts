@@ -17,6 +17,7 @@ import {
   sweepExpiredPreviews,
   sweepExpiredSignIns,
   sweepOldNotifications,
+  sweepDates,
   sweepStalePresence,
   sweepUncheckedPublications,
 } from './sweep.js';
@@ -86,6 +87,13 @@ const sweep = setInterval(() => {
   void foldNotificationDigests(db, log)
     .then((made) => made > 0 && log.info({ made }, 'folded inbox digests'))
     .catch((error: unknown) => log.error({ err: error }, 'digest fold failed'));
+  // Revisions taking effect and reviews lapsing, as the system (the WF5 plan, WF5-D, WF5-G).
+  void sweepDates(db, log)
+    .then(
+      ({ effected, lapsed }) =>
+        effected + lapsed > 0 && log.info({ effected, lapsed }, 'swept dates'),
+    )
+    .catch((error: unknown) => log.error({ err: error }, 'dates sweep failed'));
   void sweepOldNotifications(db, log)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept old notifications'))
     .catch((error: unknown) => log.error({ err: error }, 'notification sweep failed'));

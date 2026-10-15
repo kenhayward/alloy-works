@@ -19256,6 +19256,30 @@
         {
           "id": "LIF-041",
           "howItIsMet": "A reference tracking the latest approved revision says when a newer one is approved than the document's last publication carried, and compares them"
+        },
+        {
+          "id": "LIF-015",
+          "howItIsMet": "Dates, below: an effective date set apart from approval, an act (`artifact_dates`)"
+        },
+        {
+          "id": "LIF-016",
+          "howItIsMet": "A review-by day, set beside it with its owner"
+        },
+        {
+          "id": "LIF-017",
+          "howItIsMet": "Home's **Review due** for the owner, from the days the workflow's review policy says before the day"
+        },
+        {
+          "id": "LIF-018",
+          "howItIsMet": "**Past review** on the artifact's header and in the lists, and on the label of every reference to it in a document"
+        },
+        {
+          "id": "LIF-059",
+          "howItIsMet": "The workflow's `review.lapse`: shown alone, a move to a state by nobody, or an escalation to a person, acted on once per day passed"
+        },
+        {
+          "id": "LIF-060",
+          "howItIsMet": "A future effective date fixed to the revision approved, served only from that instant, its taking effect `revision.effective` by the system"
         }
       ]
     }
@@ -19678,13 +19702,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 386,
+      "line": 390,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 399,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -21034,13 +21058,13 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 455,
+      "line": 508,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 418,
+      "line": 471,
       "kind": "title"
     },
     {
@@ -21059,6 +21083,24 @@
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
       "line": 295,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-015",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 418,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-016",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 418,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-018",
+      "file": "apps/service/src/workflow-routes.test.ts",
+      "line": 418,
       "kind": "title"
     },
     {
@@ -21833,6 +21875,18 @@
       "id": "TAB-053",
       "file": "apps/web/src/editor/tableWidths.test.ts",
       "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-017",
+      "file": "apps/web/src/home/Home.test.tsx",
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-059",
+      "file": "apps/web/src/home/Home.test.tsx",
+      "line": 166,
       "kind": "title"
     },
     {
@@ -23582,6 +23636,42 @@
       "kind": "title"
     },
     {
+      "id": "LIF-015",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-016",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-017",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 270,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-018",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 291,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-059",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 291,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-060",
+      "file": "packages/db/src/dates.test.ts",
+      "line": 223,
+      "kind": "title"
+    },
+    {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
       "line": 120,
@@ -24712,7 +24802,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 205,
+      "line": 207,
       "kind": "title"
     },
     {
@@ -25450,7 +25540,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 684,
+      "line": 686,
       "kind": "title"
     },
     {
@@ -26650,37 +26740,43 @@
     {
       "id": "LIF-002",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 28,
+      "line": 29,
       "kind": "title"
     },
     {
       "id": "LIF-003",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 58,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "LIF-004",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 117,
+      "line": 118,
       "kind": "title"
     },
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 250,
+      "line": 275,
       "kind": "title"
     },
     {
       "id": "LIF-009",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 58,
+      "line": 59,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 58,
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-059",
+      "file": "packages/domain/src/workflow/workflow.test.ts",
+      "line": 149,
       "kind": "title"
     },
     {

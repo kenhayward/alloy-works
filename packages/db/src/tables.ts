@@ -594,6 +594,50 @@ export interface RevisionDesignationTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/**
+ * A component's or document's dates, as acts (0099; the WF5 plan, WF5-A). `review_by` is a `date`:
+ * read it as text (`review_by::text`), which the driver would otherwise turn into a local midnight.
+ */
+export interface ArtifactDatesTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  effective_at: Date | null;
+  effective_offset: number | null;
+  review_by: ColumnType<unknown, string | null, never>;
+  owner: string | null;
+  by: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A revision approved to take effect later, its date fixed as the gate passed (0099; WF5-B). */
+export interface RevisionEffectiveTable {
+  version_id: string;
+  artifact_id: string;
+  effective_at: Date;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A revision taking effect, recorded once by the sweep (0099; WF5-D). */
+export interface RevisionEffectedTable {
+  version_id: string;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
+/** A review date passing unmet, acted on once (0099; WF5-G). `review_by` read as text. */
+export interface ReviewLapseTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  kind: 'component' | 'document';
+  review_by: ColumnType<unknown, string, never>;
+  action: 'visibility' | 'move' | 'escalate';
+  escalated_to: string | null;
+  at: ColumnType<Date, never, never>;
+  written_by: ColumnType<string, never, never>;
+}
+
 /** One archival act on a component or a document, inserted and never changed (0083; AH-C). */
 export interface ArtifactArchivalTable {
   id: ColumnType<string, never, never>;
@@ -889,6 +933,10 @@ export interface TenantTables {
   workflow_transition: WorkflowTransitionTable;
   workflow_approval: WorkflowApprovalTable;
   revision_designation: RevisionDesignationTable;
+  artifact_dates: ArtifactDatesTable;
+  revision_effective: RevisionEffectiveTable;
+  revision_effected: RevisionEffectedTable;
+  review_lapse: ReviewLapseTable;
   search_text: SearchTextTable;
   search_earlier: SearchEarlierTable;
   search_earlier_text: SearchEarlierTextTable;

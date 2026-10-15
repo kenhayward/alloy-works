@@ -6,6 +6,7 @@ import {
   GateView,
   TransitionView,
   WorkflowRevisionView,
+  DatesView,
   WorkflowStandingView,
   WorkflowStateView,
 } from './workflows.js';
@@ -218,6 +219,7 @@ export const ComponentList = z.object({
         .nullable()
         .describe('Who made its latest version; null for a version nobody authored'),
       state: WorkflowStateView,
+      pastReview: z.boolean().describe('Whether its review-by day has passed (LIF-018)'),
     }),
   ),
   next: nextCursor,
@@ -275,6 +277,7 @@ export const ComponentView = z.object({
     .describe('The workflow transitions the caller may take from its state now, in order'),
   gates: z.array(GateView).describe('Each gate from its state, decided by its approvers'),
   revision: WorkflowRevisionView,
+  dates: DatesView,
   onHold: z
     .boolean()
     .describe(

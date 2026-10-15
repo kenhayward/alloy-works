@@ -163,6 +163,39 @@ describe('Home', () => {
     expect(within(section).getByText('2 more')).toBeInTheDocument();
   });
 
+  it('LIF-017 LIF-059 tells an owner a review falls due, and whoever a lapsed one was escalated to that it is overdue', async () => {
+    const answer = {
+      items: [
+        {
+          kind: 'review_overdue',
+          artifact: { id: AUDIT, kind: 'document', title: 'The audit' },
+          reviewBy: '2026-10-01',
+        },
+        {
+          kind: 'review_due',
+          artifact: { id: PRINTER, kind: 'component', title: 'Install the printer' },
+          reviewBy: '2026-11-20',
+        },
+      ],
+      total: 2,
+    };
+    render(
+      <Home client={service({ ...everything, '/v1/me/attention': () => json(200, answer) })} />,
+    );
+    expect(await attention()).toEqual([
+      {
+        link: 'Open',
+        said: ['The audit is overdue for review', 'It was to be reviewed by 1 October 2026.'],
+        href: `#/documents/${AUDIT}`,
+      },
+      {
+        link: 'Open',
+        said: ['Install the printer is due for review', 'Review it by 20 November 2026.'],
+        href: `#/components/${PRINTER}`,
+      },
+    ]);
+  });
+
   it('lists nothing of a kind it does not know, and the rest as ever', async () => {
     const [failed, ...rest] = waiting.items;
     const answer = {

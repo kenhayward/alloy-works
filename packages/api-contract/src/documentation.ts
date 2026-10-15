@@ -328,6 +328,8 @@ const operationTags = {
     'transitionQueryDefinition',
     'decideQueryDefinitionGate',
     'listQueryDefinitionApprovals',
+    'setComponentDates',
+    'setDocumentDates',
   ],
   'Audit log': ['listAuditEvents', 'requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
 } as const;
@@ -642,6 +644,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists every approval and rejection of a component at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the component.',
   listDocumentApprovals:
     'Lists every approval and rejection of a document at its gates, newest first: the gate, the decision, who, when, the version decided and a rejection’s reason. Needs read on the document.',
+  setComponentDates:
+    "Sets a component's dates as an act, needing edit: when a revision approved from now takes effect, which fixes it to that revision until then, the day it is to be reviewed by, and who is prompted to review it, somebody who may read it. Audited.",
+  setDocumentDates:
+    "Sets a document's dates as an act, needing edit: when a revision approved from now takes effect, which fixes it to that revision until then, the day it is to be reviewed by, and who is prompted to review it, somebody who may read it. Audited.",
   transitionQueryDefinition:
     "Moves a query definition along a transition from its state, named as the caller saw it, needing the transition's permission on the definition and a reason where the transition asks for one. Saving an approved definition moves it back to the initial state on its own. Audited.",
   decideQueryDefinitionGate:

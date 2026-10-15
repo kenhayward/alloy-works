@@ -79,10 +79,25 @@ const WorkflowTransitionBody = z.strictObject({
     ),
 });
 
+/** What a review date passing unmet does, and how long before it its owner is prompted (LIF-059). */
+const ReviewPolicyBody = z
+  .strictObject({
+    remind: z.int().min(0).max(365).describe('Days before the review-by day its owner is prompted'),
+    lapse: z
+      .discriminatedUnion('kind', [
+        z.strictObject({ kind: z.literal('visibility') }),
+        z.strictObject({ kind: z.literal('move'), to: Key.describe('The state it moves to') }),
+        z.strictObject({ kind: z.literal('escalate'), to: z.uuid().describe('Who is prompted') }),
+      ])
+      .describe('What a review day passing unmet does: shown alone, a move, or an escalation'),
+  })
+  .describe('Absent: 30 days, and shown alone');
+
 /** A definition's body: every state reachable from the initial one, keys unique. */
 export const WorkflowBody = z.strictObject({
   states: z.array(WorkflowStateBody).min(1).max(50),
   transitions: z.array(WorkflowTransitionBody).max(200),
+  review: ReviewPolicyBody.optional(),
 });
 export type WorkflowBody = z.input<typeof WorkflowBody>;
 
@@ -122,6 +137,7 @@ export const WorkflowDefinitionView = z.object({
         requires: z.array(TransitionCondition).optional(),
       }),
     ),
+    review: ReviewPolicyBody.optional(),
   }),
   by: Principal.nullable().describe('Who saved it; null for the seed'),
   at: z.string().describe('When it was saved'),
@@ -236,6 +252,44 @@ export const TransitionAnswer = z.object({
   revision: WorkflowRevisionView,
 });
 export type TransitionAnswer = z.infer<typeof TransitionAnswer>;
+
+/** A component's or document's dates (LIF-015 to LIF-018; the WF5 plan, WF5-A, WF5-H). */
+export const DatesView = z
+  .object({
+    effectiveAt: z.iso
+      .datetime({ offset: true })
+      .nullable()
+      .describe('When a revision approved from now takes effect, with the offset it was set in'),
+    reviewBy: z.iso.date().nullable().describe('The day it is to be reviewed by'),
+    owner: z
+      .object({ id: z.uuid(), name: z.string().nullable() })
+      .nullable()
+      .describe('Who is prompted to review it'),
+    pastReview: z.boolean().describe('Whether its review-by day has passed'),
+    effectiveFrom: z.iso
+      .datetime()
+      .nullable()
+      .describe(
+        'Where its latest revision is approved to take effect later, when: references take the one before until then',
+      ),
+  })
+  .describe("Its effective and review-by dates, and its review's owner");
+export type DatesView = z.infer<typeof DatesView>;
+
+export const DatesBody = z.strictObject({
+  effectiveAt: z.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe(
+      'When a revision approved from now takes effect, with the offset of its local time; null for as it is approved',
+    ),
+  reviewBy: z.iso.date().nullable().describe('The day it is to be reviewed by; null for none'),
+  owner: z
+    .uuid()
+    .nullable()
+    .describe('Who is prompted to review it: somebody who may read it; null for nobody'),
+});
+export type DatesBody = z.infer<typeof DatesBody>;
 
 export const ApprovalBody = z.strictObject({
   transition: Key.describe('The gate, by its transition key'),
@@ -366,7 +420,54 @@ const transitionResponses = (kind: 'component' | 'document' | 'query definition'
   }) as const;
 
 /** Workflow definitions and moves (workflow.md; the WF1 plan, WF-F and WF-J). */
+const editing = {
+  check: 'permission',
+  permission: 'edit',
+  target: { artifact: 'id' },
+} as const;
+
+const datesResponses = (kind: 'component' | 'document') =>
+  ({
+    200: { description: 'Its dates now', schema: DatesView },
+    400: {
+      description: 'owner_invalid: the owner is nobody who may read it',
+      schema: ErrorBody,
+    },
+    401: unauthenticated,
+    403: { description: `The caller may read the ${kind} but may not edit it`, schema: ErrorBody },
+    404: {
+      description: `No such ${kind} in this environment, or none the caller may read`,
+      schema: ErrorBody,
+    },
+    409: {
+      description: `artifact_archived: an archived ${kind} keeps its dates`,
+      schema: ErrorBody,
+    },
+  }) as const;
+
 export const workflowRoutes = {
+  setComponentDates: {
+    operationId: 'setComponentDates',
+    method: 'PUT',
+    path: '/v1/components/{id}/dates',
+    summary: "Set a component's effective and review-by dates",
+    tenantScoped: true,
+    access: editing,
+    params: TransitionParams,
+    body: DatesBody,
+    responses: datesResponses('component'),
+  },
+  setDocumentDates: {
+    operationId: 'setDocumentDates',
+    method: 'PUT',
+    path: '/v1/documents/{id}/dates',
+    summary: "Set a document's effective and review-by dates",
+    tenantScoped: true,
+    access: editing,
+    params: TransitionParams,
+    body: DatesBody,
+    responses: datesResponses('document'),
+  },
   listWorkflows: {
     operationId: 'listWorkflows',
     method: 'GET',

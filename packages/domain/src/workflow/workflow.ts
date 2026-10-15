@@ -93,10 +93,31 @@ const Transition = z.strictObject({
   requires: z.array(z.enum(TRANSITION_CONDITIONS)).max(TRANSITION_CONDITIONS.length).optional(),
 });
 
+/**
+ * What a review date passing unmet does (LIF-059; the WF5 plan, WF5-E): shown alone, a move to a
+ * state, or an escalation to a person; and how many days before it the owner is prompted (LIF-017).
+ */
+const ReviewPolicy = z.strictObject({
+  remind: z.number().int().min(0).max(365),
+  lapse: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('visibility') }),
+    z.strictObject({ kind: z.literal('move'), to: Key }),
+    z.strictObject({ kind: z.literal('escalate'), to: z.uuid() }),
+  ]),
+});
+export type ReviewPolicy = z.output<typeof ReviewPolicy>;
+
 export const workflowBodySchema = z.strictObject({
   states: z.array(State).min(1).max(50),
   transitions: z.array(Transition).max(200),
+  /** Absent in a body stored before WF5, and read as `reviewPolicy` says. */
+  review: ReviewPolicy.optional(),
 });
+
+/** A body's review policy, or 30 days and visibility alone where it declares none (ADR-0061). */
+export function reviewPolicy(body: WorkflowBody): ReviewPolicy {
+  return body.review ?? { remind: 30, lapse: { kind: 'visibility' } };
+}
 export type WorkflowBody = z.output<typeof workflowBodySchema>;
 export type WorkflowState = WorkflowBody['states'][number];
 export type WorkflowTransition = WorkflowBody['transitions'][number];
@@ -246,6 +267,14 @@ export function parseWorkflowBody(
       });
     }
   });
+  const lapse = body.review?.lapse;
+  if (lapse?.kind === 'move' && !keys.has(lapse.to)) {
+    problems.push({
+      rule: 'state_unknown',
+      path: 'review.lapse.to',
+      message: `No state has the key ${lapse.to}`,
+    });
+  }
   if (problems.length === 0) {
     const reached = new Set([initial[0]!.key]);
     for (let grew = true; grew;) {
