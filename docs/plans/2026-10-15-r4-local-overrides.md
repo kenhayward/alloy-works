@@ -40,3 +40,7 @@ REU-015).
 - **Override here**, the marks, **Remove override**, stale said. The browser walks. The final review
   hunts an override reaching another document, and a stale one applied or dropped silently. The close:
   0.175.0.
+
+## Built
+
+R4a #637, and R4b with the close (0.175.0) #638. The final review found an override replacing a paragraph's whole content, so a paragraph holding a footnote, a reference, a value or an equation would have lost it; such a paragraph is now refused and not offered. A comment anchored in an overridden paragraph would have quoted words the component does not hold; it can no longer be. Editing the component in place now says the document overrides it. Left: an overridden paragraph is plain text, its formatting not kept; overriding marks is for later.

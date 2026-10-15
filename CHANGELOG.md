@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.175.0 - 2026-10-15 (PR #638)
+
+Reuse's fourth slice: local overrides (the R4 plan).
+
+### Added
+
+- **Local overrides, through the API.** A document's reference can override a paragraph of its component in this document alone. A publish applies it while the paragraph stands as it was, and fails by name once it has changed. Where a component is used says which references override it.
+- **Overrides in the page.** A component's label in a document offers **Overrides**: change a paragraph's words in this document alone. The label says **Overridden here**, or **Override no longer applies** once the paragraph has changed.
+
 ## 0.174.0 - 2026-10-15 (PR #636)
 
 Reuse's third slice: jobs through the API, and the complete impact report (the R3 plan).
