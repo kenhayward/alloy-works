@@ -307,6 +307,38 @@ describe('the inverse of an act is one operation', () => {
     expect(applied(after, inverseOf(before, after, retitle))).toEqual(before);
   });
 
+  it('undoes a change to a reference overrides by setting them back, none as none', () => {
+    const before: OutlineDocument = {
+      ...three(),
+      nodes: [
+        {
+          type: 'reference',
+          id: RESULTS,
+          component: '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01',
+          mode: { kind: 'latest' },
+          numbered: true,
+          matter: 'body',
+          pageBreak: 'none',
+          values: {},
+          children: [],
+        },
+      ],
+    };
+    const set: OutlineOperation = {
+      operation: 'set',
+      node: RESULTS,
+      overrides: [
+        {
+          block: 'p1',
+          against: '11111111-1111-4111-8111-111111111111',
+          text: [{ type: 'text', value: 'Here', marks: [] }],
+        },
+      ],
+    };
+    const after = applied(before, set);
+    expect(applied(after, inverseOf(before, after, set))).toEqual(before);
+  });
+
   it('sets back only the switches an act named', () => {
     const before = three();
     const set: OutlineOperation = { operation: 'set', node: RESULTS, pageBreak: 'recto' };

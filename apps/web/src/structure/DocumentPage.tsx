@@ -69,6 +69,8 @@ import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { dataState } from './dataStates.js';
 import type { NodeMarks } from './OutlinePanel.js';
 import { PlaceSectionButton } from './PlaceSection.js';
+import { OverrideDialog } from './OverrideDialog.js';
+import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
 import { useLiveDocument, type LiveDocument } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
 import type { FollowOptions } from '@alloy-works/api-client';
@@ -644,6 +646,12 @@ export function DocumentPage({
   // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
   // read again for every version the page shows and whenever a component edited in place closes.
   const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
+  // Each reference's overrides, and its text as the component holds it, for Overrides (R4-G).
+  const [overridesByNode, setOverridesByNode] = useState<
+    ReadonlyMap<string, readonly OverrideView[]>
+  >(new Map());
+  const [unoverridden, setUnoverridden] = useState<ReadonlyMap<string, unknown>>(new Map());
+  const [overriding, setOverriding] = useState<string | null>(null);
   // Whether the reader may edit each occurrence's component now, and who holds it (CNT-074).
   const [editable, setEditable] = useState<ReadonlyMap<string, Editable>>(new Map());
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
@@ -776,14 +784,24 @@ export function DocumentPage({
             ]),
           ),
         );
+        const overridden = new Map<string, readonly OverrideView[]>();
+        const asHeld = new Map<string, unknown>();
         for (const occurrence of data.occurrences) {
           if (occurrence.version === null) continue;
           const content = contents.get(occurrence.version);
-          if (content !== undefined) byNode.set(occurrence.node, content);
+          // Drawn with this document's overrides that stand (REU-011, REU-015).
+          const overrides = overridesIn(occurrence.overrides);
+          if (overrides.length > 0) overridden.set(occurrence.node, overrides);
+          if (content !== undefined) {
+            asHeld.set(occurrence.node, content);
+            byNode.set(occurrence.node, withOverrides(content, overrides));
+          }
           const number = numbers.get(occurrence.version);
           if (number !== undefined) numberOf.set(occurrence.node, number);
         }
         setTexts(byNode);
+        setOverridesByNode(overridden);
+        setUnoverridden(asHeld);
         setOccurrenceVersions(
           new Map(
             data.occurrences.flatMap((occurrence) =>
@@ -2533,6 +2551,34 @@ export function DocumentPage({
               </div>
             )}
             <div ref={textColumn} className={`${styles['text']} aw-desk`}>
+              {overriding !== null && unoverridden.has(overriding) && (
+                // A reference's overrides, this document's alone (REU-011; the R4 plan, R4-G).
+                <OverrideDialog
+                  name={(() => {
+                    const held = unoverridden.get(overriding) as { title?: unknown } | undefined;
+                    return typeof held?.title === 'string' ? held.title : 'this component';
+                  })()}
+                  content={unoverridden.get(overriding)}
+                  version={occurrenceVersions.get(overriding) ?? ''}
+                  overrides={overridesByNode.get(overriding) ?? []}
+                  current={(() => {
+                    let held: readonly OverrideBody[] = [];
+                    walkOutline(document.outline.nodes, (node) => {
+                      if (node.id === overriding && node.type === 'reference') {
+                        held = (node.overrides ?? []) as readonly OverrideBody[];
+                      }
+                    });
+                    return held;
+                  })()}
+                  busy={busy}
+                  onClose={() => setOverriding(null)}
+                  onSave={(overrides) => {
+                    const node = overriding;
+                    setOverriding(null);
+                    void apply({ operation: 'set', node, overrides } as OutlineOperation, false);
+                  }}
+                />
+              )}
               <DocumentText
                 outline={document.outline}
                 scheme={document.scheme}
@@ -2552,6 +2598,8 @@ export function DocumentPage({
                 resolved={resolved}
                 revisions={revisionByNode}
                 pastReview={pastReviewNodes}
+                overridesOf={overridesByNode}
+                {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}
                 newer={{ client, byNode: newerByNode }}
                 // The version is chosen from the label in Authoring, by whoever may restructure the
                 // document (DV-F); anywhere else the label says it and offers nothing.
