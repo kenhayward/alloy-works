@@ -9,6 +9,7 @@ import {
   grant,
   latestVersion,
   migrate,
+  readVersion,
   recordVersion,
   seedDevelopmentContent,
   type Tenant,
@@ -285,6 +286,8 @@ describe('templates through the service', () => {
       id: template.id,
       name: 'Protocol',
       version: { id: template.version.id, number: '0.1' },
+      required: ['introduction'],
+      departures: { added: [], missing: [] },
     };
     expect(view.template).toEqual(shown);
     const opened = await call('alice', 'GET', `/v1/documents/${view.id}`);
@@ -461,14 +464,64 @@ describe('templates through the service', () => {
     const publish = (version: string) =>
       call('ada', 'POST', `/v1/documents/${made.id}/publications`, { version, formats: ['pdf'] });
 
-    // The Introduction taken out: refused first for the section, by its title.
-    const removed = (
-      await call('ada', 'POST', `/v1/documents/${made.id}/outline`, {
-        openedFrom: made.version.id,
-        operation: { operation: 'remove', node: made.outline.nodes[0]!.id },
-      })
-    ).json<{ version: { id: string } }>();
-    const missing = await publish(removed.version.id);
+    // The Introduction is taken out only with a reason (TPL-029), and is then no longer missing.
+    const bare = await call('ada', 'POST', `/v1/documents/${made.id}/outline`, {
+      openedFrom: made.version.id,
+      operation: { operation: 'remove', node: made.outline.nodes[0]!.id },
+    });
+    expect(bare.statusCode).toBe(400);
+    expect(bare.json()).toMatchObject({
+      code: 'outline_invalid',
+      reason: "A section this document's template requires is removed only with a reason",
+    });
+    const reasoned = await call('ada', 'POST', `/v1/documents/${made.id}/outline`, {
+      openedFrom: made.version.id,
+      operation: {
+        operation: 'remove',
+        node: made.outline.nodes[0]!.id,
+        reason: 'The cover letter introduces it.',
+      },
+    });
+    expect(reasoned.statusCode, reasoned.body).toBe(200);
+    expect(reasoned.json<{ template: { departures: unknown } }>().template.departures).toEqual({
+      added: [],
+      missing: [
+        {
+          key: 'introduction',
+          title: 'Introduction',
+          required: true,
+          reason: 'The cover letter introduces it.',
+        },
+      ],
+    });
+    expect(
+      (await publish(reasoned.json<{ version: { id: string } }>().version.id)).json(),
+    ).toMatchObject({ code: 'metadata_invalid' });
+
+    // One made before TPL-029, without it and no reason: refused first for the section, by its title.
+    const older = (await document('ada', template.id)).json<{
+      id: string;
+      version: { id: string };
+    }>();
+    const removed = await tenantDb.withTenant(tenant, async (trx) => {
+      const opened = (await readVersion(trx, older.version.id))!;
+      const outline = opened.content as { nodes: { id: string }[] };
+      const answer = await recordVersion(trx, {
+        artifactId: older.id,
+        openedFrom: older.version.id,
+        author: ids.ada!,
+        substance: {
+          kind: 'document',
+          content: { ...outline, nodes: outline.nodes.slice(1) } as never,
+        },
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.version;
+    });
+    const missing = await call('ada', 'POST', `/v1/documents/${older.id}/publications`, {
+      version: removed.id,
+      formats: ['pdf'],
+    });
     expect(missing.statusCode).toBe(400);
     expect(missing.json()).toMatchObject({
       code: 'section_required',

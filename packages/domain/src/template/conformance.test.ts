@@ -5,7 +5,7 @@ import { fieldDefinitionSchema } from '../metadata/field.js';
 import type { EffectiveField } from '../metadata/resolve.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 
-import { missingSections, valueFailures } from './conformance.js';
+import { departures, missingSections, valueFailures } from './conformance.js';
 import { TEMPLATE_SCHEMA_VERSION, templateDefinitionSchema } from './definition.js';
 
 const THEME = '4ae73bd5-0000-4000-8000-000000002866';
@@ -81,6 +81,40 @@ describe("a document against its template's requirements", () => {
           section(1, 'Introduction', 'introduction', [section(2, 'Scope', 'scope')]),
           section(3, 'Conclusion', 'conclusion'),
         ]),
+      ),
+    ).toEqual([]);
+  });
+
+  it('TPL-028 lists what the document has that its template does not, and what it lacks, with the reason a required one was removed', () => {
+    const shaped = outline([
+      section(1, 'Introduction', 'introduction'),
+      section(2, 'Findings', 'conclusion', [section(3, 'Notes', undefined)]),
+      section(4, 'Annex', 'retired'),
+    ]);
+    expect(
+      departures(definition, shaped, new Map([['scope', 'Covered in the introduction.']])),
+    ).toEqual({
+      added: [
+        { node: id(3), title: 'Notes' },
+        // Its key is one the template no longer names.
+        { node: id(4), title: 'Annex' },
+      ],
+      missing: [
+        { key: 'scope', title: 'Scope', required: true, reason: 'Covered in the introduction.' },
+        { key: 'method', title: 'Method', required: false, reason: null },
+      ],
+    });
+  });
+
+  it('TPL-029 does not hold a required section removed with a reason missing', () => {
+    expect(
+      missingSections(
+        definition,
+        outline([
+          section(1, 'Introduction', 'introduction'),
+          section(3, 'Conclusion', 'conclusion'),
+        ]),
+        new Set(['scope']),
       ),
     ).toEqual([]);
   });

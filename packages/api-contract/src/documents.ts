@@ -227,6 +227,31 @@ export const DocumentView = z.object({
       id: z.string(),
       name: z.string(),
       version: z.object({ id: z.string(), number: z.string() }),
+      required: z
+        .array(z.string())
+        .describe(
+          'The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)',
+        ),
+      departures: z
+        .object({
+          added: z
+            .array(z.object({ node: z.string(), title: z.string() }))
+            .describe('Each section the document has that its template does not'),
+          missing: z
+            .array(
+              z.object({
+                key: z.string(),
+                title: z.string(),
+                required: z.boolean(),
+                reason: z
+                  .string()
+                  .nullable()
+                  .describe('Why a required one was removed, as its remover said'),
+              }),
+            )
+            .describe('Each starting section none of its sections came from'),
+        })
+        .describe('How the document departs from its template (TPL-028)'),
     })
     .nullable()
     .describe(

@@ -191,6 +191,8 @@ export function marksWords(marks: NodeMarks | undefined): string[] {
 
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
+  /** The keys of the sections the document's template requires: each removed only with a reason (TPL-029). */
+  readonly requiredSections?: readonly string[];
   /** What stands above the panel's content in its box: the pane's tab strip. */
   readonly head?: ReactNode;
   /** The tab and the panel it shows, by id, when the panel is one tab's (interface slice 15). */
@@ -409,6 +411,7 @@ export function OutlinePanel({
   sectionFields,
   schemas,
   people,
+  requiredSections = [],
 }: OutlinePanelProps) {
   const prefix = useId();
   const nodes = outline.nodes;
@@ -747,7 +750,7 @@ export function OutlinePanel({
     if (back !== null) setFocusTarget(back);
   };
 
-  const remove = async (id: string) => {
+  const remove = async (id: string, reason?: string) => {
     const place = placeOf(nodes, id);
     setConfirming(null);
     if (!place || !may) return;
@@ -757,7 +760,11 @@ export function OutlinePanel({
       place.parent?.id ??
       place.siblings[place.index + 1]?.id ??
       null;
-    const after = await onOperation({ operation: 'remove', node: id });
+    const after = await onOperation({
+      operation: 'remove',
+      node: id,
+      ...(reason === undefined ? {} : { reason }),
+    });
     const focus = typeof after === 'string' ? id : neighbour;
     if (focus !== null) {
       setActive(focus);
@@ -1214,7 +1221,8 @@ export function OutlinePanel({
                         : null
                       : referencesTo
                 }
-                onRemove={() => void remove(confirming)}
+                needsReason={holdsRequired(placeOf(nodes, confirming)?.node, requiredSections)}
+                onRemove={(reason) => void remove(confirming, reason)}
                 onKeep={() => {
                   setConfirming(null);
                   setFocusTarget(confirming);
@@ -1439,14 +1447,26 @@ function ReferencedBy({
 
 const IRREVERSIBLE = 'This cannot be undone, and nothing before it can be undone afterwards.';
 
+/** Whether a node, or anything beneath it, is a section from one the template requires (TPL-029). */
+function holdsRequired(node: OutlineViewNode | undefined, required: readonly string[]): boolean {
+  if (!node || required.length === 0) return false;
+  if (node.type === 'section' && node.origin !== undefined && required.includes(node.origin)) {
+    return true;
+  }
+  return node.children.some((child) => holdsRequired(child, required));
+}
+
 function ConfirmRemoval({
   node,
   names,
   referencedBy,
+  needsReason,
   onRemove,
   onKeep,
 }: {
   node: OutlineViewNode | undefined;
+  /** It takes a section the template requires: removed only with a reason (TPL-029). */
+  needsReason: boolean;
   names: Names;
   /**
    * What refers to the node from elsewhere (STR-074): warned of, never refused; or not known yet, or
@@ -1454,12 +1474,14 @@ function ConfirmRemoval({
    */
   referencedBy:
     { readonly count: number; readonly list: ReactNode } | 'checking' | 'unknown' | null;
-  onRemove: () => void;
+  onRemove: (reason?: string) => void;
   onKeep: () => void;
 }) {
   const question = useId();
   const warning = useId();
+  const [reason, setReason] = useState('');
   if (!node) return null;
+  const waiting = needsReason && reason.trim() === '';
   const name = nodeName(node, names);
   return (
     <div
@@ -1492,12 +1514,26 @@ function ConfirmRemoval({
           {referencedBy.list}
         </>
       )}
+      {needsReason && (
+        <label>
+          Why it is removed
+          <textarea
+            value={reason}
+            maxLength={2000}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </label>
+      )}
       {/* Focus goes to the question the author has just asked to be put, which describes it. */}
       <button
         type="button"
         autoFocus
         aria-describedby={referencedBy === null ? question : `${question} ${warning}`}
-        onClick={onRemove}
+        aria-disabled={waiting}
+        onClick={() => {
+          if (waiting) return;
+          onRemove(needsReason ? reason.trim() : undefined);
+        }}
       >
         Remove
       </button>

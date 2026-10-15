@@ -53209,12 +53209,81 @@
                                 "id",
                                 "number"
                               ]
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                            },
+                            "departures": {
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "node": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "node",
+                                      "title"
+                                    ]
+                                  },
+                                  "description": "Each section the document has that its template does not"
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "required": {
+                                        "type": "boolean"
+                                      },
+                                      "reason": {
+                                        "description": "Why a required one was removed, as its remover said",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "title",
+                                      "required",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each starting section none of its sections came from"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "missing"
+                              ],
+                              "description": "How the document departs from its template (TPL-028)"
                             }
                           },
                           "required": [
                             "id",
                             "name",
-                            "version"
+                            "version",
+                            "required",
+                            "departures"
                           ]
                         },
                         {
@@ -53655,6 +53724,11 @@
                     "version": {
                       "id": "example",
                       "number": "example"
+                    },
+                    "required": [],
+                    "departures": {
+                      "added": [],
+                      "missing": []
                     }
                   },
                   "mayEdit": false,
@@ -114911,6 +114985,10 @@
                           "node": {
                             "type": "string",
                             "pattern": "^[a-z2-7]{26}$"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 2000
                           }
                         },
                         "required": [
@@ -116184,12 +116262,81 @@
                                 "id",
                                 "number"
                               ]
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                            },
+                            "departures": {
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "node": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "node",
+                                      "title"
+                                    ]
+                                  },
+                                  "description": "Each section the document has that its template does not"
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "required": {
+                                        "type": "boolean"
+                                      },
+                                      "reason": {
+                                        "description": "Why a required one was removed, as its remover said",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "title",
+                                      "required",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each starting section none of its sections came from"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "missing"
+                              ],
+                              "description": "How the document departs from its template (TPL-028)"
                             }
                           },
                           "required": [
                             "id",
                             "name",
-                            "version"
+                            "version",
+                            "required",
+                            "departures"
                           ]
                         },
                         {
@@ -116630,6 +116777,11 @@
                     "version": {
                       "id": "example",
                       "number": "example"
+                    },
+                    "required": [],
+                    "departures": {
+                      "added": [],
+                      "missing": []
                     }
                   },
                   "mayEdit": false,
@@ -116993,12 +117145,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -117981,12 +118202,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -119635,12 +119925,81 @@
                                 "id",
                                 "number"
                               ]
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                            },
+                            "departures": {
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "node": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "node",
+                                      "title"
+                                    ]
+                                  },
+                                  "description": "Each section the document has that its template does not"
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "required": {
+                                        "type": "boolean"
+                                      },
+                                      "reason": {
+                                        "description": "Why a required one was removed, as its remover said",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "title",
+                                      "required",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each starting section none of its sections came from"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "missing"
+                              ],
+                              "description": "How the document departs from its template (TPL-028)"
                             }
                           },
                           "required": [
                             "id",
                             "name",
-                            "version"
+                            "version",
+                            "required",
+                            "departures"
                           ]
                         },
                         {
@@ -120081,6 +120440,11 @@
                     "version": {
                       "id": "example",
                       "number": "example"
+                    },
+                    "required": [],
+                    "departures": {
+                      "added": [],
+                      "missing": []
                     }
                   },
                   "mayEdit": false,
@@ -120444,12 +120808,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -121432,12 +121865,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -129505,12 +130007,81 @@
                                 "id",
                                 "number"
                               ]
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                            },
+                            "departures": {
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "node": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "node",
+                                      "title"
+                                    ]
+                                  },
+                                  "description": "Each section the document has that its template does not"
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "required": {
+                                        "type": "boolean"
+                                      },
+                                      "reason": {
+                                        "description": "Why a required one was removed, as its remover said",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "title",
+                                      "required",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each starting section none of its sections came from"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "missing"
+                              ],
+                              "description": "How the document departs from its template (TPL-028)"
                             }
                           },
                           "required": [
                             "id",
                             "name",
-                            "version"
+                            "version",
+                            "required",
+                            "departures"
                           ]
                         },
                         {
@@ -129951,6 +130522,11 @@
                     "version": {
                       "id": "example",
                       "number": "example"
+                    },
+                    "required": [],
+                    "departures": {
+                      "added": [],
+                      "missing": []
                     }
                   },
                   "mayEdit": false,
@@ -130314,12 +130890,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -131302,12 +131947,81 @@
                                     "id",
                                     "number"
                                   ]
+                                },
+                                "required": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                                },
+                                "departures": {
+                                  "type": "object",
+                                  "properties": {
+                                    "added": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "node": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "node",
+                                          "title"
+                                        ]
+                                      },
+                                      "description": "Each section the document has that its template does not"
+                                    },
+                                    "missing": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "title": {
+                                            "type": "string"
+                                          },
+                                          "required": {
+                                            "type": "boolean"
+                                          },
+                                          "reason": {
+                                            "description": "Why a required one was removed, as its remover said",
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "key",
+                                          "title",
+                                          "required",
+                                          "reason"
+                                        ]
+                                      },
+                                      "description": "Each starting section none of its sections came from"
+                                    }
+                                  },
+                                  "required": [
+                                    "added",
+                                    "missing"
+                                  ],
+                                  "description": "How the document departs from its template (TPL-028)"
                                 }
                               },
                               "required": [
                                 "id",
                                 "name",
-                                "version"
+                                "version",
+                                "required",
+                                "departures"
                               ]
                             },
                             {
@@ -169470,12 +170184,81 @@
                                 "id",
                                 "number"
                               ]
+                            },
+                            "required": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029)"
+                            },
+                            "departures": {
+                              "type": "object",
+                              "properties": {
+                                "added": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "node": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "node",
+                                      "title"
+                                    ]
+                                  },
+                                  "description": "Each section the document has that its template does not"
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "required": {
+                                        "type": "boolean"
+                                      },
+                                      "reason": {
+                                        "description": "Why a required one was removed, as its remover said",
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "key",
+                                      "title",
+                                      "required",
+                                      "reason"
+                                    ]
+                                  },
+                                  "description": "Each starting section none of its sections came from"
+                                }
+                              },
+                              "required": [
+                                "added",
+                                "missing"
+                              ],
+                              "description": "How the document departs from its template (TPL-028)"
                             }
                           },
                           "required": [
                             "id",
                             "name",
-                            "version"
+                            "version",
+                            "required",
+                            "departures"
                           ]
                         },
                         {
@@ -169916,6 +170699,11 @@
                     "version": {
                       "id": "example",
                       "number": "example"
+                    },
+                    "required": [],
+                    "departures": {
+                      "added": [],
+                      "missing": []
                     }
                   },
                   "mayEdit": false,

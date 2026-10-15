@@ -6,6 +6,7 @@ import {
   type TransitionCondition,
   type WorkflowKind,
 } from '@alloy-works/domain';
+import { waivedKeys } from './waivers.js';
 import { documentBindings, resolveOccurrences } from './publishing.js';
 import { pendingCounts } from './suggestions.js';
 import type { TenantTransaction } from './tables.js';
@@ -126,7 +127,13 @@ export async function unmetConditions(
     }
     if (requires.includes('sections')) {
       const rules = await documentRules(trx, input.artifactId);
-      const missing = rules.bound ? missingSections(rules.definition, read.outline) : [];
+      const missing = rules.bound
+        ? missingSections(
+            rules.definition,
+            read.outline,
+            new Set((await waivedKeys(trx, input.artifactId)).keys()),
+          )
+        : [];
       found.set('sections', {
         ...none,
         count: missing.length,

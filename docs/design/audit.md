@@ -143,6 +143,7 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `revision.designated`                                                   | a revision designated as a gate passed, `{ kind, transition, revision }`                                                                   | LIF-013, VER-014 |
 | `dates.set`                                                             | a component's or document's dates set ([workflow.md](workflow.md)), `{ kind, effectiveAt, reviewBy, owner }`                               | LIF-015, LIF-016 |
 | `revision.effective`                                                    | a revision approved to take effect later taking it, by the system, `{ kind, revision, version, effectiveAt }`                              | LIF-060          |
+| `section.waived`                                                        | a section the template requires removed with a reason ([templates.md](templates.md)), `{ key }`; the reason on its row                     | TPL-029          |
 | `review.lapsed`                                                         | a review date passing unmet, by the system, `{ kind, reviewBy, action, to? }`                                                              | LIF-059          |
 
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),

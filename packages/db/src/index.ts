@@ -480,6 +480,7 @@ export {
 } from './workflow.js';
 export { decideGate, listApprovals, type Approval, type GateAnswer } from './workflow-gates.js';
 export { unmetConditions, type UnmetCondition } from './workflow-conditions.js';
+export { recordWaivers, requiredRemoved, waivedKeys } from './waivers.js';
 export {
   datesStored,
   dayOf,

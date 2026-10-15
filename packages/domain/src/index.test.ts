@@ -391,6 +391,9 @@ describe('the domain package', () => {
         'writtenValues',
         // What a publication of a document made from one is checked against (templates.md, W4.4).
         'missingSections',
+        // WF6: how a document departs from its template.
+        'departures',
+        'requiredKeys',
         'valueFailures',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',

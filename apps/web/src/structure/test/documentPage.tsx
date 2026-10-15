@@ -256,6 +256,8 @@ export function service(
     /** Its workflow state and the transitions offered (WF-G); a move answers its `moves` entry. */
     standing?: Standing;
     moves?: Record<string, Standing>;
+    /** The template the view names, with its required keys and departures (WF6-A). */
+    template?: unknown;
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -323,6 +325,7 @@ export function service(
     onHold: options.onHold ?? false,
     mayHold: options.mayHold ?? false,
     layout: options.layout ?? layoutView(defaultLayout.scheme),
+    ...(options.template === undefined ? {} : { template: options.template }),
     ...(options.parameters === undefined
       ? {}
       : {
