@@ -1051,6 +1051,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   layout declares an approval page, lists who approved it, when and at which gate, in the PDF and Word.
 - **Reviewed query definitions.** A query definition has a workflow of its own, its state and gate on
   its page beside its version, and its own section in Administration > Workflows.
+- **Effective and review-by dates.** A component's or document's header offers **Dates**: when a
+  revision approved from now takes effect, a review-by day and the review's owner. A revision approved
+  with a future effective date is served to references only from that instant, and its taking effect
+  is recorded. The owner sees **Review due** on Home before the day; past it, **Past review** shows in
+  the header, the lists and on every reference to it. Administration > Workflows says how long before
+  the owner is prompted and what a lapsed review does: nothing more, a move to a state, or an
+  escalation to a person, who then sees **Review overdue**.
 - **The latest approved revision.** A reference can track its component's latest approved revision:
   **Always the latest approved revision** in its label's list. The label says which revision it shows,
   and publishing, previews and baselines take it. Where a newer revision is approved than the
