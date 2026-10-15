@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.169.0 - 2026-10-15 (PR #621)
+
+Workflow's fourth phase: the latest approved revision (ADR-0061).
+
+### Added
+
+- **The latest approved revision.** A reference can track its component's latest approved revision, chosen from its label as **Always the latest approved revision**. Its label says which revision it shows, and publishing, previews and baselines take that revision.
+- **A revision approved since the last publication.** Where a newer revision is approved than the document's last publication carried, the reference says so and offers a comparison.
+
 ## 0.168.0 - 2026-10-15 (PR #620)
 
 Workflow's third phase: what a transition requires (ADR-0061).

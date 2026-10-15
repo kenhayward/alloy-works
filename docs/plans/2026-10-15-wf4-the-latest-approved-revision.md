@@ -34,3 +34,9 @@ audited `reference.repointed { node, component, from, to }` (RS-G).
   label, the list's choice and the notice; the browser walks.
 - The final review hunts a reader served a draft through an `approved` reference, a revision leaked
   past readability, and a resolver left at "unresolved". The close: 0.169.0.
+
+## Built
+
+#621, with the close (0.169.0). Changed while building: the list does not mark which versions are
+revisions (WF4-C's last clause), left for later. The final review found the moved notice firing
+against a newer version published at the latest; it now needs an older version of the same component.
