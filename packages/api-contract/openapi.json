@@ -20315,7 +20315,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -20688,7 +20689,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -51971,8 +51973,10 @@
                             "enum": [
                               "field",
                               "metadataSchema",
-                              "componentType"
-                            ]
+                              "componentType",
+                              "variable"
+                            ],
+                            "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                           },
                           "name": {
                             "type": "string"
@@ -52245,8 +52249,10 @@
                     "enum": [
                       "field",
                       "metadataSchema",
-                      "componentType"
-                    ]
+                      "componentType",
+                      "variable"
+                    ],
+                    "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                   },
                   "definition": {
                     "type": "object",
@@ -52291,8 +52297,10 @@
                       "enum": [
                         "field",
                         "metadataSchema",
-                        "componentType"
-                      ]
+                        "componentType",
+                        "variable"
+                      ],
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                     },
                     "version": {
                       "type": "object",
@@ -52524,8 +52532,10 @@
                           "enum": [
                             "field",
                             "metadataSchema",
-                            "componentType"
-                          ]
+                            "componentType",
+                            "variable"
+                          ],
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                         },
                         "version": {
                           "type": "object",
@@ -52784,8 +52794,10 @@
                       "enum": [
                         "field",
                         "metadataSchema",
-                        "componentType"
-                      ]
+                        "componentType",
+                        "variable"
+                      ],
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                     },
                     "version": {
                       "type": "object",
@@ -53138,8 +53150,10 @@
                       "enum": [
                         "field",
                         "metadataSchema",
-                        "componentType"
-                      ]
+                        "componentType",
+                        "variable"
+                      ],
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                     },
                     "version": {
                       "type": "object",
@@ -53371,8 +53385,10 @@
                           "enum": [
                             "field",
                             "metadataSchema",
-                            "componentType"
-                          ]
+                            "componentType",
+                            "variable"
+                          ],
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                         },
                         "version": {
                           "type": "object",
@@ -53713,8 +53729,10 @@
                           "enum": [
                             "field",
                             "metadataSchema",
-                            "componentType"
-                          ]
+                            "componentType",
+                            "variable"
+                          ],
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018)"
                         },
                         "version": {
                           "type": "object",
@@ -57763,7 +57781,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -58209,7 +58228,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -129672,7 +129692,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -131059,7 +131080,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
@@ -153689,7 +153711,8 @@
                               "engine_failed",
                               "store_failed",
                               "occurrence_gone",
-                              "override_stale"
+                              "override_stale",
+                              "variable_unresolved"
                             ]
                           },
                           "node": {
