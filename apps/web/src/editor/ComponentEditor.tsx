@@ -108,6 +108,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
+import { RelationshipsButton } from '../reuse/Relationships.js';
 import { ReachDialog, reachesAny, readUses, UsedInButton, type Uses } from '../reuse/UsedIn.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
@@ -2396,6 +2397,13 @@ export function ComponentEditor({
             <UsedInButton
               client={client}
               id={componentId}
+              title={header.title}
+              className={styles['archive']}
+            />
+            <RelationshipsButton
+              client={client}
+              id={componentId}
+              kind="component"
               title={header.title}
               className={styles['archive']}
             />
