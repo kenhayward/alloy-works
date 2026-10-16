@@ -384,6 +384,8 @@ describe('the domain package', () => {
         'resolveTemplate',
         'startingSectionSchema',
         'templateAssignmentSchema',
+        'templateComponentSchema',
+        'MAX_TEMPLATE_COMPONENTS',
         'templateDefinitionSchema',
         // Its parameters, declared, checked and recorded (the TP1 plan, TP1-A to TP1-G).
         'checkDocumentParameters',
@@ -401,6 +403,7 @@ describe('the domain package', () => {
         'checkWrittenValues',
         'writtenValues',
         // What a publication of a document made from one is checked against (templates.md, W4.4).
+        'missingComponents',
         'missingSections',
         // WF6: how a document departs from its template.
         'departures',

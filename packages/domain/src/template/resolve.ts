@@ -37,7 +37,10 @@ export interface TemplateReferences {
   readonly kinds: ReadonlyMap<string, string>;
   readonly schemas: readonly MetadataSchemaDefinition[];
   readonly fields: readonly FieldDefinition[];
-  /** Each required component the creator may read, by its identifier (R9-C). */
+  /**
+   * Each required component the creator may read, by its key in the template (R9-C): two keys may
+   * name one component in two modes. Absent where nobody asked as a creator, so nothing is checked.
+   */
   readonly components?: ReadonlyMap<string, FoundComponent>;
   /** The query definitions the creator may read, among those the components' bindings name. */
   readonly definitions?: ReadonlySet<string>;
@@ -120,8 +123,8 @@ export function resolveTemplate(
   // (TPL-070; ADR-0062): every one must be there for the creator to read.
   const components: ResolvedComponent[] = [];
   const querySet: string[] = [];
-  for (const each of definition.components ?? []) {
-    const component = found.components?.get(each.component);
+  for (const each of found.components === undefined ? [] : (definition.components ?? [])) {
+    const component = found.components!.get(each.key);
     if (component === undefined || component.state !== 'found') {
       unresolved.push({
         reference: 'component',

@@ -21,6 +21,7 @@ describe('the rule behind a refusal', () => {
       ['grant.external_past_cap', 'grant_external_past_cap', 'IAM-049'],
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
       ['section.required', 'section_required', 'TPL-013'],
+      ['component.required', 'component_required', 'TPL-044'],
       ['metadata.invalid', 'metadata_invalid', 'TPL-055'],
       ['definition.name_taken', 'definition_name_taken', 'MET-031'],
       ['assignment.conflict', 'assignment_conflict', 'MET-008'],

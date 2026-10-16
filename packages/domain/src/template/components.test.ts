@@ -63,8 +63,8 @@ const found = (over: Partial<TemplateReferences> = {}): TemplateReferences => ({
   schemas: [],
   fields: [],
   components: new Map([
-    [METHOD, { state: 'found', version: METHOD_V2, bindings: [DEPTHS] }],
-    [NOTICE, { state: 'found', version: NOTICE_V1, bindings: [] }],
+    ['statement', { state: 'found', version: METHOD_V2, bindings: [DEPTHS] }],
+    ['notice', { state: 'found', version: NOTICE_V1, bindings: [] }],
   ]),
   definitions: new Set([DEPTHS]),
   ...over,
@@ -99,7 +99,7 @@ describe('required components on a template (the R9 plan, R9-A to R9-D)', () => 
     const unresolved = resolveTemplate(
       parsed,
       found({
-        components: new Map([[NOTICE, { state: 'foreign' }]]),
+        components: new Map([['notice', { state: 'foreign' }]]),
         definitions: new Set(),
       }),
     );

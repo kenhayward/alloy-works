@@ -143,6 +143,8 @@ const NOT_ADDED = "This document's template does not allow sections to be added"
 const NOT_REMOVED = "This document's template does not allow sections to be removed";
 const NOT_REORDERED = "This document's template does not allow sections to be reordered";
 const REASON_NEEDED = "A section this document's template requires is removed only with a reason";
+const COMPONENT_REASON_NEEDED =
+  "A component this document's template requires is removed only with a reason";
 const VALUES_REFUSED = 'A value does not fit its field';
 const REFERENCE_VALUES = "A component reference holds no values: a component's are its own";
 
@@ -449,15 +451,17 @@ export function applyOutlineOperation(
   // whatever carries it.
   if (operation.operation === 'remove' && (rules.required?.length ?? 0) > 0) {
     const node = findNode(outline.nodes, operation.node);
-    let required = false;
+    let required: 'section' | 'reference' | undefined;
     if (node !== undefined) {
       walkOutline([node], (member) => {
-        if (member.origin !== undefined) {
-          if (rules.required!.includes(member.origin)) required = true;
+        if (member.origin !== undefined && rules.required!.includes(member.origin)) {
+          required ??= member.type;
         }
       });
     }
-    if (required && (operation.reason ?? '').trim() === '') return refuse(REASON_NEEDED);
+    if (required !== undefined && (operation.reason ?? '').trim() === '') {
+      return refuse(required === 'section' ? REASON_NEEDED : COMPONENT_REASON_NEEDED);
+    }
   }
   switch (operation.operation) {
     case 'insert':

@@ -21,6 +21,7 @@ import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import { componentReferences } from './template-components.js';
 import type { TenantTransaction } from './tables.js';
 import {
   checkedLimit,
@@ -179,7 +180,11 @@ export async function createTemplate(
     .where('id', '=', input.spaceId)
     .executeTakeFirst();
   if (!space) return { answer: 'space.missing' };
-  const resolved = resolveTemplate(definition, await templateReferences(trx, definition));
+  // Its required components as its designer reads them (the R9 plan, R9-C).
+  const resolved = resolveTemplate(definition, {
+    ...(await templateReferences(trx, definition)),
+    ...(await componentReferences(trx, definition, input.author)),
+  });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   const parameters = refusedParameters(definition, resolved);
   if (parameters) return parameters;
@@ -207,7 +212,10 @@ export async function recordTemplateVersion(
   const current = await readTemplate(trx, input.templateId);
   if (!current) return { answer: 'template.missing' };
   const definition = templateDefinitionSchema.parse(input.definition);
-  const resolved = resolveTemplate(definition, await templateReferences(trx, definition));
+  const resolved = resolveTemplate(definition, {
+    ...(await templateReferences(trx, definition)),
+    ...(await componentReferences(trx, definition, input.author)),
+  });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   const parameters = refusedParameters(definition, resolved);
   if (parameters) return parameters;

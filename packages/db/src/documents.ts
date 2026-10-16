@@ -32,6 +32,7 @@ import {
   requiredKeys,
   type StoredProfile,
   type FieldDefinition,
+  type FoundComponent,
   type MetadataSchemaDefinition,
   type TemplateDefinition,
 } from '@alloy-works/domain';
@@ -67,6 +68,7 @@ import {
   templateReferences,
   type ParametersRefused,
 } from './templates.js';
+import { componentReferences } from './template-components.js';
 import {
   createArtifact,
   latestVersion,
@@ -245,6 +247,9 @@ export interface TemplateResolution {
     readonly kinds: readonly (readonly [string, string])[];
     readonly schemas: readonly MetadataSchemaDefinition[];
     readonly fields: readonly FieldDefinition[];
+    /** Its required components as the creator read them, by key, and the definitions they may read (R9-C). */
+    readonly components?: readonly (readonly [string, FoundComponent])[];
+    readonly definitions?: readonly string[];
   };
 }
 
@@ -263,7 +268,10 @@ export async function resolveForDocument(
   if (!facts || !decide('read', facts).allowed) return { answer: 'template.missing' };
   const template = await readTemplate(trx, templateId);
   if (!template) return { answer: 'template.missing' };
-  const references = await templateReferences(trx, template.definition);
+  const references = {
+    ...(await templateReferences(trx, template.definition)),
+    ...(await componentReferences(trx, template.definition, author)),
+  };
   const resolved = resolveTemplate(template.definition, references);
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   return {
@@ -275,6 +283,8 @@ export async function resolveForDocument(
         kinds: [...references.kinds],
         schemas: references.schemas,
         fields: references.fields,
+        components: [...references.components],
+        definitions: [...references.definitions],
       },
     },
   };
@@ -305,6 +315,9 @@ export async function createFromResolution(
     kinds: new Map(resolution.references.kinds),
     schemas: [...resolution.references.schemas],
     fields: [...resolution.references.fields],
+    // A resolution stored before R9 read no components: its template required none.
+    components: new Map(resolution.references.components ?? []),
+    definitions: new Set(resolution.references.definitions ?? []),
   });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   // Its parameters (TP1-G), in this order: a name it does not declare, each value against its

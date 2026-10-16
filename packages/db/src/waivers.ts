@@ -44,7 +44,8 @@ export async function waivedKeys(
 const originsOf = (outline: OutlineDocument) => {
   const origins = new Set<string>();
   walkOutline(outline.nodes, (node) => {
-    if (node.type === 'section' && node.origin !== undefined) origins.add(node.origin);
+    // A section's, or a required component's reference's (TPL-044; the R9 plan, R9-D).
+    if (node.origin !== undefined) origins.add(node.origin);
   });
   return origins;
 };

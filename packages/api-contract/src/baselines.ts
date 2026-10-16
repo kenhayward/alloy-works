@@ -204,7 +204,7 @@ export const baselineRoutes = {
       200: { description: 'Made', schema: BaselineSummaryView },
       400: {
         description:
-          "`name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved`",
+          "`name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `component_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved`",
         schema: BaselineRefusal,
       },
       401: unauthenticated,

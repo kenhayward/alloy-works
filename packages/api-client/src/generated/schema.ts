@@ -9372,6 +9372,10 @@ export interface operations {
                             key: string;
                             title: string;
                         }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
+                        }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
                             node: string | null;
@@ -23039,7 +23043,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved` */
+            /** @description `name_invalid`: the name cannot be stored; `baseline_unresolved`: a place does not resolve as the caller reads it, each in `places`; and a publish's refusals: `layout_language`, `section_required`, `component_required`, `metadata_invalid`, `values_unresolved`, `binding_unresolved` */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -23072,6 +23076,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -23216,6 +23224,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -38490,8 +38502,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -38828,8 +38847,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -39688,8 +39714,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -40026,8 +40059,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -41031,8 +41071,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -41369,8 +41416,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -41659,7 +41713,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
+            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -41692,6 +41746,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -41819,6 +41877,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -42482,8 +42544,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -42820,8 +42889,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -43157,7 +43233,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -43190,6 +43266,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -43317,6 +43397,10 @@ export interface operations {
                         sections?: {
                             key: string;
                             title: string;
+                        }[];
+                        /** @description component_required: each component the document's template requires, by its key, that no reference came from and no reason waived */
+                        components?: {
+                            key: string;
                         }[];
                         /** @description metadata_invalid: each value that does not satisfy the document's template, in MET-022's shape, with the node it belongs to, null for the document's own */
                         failures?: {
@@ -46123,8 +46207,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -46461,8 +46552,15 @@ export interface operations {
                         /** @description values_unresolved: what the document's template names that does not resolve now */
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -62254,8 +62352,15 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -63927,6 +64032,27 @@ export interface operations {
                                 arguments: boolean;
                             };
                         }[];
+                        components?: {
+                            key: string;
+                            /** Format: uuid */
+                            component: string;
+                            mode?: {
+                                /** @constant */
+                                kind: "pinned";
+                                version: string;
+                            } | {
+                                /** @constant */
+                                kind: "latest";
+                            } | {
+                                /** @constant */
+                                kind: "approved";
+                            };
+                            place: {
+                                section: string | null;
+                                /** @enum {string} */
+                                at: "start" | "end";
+                            };
+                        }[];
                     };
                 };
             };
@@ -64003,8 +64129,15 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -65760,6 +65893,27 @@ export interface operations {
                                 arguments: boolean;
                             };
                         }[];
+                        components?: {
+                            key: string;
+                            /** Format: uuid */
+                            component: string;
+                            mode?: {
+                                /** @constant */
+                                kind: "pinned";
+                                version: string;
+                            } | {
+                                /** @constant */
+                                kind: "latest";
+                            } | {
+                                /** @constant */
+                                kind: "approved";
+                            };
+                            place: {
+                                section: string | null;
+                                /** @enum {string} */
+                                at: "start" | "end";
+                            };
+                        }[];
                     };
                 };
             };
@@ -65836,8 +65990,15 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";
@@ -65962,8 +66123,15 @@ export interface operations {
                         traceId: string;
                         unresolved?: {
                             /** @enum {string} */
-                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict";
+                            reference: "theme" | "layout" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
                             id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
                             field?: string;
                             /** @enum {string} */
                             level?: "document" | "section";

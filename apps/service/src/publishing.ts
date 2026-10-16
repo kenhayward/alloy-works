@@ -203,6 +203,13 @@ export async function refusePublish(
         `This document is missing ${answer.sections.length === 1 ? 'a section' : 'sections'} its template requires: ${answer.sections.map((each) => each.title).join(', ')}.`,
         { sections: answer.sections },
       );
+    case 'component.required':
+      throw refused(
+        400,
+        'component.required',
+        `This document is missing ${answer.components.length === 1 ? 'a component' : 'components'} its template requires, removed with no reason given.`,
+        { components: answer.components.map((each) => ({ key: each.key })) },
+      );
     case 'metadata.invalid': {
       const titles = await sectionTitles(trx, id);
       const said = answer.failures.map((each) =>

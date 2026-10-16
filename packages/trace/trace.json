@@ -19120,6 +19120,18 @@
         {
           "id": "REU-051",
           "howItIsMet": "The template and every definition it names are resolved once, when the cohort is asked for, and kept on it; every row, rerun or not, is made from that resolution (R7-D). Templates place no components, so no reference is movable yet"
+        },
+        {
+          "id": "TPL-014",
+          "howItIsMet": "A definition's `components` names each component every document from it includes, by key, with its reference mode and its place; making a document places each as a reference carrying its key as `origin` ([Required components](#required-components))"
+        },
+        {
+          "id": "TPL-044",
+          "howItIsMet": "The outline's `remove` of a reference from a required component needs a `reason`, kept as a `section_waiver` row as a section's is; a publication request with one missing and not waived is refused, `component_required`, naming its key"
+        },
+        {
+          "id": "TPL-070",
+          "howItIsMet": "A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read"
         }
       ]
     },
@@ -25473,6 +25485,24 @@
       "kind": "title"
     },
     {
+      "id": "TPL-014",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-044",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 336,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-070",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 244,
+      "kind": "title"
+    },
+    {
       "id": "TPL-001",
       "file": "packages/db/src/templates.test.ts",
       "line": 141,
@@ -26669,7 +26699,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 719,
+      "line": 722,
       "kind": "title"
     },
     {
@@ -27611,7 +27641,7 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 736,
+      "line": 737,
       "kind": "title"
     },
     {
@@ -27660,6 +27690,24 @@
       "id": "STR-071",
       "file": "packages/domain/src/structure/references.test.ts",
       "line": 377,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-014",
+      "file": "packages/domain/src/template/components.test.ts",
+      "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-044",
+      "file": "packages/domain/src/template/components.test.ts",
+      "line": 145,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-070",
+      "file": "packages/domain/src/template/components.test.ts",
+      "line": 89,
       "kind": "title"
     },
     {

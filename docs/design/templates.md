@@ -63,6 +63,9 @@ refused while a required section is missing or a field its template applies is n
 | **REU-034** | A cohort is recorded with its template version, its title and its source, and `GET /v1/cohorts/{id}` names every row's document or failure to anybody who may read its space (R7-G)                                                                                                                                                                                                                                  |
 | **REU-035** | `POST /v1/cohorts/{id}/rerun` sets the failed rows pending, with any corrected parameters, and runs them by a new job from the same resolution; a made row is never touched (R7-F)                                                                                                                                                                                                                                   |
 | **REU-051** | The template and every definition it names are resolved once, when the cohort is asked for, and kept on it; every row, rerun or not, is made from that resolution (R7-D). Templates place no components, so no reference is movable yet                                                                                                                                                                              |
+| **TPL-014** | A definition's `components` names each component every document from it includes, by key, with its reference mode and its place; making a document places each as a reference carrying its key as `origin` ([Required components](#required-components))                                                                                                                                                             |
+| **TPL-044** | The outline's `remove` of a reference from a required component needs a `reason`, kept as a `section_waiver` row as a section's is; a publication request with one missing and not waived is refused, `component_required`, naming its key                                                                                                                                                                           |
+| **TPL-070** | A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read                                                                                                                         |
 
 ## What this document does not own
 
@@ -223,6 +226,28 @@ Before anything is queued, after the checks that stand today, in this order:
 
 Refused at the door, as a format or a language is (PUB-014, PUB-095), so the author is told at once and
 nothing is queued to fail.
+
+## Required components
+
+As built by [the R9 plan](../plans/2026-10-16-r9-required-components-and-bindings-at-creation.md)
+(TPL-014, TPL-044, TPL-070; ADR-0062):
+
+- **Declared** in the definition's `components`, at most 50, additive at schema 1: `{ key, component,
+mode?, place: { section: key | null, at: 'start' | 'end' } }`. The key is one namespace with the
+  starting sections', so a waiver names either. `mode` is a reference's, following approved revisions
+  where absent. `section: null` places it at the top level: its start follows the front matter, its
+  end precedes the appendices closing the outline.
+- **Resolved for whoever asks** (`componentReferences`): each at the version its mode chooses, for a
+  designer saving the template and for a creator making a document, a component either may not read
+  being `missing` and nothing more. A pin to another artifact's version is `foreign`, and approved
+  with none in effect `unapproved`. Its bindings' definitions are the query set; one the reader may
+  not read is `query`, by the component's key. Publishing and a template move read no components.
+- **Placed** as a reference node with `origin`, an optional member at outline schema 3, as
+  `overrides` is, so no stored outline's digest moves.
+- **Protected** as a required section is: removal needs a reason, kept as a waiver, a restore dropping
+  one is refused, and a publication request with one missing and unwaived is `component_required`.
+- **Not built**: TPL-049's other half, a component the layout places as document-level matter, since a
+  layout places generated matter alone (PUB-088). TPL-049 is unclaimed for it.
 
 ## Parameters
 
