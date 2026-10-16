@@ -49,6 +49,8 @@ const PATHS: Record<string, readonly string[]> = {
     'M5 4.2c0-.9 1.3-1.4 3-1.4s3 .5 3 1.4v5.6c0 .9-1.3 1.4-3 1.4s-3-.5-3-1.4z',
     'M5 4.2c0 .9 1.3 1.4 3 1.4s3-.5 3-1.4',
   ],
+  // A line that forks, one branch for each reader: text kept for some profiles alone (R6-H).
+  Condition: ['M4 2.5v11', 'M4 9c0-3 2.2-4.5 5-4.5h3.5', 'M10.5 2.5l2 2-2 2'],
   // Braces round an x: a name standing for a value (the R5 plan, R5b).
   Variable: [
     'M5.5 3C4 3 4 4 4 5.2S3.6 7.6 2.5 8c1.1.4 1.5 1.6 1.5 2.8S4 13 5.5 13',

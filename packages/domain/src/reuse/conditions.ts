@@ -80,7 +80,8 @@ export function applyConditions(
   const unset: UnsetAxis[] = [];
   const said = new Set<string>();
   const selects = (mark: ConditionMark, block: string | null): boolean => {
-    const taken = profile[mark.axis];
+    // Its own keys alone: an axis named `constructor` is unset, never an inherited member.
+    const taken = Object.hasOwn(profile, mark.axis) ? profile[mark.axis] : undefined;
     if (taken === undefined) {
       const seen = `${mark.axis}\u0000${block ?? ''}`;
       if (!said.has(seen)) {
@@ -102,7 +103,9 @@ export function applyConditions(
       const kept: unknown[] = [];
       for (const member of value) {
         if (isRun(member) && member.marks.some(isCondition)) {
-          if (member.marks.filter(isCondition).every((mark) => selects(mark, block))) {
+          // Each asked, so every unset axis on the run is reported, not the first alone (REU-053).
+          const answers = member.marks.filter(isCondition).map((mark) => selects(mark, block));
+          if (answers.every(Boolean)) {
             close();
             kept.push({ ...member, marks: member.marks.filter((mark) => !isCondition(mark)) });
           } else {

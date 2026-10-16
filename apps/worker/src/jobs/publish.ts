@@ -36,6 +36,7 @@ import {
   type PinnedFonts,
 } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
+import { leakedFrom } from '../scan.js';
 import {
   PUBLICATION_TEMPLATE,
   PUBLISHING_SCHEMA_CURRENT,
@@ -261,6 +262,9 @@ export async function wideTables(
 const PROVENANCE_CONTENT_TYPE = 'application/json';
 
 /** One output into the tenant's store by its hash, as its format's content type. */
+/** An output kept in the tenant's store: its key, digest and size. */
+type Kept = Awaited<ReturnType<typeof keep>>;
+
 async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx' | 'provenance') {
   try {
     return await store.put(
@@ -397,6 +401,10 @@ export function publishJob(deps: {
       // from too.
       const data = JSON.stringify(assembled.document);
       const outputs: NewPublicationOutput[] = [];
+      // Each output made, and kept only once every one has been scanned (REU-048; R6-G): a passage
+      // its conditions took out that reaches any of them fails the publish, and nothing is stored.
+      const made: { bytes: Uint8Array; format: 'pdf' | 'docx'; record: (stored: Kept) => void }[] =
+        [];
       // Read once, for whichever outputs are asked for: the same bytes by the same paths. Of a held
       // result's images, only those the binding stage placed (B6-F), never every one a result holds.
       const placed = new Map(assets);
@@ -417,14 +425,18 @@ export function publishJob(deps: {
         // At the request's time, or a baseline's own, so every publish of one is the same bytes (BL-F).
         const pdf = await deps.typst.compile(template.file, data, request.compiledAt, images);
         const engineVersion = await deps.typst.version();
-        const stored = await keep(read.store, pdf, 'pdf');
-        outputs.push({
+        made.push({
+          bytes: pdf,
           format: 'pdf',
-          engineVersion,
-          templateVersion: template.version,
-          key: stored.key,
-          sha256: stored.sha256,
-          bytes: stored.size,
+          record: (stored) =>
+            outputs.push({
+              format: 'pdf',
+              engineVersion,
+              templateVersion: template.version,
+              key: stored.key,
+              sha256: stored.sha256,
+              bytes: stored.size,
+            }),
         });
       }
       if (formats.includes('docx')) {
@@ -451,16 +463,35 @@ export function publishJob(deps: {
                 : [{ node, block: table, set: 'scaled' }],
           ),
         });
-        const stored = await keep(read.store, bytes, 'docx');
-        outputs.push({
+        made.push({
+          bytes,
           format: 'docx',
-          writerVersion: WORD_WRITER_VERSION,
-          report,
-          key: stored.key,
-          sha256: stored.sha256,
-          bytes: stored.size,
+          record: (stored) =>
+            outputs.push({
+              format: 'docx',
+              writerVersion: WORD_WRITER_VERSION,
+              report,
+              key: stored.key,
+              sha256: stored.sha256,
+              bytes: stored.size,
+            }),
         });
       }
+      const leaks: PublishFailure[] = [];
+      for (const each of made) {
+        if ((await leakedFrom(assembled.probes, each.format, each.bytes)).length > 0) {
+          // Named by its format alone: the failure never repeats the text it found.
+          leaks.push({
+            stage: 'engine',
+            code: 'condition_leaked',
+            node: null,
+            block: null,
+            detail: each.format,
+          });
+        }
+      }
+      if (leaks.length > 0) throw new PublishRefused(leaks);
+      for (const each of made) each.record(await keep(read.store, each.bytes, each.format));
       // `provenance.json` beside the outputs wherever a value is printed (B3-G; DAT-042, PUB-049): a
       // publication's alone, since a preview records no publication (B3-H). Wherever the request
       // recorded a binding, as `recordPublication` counts them, even where a condition took every

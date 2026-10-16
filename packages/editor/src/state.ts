@@ -31,6 +31,7 @@ import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 import type { BindingContext } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
+import { conditionAxesPlugin } from './conditions.js';
 import { boundTableFocusDecorations, boundTableFocusPlugin } from './boundTableFocus.js';
 import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
@@ -387,6 +388,8 @@ export interface EditorStateOptions {
    * host making a fresh state carries the one it had across with `bindingContextOf`.
    */
   readonly bindingContext?: BindingContext | null;
+  /** The axes the environment declares, by key, carried across as the binding context is. */
+  readonly conditionAxes?: readonly string[];
 }
 
 /**
@@ -572,6 +575,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       referencesPlugin(options.referenceContext ?? null),
       // The host's binding context (B1-D), changed and held as the reference context is.
       bindingsPlugin(options.bindingContext ?? null),
+      // The environment's declared axes, which a paste keeps conditions on (the R6 plan, R6-H).
+      conditionAxesPlugin(options.conditionAxes ?? []),
       // Which column the Bound table panel has the focus on (ADR-0051), held outside the history.
       boundTableFocusPlugin(),
       // The page's check of the theme the surface is set in, and the marks it makes (ET-I, STY-070).

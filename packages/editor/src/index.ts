@@ -139,6 +139,18 @@ export {
 export { bindingContextOf, setBindingContext } from './bindingView.js';
 // A variable, placed from the declared ones (the R5 plan, R5b).
 export { insertVariable, variablePlaceable, variableSelected } from './variables.js';
+// Conditions, set over text and given alternatives (the R6 plan, R6-H).
+export {
+  addAlternative,
+  conditionable,
+  conditionAxesOf,
+  conditionsOver,
+  removeCondition,
+  setCondition,
+  setConditionAxes,
+  type ConditionChoice,
+  type ConditionHeld,
+} from './conditions.js';
 export { fillBoundTable, moreRows, noteLabel } from './boundTableView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {

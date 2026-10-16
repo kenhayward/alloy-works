@@ -57,6 +57,7 @@ import { checkOoxml } from './testing/ooxml.js';
 import { readPdf, type ReadPdf } from './testing/pdf.js';
 import { askedOf, fieldOf } from './testing/word.js';
 import { checkPdfUa1, suiteChecker, type VeraPdfVerdict } from './testing/verapdf.js';
+import { pdfSaying } from './testing/handmade-pdf.js';
 import { processNextBesideChecks } from './testing/work.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
@@ -587,8 +588,10 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(spoken(read.taggedText.flat())).toContain('Then #panic("x") ] [ * _ $ as words.');
   });
 
-  it('REU-027 publishes the text its profile selects, recording the profile on the publication', async () => {
-    const request = await service.withTenant(tenant, async (trx) => {
+  /** The Audience axis, declared once for the tests that publish under a profile. */
+  let audienceDeclared: Promise<void> | undefined;
+  const audience = () =>
+    (audienceDeclared ??= service.withTenant(tenant, async (trx) => {
       const axis = await createDefinition(trx, {
         kind: 'conditionAxis',
         definition: {
@@ -603,6 +606,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
         author: ada,
       });
       if (axis.answer !== 'created') throw new Error(axis.answer);
+    }));
+  /** A document placing one paragraph for the regulator and one for staff, asked for as the regulator's. */
+  const askedForTheRegulator = async () => {
+    await audience();
+    return service.withTenant(tenant, async (trx) => {
       const only = (value: string, audience: string) => ({
         type: 'text',
         value,
@@ -639,6 +647,30 @@ describe('publishing a document, from the request to the stored PDF', () => {
       if (answer.answer !== 'requested') throw new Error(answer.answer);
       return answer.request.id;
     });
+  };
+
+  it('REU-048 fails a publish whose PDF holds text its profile left out, and stores nothing', async () => {
+    const request = await askedForTheRegulator();
+    const before = await publicationCount();
+    // A PDF the conditions could not have made: the engine handed the excluded paragraph back.
+    const leaky: Typst = {
+      ...typst,
+      compile: async () =>
+        Buffer.from(pdfSaying('Staff are told at the morning meeting.', 'Notice')),
+    };
+    const handlers = { publish: publishJob({ db: worker, stores, typst: leaky, fonts }) };
+    expect(await work({ handlers })).toBe('failed');
+    expect(await requestRow(request)).toMatchObject({
+      state: 'failed',
+      failures: [
+        { stage: 'engine', code: 'condition_leaked', node: null, block: null, detail: 'pdf' },
+      ],
+    });
+    expect(await publicationCount()).toBe(before);
+  });
+
+  it('REU-027 publishes the text its profile selects, recording the profile on the publication', async () => {
+    const request = await askedForTheRegulator();
     expect(await work()).toBe('done');
     const row = await publicationOf(request);
     const said = spoken((await readPdf(await pdfOf(row!.object_key))).taggedText.flat());

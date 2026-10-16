@@ -16599,6 +16599,18 @@
           "howItIsMet": "After a pause in changes the renderer sends the whole content and values as an iteration; there is no save action for drafts"
         },
         {
+          "id": "REU-021",
+          "howItIsMet": "The editor holds the `condition` mark, which excludes nothing, so several stand over one run and ranges overlap; **Condition** (Ctrl or Cmd, Alt and O) sets one over the selection from the declared axes and their values, replacing one on the same axis and keeping one on another ([the R6 plan](../plans/2026-10-16-r6-conditions-and-profiles.md), R6-H)"
+        },
+        {
+          "id": "REU-026",
+          "howItIsMet": "Conditional text is drawn tinted and underlined dashed, wherever the component's text is shown, with what it depends on as its title: _Only where audience is regulator_ (R6-H)"
+        },
+        {
+          "id": "REU-047",
+          "howItIsMet": "Where the selection is already conditioned on an axis, the Condition dialog says how to word it differently for other readers and offers **Add alternative**: a copy beside it, kept for the axis's other values, selected to rewrite (R6-H)"
+        },
+        {
           "id": "CNT-067",
           "howItIsMet": "The renderer reports a change saved only when its iteration is acknowledged, and reopening after a closed tab, a crash or a lost connection says when the author last saved work no version holds and offers **Recover**, which lists it and every other retained iteration of theirs to restore"
         },
@@ -17597,6 +17609,14 @@
         {
           "id": "REU-053",
           "howItIsMet": "Content conditioned on an axis the profile does not name fails the publish `axis_unset`, naming node, block and axis, unless the document's profile records `excludeUnset` (R6-E)"
+        },
+        {
+          "id": "REU-048",
+          "howItIsMet": "Before any output is stored, each one's text and metadata (a PDF's pages, information and XMP; every XML part of a Word document) are searched for each four words of a passage its conditions took out that the kept text does not hold; a match fails the publish `condition_leaked`, naming the format, and nothing is stored (the R6 plan, R6-G). A passage shorter than four words is not searched for"
+        },
+        {
+          "id": "REU-025",
+          "howItIsMet": "The document page's **Profile** offers a preview of the text under any profile chosen there, saved or not: a preview request may name a profile in place of the document's (R6-F, R6-H)"
         },
         {
           "id": "PUB-089",
@@ -21947,6 +21967,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-026",
+      "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
+      "line": 1369,
+      "kind": "title"
+    },
+    {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
       "line": 350,
@@ -21989,15 +22015,27 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 49,
+      "kind": "title"
+    },
+    {
+      "id": "REU-047",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 68,
+      "kind": "title"
+    },
+    {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 217,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 662,
+      "line": 663,
       "kind": "title"
     },
     {
@@ -22009,13 +22047,13 @@
     {
       "id": "CNT-067",
       "file": "apps/web/src/editor/Recovery.test.tsx",
-      "line": 254,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "CNT-090",
       "file": "apps/web/src/editor/Recovery.test.tsx",
-      "line": 287,
+      "line": 288,
       "kind": "title"
     },
     {
@@ -22961,6 +22999,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-022",
+      "file": "apps/web/src/structure/ProfilePanel.test.tsx",
+      "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "REU-025",
+      "file": "apps/web/src/structure/ProfilePanel.test.tsx",
+      "line": 65,
+      "kind": "title"
+    },
+    {
       "id": "DAT-057",
       "file": "apps/web/src/structure/RevisionDialog.test.tsx",
       "line": 93,
@@ -23407,79 +23457,85 @@
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 430,
+      "line": 431,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 472,
+      "line": 473,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 365,
+      "line": 366,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 852,
+      "line": 884,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 569,
+      "line": 570,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 585,
+      "line": 586,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 650,
+      "line": 682,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1432,
+      "line": 1464,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1347,
+      "line": 1379,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 870,
+      "line": 902,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 379,
+      "line": 380,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 797,
+      "line": 829,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 590,
+      "line": 672,
+      "kind": "title"
+    },
+    {
+      "id": "REU-048",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 652,
       "kind": "title"
     },
     {
@@ -23534,6 +23590,12 @@
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
       "line": 1321,
+      "kind": "title"
+    },
+    {
+      "id": "REU-048",
+      "file": "apps/worker/src/scan.test.ts",
+      "line": 22,
       "kind": "title"
     },
     {
@@ -26197,7 +26259,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 713,
+      "line": 716,
       "kind": "title"
     },
     {
@@ -26443,13 +26505,13 @@
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4115,
+      "line": 4135,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3931,
+      "line": 3951,
       "kind": "title"
     },
     {
@@ -26467,13 +26529,13 @@
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7007,
+      "line": 7027,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6716,
+      "line": 6736,
       "kind": "title"
     },
     {
@@ -26503,19 +26565,19 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7028,
+      "line": 7048,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5999,
+      "line": 6019,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7042,
+      "line": 7062,
       "kind": "title"
     },
     {
@@ -26533,7 +26595,7 @@
     {
       "id": "REU-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3249,
+      "line": 3269,
       "kind": "title"
     },
     {
@@ -26551,37 +26613,37 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3907,
+      "line": 3927,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3631,
+      "line": 3651,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4014,
+      "line": 4034,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3525,
+      "line": 3545,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3554,
+      "line": 3574,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3577,
+      "line": 3597,
       "kind": "title"
     },
     {
@@ -26593,19 +26655,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5206,
+      "line": 5226,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5206,
+      "line": 5226,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5230,
+      "line": 5250,
       "kind": "title"
     },
     {
@@ -26623,7 +26685,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6933,
+      "line": 6953,
       "kind": "title"
     },
     {
@@ -26816,6 +26878,12 @@
       "id": "REU-024",
       "file": "packages/domain/src/reuse/conditions.test.ts",
       "line": 104,
+      "kind": "title"
+    },
+    {
+      "id": "REU-048",
+      "file": "packages/domain/src/reuse/scan.test.ts",
+      "line": 15,
       "kind": "title"
     },
     {
@@ -27617,6 +27685,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "packages/editor/src/conditions.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "REU-047",
+      "file": "packages/editor/src/conditions.test.ts",
+      "line": 75,
+      "kind": "title"
+    },
+    {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
       "line": 455,
@@ -27713,21 +27793,27 @@
       "kind": "title"
     },
     {
+      "id": "REU-021",
+      "file": "packages/editor/src/mapping.test.ts",
+      "line": 1307,
+      "kind": "title"
+    },
+    {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 198,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 637,
+      "line": 638,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 316,
+      "line": 317,
       "kind": "title"
     },
     {

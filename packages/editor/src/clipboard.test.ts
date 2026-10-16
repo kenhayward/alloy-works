@@ -11,6 +11,7 @@ import {
   readMarkdownText,
   type ClipboardSource,
 } from './clipboard.js';
+import { setConditionAxesIn } from './conditions.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { createEditorState } from './state.js';
 
@@ -966,5 +967,31 @@ describe('copying and pasting an equation', () => {
     const outcome = pasting(atEndOf(state, 'li1'), copyOf(state, 'e1'));
     expect(outcome.ok).toBe(false);
     expect(outcome.report.at(-1)).toMatchObject({ action: 'refused', subject: 'invalid' });
+  });
+});
+
+describe('a condition through the clipboard (the R6 plan, R6-H)', () => {
+  const conditioned = paragraph('b1', 'Staff only', [
+    { type: 'condition', id: 'c1', axis: 'audience', values: ['internal'] } as Mark,
+  ]);
+
+  it('keeps a condition on an axis the environment declares, and drops one on an axis it does not', () => {
+    const copied = productClipboard(
+      stateOf([conditioned]),
+      0,
+      stateOf([conditioned]).doc.content.size,
+    )!;
+    const into = (axes: readonly string[]) => {
+      const receiving = setConditionAxesIn(stateOf([paragraph('b9', '')]), axes);
+      return stored(
+        paste(receiving, { [PRODUCT_CLIPBOARD_TYPE]: copied, 'text/plain': 'Staff only' }),
+      );
+    };
+    const [kept] = into(['audience']) as unknown as [{ content: { marks: unknown[] }[] }];
+    expect(kept.content[0]!.marks).toMatchObject([
+      { type: 'condition', axis: 'audience', values: ['internal'] },
+    ]);
+    const [dropped] = into([]) as unknown as [{ content: { marks: unknown[] }[] }];
+    expect(dropped.content[0]!.marks).toEqual([]);
   });
 });

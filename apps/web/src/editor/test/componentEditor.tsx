@@ -70,7 +70,8 @@ export function service(answers: Record<string, Answer>) {
         ? undefined
         : (JSON.parse(text) as unknown);
     const route = `${request.method} ${url.pathname.replace(COMPONENT, '{id}').replace(SESSION, '{session}')}`;
-    asked.push({ route, body });
+    // The declared axes the editor reads on opening (R6-H) are not what these tests count.
+    if (route !== 'GET /v1/definitions') asked.push({ route, body });
     const answer = answers[route];
     return answer ? answer(body) : json(404, { code: 'not_found', message: 'none', traceId: 't' });
   });

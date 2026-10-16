@@ -1295,3 +1295,47 @@ describe('a variable through the mapping (the R5 plan, R5b)', () => {
     expect(node.spec.leafText?.(node.create({ name: 'review_date' }))).toBe('review_date');
   });
 });
+
+describe('conditions through the mapping (the R6 plan, R6-H)', () => {
+  const condition = (id: string, axis: string, values: string[]) => ({
+    type: 'condition' as const,
+    id,
+    axis,
+    values,
+  });
+
+  it('REU-021 opens for editing text marked with conditions, two over one run, and stores them as they came', () => {
+    const stored = parseContentDocument(
+      documentWith([
+        run('For all. ', []),
+        run('UK regulator only.', [
+          condition('c1', 'audience', ['regulator']),
+          condition('c2', 'region', ['uk']),
+        ]),
+        run(' Staff.', [condition('c3', 'audience', ['internal'])]),
+      ]),
+    );
+    const opened = openedDoc(stored);
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
+  });
+
+  it('draws conditional text with its axis and values said, and reads it back from what it drew', () => {
+    const mark = editorSchema.marks.condition!.create({
+      id: 'c1',
+      axis: 'audience',
+      values: ['regulator', 'internal'],
+    });
+    const [tag, attributes] = editorSchema.marks.condition!.spec.toDOM!(mark, true) as [
+      string,
+      Record<string, string>,
+    ];
+    expect(tag).toBe('span');
+    expect(attributes).toMatchObject({
+      'data-mark-id': 'c1',
+      'data-axis': 'audience',
+      'data-values': 'regulator internal',
+      title: 'Only where audience is regulator or internal',
+    });
+  });
+});

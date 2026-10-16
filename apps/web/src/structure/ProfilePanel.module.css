@@ -1,0 +1,33 @@
+/* The document's profile: one set of values per axis, the acceptance, and its two acts. */
+.panel {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-12) 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--size-13);
+  font-weight: 600;
+}
+
+.axis {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+}
+
+.value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}

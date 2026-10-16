@@ -212,6 +212,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // REU-017: never printed as its name, never blank.
     case 'variable_unresolved':
       return `The variable ${failure.detail ?? 'here'} has no value for this document. Give the document the parameter or the field it is taken from, or remove it.`;
+    // REU-048: never published with excluded text in it, however it got there.
+    case 'condition_leaked':
+      return `Text this profile leaves out was found in the ${failure.detail === 'docx' ? 'Word document' : 'PDF'}, so nothing was published. Report this; it is a fault in publishing, not in the document.`;
     // REU-053: an unset axis leaves text out only where the document accepts it.
     case 'axis_unset':
       return `Text here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
@@ -510,6 +513,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   override_stale: 'It overrides a paragraph that has changed since.',
   variable_unresolved: 'A variable in it has no value for the document.',
   axis_unset: 'Text in it depends on a condition the document does not set.',
+  condition_leaked: 'Text its profile leaves out was found in what was made.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

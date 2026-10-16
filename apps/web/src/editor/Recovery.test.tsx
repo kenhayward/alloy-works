@@ -121,7 +121,8 @@ function service(answers: Record<string, Answer>) {
       query: Object.fromEntries(url.searchParams),
       body: text === '' ? undefined : (JSON.parse(text) as unknown),
     };
-    asked.push(one);
+    // The declared axes the editor reads on opening (R6-H) are not what these tests count.
+    if (route !== 'GET /v1/definitions') asked.push(one);
     const answer = answers[route];
     return answer ? answer(one) : json(404, { code: 'not_found', message: 'none', traceId: 't' });
   });

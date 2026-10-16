@@ -20317,7 +20317,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -20699,7 +20700,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -57811,7 +57813,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -58266,7 +58269,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -129803,7 +129807,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -134352,7 +134357,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {
@@ -157012,7 +157018,8 @@
                               "occurrence_gone",
                               "override_stale",
                               "variable_unresolved",
-                              "axis_unset"
+                              "axis_unset",
+                              "condition_leaked"
                             ]
                           },
                           "node": {

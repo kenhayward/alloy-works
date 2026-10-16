@@ -227,6 +227,12 @@ importers:
       '@alloy-works/objects':
         specifier: workspace:^
         version: link:../../packages/objects
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+      pdfjs-dist:
+        specifier: ^6.3.289
+        version: 6.3.289
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -249,12 +255,6 @@ importers:
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
-      fflate:
-        specifier: ^0.8.3
-        version: 0.8.3
-      pdfjs-dist:
-        specifier: ^6.3.289
-        version: 6.3.289
       tsx:
         specifier: ^4.23.13
         version: 4.23.13

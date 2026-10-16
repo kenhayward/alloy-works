@@ -7,6 +7,7 @@ import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
 import { canPlaceBinding } from './bindings.js';
 import { canPlaceVariable } from './variables.js';
+import { canPlaceCondition } from './conditions.js';
 import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
@@ -156,7 +157,8 @@ export type BlockAction =
   | 'equation'
   | 'symbol'
   | 'value'
-  | 'variable';
+  | 'variable'
+  | 'condition';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -939,6 +941,10 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // ones, in the renderer's dialog, which runs `insertVariable` with the answer.
     case 'variable':
       return canPlaceVariable;
+    // The R6 plan, R6-H: which axis and values are the author's to choose, in the renderer's dialog,
+    // which runs `setCondition` or `addAlternative` with the answer.
+    case 'condition':
+      return canPlaceCondition;
   }
 }
 

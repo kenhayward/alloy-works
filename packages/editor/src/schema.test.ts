@@ -10,7 +10,7 @@ import { editorSchema } from './schema.js';
  * annotations nothing in T1 can create. Derived rather than written out a second time, so that
  * reordering the content model's list, or adding a kind to it, fails here rather than drifting.
  */
-const annotations: readonly string[] = ['condition', 'suggestion', 'comment'];
+const annotations: readonly string[] = ['suggestion', 'comment'];
 const editorMarks = markTypes.filter((name) => !annotations.includes(name));
 
 /**
@@ -40,9 +40,9 @@ const gate = (name: string) => ruleFor(name).getAttrs;
 const BOXES = ['span', { class: 'aw-mark-below' }, ['span', { class: 'aw-mark-run' }, 0]];
 
 describe('the editor schema', () => {
-  it('holds the ten marks an author or the mapping needs', () => {
+  it('holds the eleven marks an author or the mapping needs', () => {
     expect(Object.keys(editorSchema.marks).sort()).toEqual([...editorMarks].sort());
-    expect(editorMarks).toHaveLength(10);
+    expect(editorMarks).toHaveLength(11);
   });
 
   it('does not hold a mark nothing in T1 can create', () => {
@@ -179,6 +179,7 @@ describe('the editor schema', () => {
       inlineCode: 'code',
       definedTerm: 'dfn',
       quotedPhrase: 'q',
+      condition: 'span.aw-condition',
       hyperlink: 'a[href]',
       language: 'span.aw-language',
     };

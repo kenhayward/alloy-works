@@ -136,6 +136,14 @@
 .aw-text .aw-language {
 }
 
+/* Conditional text (REU-026; the R6 plan, R6-H): tinted, and underlined dashed so it is told apart
+ * without colour; what it depends on is its title. */
+.aw-text .aw-condition {
+  background: var(--accent-weak);
+  text-decoration: underline dashed var(--accent);
+  text-underline-offset: 0.2em;
+}
+
 /*
  * Lists, in the three kinds the schema renders (packages/editor/src/schema.ts). The markers below
  * are the ones the publication template pins - disc, circle and square, which Typst CYCLES, so a

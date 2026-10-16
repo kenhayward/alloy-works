@@ -238,6 +238,16 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Alt and V',
     prompts: true,
   },
+  // The R6 plan, R6-H: beside Variable, prompting as it does, for the axis and values only the author
+  // can choose. On the same chord with O, for "only": C and K open developer tools on a Mac.
+  {
+    kind: 'block',
+    action: 'condition',
+    label: 'Condition',
+    shortcut: 'Mod-Alt-o',
+    shortcutSaid: 'Ctrl or Cmd, Alt and O',
+    prompts: true,
+  },
   // Equations 1, ruling R6: prompting as Reference does, for the LaTeX only the author can type. On
   // Shift and E rather than a Ctrl-Alt chord, which AltGr types a character with on common layouts
   // (the euro sign on E among them). Checked for its plan: nothing in this registry or the renderer
