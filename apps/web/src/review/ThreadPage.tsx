@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Outside } from '../parts/Outside.js';
 import type { ThreadAnchor } from '@alloy-works/domain';
 import { useEffect, useRef, useState } from 'react';
 
@@ -14,6 +15,8 @@ type Part = { readonly text: string } | { readonly mention: string };
 interface Person {
   readonly id: string;
   readonly name: string | null;
+  /** From outside the organisation (IAM-045). */
+  readonly external?: true | undefined;
 }
 interface Thread {
   readonly on: ThreadOn;
@@ -158,7 +161,9 @@ export function ThreadPage({
                   className={styles['threadMessage']}
                 >
                   <p className={styles['threadWho']}>
-                    {`${each.author.name ?? 'Somebody'}, ${when.format(new Date(each.at))}`}
+                    {each.author.name ?? 'Somebody'}
+                    <Outside person={each.author} />
+                    {`, ${when.format(new Date(each.at))}`}
                   </p>
                   <p>
                     {latest.parts.map((part, index) =>

@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Outside } from '../parts/Outside.js';
 import { compareContent, unitTexts, type ContentDocument } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useState } from 'react';
 
@@ -10,6 +11,8 @@ type Client = ReturnType<typeof createApiClient>;
 interface Person {
   readonly id: string;
   readonly name: string | null;
+  /** From outside the organisation (IAM-045). */
+  readonly external?: true | undefined;
 }
 
 interface StalePlace {
@@ -307,7 +310,9 @@ export function SuggestionsPanel({
                     className={styles['open']}
                     onClick={() => void open(each.id)}
                   >
-                    {`${each.madeBy.name ?? 'Somebody'} on ${placeOf(each.component)}`}
+                    {each.madeBy.name ?? 'Somebody'}
+                    <Outside person={each.madeBy} />
+                    {` on ${placeOf(each.component)}`}
                   </button>
                   <span className={styles['note']}>{when.format(new Date(each.madeAt))}</span>
                   <span className={styles['state']}>{STATE_WORDS[each.state]}</span>

@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Outside } from '../parts/Outside.js';
 import { useCallback, useEffect, useId, useState } from 'react';
 
 import styles from './ThreadsPanel.module.css';
@@ -8,6 +9,8 @@ type Client = ReturnType<typeof createApiClient>;
 interface Person {
   readonly id: string;
   readonly name: string | null;
+  /** From outside the organisation (IAM-045). */
+  readonly external?: true | undefined;
 }
 
 /** A round as the service answers it (RR-D, RR-E). */
@@ -91,7 +94,11 @@ export function RoundsPanel({
   principalId?: string | undefined;
   /** Whether the reader may open a round: `edit` on the document. */
   mayOpen: boolean;
-  people: readonly { readonly id: string; readonly name: string }[];
+  people: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly external?: true | undefined;
+  }[];
   /** The document's sections a round's scope may name, in order. */
   sections: readonly { readonly id: string; readonly label: string }[];
   /** Opens a baseline's page, where a round on it is reviewed (RR-G). */
@@ -214,7 +221,10 @@ export function RoundsPanel({
             <ul className={styles['rows']} aria-label={`Reviewers of ${round.title}`}>
               {round.reviewers.map((each) => (
                 <li key={each.person.id} className={styles['row']}>
-                  <span>{each.person.name ?? 'Somebody'}</span>
+                  <span>
+                    {each.person.name ?? 'Somebody'}
+                    <Outside person={each.person} />
+                  </span>
                   <span className={styles['state']}>{stateWords(each)}</span>
                 </li>
               ))}
@@ -284,7 +294,11 @@ function OpenRound({
 }: {
   client: Client;
   document: string;
-  people: readonly { readonly id: string; readonly name: string }[];
+  people: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly external?: true | undefined;
+  }[];
   sections: readonly { readonly id: string; readonly label: string }[];
   onCancel: () => void;
   onOpened: () => Promise<void>;
@@ -367,6 +381,7 @@ function OpenRound({
               onChange={() => setReviewers(toggle(reviewers, person.id))}
             />{' '}
             {person.name}
+            <Outside person={person} />
           </label>
         ))}
       </fieldset>

@@ -1,4 +1,5 @@
 import styles from './DocumentPage.module.css';
+import { OUTSIDE_SAID } from '../parts/Outside.js';
 import type { Freshness, LivePresence } from './live.js';
 
 type Person = LivePresence & { readonly freshness: Freshness };
@@ -20,7 +21,7 @@ const initialsOf = (name: string) =>
 
 /** A person's presence in words: their name, what they are doing where it may be told, and staleness. */
 export function presenceWords(person: Person): string {
-  const name = person.person.name ?? 'Somebody';
+  const name = `${person.person.name ?? 'Somebody'}${person.person.external === true ? `, ${OUTSIDE_SAID}` : ''}`;
   const doing = person.mode === null ? 'here' : DOING[person.mode];
   return person.freshness === 'stale'
     ? `${name}, ${doing}, not heard from lately`

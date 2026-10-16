@@ -117,6 +117,50 @@ describe("what a document's stream hears, said by the database (the PL plan)", (
       },
     );
 
+  it('IAM-045 says a person present from outside the organisation is from outside it (the R13 plan, R13-A)', async () => {
+    const { eve, here } = await service.withTenant(tenant, async (trx) => {
+      const row = await trx
+        .insertInto('principal')
+        .values({
+          issuer: 'https://idp.example',
+          subject: 'eve',
+          email: null,
+          display_name: 'Eve',
+          kind: 'external',
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const made = await createDocument(trx, {
+        spaceId: general,
+        title: 'Who is here',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return { eve: row.id, here: made.version.artifactId };
+    });
+    await service.withTenant(tenant, async (trx) => {
+      for (const who of [ada, eve]) {
+        await beatPresence(trx, {
+          viewer:
+            who === ada
+              ? '44444444-4444-4444-8444-444444444444'
+              : '55555555-5555-4555-8555-555555555555',
+          principalId: who,
+          document: here,
+          component: null,
+          mode: 'author',
+        });
+      }
+    });
+    const shown = await service.withTenant(tenant, (trx) => presenceShown(trx, here, new Set()));
+    expect(shown.map((each) => each.person)).toEqual([
+      { id: ada, name: 'Ada' },
+      { id: eve, name: 'Eve', external: true },
+    ]);
+  });
+
   it('says a lock claimed, moved on by a minute and released, and not one moved within its minute', async () => {
     const id = await service.withTenant(tenant, (trx) => component(trx, general, 'Dosing'));
     expect(

@@ -9773,6 +9773,11 @@ export interface operations {
                             startedBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             startedAt: string;
@@ -14581,6 +14586,11 @@ export interface operations {
                             madeBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             madeAt: string;
@@ -14604,6 +14614,11 @@ export interface operations {
                                 by: {
                                     id: string & (unknown & unknown);
                                     name: string | null;
+                                    /**
+                                     * @description True where the person is from outside the organisation; absent otherwise
+                                     * @constant
+                                     */
+                                    external?: true;
                                 };
                                 /** Format: date-time */
                                 at: string;
@@ -14795,6 +14810,11 @@ export interface operations {
                         madeBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         madeAt: string;
@@ -14818,6 +14838,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -15009,6 +15034,11 @@ export interface operations {
                             startedBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             startedAt: string;
@@ -15220,6 +15250,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -15227,6 +15262,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -15236,6 +15276,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -43530,6 +43575,11 @@ export interface operations {
                             openedBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             openedAt: string;
@@ -43537,6 +43587,11 @@ export interface operations {
                                 by: {
                                     id: string & (unknown & unknown);
                                     name: string | null;
+                                    /**
+                                     * @description True where the person is from outside the organisation; absent otherwise
+                                     * @constant
+                                     */
+                                    external?: true;
                                 };
                                 /** Format: date-time */
                                 at: string;
@@ -43545,6 +43600,11 @@ export interface operations {
                                 person: {
                                     id: string & (unknown & unknown);
                                     name: string | null;
+                                    /**
+                                     * @description True where the person is from outside the organisation; absent otherwise
+                                     * @constant
+                                     */
+                                    external?: true;
                                 };
                                 /** @enum {string} */
                                 state: "not_started" | "in_progress" | "complete";
@@ -43755,6 +43815,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -43762,6 +43827,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -43770,6 +43840,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -43949,6 +44024,11 @@ export interface operations {
                             madeBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             madeAt: string;
@@ -43972,6 +44052,11 @@ export interface operations {
                                 by: {
                                     id: string & (unknown & unknown);
                                     name: string | null;
+                                    /**
+                                     * @description True where the person is from outside the organisation; absent otherwise
+                                     * @constant
+                                     */
+                                    external?: true;
                                 };
                                 /** Format: date-time */
                                 at: string;
@@ -44781,6 +44866,11 @@ export interface operations {
                             startedBy: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             startedAt: string;
@@ -44992,6 +45082,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -44999,6 +45094,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -45008,6 +45108,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -49189,6 +49294,11 @@ export interface operations {
                             actor: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description From outside the organisation (IAM-045)
+                                 * @constant
+                                 */
+                                external?: true;
                             } | null;
                             /** @description The thread; null on a digest, or where the caller may no longer read what it is on */
                             thread: (string & (unknown & unknown)) | null;
@@ -50960,6 +51070,11 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
+                            /**
+                             * @description From outside the organisation (IAM-045)
+                             * @constant
+                             */
+                            external?: true;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -57113,6 +57228,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -57120,6 +57240,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -57128,6 +57253,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -57310,6 +57440,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -57317,6 +57452,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -57325,6 +57465,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -57522,6 +57667,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -57529,6 +57679,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -57537,6 +57692,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -57739,6 +57899,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -57746,6 +57911,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -57754,6 +57924,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -57956,6 +58131,11 @@ export interface operations {
                         openedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         openedAt: string;
@@ -57963,6 +58143,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -57971,6 +58156,11 @@ export interface operations {
                             person: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** @enum {string} */
                             state: "not_started" | "in_progress" | "complete";
@@ -64602,6 +64792,11 @@ export interface operations {
                         madeBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         madeAt: string;
@@ -64625,6 +64820,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -64787,6 +64987,11 @@ export interface operations {
                         madeBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         madeAt: string;
@@ -64810,6 +65015,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -65064,6 +65274,11 @@ export interface operations {
                         madeBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         madeAt: string;
@@ -65087,6 +65302,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -65295,6 +65515,11 @@ export interface operations {
                         madeBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         madeAt: string;
@@ -65318,6 +65543,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -65516,6 +65746,11 @@ export interface operations {
                             holder?: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                         }[];
                     };
@@ -66459,6 +66694,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -66466,6 +66706,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -66475,6 +66720,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -66652,6 +66902,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -66659,6 +66914,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -66668,6 +66928,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -66886,6 +67151,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -66893,6 +67163,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -66902,6 +67177,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -67105,6 +67385,11 @@ export interface operations {
                         startedBy: {
                             id: string & (unknown & unknown);
                             name: string | null;
+                            /**
+                             * @description True where the person is from outside the organisation; absent otherwise
+                             * @constant
+                             */
+                            external?: true;
                         };
                         /** Format: date-time */
                         startedAt: string;
@@ -67112,6 +67397,11 @@ export interface operations {
                             by: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;
@@ -67121,6 +67411,11 @@ export interface operations {
                             author: {
                                 id: string & (unknown & unknown);
                                 name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
                             };
                             /** Format: date-time */
                             at: string;

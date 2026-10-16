@@ -1,4 +1,5 @@
 import { walkOutline, readOutline } from '@alloy-works/domain';
+import { personView } from './person-view.js';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { isDeleted } from './deletion.js';
@@ -183,6 +184,7 @@ export async function presenceShown(
       'r.viewer',
       'r.principal_id',
       'p.display_name',
+      'p.kind',
       'r.component_id',
       'r.mode',
       'r.beat_at',
@@ -201,7 +203,7 @@ export async function presenceShown(
     const shown = row.component_id === null || readable.has(row.component_id);
     return {
       viewer: row.viewer,
-      person: { id: row.principal_id, name: row.display_name },
+      person: personView(row.principal_id, row.display_name, row.kind),
       component: shown ? row.component_id : null,
       mode: shown ? (row.mode as PresenceMode) : null,
       beatAt: row.beat_at.toISOString(),

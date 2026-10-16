@@ -1,3 +1,4 @@
+import { personView } from './person-view.js';
 import { labelFor } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -176,6 +177,7 @@ export async function listInbox(
       'n.kind',
       'n.actor',
       'p.display_name',
+      'p.kind as actor_kind',
       'n.thread_id',
       // Through the row whole: a schema before 0079 has no such column.
       sql<string | null>`to_jsonb(n) ->> 'round_id'`.as('round_id'),
@@ -200,7 +202,7 @@ export async function listInbox(
     notifications: rows.map((row) => ({
       id: row.id,
       kind: row.kind,
-      actor: row.actor === null ? null : { id: row.actor, name: row.display_name },
+      actor: row.actor === null ? null : personView(row.actor, row.display_name, row.actor_kind),
       thread: row.thread_id,
       round: row.round_id,
       artifact: row.artifact_id,

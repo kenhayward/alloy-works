@@ -348,6 +348,11 @@
                     "string",
                     "null"
                   ]
+                },
+                "external": {
+                  "description": "From outside the organisation (IAM-045)",
+                  "type": "boolean",
+                  "const": true
                 }
               },
               "required": [

@@ -12,7 +12,12 @@ export interface LiveLock {
 /** Somebody's window in the document, as the stream says it (COL-001 to COL-003). */
 export interface LivePresence {
   readonly viewer: string;
-  readonly person: { readonly id: string; readonly name: string | null };
+  /** external where they are from outside the organisation (IAM-045; the R13 plan, R13-A). */
+  readonly person: {
+    readonly id: string;
+    readonly name: string | null;
+    readonly external?: true | undefined;
+  };
   readonly component: string | null;
   readonly mode: 'read' | 'review' | 'author' | null;
   readonly beatAt: string;

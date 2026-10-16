@@ -3,7 +3,7 @@ import { BaselineParams } from './baselines.js';
 import { ComponentParams } from './components.js';
 import { DocumentParams } from './documents.js';
 import { pageQuery, nextCursor } from './listing.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { PersonView, ErrorBody, LowercaseUuid } from './schemas.js';
 
 /** Where a thread stands (collaboration.md, Threads; COL-012), checked by the service against the version. */
 const ThreadAnchorBody = z
@@ -50,7 +50,7 @@ export const ThreadListQuery = z.strictObject({
 });
 export type ThreadListQuery = z.infer<typeof ThreadListQuery>;
 
-const Person = z.object({ id: LowercaseUuid, name: z.string().nullable() });
+const Person = PersonView;
 
 /** A thread as a list shows it (COL-018). */
 export const ThreadSummaryView = z.object({

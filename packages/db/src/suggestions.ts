@@ -12,6 +12,7 @@ import {
   type StalePlace,
   type VersionSubstance,
 } from '@alloy-works/domain';
+import { personView, type PersonView } from './person-view.js';
 import { sql } from 'kysely';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import { componentFieldsNow } from './component-values.js';
@@ -23,7 +24,7 @@ import { latestVersion, readVersion, recordVersion, type StoredVersion } from '.
 /** How many suggestions one person may have pending on one component (SG-A). */
 export const PENDING_PER_AUTHOR = 20;
 
-type Person = { readonly id: string; readonly name: string | null };
+type Person = PersonView;
 
 /** A suggestion as stored (collaboration.md, Suggestions): the draft whole, and how it ended. */
 export interface StoredSuggestion {
@@ -191,10 +192,12 @@ const suggestionColumns = [
   'g.proposed',
   'g.made_by',
   'm.display_name as made_name',
+  'm.kind as made_kind',
   'g.made_at',
   'r.act',
   'r.resolved_by',
   'rp.display_name as resolved_name',
+  'rp.kind as resolved_kind',
   'r.resolved_at',
   'r.version_id',
 ] as const;
@@ -215,14 +218,14 @@ const storedOf = (row: Row): StoredSuggestion => ({
   component: row.component_id,
   madeAgainst: row.made_against,
   proposed: row.proposed as ContentDocument,
-  madeBy: { id: row.made_by, name: row.made_name },
+  madeBy: personView(row.made_by, row.made_name, row.made_kind),
   madeAt: row.made_at,
   resolution:
     row.act === null
       ? null
       : {
           act: row.act,
-          by: { id: row.resolved_by!, name: row.resolved_name },
+          by: personView(row.resolved_by!, row.resolved_name, row.resolved_kind),
           at: row.resolved_at!,
           version: row.version_id,
         },

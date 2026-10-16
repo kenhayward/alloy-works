@@ -70,6 +70,7 @@ next hold the lock. A take is never instant and never silent.
 | **COL-028** | A round names its reviewers, its scope - the document or nodes of it - and its due date ([Review rounds](#review-rounds)) |
 | **COL-029** | Each reviewer is not started, in progress (**Start**, or a completion reopened) or complete, derived from their own acts |
 | **COL-030** | The round's summary: every reviewer by state and the count complete of all, to anybody who may read the round |
+| **COL-059** | A round may name a principal from outside who may comment on or suggest to the document and reads all it covers, on the terms an internal one is named on; what they may do is the cap's (IAM-047; the R13 plan, R13-B) |
 | **COL-031** | A round may name a baseline: its reviewers read and comment on the baseline's fixed page in Review mode, threads judged against the pins |
 | **COL-032** | A completion says **with comments** or **nothing to say**, each apart from not started |
 | **COL-057** | A reviewer reopens their completion while the round is open, recorded with who and when |
@@ -235,7 +236,7 @@ applies and approves nothing; a gate requiring a round is T9's LIF.
 - **The rows**: a round, its reviewers and its events, kept against the document version it opened on
   (COL-050); nothing deleted, state derived.
 - **Who**: opened and closed with `edit` on the document; read with `read`; acted on by a named
-  person holding `comment` or `suggest` now. External reviewers (COL-059) are T4's.
+  person holding `comment` or `suggest` now. A reviewer may be from outside the organisation (COL-059; R13-B), never a service.
 - **On a baseline**: Review mode on the baseline's page, threads started on the pinned versions and
   judged against them; a suggestion is drafted on the document as it is.
 - **Told**: each reviewer named, a notification of its own kind, carrying no text.

@@ -16032,6 +16032,10 @@
           "howItIsMet": "Changing or creating a field, a metadata schema or a component type needs `manage_definitions`, a permission of its own that a role can hold without `administer` or `design`"
         },
         {
+          "id": "IAM-045",
+          "howItIsMet": "Every person view the API returns - presence, a thread's starter and a comment's author, a suggestion's, a round's reviewers, the people picker, an inbox sender, the administrator's listings - carries `external: true` for a principal from outside, and the page draws **Outside** beside the name, said \"from outside the organisation\" (the R13 plan, R13-A)"
+        },
+        {
           "id": "IAM-049",
           "howItIsMet": "A grant carries an optional expiry, and **for an external principal a grant without one confers nothing**. Granting to an external principal takes the tenant's default expiry when none is given and refuses one past the tenant's cap, and a decision reads no allow of theirs expiring past the cap from now, so external access cannot be left unset or reach past the cap whichever way it arrives"
         },
@@ -16535,6 +16539,10 @@
         {
           "id": "COL-030",
           "howItIsMet": "The round's summary: every reviewer by state and the count complete of all, to anybody who may read the round"
+        },
+        {
+          "id": "COL-059",
+          "howItIsMet": "A round may name a principal from outside who may comment on or suggest to the document and reads all it covers, on the terms an internal one is named on; what they may do is the cap's (IAM-047; the R13 plan, R13-B)"
         },
         {
           "id": "COL-031",
@@ -20655,6 +20663,18 @@
       "kind": "title"
     },
     {
+      "id": "COL-059",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 267,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 214,
+      "kind": "title"
+    },
+    {
       "id": "IAM-059",
       "file": "apps/service/src/first-administrator.test.ts",
       "line": 127,
@@ -22755,33 +22775,57 @@
       "kind": "title"
     },
     {
+      "id": "COL-059",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "apps/web/src/review/RoundsPanel.test.tsx",
+      "line": 123,
+      "kind": "title"
+    },
+    {
       "id": "COL-020",
       "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
-      "line": 93,
+      "line": 101,
       "kind": "title"
     },
     {
       "id": "COL-022",
       "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
-      "line": 65,
+      "line": 73,
       "kind": "title"
     },
     {
       "id": "COL-048",
       "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
-      "line": 93,
+      "line": 101,
       "kind": "title"
     },
     {
       "id": "COL-052",
       "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
-      "line": 65,
+      "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "apps/web/src/review/SuggestionsPanel.test.tsx",
+      "line": 127,
       "kind": "title"
     },
     {
       "id": "COL-017",
       "file": "apps/web/src/review/ThreadPage.test.tsx",
       "line": 104,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "apps/web/src/review/ThreadPage.test.tsx",
+      "line": 168,
       "kind": "title"
     },
     {
@@ -23394,6 +23438,12 @@
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
       "line": 62,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "apps/web/src/structure/PeopleHere.test.tsx",
+      "line": 6,
       "kind": "title"
     },
     {
@@ -25116,6 +25166,12 @@
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-045",
+      "file": "packages/db/src/live.test.ts",
+      "line": 120,
       "kind": "title"
     },
     {

@@ -3,7 +3,7 @@ import { ComponentParams } from './components.js';
 import { DocumentParams } from './documents.js';
 import { nextCursor, pageQuery } from './listing.js';
 import { EditingRefusal } from './editing.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { PersonView, ErrorBody, LowercaseUuid } from './schemas.js';
 
 export const MakeSuggestionBody = z.strictObject({
   version: LowercaseUuid.describe('The version the draft was opened from, one of this component’s'),
@@ -26,7 +26,7 @@ export const SuggestionListQuery = z.strictObject({
 });
 export type SuggestionListQuery = z.infer<typeof SuggestionListQuery>;
 
-const Person = z.object({ id: LowercaseUuid, name: z.string().nullable() });
+const Person = PersonView;
 
 /** A place a suggestion no longer fits the current version, and why (COL-052). */
 const StalePlace = z.object({

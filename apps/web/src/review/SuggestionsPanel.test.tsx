@@ -20,7 +20,11 @@ const words = (value: string) => ({
     { type: 'paragraph', id: 'b1', style: 'body', content: [{ type: 'text', value, marks: [] }] },
   ],
 });
-const suggestion = (id: string, by: { id: string; name: string }, stale: unknown[] = []) => ({
+const suggestion = (
+  id: string,
+  by: { id: string; name: string; external?: boolean },
+  stale: unknown[] = [],
+) => ({
   id,
   component: COMPONENT,
   madeAgainst: 'v1',
@@ -33,10 +37,14 @@ const suggestion = (id: string, by: { id: string; name: string }, stale: unknown
   drawn: words('Unbox it carefully.'),
 });
 
-function service() {
+function service(outside = false) {
   const asked: { route: string; body: unknown }[] = [];
   const listed = [
-    suggestion('gggggggg-0000-4000-8000-000000000001', { id: GRACE, name: 'Grace' }),
+    suggestion('gggggggg-0000-4000-8000-000000000001', {
+      id: GRACE,
+      name: 'Grace',
+      ...(outside ? { external: true } : {}),
+    }),
     suggestion('gggggggg-0000-4000-8000-000000000002', { id: ADA, name: 'Ada' }, [
       { block: 'b1', why: 'changed' },
     ]),
@@ -114,5 +122,23 @@ describe('the suggestions panel in Review', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Withdraw' })).toBeInTheDocument(),
     );
+  });
+
+  it('IAM-045 says a suggestion made from outside the organisation is so', async () => {
+    const { client } = service(true);
+    render(
+      <SuggestionsPanel
+        client={client}
+        document={DOCUMENT}
+        principalId={ADA}
+        mayResolve={() => true}
+        placeOf={() => '1 Method'}
+        onChanged={() => undefined}
+      />,
+    );
+    const made = await screen.findByRole('button', {
+      name: 'Grace, from outside the organisation on 1 Method',
+    });
+    expect(within(made).getByText('Outside')).toBeInTheDocument();
   });
 });

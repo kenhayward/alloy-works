@@ -28,7 +28,11 @@ export const NotificationView = z.object({
   id: LowercaseUuid,
   kind: z.enum(['mention', 'reply', 'resolution', 'round', 'digest']),
   actor: z
-    .object({ id: LowercaseUuid, name: z.string().nullable() })
+    .object({
+      id: LowercaseUuid,
+      name: z.string().nullable(),
+      external: z.literal(true).optional().describe('From outside the organisation (IAM-045)'),
+    })
     .nullable()
     .describe('Who did it; null on a digest, or where the caller may no longer read what it is on'),
   thread: LowercaseUuid.nullable().describe(

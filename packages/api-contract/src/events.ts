@@ -32,7 +32,11 @@ export const LockEvent = z
 export const PresenceEvent = z
   .object({
     viewer: Id.describe('The window, as its own beats name it'),
-    person: z.object({ id: Id, name: z.string().nullable() }),
+    person: z.object({
+      id: Id,
+      name: z.string().nullable(),
+      external: z.literal(true).optional().describe('From outside the organisation (IAM-045)'),
+    }),
     component: Id.nullable().describe(
       'Where they are; null between components, or where the viewer may not read it',
     ),
