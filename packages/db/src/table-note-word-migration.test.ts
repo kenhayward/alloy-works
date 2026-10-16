@@ -139,6 +139,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0102_reference_index',
       '0103_api_jobs',
       '0104_variable_definitions',
+      '0105_provenance_without_bindings',
     ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,

@@ -177,6 +177,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0102_reference_index',
       '0103_api_jobs',
       '0104_variable_definitions',
+      '0105_provenance_without_bindings',
     ]);
 
     // The component and its version are as they were.
@@ -345,6 +346,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0102_reference_index',
       '0103_api_jobs',
       '0104_variable_definitions',
+      '0105_provenance_without_bindings',
     ]);
 
     const { rows } = await queryAs(
