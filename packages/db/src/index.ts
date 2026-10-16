@@ -813,3 +813,15 @@ export {
   type StoredCohort,
 } from './cohorts.js';
 export type { CohortOutcome } from './jobs.js';
+// Relationships (the R8 plan): made, changed, removed and read, of a declared type.
+export {
+  brokenByType,
+  changeRelationship,
+  makeRelationship,
+  readRelationship,
+  relationshipType,
+  removeRelationship,
+  type EndAsked,
+  type RelationshipAnswer,
+  type StoredRelationship,
+} from './relationships.js';

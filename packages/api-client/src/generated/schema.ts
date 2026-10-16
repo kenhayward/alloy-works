@@ -2839,6 +2839,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relate two artifacts by a declared relationship type
+         * @description Relates two artifacts by a relationship type, each end pinned to a version or floating at its latest, with the values its type's fields take. Refused where the type does not permit an end's kind, an artifact related to itself, a deprecated type, an end already holding the one relationship of the type it may, or, for an acyclic type, a cycle. Needs read on both ends and the permission the type declares at each. Audited.
+         */
+        post: operations["makeRelationship"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/relationships/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A relationship: its type, its two ends and its values
+         * @description Reads a relationship: its type, its two ends and the versions they pin, and its values. Anybody who may read both ends reads it.
+         */
+        get: operations["getRelationship"];
+        put?: never;
+        /**
+         * Change a relationship: an end re-targeted or re-pinned, or its values
+         * @description Changes a relationship: an end re-targeted or re-pinned, or its values given whole, each checked as making it is. Needs read on both ends and the permission the type declares at each. Audited.
+         */
+        post: operations["changeRelationship"];
+        /**
+         * Remove a relationship
+         * @description Removes a relationship and records the removal, answering it as it was. Needs read on both ends and the permission the type declares at each.
+         */
+        delete: operations["removeRelationship"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/retention": {
         parameters: {
             query?: never;
@@ -20428,10 +20476,10 @@ export interface operations {
                         items: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                             name: string;
                             /** @description A variable's or an axis's key, which text names it by */
                             key?: string;
@@ -20555,10 +20603,10 @@ export interface operations {
                  */
                 "application/json": {
                     /**
-                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                      * @enum {string}
                      */
-                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                     definition: {
                         [key: string]: unknown;
                     };
@@ -20593,10 +20641,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -20664,10 +20712,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -20786,10 +20834,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -20946,10 +20994,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -21017,10 +21065,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -21149,10 +21197,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -55257,6 +55305,779 @@ export interface operations {
                                 at: string;
                             } | null;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    makeRelationship: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "type": "00000000-0000-4000-8000-000000000001",
+                 *       "from": {
+                 *         "artifact": "00000000-0000-4000-8000-000000000001"
+                 *       },
+                 *       "to": {
+                 *         "artifact": "00000000-0000-4000-8000-000000000001"
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The relationship type, a definition of kind `relationshipType` */
+                    type: string & (unknown & unknown);
+                    from: {
+                        /** @description The artifact at this end */
+                        artifact: string & (unknown & unknown);
+                        /** @description The version of it this end pins; none, or null, floats at its latest (REL-043) */
+                        version?: (string & (unknown & unknown)) | null;
+                    };
+                    to: {
+                        /** @description The artifact at this end */
+                        artifact: string & (unknown & unknown);
+                        /** @description The version of it this end pins; none, or null, floats at its latest (REL-043) */
+                        version?: (string & (unknown & unknown)) | null;
+                    };
+                    /** @description Its values for the fields its type's schemas assign, by field identifier */
+                    values?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "type": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "to": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "values": {},
+                     *       "createdBy": "00000000-0000-4000-8000-000000000001",
+                     *       "createdAt": "example",
+                     *       "changedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        type: string & (unknown & unknown);
+                        from: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        to: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        createdBy: string & (unknown & unknown);
+                        createdAt: string;
+                        changedAt: string;
+                    };
+                };
+            };
+            /** @description `relationship_refused`: the type does not permit an end, as `reason` says; `values_invalid`: its values fail its type's fields; or `invalid_request` */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /**
+                         * @description relationship_refused: an end's kind the type does not permit, an artifact related to itself, a deprecated type, or a version that is not the end's
+                         * @enum {string}
+                         */
+                        reason?: "kind" | "self" | "deprecated" | "version";
+                        /**
+                         * @description The end refused
+                         * @enum {string}
+                         */
+                        end?: "from" | "to";
+                        /** @description values_invalid: each field its values fail */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read both ends but lacks the permission the type asks at one */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such type, or an end the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `relationship_cardinality`: an end already holds the one relationship of the type it may; `relationship_cycle`: the type is acyclic and this would close a cycle */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /**
+                         * @description relationship_refused: an end's kind the type does not permit, an artifact related to itself, a deprecated type, or a version that is not the end's
+                         * @enum {string}
+                         */
+                        reason?: "kind" | "self" | "deprecated" | "version";
+                        /**
+                         * @description The end refused
+                         * @enum {string}
+                         */
+                        end?: "from" | "to";
+                        /** @description values_invalid: each field its values fail */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRelationship: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The relationship */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "type": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "to": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "values": {},
+                     *       "createdBy": "00000000-0000-4000-8000-000000000001",
+                     *       "createdAt": "example",
+                     *       "changedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        type: string & (unknown & unknown);
+                        from: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        to: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        createdBy: string & (unknown & unknown);
+                        createdAt: string;
+                        changedAt: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such relationship, or one with an end the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    changeRelationship: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "values": {}
+                 *     }
+                 */
+                "application/json": {
+                    from?: {
+                        /** @description The artifact at this end */
+                        artifact: string & (unknown & unknown);
+                        /** @description The version of it this end pins; none, or null, floats at its latest (REL-043) */
+                        version?: (string & (unknown & unknown)) | null;
+                    };
+                    to?: {
+                        /** @description The artifact at this end */
+                        artifact: string & (unknown & unknown);
+                        /** @description The version of it this end pins; none, or null, floats at its latest (REL-043) */
+                        version?: (string & (unknown & unknown)) | null;
+                    };
+                    values?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "type": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "to": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "values": {},
+                     *       "createdBy": "00000000-0000-4000-8000-000000000001",
+                     *       "createdAt": "example",
+                     *       "changedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        type: string & (unknown & unknown);
+                        from: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        to: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        createdBy: string & (unknown & unknown);
+                        createdAt: string;
+                        changedAt: string;
+                    };
+                };
+            };
+            /** @description `relationship_refused`: the type does not permit an end, as `reason` says; `values_invalid`: its values fail its type's fields; or `invalid_request` */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /**
+                         * @description relationship_refused: an end's kind the type does not permit, an artifact related to itself, a deprecated type, or a version that is not the end's
+                         * @enum {string}
+                         */
+                        reason?: "kind" | "self" | "deprecated" | "version";
+                        /**
+                         * @description The end refused
+                         * @enum {string}
+                         */
+                        end?: "from" | "to";
+                        /** @description values_invalid: each field its values fail */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read both ends but lacks the permission the type asks at one */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such type, or an end the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `relationship_cardinality`: an end already holds the one relationship of the type it may; `relationship_cycle`: the type is acyclic and this would close a cycle */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /**
+                         * @description relationship_refused: an end's kind the type does not permit, an artifact related to itself, a deprecated type, or a version that is not the end's
+                         * @enum {string}
+                         */
+                        reason?: "kind" | "self" | "deprecated" | "version";
+                        /**
+                         * @description The end refused
+                         * @enum {string}
+                         */
+                        end?: "from" | "to";
+                        /** @description values_invalid: each field its values fail */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    removeRelationship: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed: the relationship as it was */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "type": "00000000-0000-4000-8000-000000000001",
+                     *       "from": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "to": {
+                     *         "artifact": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "example",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "values": {},
+                     *       "createdBy": "00000000-0000-4000-8000-000000000001",
+                     *       "createdAt": "example",
+                     *       "changedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        type: string & (unknown & unknown);
+                        from: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        to: {
+                            artifact: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description The version pinned, or null where it floats */
+                            version: (string & (unknown & unknown)) | null;
+                        };
+                        values: {
+                            [key: string]: unknown;
+                        };
+                        createdBy: string & (unknown & unknown);
+                        createdAt: string;
+                        changedAt: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read both ends but lacks the permission the type asks at one */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such relationship, or one with an end the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

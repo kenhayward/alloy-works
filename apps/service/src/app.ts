@@ -95,6 +95,7 @@ import { archivalHandlers } from './archival.js';
 import { deletedListingHandlers, deletionHandlers } from './deletion.js';
 import { usesHandlers } from './uses.js';
 import { impactHandlers } from './impact.js';
+import { relationshipHandlers } from './relationships.js';
 import { cohortHandlers } from './cohorts.js';
 import { jobHandlers } from './jobs.js';
 import { holdHandlers } from './holds.js';
@@ -554,6 +555,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...impactHandlers(),
     ...jobHandlers(db, tenantOf, principalOf, options.objects),
     ...cohortHandlers(db, tenantOf, options.objects),
+    ...relationshipHandlers(db, tenantOf),
     ...deletedListingHandlers(db, tenantOf, principalOf),
     ...holdHandlers(),
     ...retentionHandlers(),

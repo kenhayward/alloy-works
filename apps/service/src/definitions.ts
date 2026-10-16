@@ -22,6 +22,7 @@ import {
   metadataSchemaDefinitionSchema,
   variableDefinitionSchema,
   conditionAxisDefinitionSchema,
+  relationshipTypeDefinitionSchema,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -37,6 +38,7 @@ const parsers = {
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
+  relationshipType: relationshipTypeDefinitionSchema,
 } as const;
 
 function definitionView(stored: StoredDefinition): DefinitionView {

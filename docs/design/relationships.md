@@ -24,80 +24,77 @@ answer beyond those bounds is a report produced in the background.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                                                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **REL-001** | `relationship.type_id` is a foreign key to `relationship_type`; a relationship of an undeclared type cannot be inserted                                                                                                                                      |
-| **REL-004** | `relationship_type.inverse_name`, used whenever a relationship is read from its far end                                                                                                                                                                      |
-| **REL-005** | Types and endpoints are rows, maintained by a tenant administrator through the service                                                                                                                                                                       |
-| **REL-006** | Deleting a type or an endpoint kind in use is refused by restricted foreign keys; a cardinality change is checked against instances                                                                                                                          |
-| **REL-008** | A composite foreign key ties each end's artifact and kind to a kind the type permits                                                                                                                                                                         |
-| **REL-052** | The endpoint table's kind is an artifact kind, and a composite foreign key ties each end to `artifact(id, kind)`, so any kind the product defines can be an endpoint and the permitted set is drawn from the artifact kinds rather than a list repeated here |
-| **REL-010** | The service validates metadata against the type's schema before inserting, in the same transaction                                                                                                                                                           |
-| **REL-012** | A trigger locks the endpoint's artifact row and counts before inserting, so two concurrent creations cannot both pass                                                                                                                                        |
-| **REL-013** | `to_version` is null for a relationship that floats at latest, and a foreign key to the pinned version otherwise                                                                                                                                             |
-| **REL-014** | Foreign keys to `artifact` restrict deletion; removing an artifact's relationships is an explicit, audited act that deletion awaits                                                                                                                          |
-| **REL-015** | The neighbours operation, by type and direction, a page at a time                                                                                                                                                                                            |
-| **REL-017** | Every operation requires a depth, and the service refuses anything above ten                                                                                                                                                                                 |
-| **REL-018** | De-duplicating recursion never revisits an artifact at a depth it has already reached, so a cycle ends the walk rather than repeating                                                                                                                        |
-| **REL-019** | The permission test is inside the recursive step, so an unreadable artifact is never returned and never expanded                                                                                                                                             |
-| **REL-020** | Edges into the walk from unreadable artifacts are counted, and every result carries whether any were                                                                                                                                                         |
-| **REL-022** | Impact walks references and relationships together, from the artifact outwards along edges into it                                                                                                                                                           |
-| **REL-023** | Each artifact in an impact result is marked hard if a chain of references alone reaches it, and informational otherwise                                                                                                                                      |
-| **REL-024** | Hard impact is the cheap walk - 76ms at worst in the spike - so it runs before a change is saved, not after                                                                                                                                                  |
-| **REL-029** | The shortest-path operation: a bidirectional search to a declared depth, optionally along named types                                                                                                                                                        |
-| **REL-030** | Results stop at the nearest 1,000, and the result says whether there are more                                                                                                                                                                                |
-| **REL-031** | The conformance suite generates a tenant like the spike's and measures every operation for three kinds of user                                                                                                                                               |
-| **REL-032** | The impact report runs in the background with no result cap, bounded by depth and filtered by permission                                                                                                                                                     |
-| **REL-050** | The report is a job (service-foundations.md, "Jobs"): its identity at once, pollable with its depth reached, cancellable at its next depth, failing in an error's shape                                                                                      |
-| **REU-001** | A reference names a component the author may read, from any space (`mayReference`); `GET /v1/components/{id}/uses` lists every document placing it                                                                                                           |
-| **REU-003** | Each reference is its own outline node, so one component placed twice is two occurrences, each listed apart                                                                                                                                                  |
-| **REU-005** | A reference to a component deleted, or none at all, fails the publish `occurrence_gone`, naming its node                                                                                                                                                     |
-| **REU-043** | One there that the publisher may not read fails `occurrence_unreadable`, naming its node alone; only the gone are selected, so nothing of it is read                                                                                                         |
-| **REU-008** | Save version reads the uses first, and asks before a version reaching any `latest` or `approved` reference, listing each document it reaches; working changes reach none                                                                                     |
-| **REU-009** | Each document in the uses carries whether its workflow state is approved, and the warning lists approved documents apart from drafts                                                                                                                         |
-| **REU-013** | Each reference in where-used says whether it carries local overrides                                                                                                                                                                                         |
-| **REU-006** | "Where is this used" is the reference index read backwards, one hop                                                                                                                                                                                          |
-| **REU-007** | Each reference is listed with its mode: `latest` takes every new version, `approved` each approved revision, `pinned` none                                                                                                                                   |
-| **REU-010** | Where-used applies the same permission test as traversal                                                                                                                                                                                                     |
-| **SCH-023** | As REU-006, for any referenced artifact                                                                                                                                                                                                                      |
-| **SCH-024** | "What does this use" is the reference index read forwards, one hop                                                                                                                                                                                           |
-| **SCH-026** | Structural queries use the same permission test as traversal, which is the one search applies (ADR-0016)                                                                                                                                                     |
+| ID          | How it is met                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REL-001** | A relationship names its type, a definition of kind `relationshipType`, and is refused `type.missing` where none is declared ([the R8 plan](../plans/2026-10-16-r8-relationships-and-the-graph.md), R8-A)                            |
+| **REL-004** | The type declares its `inverseName`, read whenever a relationship is read from its far end                                                                                                                                           |
+| **REL-005** | A type is a definition, made and changed through `/v1/definitions` by whoever manages the environment's definitions, as fields are                                                                                                   |
+| **REL-006** | A definition is never deleted, so a type in use cannot be; a change that would break its relationships is refused (REL-054)                                                                                                          |
+| **REL-008** | Each end's kind is held to the kinds the type permits there, in the transaction that writes the relationship (`endsRefused`)                                                                                                         |
+| **REL-052** | An end's kind is an artifact kind, tied to `artifact(id, kind)` by a composite foreign key, so any kind a type permits may be an end                                                                                                 |
+| **REL-010** | Its values are checked against the fields its type's schemas assign, before it is written                                                                                                                                            |
+| **REL-012** | Cardinality is counted under an advisory lock on the type and each limited end, so two at once cannot both find room                                                                                                                 |
+| **REL-013** | Each end names the version it pins, or none and floats at latest                                                                                                                                                                     |
+| **REL-011** | Making, changing and removing a relationship are audited `relationship.made`, `.changed` and `.removed`, on its from end, naming its type and itself (R8-E)                                                                          |
+| **REL-033** | A relationship's values are changed whole, and either end re-targeted or re-pinned                                                                                                                                                   |
+| **REL-034** | A change is checked exactly as making it is: kinds, self-reference, cardinality, cycles and values                                                                                                                                   |
+| **REL-035** | Making, changing or removing one needs read on both ends and the permission its type declares at each; reading it, read on both                                                                                                      |
+| **REL-037** | A type marked `deprecated`, naming a replacement or none, is refused for new relationships and stays valid on those that hold it                                                                                                     |
+| **REL-038** | A type is renamed by its next version, its identifier unchanged, so its relationships are untouched                                                                                                                                  |
+| **REL-042** | A type declares at each end whether an artifact may hold one relationship of it there, or many                                                                                                                                       |
+| **REL-043** | Each end pins or floats on its own                                                                                                                                                                                                   |
+| **REL-045** | A relationship from an artifact to itself is refused unless its type declares `selfReference`                                                                                                                                        |
+| **REL-046** | Where a type is `acyclic`, a relationship whose to end already reaches its from end along the type is refused, under a lock on the type                                                                                              |
+| **REL-047** | The type declares its name, its stable identifier (the definition's), its endpoint kinds, direction, inverse name, cardinality, self-reference, acyclicity, the permission at each end, whether it is informational, and its schemas |
+| **REL-049** | As REL-012: the lock makes the count and the insert one act                                                                                                                                                                          |
+| **REL-053** | A type assigns metadata schemas, as a component type does, whose fields its relationships carry                                                                                                                                      |
+| **REL-054** | A type's next version is refused where it would leave relationships invalid, saying how many                                                                                                                                         |
+| **REL-014** | Foreign keys to `artifact` restrict deletion; removing an artifact's relationships is an explicit, audited act that deletion awaits                                                                                                  |
+| **REL-015** | The neighbours operation, by type and direction, a page at a time                                                                                                                                                                    |
+| **REL-017** | Every operation requires a depth, and the service refuses anything above ten                                                                                                                                                         |
+| **REL-018** | De-duplicating recursion never revisits an artifact at a depth it has already reached, so a cycle ends the walk rather than repeating                                                                                                |
+| **REL-019** | The permission test is inside the recursive step, so an unreadable artifact is never returned and never expanded                                                                                                                     |
+| **REL-020** | Edges into the walk from unreadable artifacts are counted, and every result carries whether any were                                                                                                                                 |
+| **REL-022** | Impact walks references and relationships together, from the artifact outwards along edges into it                                                                                                                                   |
+| **REL-023** | Each artifact in an impact result is marked hard if a chain of references alone reaches it, and informational otherwise                                                                                                              |
+| **REL-024** | Hard impact is the cheap walk - 76ms at worst in the spike - so it runs before a change is saved, not after                                                                                                                          |
+| **REL-029** | The shortest-path operation: a bidirectional search to a declared depth, optionally along named types                                                                                                                                |
+| **REL-030** | Results stop at the nearest 1,000, and the result says whether there are more                                                                                                                                                        |
+| **REL-031** | The conformance suite generates a tenant like the spike's and measures every operation for three kinds of user                                                                                                                       |
+| **REL-032** | The impact report runs in the background with no result cap, bounded by depth and filtered by permission                                                                                                                             |
+| **REL-050** | The report is a job (service-foundations.md, "Jobs"): its identity at once, pollable with its depth reached, cancellable at its next depth, failing in an error's shape                                                              |
+| **REU-001** | A reference names a component the author may read, from any space (`mayReference`); `GET /v1/components/{id}/uses` lists every document placing it                                                                                   |
+| **REU-003** | Each reference is its own outline node, so one component placed twice is two occurrences, each listed apart                                                                                                                          |
+| **REU-005** | A reference to a component deleted, or none at all, fails the publish `occurrence_gone`, naming its node                                                                                                                             |
+| **REU-043** | One there that the publisher may not read fails `occurrence_unreadable`, naming its node alone; only the gone are selected, so nothing of it is read                                                                                 |
+| **REU-008** | Save version reads the uses first, and asks before a version reaching any `latest` or `approved` reference, listing each document it reaches; working changes reach none                                                             |
+| **REU-009** | Each document in the uses carries whether its workflow state is approved, and the warning lists approved documents apart from drafts                                                                                                 |
+| **REU-013** | Each reference in where-used says whether it carries local overrides                                                                                                                                                                 |
+| **REU-006** | "Where is this used" is the reference index read backwards, one hop                                                                                                                                                                  |
+| **REU-007** | Each reference is listed with its mode: `latest` takes every new version, `approved` each approved revision, `pinned` none                                                                                                           |
+| **REU-010** | Where-used applies the same permission test as traversal                                                                                                                                                                             |
+| **SCH-023** | As REU-006, for any referenced artifact                                                                                                                                                                                              |
+| **SCH-024** | "What does this use" is the reference index read forwards, one hop                                                                                                                                                                   |
+| **SCH-026** | Structural queries use the same permission test as traversal, which is the one search applies (ADR-0016)                                                                                                                             |
 
 **Built so far** ([R1](../plans/2026-10-15-r1-where-a-component-is-used.md), [R2](../plans/2026-10-15-r2-impact-and-placing-a-section.md)): the reference index (0102), where-used and what an artifact uses read from it, and impact over references alone, walked a depth at a time in TypeScript rather than in one recursive statement (R2-D), which stays the route to REL-031's budget. The background report is built as a job ([R3](../plans/2026-10-15-r3-jobs-and-the-impact-report.md)). Declared relationships, neighbours and shortest paths are not, so impact's informational half is empty. **REU-052 is not claimed**: terms, bibliography entries, vocabulary values and styles do not exist yet.
 
-**REL-047 is not claimed here.** It asks a type to declare a stable identifier, whether it permits an
-artifact to relate to itself (REL-045), whether it is acyclic (REL-046), and the permission required
-at each end (REL-035), as well as the name, direction, cardinality and inverse name that
-`relationship_type` carries below. The last three are requirements this design does not answer at all,
-so claiming REL-047 would claim ground it does not hold: the requirement stays specified and
-\1
-
-**REL-053 is not claimed here, and REL-003, which it replaced, no longer is.** This design stores a JSON
-Schema per type in `relationship_type.metadata_schema`, which answered REL-003's "a metadata shape".
-REL-053 asks for more: a type assigns the tenant's shared metadata schemas ([MET](../specification/requirements/MET-metadata-and-component-types.md)), so a
-field on a relationship is the same field as on a component and facets with it. A JSON Schema private to
-one type cannot be that, so the claim is dropped rather than repointed - and **REL-054**, which guards
-relationships against a schema or field change as well as a type change, is undesigned with it.
+**R8 makes a type a definition** ([the R8 plan](../plans/2026-10-16-r8-relationships-and-the-graph.md), R8-A), so the `relationship_type` and endpoint
+tables below are not built: a type's identifier, name, versions and schemas are a definition's, and
+what it permits is checked in the transaction that writes a relationship. REL-007, REL-039 and REL-041
+wait for configuration export; REL-048 for bulk acts.
 
 ## Tables
 
-| Table                        | One row per                               | Carries                                                                                            |
-| ---------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `relationship_type`          | Declared type                             | Name, inverse name, direction, cardinality, metadata schema, whether it is informational           |
-| `relationship_type_endpoint` | Kind permitted at one end of a type       | Type, end (from or to), artifact kind                                                              |
-| `relationship`               | Declared relationship                     | Type, from artifact and kind, to artifact and kind, pinned version or none, metadata, who and when |
-| `reference`                  | Reference in an artifact's latest version | From artifact and version, to artifact and kind, mode, pinned version or none, the node holding it |
+| Table          | One row per           | Carries                                                                                                |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `relationship` | Declared relationship | Its type, each end's artifact, kind and pinned version or none, its field values, who made it and when |
+| `reference`    | Reference in content  | From artifact and version, to artifact and kind, mode, pinned version or none, the node holding it     |
 
-**What can be declared is enforced by the database where it can be.** `artifact` gains a unique key
-on `(id, kind)`, so `relationship` can carry a composite foreign key from `(from_id, from_kind)` to
-it, and another from `(type_id, 'from', from_kind)` to the endpoint table: a relationship between
-kinds its type does not permit is a constraint violation, not a check someone forgot (REL-008). The
-same foreign keys, restricted, refuse deleting a type or an endpoint kind that instances use
-(REL-006) - the argument ADR-0008 and ADR-0012 made twice already, used a third time.
-
-Cardinality cannot be a plain constraint, because it varies by type. A trigger locks the endpoint's
-`artifact` row, counts that type's relationships at that end and refuses the insert when the type's
-cardinality is full; the lock is what stops two concurrent inserts both seeing room (REL-012).
+A type is a definition of kind `relationshipType` (0108). Each end of a relationship is tied to
+`artifact(id, kind)` by a composite foreign key, restricted, so an artifact a relationship names is not
+deleted from under it; its kind is held to the type's endpoint kinds when the row is written, with
+self-reference, cardinality under an advisory lock, acyclicity and the type's fields.
 
 ## References
 

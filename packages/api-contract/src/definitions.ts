@@ -4,6 +4,7 @@ import {
   metadataSchemaDefinitionSchema,
   variableDefinitionSchema,
   conditionAxisDefinitionSchema,
+  relationshipTypeDefinitionSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
@@ -15,10 +16,18 @@ export const DefinitionParams = z.object({ id: LowercaseUuid });
 export type DefinitionParams = z.infer<typeof DefinitionParams>;
 
 export const DefinitionKind = z
-  .enum(['field', 'metadataSchema', 'componentType', 'variable', 'conditionAxis'])
+  .enum([
+    'field',
+    'metadataSchema',
+    'componentType',
+    'variable',
+    'conditionAxis',
+    'relationshipType',
+  ])
   .describe(
     'variable: a value text may name, taken from the document that places it (REU-018); ' +
-      'conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)',
+      'conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); ' +
+      'relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)',
   );
 
 /** An identifier a payload is checked with, and never stored: the service allocates the real one. */
@@ -30,6 +39,7 @@ const payloadSchemas = {
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
+  relationshipType: relationshipTypeDefinitionSchema,
 } as const;
 
 /**

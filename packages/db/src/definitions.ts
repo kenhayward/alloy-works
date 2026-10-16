@@ -11,8 +11,10 @@ import {
   variableDefinitionSchema,
   type VariableDefinition,
   conditionAxisDefinitionSchema,
+  relationshipTypeDefinitionSchema,
   type ConditionAxisDefinition,
   type StoredProfile,
+  type RelationshipTypeDefinition,
   readDefinition,
   schemaConflicts,
   templateDefinitionSchema,
@@ -24,6 +26,7 @@ import {
   type SchemaPlace,
   type SchemaConflict,
 } from '@alloy-works/domain';
+import { brokenByType } from './relationships.js';
 import { sql } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
@@ -95,6 +98,7 @@ const parsers = {
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
+  relationshipType: relationshipTypeDefinitionSchema,
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
@@ -351,6 +355,24 @@ async function refusal(
     }
     const refused = await keyRefused(trx, 'variable', variable.key, self);
     if (refused) return refused;
+  }
+  if (kind === 'relationshipType' && self !== undefined) {
+    // A change that would leave relationships of the type invalid is refused, counted (REL-054).
+    const broken = await brokenByType(trx, self, candidate as RelationshipTypeDefinition);
+    if (broken > 0) {
+      return {
+        answer: 'definition.invalid',
+        failures: [
+          {
+            code: 'metadata.fixed',
+            field: self,
+            rule: 'fixed',
+            schemas: [],
+            detail: `${broken} ${broken === 1 ? 'relationship' : 'relationships'} of this type would become invalid`,
+          },
+        ],
+      };
+    }
   }
   if (kind === 'conditionAxis') {
     // As a variable's (the R6 plan, R6-A): every condition mark in text names it by its key.

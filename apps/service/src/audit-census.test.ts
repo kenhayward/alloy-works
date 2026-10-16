@@ -181,6 +181,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   // Asking is recorded on the cohort; each document its run makes is the event (the R7 plan, R7-E).
   submitCohort: { none: 'derived' },
   getCohort: read,
+  makeRelationship: writes('relationship.made'),
+  getRelationship: read,
+  changeRelationship: writes('relationship.changed'),
+  removeRelationship: writes('relationship.removed'),
   rerunCohort: { none: 'derived' },
   getJob: read,
   cancelJob: { none: 'derived' },
