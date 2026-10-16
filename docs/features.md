@@ -1112,8 +1112,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   preview under any profile. A publish keeps what its profile selects, leaves the rest out before
   anything is numbered or referred to, fails by name where text depends on an axis the profile does
   not set unless the document accepts that, and scans every output for what was left out. A publish
-  through the API may name another profile, and the publication records it. A whole block or section
-  cannot carry a condition yet.
+  through the API may name another profile, and the publication records it. Through the outline, a
+  section or a placed component can carry conditions too, and so can a table, a figure or a block
+  equation through the API: what a profile leaves out takes no number, is in no contents or list, and
+  a cross-reference to it fails by name. Neither is set from the page yet. A baseline publishes under
+  the profile in force when it was taken, and a workflow transition can require every axis the
+  document depends on to be set.
 - **Bulk generation.** Templates offers **Generate** on each template: a document for each row of a
   CSV file, or of a list pasted from a spreadsheet, each titled from a pattern such as `Site report:
 {site}`. Through the API (`POST /v1/spaces/{space}/cohorts`) the rows may also come from a query

@@ -322,7 +322,9 @@ function placeInOutline(
   const [found] = held;
   if (found === undefined) return 'A part no longer in this document';
   if (scheme === null) return nodeName(found, names);
-  const numbers = sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), scheme));
+  const numbers = sectionNumbers(
+    number(conditions(resolve(outline, NOTHING_KNOWN), outline.profile?.values ?? {}), scheme),
+  );
   const numbered = numbers.get(node);
   return numbered === undefined ? nodeName(found, names) : `${numbered} ${nodeName(found, names)}`;
 }

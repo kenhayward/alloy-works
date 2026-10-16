@@ -3419,10 +3419,72 @@ describe('cross-references, published (cross-references 2)', () => {
       ).toEqual([failed('cross_reference_excluded', 'x1', 'block t1')]);
     });
 
+    it('gives the scan the words of an excluded occurrence across its marks, and fails nothing for an image its block conditions take out (the R11 final review)', () => {
+      const words = report('internal', {
+        occurrences: new Map([
+          [id('calib'), component([paragraph('b1', text('Kept.'))])],
+          [
+            id('annexed'),
+            component([
+              paragraph(
+                'p1',
+                text('Staff are told '),
+                marked('at the morning', { type: 'strong', id: 's1' }),
+                text(' meeting.'),
+              ),
+            ]),
+          ],
+          [id('last'), component([table('t3')])],
+        ]),
+      });
+      const assembled = assemble(words);
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      expect(assembled.probes).toContain('are told at the');
+
+      const figured = assemble({
+        ...inIntro(table('t1', [text('Inspections')], { conditions: regulator })),
+        refused: [
+          {
+            stage: 'resolve',
+            code: 'asset_unreadable',
+            node: id('calib'),
+            block: 't1',
+            detail: null,
+          },
+        ],
+        profile: { values: { audience: ['internal'] }, excludeUnset: false },
+      });
+      expect(failuresOf(figured)).toEqual([]);
+    });
+
+    it('names a reference excluded only where every placement of its component leaves its target out (the R11 final review)', () => {
+      const twice = report('internal', {
+        outline: outline([
+          section('intro', 'Introduction', [reference('calib'), reference('kept', OTHER)]),
+          { ...section('annex', 'Annex', [reference('annexed', OTHER)]), conditions: regulator },
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([paragraph('b1', xref('x1', toComponent(OTHER, 't9'), 'number'))]),
+          ],
+          [id('kept'), component([table('t2')])],
+          [id('annexed'), component([table('t2')])],
+        ]),
+      });
+      expect(failuresOf(assemble(twice))).toEqual([
+        failed('cross_reference_unresolved', 'x1', `component ${OTHER} block t9`),
+      ]);
+    });
+
     it('gives the scan the title and the words of what a node condition takes out', () => {
       const assembled = assemble(report('internal'));
       if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-      expect(assembled.probes).toEqual(['annex for the regulator', 'inspections by the regulator']);
+      expect(assembled.probes).toEqual([
+        'annex for the regulator',
+        'inspections by the regulator',
+        'by the regulator 12',
+      ]);
     });
   });
 

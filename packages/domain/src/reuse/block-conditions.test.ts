@@ -76,7 +76,8 @@ describe('conditions on a numbered block (the R11 plan, R11-B)', () => {
     );
     const forStaff = applyConditions(marked, { audience: ['internal'] });
     expect(forStaff.content.content.map((block) => block.id)).toEqual(['p1', 't2']);
-    expect(forStaff.removed).toEqual(['t1', 'e1']);
+    // Everything a reference could name inside it, too.
+    expect(forStaff.removed).toEqual(['t1', 't1c', 'e1']);
     expect(forStaff.excluded).toEqual(['Inspections by the regulator Twelve sites']);
     expect(forStaff.unset).toEqual([{ axis: 'status', block: 'e1' }]);
 
@@ -84,5 +85,24 @@ describe('conditions on a numbered block (the R11 plan, R11-B)', () => {
     expect(forRegulator.content.content.map((block) => block.id)).toEqual(['p1', 't1', 't2']);
     // What is kept is returned without its conditions, which nothing downstream reads.
     expect(forRegulator.content.content[1]).not.toHaveProperty('conditions');
+  });
+
+  it('removes a paragraph its text conditions empty wherever it stands after a block they take out, and keeps one written empty (the R11 final review)', () => {
+    const only = (value: string) => ({
+      type: 'text',
+      value,
+      marks: [{ type: 'condition', id: 'c1', axis: 'audience', values: ['regulator'] }],
+    });
+    const applied = applyConditions(
+      content(
+        table('t1', 'Inspections', { conditions: regulator }),
+        { type: 'paragraph', id: 'p1', style: 'body', content: [only('For the regulator.')] },
+        { type: 'paragraph', id: 'p2', style: 'body', content: [] },
+        paragraph('p3', 'Kept.'),
+      ),
+      { audience: ['internal'] },
+    );
+    expect(applied.content.content.map((block) => block.id)).toEqual(['p2', 'p3']);
+    expect(applied.removed).toEqual(['t1', 't1c', 'p1']);
   });
 });

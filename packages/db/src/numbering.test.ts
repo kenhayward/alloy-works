@@ -242,6 +242,57 @@ describe('what a document numbers against, read from the store', () => {
     });
   });
 
+  it('STR-036 numbers as the document will publish under its profile: what a node or a block condition leaves out takes no number (the R11 final review)', async () => {
+    await service.withTenant(production, async (trx) => {
+      const made = await createComponent(trx, {
+        spaceId: general,
+        title: 'Inspections',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const substance = substanceOf(made.version);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const content = figured('Inspections');
+      const regulator = [{ axis: 'audience', values: ['regulator'] }];
+      const recorded = await recordVersion(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: ada,
+        substance: {
+          ...substance,
+          content: {
+            ...content,
+            content: [
+              { ...content.content[0]!, conditions: regulator },
+              ...content.content.slice(1),
+            ],
+          } as ContentDocument,
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      const annexed = referenceNode(made.version.artifactId, { kind: 'latest' });
+      const kept = referenceNode(made.version.artifactId, { kind: 'latest' });
+      const nodes = [
+        { ...sectionNode('Annex', [annexed]), conditions: regulator },
+        sectionNode('Findings', [kept]),
+      ];
+      const outline: OutlineDocument = {
+        ...(await documentWith(trx, nodes)),
+        profile: { values: { audience: ['internal'] } },
+      };
+      const inputs = await numberingInputs(trx, outline, ada);
+      const table = number(
+        conditions(resolve(outline, inputs.contributions), outline.profile!.values),
+        defaultNumberingScheme,
+      );
+      expect(
+        table.entries.filter((entry) => entry.sequence === 'figure').map((entry) => entry.label),
+      ).toEqual(['Figure 1.1', 'Figure 1.2']);
+    });
+  });
+
   it('never reads a pinned version that is not the component the node names', async () => {
     await service.withTenant(production, async (trx) => {
       const one = await component(trx, general, ada, 'One');

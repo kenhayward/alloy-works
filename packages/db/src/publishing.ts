@@ -370,7 +370,7 @@ export interface ReadOccurrence {
  * decides from it: the images they place, and whether they cite a page. Only a version the publisher
  * resolved - one it may read - is ever selected.
  */
-async function readResolved(
+export async function readResolved(
   trx: TenantTransaction,
   resolved: readonly {
     readonly node: string;
@@ -806,9 +806,12 @@ export async function resolvePublishable(
           },
         ],
   );
+  // Nor is it read, pinned, bound or searched for a page: only what the profile keeps (R11 review).
   const resolved = await readResolved(
     trx,
-    outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
+    outcomes.flatMap((each) =>
+      each.outcome === 'resolved' && !excluded.has(each.node) ? [each] : [],
+    ),
   );
   // An override that no longer stands fails loudly, by node and block (REU-015; the R4 plan, R4-C).
   const stale = (
@@ -829,7 +832,9 @@ export async function resolvePublishable(
   if (formats !== null && !formats.includes('pdf')) {
     let titled = false;
     walkOutline(read.outline.nodes, (node) => {
-      if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
+      if (node.type === 'section' && !excluded.has(node.id) && pageCitedIn(node.title)) {
+        titled = true;
+      }
     });
     if (titled || resolved.some((each) => citesAPage(each.content.content))) {
       return { answer: 'page_reference.without_pdf' };

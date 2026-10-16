@@ -45,3 +45,7 @@ complete profile; and the order test places transclusion, conditions and variabl
 
 - Baseline view and request; `profile` in `requires`. The final review hunts excluded content reaching
   an output and a number counted for it. The close: 0.182.0.
+
+## Built
+
+R11a #666, R11b #668, and R11c with the close (0.182.0) #670. The final review found what a profile leaves out still refusing a publish or a baseline before `assemble` (its bindings, its page citations, an unreadable component pinned), the page numbering every node whatever the profile, the scan missing a sentence split by marks, an emptied paragraph misjudged after an excluded block, a gate counting an excluded unreadable component as unproven, and a reference into an excluded table or to a component placed twice misnamed; all fixed. Left: setting a node's or a block's conditions from the page; LIB-022, axis values from a vocabulary.

@@ -425,6 +425,7 @@ describe('the domain package', () => {
         'profileSchema',
         // R11: an outline as a profile selects it.
         'selectOutline',
+        'unsetAxes',
         'storedProfileSchema',
         'leaked',
         'probesOf',

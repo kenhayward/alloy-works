@@ -53,7 +53,12 @@ import {
   type VariableContext,
   type VariableDefinition,
 } from '../reuse/variables.js';
-import { applyConditions, selectOutline, type Profile } from '../reuse/conditions.js';
+import {
+  applyConditions,
+  selectOutline,
+  wordsOf as passageOf,
+  type Profile,
+} from '../reuse/conditions.js';
 import { probesOf } from '../reuse/scan.js';
 
 /** Every text run's words in a value, in order: what the scan holds a probe against. */
@@ -479,20 +484,30 @@ export function assemble(given: AssembleInput): Assembled {
   });
   const removedBlocks = new Map<string, ReadonlySet<string>>();
   for (const [node, content] of given.occurrences) {
-    if (excludedNodes.has(node)) excludedPassages.push(...textValuesOf(content));
+    // Each block's words as they read, across the marks that split them (the R11 final review).
+    if (excludedNodes.has(node)) {
+      for (const block of content.content) {
+        const words = passageOf(block);
+        if (words !== '') excludedPassages.push(words);
+      }
+    }
   }
   /** Whether a target that did not resolve is one a condition took out (STR-030; R11-D). */
   const excludedTarget = (target: CrossReferenceTarget, node: string): boolean => {
     if (target.kind === 'node') return excludedNodes.has(target.node);
     if (target.kind === 'block') return removedBlocks.get(node)?.has(target.block) === true;
-    if (excludedComponents.has(target.component)) return true;
-    let removed = false;
+    // Only where every placement of the component leaves the target out (the R11 final review).
+    let placements = 0;
+    let leftOut = 0;
     walkOutline(given.outline.nodes, (each) => {
       if (each.type === 'reference' && each.component === target.component) {
-        removed ||= removedBlocks.get(each.id)?.has(target.block) === true;
+        placements += 1;
+        if (excludedNodes.has(each.id) || removedBlocks.get(each.id)?.has(target.block) === true) {
+          leftOut += 1;
+        }
       }
     });
-    return removed;
+    return placements > 0 && leftOut === placements;
   };
   const condition =
     given.conditionContent ??
@@ -605,7 +620,17 @@ export function assemble(given: AssembleInput): Assembled {
     excludedPassages.length === 0
       ? []
       : probesOf(excludedPassages, [...keptText, ...titleTexts(input.outline.nodes)].join(' '));
-  const failures: PublishFailure[] = [...input.refused, ...conditionFailures, ...bindFailures];
+  // A block the conditions took out fails nothing it would have, an image it holds among them.
+  const failures: PublishFailure[] = [
+    ...input.refused.filter(
+      (each) =>
+        each.node === null ||
+        each.block === null ||
+        removedBlocks.get(each.node)?.has(each.block) !== true,
+    ),
+    ...conditionFailures,
+    ...bindFailures,
+  ];
   /**
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
    * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its

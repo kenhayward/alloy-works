@@ -14,4 +14,12 @@ describe('what a transition requires, said (the WF3 plan, WF3-B)', () => {
       'Not yet: 2 unresolved suggestions; 1 required section missing: Introduction; 2 components not at an approved revision: Dose, Method (1 component you may not read, so unchecked); 3 components you may not read, so not checked for bindings.',
     );
   });
+
+  it('LIF-065 names each condition axis the profile leaves unset', () => {
+    expect(
+      unmetMessage([
+        { condition: 'profile', count: 2, names: ['audience', 'market'], unreadable: 0 },
+      ]),
+    ).toBe('Not yet: 2 condition axes not set in the profile: audience, market.');
+  });
 });

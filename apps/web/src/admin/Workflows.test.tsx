@@ -243,6 +243,7 @@ describe("Administration's Workflows", () => {
       }),
     );
     for (const name of [
+      'Approve requires every condition set in the profile',
       'Approve requires every component approved',
       'Approve requires no open threads',
     ]) {
@@ -255,6 +256,7 @@ describe("Administration's Workflows", () => {
     expect(saved.transitions.find((each) => each.key === 'approve')?.requires).toEqual([
       'threads',
       'components',
+      'profile',
     ]);
     expect(saved.transitions.find((each) => each.key === 'submit')).not.toHaveProperty('requires');
   });

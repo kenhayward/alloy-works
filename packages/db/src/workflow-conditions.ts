@@ -1,13 +1,15 @@
 import {
   missingSections,
   readOutline,
+  selectOutline,
   TRANSITION_CONDITIONS,
+  unsetAxes,
   walkOutline,
   type TransitionCondition,
   type WorkflowKind,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
-import { documentBindings, resolveOccurrences } from './publishing.js';
+import { documentBindings, readResolved, resolveOccurrences } from './publishing.js';
 import { pendingCounts } from './suggestions.js';
 import type { TenantTransaction } from './tables.js';
 import { documentRules } from './templates.js';
@@ -21,9 +23,9 @@ import { latestVersion } from './versions.js';
 
 export interface UnmetCondition {
   readonly condition: TransitionCondition;
-  /** How many stand in its way: suggestions, threads, bindings, sections, revisions or components. */
+  /** How many stand in its way: suggestions, threads, bindings, sections, revisions, components or axes. */
   readonly count: number;
-  /** The sections missing and the components not approved, by title. */
+  /** The sections missing and the components not approved, by title; the axes unset, by key. */
   readonly names: readonly string[];
   /** Components the decider may not read, which leave it unproven (WF3-D). */
   readonly unreadable: number;
@@ -141,7 +143,8 @@ export async function unmetConditions(
       });
     }
     const asDecider = requires.filter(
-      (each) => each === 'bindings' || each === 'revisions' || each === 'components',
+      (each) =>
+        each === 'bindings' || each === 'revisions' || each === 'components' || each === 'profile',
     );
     if (asDecider.length > 0) {
       const outcomes = await resolveOccurrences(trx, read.outline, input.principal);
@@ -167,6 +170,31 @@ export async function unmetConditions(
           ...(await notApproved(trx, outcomes, references)),
           unreadable,
         });
+      }
+      // Every axis what it keeps is conditioned on, set: a component the decider may not read leaves
+      // it unproven (LIF-065; the R11 plan, R11-G).
+      if (requires.includes('profile')) {
+        const contents = await readResolved(
+          trx,
+          outcomes.flatMap((each) => (each.outcome === 'resolved' ? [each] : [])),
+        );
+        const axes = unsetAxes(
+          read.outline,
+          new Map(contents.map((each) => [each.node, each.content])),
+          read.outline.profile?.values ?? {},
+        );
+        // What the profile leaves out cannot leave an axis unset, read or not (the R11 final review).
+        const left = new Set(
+          selectOutline(read.outline, read.outline.profile?.values ?? {}).excluded,
+        );
+        const unproven = new Set(
+          outcomes.flatMap((each) =>
+            (each.outcome === 'unreadable' || each.outcome === 'gone') && !left.has(each.node)
+              ? [references.get(each.node)!.component]
+              : [],
+          ),
+        ).size;
+        found.set('profile', { ...none, count: axes.length, names: axes, unreadable: unproven });
       }
     }
   }

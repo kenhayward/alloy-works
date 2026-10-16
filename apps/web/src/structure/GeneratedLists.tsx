@@ -67,7 +67,7 @@ export function GeneratedLists({
   const contributions = known.state === 'loaded' ? known.contributions : NOTHING;
   const lists = useMemo(() => {
     if (scheme === null) return [];
-    const conditioned = conditions(resolve(outline, contributions));
+    const conditioned = conditions(resolve(outline, contributions), outline.profile?.values ?? {});
     const numbering = number(conditioned, scheme);
     return LISTS.map((list) => ({
       ...list,

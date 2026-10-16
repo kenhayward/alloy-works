@@ -41,7 +41,8 @@ interface Review {
 const NO_REVIEW: Review = { remind: 30, lapse: { kind: 'visibility' } };
 
 /** What a transition may require before it is taken (LIF-004; the WF3 plan, WF3-A). */
-type Condition = 'suggestions' | 'threads' | 'bindings' | 'sections' | 'revisions' | 'components';
+type Condition =
+  'suggestions' | 'threads' | 'bindings' | 'sections' | 'revisions' | 'components' | 'profile';
 
 /** Each condition, as a transition's row offers it: "Submit requires no open threads". */
 const CONDITIONS: Readonly<Record<Condition, string>> = {
@@ -51,12 +52,22 @@ const CONDITIONS: Readonly<Record<Condition, string>> = {
   sections: 'no required section missing',
   revisions: 'no value revised by hand outstanding',
   components: 'every component approved',
+  // LIF-065 (the R11 plan, R11-G): every axis what the document keeps depends on, set.
+  profile: 'every condition set in the profile',
 };
 
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
 const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
   component: ['suggestions', 'threads'],
-  document: ['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components'],
+  document: [
+    'suggestions',
+    'threads',
+    'bindings',
+    'sections',
+    'revisions',
+    'components',
+    'profile',
+  ],
   queryDefinition: [],
 };
 

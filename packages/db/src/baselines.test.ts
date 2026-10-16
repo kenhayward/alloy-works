@@ -389,6 +389,126 @@ describe('baselines', () => {
     made(await make(document, 'Left out'));
   });
 
+  /** A new version of a document with this profile, its nodes as they are. */
+  const profiled = (document: StoredVersion, profile: OutlineDocument['profile']) =>
+    tenant(async (trx) => {
+      const { profile: dropped, ...outline } = document.content as OutlineDocument;
+      void dropped;
+      const recorded = await recordVersion(trx, {
+        artifactId: document.artifactId,
+        openedFrom: document.id,
+        author: ada,
+        substance: {
+          kind: 'document',
+          content: profile === undefined ? outline : { ...outline, profile },
+        },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return recorded.version;
+    });
+
+  it('pins nothing of a reference the profile leaves out, so a requester who may not read it still publishes the baseline (the R11 final review)', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const left = {
+      ...reference(secret.artifactId),
+      conditions: [{ axis: 'audience', values: ['regulator'] }],
+    };
+    const document = await profiled(await documentWith([left]), {
+      values: { audience: ['internal'] },
+    });
+    const id = made(await make(document, 'Internal', grace));
+    expect((await tenant((trx) => readBaseline(trx, id, grace)))!.pins.occurrences).toEqual([]);
+    const asked = await tenant((trx) =>
+      requestBaselinePublication(trx, { baseline: id, formats: ['pdf'], requester: ada }),
+    );
+    expect(asked.answer).toBe('requested');
+  });
+
+  it('VER-020 records the profile in force when it was taken, and publishes under it rather than none', async () => {
+    const document = await profiled(await documentWith([]), {
+      values: { audience: ['regulator'] },
+      excludeUnset: true,
+    });
+    const id = made(await make(document, 'For the regulator'));
+    // The document moves on; the baseline keeps what was in force.
+    await profiled(document, { values: { audience: ['internal'] } });
+    const read = await tenant((trx) => readBaseline(trx, id, ada));
+    expect(read!.profile).toEqual({ values: { audience: ['regulator'] }, excludeUnset: true });
+    const inputs = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return publicationInputs(trx, asked.request.id);
+    });
+    expect(inputs!.profile).toEqual({ values: { audience: ['regulator'] }, excludeUnset: true });
+    // A document that declares none is baselined under none.
+    const plain = made(await make(await documentWith([]), 'Plain'));
+    expect((await tenant((trx) => readBaseline(trx, plain, ada)))!.profile).toBeNull();
+  });
+
+  it('LIF-065 holds a transition requiring a complete profile while an axis its kept content depends on is unset, naming each', async () => {
+    const notice = await component(general, ada, 'Notice');
+    await revise(notice, [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [
+          {
+            type: 'text',
+            value: 'For vets.',
+            marks: [{ type: 'condition', id: 'c1', axis: 'audience', values: ['vets'] }],
+          },
+        ],
+      },
+    ]);
+    const annex = {
+      ...section('Annex', [reference(notice.artifactId)]),
+      conditions: [{ axis: 'market', values: ['uk'] }],
+    };
+    const document = await documentWith([annex, reference(notice.artifactId)]);
+    const unmet = () =>
+      tenant((trx) =>
+        unmetConditions(trx, {
+          artifactId: document.artifactId,
+          kind: 'document',
+          requires: ['profile'],
+          principal: ada,
+        }),
+      );
+    expect(await unmet()).toEqual([
+      { condition: 'profile', count: 2, names: ['audience', 'market'], unreadable: 0 },
+    ]);
+    // Accepting exclusion by unset is not setting it.
+    const accepted = await profiled(document, { values: {}, excludeUnset: true });
+    expect((await unmet())[0]).toMatchObject({ names: ['audience', 'market'] });
+    // A market that leaves the annex out leaves nothing it holds to ask.
+    await profiled(accepted, { values: { market: ['us'], audience: ['vets'] } });
+    expect(await unmet()).toEqual([]);
+  });
+
+  it('LIF-065 counts no component the profile leaves out as unproven, though its decider may not read it', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const annex = {
+      ...section('Annex', [reference(secret.artifactId)]),
+      conditions: [{ axis: 'market', values: ['uk'] }],
+    };
+    const document = await profiled(await documentWith([annex]), { values: { market: ['us'] } });
+    expect(
+      await tenant((trx) =>
+        unmetConditions(trx, {
+          artifactId: document.artifactId,
+          kind: 'document',
+          requires: ['profile'],
+          principal: ada,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it('refuses a baseline of a version that is not the latest, naming the latest by its heading', async () => {
     const document = await documentWith([]);
     const answer = await tenant((trx) =>
