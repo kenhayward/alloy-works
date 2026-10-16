@@ -18026,7 +18026,7 @@
         },
         {
           "id": "REL-015",
-          "howItIsMet": "The neighbours operation, by type and direction, a page at a time"
+          "howItIsMet": "The neighbours operation, by type and direction, at most 1,000"
         },
         {
           "id": "REL-017",
@@ -19965,13 +19965,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 421,
+      "line": 423,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 434,
+      "line": 436,
       "kind": "title"
     },
     {
@@ -20283,7 +20283,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1362,
+      "line": 1365,
       "kind": "title"
     },
     {
@@ -20914,6 +20914,18 @@
       "id": "REL-005",
       "file": "apps/service/src/relationship-routes.test.ts",
       "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "REL-015",
+      "file": "apps/service/src/relationship-routes.test.ts",
+      "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "REL-029",
+      "file": "apps/service/src/relationship-routes.test.ts",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -25450,6 +25462,36 @@
       "id": "COL-054",
       "file": "packages/db/src/threads.test.ts",
       "line": 274,
+      "kind": "title"
+    },
+    {
+      "id": "REL-015",
+      "file": "packages/db/src/traversal.test.ts",
+      "line": 224,
+      "kind": "title"
+    },
+    {
+      "id": "REL-020",
+      "file": "packages/db/src/traversal.test.ts",
+      "line": 330,
+      "kind": "title"
+    },
+    {
+      "id": "REL-022",
+      "file": "packages/db/src/traversal.test.ts",
+      "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "REL-023",
+      "file": "packages/db/src/traversal.test.ts",
+      "line": 194,
+      "kind": "title"
+    },
+    {
+      "id": "REL-029",
+      "file": "packages/db/src/traversal.test.ts",
+      "line": 259,
       "kind": "title"
     },
     {

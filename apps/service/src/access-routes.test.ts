@@ -1130,6 +1130,14 @@ describe('routes that check a permission', () => {
     getComponentUses: () => ({ url: `/v1/components/${dosing}/uses`, status: 404 }),
     getArtifactImpact: () => ({ url: `/v1/artifacts/${dosing}/impact?depth=1`, status: 404 }),
     getArtifactReferences: () => ({ url: `/v1/artifacts/${dosing}/references`, status: 404 }),
+    getArtifactRelationships: () => ({
+      url: `/v1/artifacts/${dosing}/relationships`,
+      status: 404,
+    }),
+    getArtifactPath: () => ({
+      url: `/v1/artifacts/${dosing}/path?to=${dosing}&depth=1`,
+      status: 404,
+    }),
     submitImpactReport: () => ({
       url: `/v1/artifacts/${dosing}/impact-reports`,
       status: 404,

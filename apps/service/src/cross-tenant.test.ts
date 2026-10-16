@@ -257,6 +257,8 @@ const OTHER_TENANT_IDS: Readonly<
   getComponentUses: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getArtifactImpact: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getArtifactReferences: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  getArtifactRelationships: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
+  getArtifactPath: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   previewPlacement: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   submitImpactReport: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
@@ -472,6 +474,7 @@ const VALID_INPUT: Readonly<
   compareBaselineResolved: { query: 'with=now' },
   previewTemplateMove: { query: `to=${SESSION}` },
   getArtifactImpact: { query: 'depth=1' },
+  getArtifactPath: { query: `to=${SESSION}&depth=1` },
   submitImpactReport: { payload: { depth: 1 } },
   submitCohort: {
     payload: {

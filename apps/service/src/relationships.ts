@@ -1,15 +1,21 @@
 import type {
   ChangeRelationshipBody,
   MakeRelationshipBody,
+  NeighboursQuery,
+  NeighboursView,
+  PathQuery,
+  PathView,
   RelationshipParams,
   RelationshipView,
 } from '@alloy-works/api-contract';
 import {
   changeRelationship,
   makeRelationship,
+  neighbours,
   readRelationship,
   relationshipType,
   removeRelationship,
+  shortestPath,
   type RelationshipAnswer,
   type StoredRelationship,
   type Tenant,
@@ -18,7 +24,8 @@ import {
 } from '@alloy-works/db';
 import type { RelationshipTypeDefinition } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, callerOf, notFound } from './access.js';
+import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
+import { AppError } from './errors.js';
 import { refused } from './wire-codes.js';
 
 export function relationshipView(relationship: StoredRelationship): RelationshipView {
@@ -97,6 +104,15 @@ function refusedBy(answer: RelationshipAnswer): never {
   }
 }
 
+/** A field's value as asked, as text: JSON where it parses, so `true` and `3` are not strings. */
+function valueOf(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
 /** Relationships through the API (REL-001, REL-011, REL-033 to REL-035; the R8 plan, R8-D, R8-E). */
 export function relationshipHandlers(
   db: TenantDatabase,
@@ -161,6 +177,53 @@ export function relationshipHandlers(
         if (answer.answer !== 'made' && answer.answer !== 'changed') refusedBy(answer);
         return relationshipView(answer.relationship);
       });
+    },
+
+    getArtifactRelationships: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<NeighboursView> => {
+      const { id } = request.params as RelationshipParams;
+      const query = request.query as NeighboursQuery;
+      if ((query.field === undefined) !== (query.value === undefined)) {
+        throw new AppError(
+          400,
+          'invalid_request',
+          'Name a field and a value together, or neither.',
+        );
+      }
+      const found = await neighbours(trx, principalId, id, {
+        ...(query.type ? { type: query.type } : {}),
+        ...(query.direction ? { direction: query.direction } : {}),
+        ...(query.field !== undefined && query.value !== undefined
+          ? { field: { id: query.field, value: valueOf(query.value) } }
+          : {}),
+      });
+      return {
+        relationships: found.items.map((each) => ({
+          relationship: relationshipView(each.relationship),
+          direction: each.direction,
+          other: { ...each.other },
+        })),
+        cut: found.cut,
+        more: found.more,
+      };
+    },
+
+    getArtifactPath: async (request: FastifyRequest, authorised: Authorised): Promise<PathView> => {
+      const { trx, principalId } = authorised;
+      const { id } = request.params as RelationshipParams;
+      const query = request.query as PathQuery;
+      await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: query.to });
+      const found = await shortestPath(
+        trx,
+        principalId,
+        id,
+        query.to,
+        Number(query.depth),
+        query.types ? query.types.split(',') : null,
+      );
+      return { path: found.path?.map((each) => ({ ...each })) ?? null, cut: found.cut };
     },
 
     removeRelationship: async (request: FastifyRequest): Promise<RelationshipView> =>
