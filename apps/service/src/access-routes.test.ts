@@ -1136,6 +1136,19 @@ describe('routes that check a permission', () => {
       payload: { depth: 1 },
     }),
     getJob: () => ({ url: `/v1/jobs/${MISSING}`, status: 404 }),
+    submitCohort: () => ({
+      url: `/v1/spaces/${MISSING}/cohorts`,
+      status: 404,
+      payload: {
+        template: MISSING,
+        title: 'Report',
+        language: 'en-GB',
+        direction: 'ltr',
+        rows: [{}],
+      },
+    }),
+    getCohort: () => ({ url: `/v1/cohorts/${MISSING}`, status: 404 }),
+    rerunCohort: () => ({ url: `/v1/cohorts/${MISSING}/rerun`, status: 404, payload: {} }),
     cancelJob: () => ({ url: `/v1/jobs/${MISSING}/cancel`, status: 404 }),
     downloadJob: () => ({ url: `/v1/jobs/${MISSING}/download`, status: 404 }),
     placeSection: () => ({

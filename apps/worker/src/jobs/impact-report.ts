@@ -32,7 +32,7 @@ export function impactReportJob(deps: {
       const started = await deps.db.withTenant(tenant, (trx) => startJob(trx, id));
       // Cancelled before it ran, or finished by an attempt before this one.
       if (!started) return;
-      const depth = started.parameters.depth;
+      const depth = started.parameters.depth ?? 1;
       // Its requester may have lost the subject since they asked: a report is their reading of it.
       const readable = await deps.db.withTenant(tenant, (trx) =>
         mayStillRead(trx, started.requestedBy, started.subject),

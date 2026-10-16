@@ -178,6 +178,10 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   previewPlacement: read,
   // A job about what is recorded, its rows its requester's alone: no change to the tenant's content.
   submitImpactReport: { none: 'derived' },
+  // Asking is recorded on the cohort; each document its run makes is the event (the R7 plan, R7-E).
+  submitCohort: { none: 'derived' },
+  getCohort: read,
+  rerunCohort: { none: 'derived' },
   getJob: read,
   cancelJob: { none: 'derived' },
   downloadJob: read,
@@ -336,6 +340,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     audit_export: { none: 'derived' },
     // A report of what is recorded, kept for its requester alone (the R3 plan, R3-F).
     impact_report: { none: 'derived' },
+    // Each row's document cut at 0.1, as a document made by hand is (the R7 plan, R7-E).
+    cohort: writes('content.version_cut'),
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {

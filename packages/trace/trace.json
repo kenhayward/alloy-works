@@ -18998,6 +18998,34 @@
         {
           "id": "TPL-058",
           "howItIsMet": "The move brings the newer version's assignments forward and carries values by `carryForward`; the report names each field assigned, no longer assigned, or made required or not, at document and section level, and each value not carried, as MET-036 does. Fields resolve current (TE-K), so a changed schema or field applies without a move, which is therefore never needed for one ([Governance](#governance))"
+        },
+        {
+          "id": "REU-031",
+          "howItIsMet": "`POST /v1/spaces/{space}/cohorts` makes a document for each row of parameters from one template, as a job of kind `cohort`, each titled from a pattern ([the R7 plan](../plans/2026-10-16-r7-bulk-generation.md), R7-A, R7-C)"
+        },
+        {
+          "id": "REU-032",
+          "howItIsMet": "The rows are given inline, at most 1,000, or taken from a query result's version the caller may read, a parameter for each column (R7-B); a file is read into rows by the page"
+        },
+        {
+          "id": "REU-033",
+          "howItIsMet": "Each row is made in a savepoint of its own transaction: a refusal leaves nothing of it and is kept as the row's failure with its code and words, and the run goes on; the job's JSON Lines report has a line for every row (R7-E)"
+        },
+        {
+          "id": "TPL-039",
+          "howItIsMet": "As REU-033: every row reported made or failed, and a failed row leaves no document (R7-E)"
+        },
+        {
+          "id": "REU-034",
+          "howItIsMet": "A cohort is recorded with its template version, its title and its source, and `GET /v1/cohorts/{id}` names every row's document or failure to anybody who may read its space (R7-G)"
+        },
+        {
+          "id": "REU-035",
+          "howItIsMet": "`POST /v1/cohorts/{id}/rerun` sets the failed rows pending, with any corrected parameters, and runs them by a new job from the same resolution; a made row is never touched (R7-F)"
+        },
+        {
+          "id": "REU-051",
+          "howItIsMet": "The template and every definition it names are resolved once, when the cohort is asked for, and kept on it; every row, rerun or not, is made from that resolution (R7-D). Templates place no components, so no reference is movable yet"
         }
       ]
     },
@@ -19881,13 +19909,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 411,
+      "line": 417,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 424,
+      "line": 430,
       "kind": "title"
     },
     {
@@ -20089,6 +20117,18 @@
       "kind": "title"
     },
     {
+      "id": "REU-032",
+      "file": "apps/service/src/cohort-routes.test.ts",
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "REU-034",
+      "file": "apps/service/src/cohort-routes.test.ts",
+      "line": 58,
+      "kind": "title"
+    },
+    {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
       "line": 226,
@@ -20187,7 +20227,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 1267,
+      "line": 1312,
       "kind": "title"
     },
     {
@@ -23257,6 +23297,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-033",
+      "file": "apps/worker/src/cohort.test.ts",
+      "line": 150,
+      "kind": "title"
+    },
+    {
       "id": "TAB-053",
       "file": "apps/worker/src/column-widths.test.ts",
       "line": 125,
@@ -24088,6 +24134,30 @@
       "id": "VER-058",
       "file": "packages/db/src/baselines.test.ts",
       "line": 957,
+      "kind": "title"
+    },
+    {
+      "id": "REU-031",
+      "file": "packages/db/src/cohorts.test.ts",
+      "line": 193,
+      "kind": "title"
+    },
+    {
+      "id": "REU-033",
+      "file": "packages/db/src/cohorts.test.ts",
+      "line": 193,
+      "kind": "title"
+    },
+    {
+      "id": "REU-035",
+      "file": "packages/db/src/cohorts.test.ts",
+      "line": 252,
+      "kind": "title"
+    },
+    {
+      "id": "REU-051",
+      "file": "packages/db/src/cohorts.test.ts",
+      "line": 222,
       "kind": "title"
     },
     {

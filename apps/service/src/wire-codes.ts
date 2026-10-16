@@ -149,6 +149,8 @@ const WIRE_CODES = {
   'template.not_latest': 'template_not_latest',
   'source.moved': 'source_moved',
   'profile.invalid': 'profile_invalid',
+  'rows.invalid': 'rows_invalid',
+  'cohort.complete': 'cohort_complete',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
