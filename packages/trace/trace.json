@@ -16457,6 +16457,10 @@
           "howItIsMet": "A notification names its kind, who, and the thread and artifact by identifier: never the text. The inbox shows a title only to a reader of it, at the moment it is read"
         },
         {
+          "id": "COL-038",
+          "howItIsMet": "A thread is started internal, or made so while open by somebody inside, once (0109's `thread_internal`, audited `thread.made_internal`); to a principal from outside it does not exist - listed, read, replied to, resolved, counted on a round, told of, held in the inbox or found - and the page marks it **Internal** (the R13 plan, R13-C, R13-D)"
+        },
+        {
           "id": "COL-053",
           "howItIsMet": "The digest holds counts and identifiers alone, on the same terms"
         },
@@ -18340,6 +18344,10 @@
         {
           "id": "SCH-071",
           "howItIsMet": "A thread is one `search_entry` on the artifact it is anchored to, so the one predicate filters it; each message a `search_text` place, appended to the entry as it is written and an edit rebuilt from the entry's own places, never by re-reading the thread ([Threads](#threads))"
+        },
+        {
+          "id": "SCH-072",
+          "howItIsMet": "`internal=true` or `false` keeps threads alone, internal or not; for a searcher from outside the organisation an internal thread is no row at all, in results, facets and counts (the R13 plan, R13-D)"
         },
         {
           "id": "SCH-066",
@@ -20663,6 +20671,12 @@
       "kind": "title"
     },
     {
+      "id": "COL-038",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 303,
+      "kind": "title"
+    },
+    {
       "id": "COL-059",
       "file": "apps/service/src/external-routes.test.ts",
       "line": 267,
@@ -20672,6 +20686,12 @@
       "id": "IAM-045",
       "file": "apps/service/src/external-routes.test.ts",
       "line": 214,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-072",
+      "file": "apps/service/src/external-routes.test.ts",
+      "line": 395,
       "kind": "title"
     },
     {
@@ -22831,19 +22851,25 @@
     {
       "id": "CNT-137",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 183,
+      "line": 192,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 160,
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "COL-038",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 305,
       "kind": "title"
     },
     {
       "id": "COL-067",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 262,
+      "line": 271,
       "kind": "title"
     },
     {

@@ -118,6 +118,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0106_conditions_and_profiles',
       '0107_cohorts',
       '0108_relationships',
+      '0109_thread_internal',
     ]);
 
     const read = async () =>

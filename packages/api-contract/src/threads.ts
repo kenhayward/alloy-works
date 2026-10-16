@@ -24,6 +24,12 @@ export const StartThreadBody = z.strictObject({
   version: LowercaseUuid.describe('The version the anchor was taken on, one of this artifact’s'),
   anchor: ThreadAnchorBody,
   parts: CommentPartsBody.describe('Its first comment'),
+  internal: z
+    .boolean()
+    .optional()
+    .describe(
+      'Kept from everybody from outside the organisation, who are never shown it or told of it (COL-038); not, when omitted',
+    ),
 });
 export type StartThreadBody = z.infer<typeof StartThreadBody>;
 
@@ -55,6 +61,7 @@ const Person = PersonView;
 /** A thread as a list shows it (COL-018). */
 export const ThreadSummaryView = z.object({
   id: LowercaseUuid,
+  internal: z.boolean().describe('Kept from everybody from outside the organisation (COL-038)'),
   on: z.object({ id: LowercaseUuid, kind: z.enum(['component', 'document']) }),
   anchor: z.record(z.string(), z.unknown()),
   madeAgainst: LowercaseUuid.describe('The version it was started on'),
@@ -83,6 +90,7 @@ export type ThreadList = z.infer<typeof ThreadList>;
 /** A thread read whole: every comment, and every text each has had (COL-014, COL-051). */
 export const ThreadView = z.object({
   id: LowercaseUuid,
+  internal: z.boolean().describe('Kept from everybody from outside the organisation (COL-038)'),
   on: z.object({ id: LowercaseUuid, kind: z.enum(['component', 'document']) }),
   anchor: z.record(z.string(), z.unknown()),
   madeAgainst: LowercaseUuid,
@@ -270,6 +278,22 @@ export const threadRoutes = {
         schema: ErrorBody,
       },
       404: { description: 'No such thread, or no such comment on it', schema: ErrorBody },
+      409: resolved,
+    },
+  },
+  markThreadInternal: {
+    operationId: 'markThreadInternal',
+    method: 'POST',
+    path: '/v1/threads/{id}/internal',
+    summary: 'Make an open thread internal, once and for good',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'comment', target: { thread: 'id' } },
+    params: ThreadParams,
+    responses: {
+      200: { description: 'Internal, now or already', schema: ThreadView },
+      401: unauthenticated,
+      403: cannotComment,
+      404: noThread,
       409: resolved,
     },
   },

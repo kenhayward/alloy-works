@@ -108,6 +108,28 @@ export async function setCadences(
   }
 }
 
+/** Those of `recipients` from outside, where `thread` is internal: none where it is not. */
+async function outsideOf(
+  trx: TenantTransaction,
+  thread: string,
+  recipients: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (recipients.length === 0) return new Set();
+  const internal = await trx
+    .selectFrom('thread_internal')
+    .select('thread_id')
+    .where('thread_id', '=', thread)
+    .executeTakeFirst();
+  if (!internal) return new Set();
+  const rows = await trx
+    .selectFrom('principal')
+    .select('id')
+    .where('id', 'in', [...recipients])
+    .where('kind', '=', 'external')
+    .execute();
+  return new Set(rows.map((row) => row.id));
+}
+
 /**
  * Tells each recipient of an act on a thread, in the act's transaction (TH-G): but its actor, each
  * only where they may read what the thread is on, decided now (TH-E), and by their cadence - a
@@ -128,9 +150,17 @@ export async function tell(
 ): Promise<{ readonly untold: string[]; readonly told: string[] }> {
   const untold: string[] = [];
   const told: string[] = [];
+  // An internal thread tells nobody from outside, as it shows them nothing (COL-038; R13-D).
+  const kept =
+    input.thread === undefined
+      ? new Set<string>()
+      : await outsideOf(trx, input.thread, [...new Set(input.recipients)]);
   for (const recipient of new Set(input.recipients)) {
     if (recipient === input.actor) continue;
-    if (!(await readableOf(trx, recipient, [input.artifact])).has(input.artifact)) {
+    if (
+      kept.has(recipient) ||
+      !(await readableOf(trx, recipient, [input.artifact])).has(input.artifact)
+    ) {
       untold.push(recipient);
       continue;
     }
@@ -169,6 +199,18 @@ export async function listInbox(
 ): Promise<{ notifications: StoredNotification[]; unread: number }> {
   // Keyed to the millisecond a cursor can carry, not Postgres' microsecond.
   const at = sql<Date>`date_trunc('milliseconds', n.at)`;
+  // A thread made internal after somebody from outside was told of it is no longer theirs to see
+  // (COL-038; the R13 plan, R13-D).
+  const outside =
+    (
+      await trx
+        .selectFrom('principal')
+        .select('kind')
+        .where('id', '=', recipient)
+        .executeTakeFirst()
+    )?.kind === 'external';
+  const keptFromOutside = sql<boolean>`n.thread_id is not null and exists (
+    select 1 from thread_internal i where i.thread_id = n.thread_id)`;
   let query = trx
     .selectFrom('notification as n')
     .leftJoin('principal as p', 'p.id', 'n.actor')
@@ -187,16 +229,18 @@ export async function listInbox(
       'n.read_at',
     ])
     .where('n.recipient', '=', recipient);
+  if (outside) query = query.where(sql<boolean>`not (${keptFromOutside})`);
   if (input.unread) query = query.where('n.read_at', 'is', null);
   if (input.after !== undefined) {
     query = query.where(sql<boolean>`(${at}, n.id) < (${input.after.at}, ${input.after.id}::uuid)`);
   }
   const rows = await query.orderBy(at, 'desc').orderBy('n.id', 'desc').limit(input.limit).execute();
   const count = await trx
-    .selectFrom('notification')
+    .selectFrom('notification as n')
     .select((eb) => eb.fn.countAll<string>().as('unread'))
-    .where('recipient', '=', recipient)
-    .where('read_at', 'is', null)
+    .where('n.recipient', '=', recipient)
+    .where('n.read_at', 'is', null)
+    .$if(outside, (counted) => counted.where(sql<boolean>`not (${keptFromOutside})`))
     .executeTakeFirstOrThrow();
   return {
     notifications: rows.map((row) => ({

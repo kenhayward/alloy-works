@@ -9,6 +9,8 @@ import type {
   ThreadView,
 } from '@alloy-works/api-contract';
 import {
+  internalThreads,
+  markThreadInternal,
   addComment,
   deletedOnceReferenced,
   editComment,
@@ -54,6 +56,7 @@ const person = (who: {
 
 const threadView = (thread: StoredThread): ThreadView => ({
   id: thread.id,
+  internal: thread.internal,
   on: { id: thread.on, kind: thread.onKind },
   anchor: thread.anchor as unknown as Record<string, unknown>,
   madeAgainst: thread.madeAgainst,
@@ -96,6 +99,17 @@ function refuse(answer: Exclude<ThreadAnswer, { answer: 'done' }>): AppError {
   }
 }
 
+/** Whether the caller is from outside the organisation (IAM-045), as their decision read them. */
+const outside = (authorised: Authorised) => authorised.facts.principal.kind === 'external';
+
+/**
+ * An internal thread is no thread at all to somebody from outside (COL-038; the R13 plan, R13-D):
+ * answered as one that does not exist, as anything they may not read is.
+ */
+async function keptFrom(trx: TenantTransaction, thread: string, authorised: Authorised) {
+  if (outside(authorised) && (await internalThreads(trx, [thread])).has(thread)) throw notFound();
+}
+
 /** The kind of the artifact a path names, which a route of the other kind answers as not found. */
 async function kindOf(trx: TenantTransaction, id: string): Promise<string | undefined> {
   const row = await trx
@@ -136,6 +150,7 @@ const summaryView = (
   places?: { node: string; orphaned: boolean }[],
 ): ThreadSummaryView => ({
   id: thread.id,
+  internal: thread.internal,
   on: { id: thread.on, kind: thread.onKind },
   anchor: thread.anchor as unknown as Record<string, unknown>,
   madeAgainst: thread.madeAgainst,
@@ -156,16 +171,26 @@ const summaryView = (
 export function threadHandlers() {
   const start =
     (kind: 'component' | 'document') =>
-    async (request: FastifyRequest, { trx, principalId }: Authorised): Promise<ThreadView> => {
+    async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as { id: string };
       if ((await kindOf(trx, id)) !== kind) throw notFound();
       const body = request.body as StartThreadBody;
+      // Somebody from outside could never read a thread kept from them (COL-038; R13-D).
+      if (body.internal === true && outside(authorised)) {
+        throw refused(
+          403,
+          'thread.internal_outside',
+          'Somebody from outside the organisation cannot start an internal thread.',
+        );
+      }
       const answer = await startThread(trx, {
         on: id,
         version: body.version,
         anchor: body.anchor,
         parts: body.parts,
         author: principalId,
+        ...(body.internal === true ? { internal: true } : {}),
       });
       if (answer.answer === 'missing')
         throw refused(400, 'version.not_held', `That version is not one of this ${kind}'s.`);
@@ -175,7 +200,8 @@ export function threadHandlers() {
 
   const list =
     (kind: 'component' | 'document') =>
-    async (request: FastifyRequest, { trx, principalId }: Authorised): Promise<ThreadList> => {
+    async (request: FastifyRequest, authorised: Authorised): Promise<ThreadList> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as { id: string };
       if ((await kindOf(trx, id)) !== kind) throw notFound();
       const query = request.query as ThreadListQuery;
@@ -206,7 +232,17 @@ export function threadHandlers() {
           }
         }
       }
-      return listedOn(trx, id, latest.id, occurrences, query, after, limit, stands);
+      return listedOn(
+        trx,
+        id,
+        latest.id,
+        occurrences,
+        query,
+        after,
+        limit,
+        stands,
+        outside(authorised),
+      );
     };
 
   /**
@@ -222,9 +258,11 @@ export function threadHandlers() {
     after: ReturnType<typeof keysetAfter>,
     limit: number,
     stands: ReturnType<typeof standing>,
+    hideInternal: boolean,
   ): Promise<ThreadList> => {
     const page = await listThreads(trx, {
       on: [id, ...occurrences.keys()],
+      ...(hideInternal ? { hideInternal: true } : {}),
       ...(query.state === undefined ? {} : { state: query.state }),
       ...(query.author === undefined ? {} : { author: query.author }),
       ...(query.since === undefined ? {} : { since: new Date(query.since) }),
@@ -272,8 +310,9 @@ export function threadHandlers() {
      */
     listBaselineThreads: async (
       request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      authorised: Authorised,
     ): Promise<ThreadList> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as { id: string };
       const read = await readBaseline(trx, id, principalId);
       if (!read) throw notFound();
@@ -299,6 +338,7 @@ export function threadHandlers() {
         after,
         limit,
         standing(trx),
+        outside(authorised),
       );
     },
     startComponentThread: start('component'),
@@ -306,40 +346,54 @@ export function threadHandlers() {
     listComponentThreads: list('component'),
     listDocumentThreads: list('document'),
 
-    getThread: async (request: FastifyRequest, { trx }: Authorised): Promise<ThreadView> => {
+    getThread: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
+      const { trx } = authorised;
       const { id } = request.params as ThreadParams;
+      await keptFrom(trx, id, authorised);
       const read = await readThread(trx, id);
       if (!read) throw notFound();
       return threadView(read);
     },
 
-    addComment: async (
-      request: FastifyRequest,
-      { trx, principalId }: Authorised,
-    ): Promise<ThreadView> => {
+    addComment: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as ThreadParams;
+      await keptFrom(trx, id, authorised);
       const { parts } = request.body as CommentBody;
       const answer = await addComment(trx, { thread: id, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
       return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
     },
 
-    editComment: async (
-      request: FastifyRequest,
-      { trx, principalId }: Authorised,
-    ): Promise<ThreadView> => {
+    editComment: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
+      const { trx, principalId } = authorised;
       const { id, comment } = request.params as CommentParams;
+      await keptFrom(trx, id, authorised);
       const { parts } = request.body as CommentBody;
       const answer = await editComment(trx, { thread: id, comment, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
       return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
     },
 
-    resolveThread: async (
+    /** Kept from outside from now on, by somebody inside (COL-038; the R13 plan, R13-C). */
+    markThreadInternal: async (
       request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      authorised: Authorised,
     ): Promise<ThreadView> => {
+      const { trx, principalId } = authorised;
       const { id } = request.params as ThreadParams;
+      // Somebody from outside has no say in what is kept from them, and is told no more than that.
+      if (outside(authorised)) throw notFound();
+      const answer = await markThreadInternal(trx, { thread: id, by: principalId });
+      if (answer === 'missing') throw notFound();
+      if (answer === 'resolved') throw refused(409, 'thread.resolved', 'This thread is resolved.');
+      return viewOf(trx, id);
+    },
+
+    resolveThread: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
+      const { trx, principalId } = authorised;
+      const { id } = request.params as ThreadParams;
+      await keptFrom(trx, id, authorised);
       const answer = await resolveThread(trx, { thread: id, by: principalId });
       if (answer === 'missing') throw notFound();
       if (answer === 'resolved.already')

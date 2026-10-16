@@ -700,6 +700,8 @@ export {
   threadCommenters,
   threadOn,
   type StoredComment,
+  internalThreads,
+  markThreadInternal,
   type StoredThread,
   type ThreadAnswer,
   type ThreadSummary,

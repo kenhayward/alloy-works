@@ -119,6 +119,7 @@ export function filtersOf(query: SearchQuery): SearchFilters {
     ...(owners === undefined ? {} : { owners }),
     ...(states === undefined ? {} : { states }),
     ...(changed === undefined ? {} : { changed }),
+    ...(query.internal === undefined ? {} : { internal: query.internal === 'true' }),
     ...(values.length === 0
       ? {}
       : {

@@ -435,6 +435,12 @@ export const auditKindSpecs = {
     z.strictObject({ thread: Id, comment: Id }),
     'packages/db/src/threads.ts',
   ),
+  // A thread made internal after it was started (COL-038; the R13 plan, R13-C): kept from outside.
+  'thread.made_internal': kind(
+    ['COL-038'],
+    z.strictObject({ thread: Id }),
+    'packages/db/src/threads.ts',
+  ),
   'thread.resolved': kind(
     ['COL-013'],
     z.strictObject({ thread: Id }),

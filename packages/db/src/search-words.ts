@@ -160,6 +160,8 @@ export interface SearchFilters {
   readonly changed?:
     { readonly within: ChangedRange } | { readonly from?: string; readonly to?: string };
   readonly values?: readonly { readonly field: string; readonly value: string }[];
+  /** Threads alone, internal or not (SCH-072; the R13 plan, R13-D). */
+  readonly internal?: boolean;
 }
 
 /** A value a facet offers, and how many results it would leave. */
@@ -720,12 +722,34 @@ export async function searchWords(
   // is read at the tenant, and refused like any other by a grant on itself. A section is its
   // document's, by the document's artifact. A field is read the same way, so the fields a reader may
   // read are the only ones that facet or filter for them.
+  // An internal thread is no row for a principal from outside, however it is searched (COL-038;
+  // R13-D); and threads filter on whether they are internal (SCH-072). Asked only where either is in
+  // play, so a schema before 0109 is never asked for the table.
+  const outside =
+    (
+      await trx
+        .selectFrom('principal')
+        .select('kind')
+        .where('id', '=', principal)
+        .executeTakeFirst()
+    )?.kind === 'external';
+  const internalOf = sql<SqlBool>`exists (select 1 from thread_internal ti where ti.thread_id = e.thread_id)`;
+  const askedInternal = options.filters?.internal;
+  const threadsKept = sql<SqlBool>`${
+    outside ? sql<SqlBool>`(e.thread_id is null or not ${internalOf})` : sql<SqlBool>`true`
+  } and ${
+    askedInternal === undefined
+      ? sql<SqlBool>`true`
+      : askedInternal
+        ? sql<SqlBool>`(e.thread_id is not null and ${internalOf})`
+        : sql<SqlBool>`(e.thread_id is not null and not ${internalOf})`
+  }`;
   const readableRow = sql<SqlBool>`(
       ((e.space_id = any(${[...readable.spaces]}::uuid[])
           or (e.space_id is null and ${readable.tenant}::boolean))
         and not e.artifact_id = any(${[...readable.excluded]}::uuid[]))
       or e.artifact_id = any(${[...readable.included]}::uuid[])
-    )`;
+    ) and ${threadsKept}`;
   // Archived content is no result, facet or count (LIF-020; lifecycle.md).
   // The places' tests apart: per row, so a bounded search runs them on the newest candidates alone.
   const candidate = sql<SqlBool>`${readableRow} and ${shown} and ${words}`;

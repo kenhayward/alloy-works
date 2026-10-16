@@ -268,6 +268,7 @@ const operationTags = {
     'getThread',
     'addComment',
     'editComment',
+    'markThreadInternal',
     'resolveThread',
   ],
   Inbox: [
@@ -436,6 +437,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Replies to an open thread. A resolved thread takes nothing more; start a new one instead.',
   editComment:
     'Gives the caller’s own comment a new text. Every earlier text is kept and read with the thread.',
+  markThreadInternal:
+    'Makes an open thread internal: from then on nobody from outside the organisation is shown it, its comments or its notifications, or finds it in search. A thread is made internal once and is never made public again, so what was written for colleagues is never shown to a client. Somebody from outside may not make one internal, and a resolved thread is not changed.',
   resolveThread:
     'Resolves an open thread, recording who and when. A thread is resolved once and never reopened.',
   getAttention:

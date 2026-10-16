@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { Chip } from '../parts/Chip.js';
 import { Outside } from '../parts/Outside.js';
 import type { ThreadAnchor } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
@@ -22,6 +23,8 @@ export interface ThreadSummary {
   readonly anchor: ThreadAnchor;
   readonly startedBy: Person;
   readonly startedAt: string;
+  /** Kept from everybody from outside the organisation (COL-038; the R13 plan, R13-C). */
+  readonly internal?: boolean;
   readonly resolvedAt: string | null;
   readonly comments: number;
   readonly orphaned: boolean;
@@ -32,6 +35,7 @@ interface Thread {
   readonly id: string;
   readonly on: { readonly id: string; readonly kind: 'component' | 'document' };
   readonly anchor: ThreadAnchor;
+  readonly internal?: boolean;
   readonly resolution: { readonly by: Person; readonly at: string } | null;
   readonly comments: readonly {
     readonly id: string;
@@ -237,6 +241,10 @@ export function ThreadsPanel({
   /** A thread to open, once for each arrival of the address naming it (the SV plan, SV-M). */
   opening?: { readonly thread: string; readonly arrival: number } | null;
 }) {
+  // Whether the reader is from outside the organisation (IAM-045), who neither starts an internal
+  // thread nor makes one so (COL-038; the R13 plan, R13-C).
+  const outside = people.some((each) => each.id === principalId && each.external === true);
+  const [internal, setInternal] = useState(false);
   const ids = useId();
   const [show, setShow] = useState<Show>('open');
   const [threads, setThreads] = useState<readonly ThreadSummary[] | null | undefined>(undefined);
@@ -327,7 +335,12 @@ export function ThreadsPanel({
     if (!chosen) return false;
     setSaid('');
     setRefused('');
-    const body = { version: chosen.version, anchor: chosen.anchor, parts };
+    const body = {
+      version: chosen.version,
+      anchor: chosen.anchor,
+      parts,
+      ...(internal ? { internal: true } : {}),
+    };
     const answer =
       chosen.on.kind === 'component'
         ? await client.POST('/v1/components/{id}/threads', {
@@ -343,6 +356,7 @@ export function ThreadsPanel({
       return false;
     }
     setOpened(answer.data as unknown as Thread);
+    setInternal(false);
     const started = (answer.data as unknown as Thread).id;
     const listed = await read();
     // Announced naming which and where (CNT-137), in the region there from the start.
@@ -387,6 +401,24 @@ export function ThreadsPanel({
     return true;
   };
 
+  /** Kept from outside from now on (COL-038; R13-C): once, and never public again. */
+  const makeInternal = async (thread: string) => {
+    setSaid('');
+    setRefused('');
+    const answer = await client.POST('/v1/threads/{id}/internal', {
+      params: { path: { id: thread } },
+    });
+    if (!answer.data) {
+      setRefused(refusalOf(answer.error, 'The thread could not be made internal.'));
+      return;
+    }
+    setSaid(
+      `Thread on ${annotation((answer.data as unknown as Thread).anchor)}${where(summaryOf(thread))} made internal. Nobody from outside the organisation sees it now.`,
+    );
+    setOpened(answer.data as unknown as Thread);
+    await read();
+  };
+
   const resolve = async (thread: string) => {
     setSaid('');
     setRefused('');
@@ -423,6 +455,16 @@ export function ThreadsPanel({
               </option>
             ))}
           </select>
+          {!outside && (
+            <label>
+              <input
+                type="checkbox"
+                checked={internal}
+                onChange={(event) => setInternal(event.target.checked)}
+              />{' '}
+              Internal: nobody from outside the organisation sees it
+            </label>
+          )}
           <Composer label="Comment" action="Start thread" people={people} onSend={start} />
         </section>
       )}
@@ -445,6 +487,11 @@ export function ThreadsPanel({
           {summaryOf(opened.id) && (
             <p className={styles['note']}>{placeOf(summaryOf(opened.id)!)}</p>
           )}
+          {opened.internal === true && (
+            <p className={styles['note']}>
+              <Chip>Internal</Chip> Nobody from outside the organisation sees this thread.
+            </p>
+          )}
           {opened.resolution && (
             <p className={styles['note']}>
               {`Resolved by ${opened.resolution.by.name ?? 'somebody'}, ${when.format(new Date(opened.resolution.at))}`}
@@ -458,7 +505,9 @@ export function ThreadsPanel({
               return (
                 <li key={comment.id} className={styles['comment']}>
                   <span className={styles['who']}>
-                    {`${comment.author.name ?? 'Somebody'}, ${when.format(new Date(comment.at))}`}
+                    {comment.author.name ?? 'Somebody'}
+                    <Outside person={comment.author} />
+                    {`, ${when.format(new Date(comment.at))}`}
                     {earlier.length > 0 && ' (edited)'}
                   </span>
                   {editing === comment.id ? (
@@ -504,6 +553,11 @@ export function ThreadsPanel({
               <button type="button" onClick={() => void resolve(opened.id)}>
                 Resolve
               </button>
+              {opened.internal !== true && !outside && (
+                <button type="button" onClick={() => void makeInternal(opened.id)}>
+                  Make internal
+                </button>
+              )}
             </>
           )}
         </section>
@@ -545,6 +599,7 @@ export function ThreadsPanel({
                     <Outside person={thread.startedBy} />
                     {`, ${when.format(new Date(thread.startedAt))}; ${thread.comments} ${thread.comments === 1 ? 'comment' : 'comments'}`}
                   </span>
+                  {thread.internal === true && <Chip>Internal</Chip>}
                   {thread.resolvedAt !== null && <span className={styles['state']}>Resolved</span>}
                   {thread.orphaned && (
                     <span className={styles['state']}>Its text is no longer there</span>
