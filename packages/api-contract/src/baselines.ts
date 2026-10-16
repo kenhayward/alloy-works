@@ -1,3 +1,4 @@
+import { storedProfileSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { DocumentParams } from './documents.js';
 import {
@@ -109,6 +110,11 @@ export const BaselineView = BaselineSummaryView.extend({
       assets: z.int().nonnegative().describe('How many images the caller may not read'),
     })
     .describe('What the caller may not read, as little as says it is there'),
+  profile: storedProfileSchema
+    .nullable()
+    .describe(
+      'The profile in force when it was taken: the pinned document version declares it, and a publication of the baseline is made under it. Null where that version declares none',
+    ),
 });
 export type BaselineView = z.infer<typeof BaselineView>;
 

@@ -132,6 +132,12 @@ describe('a workflow definition (workflow.md)', () => {
       ok: false,
       problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.1' }],
     });
+    // A complete profile is a document's alone (LIF-065; the R11 plan, R11-G).
+    expect(parseWorkflowBody(body(['profile']), 'document')).toMatchObject({ ok: true });
+    expect(parseWorkflowBody(body(['threads', 'profile']), 'component')).toMatchObject({
+      ok: false,
+      problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.1' }],
+    });
     expect(parseWorkflowBody(body(['threads']), 'queryDefinition')).toMatchObject({
       ok: false,
       problems: [{ rule: 'condition_kind', path: 'transitions.0.requires.0' }],

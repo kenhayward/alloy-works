@@ -247,3 +247,23 @@ export function selectOutline(
   const nodes = keep(outline.nodes);
   return { outline: { ...outline, nodes }, excluded, passages, unset };
 }
+
+/**
+ * **What a profile leaves unset** (LIF-065, REU-053; the R11 plan, R11-G): each axis the outline it
+ * keeps, and each kept occurrence's content, is conditioned on that the profile does not name, once
+ * each, in order. Accepting exclusion by unset sets nothing, so it is not asked here.
+ */
+export function unsetAxes(
+  outline: OutlineDocument,
+  contents: ReadonlyMap<string, ContentDocument>,
+  profile: Profile,
+): string[] {
+  const selection = selectOutline(outline, profile);
+  const excluded = new Set(selection.excluded);
+  const axes = new Set(selection.unset.map((each) => each.axis));
+  for (const [node, content] of contents) {
+    if (excluded.has(node)) continue;
+    for (const each of applyConditions(content, profile).unset) axes.add(each.axis);
+  }
+  return [...axes].sort((a, b) => a.localeCompare(b));
+}

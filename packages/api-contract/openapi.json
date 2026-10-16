@@ -19573,6 +19573,42 @@
                         "assets"
                       ],
                       "description": "What the caller may not read, as little as says it is there"
+                    },
+                    "profile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "values": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "additionalProperties": {
+                                "minItems": 1,
+                                "maxItems": 200,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                }
+                              }
+                            },
+                            "excludeUnset": {
+                              "type": "boolean",
+                              "const": true
+                            }
+                          },
+                          "required": [
+                            "values"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The profile in force when it was taken: the pinned document version declares it, and a publication of the baseline is made under it. Null where that version declares none"
                     }
                   },
                   "required": [
@@ -19584,7 +19620,8 @@
                     "digest",
                     "superseded",
                     "pins",
-                    "withheld"
+                    "withheld",
+                    "profile"
                   ]
                 },
                 "example": {
@@ -19626,6 +19663,9 @@
                   "withheld": {
                     "nodes": [],
                     "assets": 0
+                  },
+                  "profile": {
+                    "values": {}
                   }
                 }
               }
@@ -29984,9 +30024,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -38806,9 +38847,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -58758,9 +58800,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -142534,9 +142577,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -164965,9 +165009,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -165612,9 +165657,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           },
                           "count": {
                             "type": "integer",
@@ -204812,9 +204858,10 @@
                                               "bindings",
                                               "sections",
                                               "revisions",
-                                              "components"
+                                              "components",
+                                              "profile"
                                             ],
-                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                                           }
                                         }
                                       },
@@ -205312,9 +205359,10 @@
                               "bindings",
                               "sections",
                               "revisions",
-                              "components"
+                              "components",
+                              "profile"
                             ],
-                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                            "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                           }
                         }
                       },
@@ -205577,9 +205625,10 @@
                                     "bindings",
                                     "sections",
                                     "revisions",
-                                    "components"
+                                    "components",
+                                    "profile"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                                 }
                               }
                             },
@@ -206165,9 +206214,10 @@
                                     "bindings",
                                     "sections",
                                     "revisions",
-                                    "components"
+                                    "components",
+                                    "profile"
                                   ],
-                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision"
+                                  "description": "suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile"
                                 }
                               }
                             },

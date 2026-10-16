@@ -7,7 +7,8 @@ import {
   parseOutlineDocument,
   type OutlineDocument,
 } from '../structure/outline.js';
-import { selectOutline } from './conditions.js';
+import { parseContentDocument } from '../content/model/document.js';
+import { selectOutline, unsetAxes } from './conditions.js';
 
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
 const id = (name: string) => name.padEnd(26, 'a');
@@ -111,5 +112,44 @@ describe('conditions on an outline node (the R11 plan, R11-A)', () => {
     expect(forRegulator.unset).toEqual([]);
     // What a profile keeps is returned without its conditions, which nothing downstream reads.
     expect(forRegulator.outline.nodes[1]).not.toHaveProperty('conditions');
+  });
+});
+
+describe('whether a profile is complete (the R11 plan, R11-G)', () => {
+  it('names each axis the kept outline and content are conditioned on that the profile does not set, once', () => {
+    const marked = outline([
+      section('annex', 'Annex', [reference('calib')], {
+        conditions: [{ axis: 'market', values: ['uk'] }],
+      }),
+      reference('notice'),
+    ]);
+    const conditioned = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Notice',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            {
+              type: 'text',
+              value: 'For vets.',
+              marks: [{ type: 'condition', id: 'c1', axis: 'audience', values: ['vets'] }],
+            },
+          ],
+        },
+      ],
+    });
+    const contents = new Map([
+      [id('calib'), conditioned],
+      [id('notice'), conditioned],
+    ]);
+    expect(unsetAxes(marked, contents, {})).toEqual(['audience', 'market']);
+    // What the profile leaves out asks nothing of it.
+    expect(unsetAxes(marked, contents, { market: ['us'] })).toEqual(['audience']);
+    expect(unsetAxes(marked, contents, { market: ['us'], audience: ['vets'] })).toEqual([]);
   });
 });

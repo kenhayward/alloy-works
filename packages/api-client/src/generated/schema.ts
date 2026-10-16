@@ -8661,6 +8661,9 @@ export interface operations {
                      *       "withheld": {
                      *         "nodes": [],
                      *         "assets": 0
+                     *       },
+                     *       "profile": {
+                     *         "values": {}
                      *       }
                      *     }
                      */
@@ -8739,6 +8742,14 @@ export interface operations {
                             /** @description How many images the caller may not read */
                             assets: number;
                         };
+                        /** @description The profile in force when it was taken: the pinned document version declares it, and a publication of the baseline is made under it. Null where that version declares none */
+                        profile: {
+                            values: {
+                                [key: string]: string[];
+                            };
+                            /** @constant */
+                            excludeUnset?: true;
+                        } | null;
                     };
                 };
             };
@@ -12150,10 +12161,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -15572,10 +15583,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -22670,10 +22681,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -45344,10 +45355,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -53954,10 +53965,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -54218,10 +54229,10 @@ export interface operations {
                         /** @description conditions_unmet: each condition not met, in the order the transition names them */
                         unmet?: {
                             /**
-                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision
+                             * @description suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile
                              * @enum {string}
                              */
-                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components";
+                            condition: "suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile";
                             /** @description How many stand in its way */
                             count: number;
                             /** @description The sections missing, or the components not approved, by title */
@@ -67674,7 +67685,7 @@ export interface operations {
                                             /** @enum {string} */
                                             publication: "none" | "permitted" | "required";
                                         };
-                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
+                                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile")[];
                                     }[];
                                     /** @description Absent: 30 days, and shown alone */
                                     review?: {
@@ -67875,7 +67886,7 @@ export interface operations {
                             publication?: "none" | "permitted" | "required";
                         };
                         /** @description What must be met to take it, or for each approval at a gate (LIF-004): a component's may require suggestions and threads, a document's any; each at most once */
-                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
+                        requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile")[];
                     }[];
                     /** @description Absent: 30 days, and shown alone */
                     review?: {
@@ -67968,7 +67979,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {
@@ -68183,7 +68194,7 @@ export interface operations {
                                     /** @enum {string} */
                                     publication: "none" | "permitted" | "required";
                                 };
-                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components")[];
+                                requires?: ("suggestions" | "threads" | "bindings" | "sections" | "revisions" | "components" | "profile")[];
                             }[];
                             /** @description Absent: 30 days, and shown alone */
                             review?: {

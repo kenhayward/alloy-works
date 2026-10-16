@@ -71,6 +71,8 @@ export function unmetMessage(unmet: readonly UnmetCondition[]): string {
         ),
       components: () =>
         `${counted(each.count, 'component not at an approved revision', 'components not at an approved revision')}${named}`,
+      profile: () =>
+        `${counted(each.count, 'condition axis not set in the profile', 'condition axes not set in the profile')}${named}`,
     }[each.condition]();
     const unseen =
       each.unreadable === 0

@@ -71,6 +71,8 @@ export const TRANSITION_CONDITIONS = [
   'sections',
   'revisions',
   'components',
+  // A complete profile: every axis the kept content is conditioned on set (LIF-065; R11-G).
+  'profile',
 ] as const;
 export type TransitionCondition = (typeof TRANSITION_CONDITIONS)[number];
 

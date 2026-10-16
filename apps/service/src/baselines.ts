@@ -137,6 +137,8 @@ export function baselineHandlers(
           })),
         },
         withheld: { nodes: [...withheld.nodes], assets: withheld.assets },
+        // VER-020 (the R11 plan, R11-F): what its publication is made under.
+        profile: read.profile,
       };
     },
 

@@ -11,6 +11,7 @@ import {
   unsupportedFormats,
   type BaselinePins,
   type PublishFailure,
+  type StoredProfile,
 } from '@alloy-works/domain';
 import { documentTemplate } from './templates.js';
 import { sql } from 'kysely';
@@ -268,6 +269,11 @@ export interface BaselineRecord extends BaselineSummary {
    * images. Never a component, a version or a binding.
    */
   readonly withheld: { readonly nodes: readonly string[]; readonly assets: number };
+  /**
+   * The profile in force when it was taken (VER-020; the R11 plan, R11-F): the pinned document
+   * version's, which its publication runs under. Null where that version declares none.
+   */
+  readonly profile: StoredProfile | null;
 }
 
 const summaries = (trx: TenantTransaction) =>
@@ -357,6 +363,7 @@ export async function readBaseline(
       'tv.version_digest as theme_digest',
       'b.template_version_id',
       'pv.version_digest as template_digest',
+      sql<StoredProfile | null>`dv.content -> 'profile'`.as('profile'),
     ])
     .where('b.id', '=', baselineId)
     .executeTakeFirst();
@@ -431,6 +438,7 @@ export async function readBaseline(
           ...pinnedRevisions(each.revisions ?? [], values),
         })),
     },
+    profile: row.profile ?? null,
     withheld: {
       nodes: occurrences.filter((each) => !shown.has(each.node!)).map((each) => each.node!),
       assets: assets.filter((each) => !readableImages.has(each.artifact_id)).length,
@@ -626,6 +634,9 @@ export async function requestBaselinePublication(
   }
 
   const formats = PUBLISHING_FORMATS.filter((format) => input.formats.includes(format));
+  // Under the profile the pinned version declares, recorded where it says something, as a publish's is
+  // (VER-020; R11-F): never the empty profile in its place.
+  const profile = (baseline.outline as { profile?: StoredProfile }).profile;
   const request = await trx
     .insertInto('publication_request')
     .values({
@@ -639,6 +650,7 @@ export async function requestBaselinePublication(
       theme_id: baseline.theme_id,
       theme_version_id: baseline.theme_version_id,
       baseline_id: input.baseline,
+      ...(profile === undefined ? {} : { profile: JSON.stringify(profile) }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();

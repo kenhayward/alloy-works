@@ -50,9 +50,9 @@ const GateBody = z.strictObject({
 
 /** What a transition may require (LIF-004; the WF3 plan, WF3-A). */
 const TransitionCondition = z
-  .enum(['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components'])
+  .enum(['suggestions', 'threads', 'bindings', 'sections', 'revisions', 'components', 'profile'])
   .describe(
-    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision',
+    'suggestions: none unresolved; threads: none open; bindings: every binding resolved and current; sections: no required section missing; revisions: no value revised by hand outstanding; components: every component assembled at an approved revision; profile: every condition axis the kept content depends on set in the document profile',
   );
 
 const WorkflowTransitionBody = z.strictObject({

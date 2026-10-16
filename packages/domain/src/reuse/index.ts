@@ -3,6 +3,7 @@ export {
   conditionAxisDefinitionSchema,
   profileSchema,
   selectOutline,
+  unsetAxes,
   storedProfileSchema,
   type ConditionAxisDefinition,
   type Profile,

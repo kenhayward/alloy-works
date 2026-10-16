@@ -370,7 +370,7 @@ export interface ReadOccurrence {
  * decides from it: the images they place, and whether they cite a page. Only a version the publisher
  * resolved - one it may read - is ever selected.
  */
-async function readResolved(
+export async function readResolved(
   trx: TenantTransaction,
   resolved: readonly {
     readonly node: string;
