@@ -18061,6 +18061,26 @@
           "howItIsMet": "The shortest-path operation: a bidirectional search to a declared depth, optionally along named types"
         },
         {
+          "id": "REL-025",
+          "howItIsMet": "The Relationships dialog draws an artifact's relationships centred on it, and Expand reads the next ring"
+        },
+        {
+          "id": "REL-026",
+          "howItIsMet": "The dialog filters by type and direction, the service answering each filter"
+        },
+        {
+          "id": "REL-027",
+          "howItIsMet": "Past twenty neighbours of one kind from one artifact, the graph draws a count, opened as a list"
+        },
+        {
+          "id": "REL-028",
+          "howItIsMet": "Every view names the `GET` query that answers it, filters and all"
+        },
+        {
+          "id": "REL-051",
+          "howItIsMet": "Neighbours and the dialog filter by one field's value, as well as by type and direction"
+        },
+        {
           "id": "REL-030",
           "howItIsMet": "Results stop at the nearest 1,000, and the result says whether there are more"
         },
@@ -22477,6 +22497,36 @@
       "kind": "title"
     },
     {
+      "id": "REL-025",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "REL-026",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 152,
+      "kind": "title"
+    },
+    {
+      "id": "REL-027",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 175,
+      "kind": "title"
+    },
+    {
+      "id": "REL-028",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "REL-051",
+      "file": "apps/web/src/reuse/Relationships.test.tsx",
+      "line": 152,
+      "kind": "title"
+    },
+    {
       "id": "REU-007",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
       "line": 58,
@@ -22492,6 +22542,24 @@
       "id": "REU-009",
       "file": "apps/web/src/reuse/UsedIn.test.tsx",
       "line": 117,
+      "kind": "title"
+    },
+    {
+      "id": "REL-025",
+      "file": "apps/web/src/reuse/graph.test.ts",
+      "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "REL-027",
+      "file": "apps/web/src/reuse/graph.test.ts",
+      "line": 66,
+      "kind": "title"
+    },
+    {
+      "id": "REL-028",
+      "file": "apps/web/src/reuse/graph.test.ts",
+      "line": 36,
       "kind": "title"
     },
     {

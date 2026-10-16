@@ -179,11 +179,12 @@ export async function shortestPath(
     return { path: null, cut: false };
   }
   const readable = await loadReadableSet(trx, by);
-  // Each side: every artifact it has reached, and the artifact and edge it was reached from.
-  type Side = Map<string, { parent: string | null; via: string | null }>;
+  // Each side: every artifact it has reached, its hops from that side's end, and the artifact and
+  // edge it was reached from.
+  type Side = Map<string, { parent: string | null; via: string | null; hops: number }>;
   const sides: [Side, Side] = [
-    new Map([[from, { parent: null, via: null }]]),
-    new Map([[to, { parent: null, via: null }]]),
+    new Map([[from, { parent: null, via: null, hops: 0 }]]),
+    new Map([[to, { parent: null, via: null, hops: 0 }]]),
   ];
   const frontiers: [string[], string[]] = [[from], [to]];
   let cut = false;
@@ -197,6 +198,8 @@ export async function shortestPath(
       edges.map((edge) => edge.to),
     );
     const next: string[] = [];
+    // The whole hop is taken, and the meeting nearest both ends kept.
+    let best = Infinity;
     for (const edge of edges) {
       if (sides[grow].has(edge.to)) continue;
       if (deleted.has(edge.to)) continue;
@@ -204,11 +207,13 @@ export async function shortestPath(
         cut = true;
         continue;
       }
-      sides[grow].set(edge.to, { parent: edge.from, via: edge.via });
+      const at = sides[grow].get(edge.from)!.hops + 1;
+      sides[grow].set(edge.to, { parent: edge.from, via: edge.via, hops: at });
       next.push(edge.to);
-      if (sides[1 - grow]!.has(edge.to)) {
+      const there = sides[1 - grow]!.get(edge.to);
+      if (there && at + there.hops < best) {
+        best = at + there.hops;
         meet = edge.to;
-        break;
       }
     }
     frontiers[grow] = next;
