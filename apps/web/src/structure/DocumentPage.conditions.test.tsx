@@ -42,12 +42,14 @@ describe("a node's conditions in the outline (the R12 plan)", () => {
       },
     ]);
     // Its row says what it is kept for, and that this document's profile, which sets no audience,
-    // leaves it out: it takes no number.
+    // must take a value on it before it publishes (REU-053).
     await waitFor(() =>
       expect(item('Results')).toHaveAccessibleDescription(
-        'Kept for Audience: Regulator; left out by this document’s profile',
+        'Kept for Audience: Regulator; needs a value for Audience in this document’s profile',
       ),
     );
+    // And the focus is back on what opened the dialog (the R12 final review).
+    expect(screen.getByRole('button', { name: 'Set condition on Results' })).toHaveFocus();
 
     await userEvent.click(screen.getByRole('button', { name: 'Set condition on Results' }));
     const again = await screen.findByRole('dialog', { name: 'Condition' });
@@ -71,13 +73,18 @@ describe("a node's conditions in the outline (the R12 plan)", () => {
     const document = screen.getByRole('tabpanel', { name: 'Document' });
     await userEvent.click(await within(document).findByRole('checkbox', { name: 'Regulator' }));
     await userEvent.click(
+      within(document).getByRole('checkbox', {
+        name: 'Leave out text that depends on an axis this profile does not set',
+      }),
+    );
+    await userEvent.click(
       within(document).getByRole('button', { name: 'Publish under this profile' }),
     );
 
     const publishing = await screen.findByRole('tabpanel', { name: 'Publishing' });
     expect(
       within(publishing).getByText(
-        'Publishing under a profile chosen in place of the document’s: Audience: Regulator.',
+        'Publishing under a profile chosen in place of the document’s: Audience: Regulator; text depending on an axis it does not set is left out.',
       ),
     ).toBeInTheDocument();
     await userEvent.click(within(publishing).getByRole('button', { name: 'Publish as PDF' }));
@@ -85,7 +92,24 @@ describe("a node's conditions in the outline (the R12 plan)", () => {
       expect(
         fake.sent.find((each) => each.url.endsWith('/publications') && each.body !== undefined)
           ?.body,
-      ).toMatchObject({ profile: { values: { audience: ['regulator'] } } }),
+      ).toMatchObject({ profile: { values: { audience: ['regulator'] }, excludeUnset: true } }),
     );
+  });
+
+  it('says a node is left out where the profile sets its axis to another value, or accepts leaving out what it does not set', async () => {
+    const conditioned = { ...section(RESULTS, 'Results'), conditions: regulator };
+    for (const [profile, said] of [
+      [{ values: { audience: ['internal'] } }, 'left out by this document’s profile'],
+      [{ values: {}, excludeUnset: true }, 'left out by this document’s profile'],
+    ] as [{ values: Record<string, string[]>; excludeUnset?: true }, string][]) {
+      const fake = service({ ...outline([conditioned]), profile }, { axes: true });
+      const { unmount } = open(fake.fetch);
+      await waitFor(() =>
+        expect(item('Results')).toHaveAccessibleDescription(
+          `Kept for Audience: Regulator; ${said}`,
+        ),
+      );
+      unmount();
+    }
   });
 });

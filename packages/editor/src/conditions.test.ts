@@ -244,6 +244,8 @@ describe("a numbered block's conditions in the editor (the R12 plan)", () => {
     ).toMatchObject({
       class: 'aw-conditional',
       title: 'Only where audience is regulator',
+      // Said to assistive technology too, which a title alone is not reliably (the R12 final review).
+      'aria-description': 'Only where audience is regulator',
     });
   });
 });

@@ -160,12 +160,12 @@ describe('publishing from the document page', () => {
     const cleared = vi.fn();
     open(fake.fetch, true, 0, undefined, undefined, {
       chosen: { values: { audience: ['regulator'] }, excludeUnset: true },
-      said: 'Audience: Regulator',
+      said: 'Audience: Regulator; text depending on an axis it does not set is left out',
       onClear: cleared,
     });
     expect(
       await screen.findByText(
-        'Publishing under a profile chosen in place of the document’s: Audience: Regulator.',
+        'Publishing under a profile chosen in place of the document’s: Audience: Regulator; text depending on an axis it does not set is left out.',
       ),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));

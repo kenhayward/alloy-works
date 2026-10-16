@@ -435,7 +435,11 @@ function profileWords(profile: StoredProfile, axes: readonly OfferedAxis[]): str
     );
     return `${axis?.name ?? key}: ${labels.join(', ')}`;
   });
-  return said.length === 0 ? 'no value on any axis' : said.join('; ');
+  const values = said.length === 0 ? 'no value on any axis' : said.join('; ');
+  // What it accepts is said too, since it leaves text out (the R12 final review).
+  return profile.excludeUnset === true
+    ? `${values}; text depending on an axis it does not set is left out`
+    : values;
 }
 
 const STARTS = {
@@ -683,6 +687,28 @@ export function DocumentPage({
   const [publishProfile, setPublishProfile] = useState<StoredProfile | null>(null);
   // The node whose conditions the Condition dialog is open for (REU-021; the R12 plan).
   const [conditioning, setConditioning] = useState<string | null>(null);
+  // Where the focus goes back to as the dialog closes: the node's own Set condition, found again by
+  // its label once the outline has answered (the R12 final review).
+  const conditionsBack = useRef<string | null>(null);
+  const openNodeConditions = useCallback((node: string) => {
+    const opener = window.document.activeElement;
+    conditionsBack.current =
+      opener instanceof HTMLElement ? opener.getAttribute('aria-label') : null;
+    setConditioning(node);
+  }, []);
+  useEffect(() => {
+    if (conditioning !== null || conditionsBack.current === null) return;
+    const label = conditionsBack.current;
+    conditionsBack.current = null;
+    // After the render that answers the act, which may have replaced the button.
+    const at = window.setTimeout(() => {
+      const found = [...window.document.querySelectorAll<HTMLElement>('button[aria-label]')].find(
+        (each) => each.getAttribute('aria-label') === label,
+      );
+      found?.focus();
+    }, 0);
+    return () => window.clearTimeout(at);
+  }, [conditioning]);
   // The declared axes, read once, which the outline names a node's conditions by; keys until read.
   const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
   useEffect(() => {
@@ -2275,7 +2301,7 @@ export function DocumentPage({
               outline={document.outline}
               requiredSections={document.template?.required ?? []}
               conditionAxes={axes}
-              {...(document.mayEdit && authoring ? { onConditions: setConditioning } : {})}
+              {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
               marks={outlineMarks}
               {...(referencesTo === undefined ? {} : { referencesTo })}
               head={
