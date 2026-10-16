@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.182.0 - 2026-10-16 (PR #PRNUM)
+## 0.182.0 - 2026-10-16 (PR #670)
 
 Reuse's eleventh slice: conditions on sections and blocks (the R11 plan).
 
