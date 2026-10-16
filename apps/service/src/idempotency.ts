@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { recallAnswer, rememberAnswer, type TenantTransaction } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
+import { AfterCommit } from './after-commit.js';
 import { AppError } from './errors.js';
 
 /** The header a caller names a request by, to be answered once however often it is sent (API-008). */
@@ -53,15 +54,20 @@ export async function once<T>(
   if (keyed === undefined) return { body: await work(), replayed: false };
   const recalled = await recallAnswer(trx, { ...keyed, principal });
   if (recalled.kind === 'replay') return { body: recalled.body as T, replayed: true };
-  if (recalled.kind === 'reused') {
-    throw new AppError(
-      422,
-      'idempotency_key_reused',
-      'This idempotency key was already used for a different request. Use a new key for this one.',
-      'API-008',
-    );
-  }
+  if (recalled.kind === 'reused') throw keyReused();
   const body = await work();
+  // Work done after the commit keeps its own answer, where it does that work (#661).
+  if (body instanceof AfterCommit && body.remembers) return { body, replayed: false };
   await rememberAnswer(trx, { ...keyed, principal, status, body });
   return { body, replayed: false };
+}
+
+/** A key already used for a different request (API-008). */
+export function keyReused(): AppError {
+  return new AppError(
+    422,
+    'idempotency_key_reused',
+    'This idempotency key was already used for a different request. Use a new key for this one.',
+    'API-008',
+  );
 }

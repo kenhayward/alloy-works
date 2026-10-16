@@ -980,7 +980,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           const done = await once(trx, principal, keyed, () => run(request, authorised));
           // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
           // commits would go unrecorded: such a route declares `idempotencyKey: false`.
-          if (done.body instanceof AfterCommit && keyed !== undefined) {
+          if (done.body instanceof AfterCommit && !done.body.remembers && keyed !== undefined) {
             throw new Error(
               `${operation} works after its commit and cannot take an idempotency key`,
             );

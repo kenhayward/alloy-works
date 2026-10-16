@@ -12,7 +12,14 @@
  * handler - a guard against a route that forgot the declaration, never an answer a client sees.
  */
 export class AfterCommit<T> {
-  constructor(readonly run: () => Promise<T>) {}
+  constructor(
+    readonly run: () => Promise<T>,
+    /**
+     * Whether `run` keeps a keyed request's answer itself, in the transaction that does its work (#661):
+     * such a route takes an idempotency key, which the deciding transaction only recalls.
+     */
+    readonly remembers = false,
+  ) {}
 }
 
 /**
