@@ -128,10 +128,34 @@ describe('bindings established when a document is made', () => {
     expect(await documents()).toBe(before);
   });
 
-  it('refuses an idempotency key where the required components run queries, since their answer is made after the request is decided', async () => {
-    const keyed = await create('East Quay survey', { 'idempotency-key': 'east-quay' });
-    expect(keyed.statusCode, keyed.body).toBe(400);
-    expect(keyed.json()).toMatchObject({ code: 'invalid_request' });
+  it('API-008 answers a repeated creation by its idempotency key without running its queries again, and remembers no failure', async () => {
+    const runs = () => h.connector.asked.filter((each) => each.path === '/v1/run').length;
+    h.connector.mode = 'answer';
+    // A failure is not kept against the key: the same key, sent again once the source answers, makes it.
+    h.connector.run = {
+      outcome: 'failed',
+      failure: { code: 'connector_error', attribution: 'connector' },
+    };
+    const failed = await create('East Quay survey', { 'idempotency-key': 'east-quay' });
+    expect(failed.statusCode, failed.body).toBe(409);
+    h.connector.run = ranOk([['1', 'East Quay']]);
+    const made = await create('East Quay survey', { 'idempotency-key': 'east-quay' });
+    expect(made.statusCode, made.body).toBe(200);
+    const before = runs();
+    const again = await create('East Quay survey', { 'idempotency-key': 'east-quay' });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.headers['idempotent-replayed']).toBe('true');
+    expect(again.json<{ id: string }>().id).toBe(made.json<{ id: string }>().id);
+    expect(runs()).toBe(before);
+    // Two at once with one key make one document.
+    const before2 = await documents();
+    const [a, b] = await Promise.all([
+      create('West Pier survey', { 'idempotency-key': 'west-pier' }),
+      create('West Pier survey', { 'idempotency-key': 'west-pier' }),
+    ]);
+    expect([a.statusCode, b.statusCode]).toEqual([200, 200]);
+    expect(a.json<{ id: string }>().id).toBe(b.json<{ id: string }>().id);
+    expect(await documents()).toBe(before2 + 1);
   });
 
   it('TPL-024 makes nothing where the creator may no longer create in the space by the time the source answers', async () => {

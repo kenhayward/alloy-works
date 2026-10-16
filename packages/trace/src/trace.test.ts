@@ -864,6 +864,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1515 (2026-10-16): #661's idempotency key honoured where a creation runs queries - API-008.
     // 1514 (2026-10-16): #660's move adding what a newer template version requires, and TPL-073.
     // 1511 (2026-10-16): R10b's profile defaults and the R10 final review's tests.
     // 1508 (2026-10-16): R10a's variables - REU-016, REU-038, TPL-067, TPL-069, TPL-072.
@@ -917,7 +918,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1514);
+    expect(model.citations).toHaveLength(1515);
   });
 
   it('cites no identifier the corpus does not hold', () => {

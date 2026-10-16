@@ -49,12 +49,14 @@ import {
   readPendingResult,
   readQueryDefinition,
   readVersion,
+  recallAnswer,
   recordDatasetVersion,
   recordEvent,
   recordResolution,
   recordRevision,
   recordTake,
   refusePending,
+  rememberAnswer,
   publishedBindings,
   resolutionsOf,
   resolvedFrom,
@@ -145,7 +147,7 @@ import { contextOf, isRefusal, recordRefusalIn } from '../audit.js';
 import { Accepted, AfterCommit, Revalidated } from '../after-commit.js';
 import { createdView } from '../documents.js';
 import { AppError, storageUnavailable } from '../errors.js';
-import { IDEMPOTENCY_KEY } from '../idempotency.js';
+import { keyedRequest, keyReused } from '../idempotency.js';
 import { hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
@@ -2101,7 +2103,11 @@ export async function resolveAct(
             };
             const refusal = undecided.get(key(node, binding.id));
             if (refusal !== undefined) {
-              results.push({ node, binding: binding.id, failure: bindingFailure(refusal, naming) });
+              results.push({
+                node,
+                binding: binding.id,
+                failure: bindingFailure(refusal, naming),
+              });
               continue;
             }
             const admission = admitted.get(each.question)!;
@@ -3501,14 +3507,9 @@ export async function creationAct(
   const resolved = resolvedFrom(resolution.resolution);
   if (!resolved.ok || resolved.querySet.length === 0) return undefined;
   if (!objects) throw storageUnavailable();
-  // Its queries run after the request is decided, where no key's answer can be kept (after-commit.ts).
-  if (request.headers[IDEMPOTENCY_KEY] !== undefined) {
-    throw new AppError(
-      400,
-      'invalid_request',
-      "A document whose template's components run queries is made without an idempotency key.",
-    );
-  }
+  // A key's answer is kept where the document is made, after its queries run (#661; API-008): the
+  // deciding transaction recalled it already, and the making one recalls it again under its lock.
+  const keyed = keyedRequest(request, 'createDocument');
   const running = through();
   const caller = callerOf(request);
   const artifactId = randomUUID();
@@ -3586,96 +3587,120 @@ export async function creationAct(
         .join(' ')}`,
       { failures },
     );
-  return new AfterCommit(() =>
-    running.whileHeld(async (signal) => {
-      let opened: Awaited<ReturnType<ObjectStores['forTenant']>> | undefined;
-      const store = async () =>
-        (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
-      const takes = takesByQuestion(prepared);
-      const outcomes = await inTurn(questions, AT_ONCE, (each) =>
-        runOnce(tenant, each, takes.get(each.question)!, running, store, signal),
-      );
-      if (signal.aborted) throw signal.reason;
-      const ran = new Map(questions.map((each, at) => [each.question, outcomes[at]!]));
-      // Nothing is made where a query failed (TPL-024): each failure named.
-      const failures = prepared.flatMap((each) => {
-        const outcome = ran.get(each.question)!;
-        return outcome.ok ? [] : [failedAs(each, outcome.failure)];
-      });
-      if (failures.length > 0) throw failedCreation(failures);
-      return db.withTenant(
-        tenant,
-        async (record) => {
-          // `create` in the space, decided again: it may have ended while the source answered.
-          try {
-            await authoriseAt(record, caller, 'create', { kind: 'space', id: space });
-          } catch (error) {
-            if (error instanceof AppError) throw accessChanged();
-            throw error;
-          }
-          let at = 0;
-          const made = await createFromResolution(
-            record,
-            { ...input, identity: { artifactId, newIdentifier: () => ids[at++]! } },
-            resolution.resolution,
-          );
-          if (made.answer !== 'created')
-            return createdView(record, principalId, facts, space, made);
-          await decideAgain(record, request, { id: artifactId, permission: 'read' }, prepared);
-          await lockDatasetQuestions(record, recordable(prepared, ran));
-          const admitted = await admitAll(record, store, principalId, recordedRuns(prepared, ran));
-          const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
-          const refusedNow: ReturnType<typeof failedAs>[] = [];
-          for (const each of prepared) {
-            const outcome = ran.get(each.question)! as Extract<Ran, { ok: true }>;
-            const { node, binding } = each.placed;
-            const admission = admitted.get(each.question)!;
-            if ('failure' in admission) {
-              refusedNow.push(failedAs(each, admission.failure));
-              continue;
+  return new AfterCommit(
+    () =>
+      running.whileHeld(async (signal) => {
+        let opened: Awaited<ReturnType<ObjectStores['forTenant']>> | undefined;
+        const store = async () =>
+          (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
+        const takes = takesByQuestion(prepared);
+        const outcomes = await inTurn(questions, AT_ONCE, (each) =>
+          runOnce(tenant, each, takes.get(each.question)!, running, store, signal),
+        );
+        if (signal.aborted) throw signal.reason;
+        const ran = new Map(questions.map((each, at) => [each.question, outcomes[at]!]));
+        // Nothing is made where a query failed (TPL-024): each failure named.
+        const failures = prepared.flatMap((each) => {
+          const outcome = ran.get(each.question)!;
+          return outcome.ok ? [] : [failedAs(each, outcome.failure)];
+        });
+        if (failures.length > 0) throw failedCreation(failures);
+        return db.withTenant(
+          tenant,
+          async (record) => {
+            // Another request with this key may have made it while these queries ran: its answer stands.
+            if (keyed) {
+              const recalled = await recallAnswer(record, { ...keyed, principal: principalId });
+              if (recalled.kind === 'replay') {
+                return recalled.body as Awaited<ReturnType<typeof createdView>>;
+              }
+              if (recalled.kind === 'reused') throw keyReused();
             }
-            if (!admission.held) {
-              // Images the space does not hold yet are admitted only as a resolve's are, followed by
-              // whoever asked (D8-E), which a creation has no way to be: refused, nothing made.
-              refusedNow.push(
-                failedAs(
-                  each,
-                  new AppError(
-                    409,
-                    'images_pending',
-                    `The result of the binding ${binding.id} holds images this space does not hold yet, which a document being made cannot take in.`,
+            // `create` in the space, decided again: it may have ended while the source answered.
+            try {
+              await authoriseAt(record, caller, 'create', { kind: 'space', id: space });
+            } catch (error) {
+              if (error instanceof AppError) throw accessChanged();
+              throw error;
+            }
+            let at = 0;
+            const made = await createFromResolution(
+              record,
+              { ...input, identity: { artifactId, newIdentifier: () => ids[at++]! } },
+              resolution.resolution,
+            );
+            if (made.answer !== 'created')
+              return createdView(record, principalId, facts, space, made);
+            await decideAgain(record, request, { id: artifactId, permission: 'read' }, prepared);
+            await lockDatasetQuestions(record, recordable(prepared, ran));
+            const admitted = await admitAll(
+              record,
+              store,
+              principalId,
+              recordedRuns(prepared, ran),
+            );
+            const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+            const refusedNow: ReturnType<typeof failedAs>[] = [];
+            for (const each of prepared) {
+              const outcome = ran.get(each.question)! as Extract<Ran, { ok: true }>;
+              const { node, binding } = each.placed;
+              const admission = admitted.get(each.question)!;
+              if ('failure' in admission) {
+                refusedNow.push(failedAs(each, admission.failure));
+                continue;
+              }
+              if (!admission.held) {
+                // Images the space does not hold yet are admitted only as a resolve's are, followed by
+                // whoever asked (D8-E), which a creation has no way to be: refused, nothing made.
+                refusedNow.push(
+                  failedAs(
+                    each,
+                    new AppError(
+                      409,
+                      'images_pending',
+                      `The result of the binding ${binding.id} holds images this space does not hold yet, which a document being made cannot take in.`,
+                    ),
                   ),
-                ),
-              );
-              continue;
-            }
-            let recorded = versions.get(each.question);
-            if (!recorded) {
-              recorded = await recordDatasetVersion(record, {
-                provenance: admission.provenance,
-                author: principalId,
-                images: admission.hashes,
+                );
+                continue;
+              }
+              let recorded = versions.get(each.question);
+              if (!recorded) {
+                recorded = await recordDatasetVersion(record, {
+                  provenance: admission.provenance,
+                  author: principalId,
+                  images: admission.hashes,
+                });
+                versions.set(each.question, recorded);
+              }
+              await recordTaken(record, recorded.version.id, each, outcome);
+              await recordLoggedResolution(record, {
+                document: artifactId,
+                node,
+                binding: binding.id,
+                digest: each.placed.digest,
+                version: recorded.version.id,
+                replaces: null,
+                act: 'resolve',
+                by: principalId,
               });
-              versions.set(each.question, recorded);
             }
-            await recordTaken(record, recorded.version.id, each, outcome);
-            await recordLoggedResolution(record, {
-              document: artifactId,
-              node,
-              binding: binding.id,
-              digest: each.placed.digest,
-              version: recorded.version.id,
-              replaces: null,
-              act: 'resolve',
-              by: principalId,
-            });
-          }
-          // Refused here, the transaction rolls back and nothing is made (TPL-024).
-          if (refusedNow.length > 0) throw failedCreation(refusedNow);
-          return createdView(record, principalId, facts, space, made);
-        },
-        contextOf(request),
-      );
-    }),
+            // Refused here, the transaction rolls back and nothing is made (TPL-024), nor remembered.
+            if (refusedNow.length > 0) throw failedCreation(refusedNow);
+            const view = await createdView(record, principalId, facts, space, made);
+            if (keyed) {
+              await rememberAnswer(record, {
+                ...keyed,
+                principal: principalId,
+                status: 200,
+                body: view,
+              });
+            }
+            return view;
+          },
+          contextOf(request),
+        );
+      }),
+    true,
   );
 }
