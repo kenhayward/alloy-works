@@ -2,6 +2,7 @@ import {
   bindingDigestInput,
   bindingsIn,
   missingComponents,
+  templateDefinitionSchema,
   requiredUnset,
   missingSections,
   parseProvenance,
@@ -737,6 +738,8 @@ export async function resolvePublishable(
     readonly principal: string;
     readonly formats: readonly string[] | null;
     readonly kind: 'publish' | 'preview';
+    /** The profile it is made under where not the document's own (REU-027). */
+    readonly profile?: StoredProfile;
   },
 ): Promise<Publishable | PublishRefusal> {
   const { formats, kind } = input;
@@ -846,6 +849,15 @@ export async function resolvePublishable(
       new Set((await waivedKeys(trx, input.documentId)).keys()),
     );
     if (components.length > 0) return { answer: 'component.required', components };
+    // A publish, or a baseline, is made under a profile its template finds complete; a preview may
+    // show an incomplete one (TPL-051; the R10 plan, R10-E and its final review).
+    if (kind === 'publish') {
+      const unset = requiredUnset(
+        rules.definition,
+        input.profile ?? read.outline.profile ?? { values: {} },
+      );
+      if (unset.length > 0) return { answer: 'profile.incomplete', axes: unset };
+    }
     if (!rules.resolved.ok) {
       return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
     }
@@ -922,18 +934,12 @@ export async function requestPublication(
     principal: input.requester,
     formats: input.formats,
     kind,
+    ...(input.profile === undefined ? {} : { profile: input.profile }),
   });
   if (found.answer !== 'publishable') return found;
   const { latest, layout, theme, resolved, failures, bindings } = found;
   // Recorded only where it says something: none is the empty profile, as on a request before 0106.
   const profile = input.profile ?? found.outline.profile;
-  // A publish is made under a profile its template finds complete; a preview may show an incomplete
-  // one (TPL-051; the R10 plan, R10-E).
-  if (kind === 'publish') {
-    const rules = await documentRules(trx, input.documentId);
-    const unset = rules.bound ? requiredUnset(rules.definition, profile ?? { values: {} }) : [];
-    if (unset.length > 0) return { answer: 'profile.incomplete', axes: unset };
-  }
   const said =
     profile !== undefined &&
     (Object.keys(profile.values).length > 0 || profile.excludeUnset === true);
@@ -1380,16 +1386,22 @@ export async function publicationInputs(
     .where('r.id', '=', requestId)
     .executeTakeFirst();
   if (!request || request.state !== 'queued') return undefined;
-  const madeAt =
+  const pinnedBy =
     request.baseline_id === null
       ? null
-      : (
-          await trx
-            .selectFrom('baseline')
-            .select('made_at')
-            .where('id', '=', request.baseline_id)
-            .executeTakeFirstOrThrow()
-        ).made_at;
+      : await trx
+          .selectFrom('baseline')
+          .select(['made_at', 'template_version_id'])
+          .where('id', '=', request.baseline_id)
+          .executeTakeFirstOrThrow();
+  const madeAt = pinnedBy?.made_at ?? null;
+  // A baseline's template version is the one it pins, whatever the document has moved to since (the
+  // R10 final review); a request's is the document's now.
+  const declarations = pinnedBy?.template_version_id
+    ? (templateDefinitionSchema.parse(
+        (await readVersion(trx, pinnedBy.template_version_id))!.content,
+      ).parameters ?? [])
+    : await documentParameterDeclarations(trx, request.document_id);
   const read = readOutline(request.content, {
     artifact: request.document_id,
     version: request.document_version_id,
@@ -1523,7 +1535,7 @@ export async function publicationInputs(
         values: (request.metadata_values ?? {}) as Record<string, unknown>,
         // Which parameter feeds each variable, as the document's template says (TPL-069; R10-A).
         feeds: new Map(
-          (await documentParameterDeclarations(trx, request.document_id)).flatMap((each) =>
+          declarations.flatMap((each) =>
             (each.feeds.variables ?? []).map((key) => [key, each.name] as const),
           ),
         ),

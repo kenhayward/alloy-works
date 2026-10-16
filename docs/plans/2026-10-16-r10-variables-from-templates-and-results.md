@@ -41,3 +41,7 @@ required components hold that does not resolve yet; and a template declares its 
 
 - The template's `profile`, its checks, creation writing it, the publish's refusal; the final review;
   the close.
+
+## Built
+
+R10a in #658, R10b with the close (0.181.0) in #PRNUM. A query source counts as resolving at creation where the document holds a result of its definition; the publish decides whether that result is one row. The final review found a baseline, a gate's among them, made while a required axis was unset (now refused, `profile_incomplete`, at the door every publish and baseline passes), a baseline published after its document moved reading which parameter feeds a variable from the newer template version (now from the version it pins), and two parameters feeding one axis (now refused at save); all fixed, each with a test. Left: a baseline's publication runs under no profile, as it has since R6, and recording one on it is a slice of its own; the page does not show `unresolvedVariables`, nor ask for a profile when a document is made.

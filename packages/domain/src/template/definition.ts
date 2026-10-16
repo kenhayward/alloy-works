@@ -193,7 +193,18 @@ export const templateDefinitionSchema = z
     // A parameter named once, and its permitted values or range in its type, by the query
     // definition's own rule (TE-N, TP1-A).
     const names = new Set<string>();
+    const fedAxes = new Set<string>();
     (template.parameters ?? []).forEach((parameter, index) => {
+      // One axis fed by two parameters would take whichever came last (the R10 final review).
+      const axis = parameter.feeds.axis;
+      if (axis !== undefined && fedAxes.has(axis)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['parameters', index, 'feeds', 'axis'],
+          message: `The axis ${axis} is fed by more than one parameter`,
+        });
+      }
+      if (axis !== undefined) fedAxes.add(axis);
       if (names.has(parameter.name)) {
         context.addIssue({
           code: 'custom',

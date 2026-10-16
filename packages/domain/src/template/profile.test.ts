@@ -50,9 +50,12 @@ describe("a template's profile (the R10 plan, R10-E)", () => {
     ).toEqual([]);
   });
 
-  it('refuses a parameter feeding an axis that is not text, which a profile value is', () => {
+  it('refuses a parameter feeding an axis that is not text, which a profile value is, and an axis two parameters feed', () => {
     expect(
       definition({ parameters: [{ ...market, type: { base: 'integer' }, list: false }] }).success,
     ).toBe(false);
+    expect(definition({ parameters: [market, { ...market, name: 'country' }] }).success).toBe(
+      false,
+    );
   });
 });

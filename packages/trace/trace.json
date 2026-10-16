@@ -19173,6 +19173,10 @@
         {
           "id": "TPL-072",
           "howItIsMet": "Making a document from a template answers `unresolvedVariables`: each variable its required components hold that does not resolve against its parameters, values and the results it holds, by node and key, and refuses nothing"
+        },
+        {
+          "id": "TPL-051",
+          "howItIsMet": "A definition's `profile` declares default values for axes and the axes a document must set; a parameter's `feeds.axis` gives its value to an axis. Making a document writes the profile, never none; a publish with a required axis unset is `profile_incomplete` ([Profile](#profile))"
         }
       ]
     },
@@ -25558,31 +25562,43 @@
     {
       "id": "TPL-014",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 248,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 340,
+      "line": 342,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-051",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 545,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-067",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 649,
       "kind": "title"
     },
     {
       "id": "TPL-069",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 434,
+      "line": 436,
       "kind": "title"
     },
     {
       "id": "TPL-070",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 248,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "TPL-072",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 434,
+      "line": 436,
       "kind": "title"
     },
     {
@@ -26782,7 +26798,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 722,
+      "line": 724,
       "kind": "title"
     },
     {
@@ -27899,6 +27915,12 @@
       "id": "TPL-058",
       "file": "packages/domain/src/template/move.test.ts",
       "line": 74,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-051",
+      "file": "packages/domain/src/template/profile.test.ts",
+      "line": 31,
       "kind": "title"
     },
     {

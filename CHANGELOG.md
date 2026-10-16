@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.181.0 - 2026-10-16 (PR #PRNUM)
+
+Reuse's tenth slice: variables from templates and results, and profile defaults (the R10 plan).
+
+### Added
+
+- **Variables from templates and results.** A template's parameter can now say which variables it fills, and a variable can take its value from a column of a query result its document holds. A variable takes the parameter first, then the metadata field, then the result, and each publication records which. Making a document from a template names, through the API, each variable its required components hold that does not have a value yet.
+- **Profiles from templates.** A template made through the API may declare its documents' profile: default values on some condition axes, the axes each document must set, and a parameter whose value sets an axis. Every document made from it starts with that profile, and cannot be published while a required axis is unset; a preview can.
+
 ## 0.180.0 - 2026-10-16 (PR #656)
 
 Reuse's ninth slice: required components and bindings at creation (the R9 plan).

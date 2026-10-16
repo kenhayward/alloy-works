@@ -12,6 +12,7 @@ import {
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { makeBaseline, requestBaselinePublication } from './baselines.js';
 import { submitCohort } from './cohorts.js';
 import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
@@ -22,12 +23,13 @@ import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { requestPublication } from './publishing.js';
+import { publicationInputs, requestPublication } from './publishing.js';
 import { createQueryDefinition } from './queryDefinitions.js';
 import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { createTemplate } from './templates.js';
+import { moveDocumentTemplate } from './template-move.js';
+import { createTemplate, recordTemplateVersion } from './templates.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
@@ -618,6 +620,17 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
         }),
       ),
     ).toEqual({ answer: 'profile.incomplete', axes: ['region'] });
+    // A baseline, a gate's among them, is held to it as a publish is (the R10 final review).
+    expect(
+      await as((trx) =>
+        makeBaseline(trx, {
+          documentId: document.artifactId,
+          version: document.id,
+          name: 'Issue 1',
+          maker: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'profile.incomplete', axes: ['region'] });
     expect(
       (
         await as((trx) =>
@@ -631,5 +644,99 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
         )
       ).answer,
     ).toBe('requested');
+  });
+
+  it('TPL-067 reads which parameter feeds a variable from the template version a baseline pins, not one the document moved to since', async () => {
+    const declared = await as((trx) =>
+      createDefinition(trx, {
+        kind: 'variable',
+        definition: {
+          schemaVersion: DEFINITION_SCHEMA_VERSION,
+          name: 'Pinned name',
+          key: 'pinned_name',
+          type: { base: 'text' },
+          sources: { parameter: 'unnamed' },
+        },
+        author: grace,
+      }),
+    );
+    if (declared.answer !== 'created') throw new Error(declared.answer);
+    const parameter = (name: string, variables: string[]) => ({
+      name,
+      type: { base: 'text' },
+      required: false,
+      list: false,
+      changeable: true,
+      feeds: { arguments: variables.length === 0, variables },
+    });
+    const definition = (first: string[], second: string[]) => ({
+      schemaVersion: TEMPLATE_SCHEMA_VERSION,
+      name: 'Pinned report',
+      theme: DEFAULT_THEME_ID,
+      layout: DEFAULT_LAYOUT_ID,
+      schemas: [],
+      outline: { sections: [] },
+      changes: { add: true, remove: true, reorder: true },
+      parameters: [parameter('first', first), parameter('second', second)],
+    });
+    const made = await as((trx) =>
+      createTemplate(trx, {
+        spaceId: general,
+        author: grace,
+        definition: definition(['pinned_name'], []),
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const document = await as(async (trx) => {
+      const answer = await createDocument(trx, {
+        spaceId: general,
+        title: 'Pinned',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+        template: made.template.id,
+        parameters: { first: 'One', second: 'Two' },
+      });
+      if (answer.answer !== 'created') throw new Error(answer.answer);
+      return answer.version;
+    });
+    const baseline = await as((trx) =>
+      makeBaseline(trx, {
+        documentId: document.artifactId,
+        version: document.id,
+        name: 'Issue 1',
+        maker: ada,
+      }),
+    );
+    if (baseline.answer !== 'made') throw new Error(baseline.answer);
+    // The template's next version feeds the variable from the other parameter; the document moves to it.
+    const next = await as((trx) =>
+      recordTemplateVersion(trx, {
+        templateId: made.template.id,
+        openedFrom: made.template.version.id,
+        definition: definition([], ['pinned_name']),
+        author: grace,
+      }),
+    );
+    if (next.answer !== 'recorded') throw new Error(next.answer);
+    const moved = await as((trx) =>
+      moveDocumentTemplate(trx, {
+        documentId: document.artifactId,
+        latest: document.id,
+        to: next.template.version.id,
+        by: ada,
+      }),
+    );
+    expect(moved.answer).toBe('moved');
+    const requested = await as((trx) =>
+      requestBaselinePublication(trx, {
+        baseline: baseline.baseline,
+        formats: ['pdf'],
+        requester: ada,
+      }),
+    );
+    if (requested.answer !== 'requested') throw new Error(requested.answer);
+    const inputs = await as((trx) => publicationInputs(trx, requested.request.id));
+    expect(inputs?.variables.context.feeds?.get('pinned_name')).toBe('first');
   });
 });
