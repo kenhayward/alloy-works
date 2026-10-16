@@ -19,6 +19,8 @@
     "@alloy-works/domain": "workspace:^",
     "@alloy-works/fonts": "workspace:^",
     "@alloy-works/objects": "workspace:^",
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.3.289",
     "pg": "^8.23.0",
     "pino": "^10.3.1",
     "sharp": "0.35.4",
@@ -28,8 +30,6 @@
     "@alloy-works/conformance": "workspace:^",
     "@types/node": "^24.5.2",
     "@types/pg": "^8.23.1",
-    "fflate": "^0.8.3",
-    "pdfjs-dist": "^6.3.289",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"

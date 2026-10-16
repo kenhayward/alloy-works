@@ -54,6 +54,23 @@ import {
   type VariableDefinition,
 } from '../reuse/variables.js';
 import { applyConditions, type Profile } from '../reuse/conditions.js';
+import { probesOf } from '../reuse/scan.js';
+
+/** Every text run's words in a value, in order: what the scan holds a probe against. */
+function textValuesOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(textValuesOf);
+  if (typeof value !== 'object' || value === null) return [];
+  const record = value as Record<string, unknown>;
+  if (record['type'] === 'text' && typeof record['value'] === 'string') return [record['value']];
+  return Object.values(record).flatMap(textValuesOf);
+}
+
+/** Every section title's words, at every depth. */
+const titleTexts = (nodes: readonly OutlineNode[]): string[] =>
+  nodes.flatMap((node) => [
+    ...(node.type === 'section' ? textValuesOf(node.title) : []),
+    ...titleTexts(node.children),
+  ]);
 import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
@@ -344,6 +361,11 @@ export type Assembled<
       readonly values: readonly PrintedValue[];
       /** Every variable printed, and the source of each (REU-038; R5-E). */
       readonly variables: readonly PrintedVariable[];
+      /**
+       * What every output is scanned for (REU-048; the R6 plan, R6-G): each four words of a passage
+       * the conditions took out that what they kept does not also hold. None where nothing was.
+       */
+      readonly probes: readonly string[];
     }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
@@ -435,6 +457,8 @@ export function assemble(given: AssembleInput): Assembled {
   // (B3-D), and nothing downstream reads the content as it was stored: `input` is the conditioned,
   // bound document from here on (issue #253).
   const conditionFailures: PublishFailure[] = [];
+  const excludedPassages: string[] = [];
+  const keptText: string[] = [given.outline.title];
   const condition =
     given.conditionContent ??
     (given.profile === undefined
@@ -442,6 +466,8 @@ export function assemble(given: AssembleInput): Assembled {
       : (node: string, content: ContentDocument) => {
           // REU-024 and REU-053: an unset axis excludes, and fails unless the document accepts it.
           const applied = applyConditions(content, given.profile!.values);
+          excludedPassages.push(...applied.excluded);
+          keptText.push(...textValuesOf(applied.content));
           if (!given.profile!.excludeUnset) {
             for (const each of applied.unset) {
               conditionFailures.push(failure('compose', 'axis_unset', node, each.block, each.axis));
@@ -524,6 +550,11 @@ export function assemble(given: AssembleInput): Assembled {
   }
   const pdf = input.formats.includes('pdf');
   const docx = input.formats.includes('docx');
+  // Held against what the conditions kept, section titles among it (REU-048; R6-G).
+  const probes =
+    excludedPassages.length === 0
+      ? []
+      : probesOf(excludedPassages, [...keptText, ...titleTexts(input.outline.nodes)].join(' '));
   const failures: PublishFailure[] = [...input.refused, ...conditionFailures, ...bindFailures];
   /**
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
@@ -2279,6 +2310,7 @@ export function assemble(given: AssembleInput): Assembled {
       numbering,
       values,
       variables: printedVariables,
+      probes,
       word: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
@@ -2345,6 +2377,7 @@ export function assemble(given: AssembleInput): Assembled {
     numbering,
     values,
     variables: printedVariables,
+    probes,
     word:
       docx && docxFormat !== undefined
         ? {

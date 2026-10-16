@@ -224,6 +224,9 @@ export const publishFailureCodes = [
   // compose, from R6 (REU-053): content conditioned on an axis the profile does not name, where the
   // document has not accepted exclusion by unset, naming the node, the block and in `detail` the axis.
   'axis_unset',
+  // engine, from R6 (REU-048): a passage the conditions took out found in an output's text or its
+  // metadata, naming in `detail` the format and never the text. Nothing is stored.
+  'condition_leaked',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

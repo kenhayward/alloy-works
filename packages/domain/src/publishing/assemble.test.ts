@@ -3246,6 +3246,26 @@ describe('cross-references, published (cross-references 2)', () => {
       ]);
     });
 
+    it('gives the scan each four words of an excluded passage that the kept text does not hold', () => {
+      const assembled = assemble({
+        ...inIntro(
+          paragraph(
+            'p1',
+            text('Readings were taken daily. '),
+            only('Staff are told at the morning meeting.', 'audience', 'internal'),
+          ),
+        ),
+        profile: { values: { audience: ['regulator'] }, excludeUnset: false },
+      });
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      expect(assembled.probes).toEqual([
+        'staff are told at',
+        'are told at the',
+        'told at the morning',
+        'at the morning meeting',
+      ]);
+    });
+
     it('REU-053 fails while an axis the content depends on is unset, unless the document accepts exclusion', () => {
       const blocks = [paragraph('p1', text('Kept. '), only('Draft.', 'status', 'draft'))];
       expect(

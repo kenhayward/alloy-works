@@ -419,6 +419,9 @@ describe('the domain package', () => {
         'conditionAxisDefinitionSchema',
         'profileSchema',
         'storedProfileSchema',
+        'leaked',
+        'probesOf',
+        'PROBE_WORDS',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',

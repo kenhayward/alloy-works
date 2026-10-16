@@ -9,6 +9,7 @@ export {
   type UnsetAxis,
 } from './conditions.js';
 export { referencesIn, type IndexedReference } from './references.js';
+export { leaked, probesOf, PROBE_WORDS } from './scan.js';
 export {
   printTitleVariables,
   printVariables,
