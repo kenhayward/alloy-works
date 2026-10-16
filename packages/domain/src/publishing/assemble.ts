@@ -53,6 +53,7 @@ import {
   type VariableContext,
   type VariableDefinition,
 } from '../reuse/variables.js';
+import { applyConditions, type Profile } from '../reuse/conditions.js';
 import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
@@ -129,6 +130,13 @@ export interface AssembleInput {
    * text - so a figure a condition takes out takes no number and is in no list (issue #253).
    */
   readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
+  /**
+   * The profile the publish is made under (REU-022, REU-027; the R6 plan, R6-B, R6-F), whose values
+   * select each occurrence's conditional content where `conditionContent` is not given; and whether the
+   * document accepts what is conditioned on an unset axis being excluded (REU-053). Omitted, content
+   * is not conditioned, and a condition mark is refused as an annotation.
+   */
+  readonly profile?: { readonly values: Profile; readonly excludeUnset: boolean };
   /**
    * The binding stage's input (the B3 plan, B3-D): each binding's result the request recorded, read and
    * held to its checksum by the worker, by node and then binding. A binding with none is
@@ -426,8 +434,21 @@ export function assemble(given: AssembleInput): Assembled {
   // Conditions first, over each occurrence's content, then the binding stage over what survives them
   // (B3-D), and nothing downstream reads the content as it was stored: `input` is the conditioned,
   // bound document from here on (issue #253).
+  const conditionFailures: PublishFailure[] = [];
   const condition =
-    given.conditionContent ?? ((_node: string, content: ContentDocument) => content);
+    given.conditionContent ??
+    (given.profile === undefined
+      ? (_node: string, content: ContentDocument) => content
+      : (node: string, content: ContentDocument) => {
+          // REU-024 and REU-053: an unset axis excludes, and fails unless the document accepts it.
+          const applied = applyConditions(content, given.profile!.values);
+          if (!given.profile!.excludeUnset) {
+            for (const each of applied.unset) {
+              conditionFailures.push(failure('compose', 'axis_unset', node, each.block, each.axis));
+            }
+          }
+          return applied.content;
+        });
   const valueFormats = formatsFor(given.theme?.valueCatalogue ?? null, given.outline.language);
   const values: PrintedValue[] = [];
   const bindFailures: PublishFailure[] = [];
@@ -503,7 +524,7 @@ export function assemble(given: AssembleInput): Assembled {
   }
   const pdf = input.formats.includes('pdf');
   const docx = input.formats.includes('docx');
-  const failures: PublishFailure[] = [...input.refused, ...bindFailures];
+  const failures: PublishFailure[] = [...input.refused, ...conditionFailures, ...bindFailures];
   /**
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
    * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its

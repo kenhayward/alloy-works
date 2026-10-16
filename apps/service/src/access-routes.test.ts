@@ -814,6 +814,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { openedFrom: MISSING, parameters: {} },
     }),
+    recordDocumentProfile: () => ({
+      url: `/v1/documents/${report}/profile`,
+      status: 404,
+      payload: { openedFrom: MISSING, profile: null },
+    }),
     requestPublication: () => ({
       url: `/v1/documents/${report}/publications`,
       status: 404,

@@ -40,6 +40,7 @@ import {
   type HeldDataset,
   workflowBodySchema,
   type PublishedApproval,
+  type StoredProfile,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
 import { latestRevisionsOf } from './workflow.js';
@@ -67,7 +68,7 @@ import {
 } from './listing.js';
 import { lockBindings } from './datasets.js';
 import { applyOutlineOverrides } from './overrides.js';
-import { variablesByKey } from './definitions.js';
+import { profileUnknown, variablesByKey } from './definitions.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -499,6 +500,8 @@ async function resolveImages(
 }
 
 export type PublicationRequestAnswer =
+  /** A profile naming an axis, or a value of one, the environment does not declare (R6-F). */
+  | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] }
   | {
       readonly answer: 'requested';
       readonly request: { readonly id: string; readonly state: 'queued' };
@@ -882,9 +885,15 @@ export async function requestPublication(
     readonly requester: string;
     /** A publish unless told: a preview of that version, marked as one and kept for an hour. */
     readonly kind?: 'publish' | 'preview';
+    /** The profile to make it under in place of the document's (REU-027; the R6 plan, R6-F). */
+    readonly profile?: StoredProfile;
   },
 ): Promise<PublicationRequestAnswer> {
   const kind = input.kind ?? 'publish';
+  if (input.profile !== undefined) {
+    const unknown = await profileUnknown(trx, input.profile);
+    if (unknown.length > 0) return { answer: 'profile.invalid', unknown };
+  }
   const found = await resolvePublishable(trx, {
     documentId: input.documentId,
     version: input.version,
@@ -894,6 +903,11 @@ export async function requestPublication(
   });
   if (found.answer !== 'publishable') return found;
   const { latest, layout, theme, resolved, failures, bindings } = found;
+  // Recorded only where it says something: none is the empty profile, as on a request before 0106.
+  const profile = input.profile ?? found.outline.profile;
+  const said =
+    profile !== undefined &&
+    (Object.keys(profile.values).length > 0 || profile.excludeUnset === true);
   const request = await trx
     .insertInto('publication_request')
     .values({
@@ -909,6 +923,7 @@ export async function requestPublication(
       theme_version_id: theme.versionId,
       // A preview names its kind; a publish is the column's default, as every request before 0035 was.
       ...(kind === 'preview' ? { kind } : {}),
+      ...(said ? { profile: JSON.stringify(profile) } : {}),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -1047,6 +1062,11 @@ export interface PublicationInputs {
     readonly context: VariableContext;
   };
   readonly refused: readonly PublishFailure[];
+  /**
+   * The profile the request was made under (REU-027; the R6 plan, R6-F): the one it named, or the
+   * document's; no values where it recorded none.
+   */
+  readonly profile: StoredProfile;
   /**
    * The layout version the request was made under, as recorded on it - never the layout's latest - or
    * null for a request made before layouts existed (0018), which publishes as the first slice did.
@@ -1324,6 +1344,8 @@ export async function publicationInputs(
       'v.metadata_values',
       // Read from the row whole, for an environment short of 0057.
       sql<unknown>`to_jsonb(v) -> 'parameters'`.as('parameters'),
+      // Short of 0106 a request recorded no profile, and conditions nothing.
+      sql<StoredProfile | null>`to_jsonb(r) -> 'profile'`.as('profile'),
       'l.content as layout_content',
     ])
     .where('r.id', '=', requestId)
@@ -1473,6 +1495,7 @@ export async function publicationInputs(
       },
     },
     refused: request.failures as PublishFailure[],
+    profile: request.profile ?? { values: {} },
     layout,
     theme,
     revision:
@@ -1651,6 +1674,8 @@ export async function recordPublication(
       // Read from the row whole, so an environment migrated short of 0073, as a migration's own test
       // makes one, records a publication as it always did: none where the column is not there yet.
       sql<string | null>`to_jsonb(r) ->> 'baseline_id'`.as('baseline_id'),
+      // And short of 0106, which recorded no profile.
+      sql<StoredProfile | null>`to_jsonb(r) -> 'profile'`.as('profile'),
       'a.space_id',
     ])
     .where('r.id', '=', input.requestId)
@@ -1741,6 +1766,7 @@ async function insertPublication(
     readonly theme_id: string | null;
     readonly theme_version_id: string | null;
     readonly baseline_id: string | null;
+    readonly profile: StoredProfile | null;
     readonly space_id: string | null;
   },
   input: NewPublication,
@@ -1789,6 +1815,8 @@ async function insertPublication(
       // made before layouts, which template 1 sets from no theme.
       theme_id: request.theme_id,
       theme_version_id: request.theme_version_id,
+      // The profile it was made under (REU-027; R6-F), as 0106's rule holds it to its request's.
+      ...(request.profile === null ? {} : { profile: JSON.stringify(request.profile) }),
     })
     .execute();
   const occurrences = await trx

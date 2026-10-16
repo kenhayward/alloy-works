@@ -1,6 +1,7 @@
 import {
   componentTypeDefinitionSchema,
   variableDefinitionSchema,
+  conditionAxisDefinitionSchema,
   componentTypeOf,
   definitionKinds,
   fieldDefinitionSchema,
@@ -160,6 +161,7 @@ const definitionSchemas = {
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
+  conditionAxis: conditionAxisDefinitionSchema,
 } as const;
 
 /**

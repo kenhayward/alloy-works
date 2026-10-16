@@ -5,12 +5,22 @@ import { DEFINITION_SCHEMA_VERSION } from './definition.js';
 import { fieldDefinitionSchema, type FieldDefinition } from './field.js';
 import { metadataSchemaDefinitionSchema, type MetadataSchemaDefinition } from './schema.js';
 import { variableDefinitionSchema, type VariableDefinition } from '../reuse/variables.js';
+import {
+  conditionAxisDefinitionSchema,
+  type ConditionAxisDefinition,
+} from '../reuse/conditions.js';
 
 /**
  * The definition kinds, each an artifact kind versioned by the one mechanism (ADR-0024): a variable
- * the fourth (REU-018; the R5 plan, R5-A).
+ * the fourth (REU-018; the R5 plan, R5-A), a condition axis the fifth (REU-020; the R6 plan, R6-A).
  */
-export const definitionKinds = ['field', 'metadataSchema', 'componentType', 'variable'] as const;
+export const definitionKinds = [
+  'field',
+  'metadataSchema',
+  'componentType',
+  'variable',
+  'conditionAxis',
+] as const;
 
 export type DefinitionKind = (typeof definitionKinds)[number];
 
@@ -19,6 +29,7 @@ export type DefinitionOf = {
   metadataSchema: MetadataSchemaDefinition;
   componentType: ComponentTypeDefinition;
   variable: VariableDefinition;
+  conditionAxis: ConditionAxisDefinition;
 };
 
 /**
@@ -38,6 +49,11 @@ const chains: Record<DefinitionKind, MigrationChain> = {
     migrations: {},
   },
   variable: { subject: 'variable definition', current: DEFINITION_SCHEMA_VERSION, migrations: {} },
+  conditionAxis: {
+    subject: 'condition axis definition',
+    current: DEFINITION_SCHEMA_VERSION,
+    migrations: {},
+  },
 };
 
 const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = {
@@ -45,6 +61,7 @@ const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = 
   metadataSchema: (value) => metadataSchemaDefinitionSchema.parse(value),
   componentType: (value) => componentTypeDefinitionSchema.parse(value),
   variable: (value) => variableDefinitionSchema.parse(value),
+  conditionAxis: (value) => conditionAxisDefinitionSchema.parse(value),
 };
 
 /** A stored definition at the current definition schema version. A projection, never a rewrite. */

@@ -1710,6 +1710,8 @@ describe('requesting and recording a publication', () => {
         theme_id: DEFAULT_THEME_ID,
         theme_version_id: theme.versionId,
         theme_kind: 'theme',
+        // No profile: the empty one, as a request names none (0106).
+        profile: null,
         // The transaction that recorded it, which a listing's snapshot reads (0032).
         written_by: expect.stringMatching(/^\d+$/),
       });

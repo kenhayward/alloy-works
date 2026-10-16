@@ -4,6 +4,7 @@ import {
   PLACE_MAX,
   sectionNodeSchema,
   storableEverywhere,
+  storedProfileSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
@@ -164,6 +165,23 @@ export const DocumentParametersBody = z.strictObject({
     .describe("The document's parameters, by name"),
 });
 export type DocumentParametersBody = z.infer<typeof DocumentParametersBody>;
+
+/**
+ * A document's profile, whole (REU-022; the R6 plan, R6-B), from the version it was read at, or null to
+ * clear it.
+ */
+export const DocumentProfileBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe(
+    'The version the profile was read at, which must be the latest',
+  ),
+  profile: storedProfileSchema
+    .nullable()
+    .describe(
+      'The values the document takes on each condition axis, by key, and `excludeUnset: true` where ' +
+        'text conditioned on an axis it does not name may be left out of a publish (REU-053); null clears it',
+    ),
+});
+export type DocumentProfileBody = z.infer<typeof DocumentProfileBody>;
 
 /** A page of a document's parameter history. */
 export const DocumentParametersQuery = z.object({
@@ -410,6 +428,10 @@ export type DocumentView = z.infer<typeof DocumentView>;
  * moved first (`version_precondition`), or why the operation does not apply (`outline_invalid`).
  */
 export const OutlineRefusal = ErrorBody.extend({
+  unknown: z
+    .array(z.string())
+    .optional()
+    .describe('profile_invalid: each axis, or `axis.value`, the environment does not declare'),
   current: DocumentView.optional().describe('version_precondition: the document as it now stands'),
   reason: z.string().optional().describe('outline_invalid: why the operation does not apply'),
   failures: z
@@ -827,6 +849,38 @@ export const documentRoutes = {
           'parameter; parameter_unknown: a value for a parameter the template does not declare; ' +
           'parameter_fixed: a parameter that may not change was changed; or invalid_request: a body ' +
           'this route does not accept',
+        schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: 'version_precondition: the document has changed since it was read',
+        schema: OutlineRefusal,
+      },
+    },
+  },
+  recordDocumentProfile: {
+    operationId: 'recordDocumentProfile',
+    method: 'PUT',
+    path: '/v1/documents/{id}/profile',
+    summary: "Write the document's profile, whole, as one version with everything else unchanged",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: DocumentProfileBody,
+    responses: {
+      200: {
+        description: 'Written, or nothing changed: the document at its latest version',
+        schema: DocumentView,
+      },
+      400: {
+        description:
+          '`profile_invalid`: the profile names an axis or a value the environment does not ' +
+          'declare; or `invalid_request`: a body this route does not accept',
         schema: OutlineRefusal,
       },
       401: unauthenticated,

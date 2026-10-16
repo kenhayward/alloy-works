@@ -3192,6 +3192,75 @@ describe('cross-references, published (cross-references 2)', () => {
     expect(labels(hidden)).toEqual(['Table 1.1']);
   });
 
+  describe('conditions over a profile (the R6 plan, R6-C to R6-E)', () => {
+    const only = (value: string, axis: string, ...values: string[]) =>
+      marked(value, { type: 'condition', id: `c-${value.length}`, axis, values });
+    /** Every paragraph's text the publish prints, in order. */
+    const printed = (assembled: Assembled): string[] => {
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      const found: string[] = [];
+      const walk = (nodes: readonly PublishedNode[]) => {
+        for (const node of nodes) {
+          for (const each of node.blocks) {
+            if (each.type === 'paragraph') {
+              found.push(each.runs.map((run) => ('text' in run ? run.text : '')).join(''));
+            }
+          }
+          walk(node.children);
+        }
+      };
+      walk(assembled.document.nodes as readonly PublishedNode[]);
+      return found;
+    };
+
+    it("REU-030 evaluates a component's conditions in the referring document's profile", () => {
+      const blocks = [
+        paragraph(
+          'p1',
+          text('Report. '),
+          only('For the regulator.', 'audience', 'regulator'),
+          only('For staff.', 'audience', 'internal'),
+        ),
+      ];
+      const as = (audience: string) =>
+        printed(
+          assemble({
+            ...inIntro(...blocks),
+            profile: { values: { audience: [audience] }, excludeUnset: false },
+          }),
+        );
+      expect(as('regulator')).toEqual(['Report. For the regulator.']);
+      expect(as('internal')).toEqual(['Report. For staff.']);
+    });
+
+    it('REU-029 fails a reference to a paragraph its conditions take out, rather than printing it', () => {
+      const assembled = assemble({
+        ...inIntro(
+          paragraph('p1', only('Staff only.', 'audience', 'internal')),
+          paragraph('b1', text('See '), xref('x1', toBlock('p1'), 'page')),
+        ),
+        profile: { values: { audience: ['regulator'] }, excludeUnset: false },
+      });
+      expect(failuresOf(assembled).map((each) => [each.code, each.block])).toEqual([
+        ['cross_reference_unresolved', 'x1'],
+      ]);
+    });
+
+    it('REU-053 fails while an axis the content depends on is unset, unless the document accepts exclusion', () => {
+      const blocks = [paragraph('p1', text('Kept. '), only('Draft.', 'status', 'draft'))];
+      expect(
+        failuresOf(
+          assemble({ ...inIntro(...blocks), profile: { values: {}, excludeUnset: false } }),
+        ),
+      ).toEqual([failed('axis_unset', 'p1', 'status')]);
+      const accepted = assemble({
+        ...inIntro(...blocks),
+        profile: { values: {}, excludeUnset: true },
+      });
+      expect(printed(accepted)).toEqual(['Kept. ']);
+    });
+  });
+
   it("prints above and below in the layout's own words", () => {
     const worded = layoutWith((layout) => {
       layout.words.above = 'earlier';

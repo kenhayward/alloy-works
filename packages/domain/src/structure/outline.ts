@@ -14,6 +14,7 @@ import {
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
+import { storedProfileSchema } from '../reuse/conditions.js';
 import { overridesSchema, type Override } from './overrides.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
@@ -196,6 +197,12 @@ export const outlineDocumentSchema = z.strictObject({
   language: contentDocumentSchema.shape.language,
   direction: z.enum(['ltr', 'rtl']),
   nodes: z.array(outlineNodeSchema),
+  /**
+   * The profile the document declares (REU-022; the R6 plan, R6-B): the values it takes on each
+   * condition axis, and whether it accepts content conditioned on an axis it does not name being
+   * excluded (REU-053), true or absent. Absent, it takes no value on any axis.
+   */
+  profile: storedProfileSchema.optional(),
 });
 
 export type OutlineDocument = z.infer<typeof outlineDocumentSchema>;
@@ -505,6 +512,9 @@ export function canonicaliseOutline(outline: OutlineDocument): string {
     ['direction', canonicalJson(outline.direction)],
     ['language', canonicalJson(outline.language)],
     ['nodes', canonicaliseOutlineNodes(outline.nodes)],
+    ...(outline.profile === undefined
+      ? []
+      : [['profile', canonicalJson(outline.profile)] as const]),
     ['schemaVersion', canonicalJson(outline.schemaVersion)],
     ['title', canonicalJson(outline.title)],
   ];
