@@ -1,6 +1,9 @@
 import { sql } from 'kysely';
 import { createFromResolution, resolveForDocument, type TemplateResolution } from './documents.js';
+import { outlineDocumentSchema } from '@alloy-works/domain';
+import { loadReadableSet } from './access-facts.js';
 import { enqueueJob } from './queue.js';
+import { mayReadArtifact } from './queryDefinitions.js';
 import { inSavepoint } from './savepoint.js';
 import type { StoredJob } from './jobs.js';
 import { readJob } from './jobs.js';
@@ -50,6 +53,7 @@ export interface StoredCohort {
 export type CohortAnswer =
   | { readonly answer: 'submitted'; readonly cohort: StoredCohort; readonly job: StoredJob }
   | { readonly answer: 'space.missing' }
+  | { readonly answer: 'content.invalid' }
   | { readonly answer: 'template.missing' }
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly unknown[] }
   | { readonly answer: 'rows.invalid'; readonly detail: string };
@@ -97,6 +101,14 @@ export async function submitCohort(
     .where('id', '=', input.spaceId)
     .executeTakeFirst();
   if (!space) return { answer: 'space.missing' };
+  // Every row's document takes these, so they are held to the outline's own rules once, here: a run
+  // would otherwise fail every row on them, and not as a refusal (the R7 final review).
+  if (
+    !outlineDocumentSchema.shape.language.safeParse(input.language).success ||
+    !outlineDocumentSchema.shape.direction.safeParse(input.direction).success
+  ) {
+    return { answer: 'content.invalid' };
+  }
   if (input.rows.length === 0) return { answer: 'rows.invalid', detail: 'none' };
   if (input.rows.length > COHORT_ROWS_MAX) {
     return { answer: 'rows.invalid', detail: `more than ${COHORT_ROWS_MAX}` };
@@ -123,6 +135,30 @@ export async function submitCohort(
     .execute();
   const job = await runRows(trx, cohort, input.by, input.rows.length);
   return { answer: 'submitted', cohort: (await readCohort(trx, cohort))!, job };
+}
+
+/**
+ * A cohort as a reader is shown it (REU-034; R7-G, the R7 final review): each made row's document
+ * named only where the reader may read it, null otherwise.
+ */
+export async function readCohortAs(
+  trx: TenantTransaction,
+  id: string,
+  by: string,
+): Promise<StoredCohort | undefined> {
+  const cohort = await readCohort(trx, id);
+  if (!cohort) return undefined;
+  const readable = await loadReadableSet(trx, by);
+  return {
+    ...cohort,
+    rows: cohort.rows.map((each) =>
+      each.document !== null &&
+      (readable === undefined ||
+        !mayReadArtifact(readable, { id: each.document, spaceId: cohort.spaceId }))
+        ? { ...each, document: null }
+        : each,
+    ),
+  };
 }
 
 /** A cohort and its rows in order, or undefined where this environment holds none by that id. */
@@ -162,10 +198,21 @@ export async function readCohort(
   };
 }
 
+/** Whether a run of the cohort is waiting or running: it will make the cohort's pending rows. */
+async function running(trx: TenantTransaction, cohort: string): Promise<boolean> {
+  const { rows } = await sql<{ id: string }>`
+    select id from api_job
+     where kind = 'cohort' and subject_id = ${cohort} and state in ('accepted', 'running')
+     limit 1`.execute(trx);
+  return rows.length > 0;
+}
+
 /**
  * The failed rows run again (REU-035; R7-F): each set pending, from the same resolution, by a new job,
- * with the corrected parameters given for it, if any; a made row is never touched. `none.failed` where
- * there is nothing to run; `rows.invalid` where a correction names a row that has not failed.
+ * with the corrected parameters given for it, if any; a made row is never touched. Rows a cancelled or
+ * failed run left pending are run too, where no run is waiting or running to make them (the R7 final
+ * review). `none.failed` where there is nothing to run; `rows.invalid` where a correction names a row
+ * that has not failed.
  */
 export async function rerunCohort(
   trx: TenantTransaction,
@@ -203,7 +250,10 @@ export async function rerunCohort(
     .where('cohort_id', '=', id)
     .where('state', '=', 'failed')
     .executeTakeFirst();
-  const count = Number(reset.numUpdatedRows);
+  const left = (await running(trx, id))
+    ? 0
+    : cohort.rows.filter((each) => each.state === 'pending').length;
+  const count = Number(reset.numUpdatedRows) + left;
   if (count === 0) return { answer: 'none.failed' };
   return { answer: 'submitted', job: await runRows(trx, id, by, count) };
 }

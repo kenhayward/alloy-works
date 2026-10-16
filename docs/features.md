@@ -1114,6 +1114,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   not set unless the document accepts that, and scans every output for what was left out. A publish
   through the API may name another profile, and the publication records it. A whole block or section
   cannot carry a condition yet.
+- **Bulk generation.** Templates offers **Generate** on each template: a document for each row of a
+  CSV file, or of a list pasted from a spreadsheet, each titled from a pattern such as `Site report:
+{site}`. Through the API (`POST /v1/spaces/{space}/cohorts`) the rows may also come from a query
+  result. Every row is made from the template as it stood when asked for, in a transaction of its own:
+  a row that is refused leaves nothing and says why. The cohort's page follows the rows, opens each
+  document, and runs the failed rows again, corrected, without touching the rest. Approving or
+  publishing a cohort as one act is not there yet.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

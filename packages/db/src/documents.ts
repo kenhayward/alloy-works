@@ -291,7 +291,11 @@ export async function createFromResolution(
   resolution: TemplateResolution,
 ): Promise<CreateDocumentAnswer> {
   const title = input.title.trim();
-  if (!outlineDocumentSchema.shape.title.safeParse(title).success) {
+  if (
+    !outlineDocumentSchema.shape.title.safeParse(title).success ||
+    !outlineDocumentSchema.shape.language.safeParse(input.language).success ||
+    !outlineDocumentSchema.shape.direction.safeParse(input.direction).success
+  ) {
     return { answer: 'content.invalid' };
   }
   const heading = { title, language: input.language, direction: input.direction };

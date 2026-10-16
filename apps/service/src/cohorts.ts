@@ -8,7 +8,7 @@ import type {
   SubmitCohortBody,
 } from '@alloy-works/api-contract';
 import {
-  readCohort,
+  readCohortAs,
   readVersion,
   rerunCohort,
   submitCohort,
@@ -85,11 +85,21 @@ export function cohortHandlers(
   tenantOf: (request: FastifyRequest) => Tenant,
   objects: ObjectStores | undefined,
 ) {
-  /** A cohort in a space the caller may read, or not found. */
+  /**
+   * A cohort in a space the caller may read, its documents named only where they may read them; and,
+   * where its rows came from a query result, only to a caller who may read that result, since its rows
+   * are the result's (the R7 final review). Otherwise not found.
+   */
   const visible = async (trx: TenantTransaction, request: FastifyRequest, id: string) => {
-    const cohort = await readCohort(trx, id);
+    const caller = callerOf(request);
+    const cohort = await readCohortAs(trx, id, caller.principalId);
     if (!cohort) throw notFound();
-    await authoriseAt(trx, callerOf(request), 'read', { kind: 'space', id: cohort.spaceId });
+    await authoriseAt(trx, caller, 'read', { kind: 'space', id: cohort.spaceId });
+    if ('dataset' in cohort.source) {
+      const result = await readVersion(trx, cohort.source.dataset);
+      if (!result) throw notFound();
+      await authoriseAt(trx, caller, 'read', { kind: 'artifact', id: result.artifactId });
+    }
     return cohort;
   };
   return {
@@ -117,6 +127,12 @@ export function cohortHandlers(
         case 'space.missing':
         case 'template.missing':
           throw notFound();
+        case 'content.invalid':
+          throw refused(
+            400,
+            'content.invalid',
+            'That language or direction is not one a document can take.',
+          );
         case 'template.unresolved':
           throw refused(
             400,
@@ -152,7 +168,10 @@ export function cohortHandlers(
         const answer = await rerunCohort(trx, id, principal.principalId, corrections);
         switch (answer.answer) {
           case 'submitted':
-            return { cohort: cohortView((await readCohort(trx, id))!), job: jobView(answer.job) };
+            return {
+              cohort: cohortView((await readCohortAs(trx, id, principal.principalId))!),
+              job: jobView(answer.job),
+            };
           case 'missing':
             throw notFound();
           case 'none.failed':

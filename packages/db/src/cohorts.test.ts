@@ -3,12 +3,14 @@ import {
   TEMPLATE_SCHEMA_VERSION,
   type OutlineDocument,
 } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   makeCohortRow,
   pendingRows,
   readCohort,
+  readCohortAs,
   rerunCohort,
   submitCohort,
   titleFor,
@@ -190,7 +192,7 @@ describe('cohorts (the R7 plan, R7-A to R7-G)', () => {
     return answer;
   };
 
-  it('REU-031 REU-033 makes a document for each row, and fails a row alone, reported, leaving nothing of it', async () => {
+  it('REU-031 REU-033 TPL-039 makes a document for each row, and fails a row alone, reported, leaving nothing of it', async () => {
     const before = await documentsIn();
     const { cohort, job } = await submitted((await template()).id, [
       { site: 'Leeds' },
@@ -292,6 +294,63 @@ describe('cohorts (the R7 plan, R7-A to R7-G)', () => {
     expect(await ask('00000000-0000-4000-8000-000000000000', [{ site: 'Leeds' }])).toEqual({
       answer: 'template.missing',
     });
+  });
+
+  it('runs again the rows a stopped run left pending, and refuses a language no document may take', async () => {
+    const { cohort, job } = await submitted((await template()).id, [
+      { site: 'Leeds' },
+      { site: 'York' },
+    ]);
+    // The run is stopped before it made anything: its rows stay pending.
+    await as((trx) =>
+      sql`update api_job set state = 'cancelled', finished_at = now(),
+                             outcome = '{"made":0,"failed":0,"of":2}'::jsonb
+                           where id = ${job.id}`.execute(trx),
+    );
+    expect(await as((trx) => rerunCohort(trx, cohort.id, ada))).toMatchObject({
+      answer: 'submitted',
+      job: { parameters: { rows: 2 } },
+    });
+    // With that run waiting, a second rerun has nothing of its own to run.
+    expect(await as((trx) => rerunCohort(trx, cohort.id, ada))).toEqual({ answer: 'none.failed' });
+    expect(
+      await as((trx) =>
+        submitCohort(trx, {
+          by: ada,
+          spaceId: general,
+          template: cohort.template.id,
+          title: '{site}',
+          language: 'not a tag!',
+          direction: 'ltr',
+          rows: [{ site: 'Leeds' }],
+          source: { rows: 1 },
+        }),
+      ),
+    ).toEqual({ answer: 'content.invalid' });
+  });
+
+  it('names to a reader only the documents they may read', async () => {
+    const { cohort } = await submitted((await template()).id, [{ site: 'Leeds' }]);
+    const made = await run(cohort.id);
+    const grace = await as(
+      async (trx) =>
+        (
+          await trx
+            .insertInto('principal')
+            .values({
+              issuer: 'https://idp.example',
+              subject: 'grace',
+              email: null,
+              display_name: 'Grace',
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id,
+    );
+    expect((await as((trx) => readCohortAs(trx, cohort.id, ada)))!.rows[0]!.document).toBe(
+      made.rows[0]!.document,
+    );
+    expect((await as((trx) => readCohortAs(trx, cohort.id, grace)))!.rows[0]!.document).toBeNull();
   });
 
   it('titles each document from its pattern', () => {

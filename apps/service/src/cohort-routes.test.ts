@@ -117,6 +117,9 @@ describe('cohorts, through the service', () => {
   it('refuses rows given both ways, or none, and a template the caller may not read', async () => {
     expect((await submit({})).statusCode).toBe(400);
     expect((await submit({ rows: [] })).statusCode).toBe(400);
+    const language = await submit({ language: 'not a tag!', rows: [{ id: '1', name: 'Harbour' }] });
+    expect(language.statusCode).toBe(400);
+    expect(language.json()).toMatchObject({ code: 'content_invalid' });
     const missing = await submit({
       template: '00000000-0000-4000-8000-000000000000',
       rows: [{ id: '1', name: 'Harbour' }],

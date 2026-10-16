@@ -802,6 +802,7 @@ export {
   makeCohortRow,
   pendingRows,
   readCohort,
+  readCohortAs,
   rerunCohort,
   submitCohort,
   titleFor,

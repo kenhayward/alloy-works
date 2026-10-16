@@ -7,15 +7,26 @@ export type ReadRows =
     }
   | { readonly ok: false; readonly problem: string };
 
-/** One line's cells, split on `separator`, a quoted cell holding separators and doubled quotes. */
-function cellsOf(line: string, separator: string): string[] {
-  const cells: string[] = [];
+/**
+ * The text's records, each its cells: split on `separator`, and on a line break, outside quotes alone,
+ * so a quoted cell keeps its separators, its line breaks, its spaces and its doubled quotes, as a
+ * spreadsheet exports one. An unquoted cell is trimmed.
+ */
+function recordsOf(text: string, separator: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
   let cell = '';
   let quoted = false;
-  for (let at = 0; at < line.length; at += 1) {
-    const character = line[at]!;
+  let wasQuoted = false;
+  const endCell = () => {
+    record.push(wasQuoted ? cell : cell.trim());
+    cell = '';
+    wasQuoted = false;
+  };
+  for (let at = 0; at < text.length; at += 1) {
+    const character = text[at]!;
     if (quoted) {
-      if (character === '"' && line[at + 1] === '"') {
+      if (character === '"' && text[at + 1] === '"') {
         cell += '"';
         at += 1;
       } else if (character === '"') {
@@ -23,17 +34,24 @@ function cellsOf(line: string, separator: string): string[] {
       } else {
         cell += character;
       }
-    } else if (character === '"' && cell === '') {
+    } else if (character === '"' && cell.trim() === '') {
       quoted = true;
-    } else if (character === separator) {
-      cells.push(cell);
+      wasQuoted = true;
       cell = '';
+    } else if (character === separator) {
+      endCell();
+    } else if (character === '\n' || character === '\r') {
+      if (character === '\r' && text[at + 1] === '\n') at += 1;
+      endCell();
+      records.push(record);
+      record = [];
     } else {
       cell += character;
     }
   }
-  cells.push(cell);
-  return cells.map((each) => each.trim());
+  endCell();
+  records.push(record);
+  return records;
 }
 
 /**
@@ -42,21 +60,20 @@ function cellsOf(line: string, separator: string): string[] {
  * holds one, as a spreadsheet's copy does. An empty cell gives no value; an empty line is no row.
  */
 export function rowsFrom(text: string): ReadRows {
-  const lines = text.split(/\r?\n/);
-  const header = lines[0] ?? '';
-  const separator = header.includes('\t') ? '\t' : ',';
-  const names = cellsOf(header, separator);
-  if (names.length === 0 || names.every((name) => name === '')) {
+  const separator = (text.split(/\r?\n/, 1)[0] ?? '').includes('\t') ? '\t' : ',';
+  const records = recordsOf(text, separator);
+  const names = records[0] ?? [];
+  const blank = (record: readonly string[]) => record.every((cell) => cell === '');
+  if (names.length === 0 || blank(names)) {
     return { ok: false, problem: 'There are no rows to read.' };
   }
   if (names.some((name) => name === '') || new Set(names).size !== names.length) {
     return { ok: false, problem: 'The first line names a parameter twice, or leaves one unnamed.' };
   }
   const rows: Record<string, string>[] = [];
-  for (let at = 1; at < lines.length; at += 1) {
-    const line = lines[at]!;
-    if (line.trim() === '') continue;
-    const cells = cellsOf(line, separator);
+  for (let at = 1; at < records.length; at += 1) {
+    const cells = records[at]!;
+    if (blank(cells)) continue;
     if (cells.length > names.length) {
       return { ok: false, problem: `Line ${at + 1} has more cells than the first line names.` };
     }

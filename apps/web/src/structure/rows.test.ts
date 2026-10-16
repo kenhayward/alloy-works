@@ -14,6 +14,17 @@ describe('rows read from a file or a pasted list (the R7 plan, R7-B)', () => {
     });
   });
 
+  it('keeps a quoted cell whole, its line breaks and its spaces, as a spreadsheet exports one', () => {
+    expect(rowsFrom('site,note\r\n1,"First line\r\nsecond line"\r\n2," spaced "\r\n')).toEqual({
+      ok: true,
+      names: ['site', 'note'],
+      rows: [
+        { site: '1', note: 'First line\r\nsecond line' },
+        { site: '2', note: ' spaced ' },
+      ],
+    });
+  });
+
   it('reads a list pasted from a spreadsheet, by tabs, and leaves an empty cell out of its row', () => {
     expect(rowsFrom('site\tname\r\n1\t\r\n\r\n2\tQuay')).toEqual({
       ok: true,

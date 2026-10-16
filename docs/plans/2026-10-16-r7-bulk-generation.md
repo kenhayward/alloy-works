@@ -41,3 +41,7 @@ failed rows run again without touching the rest.
 - **Generate** on a template: rows from a CSV file or pasted, a title pattern, then the cohort's page
   following the job, its rows and documents, and **Run the failed again**. The browser walks. The final
   review hunts a partial document and a row made from another resolution. The close: 0.178.0.
+
+## Built
+
+R7a and R7b with the close (0.178.0) in #PRNUM. Four hundred documents are made in about eleven seconds on the test database. The final review found a language no document may take accepted and then failing every row as a crash (now refused when asked for), rows a cancelled or failed run left pending unreachable by a rerun (now run), a cohort made from a query result shown to a reader who may not read the result (now refused) and its documents named to readers who may not read them (now withheld), and a CSV's quoted line break splitting a row; all fixed. Left: approving and publishing a cohort as one act, and REU-049's production measure (ADM-016).
