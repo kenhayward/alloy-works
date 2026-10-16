@@ -22655,7 +22655,13 @@
     {
       "id": "DAT-063",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 788,
+      "line": 820,
+      "kind": "title"
+    },
+    {
+      "id": "REU-027",
+      "file": "apps/web/src/publishing/Publishing.test.tsx",
+      "line": 154,
       "kind": "title"
     },
     {
@@ -23115,6 +23121,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-027",
+      "file": "apps/web/src/structure/DocumentPage.conditions.test.tsx",
+      "line": 68,
+      "kind": "title"
+    },
+    {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
       "line": 468,
@@ -23406,6 +23418,12 @@
       "id": "REU-025",
       "file": "apps/web/src/structure/ProfilePanel.test.tsx",
       "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "REU-027",
+      "file": "apps/web/src/structure/ProfilePanel.test.tsx",
+      "line": 83,
       "kind": "title"
     },
     {

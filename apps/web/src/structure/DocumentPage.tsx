@@ -426,6 +426,22 @@ type Loaded =
 
 const SOMEBODY_ELSE = 'Somebody else changed this document. This is how it stands now.';
 
+/** A profile in words, each axis by its name and each value by its label (the R12 plan). */
+function profileWords(profile: StoredProfile, axes: readonly OfferedAxis[]): string {
+  const said = Object.entries(profile.values).map(([key, values]) => {
+    const axis = axes.find((each) => each.key === key);
+    const labels = values.map(
+      (value) => axis?.values.find((each) => each.key === value)?.label ?? value,
+    );
+    return `${axis?.name ?? key}: ${labels.join(', ')}`;
+  });
+  const values = said.length === 0 ? 'no value on any axis' : said.join('; ');
+  // What it accepts is said too, since it leaves text out (the R12 final review).
+  return profile.excludeUnset === true
+    ? `${values}; text depending on an axis it does not set is left out`
+    : values;
+}
+
 const STARTS = {
   none: 'no longer starts on a new page',
   page: 'now starts on a new page',
@@ -667,8 +683,32 @@ export function DocumentPage({
   >(new Map());
   const [unoverridden, setUnoverridden] = useState<ReadonlyMap<string, unknown>>(new Map());
   const [overriding, setOverriding] = useState<string | null>(null);
+  // A profile chosen in the Profile panel to publish under in place of the document's (REU-027).
+  const [publishProfile, setPublishProfile] = useState<StoredProfile | null>(null);
   // The node whose conditions the Condition dialog is open for (REU-021; the R12 plan).
   const [conditioning, setConditioning] = useState<string | null>(null);
+  // Where the focus goes back to as the dialog closes: the node's own Set condition, found again by
+  // its label once the outline has answered (the R12 final review).
+  const conditionsBack = useRef<string | null>(null);
+  const openNodeConditions = useCallback((node: string) => {
+    const opener = window.document.activeElement;
+    conditionsBack.current =
+      opener instanceof HTMLElement ? opener.getAttribute('aria-label') : null;
+    setConditioning(node);
+  }, []);
+  useEffect(() => {
+    if (conditioning !== null || conditionsBack.current === null) return;
+    const label = conditionsBack.current;
+    conditionsBack.current = null;
+    // After the render that answers the act, which may have replaced the button.
+    const at = window.setTimeout(() => {
+      const found = [...window.document.querySelectorAll<HTMLElement>('button[aria-label]')].find(
+        (each) => each.getAttribute('aria-label') === label,
+      );
+      found?.focus();
+    }, 0);
+    return () => window.clearTimeout(at);
+  }, [conditioning]);
   // The declared axes, read once, which the outline names a node's conditions by; keys until read.
   const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
   useEffect(() => {
@@ -2051,8 +2091,9 @@ export function DocumentPage({
   });
   const ids = tabIds(shown);
   // The panels beside the text, named in words (the LG plan, LG6c): the document's own only where it
-  // holds fields or parameters.
-  const holdsOwn = document.fields.document.length > 0 || document.templated || holdsValues;
+  // holds fields or parameters, or where a condition axis is declared, for its Profile (issue #675).
+  const holdsOwn =
+    document.fields.document.length > 0 || document.templated || holdsValues || axes.length > 0;
   const dockTabs = DOCK_PANELS.filter(
     (each) =>
       (each.key !== 'document' || holdsOwn) &&
@@ -2260,7 +2301,7 @@ export function DocumentPage({
               outline={document.outline}
               requiredSections={document.template?.required ?? []}
               conditionAxes={axes}
-              {...(document.mayEdit && authoring ? { onConditions: setConditioning } : {})}
+              {...(document.mayEdit && authoring ? { onConditions: openNodeConditions } : {})}
               marks={outlineMarks}
               {...(referencesTo === undefined ? {} : { referencesTo })}
               head={
@@ -2460,6 +2501,14 @@ export function DocumentPage({
                       readOnly={!document.mayEdit || !authoring}
                       onSave={saveProfile}
                       onPreview={(profile) => void preview.ask(profile)}
+                      {...(document.mayPublish
+                        ? {
+                            onPublish: (profile: StoredProfile) => {
+                              setPublishProfile(profile);
+                              setDock('publishing');
+                            },
+                          }
+                        : {})}
                     />
                     {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
                     {(document.templated || holdsValues) && (
@@ -2613,6 +2662,15 @@ export function DocumentPage({
                       followMs={followMs}
                       formats={document.formats}
                       shown={atPanel?.request ?? null}
+                      {...(publishProfile === null
+                        ? {}
+                        : {
+                            profile: {
+                              chosen: publishProfile,
+                              said: profileWords(publishProfile, axes),
+                              onClear: () => setPublishProfile(null),
+                            },
+                          })}
                     />
                   </div>
                   <div

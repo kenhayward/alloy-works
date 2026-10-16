@@ -263,10 +263,13 @@ export function conditionedBlocks(state: EditorState): DecorationSet {
         Decoration.node(pos, pos + node.nodeSize, {
           class: 'aw-conditional',
           title: saidOf(heldOn(node)),
+          // Said to assistive technology too, which a title is not reliably (the R12 final review).
+          'aria-description': saidOf(heldOn(node)),
         }),
       );
     }
-    return true;
+    // Never into text, which holds no block (the R12 final review).
+    return !node.isTextblock;
   });
   return DecorationSet.create(state.doc, drawn);
 }

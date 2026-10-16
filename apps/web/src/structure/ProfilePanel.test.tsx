@@ -79,4 +79,31 @@ describe("the document's profile (the R6 plan, R6-H)", () => {
     await userEvent.click(screen.getByRole('button', { name: 'Preview this profile' }));
     expect(preview).toHaveBeenCalledWith({ values: {} });
   });
+
+  it('REU-027 offers to publish under a profile chosen here, saved or not, to whoever may publish', async () => {
+    const publish = vi.fn();
+    const { rerender } = render(
+      <ProfilePanel
+        client={service()}
+        profile={undefined}
+        readOnly={false}
+        onSave={async () => 'saved'}
+        onPreview={() => undefined}
+        onPublish={publish}
+      />,
+    );
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Regulator' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish under this profile' }));
+    expect(publish).toHaveBeenCalledWith({ values: { audience: ['regulator'] } });
+    rerender(
+      <ProfilePanel
+        client={service()}
+        profile={undefined}
+        readOnly={false}
+        onSave={async () => 'saved'}
+        onPreview={() => undefined}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Publish under this profile' })).toBeNull();
+  });
 });

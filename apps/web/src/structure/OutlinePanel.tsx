@@ -193,9 +193,17 @@ export interface NamedAxis {
 export function conditionsWords(
   conditions: OutlineViewNode['conditions'],
   axes: readonly NamedAxis[],
-  leftOut: boolean,
+  standing: Standing | undefined,
 ): string | null {
-  if (conditions === undefined) return leftOut ? 'Left out by this document’s profile' : null;
+  const nameOf = (key: string) => axes.find((one) => one.key === key)?.name ?? key;
+  const after =
+    standing === undefined
+      ? ''
+      : standing === 'left'
+        ? 'left out by this document’s profile'
+        : `needs a value for ${standing.unset.map(nameOf).join(' and ')} in this document’s profile`;
+  if (conditions === undefined)
+    return after === '' ? null : after[0]!.toUpperCase() + after.slice(1);
   const said = conditions
     .map((each) => {
       const axis = axes.find((one) => one.key === each.axis);
@@ -205,27 +213,47 @@ export function conditionsWords(
       return `${axis?.name ?? each.axis}: ${values.join(', ')}`;
     })
     .join('; ');
-  return `Kept for ${said}${leftOut ? '; left out by this document’s profile' : ''}`;
+  return `Kept for ${said}${after === '' ? '' : `; ${after}`}`;
 }
 
-/** The nodes this document's own profile leaves out, each under one it leaves out among them. */
-function leftOutBy(
+/**
+ * What this document's own profile does with a node (REU-024, REU-053; the R12 final review): leaves
+ * it out, where a value it takes on an axis is not one the node is kept for, or where an axis it does
+ * not set is accepted as leaving it out - and so everything under it; or needs a value on the axes it
+ * does not set, where that is not accepted, which a publish refuses until it has one.
+ */
+type Standing = 'left' | { readonly unset: readonly string[] };
+
+function standingsBy(
   nodes: readonly OutlineViewNode[],
   profile: OutlineView['profile'],
-): ReadonlySet<string> {
-  const left = new Set<string>();
+): ReadonlyMap<string, Standing> {
+  const found = new Map<string, Standing>();
+  const values = profile?.values ?? {};
   const walk = (list: readonly OutlineViewNode[], out: boolean) => {
     for (const node of list) {
-      const here =
-        out ||
-        (node.conditions !== undefined &&
-          !conditionsSelect(node.conditions, profile?.values ?? {}, () => {}));
-      if (here) left.add(node.id);
-      walk(node.children, here);
+      let here: Standing | undefined = out ? 'left' : undefined;
+      if (!out && node.conditions !== undefined) {
+        const unset: string[] = [];
+        const chosen = conditionsSelect(node.conditions, values, (axis) => unset.push(axis));
+        const otherwise = node.conditions.some(
+          (each) =>
+            Object.hasOwn(values, each.axis) &&
+            !each.values.some((value) => values[each.axis]!.includes(value)),
+        );
+        if (!chosen) {
+          here =
+            otherwise || unset.length === 0 || profile?.excludeUnset === true
+              ? 'left'
+              : { unset: [...new Set(unset)] };
+        }
+      }
+      if (here !== undefined) found.set(node.id, here);
+      walk(node.children, here === 'left');
     }
   };
   walk(nodes, false);
-  return left;
+  return found;
 }
 
 /** A node's marks in words, each a phrase; none where nothing matters. */
@@ -478,7 +506,7 @@ export function OutlinePanel({
 }: OutlinePanelProps) {
   const prefix = useId();
   const nodes = outline.nodes;
-  const leftOut = useMemo(() => leftOutBy(nodes, outline.profile), [nodes, outline.profile]);
+  const standings = useMemo(() => standingsBy(nodes, outline.profile), [nodes, outline.profile]);
   const [active, setActive] = useState<string | null>(null);
   // The node to put focus on once it is in the page. A moved node is a new element where it lands,
   // because it sits in a different list, so focus is asked for after the answer rather than kept.
@@ -993,7 +1021,7 @@ export function OutlinePanel({
             [
               shown === undefined ? null : numberId,
               marksWords(marks?.get(node.id)).length > 0 ? `${labelId}-marks` : null,
-              conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id)) === null
+              conditionsWords(node.conditions, conditionAxes, standings.get(node.id)) === null
                 ? null
                 : `${labelId}-conditions`,
             ]
@@ -1058,9 +1086,9 @@ export function OutlinePanel({
                 {marksWords(marks?.get(node.id)).join('; ')}
               </span>
             )}
-            {conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id)) !== null && (
+            {conditionsWords(node.conditions, conditionAxes, standings.get(node.id)) !== null && (
               <span id={`${labelId}-conditions`} className={styles['nodeMarks']}>
-                {conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id))}
+                {conditionsWords(node.conditions, conditionAxes, standings.get(node.id))}
               </span>
             )}
           </div>
@@ -1275,7 +1303,7 @@ export function OutlinePanel({
                     said={conditionsWords(
                       selected.conditions,
                       conditionAxes,
-                      leftOut.has(selected.id),
+                      standings.get(selected.id),
                     )}
                     {...(onConditions ? { onConditions } : {})}
                   />

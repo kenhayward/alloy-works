@@ -2,7 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { FOLLOW_CAP_MS, nextFollow, Publishing } from './Publishing.js';
 
@@ -68,6 +68,8 @@ const open = (
   formats?: readonly string[],
   /** A failed request the page's address names. */
   shown?: string,
+  /** A profile to publish under in place of the document's (the R12 plan). */
+  profile?: Parameters<typeof Publishing>[0]['profile'],
 ) =>
   render(
     <StrictMode>
@@ -80,6 +82,7 @@ const open = (
         followMs={followMs}
         {...(formats === undefined ? {} : { formats })}
         {...(shown === undefined ? {} : { shown })}
+        {...(profile === undefined ? {} : { profile })}
       />
     </StrictMode>,
   );
@@ -146,6 +149,35 @@ describe('publishing from the document page', () => {
       version: VERSION,
       formats: ['pdf'],
     });
+  });
+
+  it('REU-027 publishes under a profile given in place of the document own, saying so, and under the document own once put back', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
+      [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
+    });
+    const cleared = vi.fn();
+    open(fake.fetch, true, 0, undefined, undefined, {
+      chosen: { values: { audience: ['regulator'] }, excludeUnset: true },
+      said: 'Audience: Regulator; text depending on an axis it does not set is left out',
+      onClear: cleared,
+    });
+    expect(
+      await screen.findByText(
+        'Publishing under a profile chosen in place of the document’s: Audience: Regulator; text depending on an axis it does not set is left out.',
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    await waitFor(() =>
+      expect(fake.sent.find((each) => each.method === 'POST')?.body).toEqual({
+        version: VERSION,
+        formats: ['pdf'],
+        profile: { values: { audience: ['regulator'] }, excludeUnset: true },
+      }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Use the document’s profile' }));
+    expect(cleared).toHaveBeenCalled();
   });
 
   it('names every failure by its place, and a component the author may not read as nothing more than that', async () => {

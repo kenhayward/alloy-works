@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.183.0 - 2026-10-16 (PR #676)
+
+Reuse's twelfth slice: conditions in the page.
+
+### Added
+
+- **Conditions on a section from the outline.** Choose a section or a placed component in the outline and use **Set condition** to keep it for some readers alone. Its row says what it is kept for, and whether the document's own profile leaves it out or still needs a value on its axis; where it is left out it takes no number there.
+- **Conditions on a table, a figure or an equation in the editor.** Select one, or put the cursor in it with nothing selected, and use **Condition** to keep the whole block for some readers. A conditional block is drawn with a tinted bar and says what it depends on.
+- **Publish under another profile from the page.** The Profile panel offers **Publish under this profile**: the Publishing tab then says which profile it will publish under, in place of the document's, until you put the document's back.
+
+### Fixed
+
+- **The Profile panel can always be reached.** The Document tab, where the Profile panel stands, is now offered wherever a condition axis is declared, not only on a document with its own fields or a template's parameters.
+
 ## 0.182.0 - 2026-10-16 (PR #670)
 
 Reuse's eleventh slice: conditions on sections and blocks (the R11 plan).

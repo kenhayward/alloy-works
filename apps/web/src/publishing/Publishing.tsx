@@ -1,11 +1,12 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { StoredProfile } from '@alloy-works/domain';
 import { useEffect, useId, useState } from 'react';
 
 import { FailureList } from './FailureList.js';
 import { failuresIn, isProductsOwn, type Failure } from './failures.js';
 import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import { formatsWords } from './formats.js';
-import { PreviewButton, PreviewSaid, type Previewing } from './Preview.js';
+import { PreviewButton, PreviewSaid, profileOnTheWire, type Previewing } from './Preview.js';
 import styles from './Publishing.module.css';
 import { Waiting } from '../states/Waiting.js';
 import { everyPage } from '../paging.js';
@@ -113,6 +114,7 @@ export function Publishing({
   formats = ['pdf'],
   preview,
   shown = null,
+  profile,
 }: {
   readonly client: Client;
   readonly document: string;
@@ -134,6 +136,15 @@ export function Publishing({
    * been asked for since.
    */
   readonly shown?: string | null;
+  /**
+   * A profile to publish under in place of the document's, chosen in its Profile panel (REU-027; the
+   * R12 plan): what it is, in words, and how to go back to the document's.
+   */
+  readonly profile?: {
+    readonly chosen: StoredProfile;
+    readonly said: string;
+    readonly onClear: () => void;
+  };
 }) {
   const offersWord = formats.includes('docx');
   const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
@@ -208,7 +219,11 @@ export function Publishing({
       const { data, error, response } = await client.POST('/v1/documents/{id}/publications', {
         params: { path: { id: document } },
         // What the author chose, or the PDF where there was nothing to choose.
-        body: { version, formats: offersWord ? [...chosen.formats] : ['pdf'] },
+        body: {
+          version,
+          formats: offersWord ? [...chosen.formats] : ['pdf'],
+          ...(profile === undefined ? {} : { profile: profileOnTheWire(profile.chosen) }),
+        },
       });
       if (!mounted.current) return;
       if (isRecord(data) && typeof data.id === 'string') {
@@ -243,6 +258,15 @@ export function Publishing({
             </label>
           ))}
         </div>
+      )}
+      {mayPublish && profile !== undefined && (
+        <p>
+          Publishing under a profile chosen in place of the document’s: {profile.said}.{' '}
+          {/* The request already sent keeps its profile: only the next publish is the document's. */}
+          <button type="button" onClick={profile.onClear}>
+            Use the document’s profile
+          </button>
+        </p>
       )}
       {(mayPublish || preview !== undefined) && (
         // Preview beside Publish, as layout C draws them; Preview alone where Publish is not offered.
