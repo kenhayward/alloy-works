@@ -59,6 +59,11 @@ answer beyond those bounds is a report produced in the background.
 | **REL-023** | Each artifact in an impact result is marked hard if a chain of references alone reaches it, and informational otherwise                                                                                                              |
 | **REL-024** | Hard impact is the cheap walk - 76ms at worst in the spike - so it runs before a change is saved, not after                                                                                                                          |
 | **REL-029** | The shortest-path operation: a bidirectional search to a declared depth, optionally along named types                                                                                                                                |
+| **REL-025** | The Relationships dialog draws an artifact's relationships centred on it, and Expand reads the next ring                                                                                                                             |
+| **REL-026** | The dialog filters by type and direction, the service answering each filter                                                                                                                                                          |
+| **REL-027** | Past twenty neighbours of one kind from one artifact, the graph draws a count, opened as a list                                                                                                                                      |
+| **REL-028** | Every view names the `GET` query that answers it, filters and all                                                                                                                                                                    |
+| **REL-051** | Neighbours and the dialog filter by one field's value, as well as by type and direction                                                                                                                                              |
 | **REL-030** | Results stop at the nearest 1,000, and the result says whether there are more                                                                                                                                                        |
 | **REL-031** | The conformance suite generates a tenant like the spike's and measures every operation for three kinds of user                                                                                                                       |
 | **REL-032** | The impact report runs in the background with no result cap, bounded by depth and filtered by permission                                                                                                                             |
@@ -184,6 +189,17 @@ In the spike every path was the true shortest and none took more than 132ms. As 
 in the service a hop at a time, each hop one query over both edge sources, and a test checks it
 against a breadth-first search over a generated graph. A floating end is not yet said resolved to a
 version in impact's answer, so REL-044 is unclaimed.
+
+## The graph view
+
+A component's or a document's header offers **Relationships** (R8c): a dialog drawing the artifact's
+relationships as rings round it, with the same relationships listed beside, by the artifact each was
+read from, for the keyboard and a screen reader. Expand on a neighbour reads its relationships into
+the next ring, each artifact drawn once, on the ring it was first reached (REL-025). Type, direction
+and a field's value filter it, each asked of the service, not filtered in the page (REL-026,
+REL-051). An artifact's neighbours of one kind past twenty are drawn as one count, which opens them as
+a list (REL-027). Under the filters the dialog names the request answering what it shows (REL-028).
+It relates the artifact to one found by search, by a type not deprecated that its kind may take.
 
 ## Residual risk: time
 

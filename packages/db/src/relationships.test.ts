@@ -309,4 +309,126 @@ describe('relationships (the R8 plan, R8-A to R8-E)', () => {
       refusal: { refused: 'deprecated' },
     });
   });
+
+  /** A new version of a type, as `type()` declares one, with these members over it. */
+  const revise = (made: { id: string; version: { id: string } }, over: Record<string, unknown>) =>
+    as((trx) =>
+      recordDefinitionVersion(trx, {
+        id: made.id,
+        openedFrom: made.version.id,
+        definition: {
+          schemaVersion: DEFINITION_SCHEMA_VERSION,
+          name: `Revised ${randomUUID().slice(0, 8)}`,
+          inverseName: 'Revised by',
+          directed: true,
+          from: { kinds: ['document'], cardinality: 'many', permission: 'edit' },
+          to: { kinds: ['document'], cardinality: 'many', permission: 'read' },
+          selfReference: false,
+          acyclic: false,
+          informational: true,
+          schemas: [],
+          ...over,
+        },
+        author: ada,
+      }),
+    );
+
+  it('REL-054 refuses making a type acyclic while its relationships hold a cycle, counting those on it', async () => {
+    const supersedes = await type();
+    const [a, b, c] = [await document(), await document(), await document()];
+    await relate(supersedes.id, a.artifactId, b.artifactId);
+    await relate(supersedes.id, b.artifactId, a.artifactId);
+    await relate(supersedes.id, b.artifactId, c.artifactId);
+    expect(await revise(supersedes, { acyclic: true })).toMatchObject({
+      answer: 'definition.invalid',
+      failures: [{ detail: '2 relationships of this type would become invalid' }],
+    });
+  });
+
+  it('REL-042 REL-046 checks a type that reads the same both ways from either end, its cycles and its cardinality alike', async () => {
+    const related = await type({ directed: false, acyclic: true });
+    const [a, b, c] = [await document(), await document(), await document()];
+    expect((await relate(related.id, a.artifactId, b.artifactId)).answer).toBe('made');
+    expect((await relate(related.id, c.artifactId, b.artifactId)).answer).toBe('made');
+    // a - b - c is joined already: a - c would close a cycle, whichever way it is written.
+    expect(await relate(related.id, a.artifactId, c.artifactId)).toEqual({ answer: 'cycle' });
+
+    const paired = await type({
+      directed: false,
+      from: { kinds: ['document'], cardinality: 'one', permission: 'edit' },
+      to: { kinds: ['document'], cardinality: 'one', permission: 'read' },
+    });
+    const [d, e, f] = [await document(), await document(), await document()];
+    expect((await relate(paired.id, d.artifactId, e.artifactId)).answer).toBe('made');
+    // e holds its one already, at the other end.
+    expect((await relate(paired.id, e.artifactId, f.artifactId)).answer).toBe('cardinality.full');
+    // And a new version making a type undirected counts an artifact at both ends.
+    const directed = await type({
+      from: { kinds: ['document'], cardinality: 'one', permission: 'edit' },
+      to: { kinds: ['document'], cardinality: 'one', permission: 'read' },
+    });
+    const [g, h, i] = [await document(), await document(), await document()];
+    await relate(directed.id, g.artifactId, h.artifactId);
+    await relate(directed.id, h.artifactId, i.artifactId);
+    expect(
+      await revise(directed, {
+        directed: false,
+        from: { kinds: ['document'], cardinality: 'one', permission: 'edit' },
+        to: { kinds: ['document'], cardinality: 'one', permission: 'read' },
+      }),
+    ).toMatchObject({ answer: 'definition.invalid' });
+  });
+
+  it('REL-037 refuses re-targeting a relationship of a deprecated type, which would be a new one, and keeps a change made at the same time as another', async () => {
+    const supersedes = await type();
+    const [a, b, c] = [await document(), await document(), await document()];
+    const held = await relate(supersedes.id, a.artifactId, b.artifactId);
+    if (held.answer !== 'made') throw new Error(held.answer);
+
+    // Two changes at once: one re-targets, one changes nothing but its values. Neither undoes the other.
+    let release: () => void = () => undefined;
+    const holding = new Promise<void>((resolve) => (release = resolve));
+    let started: () => void = () => undefined;
+    const begun = new Promise<void>((resolve) => (started = resolve));
+    const retarget = as(async (trx) => {
+      const changed = await changeRelationship(trx, {
+        id: held.relationship.id,
+        to: { artifact: c.artifactId },
+      });
+      started();
+      await holding;
+      return changed;
+    });
+    await begun;
+    const revalue = as((trx) => changeRelationship(trx, { id: held.relationship.id, values: {} }));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    release();
+    expect((await retarget).answer).toBe('changed');
+    expect((await revalue).answer).toBe('changed');
+    expect((await as((trx) => readRelationship(trx, held.relationship.id)))!.to.artifact).toBe(
+      c.artifactId,
+    );
+
+    const current = await as((trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', supersedes.id)
+        .orderBy('revision_no', 'desc')
+        .orderBy('version_no', 'desc')
+        .executeTakeFirstOrThrow(),
+    );
+    expect((await revise({ id: supersedes.id, version: current }, { deprecated: {} })).answer).toBe(
+      'recorded',
+    );
+    expect(
+      await as((trx) =>
+        changeRelationship(trx, { id: held.relationship.id, to: { artifact: b.artifactId } }),
+      ),
+    ).toEqual({ answer: 'end.refused', refusal: { refused: 'deprecated' } });
+    // Its values may still change: it is no new relationship.
+    expect(
+      (await as((trx) => changeRelationship(trx, { id: held.relationship.id, values: {} }))).answer,
+    ).toBe('changed');
+  });
 });

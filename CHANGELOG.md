@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.179.0 - 2026-10-16 (PR #653)
+
+Reuse's eighth slice: relationships and the graph (the R8 plan).
+
+### Added
+
+- **Relationships, through the API.** Declare a relationship type as a definition: the kinds it relates at each end, how many each artifact may hold, whether it reads the same both ways, whether an artifact may relate to itself, whether it may close a cycle, the permission it needs at each end and the fields it carries. Relate two artifacts by it, each end pinned to a version or floating, then change or remove the relationship; each act is checked as the type says and recorded.
+- **Relationships in traversal.** Impact now walks declared relationships beside references, marking what references alone reach as hard and what a relationship reaches as informational. List an artifact's relationships by type, direction and a field's value, and find a shortest path between two artifacts to a depth, along named types if asked; anything you may not read is left out, and the answer says only that something was.
+- **Relationships in the page.** A component's or a document's header offers **Relationships**: its relationships drawn as a graph centred on it, and listed beside, each read from its end. Expand a neighbour to grow the next ring; filter by type, direction and a field's value; past twenty of one kind from one artifact they are drawn as a count, opened as a list. Each view names the API query that answers it. Relate it to another artifact found by search, by a type it may take, or remove a relationship.
+
 ## 0.178.0 - 2026-10-16 (PR #649)
 
 Reuse's seventh slice: bulk generation (the R7 plan).

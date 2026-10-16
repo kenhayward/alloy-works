@@ -989,6 +989,15 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.getByRole('button', { name: 'Show boundaries' }).click();
       await check('boundaries shown', { shows: page.locator('[data-boundaries="shown"]') });
 
+      // Its relationships, drawn and listed (the R8 plan, R8-G).
+      await page.getByRole('button', { name: 'Relationships', exact: true }).click();
+      const relationships = page.getByRole('dialog', { name: /^Relationships of / });
+      await check('the Relationships dialog', {
+        shows: relationships.getByRole('img', { name: /^A graph of / }),
+        hides: [relationships.getByText('Reading its relationships.')],
+      });
+      await closeDialog(page);
+
       await row(/Methods/).click();
       await check('a section chosen in the outline', {
         shows: [node(/Methods/), page.getByRole('list', { name: 'Referenced by' })],

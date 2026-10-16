@@ -61,6 +61,7 @@ import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
+import { RelationshipsButton } from '../reuse/Relationships.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
@@ -2134,6 +2135,13 @@ export function DocumentPage({
                   }}
                 />
               )}
+              <RelationshipsButton
+                client={client}
+                id={document.id}
+                kind="document"
+                title={document.outline.title}
+                className={styles['toggle']}
+              />
               <ArchiveButton
                 client={client}
                 kind="document"

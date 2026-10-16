@@ -46,3 +46,7 @@ on it, filtered by type, every picture also a query.
 
 - The panel and the view; the browser walks; the final review hunts a relationship the type does
   not permit, and an unreadable artifact shown or walked past. The close: 0.179.0.
+
+## Built
+
+R8a in #650, R8b in #652, R8c with the close (0.179.0) in #653. The final review found a type made acyclic over relationships already holding a cycle accepted, a type reading the same both ways checked for cycles and cardinality one way only, a change at the same time as another able to write back an end it had re-targeted, and a deprecated type re-targetable to new artifacts; all fixed, each with a test. The shortest path now keeps the nearest meeting of its whole hop. Left: exporting types with configuration (REL-007, REL-039, REL-041), bulk acts (REL-048), the MCP surface (REL-021), the budget (REL-031) and REL-044, impact naming the version a floating end resolved to.

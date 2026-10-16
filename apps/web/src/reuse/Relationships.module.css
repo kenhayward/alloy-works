@@ -1,0 +1,133 @@
+/* An artifact's relationships, drawn and listed (the R8 plan, R8-G). */
+.relDialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.relDialog h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.relDialog h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--size-14);
+}
+
+.relDialog p {
+  margin: 0;
+}
+
+.relFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.relFilters label,
+.relRelate label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.relQuery code {
+  overflow-wrap: anywhere;
+}
+
+.relGraph {
+  width: 100%;
+  max-width: 480px;
+  align-self: center;
+}
+
+.relGraph line {
+  stroke: var(--strong-border);
+  stroke-width: 1;
+}
+
+.relGraph text {
+  fill: var(--text);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.relCentre circle {
+  fill: var(--accent);
+}
+
+.relNode circle {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.relNode,
+.relCount {
+  cursor: pointer;
+}
+
+.relCount circle {
+  fill: var(--accent-weak);
+  stroke: var(--strong-border);
+  stroke-dasharray: 3 2;
+}
+
+.relListing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.relList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0;
+  padding-left: var(--space-16);
+}
+
+.relList > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.relList > li > ul {
+  flex-basis: 100%;
+}
+
+.relRelate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.relRelate form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+}
+
+.relRelate fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.relRelate fieldset label {
+  flex-direction: row;
+  align-items: center;
+}
+
+.relMuted {
+  color: var(--muted);
+}
+
+.relButtons {
+  display: flex;
+  justify-content: flex-end;
+}
