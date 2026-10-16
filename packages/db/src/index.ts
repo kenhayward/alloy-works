@@ -825,3 +825,10 @@ export {
   type RelationshipAnswer,
   type StoredRelationship,
 } from './relationships.js';
+export {
+  neighbours,
+  shortestPath,
+  type Named as TraversalNamed,
+  type Neighbour,
+  type PathStep,
+} from './traversal.js';

@@ -350,6 +350,8 @@ const operationTags = {
     'getRelationship',
     'changeRelationship',
     'removeRelationship',
+    'getArtifactRelationships',
+    'getArtifactPath',
   ],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
@@ -528,6 +530,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads a relationship: its type, its two ends and the versions they pin, and its values. Anybody who may read both ends reads it.',
   changeRelationship:
     'Changes a relationship: an end re-targeted or re-pinned, or its values given whole, each checked as making it is. Needs read on both ends and the permission the type declares at each. Audited.',
+  getArtifactRelationships:
+    'Lists the relationships of an artifact, one hop, oldest first: each with which end the artifact is, and the artifact at the other end. Filtered by type, by direction, and by the value one field holds, given as text and compared as JSON. A relationship whose other end the caller may not read, or is deleted, is left out, and the answer says only that there were such. Needs read on the artifact.',
+  getArtifactPath:
+    'Finds one shortest path from an artifact to another, to the depth asked, from 1 to 10, stepping either way along relationships and references; along named relationship types alone, and no reference, where `types` names any. An artifact the caller may not read, or a deleted one, is never stepped onto, and the answer says only that the search met one. Null where no path is within the depth. Needs read on both.',
   removeRelationship:
     'Removes a relationship and records the removal, answering it as it was. Needs read on both ends and the permission the type declares at each.',
   submitCohort:
@@ -543,7 +549,7 @@ const descriptions: Readonly<Record<string, string>> = {
   downloadJob:
     "Hands out a link, good for five minutes, to a succeeded job's result: an impact report's is JSON Lines, one artifact a line, nearest first, with its kind, title, depth and the artifact it was reached through. Refused, job_not_ready, until it has succeeded. Only whoever submitted it may download it.",
   getArtifactImpact:
-    'Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. Each is reached by references alone, so a change would break or change it. Needs read on the artifact.',
+    'Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. It walks declared relationships too, an undirected one from either end: each says whether references alone reach it, `hard`, so a change would break or change it, or a relationship does, which is informational. Needs read on the artifact.',
   getArtifactReferences:
     'Says what an artifact uses: what its latest version references, one hop forwards. A document references its components and its template version; a component its images and query definitions; a query definition its connection. Those the caller may read are named, and the answer says whether there is more. Needs read on the artifact.',
   getComponentUses:

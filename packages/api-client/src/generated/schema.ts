@@ -68,7 +68,7 @@ export interface paths {
         };
         /**
          * What a change to an artifact reaches, to a depth
-         * @description Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. Each is reached by references alone, so a change would break or change it. Needs read on the artifact.
+         * @description Says what a change to an artifact reaches: the artifacts whose latest versions reference it, then those referencing them, to the depth asked, from 1 to 10. There is no default depth. Each is listed once, at the fewest hops it is reached in, with the artifact it references one hop nearer, so the walk ends on a cycle. Something the caller may not read is neither listed nor walked past, and the answer says only that the walk was cut there. It stops at the nearest 1,000 and says whether there were more. It walks declared relationships too, an undirected one from either end: each says whether references alone reach it, `hard`, so a change would break or change it, or a relationship does, which is informational. Needs read on the artifact.
          */
         get: operations["getArtifactImpact"];
         put?: never;
@@ -99,6 +99,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/artifacts/{id}/path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A shortest path from one artifact to another, to a depth
+         * @description Finds one shortest path from an artifact to another, to the depth asked, from 1 to 10, stepping either way along relationships and references; along named relationship types alone, and no reference, where `types` names any. An artifact the caller may not read, or a deleted one, is never stepped onto, and the answer says only that the search met one. Null where no path is within the depth. Needs read on both.
+         */
+        get: operations["getArtifactPath"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts/{id}/references": {
         parameters: {
             query?: never;
@@ -111,6 +131,26 @@ export interface paths {
          * @description Says what an artifact uses: what its latest version references, one hop forwards. A document references its components and its template version; a component its images and query definitions; a query definition its connection. Those the caller may read are named, and the answer says whether there is more. Needs read on the artifact.
          */
         get: operations["getArtifactReferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/artifacts/{id}/relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An artifact's relationships, by type, direction and field value
+         * @description Lists the relationships of an artifact, one hop, oldest first: each with which end the artifact is, and the artifact at the other end. Filtered by type, by direction, and by the value one field holds, given as text and compared as JSON. A relationship whose other end the caller may not read, or is deleted, is left out, and the answer says only that there were such. Needs read on the artifact.
+         */
+        get: operations["getArtifactRelationships"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6585,7 +6625,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The artifacts whose latest versions reference it, and those referencing them, to the depth asked: nearest first, at most 1,000 */
+            /** @description The artifacts whose latest versions reference it or that relate to it, and so on, to the depth asked: nearest first, at most 1,000 */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6610,9 +6650,9 @@ export interface operations {
                             title: string;
                             /** @description The fewest hops it is reached in */
                             depth: number;
-                            /** @description The artifact it references, one hop nearer the start */
+                            /** @description The artifact it references or relates to, one hop nearer the start */
                             via: string & (unknown & unknown);
-                            /** @description Reached by a chain of references alone, which a change would break or change */
+                            /** @description Reached by a chain of references alone, which a change would break or change; false where a declared relationship reaches it, which is informational */
                             hard: boolean;
                         }[];
                         /** @description Whether the walk met something the caller may not read, and went no further that way: never what */
@@ -6956,6 +6996,156 @@ export interface operations {
             };
         };
     };
+    getArtifactPath: {
+        parameters: {
+            query: {
+                to: string & (unknown & unknown);
+                depth: string;
+                types?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One shortest path, or none within the depth */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "path": [],
+                     *       "cut": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description From the artifact to `to`, each step either way along a relationship or a reference; null where none is within the depth */
+                        path: {
+                            id: string & (unknown & unknown);
+                            /** @description The artifact's kind */
+                            kind: string;
+                            /** @description Its title or name now */
+                            title: string;
+                            /** @description The relationship that reached it from the one before, or null: the start, or a reference */
+                            relationship: (string & (unknown & unknown)) | null;
+                        }[] | null;
+                        /** @description Whether the search met an artifact the caller may not read: never which */
+                        cut: boolean;
+                    };
+                };
+            };
+            /** @description A depth missing, or not from 1 to 10 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an artifact the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact the caller may read, at either end */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getArtifactReferences: {
         parameters: {
             query?: never;
@@ -7039,6 +7229,190 @@ export interface operations {
                 };
             };
             /** @description No such artifact the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getArtifactRelationships: {
+        parameters: {
+            query?: {
+                type?: string & (unknown & unknown);
+                direction?: "out" | "in";
+                field?: string & (unknown & unknown);
+                value?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its relationships the caller may read the other end of */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "relationships": [],
+                     *       "cut": false,
+                     *       "more": false
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Oldest first, at most 1,000 */
+                        relationships: {
+                            relationship: {
+                                id: string & (unknown & unknown);
+                                type: string & (unknown & unknown);
+                                from: {
+                                    artifact: string & (unknown & unknown);
+                                    /** @description The artifact's kind */
+                                    kind: string;
+                                    /** @description The version pinned, or null where it floats */
+                                    version: (string & (unknown & unknown)) | null;
+                                };
+                                to: {
+                                    artifact: string & (unknown & unknown);
+                                    /** @description The artifact's kind */
+                                    kind: string;
+                                    /** @description The version pinned, or null where it floats */
+                                    version: (string & (unknown & unknown)) | null;
+                                };
+                                values: {
+                                    [key: string]: unknown;
+                                };
+                                createdBy: string & (unknown & unknown);
+                                createdAt: string;
+                                changedAt: string;
+                            };
+                            /**
+                             * @description Whether the artifact is its from or its to end
+                             * @enum {string}
+                             */
+                            direction: "out" | "in";
+                            /** @description The artifact at the other end */
+                            other: {
+                                id: string & (unknown & unknown);
+                                /** @description The artifact's kind */
+                                kind: string;
+                                /** @description Its title or name now */
+                                title: string;
+                            };
+                        }[];
+                        /** @description Whether one leads to an artifact the caller may not read: never which */
+                        cut: boolean;
+                        /** @description Whether there are more than 1,000 */
+                        more: boolean;
+                    };
+                };
+            };
+            /** @description A field without a value, or a value without a field */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an artifact the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact the caller may read, at either end */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

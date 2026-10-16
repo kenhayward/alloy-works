@@ -50,7 +50,7 @@ answer beyond those bounds is a report produced in the background.
 | **REL-053** | A type assigns metadata schemas, as a component type does, whose fields its relationships carry                                                                                                                                      |
 | **REL-054** | A type's next version is refused where it would leave relationships invalid, saying how many                                                                                                                                         |
 | **REL-014** | Foreign keys to `artifact` restrict deletion; removing an artifact's relationships is an explicit, audited act that deletion awaits                                                                                                  |
-| **REL-015** | The neighbours operation, by type and direction, a page at a time                                                                                                                                                                    |
+| **REL-015** | The neighbours operation, by type and direction, at most 1,000                                                                                                                                                                       |
 | **REL-017** | Every operation requires a depth, and the service refuses anything above ten                                                                                                                                                         |
 | **REL-018** | De-duplicating recursion never revisits an artifact at a depth it has already reached, so a cycle ends the walk rather than repeating                                                                                                |
 | **REL-019** | The permission test is inside the recursive step, so an unreadable artifact is never returned and never expanded                                                                                                                     |
@@ -113,12 +113,12 @@ Traversal reads it beside the relationship table, as a second source.
 
 One interface, four operations:
 
-| Operation     | Returns                                                                                               | How                                   |
-| ------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Neighbours    | A page of artifacts one hop away, by type and direction, with a capped count and whether any were cut | One query per edge source             |
-| Impact        | The nearest artifacts that depend on this one, to a depth, marked hard or informational               | Recursive SQL, de-duplicated          |
-| Shortest path | One shortest path between two artifacts, no longer than a depth, optionally along named types         | A bidirectional search, in a function |
-| Impact report | Every artifact that depends on this one, to a depth, produced in the background                       | The impact query without the cap      |
+| Operation     | Returns                                                                                            | How                                   |
+| ------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Neighbours    | Relationships one hop away, by type, direction and a field's value, at most 1,000, and whether cut | One query                             |
+| Impact        | The nearest artifacts that depend on this one, to a depth, marked hard or informational            | Recursive SQL, de-duplicated          |
+| Shortest path | One shortest path between two artifacts, no longer than a depth, optionally along named types      | A bidirectional search, a query a hop |
+| Impact report | Every artifact that depends on this one, to a depth, produced in the background                    | The impact query without the cap      |
 
 ### The permission step
 
@@ -180,7 +180,10 @@ REL-029 asks how two artifacts are connected, which is a shortest path, not ever
 searches outwards from both ends at once, always growing the smaller side, along edges in either
 direction, keeping a visited set and a parent for each artifact on each side; when the two sides
 meet, it walks the parents back to both ends. It returns one shortest path, or none within the depth.
-In the spike every path was the true shortest and none took more than 132ms.
+In the spike every path was the true shortest and none took more than 132ms. As built (R8b), it runs
+in the service a hop at a time, each hop one query over both edge sources, and a test checks it
+against a breadth-first search over a generated graph. A floating end is not yet said resolved to a
+version in impact's answer, so REL-044 is unclaimed.
 
 ## Residual risk: time
 

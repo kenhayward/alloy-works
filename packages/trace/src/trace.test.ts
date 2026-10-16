@@ -861,6 +861,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1480 (2026-10-16): R8b's traversal - REL-015, REL-020, REL-022, REL-023, REL-029.
     // 1411 (2026-10-15): R5a's variables - REU-017, REU-018, REU-019.
     // 1406 (2026-10-15): R4b's Overrides in the page - REU-011, REU-015.
     // 1402 (2026-10-15): R4a's overrides - REU-011 to REU-015.
@@ -907,7 +908,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1473);
+    expect(model.citations).toHaveLength(1480);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -25,10 +25,14 @@ export const ImpactView = z.object({
     .array(
       Artifact.extend({
         depth: z.number().int().describe('The fewest hops it is reached in'),
-        via: LowercaseUuid.describe('The artifact it references, one hop nearer the start'),
+        via: LowercaseUuid.describe(
+          'The artifact it references or relates to, one hop nearer the start',
+        ),
         hard: z
           .boolean()
-          .describe('Reached by a chain of references alone, which a change would break or change'),
+          .describe(
+            'Reached by a chain of references alone, which a change would break or change; false where a declared relationship reaches it, which is informational',
+          ),
       }),
     )
     .describe('Nearest first, each once'),
@@ -74,7 +78,7 @@ export const impactRoutes = {
     responses: {
       200: {
         description:
-          'The artifacts whose latest versions reference it, and those referencing them, to the depth asked: nearest first, at most 1,000',
+          'The artifacts whose latest versions reference it or that relate to it, and so on, to the depth asked: nearest first, at most 1,000',
         schema: ImpactView,
       },
       400: { description: 'A depth missing, or not from 1 to 10', schema: ErrorBody },

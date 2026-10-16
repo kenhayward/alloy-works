@@ -175,6 +175,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getComponentUses: read,
   getArtifactImpact: read,
   getArtifactReferences: read,
+  getArtifactRelationships: read,
+  getArtifactPath: read,
   previewPlacement: read,
   // A job about what is recorded, its rows its requester's alone: no change to the tenant's content.
   submitImpactReport: { none: 'derived' },

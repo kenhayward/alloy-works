@@ -426,6 +426,10 @@ export {
 export {
   ChangeRelationshipBody,
   MakeRelationshipBody,
+  NeighboursQuery,
+  NeighboursView,
+  PathQuery,
+  PathView,
   RelationshipParams,
   RelationshipView,
   relationshipRoutes,

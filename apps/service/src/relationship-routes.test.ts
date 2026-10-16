@@ -87,4 +87,46 @@ describe('relationships, through the service', () => {
     expect(removed.statusCode, removed.body).toBe(200);
     expect((await h.call('ada', 'GET', `/v1/relationships/${id}`)).statusCode).toBe(404);
   });
+
+  it('REL-015 REL-029 answers the relationships of an artifact by direction, and a shortest path between two, to a reader of both', async () => {
+    const [a, b, c] = [
+      await h.documentReferencing([]),
+      await h.documentReferencing([]),
+      await h.documentReferencing([]),
+    ];
+    expect((await relate('ada', a.id, b.id)).statusCode).toBe(200);
+    expect((await relate('ada', c.id, b.id)).statusCode).toBe(200);
+
+    const around = await h.call('alice', 'GET', `/v1/artifacts/${b.id}/relationships?direction=in`);
+    expect(around.statusCode, around.body).toBe(200);
+    const listed = around.json<{ relationships: { direction: string; other: { id: string } }[] }>();
+    expect(listed.relationships.map((each) => each.other.id).sort()).toEqual([a.id, c.id].sort());
+    expect(
+      (await h.call('alice', 'GET', `/v1/artifacts/${b.id}/relationships?direction=out`)).json(),
+    ).toMatchObject({ relationships: [], cut: false });
+    expect(
+      (await h.call('alice', 'GET', `/v1/artifacts/${b.id}/relationships?field=${supersedes}`))
+        .statusCode,
+    ).toBe(400);
+    expect((await h.call('ivy', 'GET', `/v1/artifacts/${b.id}/relationships`)).statusCode).toBe(
+      404,
+    );
+
+    const path = await h.call('alice', 'GET', `/v1/artifacts/${a.id}/path?to=${c.id}&depth=2`);
+    expect(path.statusCode, path.body).toBe(200);
+    expect(path.json<{ path: { id: string }[] }>().path.map((each) => each.id)).toEqual([
+      a.id,
+      b.id,
+      c.id,
+    ]);
+    expect(
+      (await h.call('alice', 'GET', `/v1/artifacts/${a.id}/path?to=${c.id}&depth=1`)).json(),
+    ).toEqual({ path: null, cut: false });
+    expect((await h.call('alice', 'GET', `/v1/artifacts/${a.id}/path?to=${c.id}`)).statusCode).toBe(
+      400,
+    );
+    expect(
+      (await h.call('ivy', 'GET', `/v1/artifacts/${a.id}/path?to=${c.id}&depth=2`)).statusCode,
+    ).toBe(404);
+  });
 });

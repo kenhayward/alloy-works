@@ -1,4 +1,5 @@
 import { isLabelledKind, labelFor, type ReadableSet } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { deletedAmong } from './deletion.js';
 import { mayReadArtifact } from './queryDefinitions.js';
@@ -18,10 +19,13 @@ export interface Reached {
   readonly kind: string;
   readonly title: string;
   readonly depth: number;
-  /** The artifact it references, one hop nearer the start. */
+  /** The artifact it references or relates to, one hop nearer the start. */
   readonly via: string;
-  /** Reached by a chain of references alone, which would break or change (REL-023). */
-  readonly hard: true;
+  /**
+   * Reached by a chain of references alone, which would break or change; false where only a declared
+   * relationship reaches it, which is informational (REL-022, REL-023; the R8 plan, R8-F).
+   */
+  readonly hard: boolean;
 }
 
 export interface Impact {
@@ -49,6 +53,9 @@ interface Edge {
   readonly space_id: string | null;
 }
 
+/** Which edges a walk follows: references alone, or references and declared relationships. */
+type Sources = 'references' | 'both';
+
 /**
  * What a change to an artifact reaches (relationships.md, "Impact"; the R2 plan, R2-C, R2-D): the
  * artifacts whose latest versions reference it, and those referencing them, to `depth`. A depth at a
@@ -75,15 +82,50 @@ export async function impact(
   const none: Impact = { reached: [], depths: 0, stopped: false, cut: false, more: false };
   if (!UUID.test(id) || !(await referencesStored(trx))) return none;
   const readable = await loadReadableSet(trx, by);
+  // References alone say what is hard; both sources say what is reached at all (REL-022, REL-023).
+  const both = await relationshipsStored(trx);
+  const hard = await walk(trx, readable, id, depth, limit, 'references', both ? undefined : step);
+  const all = both ? await walk(trx, readable, id, depth, limit, 'both', step) : hard;
+  const isHard = new Set(hard.reached.map((each) => each.id));
+  const titles = await titlesOf(
+    trx,
+    all.reached.map((each) => each.id),
+  );
+  return {
+    reached: all.reached.map((each) => ({
+      ...each,
+      hard: isHard.has(each.id),
+      title: titles.get(each.id) ?? '',
+    })),
+    depths: all.depths,
+    stopped: all.stopped,
+    cut: all.cut,
+    more: all.more,
+  };
+}
+
+/** One walk from `id`, a depth at a time, along the edges `sources` names. */
+async function walk(
+  trx: TenantTransaction,
+  readable: ReadableSet | undefined,
+  id: string,
+  depth: number,
+  limit: number,
+  sources: Sources,
+  step?: (walked: number, reached: number) => Promise<boolean>,
+): Promise<Omit<Impact, 'reached'> & { reached: Omit<Reached, 'title' | 'hard'>[] }> {
   const seen = new Set([id]);
-  const reached: Omit<Reached, 'title'>[] = [];
+  const reached: Omit<Reached, 'title' | 'hard'>[] = [];
   let cut = false;
   let more = false;
   let frontier = [id];
   let walked = 0;
   let stopped = false;
   for (let at = 1; at <= depth && frontier.length > 0 && !more; at += 1) {
-    const edges = await edgesInto(trx, frontier);
+    const edges = [
+      ...(await edgesInto(trx, frontier)),
+      ...(sources === 'both' ? await relatedInto(trx, frontier) : []),
+    ];
     const fresh = edges.filter((edge) => !seen.has(edge.from_id));
     const deleted = await deletedAmong(
       trx,
@@ -102,7 +144,7 @@ export async function impact(
         more = true;
         break;
       }
-      reached.push({ id: edge.from_id, kind: edge.kind, depth: at, via: edge.to_id, hard: true });
+      reached.push({ id: edge.from_id, kind: edge.kind, depth: at, via: edge.to_id });
       next.push(edge.from_id);
     }
     frontier = next;
@@ -114,17 +156,49 @@ export async function impact(
   }
   // A walk that ran out of artifacts before its depth has walked every depth there was.
   if (!stopped && (frontier.length === 0 || more)) walked = depth;
-  const titles = await titlesOf(
-    trx,
-    reached.map((each) => each.id),
-  );
-  return {
-    reached: reached.map((each) => ({ ...each, title: titles.get(each.id) ?? '' })),
-    depths: walked,
-    stopped,
-    cut,
-    more,
-  };
+  return { reached, depths: walked, stopped, cut, more };
+}
+
+const relationshipsKnown = new WeakMap<TenantTransaction, boolean>();
+
+/** Whether this schema has 0108's table: migration tests run this code on older ones. */
+async function relationshipsStored(trx: TenantTransaction): Promise<boolean> {
+  const known = relationshipsKnown.get(trx);
+  if (known !== undefined) return known;
+  const { rows } = await sql<{ present: boolean }>`
+    select to_regclass('relationship') is not null as present`.execute(trx);
+  relationshipsKnown.set(trx, rows[0]!.present);
+  return rows[0]!.present;
+}
+
+/**
+ * Each declared relationship into these (REL-022; R8-F): its from end, which relates to one of them,
+ * and for a type that reads the same from both ends, its to end where one of them is its from end.
+ * Spelled as a reference edge is: `from_id` the artifact reached, `to_id` the one nearer the start.
+ */
+async function relatedInto(trx: TenantTransaction, targets: readonly string[]): Promise<Edge[]> {
+  const edges: Edge[] = [];
+  for (const part of chunks(targets)) {
+    const { rows } = await sql<Edge>`
+      with typed as (
+        select r.*, (
+          select (v.content ->> 'directed')::boolean from artifact_version v
+           where v.artifact_id = r.type_id order by v.revision_no desc, v.version_no desc limit 1
+        ) as directed
+          from relationship r
+         where r.to_id = any(${[...part]}::uuid[]) or r.from_id = any(${[...part]}::uuid[])
+      )
+      select t.from_id, t.to_id, a.kind, a.space_id
+        from typed t join artifact a on a.id = t.from_id
+       where t.to_id = any(${[...part]}::uuid[])
+      union
+      select t.to_id as from_id, t.from_id as to_id, a.kind, a.space_id
+        from typed t join artifact a on a.id = t.to_id
+       where t.from_id = any(${[...part]}::uuid[]) and t.directed is false
+      order by 1, 2`.execute(trx);
+    edges.push(...rows);
+  }
+  return edges;
 }
 
 /**
@@ -198,7 +272,7 @@ function readableBy(readable: ReadableSet | undefined, edge: Edge): boolean {
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Each artifact's title or name, from its latest version, as the audit labels it. */
-async function titlesOf(trx: TenantTransaction, ids: readonly string[]) {
+export async function titlesOf(trx: TenantTransaction, ids: readonly string[]) {
   const titles = new Map<string, string>();
   for (const part of chunks(ids)) {
     const rows = await trx
