@@ -1678,12 +1678,13 @@ export async function recordPublication(
       `The request ${request.id} asked for ${request.formats.join(', ')}, and a publication records one output per format it asked for: ${made.join(', ') || 'none'} is not that`,
     );
   }
-  // `provenance.json` exactly where the request holds a binding, and once (B3-G; DAT-042).
+  // `provenance.json` once where the request holds a binding (B3-G; DAT-042), and at most once where it
+  // holds none: the variables it printed are recorded there too (the R5 plan, R5-E; #644).
   const bound = await holdsBindings(trx, request.id);
   const provenances = input.outputs.filter((each) => each.format === 'provenance').length;
-  if (provenances !== (bound ? 1 : 0)) {
+  if (bound ? provenances !== 1 : provenances > 1) {
     throw new Error(
-      `The request ${request.id} ${bound ? 'holds a binding, and a publication of it records one provenance output' : 'holds no binding, so a publication of it records no provenance output'}`,
+      `The request ${request.id} ${bound ? 'holds a binding, and a publication of it records one provenance output' : 'holds no binding, so a publication of it records at most one provenance output'}`,
     );
   }
   // What the writer reports is held to its closed shape before it is stored, as it is read back.

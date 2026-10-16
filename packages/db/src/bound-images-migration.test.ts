@@ -215,6 +215,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0102_reference_index',
       '0103_api_jobs',
       '0104_variable_definitions',
+      '0105_provenance_without_bindings',
     ]);
     const kept = await queryAs(
       db.adminUrl,

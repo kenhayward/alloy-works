@@ -255,6 +255,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0102_reference_index',
       '0103_api_jobs',
       '0104_variable_definitions',
+      '0105_provenance_without_bindings',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

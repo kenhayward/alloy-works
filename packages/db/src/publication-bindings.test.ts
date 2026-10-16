@@ -502,15 +502,9 @@ describe('the bindings of a publication request and a publication', () => {
 
   it('DAT-042 records a publication holding values only with its bindings and its provenance output whole', async () => {
     const { request } = await requestedWithBindings();
-    // Without the provenance, or with one where nothing is bound, the record is refused before a row.
+    // Without the provenance the record is refused before a row.
     await expect(
       tenant((trx) => recordPublication(trx, recording(request, false))),
-    ).rejects.toThrow(/provenance/);
-    const unbound = await documentHolding();
-    const plain = await ask(unbound);
-    if (plain.answer !== 'requested') throw new Error(plain.answer);
-    await expect(
-      tenant((trx) => recordPublication(trx, recording(plain.request.id, true))),
     ).rejects.toThrow(/provenance/);
 
     const id = await tenant((trx) => recordPublication(trx, recording(request, true)));
@@ -542,6 +536,29 @@ describe('the bindings of a publication request and a publication', () => {
         report: [],
       },
     ]);
+  });
+
+  it('records a publication holding no binding with the provenance its variables printed, or without one (#644)', async () => {
+    // A variable's value is recorded in provenance.json where nothing is bound (the R5 plan, R5-E),
+    // so a request holding no binding may record one provenance output, and need not.
+    for (const withProvenance of [true, false]) {
+      const plain = await ask(await documentHolding());
+      if (plain.answer !== 'requested') throw new Error(plain.answer);
+      const id = await tenant((trx) =>
+        recordPublication(trx, recording(plain.request.id, withProvenance)),
+      );
+      const formats = await tenant((trx) =>
+        trx
+          .selectFrom('publication_output')
+          .select('format')
+          .where('publication_id', '=', id!)
+          .orderBy('format')
+          .execute(),
+      );
+      expect(formats.map((each) => each.format)).toEqual(
+        withProvenance ? ['pdf', 'provenance'] : ['pdf'],
+      );
+    }
   });
 
   it("DAT-042 refuses at commit a publication whose bindings are not its request's, or whose provenance output is missing", async () => {
