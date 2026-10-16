@@ -38516,7 +38516,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -38861,7 +38861,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -38980,6 +38980,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                variables?: string[];
                             };
                         }[];
                         /** @description The latest version's parameter values, by name */
@@ -39728,7 +39729,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -40073,7 +40074,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -41085,7 +41086,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -41430,7 +41431,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -42558,7 +42559,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -42903,7 +42904,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -46233,7 +46234,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -46578,7 +46579,7 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -62142,7 +62143,8 @@ export interface operations {
                      *         "scheme": {},
                      *         "words": {},
                      *         "formats": []
-                     *       }
+                     *       },
+                     *       "unresolvedVariables": []
                      *     }
                      */
                     "application/json": {
@@ -62364,6 +62366,11 @@ export interface operations {
                             /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
                             formats: string[];
                         };
+                        /** @description Each variable the components its template requires hold that does not resolve yet, by the node placing it and the variable's key: the publish fails on it unless a parameter, field or result gives it a value first (the R10 plan, R10-D) */
+                        unresolvedVariables: {
+                            node: string;
+                            key: string;
+                        }[];
                     };
                 };
             };
@@ -62422,7 +62429,7 @@ export interface operations {
                             /** @description Whether the caller may change the template */
                             mayDesign: boolean;
                         };
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -64088,6 +64095,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                variables?: string[];
                             };
                         }[];
                         components?: {
@@ -64223,7 +64231,7 @@ export interface operations {
                             /** @description Whether the caller may change the template */
                             mayDesign: boolean;
                         };
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -65949,6 +65957,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                variables?: string[];
                             };
                         }[];
                         components?: {
@@ -66084,7 +66093,7 @@ export interface operations {
                             /** @description Whether the caller may change the template */
                             mayDesign: boolean;
                         };
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */
@@ -66217,7 +66226,7 @@ export interface operations {
                             /** @description Whether the caller may change the template */
                             mayDesign: boolean;
                         };
-                        /** @description parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
                         parameters?: {
                             parameter: string;
                             /** @description The field it seeds, where that is what is refused */

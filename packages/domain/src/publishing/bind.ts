@@ -52,6 +52,8 @@ export type Held =
       readonly result: CanonicalResult;
       readonly columns: readonly Column[];
       readonly datasetVersion: string;
+      /** The query definition the result was run from, which a variable may take it by (R10-B). */
+      readonly definition?: string;
       readonly images: Readonly<Record<string, string>>;
       /** The key of the definition version the dataset version ran (TB3-B): what a keyed note names. */
       readonly key: readonly string[];

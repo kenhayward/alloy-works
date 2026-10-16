@@ -19,6 +19,7 @@ import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
   type CreateDocumentAnswer,
+  unresolvedVariables,
   documentLayout,
   documentRules,
   documentTemplate,
@@ -315,10 +316,17 @@ function refusedParameters(
       );
     case 'parameter.unused':
     case 'parameter.field':
+    case 'parameter.variable':
       return refused(
         400,
         answer.answer,
-        answer.answer === 'parameter.unused' ? PARAMETER_WORDS.unused : PARAMETER_WORDS.field,
+        PARAMETER_WORDS[
+          answer.answer === 'parameter.unused'
+            ? 'unused'
+            : answer.answer === 'parameter.field'
+              ? 'field'
+              : 'variable'
+        ],
         {
           parameters: answer.problems.map(({ parameter, field, message }) => ({
             parameter,
@@ -413,7 +421,7 @@ export async function createdView(
     .executeTakeFirstOrThrow();
   // Decided against the space, as `createComponent` decides it: the document did not exist when
   // the facts were loaded, so no denial on it can exist yet.
-  return documentView(
+  const view = await documentView(
     {
       trx,
       principalId,
@@ -429,6 +437,11 @@ export async function createdView(
     { id: answer.version.artifactId, space: held },
     answer.version,
   );
+  // What its required components hold that does not resolve yet, named, never refused (TPL-072).
+  return {
+    ...view,
+    unresolvedVariables: await unresolvedVariables(trx, answer.version.artifactId, principalId),
+  };
 }
 
 export function documentHandlers(

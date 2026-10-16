@@ -201,7 +201,8 @@ describe('the real corpus', () => {
     // 1582 (2026-10-13): SCH-073, superseding SCH-034 (the SV3 plan).
     // 1585 (2026-10-15): LIF-077, superseding LIF-040.
     // 1587 (2026-10-16): TPL-070 and TPL-071, superseding TPL-060 and TPL-046 (ADR-0062).
-    expect(total((document) => document.requirements)).toBe(1587);
+    // 1588 (2026-10-16): TPL-072, superseding TPL-064 (R10).
+    expect(total((document) => document.requirements)).toBe(1588);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

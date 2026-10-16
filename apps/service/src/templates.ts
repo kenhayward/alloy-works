@@ -26,9 +26,12 @@ import { refused } from './wire-codes.js';
 
 /** What a person is told of each parameter refusal (templates.md, "Failures"), beside its code. */
 export const PARAMETER_WORDS = {
-  unused: 'A parameter seeds no field and supplies no argument. Give it a use or remove it.',
+  unused:
+    'A parameter seeds no field, feeds no variable and supplies no argument. Give it a use or remove it.',
   field:
     'A parameter seeds a field the document does not hold, a fixed field, or one that does not take its type.',
+  variable:
+    'A parameter feeds a variable that is not declared, or of a type it does not take, or that another parameter feeds too.',
   unknown: 'A value is given for a parameter the template does not declare.',
   invalid: 'A value does not fit its parameter.',
   fixed: 'A parameter that may not change after the document is made was changed.',
@@ -73,6 +76,10 @@ function refusedTemplate(
       });
     case 'parameter.field':
       throw refused(400, 'parameter.field', PARAMETER_WORDS.field, {
+        parameters: answer.problems.map(named),
+      });
+    case 'parameter.variable':
+      throw refused(400, 'parameter.variable', PARAMETER_WORDS.variable, {
         parameters: answer.problems.map(named),
       });
     case 'version.precondition':

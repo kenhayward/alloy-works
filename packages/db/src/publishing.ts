@@ -73,7 +73,13 @@ import { profileUnknown, variablesByKey } from './definitions.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
-import { bindingQuestion, documentLayout, documentRules, documentTheme } from './templates.js';
+import {
+  bindingQuestion,
+  documentLayout,
+  documentParameterDeclarations,
+  documentRules,
+  documentTheme,
+} from './templates.js';
 import { themeAt } from './themes.js';
 import { sha256Hex } from './version-digest.js';
 import type { StoredLayout } from './layouts.js';
@@ -1505,6 +1511,12 @@ export async function publicationInputs(
       context: {
         parameters: (request.parameters ?? {}) as Record<string, unknown>,
         values: (request.metadata_values ?? {}) as Record<string, unknown>,
+        // Which parameter feeds each variable, as the document's template says (TPL-069; R10-A).
+        feeds: new Map(
+          (await documentParameterDeclarations(trx, request.document_id)).flatMap((each) =>
+            (each.feeds.variables ?? []).map((key) => [key, each.name] as const),
+          ),
+        ),
       },
     },
     refused: request.failures as PublishFailure[],

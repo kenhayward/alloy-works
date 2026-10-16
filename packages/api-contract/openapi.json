@@ -122116,7 +122116,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -123219,7 +123219,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -123621,6 +123621,14 @@
                               },
                               "arguments": {
                                 "type": "boolean"
+                              },
+                              "variables": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                }
                               }
                             },
                             "required": [
@@ -125899,7 +125907,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -127002,7 +127010,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -130346,7 +130354,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -131449,7 +131457,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -134747,7 +134755,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -135850,7 +135858,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -144989,7 +144997,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -146092,7 +146100,7 @@
                       }
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -188457,6 +188465,25 @@
                         "formats"
                       ],
                       "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                    },
+                    "unresolvedVariables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "key"
+                        ]
+                      },
+                      "description": "Each variable the components its template requires hold that does not resolve yet, by the node placing it and the variable's key: the publish fails on it unless a parameter, field or result gives it a value first (the R10 plan, R10-D)"
                     }
                   },
                   "required": [
@@ -188483,7 +188510,8 @@
                     "mayComment",
                     "maySuggest",
                     "mayReview",
-                    "layout"
+                    "layout",
+                    "unresolvedVariables"
                   ]
                 },
                 "example": {
@@ -188565,7 +188593,8 @@
                     "scheme": {},
                     "words": {},
                     "formats": []
-                  }
+                  },
+                  "unresolvedVariables": []
                 }
               }
             },
@@ -188745,7 +188774,7 @@
                       ]
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -195083,6 +195112,14 @@
                                 },
                                 "arguments": {
                                   "type": "boolean"
+                                },
+                                "variables": {
+                                  "maxItems": 50,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -195516,7 +195553,7 @@
                       ]
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -200160,6 +200197,14 @@
                                 },
                                 "arguments": {
                                   "type": "boolean"
+                                },
+                                "variables": {
+                                  "maxItems": 50,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -200595,7 +200640,7 @@
                       ]
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -200942,7 +200987,7 @@
                       ]
                     },
                     "parameters": {
-                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "description": "parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
                       "type": "array",
                       "items": {
                         "type": "object",

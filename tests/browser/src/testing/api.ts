@@ -104,7 +104,8 @@ export async function makeDocument(
     },
   });
   if (!made) throw new Error(`making a document answered ${response.status}`);
-  let document = made;
+  // As made, less what only a creation answers: each edit answers the document as any view does.
+  let document: Omit<typeof made, 'unresolvedVariables'> = made;
   for (const [position, entry] of shape.entries()) {
     const [title, ...children] = typeof entry === 'string' ? [entry] : entry;
     document = await edit(client, document, {

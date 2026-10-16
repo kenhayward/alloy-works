@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { ContentDocument } from '../content/model/document.js';
+import type { CanonicalResult } from '../data/canonical.js';
 import { valueTypeSchema, type ValueType } from '../data/columns.js';
 import { formatValue } from '../data/format.js';
 import { definitionIdentity } from '../metadata/definition.js';
@@ -28,8 +29,9 @@ export type VariableForm = z.infer<typeof formSchema>;
 /**
  * **A variable** (REU-018; R5-A): the environment's, declared once and chosen from a list. `key` is
  * what a content `variable` node names; `sources` where its value may come from, taken in the
- * declared order - the document's parameter set, then its metadata (REU-038; R5-B); `forms` how it
- * prints in a title and in text (R5-C).
+ * declared order - the document's parameter set, then its metadata (REU-038; R5-B), then a column of a
+ * query result the document holds (REU-016; the R10 plan, R10-B); `forms` how it prints in a title and
+ * in text (R5-C).
  */
 export const variableDefinitionSchema = z.strictObject({
   ...definitionIdentity,
@@ -39,9 +41,14 @@ export const variableDefinitionSchema = z.strictObject({
     .strictObject({
       parameter: z.string().min(1).max(64).optional(),
       field: z.string().min(1).max(64).optional(),
+      // Additive (R10-B): a column of the one-row result the document holds for this definition.
+      query: z.strictObject({ definition: z.uuid(), column: z.string().min(1).max(64) }).optional(),
     })
     .refine(
-      (sources) => sources.parameter !== undefined || sources.field !== undefined,
+      (sources) =>
+        sources.parameter !== undefined ||
+        sources.field !== undefined ||
+        sources.query !== undefined,
       'A variable has a source to take its value from',
     ),
   forms: z.strictObject({ title: formSchema.optional(), text: formSchema.optional() }).optional(),
@@ -49,12 +56,18 @@ export const variableDefinitionSchema = z.strictObject({
 export type VariableDefinition = z.infer<typeof variableDefinitionSchema>;
 
 /** Where a value came from, in the order sources are taken (REU-038). */
-export type VariableSource = 'parameter' | 'metadata';
+export type VariableSource = 'parameter' | 'metadata' | 'query';
 
-/** What a variable resolves from: the referring document's parameters and its own field values. */
+/**
+ * What a variable resolves from: the referring document's parameters and its own field values; which
+ * parameter its template says feeds each variable, by key (TPL-069; R10-A); and each result it holds,
+ * by the query definition that ran it (R10-B).
+ */
 export interface VariableContext {
   readonly parameters: Readonly<Record<string, unknown>>;
   readonly values: Readonly<Record<string, unknown>>;
+  readonly feeds?: ReadonlyMap<string, string>;
+  readonly results?: ReadonlyMap<string, readonly { readonly result: CanonicalResult }[]>;
 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -83,15 +96,19 @@ function fits(value: unknown, type: ValueType): value is string | boolean {
 }
 
 /**
- * A variable's value, and the source that supplied it (REU-016, REU-038; R5-B): its parameter where
- * the document's parameter set holds one, else its field where the document's metadata does; each
- * taken only where it is one value its type prints. Undefined where neither does.
+ * A variable's value, and the source that supplied it (REU-016, REU-038; R5-B, R10-A to R10-C): the
+ * parameter its document's template feeds it from - or, where the template feeds it from none, the one
+ * it names - where the document's parameter set holds one; else its field where the document's
+ * metadata does; else its column of the result the document holds for its query, where every result
+ * held for that definition is one row and all agree. Each is taken only where it is one value its type
+ * prints. Undefined where none does.
  */
 export function resolveVariable(
   definition: VariableDefinition,
   context: VariableContext,
 ): { readonly value: string | boolean; readonly source: VariableSource } | undefined {
-  const { parameter, field } = definition.sources;
+  const { field, query } = definition.sources;
+  const parameter = context.feeds?.get(definition.key) ?? definition.sources.parameter;
   if (parameter !== undefined) {
     const value = context.parameters[parameter];
     if (fits(value, definition.type)) return { value, source: 'parameter' };
@@ -99,6 +116,16 @@ export function resolveVariable(
   if (field !== undefined) {
     const value = context.values[field];
     if (fits(value, definition.type)) return { value, source: 'metadata' };
+  }
+  if (query !== undefined) {
+    const taken = new Set<unknown>();
+    for (const { result } of context.results?.get(query.definition) ?? []) {
+      const column = result.columns.findIndex(([name]) => name === query.column);
+      if (column < 0 || result.rows.length !== 1) return undefined;
+      taken.add(result.rows[0]![column]);
+    }
+    const [value] = taken;
+    if (taken.size === 1 && fits(value, definition.type)) return { value, source: 'query' };
   }
   return undefined;
 }

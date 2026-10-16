@@ -437,6 +437,16 @@ export const DocumentView = z.object({
 });
 export type DocumentView = z.infer<typeof DocumentView>;
 
+/** A document just made: as any document is viewed, and what of it does not resolve yet (TPL-072). */
+export const CreatedDocumentView = DocumentView.extend({
+  unresolvedVariables: z
+    .array(z.object({ node: z.string(), key: z.string() }))
+    .describe(
+      "Each variable the components its template requires hold that does not resolve yet, by the node placing it and the variable's key: the publish fails on it unless a parameter, field or result gives it a value first (the R10 plan, R10-D)",
+    ),
+});
+export type CreatedDocumentView = z.infer<typeof CreatedDocumentView>;
+
 /**
  * A structural act refused, in the one error shape: the outline as it now stands when somebody else
  * moved first (`version_precondition`), or why the operation does not apply (`outline_invalid`).
@@ -679,7 +689,7 @@ export const documentRoutes = {
     responses: {
       // 200, not 201, for the reason createComponent gives: a permission-checked handler cannot set
       // a status, so nothing is sent before its transaction commits.
-      200: { description: 'Created, at version 0.1', schema: DocumentView },
+      200: { description: 'Created, at version 0.1', schema: CreatedDocumentView },
       400: {
         description:
           'The title, language or direction is not one an outline accepts; ' +

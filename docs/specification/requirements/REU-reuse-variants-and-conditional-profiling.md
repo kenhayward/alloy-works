@@ -118,7 +118,7 @@ deliberately replaced.
 | **REU-018** | Variables must be declared, so an author selects one rather than typing a name and hoping                                                                                                                                                           | T4         | Specified |
 | **REU-019** | A variable's rendered form must be able to differ by context - a date written one way in a heading and another in running text                                                                                                                      | T4         | Specified |
 | **REU-036** | A variable inside a referenced component must resolve against the **referring document's** parameter set, metadata and query results - the same rule as conditions (REU-030) - so that one component serves two reports with two sets of parameters | Constraint | Specified |
-| **REU-037** | Where a chain of references crosses more than one document context, the nearest referring document must supply the value, and any name it shadows must be reported in the resolution record rather than resolved silently                           | T4         | Specified |
+| **REU-037** | Where a chain of references crosses more than one document context, the nearest referring document must supply the value, and any name it shadows must be reported in the resolution record rather than resolved silently                           | T4         | Withdrawn |
 | **REU-038** | Where more than one source could supply a variable (REU-016), precedence must be declared - parameter set, then document metadata, then a query result - and the resolution record must say which supplied the value                                | T4         | Specified |
 
 **REU-036 closes what review called the biggest semantic hole, and the answer is symmetry.**
@@ -325,3 +325,19 @@ requirement.
 | What was found                                                                                                      | Change                            |
 | ------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | REU-050's pinned and floating modes are built; its third, tracking the latest approved revision, is LIF-038's, T9's | **REU-050 to T9**, beside LIF-038 |
+
+### REU-037 withdrawn, 2026-10-16
+
+Not a review. Designing R10's variables found that no requirement lets a document include another
+document: a document places components, and a component places no document, so a chain of
+references never crosses two document contexts. Ken withdrew REU-037; REU-036, the referring
+document's context, is the whole rule while documents never nest. A requirement that lets them nest
+restates it.
+
+| What was found                                       | Change                                     |
+| ---------------------------------------------------- | ------------------------------------------ |
+| No chain of references crosses two document contexts | **REU-037 withdrawn**: REU-036 is the rule |
+
+| Counts       | Before                    | After                                     |
+| ------------ | ------------------------- | ----------------------------------------- |
+| Requirements | 54, of which 3 superseded | 54, of which 3 superseded and 1 withdrawn |

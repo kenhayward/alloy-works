@@ -7,6 +7,7 @@ import type { CanonicalValue } from '../data/canonical.js';
 import type { FieldDefinition } from '../metadata/field.js';
 import type { EffectiveField } from '../metadata/resolve.js';
 import type { MetadataValues } from '../metadata/values.js';
+import type { VariableDefinition } from '../reuse/variables.js';
 
 /** The most parameters a template declares (templates.md, "Declared on the template"). */
 export const MAX_TEMPLATE_PARAMETERS = 50;
@@ -19,7 +20,15 @@ export const MAX_TEMPLATE_PARAMETERS = 50;
  */
 export const templateParameterSchema = parameterSchema.omit({ variation: true }).extend({
   changeable: z.boolean(),
-  feeds: z.strictObject({ field: z.string().min(1).optional(), arguments: z.boolean() }),
+  feeds: z.strictObject({
+    field: z.string().min(1).optional(),
+    arguments: z.boolean(),
+    // Additive (the R10 plan, R10-A; TPL-069): the variables it gives its value, by key.
+    variables: z
+      .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
+      .max(50)
+      .optional(),
+  }),
 });
 
 export type TemplateParameter = z.infer<typeof templateParameterSchema>;
@@ -39,7 +48,7 @@ export const documentParametersSchema = z.record(
 
 /** A template parameter refused at save or creation (TP1-B), naming it and, where it seeds one, its field. */
 export interface TemplateParameterProblem {
-  readonly code: 'parameter_unused' | 'parameter_field';
+  readonly code: 'parameter_unused' | 'parameter_field' | 'parameter_variable';
   readonly parameter: string;
   readonly field?: string;
   readonly message: string;
@@ -86,16 +95,46 @@ export function seedable(field: FieldDefinition, parameter: TemplateParameter): 
 export function checkTemplateParameters(
   parameters: readonly TemplateParameter[],
   document: readonly EffectiveField[],
+  /** The environment's declared variables, by key: what `feeds.variables` may name (R10-A). */
+  variables?: ReadonlyMap<string, VariableDefinition>,
 ): TemplateParameterProblem[] {
   const problems: TemplateParameterProblem[] = [];
   const fields = new Map(document.map((each) => [each.field.id, each]));
+  const feeding = new Map<string, string[]>();
+  for (const parameter of parameters) {
+    for (const key of parameter.feeds.variables ?? []) {
+      feeding.set(key, [...(feeding.get(key) ?? []), parameter.name]);
+      if (variables === undefined) continue;
+      const declared = variables.get(key);
+      const refuse = (message: string) =>
+        problems.push({ code: 'parameter_variable', parameter: parameter.name, message });
+      if (declared === undefined) {
+        refuse(`The parameter ${parameter.name} feeds ${key}, which is no declared variable`);
+      } else if (parameter.list || declared.type.base !== parameter.type.base) {
+        refuse(
+          `The parameter ${parameter.name} cannot feed ${key}: the variable does not take its type`,
+        );
+      }
+    }
+  }
+  // One variable fed by two parameters would take whichever came first: each is refused (R10-A).
+  for (const [key, names] of feeding) {
+    if (names.length < 2) continue;
+    for (const parameter of names) {
+      problems.push({
+        code: 'parameter_variable',
+        parameter,
+        message: `The parameters ${names.join(' and ')} both feed ${key}`,
+      });
+    }
+  }
   for (const parameter of parameters) {
     const { field, arguments: argues } = parameter.feeds;
-    if (field === undefined && !argues) {
+    if (field === undefined && !argues && (parameter.feeds.variables ?? []).length === 0) {
       problems.push({
         code: 'parameter_unused',
         parameter: parameter.name,
-        message: `The parameter ${parameter.name} seeds no field and supplies no argument`,
+        message: `The parameter ${parameter.name} seeds no field, feeds no variable and supplies no argument`,
       });
       continue;
     }

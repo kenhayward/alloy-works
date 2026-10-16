@@ -10319,7 +10319,7 @@
       "area": "REU",
       "statement": "Where a chain of references crosses more than one document context, the nearest referring document must supply the value, and any name it shadows must be reported in the resolution record rather than resolved silently",
       "tranche": "T4",
-      "status": "Specified",
+      "status": "Withdrawn",
       "document": "REU-reuse-variants-and-conditional-profiling.md",
       "line": 121
     },
@@ -13487,9 +13487,18 @@
       "area": "TPL",
       "statement": "Creating a document from a template must resolve its variables",
       "tranche": "T4",
-      "status": "Specified",
+      "status": "Superseded by TPL-072",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 135
+    },
+    {
+      "id": "TPL-072",
+      "area": "TPL",
+      "statement": "Creating a document from a template must establish what its variables resolve from - the parameters that feed them and the bindings its required components hold - and must name each variable those components hold that does not resolve yet, without refusing the creation",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 136
     },
     {
       "id": "TPL-051",
@@ -13498,7 +13507,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "TPL-023",
@@ -13507,7 +13516,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-065",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "TPL-065",
@@ -13516,7 +13525,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "TPL-024",
@@ -13525,7 +13534,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "TPL-025",
@@ -13534,7 +13543,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "TPL-026",
@@ -13543,7 +13552,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "TPL-050",
@@ -13552,7 +13561,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "TPL-048",
@@ -13561,7 +13570,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "TPL-027",
@@ -13570,7 +13579,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "TPL-028",
@@ -13579,7 +13588,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "TPL-029",
@@ -13588,7 +13597,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "TPL-030",
@@ -13597,7 +13606,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "TPL-044",
@@ -13606,7 +13615,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "TPL-031",
@@ -13615,7 +13624,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "TPL-032",
@@ -13624,7 +13633,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "TPL-033",
@@ -13633,7 +13642,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "TPL-034",
@@ -13642,7 +13651,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "TPL-035",
@@ -13651,7 +13660,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "TPL-058",
@@ -13660,7 +13669,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "TPL-036",
@@ -13669,7 +13678,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "TPL-037",
@@ -13678,7 +13687,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "TPL-038",
@@ -13687,7 +13696,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "TPL-043",
@@ -13696,7 +13705,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "TPL-055",
@@ -13705,7 +13714,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "TPL-056",
@@ -13714,7 +13723,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "TPL-057",
@@ -13723,7 +13732,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "TPL-039",
@@ -13732,7 +13741,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "TPL-040",
@@ -13741,7 +13750,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "TPL-047",
@@ -13750,7 +13759,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "VER-001",
@@ -14949,25 +14958,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 227
+      "line": 228
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 228
+      "line": 229
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "VER-N01",
@@ -15882,28 +15891,28 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 238
+      "line": 239
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "VER-Q01",
@@ -17609,6 +17618,14 @@
           "howItIsMet": "A variable's definition declares `forms` by context, laid over the document's formats: its title form in a section's title, its text form in a component's text"
         },
         {
+          "id": "REU-016",
+          "howItIsMet": "A variable resolves from the referring document's parameter set, its metadata, or a column of the one-row result it holds for the variable's query definition (the R10 plan, R10-B)"
+        },
+        {
+          "id": "REU-038",
+          "howItIsMet": "Precedence is declared once: the parameter, then the field, then the query result; each printed variable records which supplied it, `parameter`, `metadata` or `query`"
+        },
+        {
           "id": "REU-024",
           "howItIsMet": "A run is kept only where the profile names the axis of every condition on it and one of that condition's values; an axis it does not name selects nothing (the R6 plan, R6-C)"
         },
@@ -19144,6 +19161,18 @@
         {
           "id": "TPL-024",
           "howItIsMet": "Making a document writes everything in one transaction; one whose required components run queries makes nothing until they have run, and nothing where one fails, `creation_failed`; a cohort's row is made in a savepoint of its own (R7-E)"
+        },
+        {
+          "id": "TPL-069",
+          "howItIsMet": "A template parameter's `feeds.variables` names the variables it gives its value, by key: each a declared variable of its type, fed by no other parameter, else `parameter_variable` at save (R10-A)"
+        },
+        {
+          "id": "TPL-067",
+          "howItIsMet": "A variable a document's template feeds takes that parameter's value when it is printed, in front of any parameter the variable names itself"
+        },
+        {
+          "id": "TPL-072",
+          "howItIsMet": "Making a document from a template answers `unresolvedVariables`: each variable its required components hold that does not resolve against its parameters, values and the results it holds, by node and key, and refuses nothing"
         }
       ]
     },
@@ -25529,19 +25558,31 @@
     {
       "id": "TPL-014",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 245,
+      "line": 248,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 337,
+      "line": 340,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-069",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 434,
       "kind": "title"
     },
     {
       "id": "TPL-070",
       "file": "packages/db/src/template-components.test.ts",
-      "line": 245,
+      "line": 248,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-072",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 434,
       "kind": "title"
     },
     {
@@ -27057,6 +27098,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-016",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 7119,
+      "kind": "title"
+    },
+    {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 7062,
@@ -27072,6 +27119,12 @@
       "id": "REU-030",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 3216,
+      "kind": "title"
+    },
+    {
+      "id": "REU-038",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 7119,
       "kind": "title"
     },
     {
@@ -27390,6 +27443,30 @@
       "id": "REU-048",
       "file": "packages/domain/src/reuse/scan.test.ts",
       "line": 15,
+      "kind": "title"
+    },
+    {
+      "id": "REU-016",
+      "file": "packages/domain/src/reuse/sources.test.ts",
+      "line": 29,
+      "kind": "title"
+    },
+    {
+      "id": "REU-038",
+      "file": "packages/domain/src/reuse/sources.test.ts",
+      "line": 29,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-067",
+      "file": "packages/domain/src/reuse/sources.test.ts",
+      "line": 86,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-069",
+      "file": "packages/domain/src/reuse/sources.test.ts",
+      "line": 86,
       "kind": "title"
     },
     {

@@ -198,6 +198,13 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
               : 'This space or template is no longer open to you. Choose another.',
           );
           void loadSpaces();
+        } else if (response.status === 409 && error?.code === 'creation_failed') {
+          // A query a required component holds failed (TPL-024): the service's sentence names it.
+          setNotice(
+            typeof error?.message === 'string'
+              ? error.message
+              : 'A value the template fills in could not be read, so nothing was made. Try again.',
+          );
         } else if (response.status === 409 && error?.code === 'space_archived') {
           // Archived since the spaces were read (the SP1 plan, SP-C): the re-read stops offering it.
           setNotice('This space has been archived. Choose another.');
