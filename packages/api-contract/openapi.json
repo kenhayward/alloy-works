@@ -139366,6 +139366,25 @@
                             ]
                           },
                           "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
+                        },
+                        "components": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "component": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "component"
+                            ]
+                          },
+                          "description": "Each component the newer version requires that the document lacks, by its key"
                         }
                       },
                       "required": [
@@ -139373,7 +139392,8 @@
                         "layout",
                         "fields",
                         "notCarried",
-                        "missing"
+                        "missing",
+                        "components"
                       ]
                     }
                   },
@@ -139401,7 +139421,8 @@
                     },
                     "fields": [],
                     "notCarried": [],
-                    "missing": []
+                    "missing": [],
+                    "components": []
                   }
                 }
               }
@@ -139913,6 +139934,25 @@
                             ]
                           },
                           "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
+                        },
+                        "components": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "component": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "component"
+                            ]
+                          },
+                          "description": "Each component the newer version requires that the document lacks, by its key"
                         }
                       },
                       "required": [
@@ -139920,7 +139960,8 @@
                         "layout",
                         "fields",
                         "notCarried",
-                        "missing"
+                        "missing",
+                        "components"
                       ]
                     }
                   },
@@ -139945,7 +139986,8 @@
                     },
                     "fields": [],
                     "notCarried": [],
-                    "missing": []
+                    "missing": [],
+                    "components": []
                   }
                 }
               }

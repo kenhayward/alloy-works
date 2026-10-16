@@ -44095,7 +44095,8 @@ export interface operations {
                      *         },
                      *         "fields": [],
                      *         "notCarried": [],
-                     *         "missing": []
+                     *         "missing": [],
+                     *         "components": []
                      *       }
                      *     }
                      */
@@ -44139,6 +44140,11 @@ export interface operations {
                             missing: {
                                 key: string;
                                 title: string;
+                            }[];
+                            /** @description Each component the newer version requires that the document lacks, by its key */
+                            components: {
+                                key: string;
+                                component: string;
                             }[];
                         };
                     };
@@ -44324,7 +44330,8 @@ export interface operations {
                      *         },
                      *         "fields": [],
                      *         "notCarried": [],
-                     *         "missing": []
+                     *         "missing": [],
+                     *         "components": []
                      *       }
                      *     }
                      */
@@ -44366,6 +44373,11 @@ export interface operations {
                             missing: {
                                 key: string;
                                 title: string;
+                            }[];
+                            /** @description Each component the newer version requires that the document lacks, by its key */
+                            components: {
+                                key: string;
+                                component: string;
                             }[];
                         };
                     };

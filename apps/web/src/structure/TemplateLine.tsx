@@ -145,6 +145,8 @@ interface Report {
     readonly value: unknown;
   }[];
   readonly missing: readonly { readonly key: string; readonly title: string }[];
+  /** Each component the newer version requires that the document lacks (TPL-044). */
+  readonly components?: readonly { readonly key: string }[];
 }
 
 const CHANGES: Readonly<Record<string, string>> = {
@@ -174,6 +176,11 @@ function reportLines(report: Report): string[] {
   }
   for (const each of report.missing) {
     lines.push(`${each.title} is required and missing: add it, or remove it with a reason.`);
+  }
+  for (const each of report.components ?? []) {
+    lines.push(
+      `The template now requires a component, ${each.key}, that this document does not hold.`,
+    );
   }
   return lines;
 }

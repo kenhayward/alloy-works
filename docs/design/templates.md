@@ -66,6 +66,9 @@ refused while a required section is missing or a field its template applies is n
 | **TPL-014** | A definition's `components` names each component every document from it includes, by key, with its reference mode and its place; making a document places each as a reference carrying its key as `origin` ([Required components](#required-components))                                                                                                                                                             |
 | **TPL-044** | The outline's `remove` of a reference from a required component needs a `reason`, kept as a `section_waiver` row as a section's is; a publication request with one missing and not waived is refused, `component_required`, naming its key                                                                                                                                                                           |
 | **TPL-070** | A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read                                                                                                                         |
+| **TPL-063** | Making a document from a template whose required components hold bindings resolves each, as the creator, before the document is made, and records each result as that binding's resolution in the transaction that makes it ([Required components](#required-components))                                                                                                                                            |
+| **TPL-065** | Each such binding's query runs when the document is made and its result is stored as a dataset version, as a resolve stores one; the binding's mode is the binding's, and the template has no setting for it                                                                                                                                                                                                         |
+| **TPL-024** | Making a document writes everything in one transaction; one whose required components run queries makes nothing until they have run, and nothing where one fails, `creation_failed`; a cohort's row is made in a savepoint of its own (R7-E)                                                                                                                                                                         |
 
 ## What this document does not own
 
@@ -246,6 +249,19 @@ mode?, place: { section: key | null, at: 'start' | 'end' } }`. The key is one na
   `overrides` is, so no stored outline's digest moves.
 - **Protected** as a required section is: removal needs a reason, kept as a waiver, a restore dropping
   one is refused, and a publication request with one missing and unwaived is `component_required`.
+- **Bindings at creation** (R9b; TPL-063, TPL-065, TPL-024): where the query set is not empty,
+  `creationAct` makes the document in a savepoint with identifiers it chose, prepares each binding as
+  a resolve does, as the creator, and rolls the savepoint back. Once the deciding transaction commits
+  the queries run through the connector; any failure refuses the request, `creation_failed`, naming
+  each binding, and nothing is made. One transaction then makes the document again with the same
+  identifiers, decides `create` in the space and the rest again, and records every result as its
+  binding's resolution. A result holding images the space does not hold yet refuses it,
+  `images_pending` among the failures, since only a resolve its requester follows admits them. A query run as
+  the caller needs `sharesOwnView` (DAT-091). An idempotency key is refused there, since the answer is
+  made after the request is decided. A cohort of such a template is refused, `cohort_bound`: the
+  worker holds no connector (DAT-088).
+- **Moved forward**, a document is told each component the newer version requires that it lacks,
+  beside its missing sections; nothing yet places one in a document that lacks it.
 - **Not built**: TPL-049's other half, a component the layout places as document-level matter, since a
   layout places generated matter alone (PUB-088). TPL-049 is unclaimed for it.
 

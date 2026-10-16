@@ -3480,8 +3480,9 @@ const PREPARED = Symbol('prepared');
  * then the savepoint is rolled back, so nothing is written. Once that commits, every question runs
  * through the connector, outside any transaction; any that fails refuses the creation, `creation_failed`,
  * naming each, and nothing is made. Then, in one transaction that decides again, the document is made
- * with the same identifiers and every result recorded as its binding's resolution, or its images
- * admitted as a resolve's are. Undefined where the template runs no query: made as any document is.
+ * with the same identifiers, `create` in the space decided again, and every result recorded as its
+ * binding's resolution; one holding images the space does not hold yet refuses it, since only a
+ * followed resolve admits them. Undefined where the template runs no query: made as any document is.
  */
 export async function creationAct(
   db: TenantDatabase,
@@ -3605,6 +3606,13 @@ export async function creationAct(
       return db.withTenant(
         tenant,
         async (record) => {
+          // `create` in the space, decided again: it may have ended while the source answered.
+          try {
+            await authoriseAt(record, caller, 'create', { kind: 'space', id: space });
+          } catch (error) {
+            if (error instanceof AppError) throw accessChanged();
+            throw error;
+          }
           let at = 0;
           const made = await createFromResolution(
             record,
@@ -3627,20 +3635,18 @@ export async function creationAct(
               continue;
             }
             if (!admission.held) {
-              // Its images are being admitted: recorded once every one is, as a resolve's is (D8-E).
-              await pendingResult(record, {
-                act: 'resolve',
-                document: artifactId,
-                node,
-                binding: binding.id,
-                digest: each.placed.digest,
-                holding: null,
-                session: null,
-                provenance: admission.provenance,
-                uploads: admission.uploads,
-                by: principalId,
-                revisions: undefined,
-              });
+              // Images the space does not hold yet are admitted only as a resolve's are, followed by
+              // whoever asked (D8-E), which a creation has no way to be: refused, nothing made.
+              refusedNow.push(
+                failedAs(
+                  each,
+                  new AppError(
+                    409,
+                    'images_pending',
+                    `The result of the binding ${binding.id} holds images this space does not hold yet, which a document being made cannot take in.`,
+                  ),
+                ),
+              );
               continue;
             }
             let recorded = versions.get(each.question);

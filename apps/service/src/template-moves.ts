@@ -67,6 +67,7 @@ const reportView = (report: MoveReport) => ({
   fields: [...report.fields],
   notCarried: [...report.notCarried],
   missing: [...report.missing],
+  components: [...report.components],
 });
 
 export function templateMoveHandlers() {

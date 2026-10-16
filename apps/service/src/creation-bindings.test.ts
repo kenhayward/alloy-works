@@ -1,9 +1,7 @@
-import { DEFAULT_LAYOUT_ID, DEFAULT_THEME_ID, findRole, grant } from '@alloy-works/db';
+import { DEFAULT_LAYOUT_ID, DEFAULT_THEME_ID, findRole, grant, removeGrant } from '@alloy-works/db';
 import { TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { binding, HOST, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
-
-type Json = Record<string, unknown>;
 
 /** A document made from a template whose required component holds a binding (the R9 plan, R9-E). */
 describe('bindings established when a document is made', () => {
@@ -134,5 +132,43 @@ describe('bindings established when a document is made', () => {
     const keyed = await create('East Quay survey', { 'idempotency-key': 'east-quay' });
     expect(keyed.statusCode, keyed.body).toBe(400);
     expect(keyed.json()).toMatchObject({ code: 'invalid_request' });
+  });
+
+  it('TPL-024 makes nothing where the creator may no longer create in the space by the time the source answers', async () => {
+    // Grace authors General and reads it beside: losing the first leaves her reading the document.
+    await h.allow(h.ids.grace!, h.roles.Reader!, { kind: 'space', id: h.general });
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['1', 'West Quay']]);
+    let release = () => undefined as void;
+    h.connector.held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const reached = h.connector.reached.length;
+    const before = await documents();
+    const asked = h.call('grace', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'West Quay survey',
+      language: 'en-GB',
+      direction: 'ltr',
+      template,
+    });
+    while (h.connector.reached.length <= reached) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const author = await findRole(trx, 'Author');
+      const held = await trx
+        .selectFrom('access_grant')
+        .select('id')
+        .where('principal_id', '=', h.ids.grace!)
+        .where('role_id', '=', author!.id)
+        .execute();
+      for (const each of held) await removeGrant(trx, each.id);
+    });
+    release();
+    h.connector.held = undefined;
+    const answer = await asked;
+    expect(answer.statusCode, answer.body).toBe(409);
+    expect(answer.json()).toMatchObject({ code: 'access_changed' });
+    expect(await documents()).toBe(before);
   });
 });

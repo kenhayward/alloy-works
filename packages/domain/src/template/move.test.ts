@@ -103,6 +103,7 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
         { node: id(1), field: STAGE, name: 'Stage', value: 'Draft' },
       ],
       missing: [{ key: 'method', title: 'Method' }],
+      components: [],
     });
     expect(plan.values).toEqual({ [OWNER]: 'Ada' });
     expect(plan.outline.nodes[0]!.values).toEqual({});
@@ -127,7 +128,30 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
       fields: [],
       notCarried: [],
       missing: [],
+      components: [],
     });
     expect(plan.values).toEqual({ [OWNER]: 'Ada' });
+  });
+
+  it('TPL-044 reports each component the newer version requires that the document lacks', () => {
+    const NOTICE = 'c0c0c0c0-0000-4000-8000-000000000002';
+    const from = {
+      definition: template(THEME, [starting('introduction', 'Introduction', true)]),
+      document: [],
+      section: [],
+    };
+    const to = {
+      ...from,
+      definition: templateDefinitionSchema.parse({
+        ...from.definition,
+        components: [{ key: 'notice', component: NOTICE, place: { section: null, at: 'end' } }],
+      }),
+    };
+    const plan = planTemplateMove({ from, to, outline, values: {}, waived: new Set() });
+    expect(plan.report.components).toEqual([{ key: 'notice', component: NOTICE }]);
+    expect(
+      planTemplateMove({ from, to, outline, values: {}, waived: new Set(['notice']) }).report
+        .components,
+    ).toEqual([]);
   });
 });
