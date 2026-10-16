@@ -13,6 +13,7 @@ export type {
   TemplateDefinition,
 } from './definition.js';
 export { materialiseTemplate } from './materialise.js';
+export { requiredUnset, templateProfile } from './profile.js';
 export type { MaterialisedTemplate } from './materialise.js';
 export { resolveTemplate } from './resolve.js';
 export type {

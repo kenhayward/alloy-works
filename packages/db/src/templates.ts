@@ -22,7 +22,7 @@ import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
-import { variablesByKey } from './definitions.js';
+import { axesByKey, profileUnknown, variablesByKey } from './definitions.js';
 import { componentReferences } from './template-components.js';
 import type { TenantTransaction } from './tables.js';
 import {
@@ -68,8 +68,33 @@ export type TemplateAnswer =
   /** A reference that does not resolve (TPL-004, TE-L), each named; nothing is written. */
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
   | ParametersRefused
+  /** Its profile names an axis, or a value of one, the environment does not declare (TPL-051). */
+  | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] }
   | { readonly answer: 'space.missing' }
   | { readonly answer: 'template.missing' };
+
+/**
+ * What a template's profile names that the environment does not declare (TPL-051; the R10 plan,
+ * R10-E): an axis or a value among its defaults, a required axis, or an axis a parameter feeds.
+ */
+export async function templateProfileUnknown(
+  trx: TenantTransaction,
+  definition: TemplateDefinition,
+): Promise<string[]> {
+  const axes = await axesByKey(trx);
+  const named = [
+    ...(definition.profile?.required ?? []),
+    ...(definition.parameters ?? []).flatMap((each) =>
+      each.feeds.axis === undefined ? [] : [each.feeds.axis],
+    ),
+  ].filter((axis) => !axes.has(axis));
+  return [
+    ...new Set([
+      ...(await profileUnknown(trx, { values: definition.profile?.values ?? {} })),
+      ...named,
+    ]),
+  ];
+}
 
 /**
  * A template's parameters refused against its resolved fields (the TP1 plan, TP1-B), each named: one
@@ -196,6 +221,8 @@ export async function createTemplate(
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   const parameters = refusedParameters(definition, resolved, await variablesByKey(trx));
   if (parameters) return parameters;
+  const profile = await templateProfileUnknown(trx, definition);
+  if (profile.length > 0) return { answer: 'profile.invalid', unknown: profile };
   const version = await createArtifact(trx, {
     spaceId: input.spaceId,
     author: input.author,
@@ -227,6 +254,8 @@ export async function recordTemplateVersion(
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   const parameters = refusedParameters(definition, resolved, await variablesByKey(trx));
   if (parameters) return parameters;
+  const profile = await templateProfileUnknown(trx, definition);
+  if (profile.length > 0) return { answer: 'profile.invalid', unknown: profile };
   const answer = await recordVersion(trx, {
     artifactId: input.templateId,
     openedFrom: input.openedFrom,

@@ -245,6 +245,14 @@ export async function refusePublish(
         `This profile names what no condition axis declares: ${answer.unknown.join(', ')}.`,
         { unknown: answer.unknown },
       );
+    // TPL-051: an axis the template requires the profile to set, each named.
+    case 'profile.incomplete':
+      throw refused(
+        400,
+        'profile.incomplete',
+        `Its template requires the profile to set ${answer.axes.join(', ')}, which it does not.`,
+        { axes: answer.axes },
+      );
     // Each binding with no result in this document, by its node, and why (B3-C; DAT-087).
     case 'binding.unresolved': {
       const said = answer.bindings.map(

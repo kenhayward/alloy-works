@@ -2,6 +2,7 @@ import {
   bindingDigestInput,
   bindingsIn,
   missingComponents,
+  requiredUnset,
   missingSections,
   parseProvenance,
   parseAssetVersion,
@@ -509,6 +510,8 @@ async function resolveImages(
 export type PublicationRequestAnswer =
   /** A profile naming an axis, or a value of one, the environment does not declare (R6-F). */
   | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] }
+  /** An axis the document's template requires its profile to set is unset (TPL-051; R10-E). */
+  | { readonly answer: 'profile.incomplete'; readonly axes: readonly string[] }
   | {
       readonly answer: 'requested';
       readonly request: { readonly id: string; readonly state: 'queued' };
@@ -924,6 +927,13 @@ export async function requestPublication(
   const { latest, layout, theme, resolved, failures, bindings } = found;
   // Recorded only where it says something: none is the empty profile, as on a request before 0106.
   const profile = input.profile ?? found.outline.profile;
+  // A publish is made under a profile its template finds complete; a preview may show an incomplete
+  // one (TPL-051; the R10 plan, R10-E).
+  if (kind === 'publish') {
+    const rules = await documentRules(trx, input.documentId);
+    const unset = rules.bound ? requiredUnset(rules.definition, profile ?? { values: {} }) : [];
+    if (unset.length > 0) return { answer: 'profile.incomplete', axes: unset };
+  }
   const said =
     profile !== undefined &&
     (Object.keys(profile.values).length > 0 || profile.excludeUnset === true);

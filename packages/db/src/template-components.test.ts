@@ -539,4 +539,97 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
     expect(await named({ location: 'North Quay' })).toEqual(['undeclared']);
     expect(await named({})).toEqual(['site_name', 'undeclared']);
   });
+
+  it('TPL-051 gives a document from a template the profile it declares, a parameter feeding an axis, and refuses to publish one a required axis leaves unset', async () => {
+    for (const [key, values] of [
+      ['market', ['uk', 'us']],
+      ['region', ['north', 'south']],
+    ] as const) {
+      const axis = await as((trx) =>
+        createDefinition(trx, {
+          kind: 'conditionAxis',
+          definition: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            name: key,
+            key,
+            values: values.map((value) => ({ key: value, label: value })),
+          },
+          author: grace,
+        }),
+      );
+      if (axis.answer !== 'created') throw new Error(axis.answer);
+    }
+    const save = (profile: unknown) =>
+      as((trx) =>
+        createTemplate(trx, {
+          spaceId: general,
+          author: grace,
+          definition: {
+            schemaVersion: TEMPLATE_SCHEMA_VERSION,
+            name: 'Market report',
+            theme: DEFAULT_THEME_ID,
+            layout: DEFAULT_LAYOUT_ID,
+            schemas: [],
+            outline: { sections: [] },
+            changes: { add: true, remove: true, reorder: true },
+            parameters: [
+              {
+                name: 'where',
+                type: { base: 'text' },
+                required: false,
+                list: false,
+                changeable: true,
+                feeds: { arguments: false, axis: 'market' },
+              },
+            ],
+            profile,
+          },
+        }),
+      );
+    // An axis, or a value of one, the environment does not declare is refused at save.
+    expect(await save({ values: { market: ['mars'] }, required: ['planet'] })).toEqual({
+      answer: 'profile.invalid',
+      unknown: ['market.mars', 'planet'],
+    });
+    const made = await save({ values: { market: ['uk'] }, required: ['region'] });
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const document = await as(async (trx) => {
+      const answer = await createDocument(trx, {
+        spaceId: general,
+        title: 'US market',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+        template: made.template.id,
+        parameters: { where: 'us' },
+      });
+      if (answer.answer !== 'created') throw new Error(answer.answer);
+      return answer.version;
+    });
+    expect((document.content as OutlineDocument).profile).toEqual({ values: { market: ['us'] } });
+    // Region is required and unset: published, it is refused by name; previewed, it is not.
+    expect(
+      await as((trx) =>
+        requestPublication(trx, {
+          documentId: document.artifactId,
+          version: document.id,
+          formats: ['pdf'],
+          requester: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'profile.incomplete', axes: ['region'] });
+    expect(
+      (
+        await as((trx) =>
+          requestPublication(trx, {
+            documentId: document.artifactId,
+            version: document.id,
+            formats: ['pdf'],
+            requester: ada,
+            profile: { values: { market: ['us'], region: ['north'] } },
+          }),
+        )
+      ).answer,
+    ).toBe('requested');
+  });
 });

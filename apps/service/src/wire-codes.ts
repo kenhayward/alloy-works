@@ -153,6 +153,7 @@ const WIRE_CODES = {
   'template.not_latest': 'template_not_latest',
   'source.moved': 'source_moved',
   'profile.invalid': 'profile_invalid',
+  'profile.incomplete': 'profile_incomplete',
   'rows.invalid': 'rows_invalid',
   'cohort.complete': 'cohort_complete',
   'relationship.refused': 'relationship_refused',
@@ -211,6 +212,7 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A template's parameter feeding nothing, refused when it is saved (templates.md, "Parameters").
   'parameter.unused': 'TPL-068',
   'parameter.variable': 'TPL-069',
+  'profile.incomplete': 'TPL-051',
   // A changed value of a parameter its template does not declare changeable (TP1-H).
   'parameter.fixed': 'TPL-021',
   // One's own view held without the warning that every reader of the document will see it (D7-H).

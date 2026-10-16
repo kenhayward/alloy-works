@@ -133,6 +133,12 @@ export const TemplateRefusal = ErrorBody.extend({
       }),
     )
     .optional(),
+  unknown: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051)',
+    ),
   current: TemplateView.optional(),
   ...parameterRefusal,
 });

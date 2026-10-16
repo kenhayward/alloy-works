@@ -399,6 +399,8 @@ describe('the domain package', () => {
         'argumentRefusal',
         // And the outline a document made from one starts with (templates.md, W4.2).
         'materialiseTemplate',
+        'requiredUnset',
+        'templateProfile',
         // Values as a section or a document is written with them (templates.md, W4.3).
         'checkWrittenValues',
         'writtenValues',

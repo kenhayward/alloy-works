@@ -24,6 +24,7 @@ describe('the rule behind a refusal', () => {
       ['component.required', 'component_required', 'TPL-044'],
       ['creation.failed', 'creation_failed', 'TPL-024'],
       ['parameter.variable', 'parameter_variable', 'TPL-069'],
+      ['profile.incomplete', 'profile_incomplete', 'TPL-051'],
       ['metadata.invalid', 'metadata_invalid', 'TPL-055'],
       ['definition.name_taken', 'definition_name_taken', 'MET-031'],
       ['assignment.conflict', 'assignment_conflict', 'MET-008'],

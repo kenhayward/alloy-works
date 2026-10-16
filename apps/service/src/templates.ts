@@ -78,6 +78,15 @@ function refusedTemplate(
       throw refused(400, 'parameter.field', PARAMETER_WORDS.field, {
         parameters: answer.problems.map(named),
       });
+    case 'profile.invalid':
+      throw refused(
+        400,
+        'profile.invalid',
+        `This profile names what no condition axis declares: ${answer.unknown.join(', ')}.`,
+        {
+          unknown: answer.unknown,
+        },
+      );
     case 'parameter.variable':
       throw refused(400, 'parameter.variable', PARAMETER_WORDS.variable, {
         parameters: answer.problems.map(named),
