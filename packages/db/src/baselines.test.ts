@@ -407,6 +407,23 @@ describe('baselines', () => {
       return recorded.version;
     });
 
+  it('pins nothing of a reference the profile leaves out, so a requester who may not read it still publishes the baseline (the R11 final review)', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const left = {
+      ...reference(secret.artifactId),
+      conditions: [{ axis: 'audience', values: ['regulator'] }],
+    };
+    const document = await profiled(await documentWith([left]), {
+      values: { audience: ['internal'] },
+    });
+    const id = made(await make(document, 'Internal', grace));
+    expect((await tenant((trx) => readBaseline(trx, id, grace)))!.pins.occurrences).toEqual([]);
+    const asked = await tenant((trx) =>
+      requestBaselinePublication(trx, { baseline: id, formats: ['pdf'], requester: ada }),
+    );
+    expect(asked.answer).toBe('requested');
+  });
+
   it('VER-020 records the profile in force when it was taken, and publishes under it rather than none', async () => {
     const document = await profiled(await documentWith([]), {
       values: { audience: ['regulator'] },
@@ -471,6 +488,25 @@ describe('baselines', () => {
     // A market that leaves the annex out leaves nothing it holds to ask.
     await profiled(accepted, { values: { market: ['us'], audience: ['vets'] } });
     expect(await unmet()).toEqual([]);
+  });
+
+  it('LIF-065 counts no component the profile leaves out as unproven, though its decider may not read it', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const annex = {
+      ...section('Annex', [reference(secret.artifactId)]),
+      conditions: [{ axis: 'market', values: ['uk'] }],
+    };
+    const document = await profiled(await documentWith([annex]), { values: { market: ['us'] } });
+    expect(
+      await tenant((trx) =>
+        unmetConditions(trx, {
+          artifactId: document.artifactId,
+          kind: 'document',
+          requires: ['profile'],
+          principal: ada,
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it('refuses a baseline of a version that is not the latest, naming the latest by its heading', async () => {

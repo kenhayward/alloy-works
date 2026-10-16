@@ -1,6 +1,7 @@
 import {
   missingSections,
   readOutline,
+  selectOutline,
   TRANSITION_CONDITIONS,
   unsetAxes,
   walkOutline,
@@ -182,7 +183,18 @@ export async function unmetConditions(
           new Map(contents.map((each) => [each.node, each.content])),
           read.outline.profile?.values ?? {},
         );
-        found.set('profile', { ...none, count: axes.length, names: axes, unreadable });
+        // What the profile leaves out cannot leave an axis unset, read or not (the R11 final review).
+        const left = new Set(
+          selectOutline(read.outline, read.outline.profile?.values ?? {}).excluded,
+        );
+        const unproven = new Set(
+          outcomes.flatMap((each) =>
+            (each.outcome === 'unreadable' || each.outcome === 'gone') && !left.has(each.node)
+              ? [references.get(each.node)!.component]
+              : [],
+          ),
+        ).size;
+        found.set('profile', { ...none, count: axes.length, names: axes, unreadable: unproven });
       }
     }
   }

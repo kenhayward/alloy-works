@@ -799,7 +799,8 @@ export function documentHandlers(
       const layout = await documentLayout(trx, id);
       const inputs = await numberingInputs(trx, outline, principalId);
       const table = number(
-        conditions(resolve(outline, inputs.contributions)),
+        // Under its own profile, so what it leaves out takes no number here either (STR-036; R11).
+        conditions(resolve(outline, inputs.contributions), outline.profile?.values ?? {}),
         layout.layout.scheme,
       );
       return {

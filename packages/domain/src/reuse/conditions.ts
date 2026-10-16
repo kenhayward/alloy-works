@@ -58,18 +58,37 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isCondition = (mark: unknown): mark is ConditionMark =>
   isRecord(mark) && mark['type'] === 'condition';
 
-/** Every text run's words a value holds, at any depth, joined by a space: what the scan looks for. */
-function wordsOf(value: unknown): string {
-  const found: string[] = [];
+/**
+ * Every text run's words a value holds, at any depth: the runs of one inline sequence joined as they
+ * read, whatever marks split them, and each sequence apart from the next by a space. What the scan
+ * looks for (REU-048).
+ */
+export function wordsOf(value: unknown): string {
+  const sequences: string[] = [];
   const walk = (each: unknown) => {
-    if (Array.isArray(each)) each.forEach(walk);
-    else if (isRecord(each)) {
-      if (each['type'] === 'text' && typeof each['value'] === 'string') found.push(each['value']);
-      else Object.values(each).forEach(walk);
-    }
+    if (Array.isArray(each)) {
+      const runs = each.filter(
+        (member): member is { value: string } =>
+          isRecord(member) && member['type'] === 'text' && typeof member['value'] === 'string',
+      );
+      if (runs.length > 0) sequences.push(runs.map((run) => run.value).join(''));
+      each.forEach((member) => {
+        if (!(isRecord(member) && member['type'] === 'text')) walk(member);
+      });
+    } else if (isRecord(each)) Object.values(each).forEach(walk);
   };
   walk(value);
-  return found.join(' ').trim();
+  return sequences.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Every identifier a value holds at any depth: what a reference into it could have named. */
+function identifiersIn(value: unknown, into: string[]): void {
+  if (Array.isArray(value)) value.forEach((each) => identifiersIn(each, into));
+  else if (isRecord(value)) {
+    if (typeof value['id'] === 'string' && typeof value['type'] === 'string')
+      into.push(value['id']);
+    Object.values(value).forEach((each) => identifiersIn(each, into));
+  }
 }
 
 const isRun = (
@@ -120,6 +139,8 @@ export function applyConditions(
         passage = null;
       };
       const kept: unknown[] = [];
+      // What each kept member was before it was walked, so an emptied paragraph is judged by its own.
+      const was: unknown[] = [];
       for (const member of value) {
         // A numbered block's own conditions (R11-B): selected as a mark's are, else taken out whole.
         if (isRecord(member) && Array.isArray(member['conditions'])) {
@@ -131,9 +152,10 @@ export function applyConditions(
             const { conditions: dropped, ...rest } = member;
             void dropped;
             kept.push(walk(rest, block));
+            was.push(member);
           } else {
             close();
-            removed.push(id);
+            identifiersIn(member, removed);
             const words = wordsOf(member);
             if (words !== '') excluded.push(words);
           }
@@ -145,6 +167,7 @@ export function applyConditions(
           if (answers.every(Boolean)) {
             close();
             kept.push({ ...member, marks: member.marks.filter((mark) => !isCondition(mark)) });
+            was.push(member);
           } else {
             passage = (passage ?? '') + member.value;
           }
@@ -152,6 +175,7 @@ export function applyConditions(
         }
         close();
         kept.push(walk(member, block));
+        was.push(member);
       }
       close();
       const emptied = (member: unknown, index: number) =>
@@ -159,9 +183,9 @@ export function applyConditions(
         member['type'] === 'paragraph' &&
         Array.isArray(member['content']) &&
         member['content'].length === 0 &&
-        isRecord(value[index]) &&
-        Array.isArray((value[index] as Record<string, unknown>)['content']) &&
-        ((value[index] as Record<string, unknown>)['content'] as unknown[]).length > 0;
+        isRecord(was[index]) &&
+        Array.isArray((was[index] as Record<string, unknown>)['content']) &&
+        ((was[index] as Record<string, unknown>)['content'] as unknown[]).length > 0;
       const remaining = kept.filter((member, index) => !emptied(member, index));
       if (remaining.length === 0) return kept;
       for (const [index, member] of kept.entries()) {
@@ -187,7 +211,7 @@ export function applyConditions(
 }
 
 /** Whether `conditions` select under `profile`, naming each axis it does not set (R6-C, REU-024). */
-function selected(
+export function selected(
   conditions: Conditions,
   profile: Profile,
   unset: (axis: string) => void,

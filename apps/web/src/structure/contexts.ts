@@ -39,7 +39,7 @@ export function referenceContexts(
   const numbering =
     scheme === null
       ? { scheme: '', entries: [] }
-      : number(conditions(resolve(outline, contributions)), scheme);
+      : number(conditions(resolve(outline, contributions), outline.profile?.values ?? {}), scheme);
   const contexts = new Map<string, ReferenceContext>();
   walkOutline(outline.nodes, (node) => {
     if (node.type !== 'reference' || node.component === null) return;

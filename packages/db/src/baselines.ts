@@ -8,6 +8,7 @@ import {
   readContent,
   readLayout,
   readOutline,
+  selectOutline,
   unsupportedFormats,
   type BaselinePins,
   type PublishFailure,
@@ -628,7 +629,9 @@ export async function requestBaselinePublication(
       if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
       return read.document;
     });
-    if (documentCitesAPage(outline.outline, contents)) {
+    // What its profile keeps alone: a title it leaves out is never set (the R11 final review).
+    const kept = selectOutline(outline.outline, outline.outline.profile?.values ?? {}).outline;
+    if (documentCitesAPage(kept, contents)) {
       return { answer: 'page_reference.without_pdf' };
     }
   }

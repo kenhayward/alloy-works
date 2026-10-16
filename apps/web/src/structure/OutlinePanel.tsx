@@ -550,7 +550,12 @@ export function OutlinePanel({
     () =>
       scheme === null
         ? new Map<string, string>()
-        : sectionNumbers(number(conditions(resolve(outline, NOTHING_KNOWN)), scheme)),
+        : sectionNumbers(
+            number(
+              conditions(resolve(outline, NOTHING_KNOWN), outline.profile?.values ?? {}),
+              scheme,
+            ),
+          ),
     [outline, scheme],
   );
 

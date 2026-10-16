@@ -1,4 +1,6 @@
 import type { InlineNode } from '../content/model/inline.js';
+import type { Conditions } from '../content/model/marks.js';
+import { selected, type Profile } from '../reuse/conditions.js';
 
 import { inlineContributions, type Contribution } from './contributions.js';
 import type { OutlineMatter } from './outline.js';
@@ -15,6 +17,8 @@ export interface NumberableNode {
   readonly numbered: boolean;
   readonly matter: OutlineMatter;
   readonly title?: readonly InlineNode[];
+  /** What a profile must select for it to be numbered at all (the R11 plan, R11-A). */
+  readonly conditions?: Conditions | undefined;
   readonly children: readonly NumberableNode[];
 }
 
@@ -49,12 +53,30 @@ export function resolve(
 }
 
 /**
- * Condition evaluation, which is REU's and T4: the identity until then. It is a stage of its own now
- * so that `number` cannot be handed anything that has not been through it (STR-051) - a `Resolved`
- * does not typecheck where a `Conditioned` is wanted.
+ * Condition evaluation over the outline (REU, the R11 plan): a stage of its own so that `number`
+ * cannot be handed anything that has not been through it (STR-051) - a `Resolved` does not typecheck
+ * where a `Conditioned` is wanted. Given a profile, a node its conditions do not select is taken out
+ * with its subtree, and what it contributed with it, so the page numbers as the publish will (STR-036;
+ * the R11 final review). Given none, the outline is as it stands: `assemble` selects it first.
  */
-export function conditions(resolved: Resolved): Conditioned {
-  return { stage: 'conditioned', resolved };
+export function conditions(resolved: Resolved, profile?: Profile): Conditioned {
+  if (profile === undefined) return { stage: 'conditioned', resolved };
+  const left = new Set<string>();
+  const leave = (node: NumberableNode) => {
+    left.add(node.id);
+    node.children.forEach(leave);
+  };
+  const keep = (nodes: readonly NumberableNode[]): NumberableNode[] =>
+    nodes.flatMap((node) => {
+      if (node.conditions !== undefined && !selected(node.conditions, profile, () => {})) {
+        leave(node);
+        return [];
+      }
+      return [{ ...node, children: keep(node.children) }];
+    });
+  const outline = { ...resolved.outline, nodes: keep(resolved.outline.nodes) };
+  const contributions = new Map([...resolved.contributions].filter(([node]) => !left.has(node)));
+  return { stage: 'conditioned', resolved: { stage: 'resolved', outline, contributions } };
 }
 
 /**

@@ -8,6 +8,8 @@ import {
   type OutlineDocument,
 } from '../structure/outline.js';
 import { parseContentDocument } from '../content/model/document.js';
+import { conditions, number, resolve, sectionNumbers } from '../structure/numbering.js';
+import { defaultNumberingScheme } from '../structure/scheme.js';
 import { selectOutline, unsetAxes } from './conditions.js';
 
 const COMPONENT = '5e1d0c7a-0b1f-4c1e-9a52-3f6d7c2b9e01';
@@ -151,5 +153,22 @@ describe('whether a profile is complete (the R11 plan, R11-G)', () => {
     // What the profile leaves out asks nothing of it.
     expect(unsetAxes(marked, contents, { market: ['us'] })).toEqual(['audience']);
     expect(unsetAxes(marked, contents, { market: ['us'], audience: ['vets'] })).toEqual([]);
+  });
+});
+
+describe('numbering as it will publish (the R11 final review)', () => {
+  it('STR-036 numbers the sections a profile keeps when `conditions` is given it, and every section when given none', () => {
+    const marked = outline([
+      section('annex', 'Annex', [], { conditions: [{ axis: 'audience', values: ['regulator'] }] }),
+      section('findings', 'Findings'),
+    ]);
+    const numbered = (profile?: Record<string, string[]>) =>
+      sectionNumbers(
+        number(conditions(resolve(marked, new Map()), profile), defaultNumberingScheme),
+      );
+    expect(numbered({ audience: ['internal'] }).get(id('findings'))).toBe('1');
+    expect(numbered({ audience: ['internal'] }).has(id('annex'))).toBe(false);
+    expect(numbered({ audience: ['regulator'] }).get(id('findings'))).toBe('2');
+    expect(numbered().get(id('findings'))).toBe('2');
   });
 });

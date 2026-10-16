@@ -18565,7 +18565,7 @@
         },
         {
           "id": "VER-020",
-          "howItIsMet": "The condition set in force is stored on the baseline row, because a document has as many resolutions as it has profiles"
+          "howItIsMet": "The profile in force is the one the pinned document version declares, so it is in the baseline's digest already; the baseline's view says it, and its publication records it and is made under it (the R11 plan, R11-F)"
         },
         {
           "id": "VER-058",
@@ -19625,6 +19625,10 @@
         {
           "id": "LIF-039",
           "howItIsMet": "A document's transition may require every component it assembles at an approved revision, naming each that is not"
+        },
+        {
+          "id": "LIF-065",
+          "howItIsMet": "A document's transition may require `profile`: every condition axis its kept outline and content depend on set in its profile, naming each that is not; accepting exclusion by unset sets none, and a component the decider may not read, unless the profile leaves it out, leaves it unproven (the R11 plan, R11-G)"
         },
         {
           "id": "COL-066",
@@ -21743,6 +21747,12 @@
       "kind": "title"
     },
     {
+      "id": "LIF-065",
+      "file": "apps/service/src/workflows.test.ts",
+      "line": 18,
+      "kind": "title"
+    },
+    {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
       "line": 1506,
@@ -21889,7 +21899,7 @@
     {
       "id": "LIF-017",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 262,
+      "line": 264,
       "kind": "title"
     },
     {
@@ -21907,7 +21917,7 @@
     {
       "id": "LIF-059",
       "file": "apps/web/src/admin/Workflows.test.tsx",
-      "line": 262,
+      "line": 264,
       "kind": "title"
     },
     {
@@ -24391,25 +24401,31 @@
     {
       "id": "DAT-038",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 405,
+      "line": 525,
       "kind": "title"
     },
     {
       "id": "DAT-062",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 605,
+      "line": 725,
       "kind": "title"
     },
     {
       "id": "DAT-123",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 523,
+      "line": 643,
       "kind": "title"
     },
     {
       "id": "LIF-004",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 523,
+      "line": 643,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-065",
+      "file": "packages/db/src/baselines.test.ts",
+      "line": 452,
       "kind": "title"
     },
     {
@@ -24421,19 +24437,19 @@
     {
       "id": "PUB-046",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 698,
+      "line": 818,
       "kind": "title"
     },
     {
       "id": "SCH-025",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 912,
+      "line": 1032,
       "kind": "title"
     },
     {
       "id": "SCH-048",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 936,
+      "line": 1056,
       "kind": "title"
     },
     {
@@ -24449,9 +24465,15 @@
       "kind": "title"
     },
     {
+      "id": "VER-020",
+      "file": "packages/db/src/baselines.test.ts",
+      "line": 427,
+      "kind": "title"
+    },
+    {
       "id": "VER-023",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 952,
+      "line": 1072,
       "kind": "title"
     },
     {
@@ -24469,13 +24491,13 @@
     {
       "id": "VER-049",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 880,
+      "line": 1000,
       "kind": "title"
     },
     {
       "id": "VER-058",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 967,
+      "line": 1087,
       "kind": "title"
     },
     {
@@ -25064,6 +25086,12 @@
       "id": "SCH-022",
       "file": "packages/db/src/listing.test.ts",
       "line": 211,
+      "kind": "title"
+    },
+    {
+      "id": "STR-036",
+      "file": "packages/db/src/numbering.test.ts",
+      "line": 245,
       "kind": "title"
     },
     {
@@ -26857,7 +26885,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 726,
+      "line": 727,
       "kind": "title"
     },
     {
@@ -27103,13 +27131,13 @@
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4280,
+      "line": 4342,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4096,
+      "line": 4158,
       "kind": "title"
     },
     {
@@ -27127,13 +27155,13 @@
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7172,
+      "line": 7234,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6881,
+      "line": 6943,
       "kind": "title"
     },
     {
@@ -27163,25 +27191,25 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7193,
+      "line": 7255,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6164,
+      "line": 6226,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7264,
+      "line": 7326,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7207,
+      "line": 7269,
       "kind": "title"
     },
     {
@@ -27205,7 +27233,7 @@
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7264,
+      "line": 7326,
       "kind": "title"
     },
     {
@@ -27235,13 +27263,13 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4072,
+      "line": 4134,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3796,
+      "line": 3858,
       "kind": "title"
     },
     {
@@ -27253,25 +27281,25 @@
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4179,
+      "line": 4241,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3690,
+      "line": 3752,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3719,
+      "line": 3781,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3742,
+      "line": 3804,
       "kind": "title"
     },
     {
@@ -27283,19 +27311,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5371,
+      "line": 5433,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5371,
+      "line": 5433,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5395,
+      "line": 5457,
       "kind": "title"
     },
     {
@@ -27313,7 +27341,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7098,
+      "line": 7160,
       "kind": "title"
     },
     {
@@ -27571,13 +27599,19 @@
     {
       "id": "REU-021",
       "file": "packages/domain/src/reuse/node-conditions.test.ts",
-      "line": 47,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "REU-024",
       "file": "packages/domain/src/reuse/node-conditions.test.ts",
-      "line": 93,
+      "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "STR-036",
+      "file": "packages/domain/src/reuse/node-conditions.test.ts",
+      "line": 160,
       "kind": "title"
     },
     {
@@ -28375,7 +28409,7 @@
     {
       "id": "LIF-007",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 275,
+      "line": 281,
       "kind": "title"
     },
     {
@@ -28393,7 +28427,7 @@
     {
       "id": "LIF-059",
       "file": "packages/domain/src/workflow/workflow.test.ts",
-      "line": 149,
+      "line": 155,
       "kind": "title"
     },
     {

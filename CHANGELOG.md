@@ -3,6 +3,27 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.182.0 - 2026-10-16 (PR #PRNUM)
+
+Reuse's eleventh slice: conditions on sections and blocks (the R11 plan).
+
+### Added
+
+- **Conditions on a section or a placed component.** A section or a component reference can carry conditions, set through the outline, so a profile can leave out a whole section. What it leaves out takes no number, is in no contents or list, and the page numbers the document as it will publish.
+- **Conditions on a table, a figure or a block equation.** A numbered block can carry conditions of its own, kept through editing and paste, so a profile can leave out a table or a figure; what it leaves out takes no number and is in no list.
+- **A gate can require a complete profile.** A workflow transition can require every condition axis a document's content depends on to be set in its profile, naming each that is not.
+
+### Changed
+
+- **A cross-reference to something a profile leaves out fails by its own name**, saying the profile leaves its target out, rather than that the target is missing.
+
+### Fixed
+
+- **Moving a document to a newer template version adds what it now requires.** A section or component the newer version requires and the document lacks is added where the template places it, so the document can be published again; the move lists each first, and any can be left out with a reason, kept on the document. A required component can now be placed in the front matter or among the appendices, not only the body.
+- **An idempotency key is honoured when a document's template runs queries.** Sending the same request again with its key now answers with the document already made, without running its queries again, as it does for any other template; a creation that failed is not remembered, so it can be tried again with the same key.
+- **A baseline publishes under its profile.** A publication made from a baseline is now made under the profile the document declared when the baseline was taken, rather than under none, and the baseline says which.
+- **What a profile leaves out no longer holds up a publish.** A component it leaves out that you may not read, or whose data is not current, no longer refuses a publish or a baseline.
+
 ## 0.181.0 - 2026-10-16 (PR #659)
 
 Reuse's tenth slice: variables from templates and results, and profile defaults (the R10 plan).

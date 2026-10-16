@@ -1,4 +1,5 @@
 import {
+  applyConditions,
   contributionsOf,
   readContent,
   unbound,
@@ -144,7 +145,15 @@ export async function numberingInputs(
     if (!projected.has(row.id)) {
       const read = readContent(row.content, { artifact: row.artifact_id, version: row.id });
       // The page counts without values (B3-D): no contribution reads one, so its numbers are a publish's.
-      projected.set(row.id, read.ok ? contributionsOf(unbound(read.document)) : null);
+      // And what the document's profile keeps of it, so a block it leaves out takes no number (R11).
+      projected.set(
+        row.id,
+        read.ok
+          ? contributionsOf(
+              unbound(applyConditions(read.document, outline.profile?.values ?? {}).content),
+            )
+          : null,
+      );
     }
     return projected.get(row.id) ?? null;
   };
