@@ -12,6 +12,7 @@ import {
   nodeIdentifierSchema as nodeIdentifier,
 } from '../content/model/identifier.js';
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
+import { conditionsSchema, type Conditions } from '../content/model/marks.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { storedProfileSchema } from '../reuse/conditions.js';
@@ -74,6 +75,8 @@ export type SectionNode = {
    * retitled or moved. Absent on a section an author added, and never written by an outline act.
    */
   readonly origin?: string | undefined;
+  /** What a profile must select for it to be published, with its subtree (REU-021; R11-A). */
+  readonly conditions?: Conditions | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -90,6 +93,7 @@ export type ReferenceNode = {
   readonly overrides?: readonly Override[] | undefined;
   /** The key of the template's required component it was placed for (TPL-014; the R9 plan, R9-B). */
   readonly origin?: string | undefined;
+  readonly conditions?: Conditions | undefined;
   readonly children: readonly OutlineNode[];
 };
 
@@ -171,6 +175,8 @@ export const sectionNodeSchema = z.strictObject({
     .string()
     .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/)
     .optional(),
+  // Additive at schema 3, as `origin` was (the R11 plan, R11-A): no node stored before holds any.
+  conditions: conditionsSchema.optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -187,6 +193,7 @@ export const referenceNodeSchema = z.strictObject({
     .string()
     .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/)
     .optional(),
+  conditions: conditionsSchema.optional(),
   children: z.array(outlineNodeSchema),
 });
 
@@ -552,6 +559,10 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
     node.type === 'section'
       ? [
           ['children', canonicaliseOutlineNodes(node.children)],
+          // Only where there are some: an outline stored before R11 digests as it did.
+          ...(node.conditions === undefined
+            ? []
+            : ([['conditions', canonicalJson(node.conditions)]] as const)),
           ['id', canonicalJson(node.id)],
           ['matter', canonicalJson(node.matter)],
           ['numbered', canonicalJson(node.numbered)],
@@ -565,6 +576,10 @@ function canonicaliseOutlineNode(node: OutlineNode): string {
       : [
           ['children', canonicaliseOutlineNodes(node.children)],
           ['component', canonicalJson(node.component)],
+          // Only where there are some: an outline stored before R11 digests as it did.
+          ...(node.conditions === undefined
+            ? []
+            : ([['conditions', canonicalJson(node.conditions)]] as const)),
           ['id', canonicalJson(node.id)],
           ['matter', canonicalJson(node.matter)],
           ['mode', canonicalJson(node.mode)],

@@ -408,6 +408,7 @@ describe('the outline a document version holds', () => {
         // A section made from a template's starting section, so every member it may hold is present.
         section(NODE, {
           origin: 'introduction',
+          conditions: [{ axis: 'audience', values: ['regulator'] }],
           children: [
             {
               type: 'reference',
@@ -420,6 +421,7 @@ describe('the outline a document version holds', () => {
               values: {},
               // Every member a reference may hold (the R4 plan, R4-A; the R9 plan, R9-B).
               origin: 'statement',
+              conditions: [{ axis: 'audience', values: ['regulator'] }],
               overrides: [
                 {
                   block: 'p1',

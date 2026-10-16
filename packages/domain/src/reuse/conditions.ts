@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import type { ContentDocument } from '../content/model/document.js';
+import type { Conditions } from '../content/model/marks.js';
+import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 import { definitionIdentity } from '../metadata/definition.js';
 
 const key = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/);
@@ -75,8 +77,11 @@ export function applyConditions(
   readonly content: ContentDocument;
   readonly excluded: readonly string[];
   readonly unset: readonly UnsetAxis[];
+  /** Each block the conditions took out, by its identifier: a reference to it fails by name (R11-D). */
+  readonly removed: readonly string[];
 } {
   const excluded: string[] = [];
+  const removed: string[] = [];
   const unset: UnsetAxis[] = [];
   const said = new Set<string>();
   const selects = (mark: ConditionMark, block: string | null): boolean => {
@@ -126,7 +131,12 @@ export function applyConditions(
         Array.isArray((value[index] as Record<string, unknown>)['content']) &&
         ((value[index] as Record<string, unknown>)['content'] as unknown[]).length > 0;
       const remaining = kept.filter((member, index) => !emptied(member, index));
-      return remaining.length > 0 ? remaining : kept;
+      if (remaining.length === 0) return kept;
+      for (const [index, member] of kept.entries()) {
+        if (emptied(member, index))
+          removed.push((member as Record<string, unknown>)['id'] as string);
+      }
+      return remaining;
     }
     if (isRecord(value)) {
       const here =
@@ -141,5 +151,67 @@ export function applyConditions(
   };
 
   const blocks = walk(content.content, null) as ContentDocument['content'];
-  return { content: { ...content, content: blocks }, excluded, unset };
+  return { content: { ...content, content: blocks }, excluded, unset, removed };
+}
+
+/** Whether `conditions` select under `profile`, naming each axis it does not set (R6-C, REU-024). */
+function selected(
+  conditions: Conditions,
+  profile: Profile,
+  unset: (axis: string) => void,
+): boolean {
+  // Each asked, so every unset axis is reported, not the first alone (REU-053).
+  const answers = conditions.map((condition) => {
+    // Its own keys alone: an axis named `constructor` is unset, never an inherited member.
+    const taken = Object.hasOwn(profile, condition.axis) ? profile[condition.axis] : undefined;
+    if (taken === undefined) {
+      unset(condition.axis);
+      return false;
+    }
+    return condition.values.some((value) => taken.includes(value));
+  });
+  return answers.every(Boolean);
+}
+
+/**
+ * **An outline as a profile selects it** (REU-021, REU-024; the R11 plan, R11-A, R11-C): a node is
+ * kept where its conditions select it, and taken out with its whole subtree where they do not; what is
+ * kept is returned without its conditions. `excluded` is every node taken out, in document order;
+ * `passages` each section title among them, for the scan (REU-048); `unset` each axis a node asked
+ * that the profile does not name, by the node. A node under one taken out is never asked.
+ */
+export function selectOutline(
+  outline: OutlineDocument,
+  profile: Profile,
+): {
+  readonly outline: OutlineDocument;
+  readonly excluded: readonly string[];
+  readonly passages: readonly string[];
+  readonly unset: readonly { readonly axis: string; readonly node: string }[];
+} {
+  const excluded: string[] = [];
+  const passages: string[] = [];
+  const unset: { axis: string; node: string }[] = [];
+  const takeOut = (node: OutlineNode) => {
+    excluded.push(node.id);
+    if (node.type === 'section') {
+      passages.push(node.title.map((each) => (each.type === 'text' ? each.value : '')).join(''));
+    }
+    node.children.forEach(takeOut);
+  };
+  const keep = (nodes: readonly OutlineNode[]): OutlineNode[] =>
+    nodes.flatMap((node) => {
+      if (
+        node.conditions !== undefined &&
+        !selected(node.conditions, profile, (axis) => unset.push({ axis, node: node.id }))
+      ) {
+        takeOut(node);
+        return [];
+      }
+      const { conditions: dropped, ...rest } = node;
+      void dropped;
+      return [{ ...rest, children: keep(node.children) } as OutlineNode];
+    });
+  const nodes = keep(outline.nodes);
+  return { outline: { ...outline, nodes }, excluded, passages, unset };
 }

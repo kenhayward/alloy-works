@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { contributionsOf } from '../structure/contributions.js';
 import { contents, listOf } from '../structure/lists.js';
+import { selectOutline } from '../reuse/conditions.js';
+import { printVariables, variableDefinitionSchema } from '../reuse/variables.js';
 import { conditions, number, resolve, type NumberingTable } from '../structure/numbering.js';
 import {
   OUTLINE_SCHEMA_VERSION,
@@ -423,5 +425,238 @@ describe('the binding stage in the resolution order', () => {
       // @ts-expect-error - `contributionsOf` takes only what has been through the binding stage.
       contributionsOf(valued);
     expect(typeof skipped).toBe('function');
+  });
+});
+
+/**
+ * PUB-109: transclusion, the first stage, `resolve`'s: each reference's content placed under it. What
+ * every later stage reads is what it placed; before it, an occurrence has no content to condition,
+ * count, refer to or list.
+ */
+describe('the transclusion stage in the resolution order', () => {
+  it('PUB-109 transcludes before conditions, numbering, references and lists: before it, nothing is counted, a reference finds no table and a list holds none', () => {
+    const made = assemble(input());
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    // In order: the condition is handed the transcluded content, and what it keeps is numbered.
+    expect(tableLabels(made.numbering)).toEqual({ t2: 'Table 1.1', t3: 'Table 1.2' });
+    // Swapped after each: the outline alone, with no occurrence placed under its reference.
+    const untranscluded = conditions(resolve(outline, new Map()));
+    const early = number(untranscluded, defaultNumberingScheme);
+    expect(tableLabels(early)).toEqual({});
+    const refer = referenceResolver({ outline, occurrences: new Map(), numbering: early });
+    expect(refer({ kind: 'block', block: 't2' }, { node: id('calib') })).toMatchObject({
+      ok: false,
+    });
+    expect(listOf(untranscluded, early, 'table')).toEqual([]);
+  });
+});
+
+/**
+ * PUB-110: conditions, the second stage (the R6 plan, R6-D; the R11 plan, R11-C). `selectOutline`
+ * takes out what a profile does not select before anything reads an occurrence; composed after each
+ * later stage, the annex it takes out is numbered, found and listed.
+ */
+describe('the conditions stage in the resolution order', () => {
+  const ANNEXED = '00000000-0000-4000-8000-000000000002';
+  const conditional = parseOutlineDocument({
+    ...outline,
+    nodes: [
+      {
+        type: 'section',
+        id: id('annex'),
+        title: [text('Annex')],
+        numbered: true,
+        matter: 'body',
+        pageBreak: 'none',
+        values: {},
+        conditions: [{ axis: 'audience', values: ['regulator'] }],
+        children: [
+          {
+            type: 'reference',
+            id: id('annexed'),
+            component: ANNEXED,
+            mode: { kind: 'latest' },
+            numbered: true,
+            matter: 'body',
+            pageBreak: 'none',
+            values: {},
+            children: [],
+          },
+        ],
+      },
+      ...outline.nodes,
+    ],
+  });
+  const annexed = parseContentDocument({ ...stored, content: [table('ta', [text('Annexed')])] });
+  const profile = { audience: ['internal'] };
+  /** The input with the profile's own conditions, not the stand-in that hides the first table. */
+  const unconditioned = (over: Parameters<typeof input>[0]) => {
+    const { conditionContent, ...rest } = input(over);
+    void conditionContent;
+    return rest;
+  };
+  const made = () => {
+    const assembled = assemble(
+      unconditioned({
+        outline: conditional,
+        occurrences: new Map([...occurrences, [id('annexed'), annexed]]),
+        profile: { values: profile, excludeUnset: false },
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    return assembled;
+  };
+  /** Counted over `over`, each occurrence's content as stored. */
+  const counted = (over: OutlineDocument) =>
+    conditions(
+      resolve(
+        over,
+        new Map([
+          [id('calib'), contributionsOf(unbound(stored))],
+          [id('annexed'), contributionsOf(unbound(annexed))],
+        ]),
+      ),
+    );
+  const selected = selectOutline(conditional, profile).outline;
+
+  it('PUB-110 applies conditions before numbering: numbered first, the annex it takes out is section 1 and every table after it a section out', () => {
+    expect(tableLabels(made().numbering)).toEqual({
+      t1: 'Table 1.1',
+      t2: 'Table 1.2',
+      t3: 'Table 1.3',
+    });
+    expect(made().numbering).toEqual(number(counted(selected), defaultNumberingScheme));
+    expect(tableLabels(number(counted(conditional), defaultNumberingScheme))).toEqual({
+      ta: 'Table 1.1',
+      t1: 'Table 2.1',
+      t2: 'Table 2.2',
+      t3: 'Table 2.3',
+    });
+  });
+
+  it('PUB-110 applies conditions before resolving references: resolved first, a reference to the annex it takes out finds it, and in order fails', () => {
+    const target = { kind: 'node', node: id('annex') } as const;
+    const resolver = (over: OutlineDocument) =>
+      referenceResolver({
+        outline: over,
+        occurrences: new Map([[id('calib'), unbound(stored)]]),
+        numbering: number(counted(over), defaultNumberingScheme),
+      });
+    expect(resolver(conditional)(target, { node: id('calib') })).toMatchObject({ ok: true });
+    expect(resolver(selected)(target, { node: id('calib') })).toMatchObject({ ok: false });
+    const referring = parseContentDocument({
+      ...stored,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [{ type: 'crossReference', id: 'x1', target, display: 'number' }],
+        },
+      ],
+    });
+    const failed = assemble(
+      unconditioned({
+        outline: conditional,
+        occurrences: new Map([
+          [id('calib'), referring],
+          [id('annexed'), annexed],
+        ]),
+        profile: { values: profile, excludeUnset: false },
+      }),
+    );
+    expect(failed).toMatchObject({ ok: false, failures: [{ code: 'cross_reference_excluded' }] });
+  });
+
+  it('PUB-110 STR-042 applies conditions before generating the lists: generated first, the list of tables holds the annex table it takes out', () => {
+    const captions = (over: OutlineDocument) =>
+      listOf(counted(over), number(counted(over), defaultNumberingScheme), 'table').map(
+        (entry) => entry.caption,
+      );
+    expect(captions(conditional)).toContain('Annexed');
+    expect(captions(selected)).not.toContain('Annexed');
+    const published = blocksOf(made().document.nodes).flatMap((block) =>
+      block.type === 'table' ? [printed(block.caption)] : [],
+    );
+    expect(published).not.toContain('Annexed');
+  });
+});
+
+/**
+ * PUB-111: variables, before the binding stage and everything after it (the R5 plan). `printVariables`
+ * is a function of its own: composed after the references or the lists, a caption's variable reaches
+ * neither.
+ */
+describe('the variables stage in the resolution order', () => {
+  const site = variableDefinitionSchema.parse({
+    schemaVersion: 1,
+    id: '00000000-0000-4000-8000-00000000a002',
+    name: 'Site',
+    key: 'site',
+    type: { base: 'text' },
+    sources: { parameter: 'site' },
+  });
+  const definitions = new Map([[site.key, site]]);
+  const context = { parameters: { site: 'York' }, values: {}, results: new Map() };
+  const valued = parseContentDocument({
+    ...stored,
+    content: [
+      table('t1', [text('Readings at '), { type: 'variable', name: 'site' }]),
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [text('See '), { ...xref('x1', 't1'), display: 'numberAndTitle' }],
+      },
+    ],
+  });
+  const made = () => {
+    const assembled = assemble(
+      input({
+        occurrences: new Map([[id('calib'), valued]]),
+        conditionContent: (_node, content) => content,
+        variables: { definitions, context: { parameters: { site: 'York' }, values: {} } },
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    return assembled;
+  };
+  const printedOut = printVariables(
+    id('calib'),
+    valued,
+    definitions,
+    context,
+    DEFAULT_VALUE_FORMATS,
+  ).content;
+  const counted = (content: ContentDocument) =>
+    conditions(resolve(outline, new Map([[id('calib'), contributionsOf(unbound(content))]])));
+
+  it('PUB-111 prints variables before resolving references: swapped after them, a reference to a table whose caption holds one prints none', () => {
+    const paragraph = blocksOf(made().document.nodes).find(
+      (block) => block.type === 'paragraph' && printed(block.runs).startsWith('See '),
+    );
+    expect(paragraph?.type === 'paragraph' && printed(paragraph.runs)).toBe(
+      'See Table 1.1 Readings at York',
+    );
+    const late = referenceResolver({
+      outline,
+      occurrences: new Map([[id('calib'), unbound(valued)]]),
+      numbering: made().numbering,
+    });
+    expect(late({ kind: 'block', block: 't1' }, { node: id('calib') })).toMatchObject({
+      ok: true,
+      target: { title: 'Readings at ' },
+    });
+  });
+
+  it('PUB-111 prints variables before numbering and the lists: counted and listed first, the list of tables sets the caption without its value', () => {
+    expect(tableLabels(made().numbering)).toEqual({ t1: 'Table 1.1' });
+    expect(made().numbering).toEqual(number(counted(printedOut), defaultNumberingScheme));
+    expect(
+      listOf(counted(printedOut), made().numbering, 'table').map((each) => each.caption),
+    ).toEqual(['Readings at York']);
+    expect(listOf(counted(valued), made().numbering, 'table').map((each) => each.caption)).toEqual([
+      'Readings at ',
+    ]);
   });
 });

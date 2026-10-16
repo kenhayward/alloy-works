@@ -53,7 +53,7 @@ import {
   type VariableContext,
   type VariableDefinition,
 } from '../reuse/variables.js';
-import { applyConditions, type Profile } from '../reuse/conditions.js';
+import { applyConditions, selectOutline, type Profile } from '../reuse/conditions.js';
 import { probesOf } from '../reuse/scan.js';
 
 /** Every text run's words in a value, in order: what the scan holds a probe against. */
@@ -459,6 +459,41 @@ export function assemble(given: AssembleInput): Assembled {
   const conditionFailures: PublishFailure[] = [];
   const excludedPassages: string[] = [];
   const keptText: string[] = [given.outline.title];
+  // The outline's own conditions first (the R11 plan, R11-C): a node a profile does not select is
+  // never read again, so nothing under it is conditioned, bound, counted, referred to or listed, and
+  // nothing it would have failed fails. No profile is the empty one here, which selects nothing.
+  const selection = selectOutline(given.outline, given.profile?.values ?? {});
+  const excludedNodes = new Set(selection.excluded);
+  excludedPassages.push(...selection.passages);
+  if (given.profile?.excludeUnset !== true) {
+    for (const each of selection.unset) {
+      conditionFailures.push(failure('compose', 'axis_unset', each.node, null, each.axis));
+    }
+  }
+  /** The components an excluded reference places, and the blocks each occurrence's conditions took out. */
+  const excludedComponents = new Set<string>();
+  walkOutline(given.outline.nodes, (node) => {
+    if (node.type === 'reference' && excludedNodes.has(node.id)) {
+      excludedComponents.add(node.component);
+    }
+  });
+  const removedBlocks = new Map<string, ReadonlySet<string>>();
+  for (const [node, content] of given.occurrences) {
+    if (excludedNodes.has(node)) excludedPassages.push(...textValuesOf(content));
+  }
+  /** Whether a target that did not resolve is one a condition took out (STR-030; R11-D). */
+  const excludedTarget = (target: CrossReferenceTarget, node: string): boolean => {
+    if (target.kind === 'node') return excludedNodes.has(target.node);
+    if (target.kind === 'block') return removedBlocks.get(node)?.has(target.block) === true;
+    if (excludedComponents.has(target.component)) return true;
+    let removed = false;
+    walkOutline(given.outline.nodes, (each) => {
+      if (each.type === 'reference' && each.component === target.component) {
+        removed ||= removedBlocks.get(each.id)?.has(target.block) === true;
+      }
+    });
+    return removed;
+  };
   const condition =
     given.conditionContent ??
     (given.profile === undefined
@@ -468,6 +503,7 @@ export function assemble(given: AssembleInput): Assembled {
           const applied = applyConditions(content, given.profile!.values);
           excludedPassages.push(...applied.excluded);
           keptText.push(...textValuesOf(applied.content));
+          removedBlocks.set(node, new Set(applied.removed));
           if (!given.profile!.excludeUnset) {
             for (const each of applied.unset) {
               conditionFailures.push(failure('compose', 'axis_unset', node, each.block, each.axis));
@@ -509,7 +545,7 @@ export function assemble(given: AssembleInput): Assembled {
       bindFailures.push(...stage.failures);
       return { ...node, title: stage.title, children };
     });
-  const outline: OutlineDocument = { ...given.outline, nodes: titled(given.outline.nodes) };
+  const outline: OutlineDocument = { ...given.outline, nodes: titled(selection.outline.nodes) };
   // A bound table is laid out under a layout alone (TB1-H): a request made before layouts has none of
   // its words, and its bound table is refused below by name, as any block it cannot set.
   const tables: BoundTables | undefined =
@@ -523,28 +559,31 @@ export function assemble(given: AssembleInput): Assembled {
   const input: BoundInput = {
     ...given,
     outline,
+    refused: given.refused.filter((each) => each.node === null || !excludedNodes.has(each.node)),
     occurrences: new Map(
-      [...given.occurrences].map(([node, content]) => {
-        const variable = printVariables(
-          node,
-          condition(node, content),
-          variableDefinitions,
-          variableContext,
-          valueFormats,
-        );
-        printedVariables.push(...variable.printed);
-        bindFailures.push(...variable.failures);
-        const stage = bind(
-          node,
-          variable.content,
-          given.bindings?.get(node) ?? new Map(),
-          valueFormats,
-          tables,
-        );
-        values.push(...stage.values);
-        bindFailures.push(...stage.failures);
-        return [node, stage.bound] as const;
-      }),
+      [...given.occurrences]
+        .filter(([node]) => !excludedNodes.has(node))
+        .map(([node, content]) => {
+          const variable = printVariables(
+            node,
+            condition(node, content),
+            variableDefinitions,
+            variableContext,
+            valueFormats,
+          );
+          printedVariables.push(...variable.printed);
+          bindFailures.push(...variable.failures);
+          const stage = bind(
+            node,
+            variable.content,
+            given.bindings?.get(node) ?? new Map(),
+            valueFormats,
+            tables,
+          );
+          values.push(...stage.values);
+          bindFailures.push(...stage.failures);
+          return [node, stage.bound] as const;
+        }),
     ),
   };
   const { layout, theme } = input;
@@ -871,6 +910,7 @@ export function assemble(given: AssembleInput): Assembled {
           layout.words.above,
           layout.words.below,
           (style) => theme!.imageStyles.get(style)?.placement === 'float',
+          excludedTarget,
         );
   failures.push(...resolved.failures);
   for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
@@ -2672,6 +2712,7 @@ function resolveReferences(
   above: string | undefined,
   below: string | undefined,
   floats: (imageStyle: string) => boolean,
+  excluded: (target: CrossReferenceTarget, node: string) => boolean,
 ): ResolvedReferences {
   const found: Found[] = [];
   const positions = new Map<string, number>();
@@ -2877,7 +2918,9 @@ function resolveReferences(
       failures.push(
         failure(
           'compose',
-          'cross_reference_unresolved',
+          excluded(reference.target, node)
+            ? 'cross_reference_excluded'
+            : 'cross_reference_unresolved',
           node,
           reference.id,
           targetNamed(reference.target),

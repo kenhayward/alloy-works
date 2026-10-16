@@ -2,6 +2,7 @@ export {
   applyConditions,
   conditionAxisDefinitionSchema,
   profileSchema,
+  selectOutline,
   storedProfileSchema,
   type ConditionAxisDefinition,
   type Profile,

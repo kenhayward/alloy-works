@@ -379,6 +379,16 @@ describe('baselines', () => {
     expect(await tenant((trx) => listBaselines(trx, document.artifactId))).toEqual([]);
   });
 
+  it('makes a baseline where what its maker cannot read is a reference the profile leaves out (the R11 plan, R11-C)', async () => {
+    const secret = await component(quality, grace, 'Calibration');
+    const hidden = {
+      ...reference(secret.artifactId),
+      conditions: [{ axis: 'audience', values: ['regulator'] }],
+    };
+    const document = await documentWith([hidden]);
+    made(await make(document, 'Left out'));
+  });
+
   it('refuses a baseline of a version that is not the latest, naming the latest by its heading', async () => {
     const document = await documentWith([]);
     const answer = await tenant((trx) =>
