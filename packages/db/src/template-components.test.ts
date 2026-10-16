@@ -1,4 +1,5 @@
 import {
+  DEFINITION_SCHEMA_VERSION,
   defaultLimits,
   resolveTemplate,
   TEMPLATE_SCHEMA_VERSION,
@@ -15,6 +16,8 @@ import { submitCohort } from './cohorts.js';
 import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { createDocument, editOutline, resolveForDocument } from './documents.js';
+import { createDefinition } from './definitions.js';
+import { unresolvedVariables } from './variable-check.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
@@ -426,5 +429,114 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
         }),
       ),
     ).toEqual({ answer: 'cohort.bound', queries: [depths] });
+  });
+
+  it('TPL-072 TPL-069 names each variable a required component holds that does not resolve yet, the template feeding one from its parameter', async () => {
+    const declared = await as((trx) =>
+      createDefinition(trx, {
+        kind: 'variable',
+        definition: {
+          schemaVersion: DEFINITION_SCHEMA_VERSION,
+          name: 'Site name',
+          key: 'site_name',
+          type: { base: 'text' },
+          // Its own name for a parameter, which the template's mapping stands in front of.
+          sources: { parameter: 'site' },
+        },
+        author: grace,
+      }),
+    );
+    if (declared.answer !== 'created') throw new Error(declared.answer);
+    const line = await as(async (trx) => {
+      const made = await createComponent(trx, {
+        spaceId: general,
+        title: 'Site line',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: grace,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const substance = substanceOf(made.version) as Extract<
+        ReturnType<typeof substanceOf>,
+        { kind: 'component' }
+      >;
+      const next = await recordVersion(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: grace,
+        substance: {
+          ...substance,
+          content: {
+            ...substance.content,
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                style: 'body',
+                content: [
+                  { type: 'variable', name: 'site_name' },
+                  { type: 'variable', name: 'undeclared' },
+                ],
+              },
+            ] as ContentDocument['content'],
+          },
+        },
+      });
+      if (next.answer !== 'recorded') throw new Error(next.answer);
+      return next.version;
+    });
+    const made = await as((trx) =>
+      createTemplate(trx, {
+        spaceId: general,
+        author: grace,
+        definition: {
+          schemaVersion: TEMPLATE_SCHEMA_VERSION,
+          name: 'Site line report',
+          theme: DEFAULT_THEME_ID,
+          layout: DEFAULT_LAYOUT_ID,
+          schemas: [],
+          outline: { sections: [] },
+          changes: { add: true, remove: true, reorder: true },
+          parameters: [
+            {
+              name: 'location',
+              type: { base: 'text' },
+              required: false,
+              list: false,
+              changeable: true,
+              feeds: { arguments: false, variables: ['site_name'] },
+            },
+          ],
+          components: [
+            {
+              key: 'line',
+              component: line.artifactId,
+              mode: { kind: 'latest' },
+              place: { section: null, at: 'start' },
+            },
+          ],
+        },
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const named = async (parameters: Record<string, unknown>) =>
+      as(async (trx) => {
+        const document = await createDocument(trx, {
+          spaceId: general,
+          title: 'Site 9',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+          template: made.template.id,
+          parameters,
+        });
+        if (document.answer !== 'created') throw new Error(document.answer);
+        return (await unresolvedVariables(trx, document.version.artifactId, ada)).map(
+          (each) => each.key,
+        );
+      });
+    // The mapped parameter given, the variable resolves; the undeclared one never does.
+    expect(await named({ location: 'North Quay' })).toEqual(['undeclared']);
+    expect(await named({})).toEqual(['site_name', 'undeclared']);
   });
 });

@@ -184,7 +184,7 @@ describe("checking a template's parameters against its fields", () => {
       {
         code: 'parameter_unused',
         parameter: 'site',
-        message: 'The parameter site seeds no field and supplies no argument',
+        message: 'The parameter site seeds no field, feeds no variable and supplies no argument',
       },
     ]);
   });

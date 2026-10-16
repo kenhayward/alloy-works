@@ -170,6 +170,7 @@ export async function heldResults(
             result: parsed.data,
             columns,
             datasetVersion: version,
+            definition: dataset.provenance.queryDefinition.artifact,
             images: dataset.provenance.images,
             key,
           };

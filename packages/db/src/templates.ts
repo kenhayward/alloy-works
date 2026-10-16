@@ -13,6 +13,7 @@ import {
   type ResolvedTemplate,
   type TemplateDefinition,
   type TemplateParameter,
+  type VariableDefinition,
   type TemplateParameterProblem,
   type TemplateReferences,
   type UnresolvedReference,
@@ -21,6 +22,7 @@ import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
+import { variablesByKey } from './definitions.js';
 import { componentReferences } from './template-components.js';
 import type { TenantTransaction } from './tables.js';
 import {
@@ -74,7 +76,7 @@ export type TemplateAnswer =
  * feeding nothing first (TPL-068), then a seeded field that cannot take it. Nothing is written.
  */
 export type ParametersRefused = {
-  readonly answer: 'parameter.unused' | 'parameter.field';
+  readonly answer: 'parameter.unused' | 'parameter.field' | 'parameter.variable';
   readonly problems: readonly TemplateParameterProblem[];
 };
 
@@ -85,16 +87,22 @@ export type ParametersRefused = {
 export function refusedParameters(
   definition: TemplateDefinition,
   resolved: Extract<ResolvedTemplate, { ok: true }>,
+  /** The environment's declared variables, by key, that a parameter may feed (R10-A). */
+  variables?: ReadonlyMap<string, VariableDefinition>,
 ): ParametersRefused | null {
-  const problems = checkTemplateParameters(definition.parameters ?? [], resolved.document);
-  for (const code of ['parameter_unused', 'parameter_field'] as const) {
+  const problems = checkTemplateParameters(
+    definition.parameters ?? [],
+    resolved.document,
+    variables,
+  );
+  const answers = {
+    parameter_unused: 'parameter.unused',
+    parameter_field: 'parameter.field',
+    parameter_variable: 'parameter.variable',
+  } as const;
+  for (const code of ['parameter_unused', 'parameter_field', 'parameter_variable'] as const) {
     const these = problems.filter((each) => each.code === code);
-    if (these.length > 0) {
-      return {
-        answer: code === 'parameter_unused' ? 'parameter.unused' : 'parameter.field',
-        problems: these,
-      };
-    }
+    if (these.length > 0) return { answer: answers[code], problems: these };
   }
   return null;
 }
@@ -186,7 +194,7 @@ export async function createTemplate(
     ...(await componentReferences(trx, definition, input.author)),
   });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
-  const parameters = refusedParameters(definition, resolved);
+  const parameters = refusedParameters(definition, resolved, await variablesByKey(trx));
   if (parameters) return parameters;
   const version = await createArtifact(trx, {
     spaceId: input.spaceId,
@@ -217,7 +225,7 @@ export async function recordTemplateVersion(
     ...(await componentReferences(trx, definition, input.author)),
   });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
-  const parameters = refusedParameters(definition, resolved);
+  const parameters = refusedParameters(definition, resolved, await variablesByKey(trx));
   if (parameters) return parameters;
   const answer = await recordVersion(trx, {
     artifactId: input.templateId,

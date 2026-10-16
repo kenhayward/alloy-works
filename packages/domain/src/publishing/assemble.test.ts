@@ -7115,4 +7115,51 @@ describe('an approved publication, assembled (the WF2 plan, WF2-I, WF2-J)', () =
       ],
     });
   });
+
+  it('REU-016 REU-038 prints a variable from the query result the document holds, recording that the result supplied it', () => {
+    const DEPTHS = '00000000-0000-4000-8000-00000000d001';
+    const site = variableDefinitionSchema.parse({
+      schemaVersion: 1,
+      id: '00000000-0000-4000-8000-00000000a002',
+      name: 'Site',
+      key: 'site',
+      type: { base: 'text' },
+      sources: { query: { definition: DEPTHS, column: 'site' } },
+    });
+    const node = reference('site');
+    const published = assemble(
+      input({
+        outline: outline([node]),
+        occurrences: new Map([
+          [node.id, component([paragraph('p1', text('At '), { type: 'variable', name: 'site' })])],
+        ]),
+        bindings: new Map([
+          [
+            node.id,
+            new Map([
+              [
+                'b1',
+                {
+                  result: { columns: [['site', 'text']], rows: [['North Quay']] },
+                  columns: [],
+                  datasetVersion: '00000000-0000-4000-8000-00000000e001',
+                  definition: DEPTHS,
+                  images: {},
+                  key: [],
+                },
+              ],
+            ]),
+          ],
+        ]),
+        variables: {
+          definitions: new Map([[site.key, site]]),
+          context: { parameters: {}, values: {} },
+        },
+      }),
+    );
+    if (!published.ok) throw new Error(JSON.stringify(published.failures));
+    expect(published.variables.map((each) => [each.source, each.printed])).toEqual([
+      ['query', 'North Quay'],
+    ]);
+  });
 });

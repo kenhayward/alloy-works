@@ -155,7 +155,8 @@ export async function makeDocument(
   });
   if (!made)
     throw new Error(`making a document answered ${response.status}: ${JSON.stringify(error)}`);
-  let document = made;
+  // As made, less what only a creation answers: each edit answers the document as any view does.
+  let document: Omit<typeof made, 'unresolvedVariables'> = made;
   let parent: string | null = null;
   for (const each of titles) {
     document = await edit(client, document, {

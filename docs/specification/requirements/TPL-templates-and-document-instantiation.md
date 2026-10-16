@@ -132,7 +132,8 @@ an API where wrong values arrive without a form to check them.
 | **TPL-022** | Creating a document must materialise the starting outline, seed its metadata, resolve its variables, and establish its bindings                                                                                                                                                                  | T2         | Superseded by TPL-062 |
 | **TPL-062** | Creating a document from a template must materialise the starting outline and seed its metadata                                                                                                                                                                                                  | T1         | Specified             |
 | **TPL-063** | Creating a document from a template must establish its bindings                                                                                                                                                                                                                                  | T4         | Specified             |
-| **TPL-064** | Creating a document from a template must resolve its variables                                                                                                                                                                                                                                   | T4         | Specified             |
+| **TPL-064** | Creating a document from a template must resolve its variables                                                                                                                                                                                                                                   | T4         | Superseded by TPL-072 |
+| **TPL-072** | Creating a document from a template must establish what its variables resolve from - the parameters that feed them and the bindings its required components hold - and must name each variable those components hold that does not resolve yet, without refusing the creation                    | T4         | Specified             |
 | **TPL-051** | A template must be able to declare default values for a document's profile axes, and which axes a document from it must set. Instantiation must establish the profile from those defaults, from parameters or from a declared incomplete state, and must never leave it undeclared (**REU-022**) | T4         | Specified             |
 | **TPL-023** | Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting                                                                                                                                         | T2         | Superseded by TPL-065 |
 | **TPL-065** | A binding's query must run when a document is created from its template, and its result must be stored (**DAT-083**); the binding's mode, checked or pinned (**DAT-082**), must govern only how source revisions are looked for, and must not be a template setting                              | T4         | Specified             |
@@ -448,3 +449,18 @@ and answered TPL-Q04: the template declares each required component's reference 
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 69, of which 16 superseded and 1 withdrawn | 71, of which 18 superseded and 1 withdrawn |
+
+### Variables resolve when used (R10), 2026-10-16
+
+Not a review. Designing R10 found that a variable resolves when a document is previewed or published
+(REU-017, REU-036), from parameters, values and results that change after the document is made, so
+resolving its variables when it is made would freeze them or refuse too early. Ken chose that making
+a document establishes what they resolve from and names what does not resolve yet.
+
+| What was found                                   | Change                                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| A variable's value is decided when it is printed | **TPL-064 superseded by TPL-072**: creation establishes and names, never refuses |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 71, of which 18 superseded and 1 withdrawn | 72, of which 19 superseded and 1 withdrawn |

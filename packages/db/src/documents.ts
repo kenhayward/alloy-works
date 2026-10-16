@@ -37,7 +37,7 @@ import {
   type MetadataSchemaDefinition,
   type TemplateDefinition,
 } from '@alloy-works/domain';
-import { profileUnknown } from './definitions.js';
+import { profileUnknown, variablesByKey } from './definitions.js';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { archivedAs, notArchivedAs } from './archival.js';
@@ -337,7 +337,7 @@ export async function createFromResolution(
   const declared = template.definition.parameters ?? [];
   const checked = checkDocumentParameters(declared, given);
   if (checked) return parameterValuesRefused(checked);
-  const unusable = refusedParameters(template.definition, resolved);
+  const unusable = refusedParameters(template.definition, resolved, await variablesByKey(trx));
   if (unusable) return unusable;
   const parameters = present(given);
   const seeded = seededValues(declared, parameters);

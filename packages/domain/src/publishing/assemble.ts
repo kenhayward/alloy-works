@@ -481,7 +481,18 @@ export function assemble(given: AssembleInput): Assembled {
   // Variables first of the printing stages (REU-017, REU-019; the R5 plan): each occurrence's in its
   // text form, each section title's in its title form, so nothing later meets a variable.
   const variableDefinitions = given.variables?.definitions ?? new Map<string, VariableDefinition>();
-  const variableContext = given.variables?.context ?? { parameters: {}, values: {} };
+  // Each result the document holds, by the definition that ran it: a variable's query source (R10-B).
+  const results = new Map<string, { readonly result: Exclude<Held, 'unreadable'>['result'] }[]>();
+  for (const held of given.bindings?.values() ?? []) {
+    for (const each of held.values()) {
+      if (each === 'unreadable' || each.definition === undefined) continue;
+      results.set(each.definition, [...(results.get(each.definition) ?? []), each]);
+    }
+  }
+  const variableContext = {
+    ...(given.variables?.context ?? { parameters: {}, values: {} }),
+    results,
+  };
   const printedVariables: PrintedVariable[] = [];
   const titled = (nodes: readonly OutlineNode[]): OutlineNode[] =>
     nodes.map((node) => {

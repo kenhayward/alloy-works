@@ -71,7 +71,8 @@ export const parameterRefusal = {
     )
     .optional()
     .describe(
-      'parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); ' +
+      'parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); ' +
+        'parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); ' +
         'parameter_field: each that seeds a field the document level does not hold, a fixed one, or ' +
         'one that does not take its type; parameter_unknown: each value for a parameter the template ' +
         'does not declare; parameter_fixed: each that may not change and was changed (TPL-021)',
