@@ -7,6 +7,7 @@ import {
   prepareDatabase,
   createArtifact,
   createComponent,
+  createDefinition,
   createDocument,
   createJobQueue,
   createSpace,
@@ -36,6 +37,7 @@ import {
 import {
   assemble,
   blockIdentifierFrom,
+  DEFINITION_SCHEMA_VERSION,
   DRAFT_NOTICE,
   OUTPUT_CONTENT_TYPES,
   type ContentDocument,
@@ -583,6 +585,66 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it('PUB-062 sets content that would be Typst source as the words it is', async () => {
     const { read } = await published();
     expect(spoken(read.taggedText.flat())).toContain('Then #panic("x") ] [ * _ $ as words.');
+  });
+
+  it('REU-027 publishes the text its profile selects, recording the profile on the publication', async () => {
+    const request = await service.withTenant(tenant, async (trx) => {
+      const axis = await createDefinition(trx, {
+        kind: 'conditionAxis',
+        definition: {
+          schemaVersion: DEFINITION_SCHEMA_VERSION,
+          name: 'Audience',
+          key: 'audience',
+          values: [
+            { key: 'regulator', label: 'Regulator' },
+            { key: 'internal', label: 'Internal' },
+          ],
+        },
+        author: ada,
+      });
+      if (axis.answer !== 'created') throw new Error(axis.answer);
+      const only = (value: string, audience: string) => ({
+        type: 'text',
+        value,
+        marks: [
+          { type: 'condition', id: `c${value.length}`, axis: 'audience', values: [audience] },
+        ],
+      });
+      const notice = await component(
+        trx,
+        general,
+        'Notice',
+        [],
+        [
+          {
+            type: 'paragraph',
+            id: 'q1',
+            style: 'body',
+            content: [
+              { type: 'text', value: 'Readings were taken daily. ', marks: [] },
+              only('The regulator is told within a week.', 'regulator'),
+              only('Staff are told at the morning meeting.', 'internal'),
+            ],
+          },
+        ],
+      );
+      const version = await documentWith(trx, [section('Notice', [reference(notice)])]);
+      const answer = await requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['pdf'],
+        requester: ada,
+        profile: { values: { audience: ['regulator'] } },
+      });
+      if (answer.answer !== 'requested') throw new Error(answer.answer);
+      return answer.request.id;
+    });
+    expect(await work()).toBe('done');
+    const row = await publicationOf(request);
+    const said = spoken((await readPdf(await pdfOf(row!.object_key))).taggedText.flat());
+    expect(said).toContain('The regulator is told within a week.');
+    expect(said).not.toContain('Staff are told');
+    expect(row).toMatchObject({ profile: { values: { audience: ['regulator'] } } });
   });
 
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {

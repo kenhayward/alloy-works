@@ -206,6 +206,8 @@ describe('the rule behind a refusal', () => {
       'template.not_latest',
       // The R2 plan's (R2-F): the section's document moved since the report.
       'source.moved',
+      // The R6 plan's (R6-B, R6-F): a profile naming an axis or a value nothing declares.
+      'profile.invalid',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

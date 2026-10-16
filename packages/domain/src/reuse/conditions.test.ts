@@ -80,7 +80,7 @@ describe('condition axes (the R6 plan, R6-A)', () => {
 describe('applying conditions (the R6 plan, R6-C)', () => {
   const regulator: Profile = { audience: ['regulator'], region: ['uk'] };
 
-  it('REU-021 keeps a run only where every condition on it selects it, so ranges may overlap', () => {
+  it('keeps a run only where every condition on it selects it, so ranges may overlap', () => {
     const applied = applyConditions(
       doc(
         paragraph(

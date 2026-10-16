@@ -12,6 +12,7 @@ import {
   type VariableDefinition,
   conditionAxisDefinitionSchema,
   type ConditionAxisDefinition,
+  type StoredProfile,
   readDefinition,
   schemaConflicts,
   templateDefinitionSchema,
@@ -463,8 +464,7 @@ async function keyRefused(
 ): Promise<DefinitionAnswer | undefined> {
   if (self !== undefined) {
     const held = (await readDefinitionLatest(trx, self))?.definition as
-      | { readonly key: string }
-      | undefined;
+      { readonly key: string } | undefined;
     if (held !== undefined && held.key !== key) {
       return {
         answer: 'definition.invalid',
@@ -486,6 +486,23 @@ async function keyRefused(
   return keyed
     ? { answer: 'definition.name_taken', holder: { id: keyed.id, name: keyed.definition.name } }
     : undefined;
+}
+
+/**
+ * What a profile names that the environment does not declare (REU-022; R6-B): an axis by its key, a
+ * value as `axis.value`; empty where every one is declared.
+ */
+export async function profileUnknown(
+  trx: TenantTransaction,
+  profile: StoredProfile,
+): Promise<string[]> {
+  const axes = await axesByKey(trx);
+  return Object.entries(profile.values).flatMap(([key, values]) => {
+    const axis = axes.get(key);
+    if (axis === undefined) return [key];
+    const declared = new Set(axis.values.map((each) => each.key));
+    return values.filter((value) => !declared.has(value)).map((value) => `${key}.${value}`);
+  });
 }
 
 /** The environment's condition axes by key, each at its latest version (REU-020; R6-A). */

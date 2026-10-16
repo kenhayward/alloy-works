@@ -1,4 +1,4 @@
-import { outputReportSchema, publishFailureCodes } from '@alloy-works/domain';
+import { outputReportSchema, publishFailureCodes, storedProfileSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import type { RouteContract } from './contract.js';
@@ -22,6 +22,11 @@ export const RequestPublicationBody = z.strictObject({
     .describe(
       "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page",
     ),
+  profile: storedProfileSchema
+    .optional()
+    .describe(
+      "The profile to publish under in place of the document's own (REU-027): the values on each condition axis, and whether text conditioned on an axis it does not name may be left out",
+    ),
 });
 export type RequestPublicationBody = z.infer<typeof RequestPublicationBody>;
 
@@ -33,6 +38,9 @@ export const RequestPreviewBody = z.strictObject({
   version: LowercaseUuid.describe(
     'The document version the caller is previewing, which must be the latest',
   ),
+  profile: storedProfileSchema
+    .optional()
+    .describe("The profile to preview under in place of the document's own (REU-025)"),
 });
 export type RequestPreviewBody = z.infer<typeof RequestPreviewBody>;
 
@@ -42,6 +50,10 @@ export type RequestPreviewBody = z.infer<typeof RequestPreviewBody>;
  * components the caller may not read (IAM-073).
  */
 export const PublicationRefusal = ErrorBody.extend({
+  unknown: z
+    .array(z.string())
+    .optional()
+    .describe('profile_invalid: each axis, or `axis.value`, the environment does not declare'),
   current: VersionSummary.optional().describe(
     'version_precondition: the version the document is at',
   ),
@@ -411,7 +423,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -448,7 +460,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
         schema: PublicationRefusal,
       },
       401: unauthenticated,

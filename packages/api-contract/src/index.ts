@@ -30,6 +30,7 @@ export {
   DocumentListQuery,
   DocumentParams,
   DocumentParametersBody,
+  DocumentProfileBody,
   DocumentParametersQuery,
   DocumentParametersView,
   DocumentValuesBody,

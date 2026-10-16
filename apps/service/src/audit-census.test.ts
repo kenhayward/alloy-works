@@ -91,6 +91,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   recordDocumentValues: writes('content.version_cut', 'workflow.transitioned'),
   getDocumentParameters: read,
   recordDocumentParameters: writes('content.version_cut', 'workflow.transitioned'),
+  recordDocumentProfile: writes('content.version_cut', 'workflow.transitioned'),
   editOutline: writes(
     'content.version_cut',
     'reference.repointed',

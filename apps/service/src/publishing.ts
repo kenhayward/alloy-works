@@ -230,6 +230,14 @@ export async function refusePublish(
         'layout.language',
         `This document is in ${answer.document}, and its layout is written in ${answer.layout}. It can be published only under a layout in its own language.`,
       );
+    // REU-027: a profile naming what no axis declares, each named.
+    case 'profile.invalid':
+      throw refused(
+        400,
+        'profile.invalid',
+        `This profile names what no condition axis declares: ${answer.unknown.join(', ')}.`,
+        { unknown: answer.unknown },
+      );
     // Each binding with no result in this document, by its node, and why (B3-C; DAT-087).
     case 'binding.unresolved': {
       const said = answer.bindings.map(
@@ -272,6 +280,7 @@ export function publishingHandlers(
         version: body.version,
         formats: body.formats,
         requester: principalId,
+        ...(body.profile === undefined ? {} : { profile: body.profile }),
       });
       return answered(trx, id, answer);
     },
@@ -293,6 +302,7 @@ export function publishingHandlers(
         formats: ['pdf'],
         requester: principalId,
         kind: 'preview',
+        ...(body.profile === undefined ? {} : { profile: body.profile }),
       });
       return answered(trx, id, answer);
     },

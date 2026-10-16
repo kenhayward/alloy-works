@@ -28,6 +28,16 @@ export type ConditionAxisDefinition = z.infer<typeof conditionAxisDefinitionSche
 export const profileSchema = z.record(key, z.array(key).min(1).max(200));
 export type Profile = z.infer<typeof profileSchema>;
 
+/**
+ * A profile as a document declares it and a publish records it (REU-022, REU-053; R6-B): its values,
+ * and whether exclusion by an unset axis is accepted, true or absent.
+ */
+export const storedProfileSchema = z.strictObject({
+  values: profileSchema,
+  excludeUnset: z.literal(true).optional(),
+});
+export type StoredProfile = z.infer<typeof storedProfileSchema>;
+
 /** An axis content is conditioned on that the profile does not name, and the block it stands in. */
 export interface UnsetAxis {
   readonly axis: string;

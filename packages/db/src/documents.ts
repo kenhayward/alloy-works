@@ -30,7 +30,9 @@ import {
   type TemplateParameter,
   type UnresolvedReference,
   requiredKeys,
+  type StoredProfile,
 } from '@alloy-works/domain';
+import { profileUnknown } from './definitions.js';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { archivedAs, notArchivedAs } from './archival.js';
@@ -937,6 +939,55 @@ export async function recordDocumentParameters(
       content: read.outline,
       values: opened.values,
       parameters: given,
+    },
+  });
+}
+
+/** A profile naming an axis, or a value of one, the environment does not declare (R6-B). */
+export type ProfileRefused = {
+  readonly answer: 'profile.invalid';
+  readonly unknown: readonly string[];
+};
+
+/**
+ * A document's profile, written whole as its next version with its outline's nodes, its values and
+ * its parameters unchanged (REU-022, REU-053; the R6 plan, R6-B), or cleared with null. Refused
+ * `profile.invalid` where it names an axis or a value the environment does not declare.
+ */
+export async function recordDocumentProfile(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly profile: StoredProfile | null;
+  },
+): Promise<RecordAnswer | ProfileRefused> {
+  const opened = await readVersion(trx, input.openedFrom);
+  if (!opened || opened.artifactId !== input.documentId || opened.kind !== 'document') {
+    return { answer: 'artifact.missing' };
+  }
+  const read = readOutline(opened.content, { artifact: input.documentId, version: opened.id });
+  if (!read.ok) {
+    throw new Error(
+      `The document ${input.documentId} at ${opened.id} does not read: ${read.failure}`,
+    );
+  }
+  if (input.profile !== null) {
+    const unknown = await profileUnknown(trx, input.profile);
+    if (unknown.length > 0) return { answer: 'profile.invalid', unknown };
+  }
+  const { profile: was, ...rest } = read.outline;
+  void was;
+  return recordVersion(trx, {
+    artifactId: input.documentId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    substance: {
+      kind: 'document',
+      content: input.profile === null ? rest : { ...rest, profile: input.profile },
+      values: opened.values,
+      parameters: opened.parameters,
     },
   });
 }

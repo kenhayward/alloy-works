@@ -14,7 +14,7 @@ import {
 import { inlineNodeSchema, type InlineNode } from '../content/model/inline.js';
 import { hasText } from '../content/model/text.js';
 import { canonicalJson } from '../stored/canonical.js';
-import { profileSchema } from '../reuse/conditions.js';
+import { storedProfileSchema } from '../reuse/conditions.js';
 import { overridesSchema, type Override } from './overrides.js';
 import { migrateStored, type MigrationChain } from '../stored/migrate.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
@@ -202,9 +202,7 @@ export const outlineDocumentSchema = z.strictObject({
    * condition axis, and whether it accepts content conditioned on an axis it does not name being
    * excluded (REU-053), true or absent. Absent, it takes no value on any axis.
    */
-  profile: z
-    .strictObject({ values: profileSchema, excludeUnset: z.literal(true).optional() })
-    .optional(),
+  profile: storedProfileSchema.optional(),
 });
 
 export type OutlineDocument = z.infer<typeof outlineDocumentSchema>;

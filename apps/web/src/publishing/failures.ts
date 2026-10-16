@@ -212,6 +212,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // REU-017: never printed as its name, never blank.
     case 'variable_unresolved':
       return `The variable ${failure.detail ?? 'here'} has no value for this document. Give the document the parameter or the field it is taken from, or remove it.`;
+    // REU-053: an unset axis leaves text out only where the document accepts it.
+    case 'axis_unset':
+      return `Text here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
     // REU-015: never applied over a changed paragraph, and never dropped without saying so.
     case 'override_stale':
       return 'This document overrides a paragraph of the component here that has changed since. Look at the paragraph again, then change the override or remove it.';
@@ -506,6 +509,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   occurrence_gone: 'It places a component that was deleted.',
   override_stale: 'It overrides a paragraph that has changed since.',
   variable_unresolved: 'A variable in it has no value for the document.',
+  axis_unset: 'Text in it depends on a condition the document does not set.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

@@ -200,6 +200,7 @@ const operationTags = {
     'recordDocumentValues',
     'getDocumentParameters',
     'recordDocumentParameters',
+    'recordDocumentProfile',
     'getContributions',
   ],
   Definitions: ['listDefinitions', 'createDefinition', 'getDefinition', 'recordDefinitionVersion'],
@@ -542,6 +543,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the parameters the document’s template declares, their current values, and each change with who made it and when, newest first.',
   recordDocumentParameters:
     'Replaces the document’s parameter values as one version while leaving its outline and values unchanged. A parameter its template does not declare changeable keeps its value. Supply the version previously read.',
+  recordDocumentProfile:
+    'Replaces the profile the document declares, the values it takes on each condition axis, as one version with its outline, values and parameters unchanged. A publish keeps the text its profile selects. Supply the version previously read.',
   getContributions:
     'Shows what each occurrence contributes to the current document, subject to the caller’s readable set.',
   getNumbering:

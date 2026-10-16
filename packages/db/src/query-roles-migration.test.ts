@@ -173,6 +173,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0103_api_jobs',
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
+      '0106_conditions_and_profiles',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -223,6 +224,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0103_api_jobs',
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
+      '0106_conditions_and_profiles',
     ]);
 
     expect(await queryRoles(development)).toEqual([

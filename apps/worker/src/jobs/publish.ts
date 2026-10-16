@@ -321,6 +321,7 @@ export function publishJob(deps: {
         bindings,
         boundAssets,
         variables,
+        profile,
       } = read.inputs;
 
       // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
@@ -369,6 +370,8 @@ export function publishJob(deps: {
         bindings: held,
         // What its variables resolve by: the declared ones, and the document's parameters and values.
         variables,
+        // The profile it was made under, which selects each occurrence's conditional content (R6-F).
+        profile: { values: profile.values, excludeUnset: profile.excludeUnset === true },
         refused,
         // The layout version the request was made under, never the latest; none for a request made
         // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.

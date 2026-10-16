@@ -3,6 +3,7 @@ import {
   fieldDefinitionSchema,
   metadataSchemaDefinitionSchema,
   variableDefinitionSchema,
+  conditionAxisDefinitionSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
@@ -14,8 +15,11 @@ export const DefinitionParams = z.object({ id: LowercaseUuid });
 export type DefinitionParams = z.infer<typeof DefinitionParams>;
 
 export const DefinitionKind = z
-  .enum(['field', 'metadataSchema', 'componentType', 'variable'])
-  .describe('variable: a value text may name, taken from the document that places it (REU-018)');
+  .enum(['field', 'metadataSchema', 'componentType', 'variable', 'conditionAxis'])
+  .describe(
+    'variable: a value text may name, taken from the document that places it (REU-018); ' +
+      'conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020)',
+  );
 
 /** An identifier a payload is checked with, and never stored: the service allocates the real one. */
 const PLACEHOLDER = '00000000-0000-4000-8000-000000000000';
@@ -25,6 +29,7 @@ const payloadSchemas = {
   metadataSchema: metadataSchemaDefinitionSchema,
   componentType: componentTypeDefinitionSchema,
   variable: variableDefinitionSchema,
+  conditionAxis: conditionAxisDefinitionSchema,
 } as const;
 
 /**
@@ -81,7 +86,7 @@ export const DefinitionList = z.object({
       id: z.string(),
       kind: DefinitionKind,
       name: z.string(),
-      key: z.string().optional().describe("A variable's key, which text names it by"),
+      key: z.string().optional().describe("A variable's or an axis's key, which text names it by"),
       version: z.object({ id: z.string(), number: z.string() }),
     }),
   ),
@@ -158,7 +163,8 @@ export const definitionRoutes = {
     operationId: 'listDefinitions',
     method: 'GET',
     path: '/v1/definitions',
-    summary: 'Every field, metadata schema, component type and variable at its latest version',
+    summary:
+      'Every field, metadata schema, component type, variable and axis at its latest version',
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { tenant: true } },
     query: DefinitionListQuery,

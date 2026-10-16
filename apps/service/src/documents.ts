@@ -3,6 +3,7 @@ import type {
   DocumentParams,
   DocumentListQuery,
   DocumentParametersBody,
+  DocumentProfileBody,
   DocumentParametersQuery,
   DocumentParametersView,
   DocumentValuesBody,
@@ -32,6 +33,7 @@ import {
   parameterHistory,
   readLocks,
   recordDocumentParameters,
+  recordDocumentProfile,
   recordDocumentValues,
   versionContents,
   latestVersionsOf,
@@ -865,6 +867,54 @@ export function documentHandlers(
           const current = await latestView(viewer, id);
           if (current.version.id !== body.openedFrom) throw stale(current);
           throw refusedParameters(answer);
+        }
+      }
+    },
+    recordDocumentProfile: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentView> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as DocumentProfileBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
+        mayHold: administersTenant(facts),
+        facts,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await recordDocumentProfile(trx, {
+        documentId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        profile: body.profile,
+      });
+      switch (answer.answer) {
+        case 'recorded':
+          return documentView(viewer, document, answer.version);
+        case 'version.unchanged':
+          return documentView(viewer, document, answer.current);
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
+        default: {
+          // Told only to a caller who is not stale, as a value refused is.
+          const current = await latestView(viewer, id);
+          if (current.version.id !== body.openedFrom) throw stale(current);
+          throw refused(
+            400,
+            'profile.invalid',
+            `This profile names what no condition axis declares: ${answer.unknown.join(', ')}.`,
+            { unknown: answer.unknown },
+          );
         }
       }
     },

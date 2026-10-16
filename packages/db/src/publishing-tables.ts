@@ -1,4 +1,4 @@
-import type { PublishingFormat } from '@alloy-works/domain';
+import type { PublishingFormat, StoredProfile } from '@alloy-works/domain';
 import type { ColumnType } from 'kysely';
 
 /**
@@ -45,6 +45,8 @@ export interface PublicationRequestTable {
   preview_sha256: ColumnType<string | null, never, string>;
   preview_bytes: ColumnType<number | null, never, number>;
   expires_at: ColumnType<Date | null, never, Date>;
+  /** The profile it is made under (0106; the R6 plan, R6-F), or none: the empty profile. */
+  profile: ColumnType<StoredProfile | null, string | undefined, never>;
 }
 
 /** Insert and read, nothing else (0017). */
@@ -133,6 +135,8 @@ export interface PublicationTable {
   theme_id: ColumnType<string | null, string | null, never>;
   theme_version_id: ColumnType<string | null, string | null, never>;
   theme_kind: ColumnType<'theme', never, never>;
+  /** Its request's profile, exactly (0106's `publication_recorded_whole`). */
+  profile: ColumnType<StoredProfile | null, string | undefined, never>;
 }
 
 export interface PublicationInputTable {

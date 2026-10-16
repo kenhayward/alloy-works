@@ -418,6 +418,7 @@ describe('the domain package', () => {
         'applyConditions',
         'conditionAxisDefinitionSchema',
         'profileSchema',
+        'storedProfileSchema',
         // What a definition is checked against before it is written (definitions.md, W5.1).
         'assignmentConflicts',
         'brokenDefaults',
