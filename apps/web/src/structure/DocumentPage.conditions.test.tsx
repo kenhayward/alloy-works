@@ -62,4 +62,30 @@ describe("a node's conditions in the outline (the R12 plan)", () => {
       operation: { operation: 'set', node: RESULTS, conditions: [] },
     });
   });
+
+  it('REU-027 publishes under the profile chosen in the Profile panel, from the Publishing tab, saying which', async () => {
+    const fake = service(outline([section(RESULTS, 'Results')]), { axes: true, mayPublish: true });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Results' });
+    await userEvent.click(screen.getByRole('tab', { name: 'Document' }));
+    const document = screen.getByRole('tabpanel', { name: 'Document' });
+    await userEvent.click(await within(document).findByRole('checkbox', { name: 'Regulator' }));
+    await userEvent.click(
+      within(document).getByRole('button', { name: 'Publish under this profile' }),
+    );
+
+    const publishing = await screen.findByRole('tabpanel', { name: 'Publishing' });
+    expect(
+      within(publishing).getByText(
+        'Publishing under a profile chosen in place of the document’s: Audience: Regulator.',
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(within(publishing).getByRole('button', { name: 'Publish as PDF' }));
+    await waitFor(() =>
+      expect(
+        fake.sent.find((each) => each.url.endsWith('/publications') && each.body !== undefined)
+          ?.body,
+      ).toMatchObject({ profile: { values: { audience: ['regulator'] } } }),
+    );
+  });
 });

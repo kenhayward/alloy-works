@@ -22,6 +22,11 @@ export interface ProfilePanelProps {
   readonly onSave: (profile: StoredProfile | null) => Promise<ProfileSaved>;
   /** Asks for a preview of the text as this profile, saved or not, would publish it (REU-025). */
   readonly onPreview: (profile: StoredProfile) => void;
+  /**
+   * Publishes under this profile, saved or not, in place of the document's (REU-027; the R12 plan).
+   * Absent where the reader may not publish.
+   */
+  readonly onPublish?: (profile: StoredProfile) => void;
 }
 
 /** The profile as chosen: each axis with a value chosen, and the acceptance only where it is given. */
@@ -42,7 +47,14 @@ const profileOf = (
  * each declared axis, and whether text depending on an axis it does not set may be left out, saved
  * whole; and a preview of the text as any profile chosen here would publish it.
  */
-export function ProfilePanel({ client, profile, readOnly, onSave, onPreview }: ProfilePanelProps) {
+export function ProfilePanel({
+  client,
+  profile,
+  readOnly,
+  onSave,
+  onPreview,
+  onPublish,
+}: ProfilePanelProps) {
   const id = useId();
   const [axes, setAxes] = useState<readonly OfferedAxis[] | 'unread' | null>(null);
   const [values, setValues] = useState<Readonly<Record<string, readonly string[]>>>(
@@ -123,6 +135,11 @@ export function ProfilePanel({ client, profile, readOnly, onSave, onPreview }: P
           <button type="button" onClick={() => onPreview(chosen)}>
             Preview this profile
           </button>
+          {onPublish && (
+            <button type="button" onClick={() => onPublish(chosen)}>
+              Publish under this profile
+            </button>
+          )}
         </div>
       </>
     </section>
