@@ -214,7 +214,9 @@ describe('the outline a document version holds', () => {
     expect(canonicaliseOutline(profiled)).toContain(
       `"profile":${canonicalJson({ excludeUnset: true, values: { audience: ['regulator'] } })}`,
     );
-    expect(canonicaliseOutline(profiled)).not.toBe(canonicaliseOutline(parseOutlineDocument(empty)));
+    expect(canonicaliseOutline(profiled)).not.toBe(
+      canonicaliseOutline(parseOutlineDocument(empty)),
+    );
     expect(canonicaliseOutline(parseOutlineDocument(empty))).not.toContain('profile');
     // A value no axis could hold, or an acceptance spelled other than true, is refused.
     for (const profile of [{ values: { audience: [] } }, { values: {}, excludeUnset: false }]) {

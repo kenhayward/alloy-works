@@ -130,9 +130,7 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
         kind: 'unordered',
         items: [
           {
-            content: [
-              paragraph('i1', run('Item '), run('internal', ['audience', ['internal']])),
-            ],
+            content: [paragraph('i1', run('Item '), run('internal', ['audience', ['internal']]))],
           },
         ],
       }),
