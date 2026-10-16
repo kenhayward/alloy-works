@@ -3,6 +3,21 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.177.0 - 2026-10-16 (PR #647)
+
+Reuse's sixth slice: conditions and profiles (the R6 plan).
+
+### Added
+
+- **Conditions and profiles, through the API.** Declare a condition axis as a definition, with its permitted values. A document declares its profile, the values it takes on each axis, with `PUT /v1/documents/{id}/profile`. A publish keeps the text its profile selects and leaves out the rest before anything is numbered or referred to, and fails by name where text depends on an axis the profile does not set, unless the document accepts that. A publish or a preview may name another profile, and the publication records the one it was made under.
+- **Every output scanned for excluded text.** Before a publication is stored, its PDF and Word document, text and metadata, are searched for what its profile left out; a match fails the publish and nothing is kept.
+- **Conditions in the editor.** **Condition** on the toolbar keeps selected text for some readers alone, chosen from the declared axes and their values; several can cover one passage. Conditional text is tinted and says what it depends on. **Add alternative** copies it beside itself for the other readers, to rewrite.
+- **A document's profile in its page.** **Profile** sets the values a document takes on each axis, and previews the text under any profile before it is published.
+
+### Fixed
+
+- **A document holding a variable and no bound value publishes.** It was refused when the publish recorded where the variable's value came from.
+
 ## 0.176.0 - 2026-10-15 (PR #643)
 
 Reuse's fifth slice: variables (the R5 plan).

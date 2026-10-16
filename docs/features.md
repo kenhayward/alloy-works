@@ -1104,6 +1104,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   chosen from those declared, shown by its key; a publish prints its value, records where it came
   from, and fails by name where it has none. No page yet declares one, and a section title holding one
   is not edited in the outline.
+- **Conditions and profiles.** Declare a condition axis through the API (`POST /v1/definitions`, kind
+  `conditionAxis`) with its values. In the editor, **Condition** (Ctrl or Cmd, Alt and O) keeps selected
+  text for some readers alone; several conditions can cover one passage, and conditional text is
+  tinted and says what it depends on. **Add alternative** copies it beside itself for the other
+  readers, to rewrite. A document's page offers **Profile**: the values it takes on each axis, and a
+  preview under any profile. A publish keeps what its profile selects, leaves the rest out before
+  anything is numbered or referred to, fails by name where text depends on an axis the profile does
+  not set unless the document accepts that, and scans every output for what was left out. A publish
+  through the API may name another profile, and the publication records it. A whole block or section
+  cannot carry a condition yet.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at
