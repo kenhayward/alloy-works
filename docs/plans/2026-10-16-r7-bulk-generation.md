@@ -4,6 +4,8 @@
 > migration 0107 (cohorts and their rows, a job kind), a new contract, a worker job. Built inline, one
 > final review at the slice's end. Decisions marked **(default)** are recommendations Ken may overturn.
 
+R7a and R7b land as one PR, stacked on R6's (the plan's two PRs, kept as its two tasks).
+
 **Goal:** many documents made from one template and a set of parameter rows, given inline or taken
 from a query's result, as one job: each row its own document or its own reported failure, nothing
 partial; the set a cohort, found again afterwards, every row made from the same resolution, and the

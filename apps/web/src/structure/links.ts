@@ -134,3 +134,15 @@ export function publishingLink(document: string, request?: string): string {
 export function nodeLink(document: string, node: string): string {
   return `#/documents/${document}/nodes/${node}`;
 }
+
+const COHORT = /^#\/cohorts\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+/** The cohort a `#/cohorts/<id>` address names, or null (the R7 plan, R7-G). */
+export function cohortAddress(hash: string): string | null {
+  return COHORT.exec(hash)?.[1] ?? null;
+}
+
+/** The address of a cohort's page. */
+export function cohortLink(cohort: string): string {
+  return `#/cohorts/${cohort}`;
+}

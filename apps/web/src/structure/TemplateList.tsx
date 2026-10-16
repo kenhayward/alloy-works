@@ -9,7 +9,8 @@ import { usePagedListing } from '../listing/usePagedListing.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './DocumentList.module.css';
-import { templateAccessLink } from './links.js';
+import { GenerateDialog } from './GenerateDialog.js';
+import { cohortLink, templateAccessLink } from './links.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Listing['items'][number];
@@ -30,6 +31,8 @@ const SORTS: readonly SortOption[] = [
 export function TemplateList({ client }: { readonly client: Client }) {
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
+  // The template documents are being generated from, in its dialog (the R7 plan, R7-B).
+  const [generating, setGenerating] = useState<Item | null>(null);
   const fetchPage = useCallback(
     (cursor: string | null) =>
       client.GET('/v1/templates', {
@@ -120,6 +123,7 @@ export function TemplateList({ client }: { readonly client: Client }) {
                   <th scope="col">Space</th>
                   <th scope="col">Version</th>
                   <th scope="col">Changed</th>
+                  <th scope="col">Documents</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,6 +144,15 @@ export function TemplateList({ client }: { readonly client: Client }) {
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
                     </td>
+                    <td>
+                      <button
+                        type="button"
+                        aria-label={`Generate documents from ${item.name}`}
+                        onClick={() => setGenerating(item)}
+                      >
+                        Generate
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -148,6 +161,17 @@ export function TemplateList({ client }: { readonly client: Client }) {
         )}
         <More listing={listing} what="templates" />
       </section>
+      {generating !== null && (
+        <GenerateDialog
+          client={client}
+          template={{ id: generating.id, name: generating.name, space: generating.space.id }}
+          onGenerated={(cohort) => {
+            setGenerating(null);
+            window.location.hash = cohortLink(cohort);
+          }}
+          onCancel={() => setGenerating(null)}
+        />
+      )}
     </ListLayout>
   );
 }

@@ -11,6 +11,8 @@ import {
   queryDefinitionAddress,
   queryDefinitionTab,
 } from '../data/links.js';
+import { CohortPage } from '../structure/CohortPage.js';
+import { cohortAddress } from '../structure/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
 import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { Home } from '../home/Home.js';
@@ -412,6 +414,8 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
         />
       );
     }
+    const cohort = cohortAddress(hash);
+    if (cohort !== null) return <CohortPage key={cohort} client={client} id={cohort} />;
     const definition = queryDefinitionAddress(hash);
     if (definition !== null) {
       return (
