@@ -19156,6 +19156,10 @@
           "howItIsMet": "The outline's `remove` of a reference from a required component needs a `reason`, kept as a `section_waiver` row as a section's is; a publication request with one missing and not waived is refused, `component_required`, naming its key"
         },
         {
+          "id": "TPL-073",
+          "howItIsMet": "A required component's `place` is the start or end of a starting section, or of the top level's front matter, body or appendices by its `matter`; creation and a move place it alike"
+        },
+        {
           "id": "TPL-070",
           "howItIsMet": "A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read"
         },
@@ -24707,7 +24711,7 @@
     {
       "id": "LIF-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 824,
+      "line": 832,
       "kind": "title"
     },
     {
@@ -24719,7 +24723,7 @@
     {
       "id": "TPL-004",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 889,
+      "line": 897,
       "kind": "title"
     },
     {
@@ -24767,7 +24771,7 @@
     {
       "id": "TPL-055",
       "file": "packages/db/src/document-template.test.ts",
-      "line": 848,
+      "line": 856,
       "kind": "title"
     },
     {
@@ -25572,6 +25576,12 @@
       "id": "TPL-014",
       "file": "packages/db/src/template-components.test.ts",
       "line": 250,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-029",
+      "file": "packages/db/src/template-components.test.ts",
+      "line": 743,
       "kind": "title"
     },
     {
