@@ -84,14 +84,15 @@ none of them but its starting outline.
 
 ## 5. The structure outline
 
-| ID          | Requirement                                                                                                                                                              | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **TPL-012** | A structure outline must declare the sections a document starts with, and their order                                                                                    | T1         | Specified |
-| **TPL-013** | It must be able to mark a section as required, meaning a document may not be published without it                                                                        | T1         | Specified |
-| **TPL-014** | It must be able to declare a component that every document from this template includes - shared boilerplate, a standard methodology statement                            | T4         | Specified |
-| **TPL-015** | It must declare what an author may change: whether sections can be added, removed or reordered                                                                           | T1         | Specified |
-| **TPL-016** | A starting outline must not be a document's outline. Once instantiated, the document owns it (**STR**)                                                                   | Constraint | Specified |
-| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**) | T4         | Specified |
+| ID          | Requirement                                                                                                                                                                                            | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **TPL-012** | A structure outline must declare the sections a document starts with, and their order                                                                                                                  | T1         | Specified             |
+| **TPL-013** | It must be able to mark a section as required, meaning a document may not be published without it                                                                                                      | T1         | Specified             |
+| **TPL-014** | It must be able to declare a component that every document from this template includes - shared boilerplate, a standard methodology statement                                                          | T4         | Specified             |
+| **TPL-015** | It must declare what an author may change: whether sections can be added, removed or reordered                                                                                                         | T1         | Specified             |
+| **TPL-016** | A starting outline must not be a document's outline. Once instantiated, the document owns it (**STR**)                                                                                                 | Constraint | Specified             |
+| **TPL-049** | A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)                               | T4         | Superseded by TPL-073 |
+| **TPL-073** | A required component (TPL-014) must declare where it sits in the starting outline: at the start or end of a starting section, or at the start or end of the outline's front matter, body or appendices | T4         | Specified             |
 
 ## 6. Parameters
 
@@ -464,3 +465,19 @@ a document establishes what they resolve from and names what does not resolve ye
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 71, of which 18 superseded and 1 withdrawn | 72, of which 19 superseded and 1 withdrawn |
+
+### A required component sits in the outline (#660), 2026-10-16
+
+Not a review. TPL-049 let a required component sit as document-level matter the publishing layout
+places (PUB-088). A layout places generated matter alone - a cover, contents, appendices - and a
+component it placed would be content outside the outline: unnumbered, unreferenced, and pinned by no
+baseline. Ken chose to supersede it; what a template wants of it, a statement in the front matter or
+a notice among the appendices, is a place in the outline.
+
+| What was found                             | Change                                                                        |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| A layout places no content, and should not | **TPL-049 superseded by TPL-073**: a place in the starting outline, by matter |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 72, of which 19 superseded and 1 withdrawn | 73, of which 20 superseded and 1 withdrawn |

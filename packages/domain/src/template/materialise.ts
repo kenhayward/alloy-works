@@ -4,9 +4,11 @@ import {
   OUTLINE_SCHEMA_VERSION,
   parseOutlineDocument,
   type OutlineDocument,
+  type OutlineMatter,
 } from '../structure/outline.js';
 
 import type { StartingSection } from './definition.js';
+import { placeAtTop } from './placement.js';
 import type { ResolvedComponent, ResolvedTemplate } from './resolve.js';
 
 /** What a document starts with when it is made from a template (templates.md, step 3 and 4). */
@@ -32,18 +34,7 @@ export function materialiseTemplate(
   heading: Pick<OutlineDocument, 'title' | 'language' | 'direction'>,
   newIdentifier: () => string,
 ): MaterialisedTemplate {
-  const reference = (component: ResolvedComponent) => ({
-    type: 'reference',
-    id: newIdentifier(),
-    component: component.component,
-    mode: component.mode,
-    origin: component.key,
-    numbered: true,
-    matter: 'body',
-    pageBreak: 'none',
-    values: {},
-    children: [],
-  });
+  const reference = (component: ResolvedComponent) => requiredReference(component, newIdentifier);
   const placed = (section: string | null, at: 'start' | 'end') =>
     template.components
       .filter((each) => each.place.section === section && each.place.at === at)
@@ -63,22 +54,47 @@ export function materialiseTemplate(
       ...placed(section.key, 'end'),
     ],
   });
-  const top = template.outline.sections;
-  const front = top.filter((each) => each.matter === 'front').length;
-  let closing = top.length;
-  while (closing > front && top[closing - 1]!.matter === 'appendix') closing -= 1;
+  const nodes = placeAtTop(
+    template.outline.sections.map(node) as { matter: OutlineMatter }[],
+    template.components
+      .filter((each) => each.place.section === null)
+      .map((each) => ({
+        matter: each.place.matter ?? 'body',
+        at: each.place.at,
+        node: reference(each) as { matter: OutlineMatter },
+      })),
+  );
   const outline = parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: heading.title,
     language: heading.language,
     direction: heading.direction,
-    nodes: [
-      ...top.slice(0, front).map(node),
-      ...placed(null, 'start'),
-      ...top.slice(front, closing).map(node),
-      ...placed(null, 'end'),
-      ...top.slice(closing).map(node),
-    ],
+    nodes,
   });
   return { outline, values: carryForward({}, template.document).values };
+}
+
+/**
+ * A required component placed as a reference (TPL-014; R9-B): its key as `origin`, its mode, and its
+ * matter where it sits at the top level. Made the same way when a document is made and when a move
+ * adds it (#660).
+ */
+export function requiredReference(
+  component: Pick<ResolvedComponent, 'component' | 'key' | 'place'> & {
+    readonly mode?: ResolvedComponent['mode'] | undefined;
+  },
+  newIdentifier: () => string,
+) {
+  return {
+    type: 'reference' as const,
+    id: newIdentifier(),
+    component: component.component,
+    mode: component.mode ?? { kind: 'approved' as const },
+    origin: component.key,
+    numbered: true,
+    matter: component.place.section === null ? (component.place.matter ?? 'body') : 'body',
+    pageBreak: 'none' as const,
+    values: {},
+    children: [],
+  };
 }

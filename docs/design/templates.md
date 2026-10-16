@@ -65,6 +65,7 @@ refused while a required section is missing or a field its template applies is n
 | **REU-051** | The template and every definition it names are resolved once, when the cohort is asked for, and kept on it; every row, rerun or not, is made from that resolution (R7-D). Templates place no components, so no reference is movable yet                                                                                                                                                                              |
 | **TPL-014** | A definition's `components` names each component every document from it includes, by key, with its reference mode and its place; making a document places each as a reference carrying its key as `origin` ([Required components](#required-components))                                                                                                                                                             |
 | **TPL-044** | The outline's `remove` of a reference from a required component needs a `reason`, kept as a `section_waiver` row as a section's is; a publication request with one missing and not waived is refused, `component_required`, naming its key                                                                                                                                                                           |
+| **TPL-073** | A required component's `place` is the start or end of a starting section, or of the top level's front matter, body or appendices by its `matter`; creation and a move place it alike                                                                                                                                                                                                                                 |
 | **TPL-070** | A template's query set is the definitions its required components' bindings name at the versions resolution chooses, computed, never declared (ADR-0062); making a document refuses `template_unresolved` where a component or one of those definitions is not there for the creator to read                                                                                                                         |
 | **TPL-063** | Making a document from a template whose required components hold bindings resolves each, as the creator, before the document is made, and records each result as that binding's resolution in the transaction that makes it ([Required components](#required-components))                                                                                                                                            |
 | **TPL-065** | Each such binding's query runs when the document is made and its result is stored as a dataset version, as a resolve stores one; the binding's mode is the binding's, and the template has no setting for it                                                                                                                                                                                                         |
@@ -264,10 +265,14 @@ mode?, place: { section: key | null, at: 'start' | 'end' } }`. The key is one na
   the caller needs `sharesOwnView` (DAT-091). An idempotency key is refused there, since the answer is
   made after the request is decided. A cohort of such a template is refused, `cohort_bound`: the
   worker holds no connector (DAT-088).
-- **Moved forward**, a document is told each component the newer version requires that it lacks,
-  beside its missing sections; nothing yet places one in a document that lacks it.
-- **Not built**: TPL-049's other half, a component the layout places as document-level matter, since a
-  layout places generated matter alone (PUB-088). TPL-049 is unclaimed for it.
+- **Placed at the top level** by matter (TPL-073, superseding TPL-049): `place.matter`, front, body
+  unless declared, or appendix, names the block whose start or end it takes; below the top level a
+  node is body matter. `placeAtTop` places it, for creation and for a move alike.
+- **Moved forward** (#660), a document gains each section and component the newer version requires
+  that it lacks, where the template places it, a section with its own required descendants, a
+  component in a section the same move adds among its places. The preview lists them as `adding`;
+  the move's `declined` leaves any out with a reason, recorded as a waiver, a blank one refused
+  `reason_required`. A component the mover may not read refuses the move, as it refuses creation.
 
 ## Profile
 

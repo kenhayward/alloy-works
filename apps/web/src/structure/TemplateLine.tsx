@@ -144,9 +144,12 @@ interface Report {
     readonly name: string;
     readonly value: unknown;
   }[];
-  readonly missing: readonly { readonly key: string; readonly title: string }[];
-  /** Each component the newer version requires that the document lacks (TPL-044). */
-  readonly components?: readonly { readonly key: string }[];
+  /** Each section and component the newer version requires that the document lacks: added (#660). */
+  readonly adding: readonly {
+    readonly kind: 'section' | 'component';
+    readonly key: string;
+    readonly title: string;
+  }[];
 }
 
 const CHANGES: Readonly<Record<string, string>> = {
@@ -172,14 +175,6 @@ function reportLines(report: Report): string[] {
       each.node === null
         ? `Its value for ${each.name}, ${value}, is not carried forward.`
         : `A section's value for ${each.name}, ${value}, is not carried forward.`,
-    );
-  }
-  for (const each of report.missing) {
-    lines.push(`${each.title} is required and missing: add it, or remove it with a reason.`);
-  }
-  for (const each of report.components ?? []) {
-    lines.push(
-      `The template now requires a component, ${each.key}, that this document does not hold.`,
     );
   }
   return lines;
@@ -208,6 +203,9 @@ function MoveDialog({
   const [preview, setPreview] = useState<{ latest: string; report: Report } | null>(null);
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  // What the author leaves out of what the move adds, each with its reason (#660; TPL-029).
+  const [leftOut, setLeftOut] = useState<ReadonlyMap<string, string>>(new Map());
+  const waiting = [...leftOut.values()].some((reason) => reason.trim() === '');
 
   useEffect(() => {
     let current = true;
@@ -232,7 +230,15 @@ function MoveDialog({
     const { data, error } = await client
       .POST('/v1/documents/{id}/template-move', {
         params: { path: { id: document } },
-        body: { latest: preview.latest, to: to.id },
+        body: {
+          latest: preview.latest,
+          to: to.id,
+          ...(leftOut.size === 0
+            ? {}
+            : {
+                declined: [...leftOut].map(([key, reason]) => ({ key, reason: reason.trim() })),
+              }),
+        },
       })
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
@@ -248,8 +254,45 @@ function MoveDialog({
         <p role="status">{said || 'Reading what the move changes...'}</p>
       ) : (
         <>
+          {preview.report.adding.length > 0 && (
+            <fieldset>
+              <legend>The template now requires these, which the move adds</legend>
+              {preview.report.adding.map((each) => {
+                const out = leftOut.has(each.key);
+                return (
+                  <div key={each.key}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={out}
+                        onChange={(event) => {
+                          const next = new Map(leftOut);
+                          if (event.target.checked) next.set(each.key, '');
+                          else next.delete(each.key);
+                          setLeftOut(next);
+                        }}
+                      />
+                      {`Leave out ${each.kind === 'section' ? each.title : `the component ${each.key}`}`}
+                    </label>
+                    {out && (
+                      <label>
+                        {`Why ${each.kind === 'section' ? each.title : each.key} is left out`}
+                        <textarea
+                          value={leftOut.get(each.key) ?? ''}
+                          maxLength={2000}
+                          onChange={(event) =>
+                            setLeftOut(new Map(leftOut).set(each.key, event.target.value))
+                          }
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </fieldset>
+          )}
           {lines.length === 0 ? (
-            <p>Nothing the document holds changes.</p>
+            preview.report.adding.length === 0 && <p>Nothing the document holds changes.</p>
           ) : (
             <ul aria-label="What the move changes">
               {lines.map((line) => (
@@ -267,7 +310,7 @@ function MoveDialog({
         <button
           type="button"
           className="primary"
-          disabled={preview === null || busy}
+          disabled={preview === null || busy || waiting}
           onClick={() => void take()}
         >
           Move

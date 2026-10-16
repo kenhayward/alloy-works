@@ -739,4 +739,124 @@ describe('a template requiring components (the R9 plan, R9-A to R9-D)', () => {
     const inputs = await as((trx) => publicationInputs(trx, requested.request.id));
     expect(inputs?.variables.context.feeds?.get('pinned_name')).toBe('first');
   });
+
+  it('TPL-044 TPL-029 adds what a newer template version requires when a document moves to it, and waives what the author declines with a reason, so it publishes again', async () => {
+    const notice = await component(general, 'Moved notice');
+    const hidden = await component(quality, 'Hidden notice');
+    const definition = (components: unknown[], annex: boolean) => ({
+      schemaVersion: TEMPLATE_SCHEMA_VERSION,
+      name: 'Moving report',
+      theme: DEFAULT_THEME_ID,
+      layout: DEFAULT_LAYOUT_ID,
+      schemas: [],
+      outline: {
+        sections: [
+          section('method', 'Method'),
+          ...(annex ? [{ ...section('annex', 'Annex'), required: true }] : []),
+        ],
+      },
+      changes: { add: true, remove: true, reorder: true },
+      components,
+    });
+    const made = await as((trx) =>
+      createTemplate(trx, { spaceId: general, author: grace, definition: definition([], false) }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const document = await make(made.template.id);
+    if (document.answer !== 'created') throw new Error(document.answer);
+    const next = await as((trx) =>
+      recordTemplateVersion(trx, {
+        templateId: made.template.id,
+        openedFrom: made.template.version.id,
+        author: grace,
+        definition: definition(
+          [
+            {
+              key: 'notice',
+              component: notice.artifactId,
+              mode: { kind: 'latest' },
+              place: { section: 'method', at: 'end' },
+            },
+          ],
+          true,
+        ),
+      }),
+    );
+    if (next.answer !== 'recorded') throw new Error(next.answer);
+    const move = (declined: { key: string; reason: string }[]) =>
+      as((trx) =>
+        moveDocumentTemplate(trx, {
+          documentId: document.version.artifactId,
+          latest: document.version.id,
+          to: next.template.version.id,
+          by: ada,
+          declined,
+        }),
+      );
+    expect(await move([{ key: 'annex', reason: ' ' }])).toEqual({ answer: 'reason.needed' });
+    const moved = await move([{ key: 'annex', reason: 'This site has no annex.' }]);
+    if (moved.answer !== 'moved') throw new Error(moved.answer);
+    expect(moved.report.adding).toEqual([{ kind: 'component', key: 'notice', title: 'notice' }]);
+    const placed = references(moved.version.content as OutlineDocument);
+    expect(placed.map((each) => [each.origin, each.component])).toEqual([
+      ['notice', notice.artifactId],
+    ]);
+    expect(await as((trx) => waivedKeys(trx, document.version.artifactId))).toEqual(
+      new Map([['annex', 'This site has no annex.']]),
+    );
+    expect(
+      (
+        await as((trx) =>
+          requestPublication(trx, {
+            documentId: document.version.artifactId,
+            version: moved.version.id,
+            formats: ['pdf'],
+            requester: ada,
+          }),
+        )
+      ).answer,
+    ).toBe('requested');
+
+    // A component the mover may not read refuses the move, as it refuses making a document.
+    const other = await as((trx) =>
+      createTemplate(trx, { spaceId: general, author: grace, definition: definition([], false) }),
+    );
+    if (other.answer !== 'created') throw new Error(other.answer);
+    const second = await make(other.template.id);
+    if (second.answer !== 'created') throw new Error(second.answer);
+    const hiding = await as((trx) =>
+      recordTemplateVersion(trx, {
+        templateId: other.template.id,
+        openedFrom: other.template.version.id,
+        author: grace,
+        definition: definition(
+          [
+            {
+              key: 'hidden',
+              component: hidden.artifactId,
+              mode: { kind: 'latest' },
+              place: { section: null, at: 'end' },
+            },
+          ],
+          false,
+        ),
+      }),
+    );
+    if (hiding.answer !== 'recorded') throw new Error(hiding.answer);
+    expect(
+      await as((trx) =>
+        moveDocumentTemplate(trx, {
+          documentId: second.version.artifactId,
+          latest: second.version.id,
+          to: hiding.template.version.id,
+          by: ada,
+        }),
+      ),
+    ).toEqual({
+      answer: 'template.unresolved',
+      unresolved: [
+        { reference: 'component', id: hidden.artifactId, key: 'hidden', why: 'missing' },
+      ],
+    });
+  });
 });

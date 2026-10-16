@@ -66,8 +66,7 @@ const reportView = (report: MoveReport) => ({
   layout: report.layout,
   fields: [...report.fields],
   notCarried: [...report.notCarried],
-  missing: [...report.missing],
-  components: [...report.components],
+  adding: [...report.adding],
 });
 
 export function templateMoveHandlers() {
@@ -79,7 +78,7 @@ export function templateMoveHandlers() {
       const { id } = request.params as { id: string };
       const { to } = request.query as TemplateMoveQuery;
       if (!(await readsTemplate(trx, principalId, id))) throw notFound();
-      const answer = await previewTemplateMove(trx, { documentId: id, to });
+      const answer = await previewTemplateMove(trx, { documentId: id, to, by: principalId });
       if (answer.answer !== 'previewed') return refusal(answer);
       return {
         template: answer.template,
@@ -101,7 +100,17 @@ export function templateMoveHandlers() {
         latest: body.latest,
         to: body.to,
         by: principalId,
+        ...(body.declined ? { declined: body.declined } : {}),
       });
+      if (answer.answer === 'reason.needed') {
+        throw refused(
+          400,
+          'reason.required',
+          'Each section or component left out needs a reason, kept on the document.',
+          {},
+          'TPL-029',
+        );
+      }
       if (answer.answer === 'version.precondition') {
         throw refused(
           409,
