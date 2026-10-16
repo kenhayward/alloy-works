@@ -414,3 +414,12 @@ export {
   TemplateMoveReport,
   templateMoveRoutes,
 } from './template-moves.js';
+export {
+  CohortParams,
+  CohortRun,
+  CohortSpaceParams,
+  CohortView,
+  RerunCohortBody,
+  SubmitCohortBody,
+  cohortRoutes,
+} from './cohorts.js';

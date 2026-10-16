@@ -259,6 +259,9 @@ const OTHER_TENANT_IDS: Readonly<
   previewPlacement: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   submitImpactReport: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   getJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
+  submitCohort: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getCohort: async (tenant, db) => ({ id: await cohortIn(tenant, db) }),
+  rerunCohort: async (tenant, db) => ({ id: await cohortIn(tenant, db) }),
   cancelJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
   downloadJob: async (tenant, db) => ({ id: await jobIn(tenant, db) }),
   placeSection: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -466,6 +469,16 @@ const VALID_INPUT: Readonly<
   previewTemplateMove: { query: `to=${SESSION}` },
   getArtifactImpact: { query: 'depth=1' },
   submitImpactReport: { payload: { depth: 1 } },
+  submitCohort: {
+    payload: {
+      template: SESSION,
+      title: 'Report',
+      language: 'en-GB',
+      direction: 'ltr',
+      rows: [{}],
+    },
+  },
+  rerunCohort: { payload: {} },
   previewPlacement: { query: `from=${SESSION}&section=x` },
   listChangesSince: { query: `since=2000-01-01T00:00:00Z&space=${SESSION}` },
   releaseLock: { query: `session=${SESSION}&openedFrom=${SESSION}` },
@@ -1038,6 +1051,38 @@ const jobIn = async (tenant: Tenant, db: TenantDatabase) => {
       .returning('id')
       .executeTakeFirstOrThrow();
     return (await submitImpactReport(trx, { by: by.id, subject, depth: 1 })).id;
+  });
+};
+
+/** A cohort in environment B, of one row, asked for by a principal of its own (the R7 plan). */
+const cohortIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const space = await spaceIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const by = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await trx
+      .insertInto('cohort')
+      .values({
+        space_id: space,
+        template_id: randomUUID(),
+        resolution: '{}',
+        title: 'Report',
+        language: 'en-GB',
+        direction: 'ltr',
+        source: '{"rows":1}',
+        requested_by: by.id,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return made.id;
   });
 };
 

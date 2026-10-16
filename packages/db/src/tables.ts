@@ -429,6 +429,32 @@ export interface DocumentTemplateTable {
   template_kind: ColumnType<'template', 'template' | undefined, never>;
 }
 
+/** A cohort (0107; the R7 plan, R7-A): inserted whole, never changed. */
+export interface CohortTable {
+  id: ColumnType<string, never, never>;
+  space_id: ColumnType<string, string, never>;
+  template_id: ColumnType<string, string, never>;
+  resolution: ColumnType<unknown, string, never>;
+  title: ColumnType<string, string, never>;
+  language: ColumnType<string, string, never>;
+  direction: ColumnType<string, string, never>;
+  source: ColumnType<unknown, string, never>;
+  requested_by: ColumnType<string, string, never>;
+  requested_at: ColumnType<Date, never, never>;
+}
+
+/** One row of a cohort (0107): its parameters fixed, its outcome written by the run (R7-E). */
+export interface CohortRowTable {
+  cohort_id: ColumnType<string, string, never>;
+  row_no: ColumnType<number, number, never>;
+  /** Corrected only on a failed row, by a rerun (R7-F). */
+  parameters: ColumnType<unknown, string, string>;
+  state: ColumnType<string, never, string>;
+  document_id: ColumnType<string | null, never, string | null>;
+  failure: ColumnType<unknown, never, string | null>;
+  attempts: ColumnType<number, never, number>;
+}
+
 /** A definition's name, folded, unique per kind (0030, MET-031); only `name_key` is ever updated. */
 export interface DefinitionNameTable {
   artifact_id: ColumnType<string, string, never>;
@@ -956,6 +982,8 @@ export interface TenantTables {
   publication_check: PublicationCheckTable;
   publication_check_given_up: PublicationCheckGivenUpTable;
   document_template: DocumentTemplateTable;
+  cohort: CohortTable;
+  cohort_row: CohortRowTable;
   definition_name: DefinitionNameTable;
   publication_request_asset: PublicationRequestAssetTable;
   publication_request_binding: PublicationRequestBindingTable;

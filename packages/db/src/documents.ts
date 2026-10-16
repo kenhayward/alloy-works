@@ -31,6 +31,9 @@ import {
   type UnresolvedReference,
   requiredKeys,
   type StoredProfile,
+  type FieldDefinition,
+  type MetadataSchemaDefinition,
+  type TemplateDefinition,
 } from '@alloy-works/domain';
 import { profileUnknown } from './definitions.js';
 import { sql } from 'kysely';
@@ -226,15 +229,83 @@ export async function createDocument(
   // From a template (templates.md, "Making a document from a template"): read at its latest version
   // where the author may read it, resolved, and materialised - all in this transaction, so a template
   // that fails any step leaves nothing behind.
-  if (!UUID.test(input.template)) return { answer: 'template.missing' };
-  const facts = await loadFacts(trx, input.author, { kind: 'artifact', id: input.template });
+  const resolution = await resolveForDocument(trx, input.author, input.template);
+  if (resolution.answer !== 'resolved') return resolution;
+  return createFromResolution(trx, { ...input, title }, resolution.resolution);
+}
+
+/**
+ * What a template resolves to, read once (the R7 plan, R7-D): its version and its definition, and the
+ * definitions it names as they stood. Plain JSON, so a cohort records it and makes every row from it.
+ */
+export interface TemplateResolution {
+  readonly template: { readonly id: string; readonly version: string };
+  readonly definition: TemplateDefinition;
+  readonly references: {
+    readonly kinds: readonly (readonly [string, string])[];
+    readonly schemas: readonly MetadataSchemaDefinition[];
+    readonly fields: readonly FieldDefinition[];
+  };
+}
+
+/** A template read at its latest version where the author may read it, and resolved now. */
+export async function resolveForDocument(
+  trx: TenantTransaction,
+  author: string,
+  templateId: string,
+): Promise<
+  | { readonly answer: 'resolved'; readonly resolution: TemplateResolution }
+  | { readonly answer: 'template.missing' }
+  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
+> {
+  if (!UUID.test(templateId)) return { answer: 'template.missing' };
+  const facts = await loadFacts(trx, author, { kind: 'artifact', id: templateId });
   if (!facts || !decide('read', facts).allowed) return { answer: 'template.missing' };
-  const template = await readTemplate(trx, input.template);
+  const template = await readTemplate(trx, templateId);
   if (!template) return { answer: 'template.missing' };
-  const resolved = resolveTemplate(
-    template.definition,
-    await templateReferences(trx, template.definition),
-  );
+  const references = await templateReferences(trx, template.definition);
+  const resolved = resolveTemplate(template.definition, references);
+  if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
+  return {
+    answer: 'resolved',
+    resolution: {
+      template: { id: template.id, version: template.version.id },
+      definition: template.definition,
+      references: {
+        kinds: [...references.kinds],
+        schemas: references.schemas,
+        fields: references.fields,
+      },
+    },
+  };
+}
+
+/**
+ * A document made from a resolution read before (R7-D): its parameters checked, its outline
+ * materialised and its version written, in the caller's transaction, so a refusal writes nothing. The
+ * title is the caller's, already trimmed.
+ */
+export async function createFromResolution(
+  trx: TenantTransaction,
+  input: Omit<NewDocument, 'template'>,
+  resolution: TemplateResolution,
+): Promise<CreateDocumentAnswer> {
+  const title = input.title.trim();
+  if (
+    !outlineDocumentSchema.shape.title.safeParse(title).success ||
+    !outlineDocumentSchema.shape.language.safeParse(input.language).success ||
+    !outlineDocumentSchema.shape.direction.safeParse(input.direction).success
+  ) {
+    return { answer: 'content.invalid' };
+  }
+  const heading = { title, language: input.language, direction: input.direction };
+  const given = input.parameters ?? {};
+  const template = { id: resolution.template.id, definition: resolution.definition };
+  const resolved = resolveTemplate(resolution.definition, {
+    kinds: new Map(resolution.references.kinds),
+    schemas: [...resolution.references.schemas],
+    fields: [...resolution.references.fields],
+  });
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   // Its parameters (TP1-G), in this order: a name it does not declare, each value against its
   // declaration, the template's own parameter checks against what resolves now, and each seeded value
@@ -272,7 +343,7 @@ export async function createDocument(
     .values({
       document_id: version.artifactId,
       template_id: template.id,
-      template_version_id: template.version.id,
+      template_version_id: resolution.template.version,
     })
     .execute();
   await indexTemplateOf(trx, version.artifactId);

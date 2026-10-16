@@ -114,6 +114,11 @@ export const documentationGroups = [
         description: 'What a change to an artifact reaches, and what an artifact uses.',
       },
       {
+        name: 'Cohorts',
+        description:
+          'Documents made in bulk from one template, one for each row of parameters, found again as a set.',
+      },
+      {
         name: 'Jobs',
         description:
           "Follow, cancel and download work that outlives a request: each job is its submitter's alone.",
@@ -334,6 +339,7 @@ const operationTags = {
   Search: ['search'],
   Impact: ['getArtifactImpact', 'getArtifactReferences', 'submitImpactReport'],
   Jobs: ['getJob', 'cancelJob', 'downloadJob'],
+  Cohorts: ['submitCohort', 'getCohort', 'rerunCohort'],
   Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -505,6 +511,12 @@ const descriptions: Readonly<Record<string, string>> = {
     'Deletes a component: it leaves every listing, search and reference and answers 410 by its id, and nothing is removed. Refused while anything depends on it, every reason listed as the deletion view lists them. Needs retire on the component. Audited.',
   submitImpactReport:
     'Asks for the complete report of what a change to an artifact reaches, to the depth asked, from 1 to 10, as a job: answered at once with the job, accepted, to follow with getJob. The report has no cap: it is bounded by its depth, and walks as the caller, so nothing they may not read is in it or walked past. Retried with the same Idempotency-Key, it answers the same job. Needs read on the artifact.',
+  submitCohort:
+    "Makes a document in this space for each row of parameters, from one template, as a job: answered at once with the cohort, every row pending, and its job, to follow with getJob. The template and what it names are resolved now, once, and every row is made from that, rerun or not. Rows are given inline, at most 1,000, or taken from a query result's version the caller may read, a parameter for each column. Each document takes the title given, {name} standing for the row's value of that parameter. Each row is made in a transaction of its own: one that is refused leaves nothing and is reported, and the rest are made. Needs create in the space.",
+  getCohort:
+    "Reads a cohort: its template version, its title, where its rows came from, and every row in order, its parameters, its document once made, or why it failed, and how many times it was tried. Anybody who may read the cohort's space reads it.",
+  rerunCohort:
+    "Runs a cohort's failed rows again, from the same template version, with any corrected parameters given by row number: answered with the cohort and a new job. A row that was made is never touched. Refused cohort_complete where no row has failed, and rows_invalid where a correction names a row that has not. Needs create in the cohort's space.",
   getJob:
     "Reads a job: its state (accepted, running, succeeded, failed or cancelled), when it was asked for, when it started and finished, how far it has got, whether a cancel was asked for, and how it ended: a failed job's error in an error's shape, or what a finished or cancelled report walked. Only whoever submitted it reads it; anybody else is answered 404.",
   cancelJob:

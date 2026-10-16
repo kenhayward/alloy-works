@@ -257,6 +257,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
       '0106_conditions_and_profiles',
+      '0107_cohorts',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

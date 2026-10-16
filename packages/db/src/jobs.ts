@@ -24,12 +24,23 @@ export interface ImpactOutcome {
   readonly cut: boolean;
 }
 
+/** What a cohort's run did, finished or cancelled: its rows made and failed of those it took (R7-E). */
+export interface CohortOutcome {
+  readonly made: number;
+  readonly failed: number;
+  readonly of: number;
+}
+
+/** The kinds of job the API takes (the R3 plan; the R7 plan, R7-A). */
+export type ApiJobKind = 'impact_report' | 'cohort';
+
 /** One job as its requester reads it (API-041). */
 export interface StoredJob {
   readonly id: string;
-  readonly kind: 'impact_report';
+  readonly kind: ApiJobKind;
   readonly subject: string;
-  readonly parameters: { readonly depth: number };
+  /** An impact report's depth, or the rows a cohort's run takes. */
+  readonly parameters: { readonly depth?: number; readonly rows?: number };
   readonly requestedBy: string;
   readonly requestedAt: Date;
   readonly state: JobState;
@@ -38,7 +49,7 @@ export interface StoredJob {
   readonly progress: { readonly done: number; readonly of: number; readonly unit: string } | null;
   readonly cancelRequested: boolean;
   readonly failure: JobFailure | null;
-  readonly outcome: ImpactOutcome | null;
+  readonly outcome: ImpactOutcome | CohortOutcome | null;
   readonly result: { readonly key: string; readonly sha256: string; readonly bytes: number } | null;
 }
 
@@ -67,7 +78,7 @@ const COLUMNS = sql`id, kind, subject_id, parameters, requested_by, requested_at
 function stored(row: Row): StoredJob {
   return {
     id: row.id,
-    kind: 'impact_report',
+    kind: row.kind as ApiJobKind,
     subject: row.subject_id,
     parameters: row.parameters as StoredJob['parameters'],
     requestedBy: row.requested_by,
@@ -78,7 +89,7 @@ function stored(row: Row): StoredJob {
     progress: (row.progress ?? null) as StoredJob['progress'],
     cancelRequested: row.cancel_requested_at !== null,
     failure: (row.failure ?? null) as JobFailure | null,
-    outcome: (row.outcome ?? null) as ImpactOutcome | null,
+    outcome: (row.outcome ?? null) as StoredJob['outcome'],
     result:
       row.object_key === null
         ? null
@@ -134,12 +145,10 @@ export async function cancelJob(
 ): Promise<CancelAnswer> {
   const job = await readJob(trx, id, by);
   if (!job) return { answer: 'missing' };
-  const nothing: ImpactOutcome = {
-    depthsWalked: 0,
-    depthsAsked: job.parameters.depth,
-    reached: 0,
-    cut: false,
-  };
+  const nothing: ImpactOutcome | CohortOutcome =
+    job.kind === 'cohort'
+      ? { made: 0, failed: 0, of: job.parameters.rows ?? 0 }
+      : { depthsWalked: 0, depthsAsked: job.parameters.depth ?? 0, reached: 0, cut: false };
   const { rows: cancelled } = await sql<Row>`
     update api_job
        set state = 'cancelled', finished_at = now(), cancel_requested_at = now(),
@@ -186,7 +195,7 @@ export async function progressJob(
 export async function finishJob(
   trx: TenantTransaction,
   id: string,
-  outcome: ImpactOutcome,
+  outcome: ImpactOutcome | CohortOutcome,
   kept: { readonly key: string; readonly sha256: string; readonly bytes: number } | null,
 ): Promise<StoredJob | undefined> {
   const { rows } = await sql<Row>`

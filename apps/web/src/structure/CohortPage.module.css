@@ -1,0 +1,49 @@
+/* A cohort's rows, in a table, and the one act over the failed. */
+.page {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.summary {
+  margin: 0;
+  color: var(--muted);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-8);
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.corrections {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.corrections label {
+  display: grid;
+  gap: var(--space-4);
+  font-size: var(--size-13);
+}
+
+.failed {
+  color: var(--danger);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.note {
+  color: var(--muted);
+  font-size: var(--size-13);
+}

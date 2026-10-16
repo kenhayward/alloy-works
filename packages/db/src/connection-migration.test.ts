@@ -209,6 +209,7 @@ describe('migration 0044, over an environment made before it', () => {
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
       '0106_conditions_and_profiles',
+      '0107_cohorts',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

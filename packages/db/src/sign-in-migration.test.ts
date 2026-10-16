@@ -116,6 +116,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
       '0106_conditions_and_profiles',
+      '0107_cohorts',
     ]);
 
     const read = async () =>

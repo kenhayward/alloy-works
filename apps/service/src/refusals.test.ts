@@ -208,6 +208,9 @@ describe('the rule behind a refusal', () => {
       'source.moved',
       // The R6 plan's (R6-B, R6-F): a profile naming an axis or a value nothing declares.
       'profile.invalid',
+      // The R7 plan's (R7-B, R7-F): rows that cannot be made, and a cohort with none failed.
+      'rows.invalid',
+      'cohort.complete',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

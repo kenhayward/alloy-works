@@ -439,6 +439,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cohorts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A cohort: what it was made from, and every row, its document or why it failed
+         * @description Reads a cohort: its template version, its title, where its rows came from, and every row in order, its parameters, its document once made, or why it failed, and how many times it was tried. Anybody who may read the cohort's space reads it.
+         */
+        get: operations["getCohort"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cohorts/{id}/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a cohort's failed rows again, from the same template version
+         * @description Runs a cohort's failed rows again, from the same template version, with any corrected parameters given by row number: answered with the cohort and a new job. A row that was made is never touched. Refused cohort_complete where no row has failed, and rows_invalid where a correction names a row that has not. Needs create in the cohort's space.
+         */
+        post: operations["rerunCohort"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components": {
         parameters: {
             query?: never;
@@ -3273,6 +3313,26 @@ export interface paths {
          * @description Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.
          */
         post: operations["createAssetUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/cohorts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make many documents from one template, one for each row of parameters, as a job
+         * @description Makes a document in this space for each row of parameters, from one template, as a job: answered at once with the cohort, every row pending, and its job, to follow with getJob. The template and what it names are resolved now, once, and every row is made from that, rerun or not. Rows are given inline, at most 1,000, or taken from a query result's version the caller may read, a parameter for each column. Each document takes the title given, {name} standing for the row's value of that parameter. Each row is made in a transaction of its own: one that is refused leaves nothing and is reported, and the rest are made. Needs create in the space.
+         */
+        post: operations["submitCohort"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6659,9 +6719,7 @@ export interface operations {
                      *       "id": "00000000-0000-4000-8000-000000000001",
                      *       "kind": "impact_report",
                      *       "subject": "00000000-0000-4000-8000-000000000001",
-                     *       "parameters": {
-                     *         "depth": -9007199254740991
-                     *       },
+                     *       "parameters": {},
                      *       "state": "accepted",
                      *       "requestedAt": "example",
                      *       "startedAt": "example",
@@ -6691,15 +6749,16 @@ export interface operations {
                     "application/json": {
                         id: string & (unknown & unknown);
                         /**
-                         * @description impact_report: what a change to `subject` reaches
+                         * @description impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made
                          * @enum {string}
                          */
-                        kind: "impact_report";
-                        /** @description What it is about: an impact report starts from this artifact */
+                        kind: "impact_report" | "cohort";
+                        /** @description What it is about: an impact report starts from this artifact; a cohort run makes this cohort */
                         subject: string & (unknown & unknown);
-                        /** @description What it was asked with */
+                        /** @description What it was asked with: an impact report's depth, or the rows a cohort run takes */
                         parameters: {
-                            depth: number;
+                            depth?: number;
+                            rows?: number;
                         };
                         /**
                          * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
@@ -6725,13 +6784,20 @@ export interface operations {
                             rule?: string;
                         } | null;
                         /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
-                        outcome: {
+                        outcome: ({
                             depthsWalked: number;
                             depthsAsked: number;
                             reached: number;
                             /** @description Whether the walk met something the requester may not read: never what */
                             cut: boolean;
-                        } | null;
+                        } | {
+                            /** @description The rows made into documents */
+                            made: number;
+                            /** @description The rows that failed, each reported */
+                            failed: number;
+                            /** @description The rows the run took */
+                            of: number;
+                        }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
                             bytes: number;
@@ -10275,6 +10341,448 @@ export interface operations {
             };
             /** @description No such document or space the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getCohort: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cohort */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "space": "00000000-0000-4000-8000-000000000001",
+                     *       "template": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "version": "00000000-0000-4000-8000-000000000001"
+                     *       },
+                     *       "title": "example",
+                     *       "source": {},
+                     *       "requestedAt": "example",
+                     *       "rows": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        space: string & (unknown & unknown);
+                        /** @description The template version every row is made from, resolved when the cohort was asked for */
+                        template: {
+                            id: string & (unknown & unknown);
+                            version: string & (unknown & unknown);
+                        };
+                        title: string;
+                        /** @description Where its rows came from: how many were given inline, or the query result */
+                        source: {
+                            rows?: number;
+                            dataset?: string & (unknown & unknown);
+                        };
+                        requestedAt: string;
+                        /** @description Every row, in order */
+                        rows: {
+                            row: number;
+                            /** @description One row: a value for each of the template's parameters, by name */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /**
+                             * @description pending: not yet made; made: `document` is its document; failed: `failure` says why
+                             * @enum {string}
+                             */
+                            state: "pending" | "made" | "failed";
+                            document: (string & (unknown & unknown)) | null;
+                            /** @description A failed row's refusal: its code, its words, and what it names */
+                            failure: ({
+                                code: string;
+                                message: string;
+                            } & {
+                                [key: string]: unknown;
+                            }) | null;
+                            attempts: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such cohort, or one in a space the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    rerunCohort: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description Corrected parameters for failed rows, by row number */
+                    corrections?: {
+                        [key: string]: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted: the cohort and the job running its failed rows */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "cohort": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "space": "00000000-0000-4000-8000-000000000001",
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "version": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "title": "example",
+                     *         "source": {},
+                     *         "requestedAt": "example",
+                     *         "rows": []
+                     *       },
+                     *       "job": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "impact_report",
+                     *         "subject": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": {},
+                     *         "state": "accepted",
+                     *         "requestedAt": "example",
+                     *         "startedAt": "example",
+                     *         "finishedAt": "example",
+                     *         "progress": {
+                     *           "done": -9007199254740991,
+                     *           "of": -9007199254740991,
+                     *           "unit": "example"
+                     *         },
+                     *         "cancelRequested": false,
+                     *         "failure": {
+                     *           "code": "example",
+                     *           "message": "example"
+                     *         },
+                     *         "outcome": {
+                     *           "depthsWalked": -9007199254740991,
+                     *           "depthsAsked": -9007199254740991,
+                     *           "reached": -9007199254740991,
+                     *           "cut": false
+                     *         },
+                     *         "result": {
+                     *           "bytes": -9007199254740991,
+                     *           "sha256": "example"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        cohort: {
+                            id: string & (unknown & unknown);
+                            space: string & (unknown & unknown);
+                            /** @description The template version every row is made from, resolved when the cohort was asked for */
+                            template: {
+                                id: string & (unknown & unknown);
+                                version: string & (unknown & unknown);
+                            };
+                            title: string;
+                            /** @description Where its rows came from: how many were given inline, or the query result */
+                            source: {
+                                rows?: number;
+                                dataset?: string & (unknown & unknown);
+                            };
+                            requestedAt: string;
+                            /** @description Every row, in order */
+                            rows: {
+                                row: number;
+                                /** @description One row: a value for each of the template's parameters, by name */
+                                parameters: {
+                                    [key: string]: unknown;
+                                };
+                                /**
+                                 * @description pending: not yet made; made: `document` is its document; failed: `failure` says why
+                                 * @enum {string}
+                                 */
+                                state: "pending" | "made" | "failed";
+                                document: (string & (unknown & unknown)) | null;
+                                /** @description A failed row's refusal: its code, its words, and what it names */
+                                failure: ({
+                                    code: string;
+                                    message: string;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                attempts: number;
+                            }[];
+                        };
+                        job: {
+                            id: string & (unknown & unknown);
+                            /**
+                             * @description impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made
+                             * @enum {string}
+                             */
+                            kind: "impact_report" | "cohort";
+                            /** @description What it is about: an impact report starts from this artifact; a cohort run makes this cohort */
+                            subject: string & (unknown & unknown);
+                            /** @description What it was asked with: an impact report's depth, or the rows a cohort run takes */
+                            parameters: {
+                                depth?: number;
+                                rows?: number;
+                            };
+                            /**
+                             * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
+                             * @enum {string}
+                             */
+                            state: "accepted" | "running" | "succeeded" | "failed" | "cancelled";
+                            requestedAt: string;
+                            /** @description When it first started; null while accepted */
+                            startedAt: string | null;
+                            finishedAt: string | null;
+                            /** @description How far it has got, as `done` of `of` in `unit`; null before its first step */
+                            progress: {
+                                done: number;
+                                of: number;
+                                unit: string;
+                            } | null;
+                            /** @description Whether a cancel was asked for while it ran */
+                            cancelRequested: boolean;
+                            /** @description A failed job's error, in an error's shape but its trace (API-043) */
+                            failure: {
+                                code: string;
+                                message: string;
+                                rule?: string;
+                            } | null;
+                            /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
+                            outcome: ({
+                                depthsWalked: number;
+                                depthsAsked: number;
+                                reached: number;
+                                /** @description Whether the walk met something the requester may not read: never what */
+                                cut: boolean;
+                            } | {
+                                /** @description The rows made into documents */
+                                made: number;
+                                /** @description The rows that failed, each reported */
+                                failed: number;
+                                /** @description The rows the run took */
+                                of: number;
+                            }) | null;
+                            /** @description A succeeded job's result, to download */
+                            result: {
+                                bytes: number;
+                                sha256: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description `rows_invalid`: a correction for a row that has not failed */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description rows_invalid: what is wrong with the rows */
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not create in the cohort's space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such cohort, or one in a space the caller may not read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `cohort_complete`: no row has failed */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -49193,9 +49701,7 @@ export interface operations {
                      *       "id": "00000000-0000-4000-8000-000000000001",
                      *       "kind": "impact_report",
                      *       "subject": "00000000-0000-4000-8000-000000000001",
-                     *       "parameters": {
-                     *         "depth": -9007199254740991
-                     *       },
+                     *       "parameters": {},
                      *       "state": "accepted",
                      *       "requestedAt": "example",
                      *       "startedAt": "example",
@@ -49225,15 +49731,16 @@ export interface operations {
                     "application/json": {
                         id: string & (unknown & unknown);
                         /**
-                         * @description impact_report: what a change to `subject` reaches
+                         * @description impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made
                          * @enum {string}
                          */
-                        kind: "impact_report";
-                        /** @description What it is about: an impact report starts from this artifact */
+                        kind: "impact_report" | "cohort";
+                        /** @description What it is about: an impact report starts from this artifact; a cohort run makes this cohort */
                         subject: string & (unknown & unknown);
-                        /** @description What it was asked with */
+                        /** @description What it was asked with: an impact report's depth, or the rows a cohort run takes */
                         parameters: {
-                            depth: number;
+                            depth?: number;
+                            rows?: number;
                         };
                         /**
                          * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
@@ -49259,13 +49766,20 @@ export interface operations {
                             rule?: string;
                         } | null;
                         /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
-                        outcome: {
+                        outcome: ({
                             depthsWalked: number;
                             depthsAsked: number;
                             reached: number;
                             /** @description Whether the walk met something the requester may not read: never what */
                             cut: boolean;
-                        } | null;
+                        } | {
+                            /** @description The rows made into documents */
+                            made: number;
+                            /** @description The rows that failed, each reported */
+                            failed: number;
+                            /** @description The rows the run took */
+                            of: number;
+                        }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
                             bytes: number;
@@ -49363,9 +49877,7 @@ export interface operations {
                      *       "id": "00000000-0000-4000-8000-000000000001",
                      *       "kind": "impact_report",
                      *       "subject": "00000000-0000-4000-8000-000000000001",
-                     *       "parameters": {
-                     *         "depth": -9007199254740991
-                     *       },
+                     *       "parameters": {},
                      *       "state": "accepted",
                      *       "requestedAt": "example",
                      *       "startedAt": "example",
@@ -49395,15 +49907,16 @@ export interface operations {
                     "application/json": {
                         id: string & (unknown & unknown);
                         /**
-                         * @description impact_report: what a change to `subject` reaches
+                         * @description impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made
                          * @enum {string}
                          */
-                        kind: "impact_report";
-                        /** @description What it is about: an impact report starts from this artifact */
+                        kind: "impact_report" | "cohort";
+                        /** @description What it is about: an impact report starts from this artifact; a cohort run makes this cohort */
                         subject: string & (unknown & unknown);
-                        /** @description What it was asked with */
+                        /** @description What it was asked with: an impact report's depth, or the rows a cohort run takes */
                         parameters: {
-                            depth: number;
+                            depth?: number;
+                            rows?: number;
                         };
                         /**
                          * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
@@ -49429,13 +49942,20 @@ export interface operations {
                             rule?: string;
                         } | null;
                         /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
-                        outcome: {
+                        outcome: ({
                             depthsWalked: number;
                             depthsAsked: number;
                             reached: number;
                             /** @description Whether the walk met something the requester may not read: never what */
                             cut: boolean;
-                        } | null;
+                        } | {
+                            /** @description The rows made into documents */
+                            made: number;
+                            /** @description The rows that failed, each reported */
+                            failed: number;
+                            /** @description The rows the run took */
+                            of: number;
+                        }) | null;
                         /** @description A succeeded job's result, to download */
                         result: {
                             bytes: number;
@@ -58554,6 +59074,320 @@ export interface operations {
                 };
             };
             /** @description No such thing in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    submitCohort: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "template": "00000000-0000-4000-8000-000000000001",
+                 *       "title": "Site report: {site}",
+                 *       "language": "en",
+                 *       "direction": "ltr",
+                 *       "rows": [
+                 *         {
+                 *           "site": "Leeds"
+                 *         },
+                 *         {
+                 *           "site": "York"
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The template every document is made from */
+                    template: string & (unknown & unknown);
+                    /** @description Each document's title, `{name}` standing for the row's value of that parameter */
+                    title: string;
+                    /** @description Each document's language, a BCP 47 tag */
+                    language: string;
+                    /**
+                     * @description Each document's base direction
+                     * @enum {string}
+                     */
+                    direction: "ltr" | "rtl";
+                    /** @description The rows, inline, 1 to 1,000 */
+                    rows?: {
+                        [key: string]: unknown;
+                    }[];
+                    /** @description A query result's version whose rows are the rows: one parameter for each column, by its name */
+                    dataset?: string & (unknown & unknown);
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted: the cohort, every row pending, and its job */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "cohort": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "space": "00000000-0000-4000-8000-000000000001",
+                     *         "template": {
+                     *           "id": "00000000-0000-4000-8000-000000000001",
+                     *           "version": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "title": "example",
+                     *         "source": {},
+                     *         "requestedAt": "example",
+                     *         "rows": []
+                     *       },
+                     *       "job": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "kind": "impact_report",
+                     *         "subject": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": {},
+                     *         "state": "accepted",
+                     *         "requestedAt": "example",
+                     *         "startedAt": "example",
+                     *         "finishedAt": "example",
+                     *         "progress": {
+                     *           "done": -9007199254740991,
+                     *           "of": -9007199254740991,
+                     *           "unit": "example"
+                     *         },
+                     *         "cancelRequested": false,
+                     *         "failure": {
+                     *           "code": "example",
+                     *           "message": "example"
+                     *         },
+                     *         "outcome": {
+                     *           "depthsWalked": -9007199254740991,
+                     *           "depthsAsked": -9007199254740991,
+                     *           "reached": -9007199254740991,
+                     *           "cut": false
+                     *         },
+                     *         "result": {
+                     *           "bytes": -9007199254740991,
+                     *           "sha256": "example"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        cohort: {
+                            id: string & (unknown & unknown);
+                            space: string & (unknown & unknown);
+                            /** @description The template version every row is made from, resolved when the cohort was asked for */
+                            template: {
+                                id: string & (unknown & unknown);
+                                version: string & (unknown & unknown);
+                            };
+                            title: string;
+                            /** @description Where its rows came from: how many were given inline, or the query result */
+                            source: {
+                                rows?: number;
+                                dataset?: string & (unknown & unknown);
+                            };
+                            requestedAt: string;
+                            /** @description Every row, in order */
+                            rows: {
+                                row: number;
+                                /** @description One row: a value for each of the template's parameters, by name */
+                                parameters: {
+                                    [key: string]: unknown;
+                                };
+                                /**
+                                 * @description pending: not yet made; made: `document` is its document; failed: `failure` says why
+                                 * @enum {string}
+                                 */
+                                state: "pending" | "made" | "failed";
+                                document: (string & (unknown & unknown)) | null;
+                                /** @description A failed row's refusal: its code, its words, and what it names */
+                                failure: ({
+                                    code: string;
+                                    message: string;
+                                } & {
+                                    [key: string]: unknown;
+                                }) | null;
+                                attempts: number;
+                            }[];
+                        };
+                        job: {
+                            id: string & (unknown & unknown);
+                            /**
+                             * @description impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made
+                             * @enum {string}
+                             */
+                            kind: "impact_report" | "cohort";
+                            /** @description What it is about: an impact report starts from this artifact; a cohort run makes this cohort */
+                            subject: string & (unknown & unknown);
+                            /** @description What it was asked with: an impact report's depth, or the rows a cohort run takes */
+                            parameters: {
+                                depth?: number;
+                                rows?: number;
+                            };
+                            /**
+                             * @description accepted: waiting to run; running; succeeded: its result may be downloaded; failed: `failure` says why; cancelled: `outcome` says how far it got
+                             * @enum {string}
+                             */
+                            state: "accepted" | "running" | "succeeded" | "failed" | "cancelled";
+                            requestedAt: string;
+                            /** @description When it first started; null while accepted */
+                            startedAt: string | null;
+                            finishedAt: string | null;
+                            /** @description How far it has got, as `done` of `of` in `unit`; null before its first step */
+                            progress: {
+                                done: number;
+                                of: number;
+                                unit: string;
+                            } | null;
+                            /** @description Whether a cancel was asked for while it ran */
+                            cancelRequested: boolean;
+                            /** @description A failed job's error, in an error's shape but its trace (API-043) */
+                            failure: {
+                                code: string;
+                                message: string;
+                                rule?: string;
+                            } | null;
+                            /** @description What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing */
+                            outcome: ({
+                                depthsWalked: number;
+                                depthsAsked: number;
+                                reached: number;
+                                /** @description Whether the walk met something the requester may not read: never what */
+                                cut: boolean;
+                            } | {
+                                /** @description The rows made into documents */
+                                made: number;
+                                /** @description The rows that failed, each reported */
+                                failed: number;
+                                /** @description The rows the run took */
+                                of: number;
+                            }) | null;
+                            /** @description A succeeded job's result, to download */
+                            result: {
+                                bytes: number;
+                                sha256: string;
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description `rows_invalid`: no rows, too many, or a query result that cannot be read as rows; `template_unresolved`: what the template names does not resolve; or `invalid_request` */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description rows_invalid: what is wrong with the rows */
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not create in this space */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space, template or query result the caller may read */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

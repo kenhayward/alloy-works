@@ -196,6 +196,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0104_variable_definitions',
       '0105_provenance_without_bindings',
       '0106_conditions_and_profiles',
+      '0107_cohorts',
     ]);
     const kept = await queryAs(
       db.adminUrl,

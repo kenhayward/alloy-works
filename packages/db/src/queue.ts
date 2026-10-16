@@ -9,9 +9,17 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * publication's PDF, its subject the publication, queued as the publication is recorded (W14.1, W-B).
  * An `audit_export` writes an export of the audit log, its subject the export (the AU2 plan, AU-N).
  * An `impact_report` walks what a change reaches, uncapped, its subject the job (the R3 plan, R3-F).
+ * A `cohort` makes a cohort's pending rows into documents, its subject the job (the R7 plan, R7-E).
  */
 export type JobKind =
-  'sample_pdf' | 'publish' | 'preview' | 'ingest' | 'check_pdf' | 'audit_export' | 'impact_report';
+  | 'sample_pdf'
+  | 'publish'
+  | 'preview'
+  | 'ingest'
+  | 'check_pdf'
+  | 'audit_export'
+  | 'impact_report'
+  | 'cohort';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

@@ -8,9 +8,17 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
  */
 export const JobView = z.object({
   id: LowercaseUuid,
-  kind: z.enum(['impact_report']).describe('impact_report: what a change to `subject` reaches'),
-  subject: LowercaseUuid.describe('What it is about: an impact report starts from this artifact'),
-  parameters: z.object({ depth: z.number().int() }).describe('What it was asked with'),
+  kind: z
+    .enum(['impact_report', 'cohort'])
+    .describe(
+      'impact_report: what a change to `subject` reaches; cohort: the documents of the cohort `subject` made',
+    ),
+  subject: LowercaseUuid.describe(
+    'What it is about: an impact report starts from this artifact; a cohort run makes this cohort',
+  ),
+  parameters: z
+    .object({ depth: z.number().int().optional(), rows: z.number().int().optional() })
+    .describe("What it was asked with: an impact report's depth, or the rows a cohort run takes"),
   state: z
     .enum(['accepted', 'running', 'succeeded', 'failed', 'cancelled'])
     .describe(
@@ -29,14 +37,21 @@ export const JobView = z.object({
     .nullable()
     .describe("A failed job's error, in an error's shape but its trace (API-043)"),
   outcome: z
-    .object({
-      depthsWalked: z.number().int(),
-      depthsAsked: z.number().int(),
-      reached: z.number().int(),
-      cut: z
-        .boolean()
-        .describe('Whether the walk met something the requester may not read: never what'),
-    })
+    .union([
+      z.object({
+        depthsWalked: z.number().int(),
+        depthsAsked: z.number().int(),
+        reached: z.number().int(),
+        cut: z
+          .boolean()
+          .describe('Whether the walk met something the requester may not read: never what'),
+      }),
+      z.object({
+        made: z.number().int().describe('The rows made into documents'),
+        failed: z.number().int().describe('The rows that failed, each reported'),
+        of: z.number().int().describe('The rows the run took'),
+      }),
+    ])
     .nullable()
     .describe(
       'What it did, once finished or cancelled: a cancelled report walked `depthsWalked` of `depthsAsked` and kept nothing',

@@ -3,6 +3,7 @@ import { deletionRoutes } from './deletion.js';
 import { usesRoutes } from './uses.js';
 import { impactRoutes } from './impact.js';
 import { jobRoutes } from './jobs.js';
+import { cohortRoutes } from './cohorts.js';
 import { holdRoutes } from './holds.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
@@ -355,7 +356,8 @@ type Routes = typeof ownRoutes &
   typeof erasureRoutes &
   typeof usesRoutes &
   typeof impactRoutes &
-  typeof jobRoutes;
+  typeof jobRoutes &
+  typeof cohortRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -401,6 +403,7 @@ export const routes: Routes = {
   ...usesRoutes,
   ...impactRoutes,
   ...jobRoutes,
+  ...cohortRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

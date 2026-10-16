@@ -16,6 +16,8 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
       if (seen.has(name)) return {};
       return value(definitions[name] ?? {}, new Set([...seen, name]));
     }
+    // A schema that must say more than its parts can, as an either-or body does, gives its own.
+    if (Array.isArray(node.examples) && node.examples.length > 0) return node.examples[0];
     if ('const' in node) return node.const;
     if (Array.isArray(node.enum)) return node.enum[0];
     for (const alternative of ['anyOf', 'oneOf'] as const) {

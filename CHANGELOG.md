@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.178.0 - 2026-10-16 (PR #649)
+
+Reuse's seventh slice: bulk generation (the R7 plan).
+
+### Added
+
+- **Bulk generation, through the API.** Make many documents from one template, one for each row of parameters given inline or taken from a query result, as a job. Every row is made from the template as it stood when asked for, reported made or failed, and a failed row leaves nothing. The cohort is found again by its id, and its failed rows can be run again, corrected, without touching the rest.
+- **Generate documents from a template.** Templates offers **Generate** on each template: a document for each row of a CSV file, or of a list pasted from a spreadsheet, each titled from a pattern. The cohort's page follows the rows as they are made, opens each document, says why a row failed, and runs the failed rows again, corrected.
+
 ## 0.177.0 - 2026-10-16 (PR #648)
 
 Reuse's sixth slice: conditions and profiles (the R6 plan).

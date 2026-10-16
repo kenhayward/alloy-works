@@ -19,6 +19,9 @@ export type PublicationList =
   paths['/v1/publications']['get']['responses']['200']['content']['application/json'];
 export type TemplateList =
   paths['/v1/templates']['get']['responses']['200']['content']['application/json'];
+/** A cohort: its rows and their outcomes (the R7 plan, R7-G). */
+export type CohortView =
+  paths['/v1/cohorts/{id}']['get']['responses']['200']['content']['application/json'];
 /** What waits on the caller (home.md, Needs your attention). */
 export type AttentionView =
   paths['/v1/me/attention']['get']['responses']['200']['content']['application/json'];
