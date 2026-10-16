@@ -413,6 +413,16 @@ export async function createdView(
       'A document needs a title and a language tag such as en-GB.',
     );
   }
+  if (answer.answer === 'profile.invalid') {
+    throw refused(
+      400,
+      'profile.invalid',
+      `This profile names what no condition axis declares: ${answer.unknown.join(', ')}.`,
+      {
+        unknown: answer.unknown,
+      },
+    );
+  }
   if (answer.answer !== 'created') throw refusedParameters(answer);
   const held = await trx
     .selectFrom('space')

@@ -8,6 +8,7 @@ import {
   checkWrittenValues,
   decide,
   materialiseTemplate,
+  templateProfile,
   outlineChangesRefused,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
@@ -133,7 +134,9 @@ export type CreateDocumentAnswer =
   /** A reference the template makes does not resolve now (TPL-004), each named; nothing is written. */
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
   | ParameterValuesRefused
-  | ParametersRefused;
+  | ParametersRefused
+  /** The profile its template and parameters give it names what the environment does not declare. */
+  | { readonly answer: 'profile.invalid'; readonly unknown: readonly string[] };
 
 /**
  * What one structural act answers: the version chain's own answers, or a refusal from the outline -
@@ -355,11 +358,18 @@ export async function createFromResolution(
       ),
     };
   }
-  const { outline, values } = materialiseTemplate(
+  const materialised = materialiseTemplate(
     resolved,
     heading,
     input.identity?.newIdentifier ?? newNodeIdentifier,
   );
+  const { values } = materialised;
+  // Its profile, from the template's defaults and the parameters feeding axes, never undeclared
+  // (TPL-051, REU-022; the R10 plan, R10-E).
+  const profile = templateProfile(template.definition, parameters);
+  const unknownAxes = await profileUnknown(trx, profile);
+  if (unknownAxes.length > 0) return { answer: 'profile.invalid', unknown: unknownAxes };
+  const outline = { ...materialised.outline, profile };
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,

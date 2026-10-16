@@ -54,6 +54,10 @@ export const PublicationRefusal = ErrorBody.extend({
     .array(z.string())
     .optional()
     .describe('profile_invalid: each axis, or `axis.value`, the environment does not declare'),
+  axes: z
+    .array(z.string())
+    .optional()
+    .describe("profile_incomplete: each axis the document's template requires its profile to set"),
   current: VersionSummary.optional().describe(
     'version_precondition: the version the document is at',
   ),
@@ -429,7 +433,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset",
         schema: PublicationRefusal,
       },
       401: unauthenticated,

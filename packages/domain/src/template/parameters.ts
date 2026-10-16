@@ -23,6 +23,11 @@ export const templateParameterSchema = parameterSchema.omit({ variation: true })
   feeds: z.strictObject({
     field: z.string().min(1).optional(),
     arguments: z.boolean(),
+    // Additive (the R10 plan, R10-E; TPL-051): the condition axis whose values it gives the profile.
+    axis: z
+      .string()
+      .regex(/^[a-z][a-z0-9_]{0,63}$/)
+      .optional(),
     // Additive (the R10 plan, R10-A; TPL-069): the variables it gives its value, by key.
     variables: z
       .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
@@ -130,7 +135,12 @@ export function checkTemplateParameters(
   }
   for (const parameter of parameters) {
     const { field, arguments: argues } = parameter.feeds;
-    if (field === undefined && !argues && (parameter.feeds.variables ?? []).length === 0) {
+    if (
+      field === undefined &&
+      !argues &&
+      parameter.feeds.axis === undefined &&
+      (parameter.feeds.variables ?? []).length === 0
+    ) {
       problems.push({
         code: 'parameter_unused',
         parameter: parameter.name,

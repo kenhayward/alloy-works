@@ -9357,6 +9357,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -23062,6 +23064,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -23210,6 +23214,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -38980,6 +38986,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                axis?: string;
                                 variables?: string[];
                             };
                         }[];
@@ -41733,6 +41740,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -41864,6 +41873,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -43234,7 +43245,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -43253,6 +43264,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -43384,6 +43397,8 @@ export interface operations {
                         traceId: string;
                         /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
                         unknown?: string[];
+                        /** @description profile_incomplete: each axis the document's template requires its profile to set */
+                        axes?: string[];
                         /** @description version_precondition: the version the document is at */
                         current?: {
                             id: string;
@@ -62407,6 +62422,8 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
                         current?: {
                             id: string;
                             space: {
@@ -64095,6 +64112,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                axis?: string;
                                 variables?: string[];
                             };
                         }[];
@@ -64119,6 +64137,14 @@ export interface operations {
                                 at: "start" | "end";
                             };
                         }[];
+                        profile?: {
+                            values?: {
+                                [key: string]: string[];
+                            };
+                            required?: string[];
+                            /** @constant */
+                            excludeUnset?: true;
+                        };
                     };
                 };
             };
@@ -64209,6 +64235,8 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
                         current?: {
                             id: string;
                             space: {
@@ -65957,6 +65985,7 @@ export interface operations {
                             feeds: {
                                 field?: string;
                                 arguments: boolean;
+                                axis?: string;
                                 variables?: string[];
                             };
                         }[];
@@ -65981,6 +66010,14 @@ export interface operations {
                                 at: "start" | "end";
                             };
                         }[];
+                        profile?: {
+                            values?: {
+                                [key: string]: string[];
+                            };
+                            required?: string[];
+                            /** @constant */
+                            excludeUnset?: true;
+                        };
                     };
                 };
             };
@@ -66071,6 +66108,8 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
                         current?: {
                             id: string;
                             space: {
@@ -66204,6 +66243,8 @@ export interface operations {
                             level?: "document" | "section";
                             schemas?: string[];
                         }[];
+                        /** @description profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051) */
+                        unknown?: string[];
                         current?: {
                             id: string;
                             space: {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type { InlineNode } from '../content/model/inline.js';
 import { checkPermitted } from '../data/definition.js';
+import { profileSchema } from '../reuse/conditions.js';
 import { assignmentSchema } from '../metadata/component-type.js';
 import {
   outlineMatterSchema,
@@ -120,6 +121,18 @@ export const templateDefinitionSchema = z
     parameters: z.array(templateParameterSchema).max(MAX_TEMPLATE_PARAMETERS).optional(),
     // Additive at schema 1, as `parameters` is: absent reads as none (the R9 plan, R9-A).
     components: z.array(templateComponentSchema).max(MAX_TEMPLATE_COMPONENTS).optional(),
+    // Additive at schema 1 (TPL-051; the R10 plan, R10-E): its documents' profile, as defaults on
+    // some axes and the axes each document must set, and whether exclusion by an unset axis is accepted.
+    profile: z
+      .strictObject({
+        values: profileSchema.optional(),
+        required: z
+          .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
+          .max(200)
+          .optional(),
+        excludeUnset: z.literal(true).optional(),
+      })
+      .optional(),
   })
   .superRefine((template, context) => {
     const keys = new Set<string>();
@@ -180,7 +193,18 @@ export const templateDefinitionSchema = z
     // A parameter named once, and its permitted values or range in its type, by the query
     // definition's own rule (TE-N, TP1-A).
     const names = new Set<string>();
+    const fedAxes = new Set<string>();
     (template.parameters ?? []).forEach((parameter, index) => {
+      // One axis fed by two parameters would take whichever came last (the R10 final review).
+      const axis = parameter.feeds.axis;
+      if (axis !== undefined && fedAxes.has(axis)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['parameters', index, 'feeds', 'axis'],
+          message: `The axis ${axis} is fed by more than one parameter`,
+        });
+      }
+      if (axis !== undefined) fedAxes.add(axis);
       if (names.has(parameter.name)) {
         context.addIssue({
           code: 'custom',
@@ -189,6 +213,14 @@ export const templateDefinitionSchema = z
         });
       }
       names.add(parameter.name);
+      // A profile value is an axis value's key: only text feeds an axis (R10-E).
+      if (parameter.feeds.axis !== undefined && parameter.type.base !== 'text') {
+        context.addIssue({
+          code: 'custom',
+          path: ['parameters', index, 'feeds', 'axis'],
+          message: `The parameter ${parameter.name} feeds an axis, which takes text alone`,
+        });
+      }
       checkPermitted(parameter, `parameters.${index}`, (path, message) =>
         context.addIssue({
           code: 'custom',

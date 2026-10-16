@@ -1140,6 +1140,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   on the document; a publish fails where one is missing with none. A cohort cannot be made from such
   a template yet, nor can the layout place a component as document-level matter, nor can one be
   made where a query's result holds images its space has not admitted.
+- **Variables from templates and results.** A template's parameter can name the variables it fills
+  (`feeds.variables`), in front of any parameter a variable names itself, and a variable can take a
+  column of the one-row result its document holds for a query (`sources.query`). A variable takes the
+  parameter, then the metadata field, then the result, and each publication records which supplied
+  it. Making a document from a template answers each variable its required components hold that has
+  no value yet (`unresolvedVariables`); the page does not show them yet.
+- **Profiles from templates.** A template made through the API may declare its documents' profile:
+  defaults on some condition axes, the axes each must set, and a parameter whose value sets an axis.
+  Every document made from it starts with that profile; a publish is refused while a required axis is
+  unset, and a preview is not. The New document form does not ask for a profile.
 - **What a transition requires.** In Administration > Workflows, a transition can require no
   unresolved suggestions and no open threads, and a document's also every binding resolved, no
   required section missing, no value revised by hand outstanding and every component it assembles at

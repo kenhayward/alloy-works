@@ -72,6 +72,7 @@ refused while a required section is missing or a field its template applies is n
 | **TPL-069** | A template parameter's `feeds.variables` names the variables it gives its value, by key: each a declared variable of its type, fed by no other parameter, else `parameter_variable` at save (R10-A)                                                                                                                                                                                                                  |
 | **TPL-067** | A variable a document's template feeds takes that parameter's value when it is printed, in front of any parameter the variable names itself                                                                                                                                                                                                                                                                          |
 | **TPL-072** | Making a document from a template answers `unresolvedVariables`: each variable its required components hold that does not resolve against its parameters, values and the results it holds, by node and key, and refuses nothing                                                                                                                                                                                      |
+| **TPL-051** | A definition's `profile` declares default values for axes and the axes a document must set; a parameter's `feeds.axis` gives its value to an axis. Making a document writes the profile, never none; a publish with a required axis unset is `profile_incomplete` ([Profile](#profile))                                                                                                                              |
 
 ## What this document does not own
 
@@ -267,6 +268,24 @@ mode?, place: { section: key | null, at: 'start' | 'end' } }`. The key is one na
   beside its missing sections; nothing yet places one in a document that lacks it.
 - **Not built**: TPL-049's other half, a component the layout places as document-level matter, since a
   layout places generated matter alone (PUB-088). TPL-049 is unclaimed for it.
+
+## Profile
+
+As built by [the R10 plan](../plans/2026-10-16-r10-variables-from-templates-and-results.md), R10-E
+(TPL-051):
+
+- **Declared** in the definition's `profile`, additive at schema 1: `values`, defaults on some axes;
+  `required`, the axes a document from it must set; `excludeUnset`, as a document's. A template
+  parameter's `feeds.axis`, text alone, gives its value, or its list's, to that axis over the
+  default. An axis or value the environment does not declare is `profile_invalid` at save.
+- **Written** when a document is made, always, even with no values (REU-022), and checked against
+  the axes then: a parameter's value no axis declares is `profile_invalid`.
+- **Incomplete** while a required axis is unset: a publish and a baseline are refused,
+  `profile_incomplete`, naming each, at the door both pass; a preview is not, since showing an
+  incomplete profile is how an author finds what to set. A baseline's publication runs under no
+  profile, as it has since R6.
+- **Variables a template feeds** are read, for a baseline, from the template version it pins; for
+  any other request, from the version the document is bound to now.
 
 ## Parameters
 

@@ -21428,6 +21428,13 @@
                         "type": "string"
                       }
                     },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "current": {
                       "description": "version_precondition: the version the document is at",
                       "type": "object",
@@ -59762,6 +59769,13 @@
                         "type": "string"
                       }
                     },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "current": {
                       "description": "version_precondition: the version the document is at",
                       "type": "object",
@@ -60228,6 +60242,13 @@
                     },
                     "unknown": {
                       "description": "profile_invalid: each axis, or `axis.value`, the environment does not declare",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -123622,6 +123643,10 @@
                               "arguments": {
                                 "type": "boolean"
                               },
+                              "axis": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
                               "variables": {
                                 "maxItems": 50,
                                 "type": "array",
@@ -132267,6 +132292,13 @@
                         "type": "string"
                       }
                     },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "current": {
                       "description": "version_precondition: the version the document is at",
                       "type": "object",
@@ -132594,6 +132626,13 @@
                     },
                     "unknown": {
                       "description": "profile_invalid: each axis, or `axis.value`, the environment does not declare",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -136848,7 +136887,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare",
+            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `component_required`: a component it requires is missing with no reason given; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was; `profile_invalid`: the profile names an axis or a value the environment does not declare; `profile_incomplete`: an axis the document's template requires is unset",
             "content": {
               "application/json": {
                 "schema": {
@@ -136872,6 +136911,13 @@
                     },
                     "unknown": {
                       "description": "profile_invalid: each axis, or `axis.value`, the environment does not declare",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -137204,6 +137250,13 @@
                     },
                     "unknown": {
                       "description": "profile_invalid: each axis, or `axis.value`, the environment does not declare",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "axes": {
+                      "description": "profile_incomplete: each axis the document's template requires its profile to set",
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -188696,6 +188749,13 @@
                         ]
                       }
                     },
+                    "unknown": {
+                      "description": "profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051)",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "current": {
                       "type": "object",
                       "properties": {
@@ -195113,6 +195173,10 @@
                                 "arguments": {
                                   "type": "boolean"
                                 },
+                                "axis": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                },
                                 "variables": {
                                   "maxItems": 50,
                                   "type": "array",
@@ -195238,6 +195302,40 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "values": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            },
+                            "additionalProperties": {
+                              "minItems": 1,
+                              "maxItems": 200,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              }
+                            }
+                          },
+                          "required": {
+                            "maxItems": 200,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            }
+                          },
+                          "excludeUnset": {
+                            "type": "boolean",
+                            "const": true
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     },
                     "required": [
@@ -195473,6 +195571,13 @@
                           "reference",
                           "id"
                         ]
+                      }
+                    },
+                    "unknown": {
+                      "description": "profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051)",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       }
                     },
                     "current": {
@@ -200198,6 +200303,10 @@
                                 "arguments": {
                                   "type": "boolean"
                                 },
+                                "axis": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                },
                                 "variables": {
                                   "maxItems": 50,
                                   "type": "array",
@@ -200323,6 +200432,40 @@
                           ],
                           "additionalProperties": false
                         }
+                      },
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "values": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            },
+                            "additionalProperties": {
+                              "minItems": 1,
+                              "maxItems": 200,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              }
+                            }
+                          },
+                          "required": {
+                            "maxItems": 200,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            }
+                          },
+                          "excludeUnset": {
+                            "type": "boolean",
+                            "const": true
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     },
                     "required": [
@@ -200560,6 +200703,13 @@
                           "reference",
                           "id"
                         ]
+                      }
+                    },
+                    "unknown": {
+                      "description": "profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051)",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       }
                     },
                     "current": {
@@ -200907,6 +201057,13 @@
                           "reference",
                           "id"
                         ]
+                      }
+                    },
+                    "unknown": {
+                      "description": "profile_invalid: each axis, or `axis.value`, its profile names that the environment does not declare (TPL-051)",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       }
                     },
                     "current": {
