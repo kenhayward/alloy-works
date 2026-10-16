@@ -3242,7 +3242,7 @@ describe('cross-references, published (cross-references 2)', () => {
         profile: { values: { audience: ['regulator'] }, excludeUnset: false },
       });
       expect(failuresOf(assembled).map((each) => [each.code, each.block])).toEqual([
-        ['cross_reference_unresolved', 'x1'],
+        ['cross_reference_excluded', 'x1'],
       ]);
     });
 
@@ -3278,6 +3278,121 @@ describe('cross-references, published (cross-references 2)', () => {
         profile: { values: {}, excludeUnset: true },
       });
       expect(printed(accepted)).toEqual(['Kept. ']);
+    });
+  });
+
+  describe('conditions on outline nodes (the R11 plan, R11-A to R11-D)', () => {
+    const THIRD = '00000000-0000-4000-8000-000000000003';
+    const regulator = [{ axis: 'audience', values: ['regulator'] }];
+    /**
+     * An introduction referring to the closing section and its table; a regulatory annex, holding a
+     * table, only for the regulator; and the closing section.
+     */
+    const report = (audience: string, over: Partial<UnderALayout> = {}) =>
+      input({
+        outline: outline([
+          section('intro', 'Introduction', [reference('calib')]),
+          {
+            ...section('annex', 'Annex for the regulator', [reference('annexed', OTHER)]),
+            conditions: regulator,
+          },
+          section('closing', 'Closing', [reference('last', THIRD)]),
+        ]),
+        occurrences: new Map([
+          [
+            id('calib'),
+            component([
+              table('t1'),
+              paragraph(
+                'b1',
+                text('See '),
+                xref('x1', toNode('closing'), 'number'),
+                text(' and '),
+                xref('x2', toComponent(THIRD, 't3'), 'number'),
+              ),
+            ]),
+          ],
+          [id('annexed'), component([table('t2', [text('Inspections by the regulator')])])],
+          [id('last'), component([table('t3', [text('Totals')])])],
+        ]),
+        profile: { values: { audience: [audience] }, excludeUnset: false },
+        ...over,
+      });
+
+    it('STR-020 numbers only what the profile keeps: a section its conditions take out, and the table under it, take no number', () => {
+      const texts = (assembled: Assembled<PublishedDocument>) =>
+        publishedOf(assembled).references.map((each) => each.text);
+      expect(texts(assemble(report('regulator')))).toEqual(['3', 'Table 3.1']);
+      expect(texts(assemble(report('internal')))).toEqual(['2', 'Table 2.1']);
+      // Nothing of it is published.
+      const anchors = publishedOf(assemble(report('internal'))).anchors;
+      expect(anchors).not.toContain(N('annex'));
+      expect(anchors).not.toContain(B('annexed', 't2'));
+    });
+
+    it('STR-030 fails a reference to a section, or to a block, that its conditions take out, rather than printing it', () => {
+      const referring = (target: object) =>
+        report('internal', {
+          occurrences: new Map([
+            [id('calib'), component([paragraph('b1', xref('x1', target, 'number'))])],
+            [id('annexed'), component([table('t2')])],
+            [id('last'), component([table('t3')])],
+          ]),
+        });
+      expect(failuresOf(assemble(referring(toNode('annex'))))).toEqual([
+        failed('cross_reference_excluded', 'x1', `node ${id('annex')}`),
+      ]);
+      expect(failuresOf(assemble(referring(toComponent(OTHER, 't2'))))).toEqual([
+        failed('cross_reference_excluded', 'x1', `component ${OTHER} block t2`),
+      ]);
+      // And to a paragraph a text condition empties (REU-029).
+      expect(
+        failuresOf(
+          assemble({
+            ...inIntro(
+              paragraph(
+                'p1',
+                marked('Staff only.', { type: 'condition', id: 'c1', ...regulator[0] }),
+              ),
+              paragraph('b1', xref('x1', toBlock('p1'), 'page')),
+            ),
+            profile: { values: { audience: ['internal'] }, excludeUnset: false },
+          }),
+        ),
+      ).toEqual([failed('cross_reference_excluded', 'x1', 'block p1')]);
+    });
+
+    it("REU-053 fails while a node's axis is unset, unless the document accepts exclusion, and fails nothing for what it excludes", () => {
+      const unset = report('internal', {
+        profile: { values: {}, excludeUnset: false },
+        // A reference under the annex that could not be read: excluded, it fails nothing.
+        refused: [
+          {
+            stage: 'resolve',
+            code: 'occurrence_unreadable',
+            node: id('annexed'),
+            block: null,
+            detail: null,
+          },
+        ],
+      });
+      expect(failuresOf(assemble(unset))).toEqual([
+        {
+          stage: 'compose',
+          code: 'axis_unset',
+          node: id('annex'),
+          block: null,
+          detail: 'audience',
+        },
+      ]);
+      const accepted = assemble({ ...unset, profile: { values: {}, excludeUnset: true } });
+      expect(accepted.ok).toBe(true);
+    });
+
+    it('gives the scan the title and the words of what a node condition takes out', () => {
+      const assembled = assemble(report('internal'));
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      expect(assembled.probes).toEqual(['annex for the regulator', 'inspections by the regulator']);
     });
   });
 

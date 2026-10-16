@@ -78,6 +78,9 @@ export const publishFailureCodes = [
   // section's title, or above and below under a layout with no words for them. Each names the
   // reference, and the target or the form, never the author's text.
   'cross_reference_unresolved',
+  // compose, from R11 (STR-030; R11-D): a reference whose target a condition took out, named apart
+  // from one that never resolved, so the author is sent to the profile and not to the target.
+  'cross_reference_excluded',
   'cross_reference_form_unavailable',
   // compose, from equations 2 (EQ-B, CNT-049): an equation holding what the maths tree cannot set -
   // an error its converter reported, maths set right to left, more than one pair of scripts on a side,

@@ -21238,6 +21238,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -21643,6 +21644,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -59984,6 +59986,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -60462,6 +60465,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -120297,6 +120301,33 @@
                               "additionalProperties": false
                             }
                           },
+                          "conditions": {
+                            "maxItems": 16,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "axis": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                },
+                                "values": {
+                                  "minItems": 1,
+                                  "maxItems": 200,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "axis",
+                                "values"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "values": {
                             "description": "A section's field values, whole: each a field its document's template applies to sections",
                             "type": "object",
@@ -132102,6 +132133,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -136726,6 +136758,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",
@@ -159569,6 +159602,7 @@
                               "footnote_empty",
                               "footnote_unnumbered",
                               "cross_reference_unresolved",
+                              "cross_reference_excluded",
                               "cross_reference_form_unavailable",
                               "equation_unrenderable",
                               "equation_unnumbered",

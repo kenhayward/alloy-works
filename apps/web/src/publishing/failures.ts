@@ -217,7 +217,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return `Text this profile leaves out was found in the ${failure.detail === 'docx' ? 'Word document' : 'PDF'}, so nothing was published. Report this; it is a fault in publishing, not in the document.`;
     // REU-053: an unset axis leaves text out only where the document accepts it.
     case 'axis_unset':
-      return `Text here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
+      return `Content here depends on ${failure.detail ?? 'a condition'}, which the document's profile does not set. Set it in the profile, or accept that such text is left out.`;
     // REU-015: never applied over a changed paragraph, and never dropped without saying so.
     case 'override_stale':
       return 'This document overrides a paragraph of the component here that has changed since. Look at the paragraph again, then change the override or remove it.';
@@ -382,6 +382,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // read from another component (STR-062).
     case 'cross_reference_unresolved':
       return 'A cross-reference points at something this document does not hold, or at a component it holds more than once.';
+    // STR-030 (the R11 plan, R11-D): the target is there, and the profile leaves it out.
+    case 'cross_reference_excluded':
+      return 'A cross-reference points at something this profile leaves out. Change the reference, or the conditions or the profile that leave its target out.';
     // Ruling R7 again: `detail` is the form asked, never the author's text.
     case 'cross_reference_form_unavailable':
       return (
@@ -512,7 +515,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   occurrence_gone: 'It places a component that was deleted.',
   override_stale: 'It overrides a paragraph that has changed since.',
   variable_unresolved: 'A variable in it has no value for the document.',
-  axis_unset: 'Text in it depends on a condition the document does not set.',
+  axis_unset: 'Content in it depends on a condition the document does not set.',
   condition_leaked: 'Text its profile leaves out was found in what was made.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
@@ -541,6 +544,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   footnote_empty: 'A footnote in it has no text.',
   footnote_unnumbered: 'A footnote in it would print with no number.',
   cross_reference_unresolved: 'A cross-reference in it points at something it does not hold.',
+  cross_reference_excluded: 'A cross-reference in it points at something its profile leaves out.',
   cross_reference_form_unavailable:
     'A cross-reference in it asks for a form of its target that cannot be shown.',
   equation_unrenderable: 'An equation in it holds something the typesetter cannot set.',

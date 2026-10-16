@@ -17636,7 +17636,7 @@
         },
         {
           "id": "REU-024",
-          "howItIsMet": "A run is kept only where the profile names the axis of every condition on it and one of that condition's values; an axis it does not name selects nothing (the R6 plan, R6-C)"
+          "howItIsMet": "A run, and an outline node (the R11 plan, R11-A), is kept only where the profile names the axis of every condition on it and one of that condition's values; an axis it does not name selects nothing (the R6 plan, R6-C)"
         },
         {
           "id": "REU-027",
@@ -17644,7 +17644,7 @@
         },
         {
           "id": "REU-029",
-          "howItIsMet": "Conditions run in `conditionContent` before references resolve, so a reference to a paragraph its conditions take out fails `cross_reference_unresolved` (R6-D)"
+          "howItIsMet": "Conditions run before references resolve, so a reference to a paragraph its conditions take out fails `cross_reference_excluded` (R6-D; the R11 plan, R11-D)"
         },
         {
           "id": "REU-030",
@@ -17653,6 +17653,30 @@
         {
           "id": "REU-053",
           "howItIsMet": "Content conditioned on an axis the profile does not name fails the publish `axis_unset`, naming node, block and axis, unless the document's profile records `excludeUnset` (R6-E)"
+        },
+        {
+          "id": "STR-020",
+          "howItIsMet": "`selectOutline` takes out a section or a reference the profile does not select, with its subtree, before anything reads an occurrence; what it and a text condition take out is never counted, so it takes no number (the R11 plan, R11-C). A numbered block's own condition is R11b's"
+        },
+        {
+          "id": "STR-030",
+          "howItIsMet": "A reference whose target a condition took out, a node, a block or a component block, fails the publish `cross_reference_excluded`, naming the reference and its target, never printed (R11-D)"
+        },
+        {
+          "id": "STR-042",
+          "howItIsMet": "The contents and the lists are generated from the selected outline and the conditioned content alone, so they hold only what the resolved document does"
+        },
+        {
+          "id": "PUB-109",
+          "howItIsMet": "`order.test.ts` places transclusion first: before it, nothing is counted, a reference finds no table and a list holds none"
+        },
+        {
+          "id": "PUB-110",
+          "howItIsMet": "`order.test.ts` places conditions before numbering, references and lists: composed after each, the section a profile takes out is numbered, found and listed"
+        },
+        {
+          "id": "PUB-111",
+          "howItIsMet": "`order.test.ts` places variables before references, numbering and lists: composed after each, a caption's variable reaches neither the reference nor the list"
         },
         {
           "id": "REU-048",
@@ -20872,6 +20896,12 @@
       "id": "STR-063",
       "file": "apps/service/src/navigation-budget.test.ts",
       "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "REU-021",
+      "file": "apps/service/src/node-condition-routes.test.ts",
+      "line": 29,
       "kind": "title"
     },
     {
@@ -27069,13 +27099,13 @@
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4135,
+      "line": 4250,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3951,
+      "line": 4066,
       "kind": "title"
     },
     {
@@ -27093,13 +27123,13 @@
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7027,
+      "line": 7142,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6736,
+      "line": 6851,
       "kind": "title"
     },
     {
@@ -27129,25 +27159,25 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7048,
+      "line": 7163,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6019,
+      "line": 6134,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7119,
+      "line": 7234,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7062,
+      "line": 7177,
       "kind": "title"
     },
     {
@@ -27165,7 +27195,7 @@
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7119,
+      "line": 7234,
       "kind": "title"
     },
     {
@@ -27181,6 +27211,12 @@
       "kind": "title"
     },
     {
+      "id": "STR-020",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3322,
+      "kind": "title"
+    },
+    {
       "id": "STR-024",
       "file": "packages/domain/src/publishing/assemble.test.ts",
       "line": 905,
@@ -27189,37 +27225,43 @@
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3927,
+      "line": 4042,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3651,
+      "line": 3766,
+      "kind": "title"
+    },
+    {
+      "id": "STR-030",
+      "file": "packages/domain/src/publishing/assemble.test.ts",
+      "line": 3333,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4034,
+      "line": 4149,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3545,
+      "line": 3660,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3574,
+      "line": 3689,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3597,
+      "line": 3712,
       "kind": "title"
     },
     {
@@ -27231,19 +27273,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5226,
+      "line": 5341,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5226,
+      "line": 5341,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5250,
+      "line": 5365,
       "kind": "title"
     },
     {
@@ -27261,7 +27303,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6953,
+      "line": 7068,
       "kind": "title"
     },
     {
@@ -27393,13 +27435,37 @@
     {
       "id": "PUB-098",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 167,
+      "line": 169,
       "kind": "title"
     },
     {
       "id": "PUB-108",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 384,
+      "line": 386,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-109",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 437,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-110",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 522,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-111",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 634,
+      "kind": "title"
+    },
+    {
+      "id": "STR-042",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 571,
       "kind": "title"
     },
     {
@@ -27478,6 +27544,18 @@
       "id": "REU-024",
       "file": "packages/domain/src/reuse/conditions.test.ts",
       "line": 104,
+      "kind": "title"
+    },
+    {
+      "id": "REU-021",
+      "file": "packages/domain/src/reuse/node-conditions.test.ts",
+      "line": 47,
+      "kind": "title"
+    },
+    {
+      "id": "REU-024",
+      "file": "packages/domain/src/reuse/node-conditions.test.ts",
+      "line": 93,
       "kind": "title"
     },
     {
@@ -27801,7 +27879,7 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 737,
+      "line": 739,
       "kind": "title"
     },
     {

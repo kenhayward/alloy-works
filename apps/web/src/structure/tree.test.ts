@@ -339,6 +339,17 @@ describe('the inverse of an act is one operation', () => {
     expect(applied(after, inverseOf(before, after, set))).toEqual(before);
   });
 
+  it('undoes a change to a node conditions by setting them back, none as none', () => {
+    const before = three();
+    const set: OutlineOperation = {
+      operation: 'set',
+      node: METHOD,
+      conditions: [{ axis: 'audience', values: ['regulator'] }],
+    };
+    const after = applied(before, set);
+    expect(applied(after, inverseOf(before, after, set))).toEqual(before);
+  });
+
   it('sets back only the switches an act named', () => {
     const before = three();
     const set: OutlineOperation = { operation: 'set', node: RESULTS, pageBreak: 'recto' };

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { MetadataFailure } from '../metadata/failure.js';
 import type { EffectiveField } from '../metadata/resolve.js';
 import { checkWrittenValues, writtenValues } from '../metadata/write.js';
+import { CONDITIONS_MAX, conditionsSchema } from '../content/model/marks.js';
 import { storableEverywhere } from '../stored/storable.js';
 
 import {
@@ -82,6 +83,8 @@ export const outlineOperationSchema = z
           'A block is overridden once',
         )
         .optional(),
+      // A node's conditions, whole (REU-021; the R11 plan, R11-A): `[]` clears them.
+      conditions: z.array(conditionsSchema.element).max(CONDITIONS_MAX).optional(),
       // A section's field values, whole (STR-060): what they may hold is its document's template's,
       // which `applyOutlineOperation` is given as its rules and checks them against. Storable here,
       // as a title is, so a character Postgres cannot hold is the caller's mistake and not a 500.
@@ -106,6 +109,7 @@ export const outlineOperationSchema = z
       operation.pageBreak !== undefined ||
       operation.mode !== undefined ||
       operation.overrides !== undefined ||
+      operation.conditions !== undefined ||
       operation.values !== undefined,
     'A set operation must name at least one switch',
   );
@@ -425,6 +429,14 @@ function set(
     const { overrides: dropped, ...rest } = next;
     void dropped;
     next = operation.overrides.length === 0 ? rest : { ...rest, overrides: operation.overrides };
+  }
+  // Conditions whole too, none at all no member, so clearing them restores the digest (R11-A).
+  if (operation.conditions !== undefined) {
+    const { conditions: dropped, ...rest } = next;
+    void dropped;
+    next = (
+      operation.conditions.length === 0 ? rest : { ...rest, conditions: operation.conditions }
+    ) as OutlineNode;
   }
   const result = replaceNode(outline.nodes, operation.node, next);
   return applyNodes(outline, result.nodes);

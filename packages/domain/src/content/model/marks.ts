@@ -73,6 +73,19 @@ export const conditionMarkSchema = z.strictObject({
   values: z.array(z.string().min(1)).min(1),
 });
 
+/**
+ * **Conditions on something whole** (REU-021; the R11 plan, R11-A, R11-B): an outline node's, or a
+ * numbered block's, each as a mark's is, and all of them must select it. Keys as an axis's and a
+ * profile's are. Optional where it is held, never empty: none is no member.
+ */
+const conditionKey = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/);
+export const CONDITIONS_MAX = 16;
+export const conditionsSchema = z
+  .array(z.strictObject({ axis: conditionKey, values: z.array(conditionKey).min(1).max(200) }))
+  .min(1)
+  .max(CONDITIONS_MAX);
+export type Conditions = z.infer<typeof conditionsSchema>;
+
 export const suggestionMarkSchema = z.strictObject({
   type: z.literal('suggestion'),
   ...identified,

@@ -4,6 +4,7 @@ import {
   missingComponents,
   templateDefinitionSchema,
   requiredUnset,
+  selectOutline,
   missingSections,
   parseProvenance,
   parseAssetVersion,
@@ -783,8 +784,12 @@ export async function resolvePublishable(
   }
 
   const outcomes = await resolveOccurrences(trx, read.outline, input.principal);
+  // What the profile takes out is never published, so it fails nothing here either (R11-C).
+  const excluded = new Set(
+    selectOutline(read.outline, (input.profile ?? read.outline.profile)?.values ?? {}).excluded,
+  );
   const failures: PublishFailure[] = outcomes.flatMap((each) =>
-    each.outcome === 'resolved'
+    each.outcome === 'resolved' || excluded.has(each.node)
       ? []
       : [
           {

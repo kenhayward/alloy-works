@@ -276,7 +276,15 @@ function ids(nodes: readonly OutlineViewNode[]): Set<string> {
   return new Set(visibleOrder(nodes));
 }
 
-const SWITCHES = ['numbered', 'matter', 'pageBreak', 'mode', 'values', 'overrides'] as const;
+const SWITCHES = [
+  'numbered',
+  'matter',
+  'pageBreak',
+  'mode',
+  'values',
+  'overrides',
+  'conditions',
+] as const;
 
 /**
  * The one operation that takes an act back (the plan's decision 6: undo is an entry in the renderer,
@@ -327,6 +335,8 @@ export function inverseOf(
         matter: node.matter,
         pageBreak: node.pageBreak,
         values: node.values,
+        // Conditions back as they were, none as none (the R11 plan, R11-A).
+        conditions: node.conditions ?? [],
         // Overrides back as they were, none at all as none (the R4 plan, R4-B).
         ...(node.type === 'reference' ? { mode: node.mode, overrides: node.overrides ?? [] } : {}),
       };
