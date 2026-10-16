@@ -44111,8 +44111,7 @@ export interface operations {
                      *         },
                      *         "fields": [],
                      *         "notCarried": [],
-                     *         "missing": [],
-                     *         "components": []
+                     *         "adding": []
                      *       }
                      *     }
                      */
@@ -44152,15 +44151,13 @@ export interface operations {
                                 name: string;
                                 value: unknown;
                             }[];
-                            /** @description Each section the newer version requires that the document lacks, to add or remove with a reason */
-                            missing: {
+                            /** @description Each section and component the newer version requires that the document lacks, which the move adds where the template places it unless declined (#660) */
+                            adding: {
+                                /** @enum {string} */
+                                kind: "section" | "component";
                                 key: string;
+                                /** @description A section's title, or a component's key */
                                 title: string;
-                            }[];
-                            /** @description Each component the newer version requires that the document lacks, by its key */
-                            components: {
-                                key: string;
-                                component: string;
                             }[];
                         };
                     };
@@ -44315,6 +44312,12 @@ export interface operations {
                     latest: string & (unknown & unknown);
                     /** @description The template's newest version, as the preview named it */
                     to: string & (unknown & unknown);
+                    /** @description Each section or component the move would add that the author leaves out instead, with a reason; refused, reason_required, where one has none */
+                    declined?: {
+                        key: string;
+                        /** @description Why it is left out: kept on the document (TPL-029) */
+                        reason: string;
+                    }[];
                 };
             };
         };
@@ -44346,8 +44349,7 @@ export interface operations {
                      *         },
                      *         "fields": [],
                      *         "notCarried": [],
-                     *         "missing": [],
-                     *         "components": []
+                     *         "adding": []
                      *       }
                      *     }
                      */
@@ -44385,15 +44387,13 @@ export interface operations {
                                 name: string;
                                 value: unknown;
                             }[];
-                            /** @description Each section the newer version requires that the document lacks, to add or remove with a reason */
-                            missing: {
+                            /** @description Each section and component the newer version requires that the document lacks, which the move adds where the template places it unless declined (#660) */
+                            adding: {
+                                /** @enum {string} */
+                                kind: "section" | "component";
                                 key: string;
+                                /** @description A section's title, or a component's key */
                                 title: string;
-                            }[];
-                            /** @description Each component the newer version requires that the document lacks, by its key */
-                            components: {
-                                key: string;
-                                component: string;
                             }[];
                         };
                     };
@@ -64135,6 +64135,8 @@ export interface operations {
                                 section: string | null;
                                 /** @enum {string} */
                                 at: "start" | "end";
+                                /** @enum {string} */
+                                matter?: "front" | "body" | "appendix";
                             };
                         }[];
                         profile?: {
@@ -66008,6 +66010,8 @@ export interface operations {
                                 section: string | null;
                                 /** @enum {string} */
                                 at: "start" | "end";
+                                /** @enum {string} */
+                                matter?: "front" | "body" | "appendix";
                             };
                         }[];
                         profile?: {

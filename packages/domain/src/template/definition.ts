@@ -83,14 +83,24 @@ export const MAX_TEMPLATE_COMPONENTS = 50;
 /**
  * A component every document from the template includes (TPL-014; R9-A): its key, one namespace with
  * the starting sections', the component, the reference mode it is placed with, following approved
- * revisions unless declared (ADR-0062), and its place (TPL-049): the start or end of a starting
- * section, or of the outline's body at its top level where `section` is null.
+ * revisions unless declared (ADR-0062), and its place (TPL-073): the start or end of a starting
+ * section, or at the top level, where `section` is null, of the block its `matter` names - the front
+ * matter, the body, unless declared, or the appendices. Below the top level a node is body matter.
  */
 export const templateComponentSchema = z.strictObject({
   key,
   component: artifact,
   mode: referenceModeSchema.optional(),
-  place: z.strictObject({ section: key.nullable(), at: z.enum(['start', 'end']) }),
+  place: z
+    .strictObject({
+      section: key.nullable(),
+      at: z.enum(['start', 'end']),
+      matter: outlineMatterSchema.optional(),
+    })
+    .refine(
+      (place) => place.section === null || place.matter === undefined,
+      'A component placed in a section is body matter, as every node below the top level is',
+    ),
 });
 export type TemplateComponent = z.infer<typeof templateComponentSchema>;
 

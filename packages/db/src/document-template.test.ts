@@ -667,7 +667,7 @@ describe('a document made from a template', () => {
       service.withTenant(production, work);
     // Nothing newer: nothing to move to.
     expect(
-      await at((trx) => previewTemplateMove(trx, { documentId: id, to: made.version.id })),
+      await at((trx) => previewTemplateMove(trx, { documentId: id, to: made.version.id, by: ada })),
     ).toEqual({ answer: 'template.current' });
     await at((trx) =>
       recordDocumentValues(trx, {
@@ -698,7 +698,9 @@ describe('a document made from a template', () => {
       return answer.template.version.id;
     });
     const latest = (await at((trx) => latestVersion(trx, id))) as { id: string };
-    const preview = await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer }));
+    const preview = await at((trx) =>
+      previewTemplateMove(trx, { documentId: id, to: newer, by: ada }),
+    );
     expect(preview).toMatchObject({
       answer: 'previewed',
       template: made.id,
@@ -714,7 +716,7 @@ describe('a document made from a template', () => {
         notCarried: expect.arrayContaining([
           { node: null, field: OWNER, name: expect.any(String), value: 'Ada' },
         ]),
-        missing: [{ key: 'conclusion', title: 'Conclusion' }],
+        adding: [{ kind: 'section', key: 'conclusion', title: 'Conclusion' }],
       },
     });
     // The preview recorded nothing: the binding is the one it was made from.
@@ -752,7 +754,9 @@ describe('a document made from a template', () => {
       { template: made.id, from: made.version.id, to: newer, notCarried: expect.any(Number) },
     ]);
     // Now at the newest: nothing more to move to.
-    expect(await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer }))).toEqual({
+    expect(
+      await at((trx) => previewTemplateMove(trx, { documentId: id, to: newer, by: ada })),
+    ).toEqual({
       answer: 'template.current',
     });
   });
@@ -816,7 +820,11 @@ describe('a document made from a template', () => {
     });
     expect(
       await service.withTenant(production, (trx) =>
-        previewTemplateMove(trx, { documentId: document.version.artifactId, to: made.version.id }),
+        previewTemplateMove(trx, {
+          documentId: document.version.artifactId,
+          to: made.version.id,
+          by: ada,
+        }),
       ),
     ).toEqual({ answer: 'template.not_latest', latest: next });
   });

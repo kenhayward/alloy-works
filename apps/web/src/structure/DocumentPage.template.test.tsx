@@ -141,7 +141,7 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
           layout: null,
           fields: [{ level: 'document', field: 'f1', name: 'Reviewer', change: 'removed' }],
           notCarried: [{ node: null, field: 'f1', name: 'Reviewer', value: 'Grace' }],
-          missing: [{ key: 'scope', title: 'Scope' }],
+          adding: [{ kind: 'section', key: 'scope', title: 'Scope' }],
         };
         return request.method === 'GET'
           ? new Response(
@@ -172,8 +172,13 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
       'Its theme changes.',
       'Reviewer is no longer one of its fields.',
       'Its value for Reviewer, Grace, is not carried forward.',
-      'Scope is required and missing: add it, or remove it with a reason.',
     ]);
+    // What the newer version requires and the document lacks is added, unless left out (#660).
+    expect(
+      within(dialog).getByRole('group', {
+        name: 'The template now requires these, which the move adds',
+      }),
+    ).toBeVisible();
     // Left there, nothing is moved.
     await userEvent.click(within(dialog).getByRole('button', { name: 'Keep version 0.3' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -182,12 +187,24 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     await userEvent.click(screen.getByRole('button', { name: 'Move to version 0.4' }));
     const again = await screen.findByRole('dialog', { name: 'Move to Report, version 0.4' });
     await within(again).findByRole('list', { name: 'What the move changes' });
-    await userEvent.click(within(again).getByRole('button', { name: 'Move' }));
+    // Left out, Scope needs a reason before the move is taken (TPL-029).
+    await userEvent.click(within(again).getByRole('checkbox', { name: 'Leave out Scope' }));
+    const move = within(again).getByRole('button', { name: 'Move' });
+    expect(move).toBeDisabled();
+    await userEvent.type(
+      within(again).getByRole('textbox', { name: 'Why Scope is left out' }),
+      'Covered by the method.',
+    );
+    await userEvent.click(move);
     await waitFor(() =>
       expect(asked.filter((each) => each.method === 'POST')).toEqual([
         {
           method: 'POST',
-          body: { latest: 'dddddddd-0000-4000-8000-000000000001', to: NEWER },
+          body: {
+            latest: 'dddddddd-0000-4000-8000-000000000001',
+            to: NEWER,
+            declined: [{ key: 'scope', reason: 'Covered by the method.' }],
+          },
         },
       ]),
     );

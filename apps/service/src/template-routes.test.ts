@@ -574,7 +574,7 @@ describe('templates through the service', () => {
       from: template.version.id,
       to: next.version.id,
       latest: made.version.id,
-      report: { theme: null, layout: null, fields: [], notCarried: [], missing: [] },
+      report: { theme: null, layout: null, fields: [], notCarried: [], adding: [] },
     });
     // The preview recorded nothing.
     expect((await view()).template.version.id).toBe(template.version.id);

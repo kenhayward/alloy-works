@@ -32,14 +32,17 @@ export const TemplateMoveReport = z.object({
       }),
     )
     .describe('Each value the move would not carry forward, as a component type change names them'),
-  missing: z
-    .array(z.object({ key: z.string(), title: z.string() }))
+  adding: z
+    .array(
+      z.object({
+        kind: z.enum(['section', 'component']),
+        key: z.string(),
+        title: z.string().describe("A section's title, or a component's key"),
+      }),
+    )
     .describe(
-      'Each section the newer version requires that the document lacks, to add or remove with a reason',
+      'Each section and component the newer version requires that the document lacks, which the move adds where the template places it unless declined (#660)',
     ),
-  components: z
-    .array(z.object({ key: z.string(), component: z.string() }))
-    .describe('Each component the newer version requires that the document lacks, by its key'),
 });
 export type TemplateMoveReport = z.infer<typeof TemplateMoveReport>;
 
@@ -63,6 +66,18 @@ export const TemplateMoveBody = z.strictObject({
     'The document version the preview was against: refused, version_precondition, where it is not the latest',
   ),
   to: LowercaseUuid.describe("The template's newest version, as the preview named it"),
+  declined: z
+    .array(
+      z.strictObject({
+        key: z.string().max(64),
+        reason: z.string().max(2000).describe('Why it is left out: kept on the document (TPL-029)'),
+      }),
+    )
+    .max(100)
+    .optional()
+    .describe(
+      'Each section or component the move would add that the author leaves out instead, with a reason; refused, reason_required, where one has none',
+    ),
 });
 export type TemplateMoveBody = z.infer<typeof TemplateMoveBody>;
 

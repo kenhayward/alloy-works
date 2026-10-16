@@ -15,6 +15,10 @@ const OWNER = '6b1f0000-0000-4000-8000-000000000001';
 const REVIEWER = '6b1f0000-0000-4000-8000-000000000002';
 const STAGE = '6b1f0000-0000-4000-8000-000000000003';
 const id = (n: number) => 'a'.repeat(25) + 'bcdefghijklmnopqrstuvwxyz'[n - 1]!;
+const counter = () => {
+  let next = 1;
+  return () => id((next += 1));
+};
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
 
 const starting = (key: string, words: string, required: boolean) => ({
@@ -89,6 +93,7 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
       outline,
       values: { [OWNER]: 'Ada', [REVIEWER]: 'Grace' },
       waived: new Set(),
+      newIdentifier: counter(),
     });
     expect(plan.report).toEqual({
       theme: { from: THEME, to: NEWER_THEME },
@@ -102,11 +107,14 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
         { node: null, field: REVIEWER, name: 'Reviewer', value: 'Grace' },
         { node: id(1), field: STAGE, name: 'Stage', value: 'Draft' },
       ],
-      missing: [{ key: 'method', title: 'Method' }],
-      components: [],
+      adding: [{ kind: 'section', key: 'method', title: 'Method' }],
     });
     expect(plan.values).toEqual({ [OWNER]: 'Ada' });
     expect(plan.outline.nodes[0]!.values).toEqual({});
+    expect(plan.outline.nodes.map((node) => node.type === 'section' && node.origin)).toEqual([
+      'introduction',
+      'method',
+    ]);
   });
 
   it('reports nothing where the newer version changes nothing the document holds', () => {
@@ -121,19 +129,19 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
       outline,
       values: { [OWNER]: 'Ada' },
       waived: new Set(),
+      newIdentifier: counter(),
     });
     expect(plan.report).toEqual({
       theme: null,
       layout: null,
       fields: [],
       notCarried: [],
-      missing: [],
-      components: [],
+      adding: [],
     });
     expect(plan.values).toEqual({ [OWNER]: 'Ada' });
   });
 
-  it('TPL-044 reports each component the newer version requires that the document lacks', () => {
+  it('TPL-044 TPL-013 adds each section and component the newer version requires and the document lacks, where the template places it, unless declined', () => {
     const NOTICE = 'c0c0c0c0-0000-4000-8000-000000000002';
     const from = {
       definition: template(THEME, [starting('introduction', 'Introduction', true)]),
@@ -144,14 +152,60 @@ describe('moving a document to a newer template version (templates.md; the WF6 p
       ...from,
       definition: templateDefinitionSchema.parse({
         ...from.definition,
-        components: [{ key: 'notice', component: NOTICE, place: { section: null, at: 'end' } }],
+        outline: {
+          sections: [
+            starting('introduction', 'Introduction', true),
+            starting('annex', 'Annex', true),
+          ],
+        },
+        components: [
+          { key: 'notice', component: NOTICE, place: { section: 'annex', at: 'start' } },
+        ],
       }),
     };
-    const plan = planTemplateMove({ from, to, outline, values: {}, waived: new Set() });
-    expect(plan.report.components).toEqual([{ key: 'notice', component: NOTICE }]);
+    const plan = planTemplateMove({
+      from,
+      to,
+      outline,
+      values: {},
+      waived: new Set(),
+      newIdentifier: counter(),
+    });
+    expect(plan.report.adding).toEqual([
+      { kind: 'section', key: 'annex', title: 'Annex' },
+      { kind: 'component', key: 'notice', title: 'notice' },
+    ]);
+    // The new Annex, and the notice at its start: a component goes in a section the move adds.
+    const annex = plan.outline.nodes[1]!;
+    expect(annex).toMatchObject({ type: 'section', origin: 'annex' });
+    expect(annex.children[0]).toMatchObject({
+      type: 'reference',
+      component: NOTICE,
+      origin: 'notice',
+      mode: { kind: 'approved' },
+    });
+    // Declined, it is neither added nor missing: the move records it waived (TPL-029).
+    const declined = planTemplateMove({
+      from,
+      to,
+      outline,
+      values: {},
+      waived: new Set(),
+      declined: new Set(['annex', 'notice']),
+      newIdentifier: counter(),
+    });
+    expect(declined.report.adding).toEqual([]);
+    expect(declined.outline.nodes).toHaveLength(1);
+    // A key already waived is not added again.
     expect(
-      planTemplateMove({ from, to, outline, values: {}, waived: new Set(['notice']) }).report
-        .components,
-    ).toEqual([]);
+      planTemplateMove({
+        from,
+        to,
+        outline,
+        values: {},
+        waived: new Set(['annex']),
+        newIdentifier: counter(),
+      }).report.adding.map((each) => each.key),
+    ).toEqual(['notice']);
   });
 });

@@ -13343,9 +13343,18 @@
       "area": "TPL",
       "statement": "A required component (TPL-014) must declare where it sits: at a position in the starting outline, or as document-level matter the publishing layout places (**PUB-088**)",
       "tranche": "T4",
-      "status": "Specified",
+      "status": "Superseded by TPL-073",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 94
+    },
+    {
+      "id": "TPL-073",
+      "area": "TPL",
+      "statement": "A required component (TPL-014) must declare where it sits in the starting outline: at the start or end of a starting section, or at the start or end of the outline's front matter, body or appendices",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 95
     },
     {
       "id": "TPL-017",
@@ -13354,7 +13363,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 100
+      "line": 101
     },
     {
       "id": "TPL-018",
@@ -13363,7 +13372,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "TPL-019",
@@ -13372,7 +13381,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-066",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "TPL-020",
@@ -13381,7 +13390,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 103
+      "line": 104
     },
     {
       "id": "TPL-021",
@@ -13390,7 +13399,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "TPL-041",
@@ -13399,7 +13408,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-068",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "TPL-042",
@@ -13408,7 +13417,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "TPL-045",
@@ -13417,7 +13426,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "TPL-066",
@@ -13426,7 +13435,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "TPL-067",
@@ -13435,7 +13444,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "TPL-068",
@@ -13444,7 +13453,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "TPL-069",
@@ -13453,7 +13462,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "TPL-022",
@@ -13462,7 +13471,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-062",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "TPL-062",
@@ -13471,7 +13480,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "TPL-063",
@@ -13480,7 +13489,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "TPL-064",
@@ -13489,7 +13498,7 @@
       "tranche": "T4",
       "status": "Superseded by TPL-072",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "TPL-072",
@@ -13498,7 +13507,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "TPL-051",
@@ -13507,7 +13516,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "TPL-023",
@@ -13516,7 +13525,7 @@
       "tranche": "T2",
       "status": "Superseded by TPL-065",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "TPL-065",
@@ -13525,7 +13534,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "TPL-024",
@@ -13534,7 +13543,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "TPL-025",
@@ -13543,7 +13552,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "TPL-026",
@@ -13552,7 +13561,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "TPL-050",
@@ -13561,7 +13570,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "TPL-048",
@@ -13570,7 +13579,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "TPL-027",
@@ -13579,7 +13588,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "TPL-028",
@@ -13588,7 +13597,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "TPL-029",
@@ -13597,7 +13606,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "TPL-030",
@@ -13606,7 +13615,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "TPL-044",
@@ -13615,7 +13624,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "TPL-031",
@@ -13624,7 +13633,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "TPL-032",
@@ -13633,7 +13642,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "TPL-033",
@@ -13642,7 +13651,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "TPL-034",
@@ -13651,7 +13660,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "TPL-035",
@@ -13660,7 +13669,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "TPL-058",
@@ -13669,7 +13678,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "TPL-036",
@@ -13678,7 +13687,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "TPL-037",
@@ -13687,7 +13696,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "TPL-038",
@@ -13696,7 +13705,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "TPL-043",
@@ -13705,7 +13714,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "TPL-055",
@@ -13714,7 +13723,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "TPL-056",
@@ -13723,7 +13732,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "TPL-057",
@@ -13732,7 +13741,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "TPL-039",
@@ -13741,7 +13750,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "TPL-040",
@@ -13750,7 +13759,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "TPL-047",
@@ -13759,7 +13768,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "VER-001",
@@ -14958,25 +14967,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 228
+      "line": 229
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "VER-N01",
@@ -15891,28 +15900,28 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 238
+      "line": 239
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "VER-Q01",
@@ -27846,6 +27855,12 @@
       "kind": "title"
     },
     {
+      "id": "TPL-073",
+      "file": "packages/domain/src/template/components.test.ts",
+      "line": 182,
+      "kind": "title"
+    },
+    {
       "id": "TPL-028",
       "file": "packages/domain/src/template/conformance.test.ts",
       "line": 88,
@@ -27900,21 +27915,27 @@
       "kind": "title"
     },
     {
+      "id": "TPL-013",
+      "file": "packages/domain/src/template/move.test.ts",
+      "line": 144,
+      "kind": "title"
+    },
+    {
       "id": "TPL-034",
       "file": "packages/domain/src/template/move.test.ts",
-      "line": 74,
+      "line": 78,
       "kind": "title"
     },
     {
       "id": "TPL-044",
       "file": "packages/domain/src/template/move.test.ts",
-      "line": 136,
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "TPL-058",
       "file": "packages/domain/src/template/move.test.ts",
-      "line": 74,
+      "line": 78,
       "kind": "title"
     },
     {

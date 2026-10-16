@@ -139409,43 +139409,33 @@
                           },
                           "description": "Each value the move would not carry forward, as a component type change names them"
                         },
-                        "missing": {
+                        "adding": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "section",
+                                  "component"
+                                ]
+                              },
                               "key": {
                                 "type": "string"
                               },
                               "title": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "A section's title, or a component's key"
                               }
                             },
                             "required": [
+                              "kind",
                               "key",
                               "title"
                             ]
                           },
-                          "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
-                        },
-                        "components": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string"
-                              },
-                              "component": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "key",
-                              "component"
-                            ]
-                          },
-                          "description": "Each component the newer version requires that the document lacks, by its key"
+                          "description": "Each section and component the newer version requires that the document lacks, which the move adds where the template places it unless declined (#660)"
                         }
                       },
                       "required": [
@@ -139453,8 +139443,7 @@
                         "layout",
                         "fields",
                         "notCarried",
-                        "missing",
-                        "components"
+                        "adding"
                       ]
                     }
                   },
@@ -139482,8 +139471,7 @@
                     },
                     "fields": [],
                     "notCarried": [],
-                    "missing": [],
-                    "components": []
+                    "adding": []
                   }
                 }
               }
@@ -139823,6 +139811,30 @@
                       }
                     ],
                     "description": "The template's newest version, as the preview named it"
+                  },
+                  "declined": {
+                    "description": "Each section or component the move would add that the author leaves out instead, with a reason; refused, reason_required, where one has none",
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "reason": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "description": "Why it is left out: kept on the document (TPL-029)"
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    }
                   }
                 },
                 "required": [
@@ -139977,43 +139989,33 @@
                           },
                           "description": "Each value the move would not carry forward, as a component type change names them"
                         },
-                        "missing": {
+                        "adding": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "section",
+                                  "component"
+                                ]
+                              },
                               "key": {
                                 "type": "string"
                               },
                               "title": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "A section's title, or a component's key"
                               }
                             },
                             "required": [
+                              "kind",
                               "key",
                               "title"
                             ]
                           },
-                          "description": "Each section the newer version requires that the document lacks, to add or remove with a reason"
-                        },
-                        "components": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string"
-                              },
-                              "component": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "key",
-                              "component"
-                            ]
-                          },
-                          "description": "Each component the newer version requires that the document lacks, by its key"
+                          "description": "Each section and component the newer version requires that the document lacks, which the move adds where the template places it unless declined (#660)"
                         }
                       },
                       "required": [
@@ -140021,8 +140023,7 @@
                         "layout",
                         "fields",
                         "notCarried",
-                        "missing",
-                        "components"
+                        "adding"
                       ]
                     }
                   },
@@ -140047,8 +140048,7 @@
                     },
                     "fields": [],
                     "notCarried": [],
-                    "missing": [],
-                    "components": []
+                    "adding": []
                   }
                 }
               }
@@ -195286,6 +195286,14 @@
                                     "start",
                                     "end"
                                   ]
+                                },
+                                "matter": {
+                                  "type": "string",
+                                  "enum": [
+                                    "front",
+                                    "body",
+                                    "appendix"
+                                  ]
                                 }
                               },
                               "required": [
@@ -200415,6 +200423,14 @@
                                   "enum": [
                                     "start",
                                     "end"
+                                  ]
+                                },
+                                "matter": {
+                                  "type": "string",
+                                  "enum": [
+                                    "front",
+                                    "body",
+                                    "appendix"
                                   ]
                                 }
                               },

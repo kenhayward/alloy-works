@@ -178,4 +178,45 @@ describe('required components on a template (the R9 plan, R9-A to R9-D)', () => 
     expect(missingComponents(parsed, removed.outline, new Set(['notice']))).toEqual([]);
     expect(missingComponents(parsed, outline)).toEqual([]);
   });
+
+  it('TPL-073 places a top-level component as front matter, body or an appendix, as the template says, and refuses matter on one in a section', () => {
+    const parsed = definition([
+      {
+        key: 'statement',
+        component: METHOD,
+        mode: { kind: 'latest' },
+        place: { section: null, at: 'start', matter: 'front' },
+      },
+      {
+        key: 'notice',
+        component: NOTICE,
+        mode: { kind: 'latest' },
+        place: { section: null, at: 'end', matter: 'appendix' },
+      },
+    ]).data!;
+    const answer = resolveTemplate(parsed, found());
+    if (!answer.ok) throw new Error('unresolved');
+    let n = 0;
+    const { outline } = materialiseTemplate(
+      answer,
+      { title: 'Site 4', language: 'en-GB', direction: 'ltr' },
+      () => 'a'.repeat(25) + 'bcdefghijklmnopqrstuvwxyz'[(n += 1) - 1]!,
+    );
+    expect(outline.nodes.map((node) => [node.origin, node.matter])).toEqual([
+      ['statement', 'front'],
+      ['summary', 'front'],
+      ['method', 'body'],
+      ['annex', 'appendix'],
+      ['notice', 'appendix'],
+    ]);
+    expect(
+      definition([
+        {
+          key: 'x',
+          component: METHOD,
+          place: { section: 'method', at: 'start', matter: 'appendix' },
+        },
+      ]).success,
+    ).toBe(false);
+  });
 });
