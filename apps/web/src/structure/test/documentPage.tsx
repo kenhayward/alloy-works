@@ -220,6 +220,9 @@ export const previewLinks = {
  *
  * Built on the house shape (`NewComponent.test.tsx`): `openapi-fetch` calls `fetch` with a `Request`.
  */
+/** The one condition axis the fake declares where asked (the R12 plan). */
+export const AUDIENCE_AXIS = 'aa000000-0000-4000-8000-000000000001';
+
 export function service(
   start: OutlineDocument,
   options: {
@@ -258,6 +261,8 @@ export function service(
     moves?: Record<string, Standing>;
     /** The template the view names, with its required keys and departures (WF6-A). */
     template?: unknown;
+    /** Whether the environment declares the Audience axis: Regulator and Internal (the R12 plan). */
+    axes?: boolean;
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -380,6 +385,35 @@ export function service(
       );
     }
     if (url === '/v1/components') return json(200, options.components ?? COMPONENTS);
+    if (options.axes && url === '/v1/definitions') {
+      return json(200, {
+        items: [
+          {
+            id: AUDIENCE_AXIS,
+            kind: 'conditionAxis',
+            name: 'Audience',
+            key: 'audience',
+            version: 1,
+          },
+        ],
+        next: null,
+      });
+    }
+    if (options.axes && url === `/v1/definitions/${AUDIENCE_AXIS}`) {
+      return json(200, {
+        id: AUDIENCE_AXIS,
+        kind: 'conditionAxis',
+        version: 1,
+        definition: {
+          name: 'Audience',
+          key: 'audience',
+          values: [
+            { key: 'regulator', label: 'Regulator' },
+            { key: 'internal', label: 'Internal' },
+          ],
+        },
+      });
+    }
     if (url === '/v1/access' && options.administers !== undefined) {
       return json(200, {
         target: `artifact:${DOCUMENT}`,

@@ -64,6 +64,7 @@ import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status
 import { RelationshipsButton } from '../reuse/Relationships.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
+import { ConditionDialog, declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, tableKey, type BindingState } from './bindingContexts.js';
 import { useRevisionAsk } from './RevisionAsk.js';
@@ -496,6 +497,9 @@ function announce(
       if (operation.matter !== undefined) {
         return `${nodeName(node, names)} ${MATTERS[operation.matter]}.`;
       }
+      if (operation.conditions !== undefined) {
+        return `${nodeName(node, names)} is now kept for ${operation.conditions.length === 0 ? 'every reader' : 'some readers'}.`;
+      }
       if (operation.mode?.kind === 'latest') {
         return `${nodeName(node, names)} now shows its latest version.`;
       }
@@ -663,6 +667,20 @@ export function DocumentPage({
   >(new Map());
   const [unoverridden, setUnoverridden] = useState<ReadonlyMap<string, unknown>>(new Map());
   const [overriding, setOverriding] = useState<string | null>(null);
+  // The node whose conditions the Condition dialog is open for (REU-021; the R12 plan).
+  const [conditioning, setConditioning] = useState<string | null>(null);
+  // The declared axes, read once, which the outline names a node's conditions by; keys until read.
+  const [axes, setAxes] = useState<readonly OfferedAxis[]>([]);
+  useEffect(() => {
+    let live = true;
+    declaredAxes(client).then(
+      (found) => live && setAxes(found),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [client]);
   // Whether the reader may edit each occurrence's component now, and who holds it (CNT-074).
   const [editable, setEditable] = useState<ReadonlyMap<string, Editable>>(new Map());
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
@@ -2241,6 +2259,8 @@ export function DocumentPage({
             <OutlinePanel
               outline={document.outline}
               requiredSections={document.template?.required ?? []}
+              conditionAxes={axes}
+              {...(document.mayEdit && authoring ? { onConditions: setConditioning } : {})}
               marks={outlineMarks}
               {...(referencesTo === undefined ? {} : { referencesTo })}
               head={
@@ -2640,6 +2660,36 @@ export function DocumentPage({
               </div>
             )}
             <div ref={textColumn} className={`${styles['text']} aw-desk`}>
+              {conditioning !== null &&
+                (() => {
+                  // A node's conditions, whole, through the outline's `set` (the R12 plan).
+                  let held: readonly { axis: string; values: string[] }[] = [];
+                  walkOutline(document.outline.nodes, (node) => {
+                    if (node.id === conditioning) held = node.conditions ?? [];
+                  });
+                  const node = conditioning;
+                  const send = (conditions: readonly { axis: string; values: string[] }[]) => {
+                    setConditioning(null);
+                    void apply(
+                      { operation: 'set', node, conditions: [...conditions] } as OutlineOperation,
+                      false,
+                    );
+                  };
+                  return (
+                    <ConditionDialog
+                      client={client}
+                      held={held}
+                      onSet={(choice) =>
+                        send([
+                          ...held.filter((each) => each.axis !== choice.axis),
+                          { axis: choice.axis, values: [...choice.values] },
+                        ])
+                      }
+                      onRemove={(axis) => send(held.filter((each) => each.axis !== axis))}
+                      onCancel={() => setConditioning(null)}
+                    />
+                  );
+                })()}
               {overriding !== null && unoverridden.has(overriding) && (
                 // A reference's overrides, this document's alone (REU-011; the R4 plan, R4-G).
                 <OverrideDialog

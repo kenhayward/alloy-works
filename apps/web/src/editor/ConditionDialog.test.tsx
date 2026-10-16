@@ -71,7 +71,7 @@ describe('the Condition dialog (the R6 plan, R6-H)', () => {
     render(
       <ConditionDialog
         client={service()}
-        held={[{ id: 'c1', axis: 'audience', values: ['regulator'] }]}
+        held={[{ axis: 'audience', values: ['regulator'] }]}
         onSet={() => undefined}
         onAlternative={alternative}
         onRemove={removed}

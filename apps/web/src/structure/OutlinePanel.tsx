@@ -2,6 +2,7 @@ import type { FieldView } from '@alloy-works/api-client';
 import {
   canonicaliseTitle,
   conditions,
+  conditionsSelect,
   hasText,
   mayBeFront,
   number,
@@ -177,6 +178,56 @@ export interface NodeMarks {
   readonly failedValues?: number;
 }
 
+/** A condition axis as the page names it: its key, its name and its values' labels (the R12 plan). */
+export interface NamedAxis {
+  readonly key: string;
+  readonly name: string;
+  readonly values: readonly { readonly key: string; readonly label: string }[];
+}
+
+/**
+ * What a node's conditions keep it for, in words (REU-026; the R12 plan): each axis by its name and
+ * the values by their labels, keys where the axes are not read; and, where this document's own profile
+ * does not select it, that it is left out. Null where it carries none.
+ */
+export function conditionsWords(
+  conditions: OutlineViewNode['conditions'],
+  axes: readonly NamedAxis[],
+  leftOut: boolean,
+): string | null {
+  if (conditions === undefined) return leftOut ? 'Left out by this document’s profile' : null;
+  const said = conditions
+    .map((each) => {
+      const axis = axes.find((one) => one.key === each.axis);
+      const values = each.values.map(
+        (value) => axis?.values.find((one) => one.key === value)?.label ?? value,
+      );
+      return `${axis?.name ?? each.axis}: ${values.join(', ')}`;
+    })
+    .join('; ');
+  return `Kept for ${said}${leftOut ? '; left out by this document’s profile' : ''}`;
+}
+
+/** The nodes this document's own profile leaves out, each under one it leaves out among them. */
+function leftOutBy(
+  nodes: readonly OutlineViewNode[],
+  profile: OutlineView['profile'],
+): ReadonlySet<string> {
+  const left = new Set<string>();
+  const walk = (list: readonly OutlineViewNode[], out: boolean) => {
+    for (const node of list) {
+      const here =
+        out ||
+        (node.conditions !== undefined &&
+          !conditionsSelect(node.conditions, profile?.values ?? {}, () => {}));
+      if (here) left.add(node.id);
+      walk(node.children, here);
+    }
+  };
+  walk(nodes, false);
+  return left;
+}
+
 /** A node's marks in words, each a phrase; none where nothing matters. */
 export function marksWords(marks: NodeMarks | undefined): string[] {
   if (marks === undefined) return [];
@@ -196,6 +247,10 @@ export interface OutlinePanelProps {
    * a reason (TPL-029, TPL-044).
    */
   readonly requiredSections?: readonly string[];
+  /** The condition axes declared, which a node's conditions are named by; keys where none are read. */
+  readonly conditionAxes?: readonly NamedAxis[];
+  /** Opens the Condition dialog for a node; absent, its conditions are said and not changed here. */
+  readonly onConditions?: (node: string) => void;
   /** What stands above the panel's content in its box: the pane's tab strip. */
   readonly head?: ReactNode;
   /** The tab and the panel it shows, by id, when the panel is one tab's (interface slice 15). */
@@ -418,9 +473,12 @@ export function OutlinePanel({
   schemas,
   people,
   requiredSections = [],
+  conditionAxes = [],
+  onConditions,
 }: OutlinePanelProps) {
   const prefix = useId();
   const nodes = outline.nodes;
+  const leftOut = useMemo(() => leftOutBy(nodes, outline.profile), [nodes, outline.profile]);
   const [active, setActive] = useState<string | null>(null);
   // The node to put focus on once it is in the page. A moved node is a new element where it lands,
   // because it sits in a different list, so focus is asked for after the answer rather than kept.
@@ -935,6 +993,9 @@ export function OutlinePanel({
             [
               shown === undefined ? null : numberId,
               marksWords(marks?.get(node.id)).length > 0 ? `${labelId}-marks` : null,
+              conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id)) === null
+                ? null
+                : `${labelId}-conditions`,
             ]
               .filter((each) => each !== null)
               .join(' ') || undefined
@@ -995,6 +1056,11 @@ export function OutlinePanel({
             {marksWords(marks?.get(node.id)).length > 0 && (
               <span id={`${labelId}-marks`} className={styles['nodeMarks']}>
                 {marksWords(marks?.get(node.id)).join('; ')}
+              </span>
+            )}
+            {conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id)) !== null && (
+              <span id={`${labelId}-conditions`} className={styles['nodeMarks']}>
+                {conditionsWords(node.conditions, conditionAxes, leftOut.has(node.id))}
               </span>
             )}
           </div>
@@ -1202,6 +1268,18 @@ export function OutlinePanel({
                 onNotice={onNotice}
                 onRemove={() => setConfirming(selected.id)}
                 referencedBy={referring(selected.id)}
+                conditions={
+                  <ConditionsRow
+                    node={selected}
+                    names={names}
+                    said={conditionsWords(
+                      selected.conditions,
+                      conditionAxes,
+                      leftOut.has(selected.id),
+                    )}
+                    {...(onConditions ? { onConditions } : {})}
+                  />
+                }
                 language={outline.language}
                 direction={outline.direction}
                 onEquation={askEquation}
@@ -1619,8 +1697,11 @@ function NodeDetails({
   people,
   link,
   referencedBy,
+  conditions,
 }: {
   node: OutlineViewNode;
+  /** What it is kept for, and how to change that (REU-021, REU-026; the R12 plan). */
+  conditions?: ReactNode;
   /** The node's link (`NodeLink`), a row of its own before Remove. */
   link?: ReactNode;
   /** What in the document refers to it (STR-074), a row after its link. */
@@ -1800,6 +1881,7 @@ function NodeDetails({
           </span>
         </div>
       )}
+      {conditions}
       {link}
       {referencedBy}
       <div className={styles['foot']}>
@@ -1808,6 +1890,41 @@ function NodeDetails({
           {node.type === 'section' ? 'Remove section' : 'Remove component'}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * **What a node is kept for** (REU-021, REU-026; the R12 plan): its conditions in words, or every
+ * reader, and **Set condition**, which opens the Condition dialog the page holds.
+ */
+function ConditionsRow({
+  node,
+  names,
+  said,
+  onConditions,
+}: {
+  node: OutlineViewNode;
+  names: Names;
+  said: string | null;
+  onConditions?: (node: string) => void;
+}) {
+  return (
+    <div className={styles['partRow']}>
+      <span className={styles['rowLabel']}>Conditions</span>
+      <span className={styles['stack']}>
+        <span>{said ?? 'Kept for every reader'}</span>
+        {onConditions && (
+          <button
+            type="button"
+            className={styles['named']}
+            aria-label={`Set condition on ${nodeName(node, names)}`}
+            onClick={() => onConditions(node.id)}
+          >
+            Set condition
+          </button>
+        )}
+      </span>
     </div>
   );
 }

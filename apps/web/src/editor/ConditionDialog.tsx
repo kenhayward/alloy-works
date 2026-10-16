@@ -69,10 +69,11 @@ export async function declaredAxes(client: Client): Promise<OfferedAxis[]> {
 
 export interface ConditionDialogProps {
   readonly client: Client;
-  /** The conditions the selection already carries. */
-  readonly held: readonly ConditionHeld[];
+  /** The conditions the selection already carries: a mark's, a node's or a block's (the R12 plan). */
+  readonly held: readonly Pick<ConditionHeld, 'axis' | 'values'>[];
   readonly onSet: (choice: ConditionChoice) => void;
-  readonly onAlternative: (choice: ConditionChoice) => void;
+  /** Offered for text alone: a section or a block is not copied beside itself (the R12 plan). */
+  readonly onAlternative?: (choice: ConditionChoice) => void;
   readonly onRemove: (axis: string) => void;
   readonly onCancel: () => void;
 }
@@ -197,7 +198,7 @@ export function ConditionDialog({
                   </label>
                 ))}
               </fieldset>
-              {already !== undefined && others.length > 0 && (
+              {onAlternative !== undefined && already !== undefined && others.length > 0 && (
                 <p className={own['said']}>{ALTERNATIVE_SAID}</p>
               )}
               <div className={own['actions']}>
@@ -208,7 +209,7 @@ export function ConditionDialog({
                 >
                   Set condition
                 </button>
-                {already !== undefined && others.length > 0 && (
+                {onAlternative !== undefined && already !== undefined && others.length > 0 && (
                   <button
                     type="button"
                     onClick={() =>

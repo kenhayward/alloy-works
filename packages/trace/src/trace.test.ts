@@ -864,6 +864,7 @@ describe('the citations in the committed model', () => {
     // 963 (2026-10-11): CP2's comparison routes.
     // 959 (2026-10-11): CP1's comparison in the domain.
     // 954 (2026-10-11): BL4's baseline page and its links.
+    // 1534 (2026-10-16): R12a's conditions in the outline - REU-021 and REU-026.
     // 1532 (2026-10-16): R11c's baseline profile and gate, and the final review - VER-020, LIF-065, STR-036.
     // 1527 (2026-10-16): R11b's conditions on numbered blocks, through the publish, the editor and paste.
     // 1524 (2026-10-16): R11a's conditions on outline nodes - REU-021, REU-024, STR-020, STR-030, REU-053,
@@ -922,7 +923,7 @@ describe('the citations in the committed model', () => {
     // 875 (2026-10-11): TG3's widths, its final review among them.
     // 866 (2026-10-11): TG2's groups on the page and transposition.
     // 851 (2026-10-11): TG1's groups, in the domain, the worker and Word.
-    expect(model.citations).toHaveLength(1532);
+    expect(model.citations).toHaveLength(1534);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1020,6 +1021,7 @@ describe('scanning the repository for test files', () => {
     // 91, from 90 (2026-10-15): structure/PlaceSection.test.tsx, citing REU-046 and REU-054.
     // 92, from 91 (2026-10-15): structure/OverrideDialog.test.tsx, citing REU-011 and REU-015.
     // 98, from 97 (2026-10-16): reuse/Relationships.test.tsx, citing REL-025 to REL-028 and REL-051.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(98);
+    // 99, from 98 (2026-10-16): structure/DocumentPage.conditions.test.tsx, citing REU-021 and REU-026.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(99);
   });
 });

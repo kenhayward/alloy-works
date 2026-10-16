@@ -424,6 +424,7 @@ describe('the domain package', () => {
         'conditionAxisDefinitionSchema',
         'profileSchema',
         // R11: an outline as a profile selects it.
+        'conditionsSelect',
         'selectOutline',
         'unsetAxes',
         'storedProfileSchema',
