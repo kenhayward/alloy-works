@@ -508,18 +508,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return reply.redirect('/', 302);
   }
 
+  const { boundCreation, ...connectionRoutes } = connectionHandlers(
+    db,
+    tenantOf,
+    principalOf,
+    options.connector,
+    options.objects,
+    options.events,
+  );
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
-    ...documentHandlers(db, tenantOf, principalOf),
+    ...documentHandlers(db, tenantOf, principalOf, boundCreation),
     ...templateHandlers(db, tenantOf, principalOf),
-    ...connectionHandlers(
-      db,
-      tenantOf,
-      principalOf,
-      options.connector,
-      options.objects,
-      options.events,
-    ),
+    ...connectionRoutes,
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),

@@ -147,6 +147,11 @@ export const cohortRoutes = {
         description: 'No such space, template or query result the caller may read',
         schema: ErrorBody,
       },
+      409: {
+        description:
+          "`cohort_bound`: the template's required components run queries, which documents made in bulk cannot run yet",
+        schema: ErrorBody,
+      },
     },
   },
   getCohort: {

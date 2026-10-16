@@ -16,6 +16,7 @@ import {
   repointsBetween,
   type Repoint,
   resolveTemplate,
+  type ResolvedTemplate,
   seededValues,
   walkOutline,
   writtenValues,
@@ -98,6 +99,11 @@ export interface NewDocument {
   readonly template?: string;
   /** Its template's parameters' values, by name (TP1-G); none for a blank document. */
   readonly parameters?: Readonly<Record<string, unknown>>;
+  /**
+   * Its identifier and its nodes', chosen before it is written (the R9 plan, R9-E): a document whose
+   * queries run before it is made is prepared with these, then made again with them.
+   */
+  readonly identity?: { readonly artifactId: string; readonly newIdentifier: () => string };
 }
 
 /**
@@ -290,6 +296,18 @@ export async function resolveForDocument(
   };
 }
 
+/** A resolution read before, resolved again from what it holds: its query set among it (TPL-070). */
+export function resolvedFrom(resolution: TemplateResolution): ResolvedTemplate {
+  return resolveTemplate(resolution.definition, {
+    kinds: new Map(resolution.references.kinds),
+    schemas: [...resolution.references.schemas],
+    fields: [...resolution.references.fields],
+    // A resolution stored before R9 read no components: its template required none.
+    components: new Map(resolution.references.components ?? []),
+    definitions: new Set(resolution.references.definitions ?? []),
+  });
+}
+
 /**
  * A document made from a resolution read before (R7-D): its parameters checked, its outline
  * materialised and its version written, in the caller's transaction, so a refusal writes nothing. The
@@ -311,14 +329,7 @@ export async function createFromResolution(
   const heading = { title, language: input.language, direction: input.direction };
   const given = input.parameters ?? {};
   const template = { id: resolution.template.id, definition: resolution.definition };
-  const resolved = resolveTemplate(resolution.definition, {
-    kinds: new Map(resolution.references.kinds),
-    schemas: [...resolution.references.schemas],
-    fields: [...resolution.references.fields],
-    // A resolution stored before R9 read no components: its template required none.
-    components: new Map(resolution.references.components ?? []),
-    definitions: new Set(resolution.references.definitions ?? []),
-  });
+  const resolved = resolvedFrom(resolution);
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
   // Its parameters (TP1-G), in this order: a name it does not declare, each value against its
   // declaration, the template's own parameter checks against what resolves now, and each seeded value
@@ -344,10 +355,15 @@ export async function createFromResolution(
       ),
     };
   }
-  const { outline, values } = materialiseTemplate(resolved, heading, newNodeIdentifier);
+  const { outline, values } = materialiseTemplate(
+    resolved,
+    heading,
+    input.identity?.newIdentifier ?? newNodeIdentifier,
+  );
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,
+    ...(input.identity ? { artifactId: input.identity.artifactId } : {}),
     // Each seeded field's value over its default (TPL-066's half), once: afterwards it is the author's.
     substance: { kind: 'document', content: outline, values: { ...values, ...seeded }, parameters },
   });

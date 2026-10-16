@@ -47,8 +47,22 @@ export const CreateDocumentBody = CreateComponentBody.pick({
         'or a list of them where the parameter is a list (templates.md, "Asked for when a document ' +
         'is made"). A required one must be given; none for a blank document',
     ),
+  sharesOwnView: z
+    .boolean()
+    .optional()
+    .describe(
+      "True to make a document whose required components' queries run as the caller, holding what the source shows them (DAT-091); otherwise such a creation is refused, acknowledgement_required",
+    ),
 });
 export type CreateDocumentBody = z.infer<typeof CreateDocumentBody>;
+
+/** A creation refused where a required component's query failed (the R9 plan, R9-E; TPL-024). */
+export const CreationRefusal = ErrorBody.extend({
+  failures: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe('creation_failed: each binding whose query failed, as a resolve names one'),
+});
 
 /**
  * One structural act (structure.md, "Editing the outline"): the version the caller read the outline
@@ -670,7 +684,10 @@ export const documentRoutes = {
         description:
           'The title, language or direction is not one an outline accepts; ' +
           '`template_unresolved`: a theme, layout, schema or field the template names does not ' +
-          'resolve; `parameter_invalid`: a required parameter has no value, or a value does not fit ' +
+          'resolve, or a component it requires or a query its bindings name is not there for the ' +
+          'caller to read; `acknowledgement_required`: a query a required component holds runs as the ' +
+          'caller and `sharesOwnView` was not sent; `invalid_request`: an idempotency key sent where ' +
+          'its required components run queries; `parameter_invalid`: a required parameter has no value, or a value does not fit ' +
           'its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the ' +
           'template does not declare, or any for a blank document; or `parameter_unused`, ' +
           "`parameter_field`: the template's parameters no longer fit its fields. Nothing is made",
@@ -687,7 +704,15 @@ export const documentRoutes = {
           'none the caller may read',
         schema: ErrorBody,
       },
-      409: { description: SPACE_ARCHIVED, schema: ErrorBody },
+      409: {
+        description: `${SPACE_ARCHIVED}; or \`creation_failed\`: a query a required component holds failed, each named in \`failures\`, and nothing is made (TPL-024)`,
+        schema: CreationRefusal,
+      },
+      503: {
+        description:
+          "`connector_unavailable`: the template's required components run queries and no connector is reachable",
+        schema: ErrorBody,
+      },
     },
   },
   getDocument: {

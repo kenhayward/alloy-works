@@ -191,7 +191,10 @@ export function marksWords(marks: NodeMarks | undefined): string[] {
 
 export interface OutlinePanelProps {
   readonly outline: OutlineView;
-  /** The keys of the sections the document's template requires: each removed only with a reason (TPL-029). */
+  /**
+   * The keys of the sections and components the document's template requires: each removed only with
+   * a reason (TPL-029, TPL-044).
+   */
   readonly requiredSections?: readonly string[];
   /** What stands above the panel's content in its box: the pane's tab strip. */
   readonly head?: ReactNode;
@@ -1451,10 +1454,13 @@ function ReferencedBy({
 
 const IRREVERSIBLE = 'This cannot be undone, and nothing before it can be undone afterwards.';
 
-/** Whether a node, or anything beneath it, is a section from one the template requires (TPL-029). */
+/**
+ * Whether a node, or anything beneath it, is a section or a component the template requires (TPL-029,
+ * TPL-044): each carries the key it was made for as its `origin`.
+ */
 function holdsRequired(node: OutlineViewNode | undefined, required: readonly string[]): boolean {
   if (!node || required.length === 0) return false;
-  if (node.type === 'section' && node.origin !== undefined && required.includes(node.origin)) {
+  if (node.origin !== undefined && required.includes(node.origin)) {
     return true;
   }
   return node.children.some((child) => holdsRequired(child, required));
@@ -1469,7 +1475,7 @@ function ConfirmRemoval({
   onKeep,
 }: {
   node: OutlineViewNode | undefined;
-  /** It takes a section the template requires: removed only with a reason (TPL-029). */
+  /** It takes a section or a component the template requires: removed only with a reason. */
   needsReason: boolean;
   names: Names;
   /**

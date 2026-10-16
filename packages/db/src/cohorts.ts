@@ -1,5 +1,10 @@
 import { sql } from 'kysely';
-import { createFromResolution, resolveForDocument, type TemplateResolution } from './documents.js';
+import {
+  createFromResolution,
+  resolvedFrom,
+  resolveForDocument,
+  type TemplateResolution,
+} from './documents.js';
 import { outlineDocumentSchema } from '@alloy-works/domain';
 import { loadReadableSet } from './access-facts.js';
 import { enqueueJob } from './queue.js';
@@ -56,7 +61,9 @@ export type CohortAnswer =
   | { readonly answer: 'content.invalid' }
   | { readonly answer: 'template.missing' }
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly unknown[] }
-  | { readonly answer: 'rows.invalid'; readonly detail: string };
+  | { readonly answer: 'rows.invalid'; readonly detail: string }
+  /** Its required components run queries, which a worker holding no connector cannot (R9-F). */
+  | { readonly answer: 'cohort.bound'; readonly queries: readonly string[] };
 
 /** A job over a cohort's pending rows, queued in the caller's transaction (R7-E, R7-F). */
 async function runRows(
@@ -115,6 +122,11 @@ export async function submitCohort(
   }
   const resolved = await resolveForDocument(trx, input.by, input.template);
   if (resolved.answer !== 'resolved') return resolved;
+  // The worker holds no connector (DAT-088): a template whose components run queries waits (R9-F).
+  const computed = resolvedFrom(resolved.resolution);
+  if (computed.ok && computed.querySet.length > 0) {
+    return { answer: 'cohort.bound', queries: computed.querySet };
+  }
   const { rows: made } = await sql<{ id: string }>`
     insert into cohort (space_id, template_id, resolution, title, language, direction, source,
                         requested_by)

@@ -183807,6 +183807,47 @@
               }
             }
           },
+          "409": {
+            "description": "`cohort_bound`: the template's required components run queries, which documents made in bulk cannot run yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "default": {
             "description": "An error, in the one shape every error takes",
             "content": {
@@ -187591,6 +187632,10 @@
                       "type": "string"
                     },
                     "additionalProperties": {}
+                  },
+                  "sharesOwnView": {
+                    "description": "True to make a document whose required components' queries run as the caller, holding what the source shows them (DAT-091); otherwise such a creation is refused, acknowledgement_required",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -188501,7 +188546,7 @@
             }
           },
           "400": {
-            "description": "The title, language or direction is not one an outline accepts; `template_unresolved`: a theme, layout, schema or field the template names does not resolve; `parameter_invalid`: a required parameter has no value, or a value does not fit its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the template does not declare, or any for a blank document; or `parameter_unused`, `parameter_field`: the template's parameters no longer fit its fields. Nothing is made",
+            "description": "The title, language or direction is not one an outline accepts; `template_unresolved`: a theme, layout, schema or field the template names does not resolve, or a component it requires or a query its bindings name is not there for the caller to read; `acknowledgement_required`: a query a required component holds runs as the caller and `sharesOwnView` was not sent; `invalid_request`: an idempotency key sent where its required components run queries; `parameter_invalid`: a required parameter has no value, or a value does not fit its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the template does not declare, or any for a blank document; or `parameter_unused`, `parameter_field`: the template's parameters no longer fit its fields. Nothing is made",
             "content": {
               "application/json": {
                 "schema": {
@@ -188848,7 +188893,59 @@
             }
           },
           "409": {
-            "description": "`space_archived`: the space is archived, and nothing new is made in it",
+            "description": "`space_archived`: the space is archived, and nothing new is made in it; or `creation_failed`: a query a required component holds failed, each named in `failures`, and nothing is made (TPL-024)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "failures": {
+                      "description": "creation_failed: each binding whose query failed, as a resolve names one",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`connector_unavailable`: the template's required components run queries and no connector is reachable",
             "content": {
               "application/json": {
                 "schema": {

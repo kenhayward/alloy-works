@@ -18,6 +18,7 @@ import { datesView, pastReviewOf } from './dates.js';
 import { cursorFor, pageAsked } from './listing.js';
 import {
   createDocument,
+  type CreateDocumentAnswer,
   documentLayout,
   documentRules,
   documentTemplate,
@@ -58,6 +59,7 @@ import {
   previewPlacement,
   applyOutlineOverrides,
 } from '@alloy-works/db';
+import type { AfterCommit } from './after-commit.js';
 import {
   conditions,
   decide,
@@ -371,10 +373,73 @@ async function latestOutline(trx: TenantTransaction, id: string) {
  * the transaction its permission was decided in; none changes a fact a decision reads - creating an
  * artifact fires no epoch trigger, and a version is not a grant - so none declares `changesAccess`.
  */
+/**
+ * A document just made, as its creator sees it; or the refusal its answer is (templates.md). Shared by
+ * a creation whose queries ran first (the R9 plan, R9-E).
+ */
+export async function createdView(
+  trx: TenantTransaction,
+  principalId: string,
+  facts: Authorised['facts'],
+  space: string,
+  answer: CreateDocumentAnswer,
+) {
+  // The space was decided on before this ran, so `space.missing` here means it went in the moment
+  // between; answered as absent either way, never as a refusal that says it exists.
+  // A template the caller may not read is answered as one that does not exist (TE-I).
+  if (answer.answer === 'space.missing' || answer.answer === 'template.missing') {
+    throw notFound();
+  }
+  if (answer.answer === 'template.unresolved') {
+    throw refused(
+      400,
+      'template.unresolved',
+      'This template names a theme, layout, schema or field that does not resolve.',
+      { unresolved: answer.unresolved },
+    );
+  }
+  if (answer.answer === 'content.invalid') {
+    throw refused(
+      400,
+      'content.invalid',
+      'A document needs a title and a language tag such as en-GB.',
+    );
+  }
+  if (answer.answer !== 'created') throw refusedParameters(answer);
+  const held = await trx
+    .selectFrom('space')
+    .select(['id', 'name'])
+    .where('id', '=', space)
+    .executeTakeFirstOrThrow();
+  // Decided against the space, as `createComponent` decides it: the document did not exist when
+  // the facts were loaded, so no denial on it can exist yet.
+  return documentView(
+    {
+      trx,
+      principalId,
+      mayEdit: decide('edit', facts).allowed,
+      mayPublish: decide('publish', facts).allowed,
+      mayRetire: decide('retire', facts).allowed,
+      mayHold: administersTenant(facts),
+      facts,
+      mayComment: decide('comment', facts).allowed,
+      mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+      maySuggest: decide('suggest', facts).allowed,
+    },
+    { id: answer.version.artifactId, space: held },
+    answer.version,
+  );
+}
+
 export function documentHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
+  /** A creation whose template runs queries, or undefined where it runs none (R9-E). */
+  boundCreation?: (
+    request: FastifyRequest,
+    authorised: Authorised,
+  ) => Promise<AfterCommit<Awaited<ReturnType<typeof createdView>>> | undefined>,
 ) {
   return {
     listDocuments: async (request: FastifyRequest) => {
@@ -420,9 +485,13 @@ export function documentHandlers(
       };
     },
 
-    createDocument: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {
+    createDocument: async (request: FastifyRequest, authorised: Authorised) => {
+      const { trx, principalId } = authorised;
       const { space } = request.params as SpaceParams;
       const body = request.body as CreateDocumentBody;
+      // A template whose required components run queries: they run first (the R9 plan, R9-E).
+      const bound = boundCreation && (await boundCreation(request, authorised));
+      if (bound) return bound;
       const answer = await createDocument(trx, {
         spaceId: space,
         title: body.title,
@@ -432,51 +501,7 @@ export function documentHandlers(
         ...(body.template === undefined ? {} : { template: body.template }),
         ...(body.parameters === undefined ? {} : { parameters: body.parameters }),
       });
-      // The space was decided on before this ran, so `space.missing` here means it went in the moment
-      // between; answered as absent either way, never as a refusal that says it exists.
-      // A template the caller may not read is answered as one that does not exist (TE-I).
-      if (answer.answer === 'space.missing' || answer.answer === 'template.missing') {
-        throw notFound();
-      }
-      if (answer.answer === 'template.unresolved') {
-        throw refused(
-          400,
-          'template.unresolved',
-          'This template names a theme, layout, schema or field that does not resolve.',
-          { unresolved: answer.unresolved },
-        );
-      }
-      if (answer.answer === 'content.invalid') {
-        throw refused(
-          400,
-          'content.invalid',
-          'A document needs a title and a language tag such as en-GB.',
-        );
-      }
-      if (answer.answer !== 'created') throw refusedParameters(answer);
-      const held = await trx
-        .selectFrom('space')
-        .select(['id', 'name'])
-        .where('id', '=', space)
-        .executeTakeFirstOrThrow();
-      // Decided against the space, as `createComponent` decides it: the document did not exist when
-      // the facts were loaded, so no denial on it can exist yet.
-      return documentView(
-        {
-          trx,
-          principalId,
-          mayEdit: decide('edit', facts).allowed,
-          mayPublish: decide('publish', facts).allowed,
-          mayRetire: decide('retire', facts).allowed,
-          mayHold: administersTenant(facts),
-          facts,
-          mayComment: decide('comment', facts).allowed,
-          mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
-          maySuggest: decide('suggest', facts).allowed,
-        },
-        { id: answer.version.artifactId, space: held },
-        answer.version,
-      );
+      return createdView(trx, principalId, authorised.facts, space, answer);
     },
 
     getDocument: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {

@@ -10,6 +10,7 @@ import {
   DOCUMENT,
   METHOD,
   outline,
+  reference,
   RESULTS,
   section,
   service,
@@ -77,6 +78,31 @@ describe("a document's template (templates.md; the WF6 plan, WF6-A, WF6-B)", () 
     await waitFor(() =>
       expect(fake.edits().at(-1)?.body).toMatchObject({
         operation: { operation: 'remove', node: METHOD, reason: 'Covered by the appendix.' },
+      }),
+    );
+  });
+
+  it('TPL-044 asks for a reason before removing a component the template requires, and sends it', async () => {
+    const NOTICE = 'nnnnnnnnnnnnnnnnnnnnnnnnnn';
+    const fake = service(
+      outline([
+        section(METHOD, 'Method'),
+        { ...reference(NOTICE, 'latest'), origin: 'notice' } as OutlineNode,
+      ]),
+      { template: { ...TEMPLATE, required: ['notice'] } },
+    );
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
+    await userEvent.click(await screen.findByRole('treeitem', { name: /Install the printer/ }));
+    await userEvent.keyboard('{Delete}');
+    const question = screen.getByRole('group', { name: 'Confirm removal' });
+    await userEvent.type(
+      within(question).getByRole('textbox', { name: 'Why it is removed' }),
+      'Issued separately.',
+    );
+    await userEvent.click(within(question).getByRole('button', { name: 'Remove' }));
+    await waitFor(() =>
+      expect(fake.edits().at(-1)?.body).toMatchObject({
+        operation: { operation: 'remove', node: NOTICE, reason: 'Issued separately.' },
       }),
     );
   });

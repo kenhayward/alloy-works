@@ -60700,6 +60700,26 @@ export interface operations {
                     };
                 };
             };
+            /** @description `cohort_bound`: the template's required components run queries, which documents made in bulk cannot run yet */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
@@ -62014,6 +62034,8 @@ export interface operations {
                     parameters?: {
                         [key: string]: unknown;
                     };
+                    /** @description True to make a document whose required components' queries run as the caller, holding what the source shows them (DAT-091); otherwise such a creation is refused, acknowledgement_required */
+                    sharesOwnView?: boolean;
                 };
             };
         };
@@ -62333,7 +62355,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The title, language or direction is not one an outline accepts; `template_unresolved`: a theme, layout, schema or field the template names does not resolve; `parameter_invalid`: a required parameter has no value, or a value does not fit its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the template does not declare, or any for a blank document; or `parameter_unused`, `parameter_field`: the template's parameters no longer fit its fields. Nothing is made */
+            /** @description The title, language or direction is not one an outline accepts; `template_unresolved`: a theme, layout, schema or field the template names does not resolve, or a component it requires or a query its bindings name is not there for the caller to read; `acknowledgement_required`: a query a required component holds runs as the caller and `sharesOwnView` was not sent; `invalid_request`: an idempotency key sent where its required components run queries; `parameter_invalid`: a required parameter has no value, or a value does not fit its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the template does not declare, or any for a blank document; or `parameter_unused`, `parameter_field`: the template's parameters no longer fit its fields. Nothing is made */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -62466,8 +62488,32 @@ export interface operations {
                     };
                 };
             };
-            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            /** @description `space_archived`: the space is archived, and nothing new is made in it; or `creation_failed`: a query a required component holds failed, each named in `failures`, and nothing is made (TPL-024) */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description creation_failed: each binding whose query failed, as a resolve names one */
+                        failures?: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: the template's required components run queries and no connector is reachable */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

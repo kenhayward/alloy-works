@@ -503,6 +503,11 @@ export {
 } from './dates.js';
 export {
   createDocument,
+  createFromResolution,
+  newNodeIdentifier,
+  resolvedFrom,
+  resolveForDocument,
+  type TemplateResolution,
   editOutline,
   recordDocumentValues,
   recordDocumentParameters,

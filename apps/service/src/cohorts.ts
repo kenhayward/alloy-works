@@ -142,6 +142,12 @@ export function cohortHandlers(
           );
         case 'rows.invalid':
           throw rowsRefused(answer.detail);
+        case 'cohort.bound':
+          throw refused(
+            409,
+            'cohort.bound',
+            "This template's required components run queries, which documents made in bulk cannot run yet. Make each document on its own.",
+          );
       }
     },
 

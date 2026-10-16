@@ -22,6 +22,7 @@ describe('the rule behind a refusal', () => {
       ['template.unresolved', 'template_unresolved', 'TPL-004'],
       ['section.required', 'section_required', 'TPL-013'],
       ['component.required', 'component_required', 'TPL-044'],
+      ['creation.failed', 'creation_failed', 'TPL-024'],
       ['metadata.invalid', 'metadata_invalid', 'TPL-055'],
       ['definition.name_taken', 'definition_name_taken', 'MET-031'],
       ['assignment.conflict', 'assignment_conflict', 'MET-008'],
@@ -52,6 +53,8 @@ describe('the rule behind a refusal', () => {
     // And no rule where none refuses: a reference to nothing, a stale save, a design's own guard.
     // Every code is one or the other, so a code added later is decided rather than defaulted.
     const unruled: readonly DottedCode[] = [
+      // Bulk generation cannot run queries yet (the R9 plan, R9-F): a gap, not a rule refusing.
+      'cohort.bound',
       // Nobody holds it, or the asker does: a state to act on, not a rule refusing (collaboration.md).
       'lock.free',
       'lock.own',
